@@ -89,7 +89,6 @@ namespace Tests {
                ;
     }
 
-
     template <typename T>
     bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
     {
@@ -191,10 +190,10 @@ namespace Tests {
                      &&    !FromTo
                         || (     // Checking communitative property
                                object.ToString(stream)
-                            && quoted || AllowChange ? json != std::string(stream) : json == std::string(stream)
+                            && AllowChange ? json != std::string(stream) : json == std::string(stream)
                             && object.FromString(stream, status)
                             && !(status.IsSet())
-                            && AllowChange ? json != std::string(object.Value().c_str()) : json == std::string(object.Value().c_str())
+                            && std::string(stream) == std::string(object.Value().c_str())
                            )
                      ;
 #else
@@ -208,7 +207,7 @@ namespace Tests {
                               && result
                               ;
 
-                    if (quoted || AllowChange) {
+                    if (AllowChange) {
                         result =    json != std::string(stream)
                                   && result
                                  ;
@@ -223,7 +222,7 @@ namespace Tests {
                              && result
                              ;
 
-                    result =    AllowChange ? json != std::string(object.Value().c_str()) : json == std::string(object.Value().c_str())
+                    result =    std::string(stream) == std::string(object.Value().c_str())
                              && result
                              ;
                  }
@@ -1437,6 +1436,252 @@ namespace Tests {
                ;
     }
 
+
+    template <typename T>
+    bool TestStringFromString(bool malformed, uint8_t& count)
+    {
+        constexpr bool AllowChange = false;
+
+        count = 0;
+
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+
+                // Opaque strings
+//                count += TestJSONFormat<T>("", FromTo, AllowChange); // Empty, by definition considered opaque but Deserialize is never triggered to categorize it as such
+                count += TestJSONFormat<T>(" ", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc 123 ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>(" abc 123 ABC ", FromTo, AllowChange);
+
+                // JSON value strings
+                count += TestJSONFormat<T>("\"\"", FromTo, AllowChange); // Empty
+                count += TestJSONFormat<T>("\" \"", FromTo, AllowChange); // Regular space
+                count += TestJSONFormat<T>("\"abc123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"abc 123 ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\" abc 123 ABC \"", FromTo, AllowChange);
+
+                // Opaque strings for reverse solidus
+                count += TestJSONFormat<T>("abc\\123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u005C", FromTo, AllowChange);
+
+                // JSON value string reverse solidus
+                count += TestJSONFormat<T>("\"\\\\\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u005C\"", FromTo, AllowChange);
+
+                // Opaque strings for quotation mark do not exist, except if the character is preceded by a non-quotation mark
+                count += TestJSONFormat<T>("abc\"123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\"123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u0022", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\u0022", FromTo, AllowChange); // Requires preceding character not to indicate start of JSON value string
+
+                // JSON value string for quotation mark
+                count += TestJSONFormat<T>("\"abc\\\"123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\"\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u0022\"", FromTo, AllowChange);
+
+                // Opaque strings for solidus
+                count += TestJSONFormat<T>("abc/123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\/123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("/", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\/", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u002F", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u002F", FromTo, AllowChange);
+
+                // JSON value strings for solidus
+                count += TestJSONFormat<T>("\"abc\\/123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\/\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\/\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u002F\"", FromTo, AllowChange);
+
+                // Opaque strrings for backspace
+                count += TestJSONFormat<T>("abc\b123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\b123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\b", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\b", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u0008", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u0008", FromTo, AllowChange);
+
+                // JSON value strings for backspace
+                count += TestJSONFormat<T>("\"abc\\\b123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\b\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u0008\"", FromTo, AllowChange);
+
+                // Opaque strings for form feed
+                count += TestJSONFormat<T>("abc\f123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\f123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\f", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\f", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u000C", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u000C", FromTo, AllowChange);
+
+                // JSON value strings for form feed
+                count += TestJSONFormat<T>("\"abc\\\f123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\f\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u000C\"", FromTo, AllowChange);
+
+                // Opaque strings for line feed
+                count += TestJSONFormat<T>("abc\n123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\n123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\n", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\n", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u000A", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u000A", FromTo, AllowChange);
+
+                // JSON value strings for line feed
+                count += TestJSONFormat<T>("\"abc\\\n123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\n\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u000A\"", FromTo, AllowChange);
+
+                // Opaque strings for carriage return
+                count += TestJSONFormat<T>("abc\r123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\r123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\r", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\r", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u000D", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u000D", FromTo, AllowChange);
+
+                // JSON value strings for carriage return
+                count += TestJSONFormat<T>("\"abc\\\r123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\r\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u000D\"", FromTo, AllowChange);
+
+                // Opaque strings for character tabulation
+                count += TestJSONFormat<T>("abc\b123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("abc\\\b123ABC", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\b", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\\b", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u0009", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u0009", FromTo, AllowChange);
+
+                // JSON value strings for character tabulation
+                count += TestJSONFormat<T>("\"abc\\\b123ABC\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\\b\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u0009\"", FromTo, AllowChange);
+
+                // Opaque strings for escape boundaries
+                count += TestJSONFormat<T>("\\u0000", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u001F", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u0020", FromTo, AllowChange);
+//                count += TestJSONFormat<T>("\u0000", FromTo, AllowChange);// Empty, by definition considered opaque but Deserialize is never triggered to categorize it as such
+                count += TestJSONFormat<T>("\u001F", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u0020", FromTo, AllowChange);
+
+                // JSON value strings for escape boundaries
+                count += TestJSONFormat<T>("\"\\u0000\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u001F\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\\u0020\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"\u0020\"", FromTo, AllowChange);
+
+                // Opaque strings for incomplete unicode
+                count += TestJSONFormat<T>("\\u", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u0", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u00", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\\u002", FromTo, AllowChange);
+
+                // Opaque string for 'nullifying'
+                count += TestJSONFormat<T>("null", FromTo, AllowChange); // Not nullifying!
+                count += TestJSONFormat<T>("null0", FromTo, AllowChange);
+
+                // JSON value string 'nullifying'
+                count += TestJSONFormat<T>("\"null\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"nul0\"", FromTo, AllowChange);
+
+                // Opaque strings for tokens
+                count += TestJSONFormat<T>("{}", FromTo, AllowChange);
+                count += TestJSONFormat<T>("[]", FromTo, AllowChange);
+                count += TestJSONFormat<T>("true", FromTo, AllowChange);
+                count += TestJSONFormat<T>("false", FromTo, AllowChange);
+
+                // JSON value string for tokens
+                count += TestJSONFormat<T>("\"{}\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"[]\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"true\"", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\"false\"", FromTo, AllowChange);
+
+                // Opaque strings for Insignificant white space
+                count += TestJSONFormat<T>("  ", FromTo, AllowChange);
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020abc123ABC\u0009\u000A\u000D\u0020", FromTo, AllowChange);
+
+                // JSON value strings for Insignificant white space
+                count += TestJSONFormat<T>(" \"\" ", FromTo, !AllowChange); // Empty with insignificant white spaces, stripped away
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange); // Idem
+            } else {
+                // Malformed
+                // =========
+
+                // JSON value string reverse solidus
+                count += !TestJSONFormat<T>("\"abc\\123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\\\"", FromTo, AllowChange);
+
+                // Opaque strings for quotation mark
+                count += !TestJSONFormat<T>("\u0022", FromTo, AllowChange);
+
+                // JSON value string for quotation mark
+                count += !TestJSONFormat<T>("\"abc\"123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u0022\"", FromTo, AllowChange);
+
+                // JSON value strings for solidus
+                count += !TestJSONFormat<T>("\"abc/123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u002F\"", FromTo, AllowChange);
+
+                // JSON value strings for backspace
+                count += !TestJSONFormat<T>("\"abc\b123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\b\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u0008\"", FromTo, AllowChange);
+
+                // JSON value strings for form feed
+                count += !TestJSONFormat<T>("\"abc\f123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\f\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u000C\"", FromTo, AllowChange);
+
+                // JSON value strings for line feed
+                count += !TestJSONFormat<T>("\"abc\n123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\n\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u000A\"", FromTo, AllowChange);
+
+                // JSON value strings for carriage return
+                count += !TestJSONFormat<T>("\"abc\r123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\r\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u000D\"", FromTo, AllowChange);
+
+                // JSON value strings for character tabulation
+                count += !TestJSONFormat<T>("\"abc\b123ABC\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\b\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\"", FromTo, AllowChange);
+
+                // JSON value strings for escape boundaries
+                count += !TestJSONFormat<T>("\"\u0000\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u001F\"", FromTo, AllowChange);
+
+                // JSON value string for incomplete unicode
+                count += !TestJSONFormat<T>("\"\\u\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\\u0\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\\u00\"", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\\u002\"", FromTo, AllowChange);
+
+                // JSON value string 'nullifying'
+                count += !TestJSONFormat<T>("\"null0\"", FromTo, AllowChange);
+
+                // JSON value strings for Insignificant white space
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020abc123ABC\"\u0009\u000A\u000D\u0020", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("\"\u0009\u000A\u000D\u0020abc123ABC\u0009\u000A\u000D\u0020\"", FromTo, AllowChange);
+            }
+        } while (FromTo);
+
+        return  !malformed ? count == 212
+                           : count == 62
+               ;
+    }
+
     template <typename T, typename S>
     bool TestDecUIntFromValue()
     {
@@ -1682,6 +1927,21 @@ namespace Tests {
 
         count += TestJSONEqual<T, S>(true, "true");
         count += TestJSONEqual<T, S>(false, "false");
+
+        return count == 2;
+    }
+
+    template <typename T, typename S>
+    bool TestStringFromValue()
+    {
+        static_assert(std::is_same<S, std::string>::value);
+
+        uint8_t count = 0;
+
+        T object;
+
+        count += object.FromString("abc123ABC") && object.Value() == S("abc123ABC");
+        count += object.FromString("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020") && object.Value() == S("\"abc123ABC\"");
 
         return count == 2;
     }
@@ -2683,6 +2943,23 @@ namespace Tests {
 
         EXPECT_TRUE(TestBoolFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 60);
+    }
+
+    TEST(JSONParser, String)
+    {
+        using json_type = Core::JSON::String;
+        using actual_type = std::string;
+
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE((TestStringFromValue<json_type, actual_type>()));
+
+        EXPECT_TRUE(TestStringFromString<json_type>(malformed, count));
+        EXPECT_EQ(count, 212);
+
+        EXPECT_TRUE(TestStringFromString<json_type>(!malformed, count));
+        EXPECT_EQ(count, 62);
     }
 }
 }

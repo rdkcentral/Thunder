@@ -1815,7 +1815,7 @@ namespace Core {
                                     _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
-				    FALLTHROUGH;
+                                    FALLTHROUGH;
                     case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
@@ -2077,10 +2077,12 @@ namespace Core {
 
             inline const string Value() const
             {
-                if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
-                    return (Core::ToQuotedString('\"', _value));
+                if (IsQuoted()) {
+                    return '"' + _value + '"';
                 }
-                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
+                else {
+                    return _value;
+                }
             }
 
             inline const string& Default() const
@@ -2124,7 +2126,7 @@ namespace Core {
 
             inline bool IsQuoted() const
             {
-                return (((_flagsAndCounters & NullBit) == 0) && ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
+                return ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
 
             inline void SetQuoted(const bool enable)
@@ -2140,305 +2142,217 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t result = 0;
+                uint16_t loaded = 0;
 
                 ASSERT(maxLength > 0);
 
-                bool isQuoted = IsQuoted();
-                if ((_flagsAndCounters & SetBit) != 0 || (_value.empty() && isQuoted)) {
-                    if (offset == 0)  {
-                        if (isQuoted == true) {
-                            // We always start with a quote or Block marker
-                            stream[result++] = '\"';
-                        }
-                        offset = 1;
-                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit| QuotedAreaBit));
+                const int32_t available = maxLength - (IsQuoted() ? 2 : 0);
+
+                if (0 < available) {
+                    if (IsQuoted()) {
+                        stream[loaded++] = '"';
                     }
 
-                    uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
+                    const std::string::size_type count = _value.size();
 
-                    while ((result < maxLength) && (length > 0)) {
-                        const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
-
-                        // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
-                            stream[result++] = static_cast<TCHAR>(current);
-                            length--;
-                            offset++;
-                        }
-                        else if ((_flagsAndCounters & SpecialSequenceBit) == 0) {
-                            // We need to escape these..
-                            stream[result++] = '\\';
-                            _flagsAndCounters |= SpecialSequenceBit;
-                        }
-                        else if ((_flagsAndCounters & 0xFF) == 0x00) {
-                            // Check if it is a single character drop or a \u
-                            switch (current) {
-                            case 0x08: stream[result++] = 'b'; break;
-                            case 0x09: stream[result++] = 't'; break;
-                            case 0x0a: stream[result++] = 'n'; break;
-                            case 0x0c: stream[result++] = 'f'; break;
-                            case 0x0d: stream[result++] = 'r'; break;
-                            case '\\': stream[result++] = '\\'; break;
-                            case '/': stream[result++] = '/'; break;
-                            case '"': stream[result++] = '"'; break;
-                            default: {
-                                uint16_t lowPart, highPart;
-                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
-
-                                if (codeSize < 0) {
-                                    // Oops it is a bad code thingy, Skip it..
-                                    // TODO: report an error
-                                    codeSize = -codeSize;
-                                }
-
-                                ASSERT(codeSize <= 7);
-
-                                if (CodePointToUTF16(_storage, lowPart, highPart) == false) {
-                                    // Oops we have a bad transaltion of the code point
-                                    // TODO: report an error
-                                }
-
-                                _storage = (highPart << 16) | lowPart;
-
-                                // Oke start processing an escape squence and remember how many bytes we jump if
-                                // we are completed, start at 2 index now as we already wrote /u
-                                _flagsAndCounters |= ((codeSize & 0x07) << 3) | 0x02;
-
-                                stream[result++] = 'u';
-                                break;
-                            }
-                            }
-
-                            // If all has been writeen it is time to move back to the "copying situation...
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
-                                length--;
-                                offset++;
-                            }
-                        }
-                        else {
-                            if ((_flagsAndCounters & 0x7) < 0x2) {
-                                stream[result++] = ((_flagsAndCounters & 0x07) == 0 ? '\\' : 'u');
-                            }
-                            else {
-                                uint8_t part;
-
-                                // Write out the CodePoint....
-                                if (_storage > 0xFFFF) {
-                                    // First write the Most Significant part
-                                    part = (_storage >> (16 + ((5 - (_flagsAndCounters & 0x07)) * 4))) & 0x0F;
-                                }
-                                else {
-                                    part = (_storage >> ((5 - (_flagsAndCounters & 0x07)) * 4)) & 0x0F;
-                                }
-                                stream[result++] = (part > 9 ? 'A' + (part - 10) : '0' + part);
-                            }
-
-                            _flagsAndCounters += 1;
-
-                            if ((_flagsAndCounters & 0x7) == 6) {
-                                // Oke we flushed a HEX value of 4 digits, lets determine the next step..
-                                if (_storage > 0xFFFF) {
-                                    _storage = (_storage & 0xFFFF);
-                                    _flagsAndCounters &= (FlagMask | 0xF8);
-                                }
-                                else {
-                                    // We are done ! Move on, strange character has been handled and converted
-                                    uint8_t skip = ((_flagsAndCounters >> 3) & 0x07);
-                                    length -= skip;
-                                    offset += skip;
-
-                                    _flagsAndCounters &= (FlagMask ^ SpecialSequenceBit);
-                                }
-                            }
-                        }
+                    if (count < static_cast<std::string::size_type>(available)) {
+                        memcpy(&stream[loaded], _value.c_str(), count);
+                        loaded += count;
                     }
 
-                    if (length == 0) {
-                        // And we close with a quote..
-                        if (isQuoted == false) {
-                            offset = 0;
-                        }
-                        else if (result < maxLength) {
-                            stream[result++] = '\"';
-                            offset = 0;
-                        }
+                    if (IsQuoted()) {
+                        stream[loaded++] = '"';
                     }
                 }
 
-                return (result);
-            }
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
-            {
-                bool finished = false;
-                uint16_t result = 0;
-                ASSERT(maxLength > 0);
+                offset = !(loaded < available);
 
-                if (offset == 0) {
-                    _value.clear();
-                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|QuotedAreaBit|QuoteFoundBit));
-                    _storage = 0;
-                    if (stream[result] == '\"') {
-                        result++;
-                        _flagsAndCounters |= QuoteFoundBit;
-                    }
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
                     offset = 1;
                 }
 
-                // Might be that the last character we added was a
-                while ((result < maxLength) && (finished == false)) {
+                return loaded;
+            }
 
-                    TCHAR current = stream[result];
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            {
+                uint16_t loaded = 0;
 
-                    // What are we deserializing a string, or an opaque JSON object!!!
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
+                bool completed = false, suffix = false, opaque = false;
 
-                        if ((_flagsAndCounters & QuotedAreaBit) == 0) {
-                            // It's an opaque structure, so *no* decoding required. Leave as is !
-                            if (current == '{') {
-                                if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                    error = Error{ "Opaque object nesting too deep" };
-                                }
-                            }
-                            else if (current == '[') {
-                                if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                    error = Error{ "Opaque object nesting too deep" };
-                                }
-                            }
-                            else if ((_flagsAndCounters & 0x1F) == 0) {
-                                // We are not in a nested area, see what 
-                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
-                            }
-                            else if (current == '}') {
-                                if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                    error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
-                                }
-                            }
-                            else if (current == ']') {
-                                if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                    error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
-                                }
-                            }
+                while(!completed && loaded < maxLength && !(error.IsSet()) && !opaque) {
+                    const char& c = stream[loaded++];
+
+                    if (!(_flagsAndCounters & SpecialSequenceBit)) {
+                        switch (c) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH;
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH;
+                        case 0x0D     : // Carriage return
+                                        if (     ((_flagsAndCounters & QuoteFoundBit) && !suffix)
+                                              || ((_flagsAndCounters & NullBit) && !suffix)
+                                           ) {
+                                            error = Error{"Insignificant white space character '" + std::to_string(c) + "' at unsupported position for String"};
+                                        }
+                                        suffix = suffix || offset;
+                                        continue;
+                        case '\0'     : // End of character sequence
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && suffix) || ((_flagsAndCounters & QuoteFoundBit) && suffix)))) {
+                                            error = Error{"Terminated character sequence without (sufficient) data for String"};
+                                        }
+                                        completed = true;
+                                        continue;
+                        case '"'    :   // Quoted character sequence
+                                        if (   (!(_flagsAndCounters & QuoteFoundBit) && offset > 0)
+                                            || ((_flagsAndCounters & QuoteFoundBit) && suffix)
+                                           ) {
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        suffix = suffix || (_flagsAndCounters & QuoteFoundBit);
+
+                                        if ((_flagsAndCounters & NullBit) && !suffix) {
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for String"};
+                                            continue;
+                                        }
+
+                                        _flagsAndCounters |= QuoteFoundBit;
+                                        break;
+                        case '\\'   :   if (offset > 0 && ((_flagsAndCounters & NullBit) || !(_flagsAndCounters & QuoteFoundBit) || suffix)) {
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+                                        _flagsAndCounters |= SpecialSequenceBit;
+                                        break;
+                        default     :   if (c == ' ' && (  !(_flagsAndCounters & QuoteFoundBit)
+                                                         || ((_flagsAndCounters & QuoteFoundBit) && suffix))
+                                           ) {
+                                            continue;
+                                        }
+
+                                        if (  (_flagsAndCounters & NullBit)
+                                            || suffix
+                                           ) {
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        if (   !(_flagsAndCounters & SpecialSequenceBit)
+                                           ) {
+                                            switch (c) {
+                                            default     : if (!(c >= 0x0000 && c <= 0x001F)) {
+                                                              break;
+                                                          }
+                                                            FALLTHROUGH;
+                                            case 0x2F   :   // '/'  the solidus character
+                                                            FALLTHROUGH;
+                                            case 0x08   :   // '\b' backspace character
+                                                            FALLTHROUGH;
+                                            case 0x0C   :   // '\f' form feed character
+                                                            FALLTHROUGH;
+                                            case 0x0A   :   // '\n' line feed character
+                                                            FALLTHROUGH;
+                                            case 0x0D   :   // '\r' carriage return character
+                                                            FALLTHROUGH;
+                                            case 0x09   :   // '\t' tabulation character
+                                                            error = Error{"Unescaped character of code point value '" + std::to_string(c) + "' for String"};
+                                                            continue;
+                                            }
+                                        }
+
+                                        const uint32_t index = _flagsAndCounters & QuoteFoundBit ? offset - 1 : offset;
+
+                                        if (index == (sizeof(IElement::NullTag) - 1 - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ? 1 : 0))) {
+                                            _flagsAndCounters |= std::string(IElement::NullTag, index + 1) == std::string(&stream[_flagsAndCounters & QuoteFoundBit ? 1 : 0], index + 1) ? NullBit : 0;
+                                        }
                         }
 
-                        if (finished == false) {
-                            if ((_flagsAndCounters & QuotedAreaBit) != 0) {
-                                // Write the amount we possibly can..
-                                _value += current;
-                            }
-                            else if (::isspace(current) == false) {
-                                // If we are creating an opaque string, drop all whitespaces if possible.
-                                _value += current;
+                        opaque = !offset && !(_flagsAndCounters & QuoteFoundBit);
 
-                                // See if we are done, if this is the last close marker, we bail out..
-                                finished = (((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']')));
-                            }
-
-                            // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
-                            // and should be considered for scope counting.
-                            // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
-                                // This is not an "escaped" quote, so it should be considered a real quote. It means
-                                // we are now entering or leaving a quoted area within the opaque struct...
-                                _flagsAndCounters ^= QuotedAreaBit;
-                            }
-
-                            result++;
+                        if (c != '"') {
+                            _value+= c;
                         }
+                    } else {
+                        switch (c) {
+                        case 0x22   :   // '"'  quotation mark character
+                        case 0x5C   :   // '\'  reverse solidus character
+                        case 0x2F   :   // '/'  the solidus character
+                        case 0x08   :   // '\b' backspace character
+                        case 0x0C   :   // '\f' form feed character
+                        case 0x0A   :   // '\n' line feed character
+                        case 0x0D   :   // '\r' carriage return character
+                        case 0x09   :   // '\t' tabulation character
+                                        if (_flagsAndCounters & 0x07) {
+                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        _flagsAndCounters ^= SpecialSequenceBit;
+                                        break;
+                        case 'u'    :   // unicode
+                                        if (_flagsAndCounters & 0x07) {
+                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                                        }
+
+                                        _flagsAndCounters |= 0x04;
+                                        break;
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && suffix) || (_flagsAndCounters & QuoteFoundBit)) || (_flagsAndCounters & 0x7))) {
+                                            error = Error{"Terminated (special) character sequence without (sufficient) data for String"};
+                                        }
+                                        FALLTHROUGH;
+                        default     :   if (   ((_flagsAndCounters & 0x7) && !std::isxdigit(c))
+                                            || !(_flagsAndCounters & 0x7)
+                                           ) {
+                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
+                                        _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
+                        }
+
+                        _value+= c;
                     }
-                    // Since it is a "real" string translate back all escaped stuff.. are we in an unescaping mode?
-                    else if ((_flagsAndCounters & SpecialSequenceBit) == 0x00) {
-                        // Nope we are not, so see if we need to start it and otherwise, just copy...
-                        if (current == '\\') {
-                            // And we need to start it.
-                            _flagsAndCounters |= SpecialSequenceBit;
-                        } else if (current == '\"') {
-                            // We are done! leave this element.
-                            finished = true;
-                        } else if (current <= 0x1F) {
-                            error = Error{ "Unescaped control character detected" };
-                        } else {
-                            // Just copy and onto the next;
-                            _value += current;
-                        }
-                        result++;
-                    }
-                    else if ((_flagsAndCounters & 0xFF) == 0x00) {
 
-                        if (current == 'u') {
-                            _flagsAndCounters |= 0x4;
-                        }
-                        else {
-                            // We are in a string mode, so we need to decode. Decode what we receive..
-                            switch (current) {
-                            case '\"': _value += '\"'; break;
-                            case '\\': _value += '\\'; break;
-                            case '/':  _value += '/';  break;
-                            case 'b':  _value += static_cast<TCHAR>(0x08); break;
-                            case 't':  _value += static_cast<TCHAR>(0x09); break;
-                            case 'n':  _value += static_cast<TCHAR>(0x0a); break;
-                            case 'f':  _value += static_cast<TCHAR>(0x0c); break;
-                            case 'r':  _value += static_cast<TCHAR>(0x0d); break;
-                            default:
-                                error = Error{ "unknown escaping code." };
-                                break;
-                            }
-                            _flagsAndCounters ^= SpecialSequenceBit;
-                        }
-                        result++;
-                    }
-                    else {
-                        // If we end up here, we are actually gathering unicode values to be decoded.
-                        _flagsAndCounters--;
+                    ++offset;
+                }
 
-                        if (::isxdigit(current) == false) {
-                            error = Error{ "the unescaping of the u requires hexadecimal characters" };
-                        }
-                        else {
-                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
-                            result++;
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
-
-                                // Examine the codePoint, if ot is a pair ot not..
-                                if ( (_storage >= 0xFFFF) || ((_storage & 0xFC00) != 0xD800) ) {
-
-                                    // We have a full monty, 2 x UTF16 to be translated :-)
-                                    uint32_t codePoint;
-                                    TCHAR buffer[6];
-
-                                    UTF16ToCodePoint((_storage & 0xFFFF), ((_storage >> 16) & 0xFFFF), codePoint);
-
-                                    // Seems like we have a pending code point to be added, before we add anaything elese :-)
-                                    int8_t bytes = FromCodePoint(codePoint, buffer, sizeof(buffer));
-
-                                    if (bytes <= 0) {
-                                        error = Error{ "There is no valid codepoint defined." };
-                                    }
-                                    else {
-                                        _value += string(buffer, bytes);
-                                    }
-                                    _storage = 0;
-                                }
-                            }
-                        }
+                if (completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_flagsAndCounters & QuoteFoundBit) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for String"};
                     }
                 }
 
-                if ( (finished == false) && (error.IsSet() == false) ) {
-                    offset += static_cast<uint32_t>(_value.length()) ;
-                } else {
+                if (opaque || (!offset && !(_flagsAndCounters & QuoteFoundBit))) {
+                    _flagsAndCounters ^= _flagsAndCounters & QuotedAreaBit ? QuotedAreaBit : 0;
+                    _flagsAndCounters ^= _flagsAndCounters & QuoteFoundBit ? QuoteFoundBit : 0;
+                    _flagsAndCounters ^= _flagsAndCounters & QuotedSerializeBit ? QuotedSerializeBit : 0;
+                    _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
+
+                    loaded = maxLength - 1;
+
+                    _value = std::string(stream, loaded);
+
+                    error.Clear();
+                }
+
+                if (!(error.IsSet())) {
                     offset = 0;
-                    _flagsAndCounters |= (_value == IElement::NullTag ? NullBit|SetBit : SetBit);
-
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
-                        // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
-                    }
+                } else {
+                    _value.clear();
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
-                return (result);
+                return loaded;
             }
 
             // IMessagePack iface:
