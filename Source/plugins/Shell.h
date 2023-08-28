@@ -24,7 +24,7 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_HANDLER(PluginHost::IShell::reason);
-ENUM_CONVERSION_HANDLER(PluginHost::IShell::state);
+ENUM_CONVERSION_HANDLER(PluginHost::IShell::reason)
+ENUM_CONVERSION_HANDLER(PluginHost::IShell::state)
 
 }
