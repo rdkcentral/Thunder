@@ -98,7 +98,7 @@ TEST(test_event, unlock_event)
     object.Stop();
 }
 
-TEST(DISABLE_test_event, set_event)
+TEST(DISABLED_test_event, set_event)
 {
     Event event(false,true);
     std::thread::id parentTid;
