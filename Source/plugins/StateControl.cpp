@@ -28,14 +28,14 @@ ENUM_CONVERSION_BEGIN(PluginHost::IStateControl::state)
     { PluginHost::IStateControl::SUSPENDED, _TXT("SUSPENDED") },
     { PluginHost::IStateControl::RESUMED, _TXT("RESUMED") },
 
-    ENUM_CONVERSION_END(PluginHost::IStateControl::state);
+    ENUM_CONVERSION_END(PluginHost::IStateControl::state)
 
     ENUM_CONVERSION_BEGIN(PluginHost::IStateControl::command)
 
     { PluginHost::IStateControl::SUSPEND, _TXT("Suspend") },
     { PluginHost::IStateControl::RESUME, _TXT("Resume") },
 
-    ENUM_CONVERSION_END(PluginHost::IStateControl::command);
+    ENUM_CONVERSION_END(PluginHost::IStateControl::command)
 
 namespace PluginHost
 {
