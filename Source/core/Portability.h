@@ -91,7 +91,11 @@
   #endif
 #endif
 
+#ifdef __WINDOWS__
+#pragma system_header
+#else
 #pragma GCC system_header
+#endif
 
 #ifdef __WINDOWS__
     #define DO_PRAGMA(x) __pragma(x)
