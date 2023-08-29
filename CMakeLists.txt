@@ -43,9 +43,9 @@ if (BUILD_REFERENCE)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH
-    "${CMAKE_SOURCE_DIR}/cmake"
-    "${CMAKE_SOURCE_DIR}/cmake/common"
-    "${CMAKE_SOURCE_DIR}/cmake/modules"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
     "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
 
 if (TOOLS_SYSROOT)
@@ -97,7 +97,7 @@ string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_F
 string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 # make sure others can make use of the JSON creation tools as well!!!
-configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
                 @ONLY)
 
@@ -107,18 +107,18 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 install(DIRECTORY
-        "${CMAKE_SOURCE_DIR}/cmake/config"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config"
     DESTINATION lib/cmake/${NAMESPACE})
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
 install(DIRECTORY
-            "${CMAKE_SOURCE_DIR}/cmake/common"
-            "${CMAKE_SOURCE_DIR}/cmake/templates"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates"
         DESTINATION lib/cmake/${NAMESPACE})
 
 if (BUILD_LIB_AS_STATIC)
     install(DIRECTORY
-            "${CMAKE_SOURCE_DIR}/cmake/modules"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
         DESTINATION lib/cmake/${NAMESPACE})
 endif ()
 
