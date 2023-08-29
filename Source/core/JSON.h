@@ -75,8 +75,6 @@ namespace Core {
             {
             }
 
-            static constexpr size_t kContextMaxLength = 80;
-
             string _message;
             string _context;
             size_t _pos;
