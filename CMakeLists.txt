@@ -65,6 +65,11 @@ find_package(ProxyStubGenerator REQUIRED)
 find_package(JsonGenerator REQUIRED)
 find_package(ConfigGenerator REQUIRED)
 
+if(NOT DEFINED BUILD_SHARED_LIBS)
+    set(BUILD_SHARED_LIBS ON CACHE INTERNAL "Enable shared objects by default") 
+    message(STATUS "BUILD_SHARED_LIBS was not set, assuming ${BUILD_SHARED_LIBS}")
+endif()
+
 #
 # Build type specific options
 #
