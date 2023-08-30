@@ -18,15 +18,12 @@
 set(TARGET ${NAMESPACE}Messaging)
 
 add_library(${TARGET} 
+        Module.cpp
         MessageClient.cpp
         MessageUnit.cpp
         TraceCategories.cpp
         Logging.cpp
         DirectOutput.cpp)
-
-if (BUILD_SHARED_LIBS)
-	target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 set(PUBLIC_HEADERS
         Module.h

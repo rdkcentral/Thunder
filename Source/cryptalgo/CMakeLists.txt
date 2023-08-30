@@ -18,15 +18,12 @@
 set(TARGET  ${NAMESPACE}Cryptalgo)
 
 add_library(${TARGET}
+        Module.cpp
         AES.cpp
         AESImplementation.cpp
         Hash.cpp
         Random.cpp
         )
-
-if (BUILD_SHARED_LIBS)
-	target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 set(PUBLIC_HEADERS
         AES.h

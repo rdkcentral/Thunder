@@ -20,6 +20,7 @@ set(TARGET ${NAMESPACE}COM)
 ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(${TARGET}
+    Module.cpp
     Administrator.cpp
     Communicator.cpp
     IUnknown.cpp
@@ -27,11 +28,6 @@ add_library(${TARGET}
     ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_COM.cpp
 )
 
-if (BUILD_SHARED_LIBS)
-	target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
-
-  
 set(PUBLIC_HEADERS
     Administrator.h
     com.h

@@ -18,16 +18,13 @@
 set(TARGET ${NAMESPACE}WebSocket)
 
 add_library(${TARGET}
+        Module.cpp
         URL.cpp
         JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
         JSONRPCLink.cpp
         )
-
-if (BUILD_SHARED_LIBS)
-        target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 set(PUBLIC_HEADERS
         URL.h

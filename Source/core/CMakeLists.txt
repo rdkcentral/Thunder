@@ -19,6 +19,7 @@ set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
 add_library(${TARGET}
+        Module.cpp
 	    DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
@@ -53,9 +54,6 @@ add_library(${TARGET}
         ResourceMonitor.cpp
         )
 
-if (BUILD_SHARED_LIBS)
-	target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
