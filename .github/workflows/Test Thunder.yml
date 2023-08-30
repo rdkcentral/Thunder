@@ -95,6 +95,7 @@ jobs:
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+        -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
         -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
