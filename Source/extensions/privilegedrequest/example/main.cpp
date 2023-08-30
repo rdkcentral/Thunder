@@ -22,6 +22,8 @@
 
 #include "privilegedrequest/PrivilegedRequest.h"
 
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
 using namespace WPEFramework;
 
 constexpr char fileNameTemplate[] = "/tmp/shared_file_test_XXXXXX";
