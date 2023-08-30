@@ -1,4 +1,4 @@
-name: Build Thunder on Linux
+name: Build archives Thunder on Linux
 
 on:
   push:
@@ -96,7 +96,7 @@ jobs:
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
 
-    - name: Build Thunder
+    - name: Build Thunder with archives
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
