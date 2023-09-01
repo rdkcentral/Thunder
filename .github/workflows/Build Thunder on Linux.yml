@@ -118,9 +118,11 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Tar files
+      if: matrix.shared_libs == 'ON'
       run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
 
     - name: Upload
+      if: matrix.shared_libs == 'ON'
       uses: actions/upload-artifact@v3
       with:
         name: Thunder-${{matrix.build_type}}-artifact
