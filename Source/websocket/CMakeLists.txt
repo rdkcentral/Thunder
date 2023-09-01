@@ -26,6 +26,8 @@ add_library(${TARGET}
         JSONRPCLink.cpp
         )
 
+find_package(ZLIB REQUIRED)
+
 set(PUBLIC_HEADERS
         URL.h
         JSONWebToken.h

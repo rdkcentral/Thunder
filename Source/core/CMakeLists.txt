@@ -18,6 +18,10 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
+find_package(Threads REQUIRED)
+find_package(ExecInfo)
+find_package(LIBRT)
+
 add_library(${TARGET}
         Module.cpp
 	    DoorBell.cpp
