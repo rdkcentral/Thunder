@@ -13,12 +13,13 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
+        shared_libs: [ON, OFF]
       
     env:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
 
-    name: Testing - ${{matrix.build_type}}
+    name: Testing - ${{matrix.build_type}}, shared libraries ${{matrix.shared_libs}}
     steps:
 # ----- Thunder -----
     - name: Checkout Thunder - default
@@ -95,7 +96,7 @@ jobs:
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_SHARED_LIBS={{matrix.shared_libs}} \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
         -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
