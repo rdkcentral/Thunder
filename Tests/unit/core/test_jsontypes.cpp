@@ -89,11 +89,33 @@ namespace Tests {
                ;
     }
 
+// FIXME: alternative IS_STATIC_MEMBER_AVAIABLE requires a return which is unknow for arbitrary JSON value type
+
     template <typename T>
+    class HasValue
+    {
+        private :
+
+            using yes = struct { char y[1]; };
+            using no = struct { char n[2]; };
+
+            template <typename U>
+            static yes test(decltype(&U::Value)) {yes y; return y;}
+
+            template <typename U>
+            static no test(...) {no n; return n;}
+
+        public :
+
+            static const bool value = sizeof(test<T>(0)) == sizeof(yes);
+    };
+
+    template<typename T, typename std::enable_if<HasValue<T>::value, T*>::type = nullptr>
     bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
     {
         auto compare = [](const std::string& reference, const std::string& data) -> bool {
-            bool result = reference.size() == data.size();
+            // Extra \'0' at the end are counted but do not add to the 'true' lenght of the character sequence
+            bool result = std::string(reference.c_str()).size() == std::string(data.c_str()).size();
 
             if (   std::is_same<T, Core::JSON::HexUInt8>::value
                 || std::is_same<T, Core::JSON::HexSInt8>::value
@@ -120,7 +142,81 @@ namespace Tests {
                 && !(status.IsSet())
                 && TestJSONEqual<T, decltype(std::declval<T>().Value())>(object.Value(), reference)
                 ;
+            }
 
+            return result;
+        };
+
+        T object;
+
+        Core::OptionalType<Core::JSON::Error> status;
+
+        std::string stream;
+
+#ifndef _INTERMEDIATE
+        bool result =    object.FromString(json, status)
+                      && !(status.IsSet())
+                      && (   !FromTo
+                          || (   object.ToString(stream)
+                              && (    AllowChange
+                                   || compare(json, stream)
+                                 )
+                             )
+                         )
+                      ;
+#else
+        bool result = object.FromString(json, status);
+             result =    result
+                      && !(status.IsSet())
+                      ;
+
+            if (FromTo) {
+                result =    result
+                         && object.ToString(stream)
+                         ;
+
+                if (!AllowChange) {
+                    result =    result
+                             && compare(json, stream)
+                             ;
+                }
+            } else {
+            }
+#endif
+        return result;
+    }
+
+    template<typename T, typename std::enable_if<!HasValue<T>::value, T*>::type = nullptr>
+    bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
+    {
+        auto compare = [](const std::string& reference, const std::string& data) -> bool {
+            // Extra \'0' at the end are counted  but do not add to the 'true' lenght of the character sequence
+            bool result = std::string(reference.c_str()).size() == std::string(data.c_str()).size();
+
+            if (   std::is_same<T, Core::JSON::HexUInt8>::value
+                || std::is_same<T, Core::JSON::HexSInt8>::value
+                || std::is_same<T, Core::JSON::HexUInt16>::value
+                || std::is_same<T, Core::JSON::HexSInt16>::value
+                || std::is_same<T, Core::JSON::HexUInt32>::value
+                || std::is_same<T, Core::JSON::HexSInt32>::value
+                || std::is_same<T, Core::JSON::HexUInt64>::value
+                || std::is_same<T, Core::JSON::HexSInt64>::value
+               ) {
+                for (std::string::size_type index = 0, end = data.size(); index < end; index++) {
+                    result = result && std::toupper(reference[index]) == std::toupper(data[index]);
+                }
+            }
+
+            if (   std::is_same<T, Core::JSON::Float>::value
+                || std::is_same<T, Core::JSON::Double>::value
+               ) {
+                T object;
+
+                Core::OptionalType<Core::JSON::Error> status;
+
+                result = object.FromString(data, status)
+                && !(status.IsSet())
+                ;
             }
 
             return result;
@@ -190,10 +286,10 @@ namespace Tests {
                      &&    !FromTo
                         || (     // Checking communitative property
                                object.ToString(stream)
-                            && AllowChange ? json != std::string(stream) : json == std::string(stream)
+                            && AllowChange ? std::string(json.c_str()) != std::string(stream.c_str()) : std::string(json.c_str()) == std::string(stream.c_str())
                             && object.FromString(stream, status)
                             && !(status.IsSet())
-                            && std::string(stream) == std::string(object.Value().c_str())
+                            && std::string(stream.c_str()) == std::string(object.Value().c_str())
                            )
                      ;
 #else
@@ -208,11 +304,11 @@ namespace Tests {
                               ;
 
                     if (AllowChange) {
-                        result =    json != std::string(stream)
+                        result =    std::string(json.c_str()) != std::string(stream,c_str())
                                   && result
                                  ;
                     } else {
-                        result =    json == std::string(stream)
+                        result =    std::string(json.c_str()) == std::string(stream.c_str())
                                   && result
                                   ;
                     }
@@ -222,7 +318,7 @@ namespace Tests {
                              && result
                              ;
 
-                    result =    std::string(stream) == std::string(object.Value().c_str())
+                    result =    std::string(stream.c_str()) == std::string(object.Value().c_str())
                              && result
                              ;
                  }
@@ -1166,7 +1262,7 @@ namespace Tests {
                 // ===================
 
                 count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0.00", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0.00", FromTo, AllowChange); // The length of the fraction sequence it typically unknown
                 count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
 
                 count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
@@ -1436,7 +1532,6 @@ namespace Tests {
                ;
     }
 
-
     template <typename T>
     bool TestStringFromString(bool malformed, uint8_t& count)
     {
@@ -1679,6 +1774,254 @@ namespace Tests {
 
         return  !malformed ? count == 212
                            : count == 62
+               ;
+    }
+
+    template <typename S>
+    bool TestArrayFromString(bool malformed, uint8_t& count)
+    {
+        // Core::JSON::ArrayType is constricted to a single type and as a consequence not a genuine JSON value array
+
+        constexpr bool AllowChange = false;
+
+        using T = Core::JSON::ArrayType<S>;
+        using W = Core::JSON::ArrayType<T>;
+
+        count = 0;
+
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+
+                // 'Empty' and nested JSON value arrays are allowed
+
+                count += TestJSONFormat<T>("", FromTo, !AllowChange); // Empty by definition, returns ['content of empty type']
+                count += TestJSONFormat<T>("[]", FromTo, !AllowChange); // returns ['content of empty type']
+
+                // Insignificant white space before token is allowed and may be stipped
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020[]", FromTo, !AllowChange); // ['content of empty type']
+                count += TestJSONFormat<T>("[]\u0009\u000A\u000D\u0020", FromTo, !AllowChange); // ['content of empty type]
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020[]\u0009\u000A\u000D\u0020", FromTo, !AllowChange); // ['content of empty type']
+
+                count += TestJSONFormat<W>("[[]]", FromTo, !AllowChange); // [['content of empty type']]
+                count += TestJSONFormat<W>("[[],[]]", FromTo, !AllowChange); // [['content of empty type']]
+                count += TestJSONFormat<W>("[[],\u0009\u000A\u000D\u0020[]]", FromTo, !AllowChange); // [['content of empty type']]
+                count += TestJSONFormat<W>("[[]\u0009\u000A\u000D\u0020,[]]", FromTo, !AllowChange); // [['content of empty type']]
+                count += TestJSONFormat<W>("[[]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[]]", FromTo, !AllowChange); // [['content of empty type']]
+
+                // Nullify ArrayType
+                count += TestJSONFormat<T>("null", FromTo, AllowChange);
+
+                // Nullify contained types, except for string, that treats it opaque
+                count += TestJSONFormat<T>("[null]", FromTo, AllowChange);
+                count += TestJSONFormat<T>("[null,null]", FromTo, AllowChange);
+                count += TestJSONFormat<T>("[null,\u0009\u000A\u000D\u0020null]", FromTo, !AllowChange); // [null,null]
+                count += TestJSONFormat<T>("[null\u0009\u000A\u000D\u0020,null]", FromTo, !AllowChange); // [null,null]
+                count += TestJSONFormat<T>("[null\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020null]", FromTo, !AllowChange); // [null,null]
+
+                count += TestJSONFormat<W>("[[null]]", FromTo, AllowChange);
+                count += TestJSONFormat<W>("[[null],[null]]", FromTo, AllowChange);
+                count += TestJSONFormat<W>("[[null],\u0009\u000A\u000D\u0020[null]]", FromTo, !AllowChange); // [[null],[null]]
+                count += TestJSONFormat<W>("[[null]\u0009\u000A\u000D\u0020,[null]]", FromTo, !AllowChange); // [[null],[null]]
+                count += TestJSONFormat<W>("[[null]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[null]]", FromTo, !AllowChange); // [[null],[null]]
+
+                if (std::is_same<S, Core::JSON::Container>::value) {
+                    count += TestJSONFormat<T>("[{}]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[{},{}]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[{},\u0009\u000A\u000D\u0020{}]", FromTo, !AllowChange); // [{},{}]
+                    count += TestJSONFormat<T>("[{}\u0009\u000A\u000D\u0020,{}]", FromTo, !AllowChange); // [{},{}]
+                    count += TestJSONFormat<T>("[{}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020{}]", FromTo, !AllowChange); // [{},{}]
+
+                    count += TestJSONFormat<W>("[[{}]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[{}],[{}]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[{[}],\u0009\u000A\u000D\u0020[{}]]", FromTo, !AllowChange); // [[{}],[{}]]
+                    count += TestJSONFormat<W>("[[{}]\u0009\u000A\u000D\u0020,[{}]]", FromTo, !AllowChange); // [[{}],[{}]]
+                    count += TestJSONFormat<W>("[[{}]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[{}]]", FromTo, !AllowChange); // [[{}],[{}]]
+
+                    count += 14;
+                }
+
+                if (   std::is_same<S, Core::JSON::DecUInt8>::value
+                    || std::is_same<S, Core::JSON::DecSInt8>::value
+                    || std::is_same<S, Core::JSON::DecUInt16>::value
+                    || std::is_same<S, Core::JSON::DecSInt16>::value
+                    || std::is_same<S, Core::JSON::DecUInt32>::value
+                    || std::is_same<S, Core::JSON::DecSInt32>::value
+                    || std::is_same<S, Core::JSON::DecUInt64>::value
+                    || std::is_same<S, Core::JSON::DecSInt64>::value
+                ) {
+                    count += TestJSONFormat<T>("[0]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[0,0]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[0,\u0009\u000A\u000D\u00200]", FromTo, !AllowChange); // [0,0]
+                    count += TestJSONFormat<T>("[0\u0009\u000A\u000D\u0020,0]", FromTo, !AllowChange); // [0,0]
+                    count += TestJSONFormat<T>("[0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u00200]", FromTo, !AllowChange); // [0,0]
+
+                    count += TestJSONFormat<W>("[[0]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[0],[0]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[0],\u0009\u000A\u000D\u0020[0]]", FromTo, !AllowChange); // [[0],[0]]
+                    count += TestJSONFormat<W>("[[0]\u0009\u000A\u000D\u0020,[0]]", FromTo, !AllowChange); // [[0],[0]]
+                    count += TestJSONFormat<W>("[[0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0]]", FromTo, !AllowChange); // [[0],[0]]
+
+                    count += 14;
+                }
+
+                if (   std::is_same<S, Core::JSON::HexUInt8>::value
+                    || std::is_same<S, Core::JSON::HexSInt8>::value
+                    || std::is_same<S, Core::JSON::HexUInt16>::value
+                    || std::is_same<S, Core::JSON::HexSInt16>::value
+                    || std::is_same<S, Core::JSON::HexUInt32>::value
+                    || std::is_same<S, Core::JSON::HexSInt32>::value
+                    || std::is_same<S, Core::JSON::HexUInt64>::value
+                    || std::is_same<S, Core::JSON::HexSInt64>::value
+                    || std::is_same<S, Core::JSON::InstanceId>::value
+                    || std::is_same<S, Core::JSON::Pointer>::value
+                ) {
+                    count += TestJSONFormat<T>("[0x0]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[0x0,0x0]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[0x0,\u0009\u000A\u000D\u00200x0]", FromTo, !AllowChange); // [0x0,0x0]
+                    count += TestJSONFormat<T>("[0x0\u0009\u000A\u000D\u0020,0x0]", FromTo, !AllowChange); // [0x0,0x0]
+                    count += TestJSONFormat<T>("[0x0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u00200x0]", FromTo, !AllowChange); // [0x0,0x0]
+
+                    count += TestJSONFormat<W>("[[0x0]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[0x0],[0x0]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[0x0],\u0009\u000A\u000D\u0020[0x0]]", FromTo, !AllowChange); // [[0x0,0x0]]
+                    count += TestJSONFormat<W>("[[0x0]\u0009\u000A\u000D\u0020,[0x0]]", FromTo, !AllowChange); // [[0x0,0x0]]
+                    count += TestJSONFormat<W>("[[0x0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0x0]]", FromTo, !AllowChange); // [[0x0,0x0]]
+
+                    count += 14;
+                }
+
+                if (   std::is_same<S, Core::JSON::OctUInt8>::value
+                    || std::is_same<S, Core::JSON::OctSInt8>::value
+                    || std::is_same<S, Core::JSON::OctUInt16>::value
+                    || std::is_same<S, Core::JSON::OctSInt16>::value
+                    || std::is_same<S, Core::JSON::OctUInt32>::value
+                    || std::is_same<S, Core::JSON::OctSInt32>::value
+                    || std::is_same<S, Core::JSON::OctUInt64>::value
+                    || std::is_same<S, Core::JSON::OctSInt64>::value
+                ) {
+                    count += TestJSONFormat<T>("[00]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[00,00]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[00,\u0009\u000A\u000D\u002000]", FromTo, !AllowChange); // [00,00]
+                    count += TestJSONFormat<T>("[00\u0009\u000A\u000D\u0020,00]", FromTo, !AllowChange); // [00,00]
+                    count += TestJSONFormat<T>("[00\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u002000]", FromTo, !AllowChange); // [00,00]
+
+                    count += TestJSONFormat<W>("[[00]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[00],[00]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[00],\u0009\u000A\u000D\u0020[00]]", FromTo, !AllowChange); // [[00,00]]
+                    count += TestJSONFormat<W>("[[00]\u0009\u000A\u000D\u0020,[00]]", FromTo, !AllowChange); // [[00,00]]
+                    count += TestJSONFormat<W>("[[00]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[00]]", FromTo, !AllowChange); // [[00,00]]
+
+                    count += 14;
+                }
+
+                if (   std::is_same<S, Core::JSON::Float>::value
+                    || std::is_same<S, Core::JSON::Double>::value
+                ) {
+                    // All re-created character sequences for arrays are not compared on float value basis but on character per character basis.
+                    // This alost always fails.
+
+                    count += TestJSONFormat<T>("[0.0]", FromTo, !AllowChange);
+                    count += TestJSONFormat<T>("[0.0,0.0]", FromTo, !AllowChange);
+                    count += TestJSONFormat<T>("[0.0,\u0009\u000A\u000D\u00200.0]", FromTo, !AllowChange); // [[0.0,0.0]
+                    count += TestJSONFormat<T>("[0.0\u0009\u000A\u000D\u0020,0.0]", FromTo, !AllowChange); // [[0.0,0.0]
+                    count += TestJSONFormat<T>("[0.0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u00200.0]", FromTo, !AllowChange); // [[0.0,0.0]
+
+                    count += TestJSONFormat<W>("[[0.0]]", FromTo, !AllowChange);
+                    count += TestJSONFormat<W>("[[0.0],[0.0]]", FromTo, !AllowChange);
+                    count += TestJSONFormat<W>("[[0.0],\u0009\u000A\u000D\u0020[0.0]]", FromTo, !AllowChange); // [[0.0],[0.0]]
+                    count += TestJSONFormat<W>("[[0.0]\u0009\u000A\u000D\u0020,[0.0]]", FromTo, !AllowChange); // [[0.0],[0.0]]
+                    count += TestJSONFormat<W>("[[0.0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0.0]]", FromTo, !AllowChange); // [[0.0],[0.0]]
+
+                    count += 14;
+                }
+
+                if (std::is_same<S, Core::JSON::String>::value) {
+                    count += TestJSONFormat<T>("[\"\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[\"\",\"\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[\"\",\u0009\u000A\u000D\u0020\"\"]", FromTo, !AllowChange); // [\"\",\"\"]
+                    count += TestJSONFormat<T>("[\"\"\u0009\u000A\u000D\u0020,\"\"]", FromTo, !AllowChange); // [\"\",\"\"]
+                    count += TestJSONFormat<T>("[\"\"\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\"]", FromTo, !AllowChange); // [\"\",\"\"]
+
+                    count += TestJSONFormat<W>("[[\"\"]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[\"\"],[\"\"]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[\"\"],\u0009\u000A\u000D\u0020[\"\"]]", FromTo, !AllowChange); // [[\"\"],[\"\"]]
+                    count += TestJSONFormat<W>("[[\"\"]\u0009\u000A\u000D\u0020,[\"\"]]", FromTo, !AllowChange); // [[\"\"],[\"\"]]
+                    count += TestJSONFormat<W>("[[\"\"]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[\"\"]]", FromTo, !AllowChange); // [[\"\"],[\"\"]]
+
+                    // Nullifying string element
+                    count += TestJSONFormat<T>("[\"null\"]", FromTo, AllowChange);
+
+                    count += 13;
+                }
+
+                if (std::is_same<S, Core::JSON::Boolean>::value) {
+                    count += TestJSONFormat<T>("[true]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[false]", FromTo, AllowChange);
+
+                    count += TestJSONFormat<T>("[true,true]", FromTo, AllowChange); 
+                    count += TestJSONFormat<T>("[true,\u0009\u000A\u000D\u0020true]", FromTo, !AllowChange); // [true,true]
+                    count += TestJSONFormat<T>("[true\u0009\u000A\u000D\u0020,true]", FromTo, !AllowChange); // [true,true]
+                    count += TestJSONFormat<T>("[true\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020true]", FromTo, !AllowChange); // [true,true]
+                    count += TestJSONFormat<T>("[false,false]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[false,\u0009\u000A\u000D\u0020false]", FromTo, !AllowChange); // [false,false]
+                    count += TestJSONFormat<T>("[false\u0009\u000A\u000D\u0020,false]", FromTo, !AllowChange); // [false,false]
+                    count += TestJSONFormat<T>("[false\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020false]", FromTo, !AllowChange); // [false,false]
+
+                    count += TestJSONFormat<T>("[true,false]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[false,true]", FromTo, AllowChange);
+
+                    count += TestJSONFormat<W>("[[true]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[false]]", FromTo, AllowChange);
+
+                    count += TestJSONFormat<W>("[[true],[true]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[true],\u0009\u000A\u000D\u0020[true]]", FromTo, !AllowChange); // [[true],[true]]
+                    count += TestJSONFormat<W>("[[true]\u0009\u000A\u000D\u0020 ,[true]]", FromTo, !AllowChange); // [[true],[true]]
+                    count += TestJSONFormat<W>("[[true]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[true]]", FromTo, !AllowChange); // [[true],[true]]
+                    count += TestJSONFormat<W>("[[false],[false]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[false],\u0009\u000A\u000D\u0020[false]]", FromTo, !AllowChange); // [[false],[false]]
+                    count += TestJSONFormat<W>("[[false]\u0009\u000A\u000D\u0020,[false]]", FromTo, !AllowChange); // [[false],[false]]
+                    count += TestJSONFormat<W>("[[false]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[false]]", FromTo, !AllowChange); // [[false],[false]]
+
+                    count += TestJSONFormat<W>("[[true],[false]]", FromTo, AllowChange);
+                    count += TestJSONFormat<W>("[[false],[true]]", FromTo, AllowChange);
+                }
+            }  else {
+                // Malformed
+                // =========
+
+                // Take [] as JSON value
+                count += !TestJSONFormat<T>("[,]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[],", FromTo, AllowChange);
+                count += !TestJSONFormat<T>(",[]", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("[,[]]", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("[[],]", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("[[][]]", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("[[].[]]", FromTo, AllowChange); // Any character not being ,
+
+                // Mismatch opening and closing
+                count += !TestJSONFormat<T>("[", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("(]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[)", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("()", FromTo, AllowChange);
+
+                // Values that cannot be used
+                count += !TestJSONFormat<T>("{}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("true", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("false", FromTo, AllowChange);
+            }
+        } while (FromTo);
+
+        return  !malformed ? count == 90
+                           : count == 34
                ;
     }
 
@@ -1940,10 +2283,12 @@ namespace Tests {
 
         T object;
 
-        count += object.FromString("abc123ABC") && object.Value() == S("abc123ABC");
-        count += object.FromString("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020") && object.Value() == S("\"abc123ABC\"");
+        count += object.FromString("abc123ABC");
+        count += S(object.Value().c_str()) == S("abc123ABC");
+        count += object.FromString("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020");
+        count += S(object.Value().c_str()) == S("\"abc123ABC\"");
 
-        return count == 2;
+        return count == 4;
     }
 
     TEST(JSONParser, DecUInt8)
@@ -2960,6 +3305,143 @@ namespace Tests {
 
         EXPECT_TRUE(TestStringFromString<json_type>(!malformed, count));
         EXPECT_EQ(count, 62);
+    }
+
+    TEST(JSONParser, ArrayType)
+    {
+        using json_type = Core::JSON::String;
+        using actual_type = std::string;
+
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt8>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt8>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt16>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt16>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt32>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt32>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt64>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt64>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Float>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Float>(!malformed, count));
+        EXPECT_EQ(count, 34);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Double>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Double>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(!malformed, count));
+        EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(malformed, count));
+        EXPECT_EQ(count, 90);
+        EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(!malformed, count));
+        EXPECT_EQ(count, 34);
     }
 }
 }

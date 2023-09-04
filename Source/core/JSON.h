@@ -2336,8 +2336,7 @@ namespace Core {
                     _flagsAndCounters ^= _flagsAndCounters & QuotedSerializeBit ? QuotedSerializeBit : 0;
                     _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
 
-                    loaded = maxLength - 1;
-
+                    loaded = maxLength;
                     _value = std::string(stream, loaded);
 
                     error.Clear();
@@ -3073,9 +3072,10 @@ namespace Core {
         class ArrayType : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
-                ERROR = 0x80,
+                QUOTED= 0x10,
                 SET = 0x20,
-                UNDEFINED = 0x40
+                UNDEFINED = 0x40,
+                ERROR = 0x80,
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3554,32 +3554,59 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
+                const int32_t available =   maxLength
+                                          - (_state & UNDEFINED ? 0 : 2)
+                                          - (_state & QUOTED ? 2 : 0)
+                                          ;
 
-                if (offset == FIND_MARKER) {
-                    _iterator.Reset();
-                    stream[loaded++] = '[';
-                    offset = (_iterator.Next() == false ? ~0 : PARSE);
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
-                }
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
-                    } else if (offset == BEGIN_MARKER) {
-                        stream[loaded++] = ',';
-                        offset = PARSE;
+                int32_t loaded = 0;
+
+                if (0 < available) {
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
-                        stream[loaded++] = ']';
-                        offset = FIND_MARKER;
+
+                    if (_state & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < static_cast<size_t>(available)) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
+
+                        loaded += count;
                     } else {
-                        offset = END_MARKER;
+                        stream[loaded++] ='[';
+
+                        for (auto begin = _data.begin(), end = _data.end(), it = begin; it != end; it++){
+                            if (it != begin) {
+                                stream[loaded++] = ',';
+                            }
+
+                            loaded += static_cast<const IElement&>(*it).Serialize(&(stream[loaded]), available - loaded, offset);
+
+                            if (offset) {
+                                break;
+                            }
+                        }
+
+                        stream[loaded++] =']';
                     }
+
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
+                }
+
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
@@ -3588,81 +3615,172 @@ namespace Core {
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                // Run till we find opening bracket..
-                if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
-                        loaded++;
+
+                bool completed = false, quoted = false, suffix = false;
+
+                uint16_t markerStartCount = 0, markerEndCount = 0, separatorCount = 0;
+
+                uint16_t valueStartPos = 0;//, valueEndPos = 0;
+
+                _state = 0;
+
+                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& ch = stream[loaded++];
+
+                    switch (ch) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    suffix = suffix || (_state & UNDEFINED);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if ((offset > 0 && markerStartCount != markerEndCount) || !suffix) {
+                                        _state = ERROR;
+                                        error = Error{"Terminated character sequence without (sufficient) data for ArrayType<>"};
+                                    }
+
+                                    completed = true;
+                                    continue;
+                                    break;
+                    case '"'    :   // Quoted character sequence
+                                    if (!markerStartCount && !(_state & QUOTED) && offset > 0) {
+                                        _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    if (markerEndCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
+                                        _state = ERROR;
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    suffix = suffix || ((markerStartCount == markerEndCount) && (_state & QUOTED));
+
+                                    _state |= suffix ? QUOTED : _state;
+
+                                    separatorCount -= separatorCount && !suffix ? 1 : 0;
+
+                                    break;
+                    case '['    :   // Start marker
+                                    if (   (markerStartCount == 0 && markerStartCount < markerEndCount)
+                                        || (markerStartCount > 0 && markerStartCount <= markerEndCount)
+                                        ) {
+                                         _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    ++markerStartCount;
+
+                                    if (markerStartCount == 1) {
+                                        valueStartPos = loaded;
+                                    }
+
+                                    separatorCount -= separatorCount ? 1 : 0;
+
+                                    break;
+                    case ']'    :   // End marker
+                                    if (   (markerStartCount > 0 && markerStartCount <= markerEndCount)
+                                        || separatorCount
+                                       ) {
+                                         _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+
+                                    }
+
+                                    ++markerEndCount;
+
+                                    FALLTHROUGH;
+                    case ','    :   // Value separator
+                                    if (ch == ',' && (separatorCount || (loaded - 1 == valueStartPos) || markerStartCount == markerEndCount)
+                                       ) {
+                                         _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    if (ch == ',') {
+                                        ++separatorCount;
+                                    }
+
+                                    if (markerStartCount == markerEndCount || ch == ',') {
+                                        _data.push_back(ELEMENT());
+
+                                        if ((loaded - 1) > valueStartPos) {
+                                            uint32_t offset = 0;
+                                            const uint16_t valueEndPos = loaded;
+                                            uint16_t loaded = 0;
+                                            // This does not allow us use the return error, one may be printed already be printed
+                                            loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[valueStartPos]), valueEndPos - valueStartPos - 1, offset/*, error*/);
+
+                                            if (offset) {
+                                                _state = ERROR;
+                                                error = Error{"Failed to deserialize type for ArrayType"};
+                                                continue;
+                                            }
+                                        } else {
+                                            uint16_t loaded = 0;
+                                            loaded += static_cast<IElement&>(_data.back()).FromString("", error);
+                                        }
+
+                                        valueStartPos = loaded;
+                                    }
+
+                                    suffix = suffix || markerStartCount == markerEndCount;
+
+                                    break;
+                    case 'n'    :   FALLTHROUGH;
+                    case 'u'    :   FALLTHROUGH;
+                    case 'l'    :   // JSON value null
+                                    ASSERT(markerStartCount || ((offset - (_state & QUOTED) - markerStartCount) < sizeof(NullTag)));
+
+                                    if (   (!markerStartCount && ch != IElement::NullTag[offset - markerStartCount - (_state & QUOTED)])
+                                        || suffix
+                                       ) {
+                                        _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    suffix =    suffix
+                                             || !markerStartCount && (offset - markerStartCount - (_state & QUOTED)) == 3
+                                             ;
+
+                                    _state |= suffix ? UNDEFINED : _state;
+
+                                    separatorCount -= separatorCount ? 1 : 0;
+
+                                    break;
+                    default     :   if (suffix || (_state & UNDEFINED)) {
+                                        _state = ERROR;
+                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    separatorCount -= separatorCount ? 1 : 0;
+                    }
+
+                    ++offset;
+                }
+
+                if (completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for ArrayType<>"};
                     }
                 }
 
-                if (loaded == maxLength) {
-                    offset = FIND_MARKER;
-                } else if (offset == FIND_MARKER) {
-                    ValueValidity valid = stream[loaded] != '[' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = FIND_MARKER;
-                    switch (valid) {
-                    default:
-                        // fall through
-                    case ValueValidity::UNKNOWN:
-                        break;
-                    case ValueValidity::IS_NULL:
-                        _state = UNDEFINED;
-                        break;
-                    case ValueValidity::INVALID:
-                        error = Error{ "Invalid value.\"null\" or \"[\" expected." };
-                        break;
-                    case ValueValidity::VALID:
-                        offset = SKIP_BEFORE;
-                        loaded++;
-                        break;
-                    }
-                }
+                if (!(error.IsSet())) {
+                    offset = 0;
+                    _state |= (_state & UNDEFINED) ? 0 : SET;
+                } else {
 
-                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
-                        // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                            loaded++;
-                        }
-
-                        if (loaded < maxLength) {
-                            switch (stream[loaded]) {
-                            case ']':
-                                offset = FIND_MARKER;
-                                loaded++;
-                                break;
-                            case ',':
-                                if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected new element, \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE;
-                                }
-                                loaded++;
-                                break;
-                            default:
-                                if (offset == SKIP_AFTER) {
-                                    error = Error{ "Unexpected character \"" + std::string(1, stream[loaded]) + "\". Expected either \",\" or \"]\"" };
-                                    offset = FIND_MARKER;
-                                    ++loaded;
-                                } else {
-                                    offset = PARSE;
-                                    _data.push_back(ELEMENT());
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    if (offset >= PARSE) {
-                        offset = (offset - PARSE);
-                        loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                        offset = (offset == FIND_MARKER ? SKIP_AFTER : offset + PARSE);
-                    }
-
-                    if (error.IsSet() == true)
-                        break;
                 }
 
                 return (loaded);
