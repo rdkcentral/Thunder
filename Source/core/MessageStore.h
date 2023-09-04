@@ -283,6 +283,46 @@ namespace Core {
                 string _callsign;
             };
 
+           /**
+            * @brief Data-Carrier, extended information about the standard-out-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL StandardOut : public MessageInfo {
+            public:
+                StandardOut(const StandardOut&) = default;
+                StandardOut& operator=(const StandardOut&) = default;
+
+                StandardOut()
+                    : MessageInfo()
+                {
+                }
+                StandardOut(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~StandardOut() = default;
+            };
+
+           /**
+            * @brief Data-Carrier, extended information about the standard-error-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL StandardError : public MessageInfo {
+            public:
+                StandardError(const StandardError&) = default;
+                StandardError& operator=(const StandardError&) = default;
+
+                StandardError()
+                    : MessageInfo()
+                {
+                }
+                StandardError(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~StandardError() = default;
+            };
+
 	    public:
             virtual ~IStore() = default;
             static IStore* Instance();
