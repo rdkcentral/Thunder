@@ -157,14 +157,15 @@ namespace Tests {
 #ifndef _INTERMEDIATE
             count +=    object.FromString(json, status)
                      && !(status.IsSet())
-                     &&    !FromTo
-                        || (     // Checking communitative property
-                               object.ToString(stream)
-                            && quoted || AllowChange ? json != std::string(stream) : json == std::string(stream)
-                            && object.FromString(stream, status)
-                            && !(status.IsSet())
-                            && AllowChange ? json != std::string(object.Value().c_str()) : json == std::string(object.Value().c_str())
-                           )
+                     && (   !FromTo
+                         || (     // Checking communitative property
+                                object.ToString(stream)
+                             && (quoted || AllowChange ? json != std::string(stream) : json == std::string(stream))
+                             && object.FromString(stream, status)
+                             && !(status.IsSet())
+                             && AllowChange ? json != std::string(object.Value().c_str()) : json == std::string(object.Value().c_str())
+                            )
+                        )
                      ;
 #else
 
@@ -1123,7 +1124,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestDecUIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value, "Type S should be an unsigned integral");
 
         uint8_t count = 0;
 
@@ -1155,7 +1156,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestDecSIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_signed<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_signed<S>::value, "Type S should be a signed integral");
 
         uint8_t count = 0;
 
@@ -1188,7 +1189,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestHexUIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value, "Type S should be an unsigned integral");
 
         uint8_t count = 0;
 
@@ -1220,7 +1221,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestHexSIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_signed<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_signed<S>::value, "Type S should be a signed integral");
 
         uint8_t count = 0;
 
@@ -1252,7 +1253,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestOctUIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_unsigned<S>::value, "Type S should be an unsigned integral");
 
         uint8_t count = 0;
 
@@ -1284,7 +1285,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestOctSIntFromValue()
     {
-        static_assert(std::is_integral<S>::value && std::is_signed<S>::value);
+        static_assert(std::is_integral<S>::value && std::is_signed<S>::value, "Type S should be a signed integral");
 
         uint8_t count = 0;
 
@@ -1330,7 +1331,7 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt8;
         using actual_type = uint8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1361,7 +1362,7 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt8;
         using actual_type = int8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1395,7 +1396,7 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt16;
         using actual_type = uint16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1426,7 +1427,7 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt16;
         using actual_type = int16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1460,7 +1461,7 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt32;
         using actual_type = uint32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1491,7 +1492,7 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt32;
         using actual_type = int32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1525,7 +1526,7 @@ namespace Tests {
         using json_type = Core::JSON::DecUInt64;
         using actual_type = uint64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1556,7 +1557,7 @@ namespace Tests {
         using json_type = Core::JSON::DecSInt64;
         using actual_type = int64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1590,7 +1591,7 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt8;
         using actual_type = uint8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1621,7 +1622,7 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt8;
         using actual_type = int8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1655,7 +1656,7 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt16;
         using actual_type = uint16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1686,7 +1687,7 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt16;
         using actual_type = int16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1720,7 +1721,7 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt32;
         using actual_type = uint32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1751,7 +1752,7 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt32;
         using actual_type = int32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1784,7 +1785,7 @@ namespace Tests {
         using json_type = Core::JSON::HexUInt64;
         using actual_type = uint64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1815,7 +1816,7 @@ namespace Tests {
         using json_type = Core::JSON::HexSInt64;
         using actual_type = int64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1849,7 +1850,7 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt8;
         using actual_type = uint8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1880,7 +1881,7 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt8;
         using actual_type = int8_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1914,7 +1915,7 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt16;
         using actual_type = uint16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1945,7 +1946,7 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt16;
         using actual_type = int16_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -1978,7 +1979,7 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt32;
         using actual_type = uint32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -2009,7 +2010,7 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt32;
         using actual_type = int32_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -2043,7 +2044,7 @@ namespace Tests {
         using json_type = Core::JSON::OctUInt64;
         using actual_type = uint64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -2074,7 +2075,7 @@ namespace Tests {
         using json_type = Core::JSON::OctSInt64;
         using actual_type = int64_t;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -2108,7 +2109,7 @@ namespace Tests {
         using json_type = Core::JSON::InstanceId;
         using actual_type = Core::instance_id;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
@@ -2139,7 +2140,7 @@ namespace Tests {
         using json_type = Core::JSON::Pointer;
         using actual_type = Core::instance_id;
 
-        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value);
+        static_assert(std::is_same<actual_type, decltype(std::declval<json_type>().Value())>::value, "Type mismatch");
 
         constexpr const bool malformed = false;
         uint8_t count = 0;
