@@ -41,7 +41,7 @@ TEST(test_textfragment, simple_textfragement)
     EXPECT_EQ(index.Remainder().Length(), 4u) << "The length of the string is not 4.";
     EXPECT_FALSE(index.Remainder().IsEmpty());
     
-    TextFragment textFragment();
+    TextFragment textFragment;
     const TCHAR buffer_new[] = "/Service/testing/test";
     TextFragment textFragment1(buffer_new);
     TextFragment textFragment2(buffer_new,21);
@@ -73,5 +73,5 @@ TEST(test_textfragment, simple_textfragement)
     TextSegmentIterator iterator2(iterator1);
     index = iterator2;
     iterator2.Reset();
-    TextSegmentIterator iterator3();
+    TextSegmentIterator iterator3;
 }
