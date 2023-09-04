@@ -93,7 +93,7 @@ namespace Tests {
     bool TestJSONFormat(const std::string& json, bool FromTo, bool AllowChange)
     {
         auto compare = [](const std::string& reference, const std::string& data) -> bool {
-            bool result = reference.size() == data.size();
+            bool result = std::string(reference.c_str()).size() == std::string(data.c_str()).size();
 
             if (   std::is_same<T, Core::JSON::HexUInt8>::value
                 || std::is_same<T, Core::JSON::HexSInt8>::value
@@ -190,10 +190,10 @@ namespace Tests {
                      &&    !FromTo
                         || (     // Checking communitative property
                                object.ToString(stream)
-                            && AllowChange ? json != std::string(stream) : json == std::string(stream)
+                            && AllowChange ? std::string(json.c_str()) != std::string(stream.c_str()) : std::string(json.c_str()) == std::string(stream.c_str())
                             && object.FromString(stream, status)
                             && !(status.IsSet())
-                            && std::string(stream) == std::string(object.Value().c_str())
+                            && std::string(stream.c_str()) == std::string(object.Value().c_str())
                            )
                      ;
 #else
@@ -208,11 +208,11 @@ namespace Tests {
                               ;
 
                     if (AllowChange) {
-                        result =    json != std::string(stream)
+                        result =    std::string(json.c_str()) != std::string(stream,c_str())
                                   && result
                                  ;
                     } else {
-                        result =    json == std::string(stream)
+                        result =    std::string(json.c_str()) == std::string(stream.c_str())
                                   && result
                                   ;
                     }
@@ -222,7 +222,7 @@ namespace Tests {
                              && result
                              ;
 
-                    result =    std::string(stream) == std::string(object.Value().c_str())
+                    result =    std::string(stream.c_str()) == std::string(object.Value().c_str())
                              && result
                              ;
                  }
@@ -1166,7 +1166,7 @@ namespace Tests {
                 // ===================
 
                 count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0.00", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0.00", FromTo, AllowChange); // The length of the fraction sequence it typically unknown
                 count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
 
                 count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
@@ -1940,10 +1940,12 @@ namespace Tests {
 
         T object;
 
-        count += object.FromString("abc123ABC") && object.Value() == S("abc123ABC");
-        count += object.FromString("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020") && object.Value() == S("\"abc123ABC\"");
+        count += object.FromString("abc123ABC");
+        count += S(object.Value().c_str()) == S("abc123ABC");
+        count += object.FromString("\u0009\u000A\u000D\u0020\"abc123ABC\"\u0009\u000A\u000D\u0020");
+        count += S(object.Value().c_str()) == S("\"abc123ABC\"");
 
-        return count == 2;
+        return count == 4;
     }
 
     TEST(JSONParser, DecUInt8)

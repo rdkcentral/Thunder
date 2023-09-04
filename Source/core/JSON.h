@@ -2336,7 +2336,7 @@ namespace Core {
                     _flagsAndCounters ^= _flagsAndCounters & QuotedSerializeBit ? QuotedSerializeBit : 0;
                     _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
 
-                    loaded = maxLength - 1;
+                    loaded = maxLength;
 
                     _value = std::string(stream, loaded);
 
