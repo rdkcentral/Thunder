@@ -115,7 +115,7 @@ bool IPTestAdministrator::Sync(const std::string & str)
 
       // Avoid unintended truncation
       strncpy(m_sharedData->m_message, str.c_str(), m_messageBufferSize - 1);
-      m_sharedData->m_message[m_messageBufferSize] = '\0';
+      m_sharedData->m_message[m_messageBufferSize - 1] = '\0';
 
       // Get hold of mutex of "waiting for second" cond var.
       TimedLock(&m_sharedData->m_waitingForSecondCondMutex, str);
