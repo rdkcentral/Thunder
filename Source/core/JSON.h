@@ -2337,6 +2337,7 @@ namespace Core {
                     _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
 
                     loaded = maxLength;
+
                     _value = std::string(stream, loaded);
 
                     error.Clear();
