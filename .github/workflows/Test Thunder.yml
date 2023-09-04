@@ -19,7 +19,7 @@ jobs:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
 
-    name: Testing - ${{matrix.build_type}}, shared libraries ${{matrix.shared_libs}}
+    name: Testing - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
 # ----- Thunder -----
     - name: Checkout Thunder - default
@@ -96,7 +96,7 @@ jobs:
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-        -DBUILD_SHARED_LIBS={{matrix.shared_libs}} \
+        -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
         -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
         -DDATA_PATH="${PWD}/${{matrix.build_type}}/install/usr/share/WPEFramework" \
@@ -115,10 +115,10 @@ jobs:
       run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
         
     - name: Tar files
-      run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
+      run: tar -czvf ${{matrix.shared_libs == 'OFF' && 'Static-' || ''}}${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
     
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        name: Thunder-${{matrix.build_type}}-artifact
-        path: ${{matrix.build_type}}.tar.gz
+        name: Thunder-${{matrix.shared_libs == 'OFF' && 'Static-' || ''}}${{matrix.build_type}}-artifact
+        path: ${{matrix.shared_libs == 'OFF' && 'Static-' || ''}}${{matrix.build_type}}.tar.gz
