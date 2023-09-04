@@ -358,61 +358,60 @@ namespace WPEFramework {
 				}
 
 			public:
+				bool Open(const Core::IResource::handle replacing) {
 
-bool Open(const Core::IResource::handle replacing) {
+					ASSERT(_index == Core::IResource::INVALID);
+					ASSERT(replacing != Core::IResource::INVALID);
 
-	ASSERT(_index == Core::IResource::INVALID);
-	ASSERT(replacing != Core::IResource::INVALID);
+					if (replacing != Core::IResource::INVALID) {
+						_handle = memfd_create(_T("RedirectReaderFile"), 0);
+							if (_handle != Core::IResource::INVALID) {
+								_index = replacing;
+								_copy = ::dup(replacing);
+								::fsync(replacing);
+								::dup2(_handle, _index);
+								::close(_handle);
+								Core::ResourceMonitor::Instance().Register(*this);
+							}
+					}
+					return (_index != Core::IResource::INVALID);
+				}
+				bool Close() {
+					if (_index != Core::IResource::INVALID) {
+						::fsync(_copy);
+						::dup2(_copy, _index);
+						::close(_copy);
+						Core::ResourceMonitor::Instance().Unregister(*this);
+						_index = Core::IResource::INVALID;
+						Reader::Flush();
+					}
+					return (_index == -1);
+				}
 
-	if (replacing != Core::IResource::INVALID) {
-		_handle = memfd_create(_T("RedirectReaderFile"), 0);
-			if (_handle != Core::IResource::INVALID) {
-				_index = replacing;
-				_copy = ::dup(replacing);
-				::fsync(replacing);
-				::dup2(_handle, _index);
-				::close(_handle);
-				Core::ResourceMonitor::Instance().Register(*this);
-			}
-	}
-	return (_index != Core::IResource::INVALID);
-}
-bool Close() {
-	if (_index != Core::IResource::INVALID) {
-		::fsync(_copy);
-		::dup2(_copy, _index);
-		::close(_copy);
-		Core::ResourceMonitor::Instance().Unregister(*this);
-		_index = Core::IResource::INVALID;
-		Reader::Flush();
-	}
-	return (_index == -1);
-}
+				Core::IResource::handle Descriptor() const override {
+					return (_handle);
+				}
+				uint16_t Events() override {
+					if (_handle != Core::IResource::INVALID) {
+						return (POLLHUP | POLLRDHUP | POLLIN);
+					}
+					return (0);
+				}
+				void Handle(const uint16_t events) override {
+					// If we have an event, read and see if we have a full line..
+					if ((events & POLLIN) != 0) {
+						int readBytes, freeSpace;
 
-Core::IResource::handle Descriptor() const override {
-	return (_handle);
-}
-uint16_t Events() override {
-	if (_handle != Core::IResource::INVALID) {
-		return (POLLHUP | POLLRDHUP | POLLIN);
-	}
-	return (0);
-}
-void Handle(const uint16_t events) override {
-	// If we have an event, read and see if we have a full line..
-	if ((events & POLLIN) != 0) {
-		int readBytes, freeSpace;
+						do {
+							readBytes = read(_handle, Reader::Buffer(), Reader::Length());
 
-		do {
-			readBytes = read(_handle, Reader::Buffer(), Reader::Length());
+							if (readBytes > 0) {
+								Reader::ProcessBuffer(readBytes);
+							}
 
-			if (readBytes > 0) {
-				Reader::ProcessBuffer(readBytes);
-			}
-
-		} while (readBytes == freeSpace);
-	}
-}
+						} while (readBytes == freeSpace);
+					}
+				}
 
 			private:
 				Core::IResource::handle _index;
