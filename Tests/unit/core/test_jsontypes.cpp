@@ -1167,7 +1167,7 @@ namespace Tests {
                 // ===================
 
                 count += TestJSONFormat<T>("0.0", FromTo, AllowChange);
-                count += TestJSONFormat<T>("0.00", FromTo, AllowChange);
+                count += TestJSONFormat<T>("0.00", FromTo, AllowChange); // The length of the fraction sequence it typically unknown
                 count += TestJSONFormat<T>("1.0", FromTo, AllowChange); // First digit any out of 1-9
 
                 count += TestJSONFormat<T>("0.1", FromTo, AllowChange); // Second digit any out of 0-9
