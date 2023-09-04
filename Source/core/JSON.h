@@ -3072,6 +3072,7 @@ namespace Core {
         class ArrayType : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
+                NONE = 0x0,
                 QUOTED= 0x10,
                 SET = 0x20,
                 UNDEFINED = 0x40,
@@ -3616,7 +3617,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false, quoted = false, suffix = false;
+                bool completed = false, suffix = false;
 
                 uint16_t markerStartCount = 0, markerEndCount = 0, separatorCount = 0;
 
@@ -3662,7 +3663,7 @@ namespace Core {
 
                                     suffix = suffix || ((markerStartCount == markerEndCount) && (_state & QUOTED));
 
-                                    _state |= suffix ? QUOTED : _state;
+                                    _state |= suffix ? QUOTED : NONE;
 
                                     separatorCount -= separatorCount && !suffix ? 1 : 0;
 
@@ -3750,10 +3751,10 @@ namespace Core {
                                     }
 
                                     suffix =    suffix
-                                             || !markerStartCount && (offset - markerStartCount - (_state & QUOTED)) == 3
+                                             || (!markerStartCount && ((offset - markerStartCount - (_state & QUOTED)) == 3))
                                              ;
 
-                                    _state |= suffix ? UNDEFINED : _state;
+                                    _state |= suffix ? UNDEFINED : NONE;
 
                                     separatorCount -= separatorCount ? 1 : 0;
 
