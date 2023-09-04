@@ -27,7 +27,7 @@
 #include <string.h>
 #include <core/core.h>
 
-MODULE_NAME_DECLARATION(BUILD_REFERENCE);
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 #ifdef WITH_CODE_COVERAGE
 extern "C" void __gcov_flush();
@@ -113,7 +113,9 @@ bool IPTestAdministrator::Sync(const std::string & str)
          fprintf(stderr, "Warning: sync string is too long: \"%s\"\n", str.c_str());
       }
 
-      strncpy(m_sharedData->m_message, str.c_str(), m_messageBufferSize);
+      // Avoid unintended truncation
+      strncpy(m_sharedData->m_message, str.c_str(), m_messageBufferSize - 1);
+      m_sharedData->m_message[m_messageBufferSize] = '\0';
 
       // Get hold of mutex of "waiting for second" cond var.
       TimedLock(&m_sharedData->m_waitingForSecondCondMutex, str);
