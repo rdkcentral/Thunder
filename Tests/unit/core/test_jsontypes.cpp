@@ -71,7 +71,7 @@ namespace Tests {
     }
 
     template<typename S, typename T, typename std::enable_if<std::is_floating_point<T>::value, T*>::type = nullptr>
-    bool TestJSONEqual(const T data, const std::string& reference)
+    bool TestJSONEqual(const T data, VARIABLE_IS_NOT_USED const std::string& reference)
     {
         // Units in the last place (measure of accuracy)
         constexpr const int ulp = 2;
@@ -1646,7 +1646,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestFPFromValue()
     {
-        static_assert(std::is_floating_point<S>::value);
+        static_assert(std::is_floating_point<S>::value, "Type S should be floating point");
 
         uint8_t count = 0;
 
@@ -1677,6 +1677,7 @@ namespace Tests {
         static_assert(   std::is_integral<S>::value
                       && std::is_unsigned<S>::value
                       && std::is_same<decltype(std::declval<T>().Value()), S>::value
+                      , "Type mismatch and/or type S should be unsigned integral (boolean)"
                      );
 
         uint8_t count = 0;
