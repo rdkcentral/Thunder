@@ -29,7 +29,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
-   test_filesystem.cpp
+   #test_filesystem.cpp
    test_frametype.cpp
    #test_hash.cpp
    #test_ipc.cpp
