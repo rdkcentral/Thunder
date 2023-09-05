@@ -2265,6 +2265,7 @@ namespace Tests {
         static_assert(   std::is_integral<S>::value
                       && std::is_unsigned<S>::value
                       && std::is_same<decltype(std::declval<T>().Value()), S>::value
+                      , "Type mismatch and/or type S should be unsigned integral (boolean)"
                      );
 
         uint8_t count = 0;
