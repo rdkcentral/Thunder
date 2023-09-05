@@ -108,13 +108,21 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${GTEST_LIBRARY}
     ${GTEST_MAIN_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
-    WPEFrameworkCore
-    WPEFrameworkCOM
-    WPEFrameworkWebSocket
+    ${NAMESPACE}Core::${NAMESPACE}Core
+    ${NAMESPACE}COM::${NAMESPACE}COM
+    ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
 )
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+
+add_library(helloworld SHARED test_library_helloworld.cpp)
+
+install(
+    TARGETS helloworld
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/testdata)
+
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})

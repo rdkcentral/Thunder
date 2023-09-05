@@ -64,6 +64,10 @@ endif()
 
 target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
+if(BUILD_SHARED_LIBS)
+    target_compile_definitions(CompileSettings INTERFACE BUILD_SHARED_LIBS)
+endif()
+
 #
 # Build type specific options
 #

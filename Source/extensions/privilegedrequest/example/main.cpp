@@ -22,6 +22,8 @@
 
 #include "privilegedrequest/PrivilegedRequest.h"
 
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
 using namespace WPEFramework;
 
 constexpr char fileNameTemplate[] = "/tmp/shared_file_test_XXXXXX";
@@ -61,20 +63,27 @@ public:
             char tmpfile[sizeof(fileNameTemplate) + 1];
             strcpy(tmpfile, fileNameTemplate);
 
-            _sharedFiles.emplace_back(mktemp(tmpfile));
+            int fd = mkstemp(tmpfile); // creates a temp file and the generated filename is written in tmpfile
 
-            Core::File& newFile = _sharedFiles.back();
+            _sharedFiles.emplace_back(tmpfile);
 
-            newFile.Create();
-            newFile.Open(false);
+            if (fd > 0) {
+                close(fd);
 
-            printf("Server opened shared file [%d] %s\n", int(newFile), newFile.FileName().c_str());
+                Core::File& newFile = _sharedFiles.back();
 
-            std::stringstream line;
+                newFile.Open(false);
 
-            line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "!" << std::endl;
+                printf("Server opened shared file [%d] %s\n", int(newFile), newFile.FileName().c_str());
 
-            newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+                std::stringstream line;
+
+                line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "!" << std::endl;
+
+                newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+            } else {
+                printf("Failed to create shared file: %s\n", strerror(errno));
+            }
         }
 
         printf("Server for %d file%s\n", nFiles, (nFiles == 1) ? "" : "s");
