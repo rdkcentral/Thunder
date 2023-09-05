@@ -3311,9 +3311,6 @@ namespace Tests {
 
     TEST(JSONParser, ArrayType)
     {
-        using json_type = Core::JSON::String;
-        using actual_type = std::string;
-
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
