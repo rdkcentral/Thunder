@@ -283,14 +283,14 @@ namespace Tests {
 #ifndef _INTERMEDIATE
             count +=    object.FromString(json, status)
                      && !(status.IsSet())
-                     && (   !FromTo
-                         || (     // Checking communitative property
+                     && (     !FromTo
+                         || (   // Checking communitative property
                                 object.ToString(stream)
-                             && (quoted || AllowChange ? json != std::string(stream) : json == std::string(stream))
+                             && AllowChange ? std::string(json.c_str()) != std::string(stream.c_str()) : std::string(json.c_str()) == std::string(stream.c_str())
                              && object.FromString(stream, status)
                              && !(status.IsSet())
-                             && AllowChange ? json != std::string(object.Value().c_str()) : json == std::string(object.Value().c_str())
-                            )
+                             && std::string(stream.c_str()) == std::string(object.Value().c_str())
+                           )
                         )
                      ;
 #else
@@ -2279,7 +2279,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestStringFromValue()
     {
-        static_assert(std::is_same<S, std::string>::value);
+        static_assert(std::is_same<S, std::string>::value, "Type mismatch");
 
         uint8_t count = 0;
 
