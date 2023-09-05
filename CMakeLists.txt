@@ -121,12 +121,6 @@ install(DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates"
         DESTINATION lib/cmake/${NAMESPACE})
 
-if (BUILD_LIB_AS_STATIC)
-    install(DIRECTORY
-            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
-        DESTINATION lib/cmake/${NAMESPACE})
-endif ()
-
 if(APPLE)
     # Mac needed variables
     # http://www.cmake.org/Wiki/CMake_RPATH_handling#Mac_OS_X_and_the_RPATH)
