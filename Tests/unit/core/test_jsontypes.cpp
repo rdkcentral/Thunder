@@ -1936,7 +1936,7 @@ namespace Tests {
     template <typename T, typename S>
     bool TestStringFromValue()
     {
-        static_assert(std::is_same<S, std::string>::value);
+        static_assert(std::is_same<S, std::string>::value, "Type mismatch");
 
         uint8_t count = 0;
 
