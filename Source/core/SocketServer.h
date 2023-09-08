@@ -97,7 +97,7 @@ namespace Core {
             }
             inline uint32_t Count() const
             {
-                return (_clients->size());
+                return (_clients.size());
             }
             HANDLECLIENT Client()
             {
