@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,7 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "Module.h"
 
+#ifdef BUILD_SHARED_LIBS
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#else
+MODULE_NAME_ARCHIVE_DECLARATION
+#endif

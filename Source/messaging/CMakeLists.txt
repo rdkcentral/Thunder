@@ -14,6 +14,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+set(TARGET ${NAMESPACE}Messaging)
+
+add_library(${TARGET} 
+        Module.cpp
+        MessageClient.cpp
+        MessageUnit.cpp
+        TraceCategories.cpp
+        Logging.cpp
+        DirectOutput.cpp)
+
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
@@ -32,20 +43,6 @@ set(PUBLIC_HEADERS
         BaseCategory.h
         ConsoleStreamRedirect.h
         )
-
-set(SOURCES 
-        Module.cpp
-        MessageClient.cpp
-        MessageUnit.cpp
-        TraceCategories.cpp
-        Logging.cpp
-        DirectOutput.cpp
-)
-
-
-set(TARGET ${NAMESPACE}Messaging)
-
-add_library(${TARGET} SHARED ${SOURCES})
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
