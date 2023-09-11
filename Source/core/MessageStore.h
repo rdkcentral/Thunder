@@ -29,6 +29,7 @@ namespace Core {
 
         extern EXTERNAL const char* MODULE_LOGGING;
         extern EXTERNAL const char* MODULE_REPORTING;
+        extern EXTERNAL const char* MODULE_OPERATIONAL_STREAM;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -287,20 +288,20 @@ namespace Core {
             * @brief Data-Carrier, extended information about the nonfunctional-streams-type message.
             *        No additional info for now, used for function overloading.
             */
-            class EXTERNAL NonfunctionalStream : public MessageInfo {
+            class EXTERNAL OperationalStream : public MessageInfo {
             public:
-                NonfunctionalStream(const NonfunctionalStream&) = default;
-                NonfunctionalStream& operator=(const NonfunctionalStream&) = default;
+                OperationalStream(const OperationalStream&) = default;
+                OperationalStream& operator=(const OperationalStream&) = default;
 
-                NonfunctionalStream()
+                OperationalStream()
                     : MessageInfo()
                 {
                 }
-                NonfunctionalStream(const MessageInfo& messageInfo)
+                OperationalStream(const MessageInfo& messageInfo)
                     : MessageInfo(messageInfo)
                 {
                 }
-                ~NonfunctionalStream() = default;
+                ~OperationalStream() = default;
             };
 
 	    public:

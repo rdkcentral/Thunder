@@ -119,6 +119,7 @@ namespace Core {
 
         const char* MODULE_LOGGING = _T("SysLog");
         const char* MODULE_REPORTING = _T("Reporting");
+        const char* MODULE_OPERATIONAL_STREAM = _T("Operational Stream");
 
         uint16_t Metadata::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
