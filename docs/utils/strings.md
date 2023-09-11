@@ -19,7 +19,7 @@ Test string
 */
 ```
 
-## Split string by delimeter
+## Split string by delimiter
 
 Split a given string on a specified delimiter and generate an iterator to loop over the segments.
 
