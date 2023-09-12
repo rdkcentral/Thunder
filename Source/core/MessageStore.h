@@ -284,7 +284,7 @@ namespace Core {
             };
 
            /**
-            * @brief Data-Carrier, extended information about the nonfunctional-streams-type message.
+            * @brief Data-Carrier, extended information about the operational-stream-type message.
             *        No additional info for now, used for function overloading.
             */
             class EXTERNAL OperationalStream : public MessageInfo {

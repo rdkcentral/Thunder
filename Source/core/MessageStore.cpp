@@ -30,8 +30,7 @@ ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
     { Core::Messaging::Metadata::type::LOGGING, _TXT("Logging") },
     { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
-    { Core::Messaging::Metadata::type::STANDARD_OUT, _TXT("StandardOut") },
-    { Core::Messaging::Metadata::type::STANDARD_ERROR, _TXT("StandardError") },
+    { Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _TXT("OperationalStream") },
 ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
@@ -168,6 +167,9 @@ namespace Core {
                 }
                 else if (_type == REPORTING) {
                     _module = MODULE_REPORTING;
+                }
+                else if (_type == OPERATIONAL_STREAM) {
+                    _module = MODULE_OPERATIONAL_STREAM;
                 }
                 else {
                     ASSERT(_type != Metadata::type::INVALID);
