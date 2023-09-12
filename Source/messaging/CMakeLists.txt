@@ -31,6 +31,7 @@ set(PUBLIC_HEADERS
         TextMessage.h
         BaseCategory.h
         ConsoleStreamRedirect.h
+        OperationalCategories.h
         )
 
 set(SOURCES 

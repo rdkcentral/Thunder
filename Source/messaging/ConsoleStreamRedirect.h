@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Control.h"
+#include "OperationalCategories.h"
 
 namespace WPEFramework {
 	namespace Messaging {
@@ -462,9 +463,14 @@ namespace WPEFramework {
 
 		public:
 			void Output(const uint16_t length, const TCHAR buffer[]) {
-				// if (LocalLifetimeType<STREAMTYPE, &Core::System::MODULE_NAME, Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
-
-				// }
+				if (OperationalStream::StandardOut::IsEnabled() == true) {
+					Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
+					Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
+					string text(buffer, length);
+					TextMessage data(text);
+					MessageUnit::Instance().Push(operationalStream, &data);
+				}
+// TO-DO: Remove the below lines when it will be functional
 				string text(buffer, length);
 				fprintf(stderr, "Redirected: \"%s\"\n", text.c_str());
 			}
@@ -483,9 +489,9 @@ namespace WPEFramework {
 
 		public:
 			void Output(const uint16_t length, const TCHAR buffer[]) {
-				// if (LocalLifetimeType<STREAMTYPE, &Core::System::MODULE_NAME, Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
 
-				// }
+// similar to StandardOut when it's finished
+
 				string text(buffer, length);
 				fprintf(stderr, "Redirected: \"%s\"\n", text.c_str());
 			}
