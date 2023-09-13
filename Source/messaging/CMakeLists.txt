@@ -41,6 +41,7 @@ set(SOURCES
         TraceCategories.cpp
         Logging.cpp
         DirectOutput.cpp
+        OperationalCategories.cpp
 )
 
 

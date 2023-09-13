@@ -462,7 +462,8 @@ namespace WPEFramework {
 			~StandardOut() = default;
 
 		public:
-			void Output(const uint16_t length, const TCHAR buffer[]) {
+			void Output(const uint16_t length, const TCHAR buffer[])
+			{
 				if (OperationalStream::StandardOut::IsEnabled() == true) {
 					Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
 					Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
@@ -488,10 +489,9 @@ namespace WPEFramework {
 			~StandardError() = default;
 
 		public:
-			void Output(const uint16_t length, const TCHAR buffer[]) {
-
-// similar to StandardOut when it's finished
-
+			void Output(const uint16_t length, const TCHAR buffer[])
+			{
+// TO-DO: Make it similar to StandardOut when it's finished and working
 				string text(buffer, length);
 				fprintf(stderr, "Redirected: \"%s\"\n", text.c_str());
 			}

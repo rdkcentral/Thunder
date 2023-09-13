@@ -21,6 +21,7 @@
 
 #include "Module.h"
 #include "BaseCategory.h"
+#include "Control.h"
 
 #ifdef __WINDOWS__
 
@@ -38,8 +39,8 @@
 #endif
 
 #define OPERATIONAL_STREAM_ANNOUNCE(CATEGORY)                                                           \
-        template<> WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control                            \
-        WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control(true)
+        template<> WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::Control              \
+        WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::_control(true)
 
 namespace WPEFramework {
 
