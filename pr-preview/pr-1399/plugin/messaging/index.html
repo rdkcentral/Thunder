@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
     
     
       
@@ -2540,12 +2540,12 @@
 </code></pre></div></p>
 </div>
 <p>Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Warning Reporting is only available if Thunder is compiled with the <code>WARNING_REPORTING</code> option, which can be found <a href="https://github.com/rdkcentral/Thunder/blob/76e08e2e5eafa12272b9080d2680091824124d9c/Source/extensions/CMakeLists.txt#L26">here</a>, and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.</p>
 </div>
 <h3 id="runtime">Runtime</h3>
-<p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieve by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
+<p>It is also possible to use the <code>MessageControl</code> plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the <code>Information</code> category in the <code>BluetoothControl</code> plugin.</p>
 <p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
