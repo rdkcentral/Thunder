@@ -27,7 +27,7 @@ Logging, tracing and warning reporting are important techniques often used in so
 
 ### MessageControl plugin
 
-The `MessageControl ` plugin not only consolidates all of the various message types but also offers the flexibility to redirect these messages to different outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP. This can be configured by assigning appropriate values to JSON objects in the configuration file located in `/etc/WPEFramework/plugins/MessageControl.json`. These object's names can be found in the constructor of the `Config` class in `ThunderNanoServicesRDK/MessageControl/MessageControl.h`:
+The `MessageControl` plugin not only consolidates all of the various message types but also offers the flexibility to redirect these messages to different outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP. This can be configured by assigning appropriate values to JSON objects in the configuration file located in `/etc/WPEFramework/plugins/MessageControl.json`. These object's names can be found in the constructor of the `Config` class in `ThunderNanoServicesRDK/MessageControl/MessageControl.h`:
 
 ```c++
 Config()
@@ -171,12 +171,12 @@ Below is an example of the messaging section in the config:
 
 Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.
 
-!!! note
-	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option.
+!!! warning
+	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option, which can be found [here](https://github.com/rdkcentral/Thunder/blob/76e08e2e5eafa12272b9080d2680091824124d9c/Source/extensions/CMakeLists.txt#L26), and is disabled by default. Note that it should not be enabled in Production, since it not only leads to a higher CPU and memory usage, but also it does not add any value to have it turned on in Production.
 
 ### Runtime
 
-It is also possible to use the `MessageControl` plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieve by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the `Information` category in the `BluetoothControl` plugin.
+It is also possible to use the `MessageControl` plugin to edit the configuration values at runtime. At the moment, it is possible to enable/disable any category at runtime, either globally for logging and warning reporting, or individually per plugin for the tracing messages. This can be achieved by either using the ThunderUI or doing a simple JSON-RPC call. In the example below, there is a request to enable traces from the `Information` category in the `BluetoothControl` plugin.
 
 :arrow_right: Request
 
