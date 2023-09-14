@@ -172,7 +172,7 @@ Below is an example of the messaging section in the config:
 Warning Reporting enables various runtime checks for potentially erroneous conditions and can be enabled on a per-category basis. These are typically time-based - i.e. a warning will be reported if something exceeded an allowable time. Each category can also have its own configuration to tune the thresholds for triggering the warning.
 
 !!! warning
-	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option, which can be found [here](https://github.com/rdkcentral/Thunder/blob/76e08e2e5eafa12272b9080d2680091824124d9c/Source/extensions/CMakeLists.txt#L26). Note that it should not be enabled in Production, since it leads to a higher CPU and memory usage.
+	Warning Reporting is only available if Thunder is compiled with the `WARNING_REPORTING` option, which can be found [here](https://github.com/rdkcentral/Thunder/blob/76e08e2e5eafa12272b9080d2680091824124d9c/Source/extensions/CMakeLists.txt#L26), and is disabled by default. Note that it should not be enabled in Production, since it leads to a higher CPU and memory usage.
 
 ### Runtime
 
