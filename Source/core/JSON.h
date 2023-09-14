@@ -3627,11 +3627,11 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false;
+                bool completed = false, suffix = false, beforeStringScope = false, afterStringScope = false, stringScope = false;
 
-                uint16_t markerStartCount = 0, markerEndCount = 0, separatorCount = 0;
+                uint16_t markerStartCount = 0, markerEndCount = 0, separatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0;
 
-                uint16_t valueStartPos = 0;//, valueEndPos = 0;
+                uint16_t valueStartPos = 0, separatorPos = 0;
 
                 _state = 0;
 
@@ -3659,6 +3659,16 @@ namespace Core {
                                     continue;
                                     break;
                     case '"'    :   // Quoted character sequence
+                                    if (   !suffix
+                                        && (   beforeStringScope
+                                            || afterStringScope
+                                            || (markerStartCount && markerStartCount != markerEndCount)
+                                           )
+                                       ) {
+                                        stringScope = !stringScope;
+                                        break;
+                                    }
+
                                     if (!markerStartCount && !(_state & QUOTED) && offset > 0) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
@@ -3676,13 +3686,24 @@ namespace Core {
                                     _state |= suffix ? QUOTED : NONE;
 
                                     separatorCount -= separatorCount && !suffix ? 1 : 0;
-
+                                    break;
+                    case '{'    :   if (!stringScope && containerStartMarkerCount >= containerEndMarkerCount) {
+                                        ++containerStartMarkerCount;
+                                    }
+                                    break;
+                    case '}'    :   if (!stringScope && containerStartMarkerCount < containerEndMarkerCount) {
+                                        ++containerEndMarkerCount;
+                                    }
                                     break;
                     case '['    :   // Start marker
+                                    if (stringScope) {
+                                        break;
+                                    }
+
                                     if (   (markerStartCount == 0 && markerStartCount < markerEndCount)
                                         || (markerStartCount > 0 && markerStartCount <= markerEndCount)
-                                        ) {
-                                         _state = ERROR;
+                                       ) {
+                                        _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -3695,10 +3716,16 @@ namespace Core {
 
                                     separatorCount -= separatorCount ? 1 : 0;
 
+                                    beforeStringScope = !stringScope;
                                     break;
                     case ']'    :   // End marker
-                                    if (   (markerStartCount > 0 && markerStartCount <= markerEndCount)
+                                    if (stringScope) {
+                                        break;
+                                    }
+
+                                    if (   !(markerStartCount > 0 && markerStartCount >= markerEndCount)
                                         || separatorCount
+                                        ||( separatorPos == loaded - 1)
                                        ) {
                                          _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
@@ -3708,8 +3735,14 @@ namespace Core {
 
                                     ++markerEndCount;
 
+                                    afterStringScope = !stringScope;
+
                                     FALLTHROUGH;
                     case ','    :   // Value separator
+                                    if (stringScope || containerStartMarkerCount != containerEndMarkerCount) {
+                                        break;
+                                    }
+
                                     if (ch == ',' && (separatorCount || (loaded - 1 == valueStartPos) || markerStartCount == markerEndCount)
                                        ) {
                                          _state = ERROR;
@@ -3719,6 +3752,7 @@ namespace Core {
 
                                     if (ch == ',') {
                                         ++separatorCount;
+                                        separatorPos = loaded;
                                     }
 
                                     if (markerStartCount == markerEndCount || ch == ',') {
@@ -3742,6 +3776,8 @@ namespace Core {
                                         }
 
                                         valueStartPos = loaded;
+
+                                        separatorCount -= separatorCount ? 1 : 0;
                                     }
 
                                     suffix = suffix || markerStartCount == markerEndCount;

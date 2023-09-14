@@ -1798,7 +1798,6 @@ namespace Tests {
             if (!malformed) {
                 // Correctly formatted
                 // ===================
-
                 // 'Empty' and nested JSON value arrays are allowed
 
                 count += TestJSONFormat<T>("", FromTo, !AllowChange); // Empty by definition, returns ['content of empty type']
@@ -1844,7 +1843,12 @@ namespace Tests {
                     count += TestJSONFormat<W>("[[{}]\u0009\u000A\u000D\u0020,[{}]]", FromTo, !AllowChange); // [[{}],[{}]]
                     count += TestJSONFormat<W>("[[{}]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[{}]]", FromTo, !AllowChange); // [[{}],[{}]]
 
-                    count += 14;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[{{},{}},{{},{}}]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[{{},{}},{{},{}}]\"", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"{{},{}}\",\"{{},{}}\"]\"", FromTo, AllowChange);
+
+                    count += 15;
                 }
 
                 if (   std::is_same<S, Core::JSON::DecUInt8>::value
@@ -1868,7 +1872,11 @@ namespace Tests {
                     count += TestJSONFormat<W>("[[0]\u0009\u000A\u000D\u0020,[0]]", FromTo, !AllowChange); // [[0],[0]]
                     count += TestJSONFormat<W>("[[0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0]]", FromTo, !AllowChange); // [[0],[0]]
 
-                    count += 14;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"0\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"0\"]\"", FromTo, AllowChange);
+
+                    count += 16;
                 }
 
                 if (   std::is_same<S, Core::JSON::HexUInt8>::value
@@ -1894,7 +1902,11 @@ namespace Tests {
                     count += TestJSONFormat<W>("[[0x0]\u0009\u000A\u000D\u0020,[0x0]]", FromTo, !AllowChange); // [[0x0,0x0]]
                     count += TestJSONFormat<W>("[[0x0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0x0]]", FromTo, !AllowChange); // [[0x0,0x0]]
 
-                    count += 14;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"0x0\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"0x0\"]\"", FromTo, AllowChange);
+
+                    count += 16;
                 }
 
                 if (   std::is_same<S, Core::JSON::OctUInt8>::value
@@ -1918,7 +1930,11 @@ namespace Tests {
                     count += TestJSONFormat<W>("[[00]\u0009\u000A\u000D\u0020,[00]]", FromTo, !AllowChange); // [[00,00]]
                     count += TestJSONFormat<W>("[[00]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[00]]", FromTo, !AllowChange); // [[00,00]]
 
-                    count += 14;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"00\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"00\"]\"", FromTo, AllowChange);
+
+                    count += 16;
                 }
 
                 if (   std::is_same<S, Core::JSON::Float>::value
@@ -1926,7 +1942,6 @@ namespace Tests {
                 ) {
                     // All re-created character sequences for arrays are not compared on float value basis but on character per character basis.
                     // This alost always fails.
-
                     count += TestJSONFormat<T>("[0.0]", FromTo, !AllowChange);
                     count += TestJSONFormat<T>("[0.0,0.0]", FromTo, !AllowChange);
                     count += TestJSONFormat<T>("[0.0,\u0009\u000A\u000D\u00200.0]", FromTo, !AllowChange); // [[0.0,0.0]
@@ -1939,7 +1954,11 @@ namespace Tests {
                     count += TestJSONFormat<W>("[[0.0]\u0009\u000A\u000D\u0020,[0.0]]", FromTo, !AllowChange); // [[0.0],[0.0]]
                     count += TestJSONFormat<W>("[[0.0]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[0.0]]", FromTo, !AllowChange); // [[0.0],[0.0]]
 
-                    count += 14;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"0.0\"]", FromTo, !AllowChange);
+                    count += TestJSONFormat<T>("\"[\"0.0\"]\"", FromTo, !AllowChange);
+
+                    count += 16;
                 }
 
                 if (std::is_same<S, Core::JSON::String>::value) {
@@ -1958,7 +1977,11 @@ namespace Tests {
                     // Nullifying string element
                     count += TestJSONFormat<T>("[\"null\"]", FromTo, AllowChange);
 
-                    count += 13;
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"[\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[\"{}\"]", FromTo, AllowChange);
+
+                    count += 15;
                 }
 
                 if (std::is_same<S, Core::JSON::Boolean>::value) {
@@ -1991,6 +2014,12 @@ namespace Tests {
 
                     count += TestJSONFormat<W>("[[true],[false]]", FromTo, AllowChange);
                     count += TestJSONFormat<W>("[[false],[true]]", FromTo, AllowChange);
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("[\"true\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"true\"]\"", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("[\"false\"]", FromTo, AllowChange);
+                    count += TestJSONFormat<T>("\"[\"false\"]\"", FromTo, AllowChange);
                 }
             }  else {
                 // Malformed
@@ -2021,7 +2050,7 @@ namespace Tests {
             }
         } while (FromTo);
 
-        return  !malformed ? count == 90
+        return  !malformed ? count == 98
                            : count == 34
                ;
     }
@@ -3315,130 +3344,130 @@ namespace Tests {
         uint8_t count = 0;
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt8>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt8>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt16>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt16>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt32>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt32>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt64>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Float>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Float>(!malformed, count));
         EXPECT_EQ(count, 34);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Double>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Double>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(!malformed, count));
         EXPECT_EQ(count, 34);
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(malformed, count));
-        EXPECT_EQ(count, 90);
+        EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(!malformed, count));
         EXPECT_EQ(count, 34);
     }
