@@ -443,7 +443,7 @@ namespace Core {
             INVALID,
             VALID
         };
-
+#ifdef _0
         static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint32_t& offset, uint16_t& loaded)
         {
             ValueValidity validity = ValueValidity::INVALID;
@@ -465,7 +465,7 @@ namespace Core {
 
             return validity;
         }
-
+#endif
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
         class NumberType : public IElement, public IMessagePack {
         private:
@@ -3738,7 +3738,7 @@ namespace Core {
 
                                     FALLTHROUGH;
                     case ','    :   // Value separator
-                                    if (stringScope || containerStartMarkerCount != containerEndMarkerCount) {
+                                    if (stringScope || containerStartMarkerCount != containerEndMarkerCount || (arrayStartMarkerCount > arrayEndMarkerCount && (arrayStartMarkerCount - arrayEndMarkerCount) > 1)) {
                                         break;
                                     }
 
@@ -3785,9 +3785,9 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH;
                     case 'u'    :   FALLTHROUGH;
                     case 'l'    :   // JSON value null
-                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED) - arrayStartMarkerCount) < sizeof(NullTag)));
+                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED ? 1 : 0)) < sizeof(NullTag)));
 
-                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - arrayStartMarkerCount - (_state & QUOTED)])
+                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
                                         || suffix
                                        ) {
                                         _state = ERROR;
@@ -3796,7 +3796,7 @@ namespace Core {
                                     }
 
                                     suffix =    suffix
-                                             || (!arrayStartMarkerCount && ((offset - arrayStartMarkerCount - (_state & QUOTED)) == 3))
+                                             || (!arrayStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
                                              ;
 
                                     _state |= suffix ? UNDEFINED : NONE;
@@ -3826,7 +3826,9 @@ namespace Core {
                     offset = 0;
                     _state |= (_state & UNDEFINED) ? 0 : SET;
                 } else {
-
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
@@ -3939,9 +3941,11 @@ namespace Core {
         class EXTERNAL Container : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
-                ERROR = 0x80,
+                NONE = 0x0,
+                QUOTED= 0x10,
+                COMPLETE = 0x20,
                 UNDEFINED = 0x40,
-                COMPLETE = 0x20
+                ERROR = 0x80,
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -4076,7 +4080,6 @@ namespace Core {
             void Clear() override
             {
                 JSONElementList::const_iterator index = _data.begin();
-
                 // As long as we did not find a set element, continue..
                 while (index != _data.end()) {
                     index->second->Clear();
@@ -4087,7 +4090,21 @@ namespace Core {
 
             void Add(const TCHAR label[], IElement* element)
             {
-                _data.push_back(JSONLabelValue(label, element));
+#ifdef _STRICT // The user is expected to behave
+                String json;
+
+                bool result =    json.FromString(label)
+                              && element != nullptr
+                              ;
+
+                ASSERT(result);
+
+                if (result) {
+#endif
+                    _data.push_back(JSONLabelValue(label, element));
+#ifdef _STRICT
+                }
+#endif
             }
 
             void Remove(const TCHAR label[])
@@ -4101,212 +4118,378 @@ namespace Core {
                 if (index != _data.end()) {
                     _data.erase(index);
                 }
+
+                for (auto head = _allocated.begin(), tail = _allocated.end(), it = head; it != tail; it++) {
+                    if (!strcmp(std::get<0>(*it)->c_str(), label)) {
+                        delete std::get<0>(*it);
+                        delete std::get<1>(*it);
+                        break;
+                    }
+                }
             }
 
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
+                const int32_t available =   maxLength
+                                          - (_state & UNDEFINED ? 0 : 2)
+                                          - (_state & QUOTED ? 2 : 0)
+                                          ;
 
-                if (offset == FIND_MARKER) {
-                    _iterator = _data.begin();
-                    stream[loaded++] = '{';
+                int32_t loaded = 0;
 
-                    offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
-                    if (offset == BEGIN_MARKER) {
-                        _fieldName = string(_iterator->first);
-                        _current.json = &_fieldName;
-                        offset = PARSE;
+                if (0 < available) {
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
-                }
 
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
-                    } else if (offset == BEGIN_MARKER) {
-                        if (_current.json == &_fieldName) {
-                            stream[loaded++] = ':';
-                            _current.json = _iterator->second;
-                            offset = PARSE;
-                        } else {
-                            if (FindNext() != false) {
+                    if (_state & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < static_cast<size_t>(available)) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
+
+                        loaded += count;
+                    } else {
+                        stream[loaded++] ='{';
+
+                        for (auto begin = _data.begin(), end = _data.end(), it = begin; it != end; it++) {
+                            if (it != begin) {
                                 stream[loaded++] = ',';
-                                _fieldName = string(_iterator->first);
-                                _current.json = &_fieldName;
-                                offset = PARSE;
+                            }
+
+                            const TCHAR* key = std::get<0>(*it);
+                            const IElement* value = std::get<1>(*it);
+
+                            static_assert(std::is_same<TCHAR, char>::value, "Mismatch of underlying types not (yet) supported in copy");
+
+                            if (key != nullptr && value != nullptr) { // Guaranteed and \'0' termination by Deserialize and user of Add
+                                const size_t count = strlen(key);
+
+                                if (count > 0 && count < static_cast<size_t>(available)) {
+                                    memcpy(&stream[loaded], key, count);
+                                    loaded += count;
+                                }
+
+                                stream[loaded++] = ':';
+
+                                loaded += value->Serialize(&(stream[loaded]), available - loaded, offset);
                             } else {
-                                offset = ~0;
+                                offset = 1;
+                            }
+
+                            if (offset) {
+                                break;
                             }
                         }
+
+                        stream[loaded++] ='}';
                     }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
-                        stream[loaded++] = '}';
-                        offset = FIND_MARKER;
-                        _fieldName.Clear();
-                    } else {
-                        offset = END_MARKER;
+
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
                 }
 
-                return (loaded);
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
+                }
+
+               return (loaded);
             }
 
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                // Run till we find opening bracket..
-                if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                        loaded++;
-                    }
-                }
 
-                if (loaded == maxLength) {
-                    offset = FIND_MARKER;
-                } else if (offset == FIND_MARKER) {
-                    ValueValidity valid = stream[loaded] != '{' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = FIND_MARKER;
-                    switch (valid) {
-                    default:
-                        // fall through
-                    case ValueValidity::UNKNOWN:
-                        break;
-                    case ValueValidity::IS_NULL:
-                        _state = UNDEFINED;
-                        break;
-                    case ValueValidity::INVALID:
-                        error = Error{ "Invalid value.\"null\" or \"{\" expected." };
-                        break;
-                    case ValueValidity::VALID:
-                        loaded++;
-                        _fieldName.Clear();
-                        offset = SKIP_BEFORE;
-                        break;
-                    }
-                }
+                bool completed = false, suffix = false, beforeStringScope = false, afterStringScope = false, stringScope = false;
 
-                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                        // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                            loaded++;
-                        }
+                uint16_t arrayStartMarkerCount = 0, arrayEndMarkerCount = 0, keyValuePairSeparatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0, keyValueSeparatorCount = 0;
 
-                        if (loaded < maxLength) {
-                            switch (stream[loaded]) {
-                            case '}':
-                                if (offset == SKIP_BEFORE && !_data.empty()) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected new element, \"}\" found." };
-                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected value, \"}\" found." };
-                                }
-                                offset = FIND_MARKER;
-                                _state |= modus::COMPLETE;
-                                loaded++;
-                                break;
-                            case ',':
-                                if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected new element \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected value, \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE;
-                                }
-                                loaded++;
-                                break;
-                            case ':':
-                                if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
-                                    offset = FIND_MARKER;
-                                } else if (_fieldName.IsSet() == false) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected \"}\" or \",\", \":\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE_VALUE;
-                                }
-                                loaded++;
-                                break;
-                            default:
-                                if (_fieldName.IsSet() == true) {
-                                    if (_current.json != nullptr) {
+                uint16_t keyValuePairStartPos = 0, keyValuePairSeparatorPos = 0, keyValueSeparatorPos = 0;
+
+                _state = 0;
+
+                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& ch = stream[loaded++];
+
+                    switch (ch) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    suffix = suffix || (_state & UNDEFINED);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if ((offset > 0 && containerStartMarkerCount != containerEndMarkerCount) || !suffix) {
                                         _state = ERROR;
-                                        // This is not a critical error. It happens when config contains more/different
-                                        // things as the one "registered".
-                                        // error = Error{"Internal parser error."};
-                                        // offset = 0;
-                                        // break;
-                                    } else if (offset != SKIP_BEFORE_VALUE) {
-                                        _state = ERROR;
-                                        error = Error{ "Colon expected." };
-                                        offset = FIND_MARKER;
-                                        ++loaded;
+                                        error = Error{"Terminated character sequence without (sufficient) data for Container"};
+                                    }
+
+                                    completed = true;
+                                    continue;
+                                    break;
+                    case '"'    :   // Quoted character sequence
+                                    if (   !suffix
+                                        && (   beforeStringScope
+                                            || afterStringScope
+                                            || (containerStartMarkerCount && containerStartMarkerCount != containerEndMarkerCount)
+                                           )
+                                       ) {
+                                        stringScope = !stringScope;
                                         break;
                                     }
-                                    _current.json = Find(_fieldName.Value().c_str());
 
-                                    _fieldName.Clear();
-
-                                    if (_current.json == nullptr) {
-                                        _current.json = &_fieldName;
-                                    }
-                                } else {
-                                    if (offset == SKIP_AFTER || offset == SKIP_AFTER_KEY) {
+                                    if (!containerStartMarkerCount && !(_state & QUOTED) && offset > 0) {
                                         _state = ERROR;
-                                        error = Error{ "Expected either \",\" or \"}\", \"" + std::string(1, stream[loaded]) + "\" found." };
-                                        offset = FIND_MARKER;
-                                        ++loaded;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    if (containerEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
+                                        _state = ERROR;
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for Container"};
+                                        continue;
+                                    }
+
+                                    suffix = suffix || ((containerStartMarkerCount == containerEndMarkerCount) && (_state & QUOTED));
+
+                                    _state |= suffix ? QUOTED : NONE;
+
+                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount && !suffix ? 1 : 0;
+                                    break;
+                    case ':'    :   if (stringScope) {
                                         break;
                                     }
-                                    _current.json = nullptr;
-                                }
-                                offset = PARSE;
-                                break;
-                            }
-                        }
+
+                                    if (keyValueSeparatorCount > 1) {
+                                        _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    // Only the first to keep
+                                    if (!keyValueSeparatorCount) {
+                                        ++keyValueSeparatorCount;
+                                        keyValueSeparatorPos = loaded;
+                                    }
+                                    break;
+                    case '['    :   if (!stringScope) {// && arrayStartMarkerCount >= arrayEndMarkerCount) {
+                                        ++arrayStartMarkerCount;
+                                    }
+                                    break;
+                    case ']'    :   if (!stringScope) {// && arrayStartMarkerCount < arrayEndMarkerCount) {
+                                        ++arrayEndMarkerCount;
+                                    }
+                                    break;
+                    case '{'    :   // Start marker
+                                    if (stringScope) {
+                                        break;
+                                    }
+
+                                    if (   (containerStartMarkerCount == 0 && containerStartMarkerCount < containerEndMarkerCount)
+                                        || (containerStartMarkerCount > 0 && containerStartMarkerCount <= containerEndMarkerCount)
+                                       ) {
+                                        _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    ++containerStartMarkerCount;
+
+                                    if (containerStartMarkerCount == 1) {
+                                        keyValuePairStartPos = loaded;
+                                    }
+
+                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
+
+                                    beforeStringScope = !stringScope;
+                                    break;
+                    case '}'    :   // End marker
+                                    if (stringScope) {
+                                        break;
+                                    }
+
+                                    if (   !(containerStartMarkerCount > 0 && containerStartMarkerCount >= containerEndMarkerCount)
+                                        || keyValuePairSeparatorCount
+                                        || (keyValuePairSeparatorPos == loaded - 1)
+                                       ) {
+                                         _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    ++containerEndMarkerCount;
+
+                                    afterStringScope = !stringScope;
+
+                                    FALLTHROUGH;
+                    case ','    :   // Value separator
+                                    if (stringScope || arrayStartMarkerCount > arrayEndMarkerCount) {
+                                        break;
+                                    }
+
+                                    if (ch == ',' && (keyValuePairSeparatorCount || (loaded - 1 == keyValuePairStartPos) || containerStartMarkerCount == containerEndMarkerCount)
+                                       ) {
+                                         _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    if (ch == ',') {
+                                        ++keyValuePairSeparatorCount;
+                                        keyValuePairSeparatorPos = loaded;
+                                    }
+
+                                    if (containerStartMarkerCount == containerEndMarkerCount || ch == ',') {
+                                        // Two modus operandi:
+                                        // - Existing element with label
+                                        // - No element
+                                        // Both have the format 'JSON String':'JSON Value', unless empty
+
+                                        if (   keyValueSeparatorPos > keyValuePairStartPos
+                                            && loaded > keyValueSeparatorPos
+                                           ) {
+                                            const std::string data(&stream[keyValuePairStartPos], keyValueSeparatorPos - keyValuePairStartPos - 1);
+
+                                            JSON::String key;
+
+                                            if (   !data.length()
+                                                || !(key.FromString(data))
+                                               ) {
+                                                _state = ERROR;
+                                                error = Error{"Failed to deserialize key for Container"};
+                                                continue;
+                                            }
+
+                                            IElement* element = Find(key.Value().c_str());
+
+                                            const std::string value(&stream[keyValueSeparatorPos], loaded - keyValueSeparatorPos - 1);
+
+                                            uint32_t offset = 0;
+
+                                            if (element != nullptr) {
+                                                element->Clear();
+
+                                                uint16_t loaded = 0;
+                                                // This does not allow us to use the return error, one may be printed already
+                                                loaded += element->Deserialize(value.c_str(), value.length(), offset/*, error*/);
+                                            } else {
+                                                element = TypeEstimate(value);
+
+                                                if (element != nullptr) {
+                                                    uint16_t loaded = 0;
+                                                    loaded += element->Deserialize(value.c_str(), value.length(), offset/*, error*/);
+
+                                                    if (!offset) {
+                                                        std::string* leakyKey = new std::string(key.Value());
+
+                                                        _allocated.push_back(std::pair<std::string*, IElement*>(leakyKey, element));
+                                                        _data.push_back(JSONLabelValue(leakyKey->c_str(), element));
+                                                    } else {
+                                                        delete element;
+                                                    }
+                                                } else {
+                                                    // Invalidate
+                                                    offset = 1;
+                                                }
+                                            }
+
+                                            if (offset) {
+                                                _state = ERROR;
+                                                error = Error{"Failed to deserialize type for Container"};
+                                                continue;
+                                            }
+                                        } else {
+                                            // {}
+                                            // Both key and value have zero lenght and ':' and ',' are absent
+                                            if (   keyValuePairSeparatorPos
+                                                || keyValueSeparatorCount
+                                               ) {
+                                                _state = ERROR;
+                                                error = Error{"Character sequence without (sufficient) data for Container"};
+                                                continue;
+                                            }
+                                        }
+
+                                        keyValuePairStartPos = loaded;
+
+                                        keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
+
+                                        keyValueSeparatorCount -= keyValueSeparatorCount ? 1 : 0;
+                                    }
+
+                                    suffix = suffix || containerStartMarkerCount == containerEndMarkerCount;
+
+                                    break;
+                    case 'n'    :   FALLTHROUGH;
+                    case 'u'    :   FALLTHROUGH;
+                    case 'l'    :   // JSON value null
+                                    ASSERT(containerStartMarkerCount || ((offset - ((_state & QUOTED) || stringScope ? 1 : 0)) < sizeof(NullTag)));
+
+                                    if (keyValueSeparatorCount) {
+                                        continue;
+                                    }
+
+                                    if (   (!containerStartMarkerCount && ch != IElement::NullTag[offset - ((_state & QUOTED) || stringScope ? 1 : 0)])
+                                        || suffix
+                                       ) {
+                                        _state = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    suffix =    suffix
+                                             || (!containerStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
+                                             ;
+
+                                    _state |= suffix ? UNDEFINED : NONE;
+
+                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
+
+                                    break;
+                    default     :   if (stringScope || arrayStartMarkerCount != arrayEndMarkerCount) {
+                                        break;
+                                    }
+
+                                    if (suffix || (_state & UNDEFINED)) {
+                                        _state = ERROR;
+                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                        continue;
+                                    }
+
+                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
                     }
 
-                    if (offset >= PARSE) {
-                        offset = (offset - PARSE);
-                        uint16_t skip = SKIP_AFTER;
-                        if (_current.json == nullptr) {
-                            loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            if (_fieldName.IsQuoted() == false) {
-                                error = Error{ "Key must be properly quoted." };
-                            }
-                            skip = SKIP_AFTER_KEY;
-                        } else {
-                            loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            // It could be that the field name was used, as we are not interested in this field, if so,
-                            // do not forget to reset the field name..
-                            _fieldName.Clear();
-                        }
-                        offset = (offset == FIND_MARKER ? skip : offset + PARSE);
-                    }
-
-                    if (error.IsSet() == true)
-                        break;
+                    ++offset;
                 }
 
-                // This is done for containers only using the fact the top most JSON element is a container.
-                // This make sure the parsing error at any level results in an empty C++ objects and context
-                // is as full as possible.
-                if (error.IsSet() == true) {
-                    Clear();
-                    error.Value().Context(stream, maxLength, loaded);
+                if (completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for Container"};
+                    }
+                }
+
+                if (!(error.IsSet())) {
+                    offset = 0;
+                    _state |= (_state & UNDEFINED) ? 0 : COMPLETE;
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
@@ -4441,6 +4624,11 @@ namespace Core {
             void Reset()
             {
                 _data.clear();
+
+                for (auto head = _allocated.begin(), tail = _allocated.end(), it = head; it != tail; it++) {
+                    delete std::get<0>(*it);
+                    delete std::get<1>(*it);
+                }
             }
 
             IElement* Find(const char label[])
@@ -4499,6 +4687,179 @@ namespace Core {
             }
 
         private:
+
+            enum TypeEstimatedSupportedJSONTypes {
+                UNDETERMINED,
+                CONTAINER,
+                ARRAYTYPE,
+                DECIMALU64,
+                DECIMALS64,
+                HEXADECIMALU64,
+                HEXADECIMALS64,
+                OCTALU64,
+                OCTALS64,
+                DOUBLE,
+                BOOLEAN,
+                STRING,
+            };
+
+            IElement* TypeEstimate(const std::string& value) const
+            {
+                TypeEstimatedSupportedJSONTypes type = UNDETERMINED;
+                return TypeEstimate(value, type);
+            }
+
+            IElement* TypeEstimate(const std::string& value, enum TypeEstimatedSupportedJSONTypes& type) const
+            {
+                IElement* element = nullptr;
+
+                // Estimate type
+                std::string::size_type nonSpaceFirstPos = value.find_first_not_of("\u0009\u000A\u000D\u0020");
+                std::string::size_type nonSpaceLastPos = value.find_last_not_of("\u0009\u000A\u000D\u0020");
+
+                if (   nonSpaceFirstPos == std::string::npos
+                    || nonSpaceLastPos == std::string::npos
+                ) {
+                    // Empty?
+                    return element;
+                }
+
+                // All types can be quoted
+
+                if (value[nonSpaceFirstPos] == '"'
+                ) {
+                    // Type might be quoted or just String
+                    ++nonSpaceFirstPos;
+                }
+
+                switch (value[nonSpaceFirstPos]) {
+                    case '{' :  // Assume it is a Container
+                    case '}' :  // Assume a Container is intended but wrongly formatted
+                                element = new Container();
+                                type = CONTAINER;
+                                break;
+                    case '[' :  // Assume it is an ArrayType
+                    case ']' :  // Assume an ArrayType is intended but wringly formatted
+                                // ArrayType is of fixed type TYPE and as consequence does not support (compile time) type deducton recursion
+                                {
+                                    uint16_t depth = 0, typeStartPos = nonSpaceFirstPos, typeEndPos = nonSpaceFirstPos;
+
+                                    for (auto index = nonSpaceFirstPos, end = value.length(); index < end; index++) {
+                                        const char character = value[index];
+
+                                        if (character == ']') {
+                                            typeEndPos = index;
+                                            break;
+                                        }
+
+                                        if (character == '[') {
+                                            typeStartPos = index;
+                                            ++depth;
+                                        }
+                                    }
+
+                                    if ((typeStartPos + 1) < typeEndPos) {
+                                        // Determine type of contained element
+// FIXME: Inefficient
+                                        element = TypeEstimate(value.substr(typeStartPos + 1, typeEndPos - typeStartPos - 1), type);
+                                        delete element;
+
+// FIXME: Currently fallback to underlying String instead of actual type
+                                        switch(depth) {
+                                        case 1  : element = new ArrayType<String>;
+                                                  break;
+                                        case 2  : element = new NestedArrayType<String, 1>::type;
+                                                  break;
+                                        case 3  : FALLTHROUGH;
+                                                  // Maximum depth without warning
+                                        default : element = new NestedArrayType<String, 2>::type;
+                                        }
+
+                                        type = ARRAYTYPE;
+                                    } else {
+                                        // No contained element. Hence unknown contained type, thus (opaque) String is the most suitable option
+                                        element = new ArrayType<String>;
+                                        type = ARRAYTYPE;
+                                    }
+                                }
+                                break;
+                    case 't' :  {
+                                    const std::string T(IElement::TrueTag);
+                                    if (   T.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                        && T == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                    ) {
+                                        // Assume it is a Boolean
+                                        element = new Boolean;
+                                        type = BOOLEAN;
+                                        break;
+                                    }
+                                }
+                                FALLTHROUGH;
+                    case 'f' :  {
+                                    const std::string F(IElement::FalseTag);
+                                    if (   F.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                        && F == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                    ) {
+                                        // Assume it is a Boolean
+                                        element = new Boolean;
+                                        type = BOOLEAN;
+                                        break;
+                                    }
+                                }
+                                FALLTHROUGH;
+                    case 'n' :  {
+                                    const std::string N(IElement::NullTag);
+                                    if (   N.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                        && N == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
+                                    ) {
+                                        // Assume it is a nullified element of unknown type thus (opaque) String is the most suitable option
+                                        element = new String();
+                                        type = STRING;
+                                        break;
+                                    }
+                                }
+                                FALLTHROUGH;
+                    default  :  bool negative = value[nonSpaceFirstPos] == '-';
+
+                                if (negative) {
+                                    ++nonSpaceFirstPos;
+                                }
+
+                                if (std::isdigit(value[nonSpaceFirstPos])) {
+                                    // Assume it is a FloatType or NumberType
+                                    if (value.find_first_of(".eE") != std::string::npos) {
+                                        // Assume it is a FloatType
+                                        element = static_cast<IElement*>(new Double());
+                                        type = DOUBLE;
+                                    } else if (value.find_first_of("x") != std::string::npos) {
+                                        // Assume it is a Hex(S/U)Int(8/16/32/64)
+                                        element = negative ? static_cast<IElement*>(new HexSInt64()) : static_cast<IElement*>(new HexUInt64());
+                                        type = negative ? HEXADECIMALS64 : HEXADECIMALU64;
+                                    } else if (    (nonSpaceLastPos ==  nonSpaceFirstPos && value[nonSpaceFirstPos] == '0')
+                                                || (nonSpaceLastPos > nonSpaceFirstPos && value[nonSpaceFirstPos] == '0' && value[nonSpaceFirstPos + 1] != '0')
+                                              ) {
+                                        // Assume it is a Dec(S/U)Int(8/16/32/64)
+                                        element = negative ? static_cast<IElement*>(new DecSInt64()) : static_cast<IElement*>(new DecUInt64());
+                                        type = negative ? DECIMALS64 : DECIMALU64;
+                                    } else {
+                                        // Assume it is a Oct(S/U)Int(8/16/32/64)
+                                        element = negative ? static_cast<IElement*>(new OctSInt64()) : static_cast<IElement*>(new OctUInt64());
+                                        type = negative ? OCTALS64 : OCTALU64;
+                                    }
+
+                                    break;
+                                }
+
+                                // What remains should be considered as an opaque string
+                                element = static_cast<IElement*>(new String());
+                                type = STRING;
+                }
+
+                ASSERT(element != nullptr);
+
+                return element;
+            }
+
             uint8_t _state;
             uint16_t _count;
             union {
@@ -4506,6 +4867,7 @@ namespace Core {
                 mutable IMessagePack* pack;
             } _current;
             JSONElementList _data;
+            std::list<std::pair<std::string*, IElement*>> _allocated;
             mutable JSONElementList::const_iterator _iterator;
             mutable String _fieldName;
         };

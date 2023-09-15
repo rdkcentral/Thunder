@@ -2055,6 +2055,304 @@ namespace Tests {
                ;
     }
 
+    template <typename S>
+    bool TestContainerFromString(bool malformed, uint8_t& count)
+    {
+        constexpr bool AllowChange = false;
+
+        using T = Core::JSON::Container;
+        using W = Core::JSON::Container;
+
+        count = 0;
+
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+                // 'Empty' and nested JSON value containers are allowed
+                count += TestJSONFormat<T>("", FromTo, !AllowChange); // {}
+                count += TestJSONFormat<T>("{}", FromTo, AllowChange); // {}
+
+                // Insignificant white space before token is allowed and may be stipped
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020{}", FromTo, !AllowChange); // {}
+                count += TestJSONFormat<T>("{}\u0009\u000A\u000D\u0020", FromTo, !AllowChange); // {}
+                count += TestJSONFormat<T>("\u0009\u000A\u000D\u0020{}\u0009\u000A\u000D\u0020", FromTo, !AllowChange); // {}
+
+                count += TestJSONFormat<W>("{\"\":{}}", FromTo, AllowChange); // {\"\":{}}
+
+                // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                count += TestJSONFormat<W>("{\"\":{},\"\":{}}", FromTo, !AllowChange); // {\"\":{}}
+                count += TestJSONFormat<W>("{\"\":{},\u0009\u000A\u000D\u0020\"\":{}}", FromTo, !AllowChange); // {\"\":{}}
+                count += TestJSONFormat<W>("{\"\":{}\u0009\u000A\u000D\u0020,\"\":{}}", FromTo, !AllowChange); // {\"\":{}}
+                count += TestJSONFormat<W>("{\"\":{}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{}}", FromTo, !AllowChange); // {\"\":{}}
+
+                count += TestJSONFormat<W>("{\"A\":{},\"B\":{}}", FromTo, AllowChange); // {\"A\":{},\"B\":{}}
+                count += TestJSONFormat<W>("{\"A\":{},\u0009\u000A\u000D\u0020\"B\":{}}", FromTo, !AllowChange); // {\"A\":{},\"B\":{}}
+                count += TestJSONFormat<W>("{\"A\":{}\u0009\u000A\u000D\u0020,\"B\":{}}", FromTo, !AllowChange); // {\"A\":{},\"B\":{}}
+                count += TestJSONFormat<W>("{\"A\":{}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{}}", FromTo, !AllowChange); // {\"A\":{},\"B\":{}}
+
+                // Nullify Container
+                count += TestJSONFormat<T>("null", FromTo, AllowChange);
+
+                // Nullify contained types, except for string, that treats it opaque
+                count += TestJSONFormat<T>("{\"\":null}", FromTo, AllowChange); // {\"\":null}
+
+                // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                count += TestJSONFormat<T>("{\"\":null,\"\":null}", FromTo, !AllowChange); // {\"\":null}
+                count += TestJSONFormat<T>("{\"\":null,\u0009\u000A\u000D\u0020\"\":null}", FromTo, !AllowChange); // {\"\":null}
+                count += TestJSONFormat<T>("{\"\":null\u0009\u000A\u000D\u0020,\"\":null}", FromTo, !AllowChange); // {\"\":null}
+                count += TestJSONFormat<T>("{\"\":null\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":null}", FromTo, !AllowChange); // {\"\":null}
+
+                count += TestJSONFormat<T>("{\"A\":null,\"B\":null}", FromTo, !AllowChange); // {\"A\":null,\"B\":null}
+                count += TestJSONFormat<T>("{\"A\":null,\u0009\u000A\u000D\u0020\"B\":null}", FromTo, !AllowChange); // {\"A\":null,\"B\":null}
+                count += TestJSONFormat<T>("{\"A\":null\u0009\u000A\u000D\u0020,\"B\":null}", FromTo, !AllowChange); // {\"A\":null,\"B\":null}
+                count += TestJSONFormat<T>("{\"A\":null\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":null}", FromTo, !AllowChange); // {\"A\":null,\"B\":null}
+
+                count += TestJSONFormat<W>("{\"\":{\"\":null}}", FromTo, AllowChange); // {\"\":{\"\":null}}
+
+                // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                count += TestJSONFormat<W>("{\"\":{\"\":null},\"\":{\"\":null}}", FromTo, !AllowChange); // {\"\":{\"\":null}}
+                count += TestJSONFormat<W>("{\"\":{\"\":null},\u0009\u000A\u000D\u0020\"\":{\"\":null}}", FromTo, !AllowChange); // {\"\":{\"\":null}}
+                count += TestJSONFormat<W>("{\"\":{\"\":null}\u0009\u000A\u000D\u0020,\"\":{\"\":null}}", FromTo, !AllowChange); // {\"\":{\"\":null}}
+                count += TestJSONFormat<W>("{\"\":{\"\":null}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":null}}", FromTo, !AllowChange); // {\"\":{\"\":null}}
+
+                count += TestJSONFormat<W>("{\"A\":{\"\":null},\"B\":{\"\":null}}", FromTo, !AllowChange); // {\"A\":{\"\":null},\"B\":{\"\":{}}}
+                count += TestJSONFormat<W>("{\"A\":{\"\":null},\u0009\u000A\u000D\u0020\"B\":{\"\":null}}", FromTo, !AllowChange); // {\"A\":{\"\":null},\"B\":{\"\":null}}
+                count += TestJSONFormat<W>("{\"A\":{\"\":null}\u0009\u000A\u000D\u0020,\"B\":{\"\":null}}", FromTo, !AllowChange); // {\"A\":{\"\":null},\"B\":{\"\":null}}
+                count += TestJSONFormat<W>("{\"A\":{\"\":null}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":null}}", FromTo, !AllowChange); // {\"A\":{\"\":null},\"\":{\"\":null}}
+
+                // An empty array element is defined as String since its type is unknown and, thus, a type cannot be deduced from a character sequence.
+
+                count += TestJSONFormat<T>("{\"\":[]}", FromTo, !AllowChange); // {\"\":[\"\"]}
+
+                // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                count += TestJSONFormat<T>("{\"\":[],\"\":[]}", FromTo, !AllowChange); // {\"\":[\"\"]}
+                count += TestJSONFormat<T>("{\"\":[],\u0009\u000A\u000D\u0020\"\":[]}", FromTo, !AllowChange); // {\"\":[\"\"]}
+                count += TestJSONFormat<T>("{\"\":[]\u0009\u000A\u000D\u0020,\"\":[]}", FromTo, !AllowChange); // {\"\":[\"\"]}
+                count += TestJSONFormat<T>("{\"\":[]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":[]}", FromTo, !AllowChange); // {\"\":[\"\"]}
+
+                count += TestJSONFormat<T>("{\"\":[[],[]]}", FromTo, AllowChange); // {\"\":[[],[]]}, detected as an ArrayType of String with each String being the opaque sequence of characters '[' and ']'
+
+                count += TestJSONFormat<W>("{\"\":{\"\":[]}}", FromTo, !AllowChange); // {\"\":{\"\":[\"\"]}}
+
+                // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                count += TestJSONFormat<W>("{\"\":{\"\":[]},\"\":{\"\":[]}}", FromTo, !AllowChange); // {\"\":{\"\":[\"\"]}}
+                count += TestJSONFormat<W>("{\"\":{\"\":[]},\u0009\u000A\u000D\u0020\"\":{\"\":[]}}", FromTo, !AllowChange); // {\"\":{\"\":[\"\"]}}
+                count += TestJSONFormat<W>("{\"\":{\"\":[]}\u0009\u000A\u000D\u0020,\"\":{\"\":[]}}", FromTo, !AllowChange); // {\"\":{\"\":[\"\"]}}
+                count += TestJSONFormat<W>("{\"\":{\"\":[]}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":[]}}", FromTo, !AllowChange); // {\"\":{\"\":[\"\"]}}
+
+                if (   std::is_same<S, Core::JSON::DecUInt8>::value
+                    || std::is_same<S, Core::JSON::DecSInt8>::value
+                    || std::is_same<S, Core::JSON::DecUInt16>::value
+                    || std::is_same<S, Core::JSON::DecSInt16>::value
+                    || std::is_same<S, Core::JSON::DecUInt32>::value
+                    || std::is_same<S, Core::JSON::DecSInt32>::value
+                    || std::is_same<S, Core::JSON::DecUInt64>::value
+                    || std::is_same<S, Core::JSON::DecSInt64>::value
+                ) {
+                    count += TestJSONFormat<T>("{\"\":0}", FromTo, AllowChange); // {\"\":0}
+
+                    count += TestJSONFormat<W>("{\"\":{\"\":0}}", FromTo, AllowChange); // {\"\":{\"\":0}}
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[0]}", FromTo, AllowChange); // {\"\":[0]}
+                    count += TestJSONFormat<T>("{\"\":[[0]]}", FromTo, AllowChange); // {\"\":[[0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0]]]}", FromTo, AllowChange); // {\"\":[[[0]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[0,0]}", FromTo, AllowChange); // {\"\":[0,0]}
+                    count += TestJSONFormat<T>("{\"\":[[0,0]]}", FromTo, AllowChange); // {\"\":[[0,0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0,0]]]}", FromTo, AllowChange); // {\"\":[[[0,0]]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"0\"]}", FromTo, AllowChange); // {\"\":[\"0\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"0\"]\"}", FromTo, AllowChange); // {\"\":\"[\"0\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"0\"]}\"", FromTo, AllowChange); // \"{\"\":[\"0\"]}\"
+
+                    count += 11;
+                }
+
+                if (   std::is_same<S, Core::JSON::HexUInt8>::value
+                    || std::is_same<S, Core::JSON::HexSInt8>::value
+                    || std::is_same<S, Core::JSON::HexUInt16>::value
+                    || std::is_same<S, Core::JSON::HexSInt16>::value
+                    || std::is_same<S, Core::JSON::HexUInt32>::value
+                    || std::is_same<S, Core::JSON::HexSInt32>::value
+                    || std::is_same<S, Core::JSON::HexUInt64>::value
+                    || std::is_same<S, Core::JSON::HexSInt64>::value
+                    || std::is_same<S, Core::JSON::InstanceId>::value
+                    || std::is_same<S, Core::JSON::Pointer>::value
+                ) {
+                    count += TestJSONFormat<T>("{\"\":0x0}", FromTo, AllowChange); // {\"\":0x0}
+                    count += TestJSONFormat<W>("{\"\":{\"\":0x0}}", FromTo, AllowChange); // {\"\":{\"\":0x0}}
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[0x0]}", FromTo, AllowChange); // {\"\":[0x0]}
+                    count += TestJSONFormat<T>("{\"\":[[0x0]]}", FromTo, AllowChange); // {\"\":[[0x0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0x0]]]}", FromTo, AllowChange); // {\"\":[[[0x0]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[0x0,0x0]}", FromTo, AllowChange); // {\"\":[0x0,0x0]}
+                    count += TestJSONFormat<T>("{\"\":[[0x0,0x0]]}", FromTo, AllowChange); // {\"\":[[0x0,0x0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0x0,0x0]]]}", FromTo, AllowChange); // {\"\":[[[0x0,0x0]]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"0x0\"]}", FromTo, AllowChange); // {\"\":[\"0X0\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"0x0\"]\"}", FromTo, AllowChange); // {\"\":\"[\"0X0\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"0x0\"]}\"", FromTo, AllowChange); // \"{\"\":[\"0X0\"]}\"
+
+                    count += 11;
+                }
+
+                if (   std::is_same<S, Core::JSON::OctUInt8>::value
+                    || std::is_same<S, Core::JSON::OctSInt8>::value
+                    || std::is_same<S, Core::JSON::OctUInt16>::value
+                    || std::is_same<S, Core::JSON::OctSInt16>::value
+                    || std::is_same<S, Core::JSON::OctUInt32>::value
+                    || std::is_same<S, Core::JSON::OctSInt32>::value
+                    || std::is_same<S, Core::JSON::OctUInt64>::value
+                    || std::is_same<S, Core::JSON::OctSInt64>::value
+                ) {
+                    count += TestJSONFormat<T>("{\"\":00}", FromTo, AllowChange); // {\"\":00}
+
+                    count += TestJSONFormat<W>("{\"\":{\"\":00}}", FromTo, AllowChange); // {\"\":{\"\":00}}
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[00]}", FromTo, AllowChange); // {\"\":[00]}
+                    count += TestJSONFormat<T>("{\"\":[[00]]}", FromTo, AllowChange); // {\"\":[[00]]}
+                    count += TestJSONFormat<T>("{\"\":[[[00]]]}", FromTo, AllowChange); // {\"\":[[[00]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[00,00]}", FromTo, AllowChange); // {\"\":[00,00]}
+                    count += TestJSONFormat<T>("{\"\":[[00,00]]}", FromTo, AllowChange); // {\"\":[[00,00]]}
+                    count += TestJSONFormat<T>("{\"\":[[[00,00]]]}", FromTo, AllowChange); // {\"\":[[[00,00]]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"00\"]}", FromTo, AllowChange); // {\"\":[\"00\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"00\"]\"}", FromTo, AllowChange); // {\"\":\"[\"00\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"00\"]}\"", FromTo, AllowChange); // \"{\"\":[\"00\"]}\"
+
+                    count += 11;
+                }
+
+                if (   std::is_same<S, Core::JSON::Float>::value
+                    || std::is_same<S, Core::JSON::Double>::value
+                ) {
+                    // All re-created character sequences for arrays are not compared on float value basis but on character per character basis.
+                    // This may fail.
+                    count += TestJSONFormat<T>("{\"\":0.0}", FromTo, !AllowChange); // {\"\":0.0}
+
+                    count += TestJSONFormat<W>("{\"\":{\"\":0.0}}", FromTo, !AllowChange); // {\"\":{\"\":0.0}}
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[0.0]}", FromTo, AllowChange); // {\"\":[0.0]}
+                    count += TestJSONFormat<T>("{\"\":[[0.0]]}", FromTo, AllowChange); // {\"\":[[0.0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0.0]]]}", FromTo, AllowChange); // {\"\":[[[0.0]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[0.0,0.0]}", FromTo, AllowChange); // {\"\":[0.0,0.0]}
+                    count += TestJSONFormat<T>("{\"\":[[0.0,0.0]]}", FromTo, AllowChange); // {\"\":[[0.0,0.0]]}
+                    count += TestJSONFormat<T>("{\"\":[[[0.0,0.0]]]}", FromTo, AllowChange); // {\"\":[[[0.0,0.0]]}
+
+                    // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+                    count += TestJSONFormat<T>("{\"\":[0.0,0.0],\"\":[0.0,0.0]}", FromTo, !AllowChange); // {\"\":[0.0,0.0]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"0.0\"]}", FromTo, AllowChange); // {\"\":[\"0.0\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"0.0\"]\"}", FromTo, AllowChange); // {\"\":\"[\"0.0\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"0.0\"]}\"", FromTo, AllowChange); // \"{\"\":[\"0.0\"]}\"
+
+                    count += 10;
+                }
+
+                if (std::is_same<S, Core::JSON::String>::value) {
+                    count += TestJSONFormat<T>("{\"\":\"\"}", FromTo, AllowChange); // {\"\":\"\"}
+
+                    count += TestJSONFormat<W>("{\"\":{\"\":\"\"}}", FromTo, AllowChange); // {\"\":{\"\":\"\"}}
+
+                    // Nullifying container ?
+                    count += TestJSONFormat<T>("{\"\":\"null\"}", FromTo, AllowChange); // null
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[\"\"]}", FromTo, AllowChange); // {\"\":[\"\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"\"]\"}", FromTo, AllowChange); // {\"\":\"[\"\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"\"]}\"", FromTo, AllowChange); // \"{\"\":[\"\"]}\"
+
+                    count += 16;
+                }
+
+                if (std::is_same<S, Core::JSON::Boolean>::value) {
+                    count += TestJSONFormat<T>("{\"\":true}", FromTo, AllowChange); // {\"\":true}
+
+                    count += TestJSONFormat<T>("{\"\":false}", FromTo, AllowChange); // {\"\":false}
+
+                    count += TestJSONFormat<W>("{\"\":{\"\":true}}", FromTo, AllowChange); // {\"\":{\"\":true}}
+                    count += TestJSONFormat<W>("{\"\":{\"\":false}}", FromTo, AllowChange); // {\"\":{\"\":false}}
+
+                    // Scope tests
+                    count += TestJSONFormat<T>("{\"\":[true]}", FromTo, AllowChange); // {\"\":[true]}
+                    count += TestJSONFormat<T>("{\"\":[[true]]}", FromTo, AllowChange); // {\"\":[[true]]}
+                    count += TestJSONFormat<T>("{\"\":[[[true]]]}", FromTo, AllowChange); // {\"\":[[[true]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[true,true]}", FromTo, AllowChange); // {\"\":[true,true]}
+                    count += TestJSONFormat<T>("{\"\":[[true,true]]}", FromTo, AllowChange); // {\"\":[[true,true]]}
+                    count += TestJSONFormat<T>("{\"\":[[[true,true]]]}", FromTo, AllowChange); // {\"\":[[[true,true]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"true\"]}", FromTo, AllowChange); // {\"\":[\"true\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"true\"]\"}", FromTo, AllowChange); // {\"\":\"[\"true\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"true\"]}\"", FromTo, AllowChange); // \"{\"\":[true]}\"
+
+                    count += TestJSONFormat<T>("{\"\":[false]}", FromTo, AllowChange); // {\"\":[false]}
+                    count += TestJSONFormat<T>("{\"\":[[false]]}", FromTo, AllowChange); // {\"\":[[false]]}
+                    count += TestJSONFormat<T>("{\"\":[[[false]]]}", FromTo, AllowChange); // \"{\"\":[[[false]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[false,false]}", FromTo, AllowChange); // {\"\":[false,false]}
+                    count += TestJSONFormat<T>("{\"\":[[false,false]]}", FromTo, AllowChange); // {\"\":[[false,false]]}
+                    count += TestJSONFormat<T>("{\"\":[[[false,false]]]}", FromTo, AllowChange); // {\"\":[[[false,false]]]}
+
+                    count += TestJSONFormat<T>("{\"\":[\"false\"]}", FromTo, AllowChange); // {\"\":[\"false\"]}
+                    count += TestJSONFormat<T>("{\"\":\"[\"false\"]\"}", FromTo, AllowChange); // {\"\":\"[\"false\"]\"}
+                    count += TestJSONFormat<T>("\"{\"\":[\"false\"]}\"", FromTo, AllowChange); // \"{\"\":[\"false\"]}\"}
+                }
+            }  else {
+                // Malformed
+                // =========
+
+                // Take {\"\":} as JSON value
+                count += !TestJSONFormat<T>("{\"\":,}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{\"\":},", FromTo, AllowChange);
+                count += !TestJSONFormat<T>(",{\"\":}", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("{\"\":,\"\":{\"\":\"\"}}", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("{\"\":{\"\":\"\"},}", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("{\"\":{\"\":\"\"}{\"\":\"\"}}", FromTo, AllowChange);
+                count += !TestJSONFormat<W>("{\"\":{\"\":\"\"}.\"\":{\"\":\"\"}}", FromTo, AllowChange); // Any character not being ,
+
+                count += !TestJSONFormat<T>("{\":\"\"}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{\"\":\"}", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("{\"\":}}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{\"\":{}", FromTo, AllowChange);
+
+                count += !TestJSONFormat<T>("{\"\":[}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{\"\":]}", FromTo, AllowChange);
+
+                // Mismatch opening and closing
+                count += !TestJSONFormat<T>("[", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("(]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[)", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("{]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("[}", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("()", FromTo, AllowChange);
+
+                // Values that cannot be used
+                count += !TestJSONFormat<T>("[]", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("true", FromTo, AllowChange);
+                count += !TestJSONFormat<T>("false", FromTo, AllowChange);
+            }
+        } while (FromTo);
+
+        return  !malformed ? count == 132
+                           : count == 46
+               ;
+    }
+
     template <typename T, typename S>
     bool TestDecUIntFromValue()
     {
@@ -2320,6 +2618,390 @@ namespace Tests {
         count += S(object.Value().c_str()) == S("\"abc123ABC\"");
 
         return count == 4;
+    }
+
+    template <typename T, typename S>
+    bool TestContainerFromValue()
+    {
+        static_assert(std::is_same<T, Core::JSON::Container>::value, "Type mismatch");
+
+        auto TestEquality = [](const std::string& in, const std::string& out) -> bool
+        {
+            T object;
+
+            Core::OptionalType<Core::JSON::Error> status;
+
+            std::string stream;
+
+            bool result = object.FromString(in)
+                          && object.ToString(stream)
+                          && !(status.IsSet())
+                          ;
+
+            if (   std::is_same<S, Core::JSON::Float>::value
+                || std::is_same<S, Core::JSON::Double>::value
+               ) {
+            } else {
+                result = result && stream == out;
+            }
+
+            return result;
+        };
+
+        uint8_t count = 0;
+
+        count += TestEquality("", "{}");
+        count += TestEquality("\u0009\u000A\u000D\u0020{}", "{}");
+        count += TestEquality("{}\u0009\u000A\u000D\u0020", "{}");
+        count += TestEquality("\u0009\u000A\u000D\u0020{}\u0009\u000A\u000D\u0020", "{}");
+
+        count += TestEquality("{\"\":{},\"\":{}}", "{\"\":{}}");
+        count += TestEquality("{\"\":{},\u0009\u000A\u000D\u0020\"\":{}}", "{\"\":{}}");
+        count += TestEquality("{\"\":{}\u0009\u000A\u000D\u0020,\"\":{}}", "{\"\":{}}");
+        count += TestEquality("{\"\":{}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{}}", "{\"\":{}}");
+
+        count += TestEquality("{\"A\":{},\u0009\u000A\u000D\u0020\"B\":{}}", "{\"A\":{},\"B\":{}}");
+        count += TestEquality("{\"A\":{}\u0009\u000A\u000D\u0020,\"B\":{}}", "{\"A\":{},\"B\":{}}");
+        count += TestEquality("{\"A\":{}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{}}", "{\"A\":{},\"B\":{}}");
+
+        count += TestEquality("{\"\":{\"\":null},\"\":{\"\":null}}", "{\"\":{\"\":null}}");
+        count += TestEquality("{\"\":{\"\":null},\u0009\u000A\u000D\u0020\"\":{\"\":null}}", "{\"\":{\"\":null}}");
+        count += TestEquality("{\"\":{\"\":null}\u0009\u000A\u000D\u0020,\"\":{\"\":null}}", "{\"\":{\"\":null}}");
+        count += TestEquality("{\"\":{\"\":null}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":null}}", "{\"\":{\"\":null}}");
+
+        count += TestEquality("{\"A\":{\"\":null},\"B\":{\"\":null}}", "{\"A\":{\"\":null},\"B\":{\"\":null}}");
+
+        count += TestEquality("{\"A\":{\"\":null},\u0009\u000A\u000D\u0020\"B\":{\"\":null}}", "{\"A\":{\"\":null},\"B\":{\"\":null}}");
+
+        count += TestEquality("{\"A\":{\"\":null}\u0009\u000A\u000D\u0020,\"B\":{\"\":null}}", "{\"A\":{\"\":null},\"B\":{\"\":null}}");
+
+        count += TestEquality("{\"A\":{\"\":null}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":null}}", "{\"A\":{\"\":null},\"B\":{\"\":null}}");
+
+        // An empty array element is defined as String since its type is unknown and, thus, a type cannot be deduced from a character sequence.
+
+        count += TestEquality("{\"\":[],\"\":[]}", "{\"\":[\"\"]}");
+        count += TestEquality("{\"\":[],\u0009\u000A\u000D\u0020\"\":[]}", "{\"\":[\"\"]}");
+        count += TestEquality("{\"\":[]\u0009\u000A\u000D\u0020,\"\":[]}", "{\"\":[\"\"]}");
+        count += TestEquality("{\"\":[]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":[]}", "{\"\":[\"\"]}");
+
+        count += TestEquality("{\"A\":[],\"B\":[]}", "{\"A\":[\"\"],\"B\":[\"\"]}");
+        count += TestEquality("{\"A\":[],\u0009\u000A\u000D\u0020\"B\":[]}", "{\"A\":[\"\"],\"B\":[\"\"]}");
+        count += TestEquality("{\"A\":[]\u0009\u000A\u000D\u0020,\"B\":[]}", "{\"A\":[\"\"],\"B\":[\"\"]}");
+        count += TestEquality("{\"A\":[]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":[]}", "{\"A\":[\"\"],\"B\":[\"\"]}");
+
+        if (   std::is_same<S, Core::JSON::DecUInt8>::value
+            || std::is_same<S, Core::JSON::DecSInt8>::value
+            || std::is_same<S, Core::JSON::DecUInt16>::value
+            || std::is_same<S, Core::JSON::DecSInt16>::value
+            || std::is_same<S, Core::JSON::DecUInt32>::value
+            || std::is_same<S, Core::JSON::DecSInt32>::value
+            || std::is_same<S, Core::JSON::DecUInt64>::value
+            || std::is_same<S, Core::JSON::DecSInt64>::value
+        ) {
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":0,\"\":0}", "{\"\":0}");
+            count += TestEquality("{\"\":0,\u0009\u000A\u000D\u0020\"\":0}", "{\"\":0}");
+            count += TestEquality("{\"\":0\u0009\u000A\u000D\u0020,\"\":0}", "{\"\":0}");
+            count += TestEquality("{\"\":0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":0}", "{\"\":0}");
+
+            count += TestEquality("{\"A\":0,\"B\":0}", "{\"A\":0,\"B\":0}");
+            count += TestEquality("{\"A\":0,\u0009\u000A\u000D\u0020\"B\":0}", "{\"A\":0,\"B\":0}");
+            count += TestEquality("{\"A\":0\u0009\u000A\u000D\u0020,\"B\":0}", "{\"A\":0,\"B\":0}");
+            count += TestEquality("{\"A\":0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":0}", "{\"A\":0,\"B\":0}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":0},\"\":{\"\":0}}", "{\"\":{\"\":0}}");
+            count += TestEquality("{\"\":{\"\":0},\u0009\u000A\u000D\u0020\"\":{\"\":0}}", "{\"\":{\"\":0}}");
+            count += TestEquality("{\"\":{\"\":0}\u0009\u000A\u000D\u0020,\"\":{\"\":0}}", "{\"\":{\"\":0}}");
+            count += TestEquality("{\"\":{\"\":0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":0}}", "{\"\":{\"\":0}}");
+
+            count += TestEquality("{\"A\":{\"\":0},\"B\":{\"\":0}}", "{\"A\":{\"\":0},\"B\":{\"\":0}}");
+            count += TestEquality("{\"A\":{\"\":0},\u0009\u000A\u000D\u0020\"B\":{\"\":0}}", "{\"A\":{\"\":0},\"B\":{\"\":0}}");
+            count += TestEquality("{\"A\":{\"\":0}\u0009\u000A\u000D\u0020,\"B\":{\"\":0}}", "{\"A\":{\"\":0},\"B\":{\"\":0}}");
+            count += TestEquality("{\"A\":{\"\":0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":0}}", "{\"A\":{\"\":0},\"B\":{\"\":0}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[0,0],\"\":[0,0]}","{\"\":[0,0]}");
+
+            count += TestEquality("{\"A\":[0,0],\"B\":[0,0]}","{\"A\":[0,0],\"B\":[0,0]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"0\"],\"\":[\"0\"]}", "{\"\":[\"0\"]}");
+            count += TestEquality("{\"\":\"[\"0\"]\",\"\":\"[\"0\"]\"}", "{\"\":\"[\"0\"]\"}");
+            count += TestEquality("\"{\"\":[\"0\"],\"\":[\"0\"]}\"", "\"{\"\":[\"0\"]}\"");
+
+            count += TestEquality("{\"A\":[\"0\"],\"B\":[\"0\"]}", "{\"A\":[\"0\"],\"B\":[\"0\"]}");
+            count += TestEquality("{\"A\":\"[\"0\"]\",\"B\":\"[\"0\"]\"}", "{\"A\":\"[\"0\"]\",\"B\":\"[\"0\"]\"}");
+            count += TestEquality("\"{\"A\":[\"0\"],\"B\":[\"0\"]}\"", "\"{\"A\":[\"0\"],\"B\":[\"0\"]}\"");
+
+            count += 32;
+        }
+
+        if (   std::is_same<S, Core::JSON::HexUInt8>::value
+            || std::is_same<S, Core::JSON::HexSInt8>::value
+            || std::is_same<S, Core::JSON::HexUInt16>::value
+            || std::is_same<S, Core::JSON::HexSInt16>::value
+            || std::is_same<S, Core::JSON::HexUInt32>::value
+            || std::is_same<S, Core::JSON::HexSInt32>::value
+            || std::is_same<S, Core::JSON::HexUInt64>::value
+            || std::is_same<S, Core::JSON::HexSInt64>::value
+            || std::is_same<S, Core::JSON::InstanceId>::value
+            || std::is_same<S, Core::JSON::Pointer>::value
+        ) {
+            // X in hexadecimal is 'always' uppercase in ToString. Important for 'exact' string comparison
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":0x0,\"\":0x0}", "{\"\":0X0}");
+            count += TestEquality("{\"\":0x0,\u0009\u000A\u000D\u0020\"\":0x0}", "{\"\":0X0}");
+            count += TestEquality("{\"\":0x0\u0009\u000A\u000D\u0020,\"\":0x0}", "{\"\":0X0}");
+            count += TestEquality("{\"\":0x0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":0x0}", "{\"\":0X0}");
+
+            count += TestEquality("{\"A\":0x0,\"B\":0x0}", "{\"A\":0X0,\"B\":0X0}");
+            count += TestEquality("{\"A\":0x0,\u0009\u000A\u000D\u0020\"B\":0x0}", "{\"A\":0X0,\"B\":0X0}");
+            count += TestEquality("{\"A\":0x0\u0009\u000A\u000D\u0020,\"B\":0x0}", "{\"A\":0X0,\"B\":0X0}");
+            count += TestEquality("{\"A\":0x0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":0x0}", "{\"A\":0X0,\"B\":0X0}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":0x0},\"\":{\"\":0x0}}", "{\"\":{\"\":0X0}}");
+            count += TestEquality("{\"\":{\"\":0x0},\u0009\u000A\u000D\u0020\"\":{\"\":0x0}}", "{\"\":{\"\":0X0}}");
+            count += TestEquality("{\"\":{\"\":0x0}\u0009\u000A\u000D\u0020,\"\":{\"\":0x0}}", "{\"\":{\"\":0X0}}");
+            count += TestEquality("{\"\":{\"\":0x0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":0x0}}", "{\"\":{\"\":0X0}}");
+
+            count += TestEquality("{\"A\":{\"\":0x0},\"B\":{\"\":0x0}}", "{\"A\":{\"\":0X0},\"B\":{\"\":0X0}}");
+            count += TestEquality("{\"A\":{\"\":0x0},\u0009\u000A\u000D\u0020\"B\":{\"\":0x0}}", "{\"A\":{\"\":0X0},\"B\":{\"\":0X0}}");
+            count += TestEquality("{\"A\":{\"\":0x0}\u0009\u000A\u000D\u0020,\"B\":{\"\":0x0}}", "{\"A\":{\"\":0X0},\"B\":{\"\":0X0}}");
+            count += TestEquality("{\"A\":{\"\":0x0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":0x0}}", "{\"A\":{\"\":0X0},\"B\":{\"\":0X0}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[0x0,0x0],\"\":[0x0,0x0]}","{\"\":[0x0,0x0]}"); // Detected as ArrayType<String>
+
+            count += TestEquality("{\"A\":[0x0,0x0],\"B\":[0x0,0x0]}","{\"A\":[0x0,0x0],\"B\":[0x0,0x0]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"0x0\"],\"\":[\"0x0\"]}", "{\"\":[\"0x0\"]}");
+            count += TestEquality("{\"\":\"[\"0x0\"]\",\"\":\"[\"0x0\"]\"}", "{\"\":\"[\"0x0\"]\"}");
+            count += TestEquality("\"{\"\":[\"0x0\"],\"\":[\"0x0\"]}\"", "\"{\"\":[\"0x0\"]}\"");
+
+            count += TestEquality("{\"A\":[\"0x0\"],\"B\":[\"0x0\"]}", "{\"A\":[\"0x0\"],\"B\":[\"0x0\"]}");
+            count += TestEquality("{\"A\":\"[\"0x0\"]\",\"B\":\"[\"0x0\"]\"}", "{\"A\":\"[\"0x0\"]\",\"B\":\"[\"0x0\"]\"}");
+            count += TestEquality("\"{\"A\":[\"0x0\"],\"B\":[\"0x0\"]}\"", "\"{\"A\":[\"0x0\"],\"B\":[\"0x0\"]}\"");
+
+            count += 32;
+        }
+
+        if (   std::is_same<S, Core::JSON::OctUInt8>::value
+            || std::is_same<S, Core::JSON::OctSInt8>::value
+            || std::is_same<S, Core::JSON::OctUInt16>::value
+            || std::is_same<S, Core::JSON::OctSInt16>::value
+            || std::is_same<S, Core::JSON::OctUInt32>::value
+            || std::is_same<S, Core::JSON::OctSInt32>::value
+            || std::is_same<S, Core::JSON::OctUInt64>::value
+            || std::is_same<S, Core::JSON::OctSInt64>::value
+        ) {
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":00,\"\":00}", "{\"\":00}");
+            count += TestEquality("{\"\":00,\u0009\u000A\u000D\u0020\"\":00}", "{\"\":00}");
+            count += TestEquality("{\"\":00\u0009\u000A\u000D\u0020,\"\":00}", "{\"\":00}");
+            count += TestEquality("{\"\":00\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":00}", "{\"\":00}");
+
+            count += TestEquality("{\"A\":00,\"B\":00}", "{\"A\":00,\"B\":00}");
+            count += TestEquality("{\"A\":00,\u0009\u000A\u000D\u0020\"B\":00}", "{\"A\":00,\"B\":00}");
+            count += TestEquality("{\"A\":00\u0009\u000A\u000D\u0020,\"B\":00}", "{\"A\":00,\"B\":00}");
+            count += TestEquality("{\"A\":00\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":00}", "{\"A\":00,\"B\":00}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":00},\"\":{\"\":00}}", "{\"\":{\"\":00}}");
+            count += TestEquality("{\"\":{\"\":00},\u0009\u000A\u000D\u0020\"\":{\"\":00}}", "{\"\":{\"\":00}}");
+            count += TestEquality("{\"\":{\"\":00}\u0009\u000A\u000D\u0020,\"\":{\"\":00}}", "{\"\":{\"\":00}}");
+            count += TestEquality("{\"\":{\"\":00}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":00}}", "{\"\":{\"\":00}}");
+
+            count += TestEquality("{\"A\":{\"\":00},\"B\":{\"\":00}}", "{\"A\":{\"\":00},\"B\":{\"\":00}}");
+            count += TestEquality("{\"A\":{\"\":00},\u0009\u000A\u000D\u0020\"B\":{\"\":00}}", "{\"A\":{\"\":00},\"B\":{\"\":00}}");
+            count += TestEquality("{\"A\":{\"\":00}\u0009\u000A\u000D\u0020,\"B\":{\"\":00}}", "{\"A\":{\"\":00},\"B\":{\"\":00}}");
+            count += TestEquality("{\"A\":{\"\":00}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":00}}", "{\"A\":{\"\":00},\"B\":{\"\":00}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[00,00],\"\":[00,00]}","{\"\":[00,00]}");
+
+            count += TestEquality("{\"A\":[00,00],\"B\":[00,00]}","{\"A\":[00,00],\"B\":[00,00]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"00\"],\"\":[\"00\"]}", "{\"\":[\"00\"]}");
+            count += TestEquality("{\"\":\"[\"00\"]\",\"\":\"[\"00\"]\"}", "{\"\":\"[\"00\"]\"}");
+            count += TestEquality("\"{\"\":[\"00\"],\"\":[\"00\"]}\"", "\"{\"\":[\"00\"]}\"");
+
+            count += TestEquality("{\"A\":[\"00\"],\"B\":[\"00\"]}", "{\"A\":[\"00\"],\"B\":[\"00\"]}");
+            count += TestEquality("{\"A\":\"[\"00\"]\",\"B\":\"[\"00\"]\"}", "{\"A\":\"[\"00\"]\",\"B\":\"[\"00\"]\"}");
+            count += TestEquality("\"{\"A\":[\"00\"],\"B\":[\"00\"]}\"", "\"{\"A\":[\"00\"],\"B\":[\"00\"]}\"");
+
+            count += 32;
+        }
+
+        if (   std::is_same<S, Core::JSON::Float>::value
+            || std::is_same<S, Core::JSON::Double>::value
+           ) {
+            // Floating point results are NOT compared on character sequence equality
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":0.0,\"\":0.0}", "{\"\":0.0}");
+            count += TestEquality("{\"\":0.0,\u0009\u000A\u000D\u0020\"\":0.0}", "{\"\":0.0}");
+            count += TestEquality("{\"\":0.0\u0009\u000A\u000D\u0020,\"\":0.0}", "{\"\":0.0}");
+            count += TestEquality("{\"\":0.0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":0.0}", "{\"\":0.0}");
+
+            count += TestEquality("{\"A\":0.0,\"B\":0.0}", "{\"A\":0.0,\"B\":0.0}");
+            count += TestEquality("{\"A\":0.0,\u0009\u000A\u000D\u0020\"B\":0.0}", "{\"A\":0.0,\"B\":0.0}");
+            count += TestEquality("{\"A\":0.0\u0009\u000A\u000D\u0020,\"B\":0.0}", "{\"A\":0.0,\"B\":0.0}");
+            count += TestEquality("{\"A\":0.0\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":0.0}", "{\"A\":0.0,\"B\":0.0}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":0.0},\"\":{\"\":0.0}}", "{\"\":{\"\":0.0}}");
+            count += TestEquality("{\"\":{\"\":0.0},\u0009\u000A\u000D\u0020\"\":{\"\":0.0}}", "{\"\":{\"\":0.0}}");
+            count += TestEquality("{\"\":{\"\":0.0}\u0009\u000A\u000D\u0020,\"\":{\"\":0.0}}", "{\"\":{\"\":0.0}}");
+            count += TestEquality("{\"\":{\"\":0.0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":0.0}}", "{\"\":{\"\":0.0}}");
+
+            count += TestEquality("{\"A\":{\"\":0.0},\"B\":{\"\":0.0}}", "{\"A\":{\"\":0.0},\"B\":{\"\":0.0}}");
+            count += TestEquality("{\"A\":{\"\":0.0},\u0009\u000A\u000D\u0020\"B\":{\"\":0.0}}", "{\"A\":{\"\":0.0},\"B\":{\"\":0.0}}");
+            count += TestEquality("{\"A\":{\"\":0.0}\u0009\u000A\u000D\u0020,\"B\":{\"\":0.0}}", "{\"A\":{\"\":0.0},\"B\":{\"\":0.0}}");
+            count += TestEquality("{\"A\":{\"\":0.0}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":0.0}}", "{\"A\":{\"\":0.0},\"B\":{\"\":0.0}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[0.0,0.0],\"\":[0.0,0.0]}","\"\":[0.0,0.0]}");
+
+            count += TestEquality("{\"A\":[0.0,0.0],\"B\":[0.0,0.0]}","\"A\":[0.0,0.0],\"B\":[0.0,0.0]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"0.0\"],\"\":[\"0.0\"]}", "{\"\":[\"0.0\"]}");
+            count += TestEquality("{\"\":\"[\"0.0\"]\",\"\":\"[\"0.0\"]\"}", "{\"\":\"[\"0.0\"]\"}");
+            count += TestEquality("\"{\"\":[\"0.0\"],\"\":[\"0.0\"]}\"", "\"{\"\":[\"0.0\"]}\"");
+
+            count += TestEquality("{\"A\":[\"0.0\"],\"B\":[\"0.0\"]}", "{\"A\":[\"00\"],\"B\":[\"0.0\"]}");
+            count += TestEquality("{\"A\":\"[\"0.0\"]\",\"B\":\"[\"0.0\"]\"}", "{\"A\":\"[\"0.0\"]\",\"B\":\"[\"0.0\"]\"}");
+            count += TestEquality("\"{\"A\":[\"0.0\"],\"B\":[\"0.0\"]}\"", "\"{\"A\":[\"0.0\"],\"B\":[\"0.0\"]}\"");
+
+            count += 32;
+        }
+
+
+        if (std::is_same<S, Core::JSON::String>::value) {
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":\"\",\"\":\"\"}", "{\"\":\"\"}");
+            count += TestEquality("{\"\":\"\",\u0009\u000A\u000D\u0020\"\":\"\"}", "{\"\":\"\"}");
+            count += TestEquality("{\"\":\"\"\u0009\u000A\u000D\u0020,\"\":\"\"}", "{\"\":\"\"}");
+            count += TestEquality("{\"\":\"\"\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":\"\"}", "{\"\":\"\"}");
+
+            count += TestEquality("{\"A\":\"\",\"B\":\"\"}", "{\"A\":\"\",\"B\":\"\"}");
+            count += TestEquality("{\"A\":\"\",\u0009\u000A\u000D\u0020\"B\":\"\"}", "{\"A\":\"\",\"B\":\"\"}");
+            count += TestEquality("{\"A\":\"\"\u0009\u000A\u000D\u0020,\"B\":\"\"}", "{\"A\":\"\",\"B\":\"\"}");
+            count += TestEquality("{\"A\":\"\"\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":\"\"}", "{\"A\":\"\",\"B\":\"\"}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":\"\"},\"\":{\"\":\"\"}}", "{\"\":{\"\":\"\"}}");
+            count += TestEquality("{\"\":{\"\":\"\"},\u0009\u000A\u000D\u0020\"\":{\"\":\"\"}}", "{\"\":{\"\":\"\"}}");
+            count += TestEquality("{\"\":{\"\":\"\"}\u0009\u000A\u000D\u0020,\"\":{\"\":\"\"}}", "{\"\":{\"\":\"\"}}");
+            count += TestEquality("{\"\":{\"\":\"\"}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":\"\"}}", "{\"\":{\"\":\"\"}}");
+
+            count += TestEquality("{\"A\":{\"\":\"\"},\"B\":{\"\":\"\"}}", "{\"A\":{\"\":\"\"},\"B\":{\"\":\"\"}}");
+            count += TestEquality("{\"A\":{\"\":\"\"},\u0009\u000A\u000D\u0020\"B\":{\"\":\"\"}}", "{\"A\":{\"\":\"\"},\"B\":{\"\":\"\"}}");
+            count += TestEquality("{\"A\":{\"\":\"\"}\u0009\u000A\u000D\u0020,\"B\":{\"\":\"\"}}", "{\"A\":{\"\":\"\"},\"B\":{\"\":\"\"}}");
+            count += TestEquality("{\"A\":{\"\":\"\"}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":\"\"}}", "{\"A\":{\"\":\"\"},\"B\":{\"\":\"\"}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"\"],\"\":[\"\"]}", "{\"\":[\"\"]}");
+            count += TestEquality("{\"\":\"[\"\"]\",\"\":\"[\"\"]\"}", "{\"\":\"[\"\"]\"}");
+            count += TestEquality("\"{\"\":[\"\"],\"\":[\"\"]}\"", "\"{\"\":[\"\"]}\"");
+
+            count += TestEquality("{\"A\":[\"\"],\"B\":[\"\"]}", "{\"A\":[\"\"],\"B\":[\"\"]}");
+            count += TestEquality("{\"A\":\"[\"\"]\",\"B\":\"[\"\"]\"}","{\"A\":\"[\"\"]\",\"B\":\"[\"\"]\"}");
+            count += TestEquality("\"{\"A\":[\"\"],\"B\":[\"\"]}\"", "\"{\"A\":[\"\"],\"B\":[\"\"]}\"");
+
+            count += 34;
+        }
+
+        if (std::is_same<S, Core::JSON::Boolean>::value) {
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":true,\"\":true}", "{\"\":true}");
+            count += TestEquality("{\"\":true,\u0009\u000A\u000D\u0020\"\":true}", "{\"\":true}");
+            count += TestEquality("{\"\":true\u0009\u000A\u000D\u0020,\"\":true}", "{\"\":true}");
+            count += TestEquality("{\"\":true\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":true}", "{\"\":true}");
+
+            count += TestEquality("{\"\":false}", "{\"\":false}");
+            count += TestEquality("{\"\":false,\u0009\u000A\u000D\u0020\"\":false}", "{\"\":false}");
+            count += TestEquality("{\"\":false\u0009\u000A\u000D\u0020,\"\":false}", "{\"\":false}");
+            count += TestEquality("{\"\":false\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":false}", "{\"\":false}");
+
+            count += TestEquality("{\"A\":true,\"B\":true}", "{\"A\":true,\"B\":true}");
+            count += TestEquality("{\"A\":true,\u0009\u000A\u000D\u0020\"B\":true}", "{\"A\":true,\"B\":true}");
+            count += TestEquality("{\"A\":true\u0009\u000A\u000D\u0020,\"B\":true}", "{\"A\":true,\"B\":true}");
+            count += TestEquality("{\"A\":true\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":true}", "{\"A\":true,\"B\":true}");
+
+            count += TestEquality("{\"A\":false,\"B\":false}", "{\"A\":false,\"B\":false}");
+            count += TestEquality("{\"A\":false,\u0009\u000A\u000D\u0020\"B\":false}", "{\"A\":false,\"B\":false}");
+            count += TestEquality("{\"A\":false\u0009\u000A\u000D\u0020,\"B\":false}", "{\"A\":false,\"B\":false}");
+            count += TestEquality("{\"A\":false\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":false}", "{\"A\":false,\"B\":false}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":true,\"\":false}", "{\"\":false}");
+            count += TestEquality("{\"\":false,\"\":true}", "{\"\":true}");
+
+            count += TestEquality("{\"A\":true,\"B\":false}", "{\"A\":true,\"B\":false}");
+            count += TestEquality("{\"A\":false,\"B\":true}", "{\"A\":false,\"B\":true}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":true},\"\":{\"\":true}}", "{\"\":{\"\":true}}");
+            count += TestEquality("{\"\":{\"\":true},\u0009\u000A\u000D\u0020\"\":{\"\":true}}", "{\"\":{\"\":true}}");
+            count += TestEquality("{\"\":{\"\":true}\u0009\u000A\u000D\u0020,\"\":{\"\":true}}", "{\"\":{\"\":true}}");
+            count += TestEquality("{\"\":{\"\":true}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":true}}", "{\"\":{\"\":true}}");
+            count += TestEquality("{\"\":{\"\":false},\"\":{\"\":false}}", "{\"\":{\"\":false}}");
+            count += TestEquality("{\"\":{\"\":false},\u0009\u000A\u000D\u0020\"\":{\"\":false}}", "{\"\":{\"\":false}}");
+            count += TestEquality("{\"\":{\"\":false}\u0009\u000A\u000D\u0020,\"\":{\"\":false}}", "{\"\":{\"\":false}}");
+            count += TestEquality("{\"\":{\"\":false}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"\":{\"\":false}}", "{\"\":{\"\":false}}");
+
+            count += TestEquality("{\"A\":{\"\":true},\"B\":{\"\":true}}", "{\"A\":{\"\":true},\"B\":{\"\":true}}");
+            count += TestEquality("{\"A\":{\"\":true},\u0009\u000A\u000D\u0020\"B\":{\"\":true}}", "{\"A\":{\"\":true},\"B\":{\"\":true}}");
+            count += TestEquality("{\"A\":{\"\":true}\u0009\u000A\u000D\u0020,\"B\":{\"\":true}}", "{\"A\":{\"\":true},\"B\":{\"\":true}}");
+            count += TestEquality("{\"A\":{\"\":true}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":true}}","{\"A\":{\"\":true},\"B\":{\"\":true}}");
+            count += TestEquality("{\"A\":{\"\":false},\"B\":{\"\":false}}", "{\"A\":{\"\":false},\"B\":{\"\":false}}");
+            count += TestEquality("{\"A\":{\"\":false},\u0009\u000A\u000D\u0020\"B\":{\"\":false}}", "{\"A\":{\"\":false},\"B\":{\"\":false}}");
+            count += TestEquality("{\"A\":{\"\":false}\u0009\u000A\u000D\u0020,\"B\":{\"\":false}}", "{\"A\":{\"\":false},\"B\":{\"\":false}}");
+            count += TestEquality("{\"A\":{\"\":false}\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020\"B\":{\"\":false}}", "{\"A\":{\"\":false},\"B\":{\"\":false}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":{\"\":true},\"\":{\"\":false}}", "{\"\":{\"\":false}}");
+            count += TestEquality("{\"\":{\"\":false},\"\":{\"\":true}}", "{\"\":{\"\":true}}");
+
+            count += TestEquality("{\"A\":{\"\":true},\"B\":{\"\":false}}", "{\"A\":{\"\":true},\"B\":{\"\":false}}");
+            count += TestEquality("{\"A\":{\"\":false},\"B\":{\"\":true}}", "{\"A\":{\"\":false},\"B\":{\"\":true}}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[true,true],\"\":[true,true]}", "{\"\":[true,true]}");
+
+            count += TestEquality("{\"A\":[true,true],\"B\":[true,true]}", "{\"A\":[true,true],\"B\":[true,true]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"true\"],\"\":[\"true\"]}", "{\"\":[\"true\"]}");
+            count += TestEquality("{\"\":\"[\"true\"]\",\"\":\"[\"true\"]\"}", "{\"\":\"[\"true\"]\"}");
+            count += TestEquality("\"{\"\":[\"true\"],\"\":[\"true\"]}\"", "\"{\"\":[\"true\"]}\"");
+
+            count += TestEquality("{\"A\":[\"true\"],\"B\":[\"true\"]}", "{\"A\":[\"true\"],\"B\":[\"true\"]}");
+            count += TestEquality("{\"A\":\"[\"true\"]\",\"B\":\"[\"true\"]\"}", "{\"A\":\"[\"true\"]\",\"B\":\"[\"true\"]\"}");
+            count += TestEquality("\"{\"A\":[\"true\"],\"B\":[\"true\"]}\"", "\"{\"A\":[\"true\"],\"B\":[\"true\"]}\"");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[false,false],\"\":[false,false]}", "{\"\":[false,false]}");
+
+            count += TestEquality("{\"A\":[false,false],\"B\":[false,false]}", "{\"A\":[false,false],\"B\":[false,false]}");
+
+            // Implementation detail: Identical keys are not distinghuised and result in the last key-value pair being recorded.
+            count += TestEquality("{\"\":[\"false\"],\"\":[\"false\"]}", "{\"\":[\"false\"]}");
+            count += TestEquality("{\"\":\"[\"false\"]\",\"\":\"[\"false\"]\"}", "{\"\":\"[\"false\"]\"}");
+            count += TestEquality("\"{\"\":[\"false\"],\"\":[\"false\"]}\"", "\"{\"\":[\"false\"]}\"");
+
+            count += TestEquality("{\"A\":[\"false\"],\"B\":[\"false\"]}", "{\"A\":[\"false\"],\"B\":[\"false\"]}");
+            count += TestEquality("{\"A\":\"[\"false\"]\",\"B\":\"[\"false\"]\"}", "{\"A\":\"[\"false\"]\",\"B\":\"[\"false\"]\"}");
+            count += TestEquality("\"{\"A\":[\"false\"],\"B\":[\"false\"]}\"", "\"{\"A\":[\"false\"],\"B\":[\"false\"]}\"");
+        }
+
+        return count == 83;
     }
 
     TEST(JSONParser, DecUInt8)
@@ -3470,6 +4152,178 @@ namespace Tests {
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(!malformed, count));
         EXPECT_EQ(count, 34);
+    }
+
+    TEST(JSONParser, Container)
+    {
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecUInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecUInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecUInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecUInt64>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecSInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecSInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecSInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::DecSInt64>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecUInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::DecSInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexUInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexUInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexUInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexUInt64>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexSInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexSInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexSInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::HexSInt64>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexUInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::HexSInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctUInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctUInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctUInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctUInt64>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctSInt8>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctSInt16>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctSInt32>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::OctSInt64>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt8>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt8>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt16>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt16>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt32>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt32>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctUInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt64>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::OctSInt64>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::InstanceId>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::InstanceId>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::InstanceId>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::Pointer>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Pointer>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Pointer>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::Float>()));
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::Double>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Float>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Float>(!malformed, count));
+        EXPECT_EQ(count, 46);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Double>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Double>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::Boolean>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Boolean>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::Boolean>(!malformed, count));
+        EXPECT_EQ(count, 46);
+
+        EXPECT_TRUE((TestContainerFromValue<Core::JSON::Container, Core::JSON::String>()));
+
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::String>(malformed, count));
+        EXPECT_EQ(count, 132);
+        EXPECT_TRUE(TestContainerFromString<Core::JSON::String>(!malformed, count));
+        EXPECT_EQ(count, 46);
     }
 }
 }
