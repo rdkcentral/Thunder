@@ -3924,6 +3924,18 @@ namespace Core {
             mutable IteratorType<ELEMENT> _iterator;
         };
 
+        template <typename T, size_t N>
+        class NestedArrayType {
+        public :
+            using type = ArrayType<typename NestedArrayType<T, N - 1>::type>;
+        };
+
+        template <typename T>
+        class NestedArrayType <T, 0>{
+        public:
+            using type = ArrayType<T>;
+        };
+
         class EXTERNAL Container : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
