@@ -3785,9 +3785,9 @@ namespace Core {
                     case 'n'    :   FALLTHROUGH;
                     case 'u'    :   FALLTHROUGH;
                     case 'l'    :   // JSON value null
-                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED) - arrayStartMarkerCount) < sizeof(NullTag)));
+                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED ? 1 : 0)) < sizeof(NullTag)));
 
-                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - arrayStartMarkerCount - (_state & QUOTED)])
+                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
                                         || suffix
                                        ) {
                                         _state = ERROR;
@@ -3796,7 +3796,7 @@ namespace Core {
                                     }
 
                                     suffix =    suffix
-                                             || (!arrayStartMarkerCount && ((offset - arrayStartMarkerCount - (_state & QUOTED)) == 3))
+                                             || (!arrayStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
                                              ;
 
                                     _state |= suffix ? UNDEFINED : NONE;
@@ -3826,7 +3826,9 @@ namespace Core {
                     offset = 0;
                     _state |= (_state & UNDEFINED) ? 0 : SET;
                 } else {
-
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
