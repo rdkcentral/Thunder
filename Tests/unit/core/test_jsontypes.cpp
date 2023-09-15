@@ -2005,7 +2005,7 @@ namespace Tests {
 
                     count += TestJSONFormat<W>("[[true],[true]]", FromTo, AllowChange);
                     count += TestJSONFormat<W>("[[true],\u0009\u000A\u000D\u0020[true]]", FromTo, !AllowChange); // [[true],[true]]
-                    count += TestJSONFormat<W>("[[true]\u0009\u000A\u000D\u0020 ,[true]]", FromTo, !AllowChange); // [[true],[true]]
+                    count += TestJSONFormat<W>("[[true]\u0009\u000A\u000D\u0020,[true]]", FromTo, !AllowChange); // [[true],[true]]
                     count += TestJSONFormat<W>("[[true]\u0009\u000A\u000D\u0020,\u0009\u000A\u000D\u0020[true]]", FromTo, !AllowChange); // [[true],[true]]
                     count += TestJSONFormat<W>("[[false],[false]]", FromTo, AllowChange);
                     count += TestJSONFormat<W>("[[false],\u0009\u000A\u000D\u0020[false]]", FromTo, !AllowChange); // [[false],[false]]

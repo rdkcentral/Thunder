@@ -3629,9 +3629,9 @@ namespace Core {
 
                 bool completed = false, suffix = false, beforeStringScope = false, afterStringScope = false, stringScope = false;
 
-                uint16_t markerStartCount = 0, markerEndCount = 0, separatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0;
+                uint16_t arrayStartMarkerCount = 0, arrayEndMarkerCount = 0, valueSeparatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0;
 
-                uint16_t valueStartPos = 0, separatorPos = 0;
+                uint16_t valueStartPos = 0, valueSeparatorPos = 0;
 
                 _state = 0;
 
@@ -3650,7 +3650,7 @@ namespace Core {
                                     suffix = suffix || (_state & UNDEFINED);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if ((offset > 0 && markerStartCount != markerEndCount) || !suffix) {
+                                    if ((offset > 0 && arrayStartMarkerCount != arrayEndMarkerCount) || !suffix) {
                                         _state = ERROR;
                                         error = Error{"Terminated character sequence without (sufficient) data for ArrayType<>"};
                                     }
@@ -3662,30 +3662,30 @@ namespace Core {
                                     if (   !suffix
                                         && (   beforeStringScope
                                             || afterStringScope
-                                            || (markerStartCount && markerStartCount != markerEndCount)
+                                            || (arrayStartMarkerCount && arrayStartMarkerCount != arrayEndMarkerCount)
                                            )
                                        ) {
                                         stringScope = !stringScope;
                                         break;
                                     }
 
-                                    if (!markerStartCount && !(_state & QUOTED) && offset > 0) {
+                                    if (!arrayStartMarkerCount && !(_state & QUOTED) && offset > 0) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    if (markerEndCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
+                                    if (arrayEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
                                         _state = ERROR;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for ArrayType<>"};
                                         continue;
                                     }
 
-                                    suffix = suffix || ((markerStartCount == markerEndCount) && (_state & QUOTED));
+                                    suffix = suffix || ((arrayStartMarkerCount == arrayEndMarkerCount) && (_state & QUOTED));
 
                                     _state |= suffix ? QUOTED : NONE;
 
-                                    separatorCount -= separatorCount && !suffix ? 1 : 0;
+                                    valueSeparatorCount -= valueSeparatorCount && !suffix ? 1 : 0;
                                     break;
                     case '{'    :   if (!stringScope && containerStartMarkerCount >= containerEndMarkerCount) {
                                         ++containerStartMarkerCount;
@@ -3700,21 +3700,21 @@ namespace Core {
                                         break;
                                     }
 
-                                    if (   (markerStartCount == 0 && markerStartCount < markerEndCount)
-                                        || (markerStartCount > 0 && markerStartCount <= markerEndCount)
+                                    if (   (arrayStartMarkerCount == 0 && arrayStartMarkerCount < arrayEndMarkerCount)
+                                        || (arrayStartMarkerCount > 0 && arrayStartMarkerCount <= arrayEndMarkerCount)
                                        ) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    ++markerStartCount;
+                                    ++arrayStartMarkerCount;
 
-                                    if (markerStartCount == 1) {
+                                    if (arrayStartMarkerCount == 1) {
                                         valueStartPos = loaded;
                                     }
 
-                                    separatorCount -= separatorCount ? 1 : 0;
+                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
 
                                     beforeStringScope = !stringScope;
                                     break;
@@ -3723,17 +3723,16 @@ namespace Core {
                                         break;
                                     }
 
-                                    if (   !(markerStartCount > 0 && markerStartCount >= markerEndCount)
-                                        || separatorCount
-                                        ||( separatorPos == loaded - 1)
+                                    if (   !(arrayStartMarkerCount > 0 && arrayStartMarkerCount >= arrayEndMarkerCount)
+                                        || valueSeparatorCount
+                                        ||( valueSeparatorPos == loaded - 1)
                                        ) {
                                          _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
-
                                     }
 
-                                    ++markerEndCount;
+                                    ++arrayEndMarkerCount;
 
                                     afterStringScope = !stringScope;
 
@@ -3743,7 +3742,7 @@ namespace Core {
                                         break;
                                     }
 
-                                    if (ch == ',' && (separatorCount || (loaded - 1 == valueStartPos) || markerStartCount == markerEndCount)
+                                    if (ch == ',' && (valueSeparatorCount || (loaded - 1 == valueStartPos) || arrayStartMarkerCount == arrayEndMarkerCount)
                                        ) {
                                          _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
@@ -3751,11 +3750,11 @@ namespace Core {
                                     }
 
                                     if (ch == ',') {
-                                        ++separatorCount;
-                                        separatorPos = loaded;
+                                        ++valueSeparatorCount;
+                                        valueSeparatorPos = loaded;
                                     }
 
-                                    if (markerStartCount == markerEndCount || ch == ',') {
+                                    if (arrayStartMarkerCount == arrayEndMarkerCount || ch == ',') {
                                         _data.push_back(ELEMENT());
 
                                         if ((loaded - 1) > valueStartPos) {
@@ -3777,18 +3776,18 @@ namespace Core {
 
                                         valueStartPos = loaded;
 
-                                        separatorCount -= separatorCount ? 1 : 0;
+                                        valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
                                     }
 
-                                    suffix = suffix || markerStartCount == markerEndCount;
+                                    suffix = suffix || arrayStartMarkerCount == arrayEndMarkerCount;
 
                                     break;
                     case 'n'    :   FALLTHROUGH;
                     case 'u'    :   FALLTHROUGH;
                     case 'l'    :   // JSON value null
-                                    ASSERT(markerStartCount || ((offset - (_state & QUOTED) - markerStartCount) < sizeof(NullTag)));
+                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED) - arrayStartMarkerCount) < sizeof(NullTag)));
 
-                                    if (   (!markerStartCount && ch != IElement::NullTag[offset - markerStartCount - (_state & QUOTED)])
+                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - arrayStartMarkerCount - (_state & QUOTED)])
                                         || suffix
                                        ) {
                                         _state = ERROR;
@@ -3797,12 +3796,12 @@ namespace Core {
                                     }
 
                                     suffix =    suffix
-                                             || (!markerStartCount && ((offset - markerStartCount - (_state & QUOTED)) == 3))
+                                             || (!arrayStartMarkerCount && ((offset - arrayStartMarkerCount - (_state & QUOTED)) == 3))
                                              ;
 
                                     _state |= suffix ? UNDEFINED : NONE;
 
-                                    separatorCount -= separatorCount ? 1 : 0;
+                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
 
                                     break;
                     default     :   if (suffix || (_state & UNDEFINED)) {
@@ -3811,7 +3810,7 @@ namespace Core {
                                         continue;
                                     }
 
-                                    separatorCount -= separatorCount ? 1 : 0;
+                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
                     }
 
                     ++offset;
