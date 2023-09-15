@@ -168,11 +168,13 @@ namespace Web
 
                 // Extract the signature and convert it to a binary string.
 				uint8_t signature[Crypto::SHA256HMAC::Length];
-                if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
+		        if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 5)/6))) {
+                    if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
 
-					hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
-					result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
-				}
+                        hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
+                        result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
+                    }
+                }
             }
 		}
 
