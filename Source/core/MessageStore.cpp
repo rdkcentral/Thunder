@@ -122,8 +122,15 @@ namespace Core {
 
         uint16_t Metadata::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
-            uint16_t length = static_cast<uint16_t>(sizeof(_type) + (_category.size() + 1));
+            uint16_t length = static_cast<uint16_t>(sizeof(_type));
             
+            if (_type == OPERATIONAL_STREAM) {
+                length += 1;
+            }
+            else {
+                length += (_category.size() + 1);
+            }
+
             if (_type == TRACING) {
                 length += static_cast<uint16_t>(_module.size() + 1);
             }
@@ -134,7 +141,21 @@ namespace Core {
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
                 Core::FrameType<0>::Writer frameWriter(frame, 0);
                 frameWriter.Number(_type);
-                frameWriter.NullTerminatedText(_category);
+
+                if (_type == OPERATIONAL_STREAM) {
+                    if (_category == "StandardOut") {
+                        frameWriter.Number(uint8_t(0));
+                    }
+                    else if (_category == "StandardError") {
+                        frameWriter.Number(uint8_t(1));
+                    }
+                    else {
+                        ASSERT(false);
+                    }
+                }
+                else {
+                    frameWriter.NullTerminatedText(_category);
+                }
 
                 if (_type == TRACING) {
                     frameWriter.NullTerminatedText(_module);
@@ -157,7 +178,22 @@ namespace Core {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _type = frameReader.Number<type>();
-                _category = frameReader.NullTerminatedText();
+
+                if (_type == OPERATIONAL_STREAM) {
+                    uint8_t category = frameReader.Number<uint8_t>();
+                    if (category == 0) {
+                        _category = std::string("StandardOut");
+                    }
+                    else if (category == 1) {
+                        _category = std::string("StandardError");
+                    }
+                    else {
+                        ASSERT(false);
+                    }
+                }
+                else {
+                    _category = frameReader.NullTerminatedText();
+                }
 
                 if (_type == TRACING) {
                     _module = frameReader.NullTerminatedText();
@@ -177,6 +213,9 @@ namespace Core {
                 
                 if (_type == TRACING) {
                     length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1)));
+                }
+                else if (_type == OPERATIONAL_STREAM) {
+                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + 1 + (static_cast<uint16_t>(_module.size()) + 1)));
                 }
                 else {
                     length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
