@@ -142,6 +142,8 @@ namespace Core {
                 Core::FrameType<0>::Writer frameWriter(frame, 0);
                 frameWriter.Number(_type);
 
+                // TO-DO: Ask Pierre if that's what he meant by saying that the category should fly as just one byte
+                // If so, then do we want to change that into an enum so that it is not hardcoded here?
                 if (_type == OPERATIONAL_STREAM) {
                     if (_category == "StandardOut") {
                         frameWriter.Number(uint8_t(0));
@@ -179,6 +181,7 @@ namespace Core {
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _type = frameReader.Number<type>();
 
+                // TO-DO: Change it accordingly to Serialize() above
                 if (_type == OPERATIONAL_STREAM) {
                     uint8_t category = frameReader.Number<uint8_t>();
                     if (category == 0) {
