@@ -595,6 +595,13 @@ POP_WARNING()
                     fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
             }
+
+            // Redirect the standard error to the messaging engine and the MessageControl plugin
+            // And if Thunder is running in the background, do the same for standard output
+            Messaging::ConsoleStandardError::Instance().Open();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Open();
+            }
             
 #ifdef __CORE_WARNING_REPORTING__
             class GlobalConfig : public Core::JSON::Container {
