@@ -20,7 +20,7 @@
 #include "CallsignTLS.h"
 #include "Thread.h"
 
-#ifdef __CORE_WARNING_REPORTING__
+#if defined(__CORE_WARNING_REPORTING__) || defined(__CORE_EXCEPTION_CATCHING__)
 
 namespace WPEFramework {
 namespace Core {
@@ -41,4 +41,4 @@ namespace Core {
 }
 } 
 
-#endif
+#endif // defined(__CORE_WARNING_REPORTING__) || defined(__CORE_EXCEPTION_CATCHING__)
