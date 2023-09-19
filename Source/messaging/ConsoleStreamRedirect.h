@@ -36,7 +36,8 @@ namespace WPEFramework {
 				~Reader() = default;
 
 			public:
-				mode IsTermination(const mode lastMode, const int length, const TCHAR buffer[]) const {
+				mode IsTermination(const mode lastMode, const int length, const TCHAR buffer[]) const
+				{
 					mode result = mode::IDLE;
 
 					ASSERT(length > 0);
@@ -72,7 +73,9 @@ namespace WPEFramework {
 					}
 					return (result);
 				}
-				void ProcessBuffer(const int readBytes) {
+
+				void ProcessBuffer(const int readBytes)
+				{
 					int index = 0;
 					int count = readBytes;
 
@@ -109,7 +112,9 @@ namespace WPEFramework {
 						_offset -= 32;
 					}
 				}
-				void Flush() {
+
+				void Flush()
+				{
 					if (_offset != 0) {
 						_handler.Output(_offset, _buffer);
 						_offset = 0;
@@ -348,39 +353,43 @@ namespace WPEFramework {
 				ReaderImplementation& operator=(ReaderImplementation&&) = delete;
 				ReaderImplementation& operator=(const ReaderImplementation&) = delete;
 
-				ReaderImplementation(ParentClass& parent)
+				ReaderImplementation(ParentClass& parent, const Core::IResource::handle replacing)
 					: Reader(parent)
-					, _index(Core::IResource::INVALID)
+					, _index(replacing)
 					, _copy(Core::IResource::INVALID)
-					, _handle(Core::IResource::INVALID) {
+					, _handle(Core::IResource::INVALID)
+				{
+					ASSERT(replacing != Core::IResource::INVALID);
 				}
-				~ReaderImplementation() override {
+				~ReaderImplementation() override
+				{
 					Close();
 				}
 
 			public:
-				bool Open(const Core::IResource::handle replacing) {
+				bool Open()
+				{
+					ASSERT(_copy == Core::IResource::INVALID);
 
-					ASSERT(_index == Core::IResource::INVALID);
-					ASSERT(replacing != Core::IResource::INVALID);
+					_handle = memfd_create(_T("RedirectReaderFile"), 0);
 
-					if (replacing != Core::IResource::INVALID) {
-						_handle = memfd_create(_T("RedirectReaderFile"), 0);
-							if (_handle != Core::IResource::INVALID) {
-								_index = replacing;
-								_copy = ::dup(replacing);
-								::fsync(replacing);
-								::dup2(_handle, _index);
-								::close(_handle);
-								Core::ResourceMonitor::Instance().Register(*this);
-							}
+					if (_handle != Core::IResource::INVALID) {
+						_copy = ::dup(_index);
+						::fsync(_index);
+						::dup2(_handle, _index);
+						int flags = fcntl(_handle, F_GETFL);
+						fcntl(_handle, F_SETFL, (flags | O_NONBLOCK));
+						Core::ResourceMonitor::Instance().Register(*this);
 					}
 					return (_index != Core::IResource::INVALID);
 				}
-				bool Close() {
-					if (_index != Core::IResource::INVALID) {
+
+				bool Close()
+				{
+					if (_copy != Core::IResource::INVALID) {
 						::fsync(_copy);
 						::dup2(_copy, _index);
+						::close(_handle);
 						::close(_copy);
 						Core::ResourceMonitor::Instance().Unregister(*this);
 						_index = Core::IResource::INVALID;
@@ -392,16 +401,24 @@ namespace WPEFramework {
 				Core::IResource::handle Descriptor() const override {
 					return (_handle);
 				}
-				uint16_t Events() override {
+
+				Core::IResource::handle Origin() const {
+					return (_copy == Core::IResource::INVALID ? _index : _copy);
+				}
+
+				uint16_t Events() override
+				{
 					if (_handle != Core::IResource::INVALID) {
 						return (POLLHUP | POLLRDHUP | POLLIN);
 					}
 					return (0);
 				}
-				void Handle(const uint16_t events) override {
+
+				void Handle(const uint16_t events) override
+				{
 					// If we have an event, read and see if we have a full line..
 					if ((events & POLLIN) != 0) {
-						int readBytes, freeSpace;
+						int readBytes;
 
 						do {
 							readBytes = read(_handle, Reader::Buffer(), Reader::Length());
@@ -410,7 +427,7 @@ namespace WPEFramework {
 								Reader::ProcessBuffer(readBytes);
 							}
 
-						} while (readBytes == freeSpace);
+						} while (readBytes > 0);
 					}
 				}
 
@@ -418,7 +435,6 @@ namespace WPEFramework {
 				Core::IResource::handle _index;
 				Core::IResource::handle _copy;
 				Core::IResource::handle _handle;
-				bool _register;
 			};
 #endif
 
@@ -428,17 +444,42 @@ namespace WPEFramework {
 			ConsoleStreamRedirectType<STREAMTYPE> operator=(ConsoleStreamRedirectType<STREAMTYPE>&&) = delete;
 			ConsoleStreamRedirectType<STREAMTYPE> operator=(const ConsoleStreamRedirectType<STREAMTYPE>&) = delete;
 
-			ConsoleStreamRedirectType() 
-				: _channel(*this) {
+			ConsoleStreamRedirectType(const Core::IResource::handle fileDescriptor)
+				: _channel(*this, fileDescriptor) {
 			}
 			~ConsoleStreamRedirectType() = default;
 
 		public:
-			bool Open(const Core::IResource::handle fileDescriptor) {
-				return (_channel.Open(fileDescriptor));
+			bool Open() {
+				return (_channel.Open());
 			}
+
 			bool Close() {
 				return (_channel.Close());
+			}
+
+			void Format(const TCHAR format[], ...)
+			{
+				string dst;
+				va_list ap;
+				va_start(ap, format);
+				int length;
+				va_list apStrLen;
+				va_copy(apStrLen, ap);
+				length = vsnprintf(nullptr, 0, format, apStrLen);
+				va_end(apStrLen);
+
+				if (length > 0) {
+					dst.resize(length);
+					vsnprintf((char*)dst.data(), dst.size() + 1, format, ap);
+					write(_channel.Origin(), dst.c_str(), length);
+				}
+				else {
+					dst = "Format error! format: ";
+					dst.append(format);
+				}
+
+				va_end(ap);
 			}
 
 		private:
@@ -471,9 +512,6 @@ namespace WPEFramework {
 					TextMessage data(text);
 					MessageUnit::Instance().Push(operationalStream, &data);
 				}
-// TO-DO: Remove the below lines when it will be functional
-				string text(buffer, length);
-				fprintf(stderr, "Redirected: \"%s\"\n", text.c_str());
 			}
 
 		};
@@ -491,13 +529,65 @@ namespace WPEFramework {
 		public:
 			void Output(const uint16_t length, const TCHAR buffer[])
 			{
-// TO-DO: Make it similar to StandardOut when it's finished and working
+				// TO-DO: Remove the text, fprintf(), and fflush() when it works
 				string text(buffer, length);
-				fprintf(stderr, "Redirected: \"%s\"\n", text.c_str());
+				fprintf(stdout, "Redirected: \"%s\"\n", text.c_str());
+				fflush(stdout);
+				if (OperationalStream::StandardError::IsEnabled() == true) {
+					Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
+					Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
+					string text(buffer, length);
+					TextMessage data(text);
+					MessageUnit::Instance().Push(operationalStream, &data);
+				}
 			}
 		};
 
-		using ConsoleStandardOut = ConsoleStreamRedirectType<StandardOut>;
-		using ConsoleStandardError = ConsoleStreamRedirectType<StandardError>;
+		// TO-DO: Make sure by asking Pierre if it is okay here to delete move/copy constructors and assignment operators
+		// And if so, does it matter if they are deleted as public or private? (since the constructor is private for this class)
+		class ConsoleStandardOut : public ConsoleStreamRedirectType<StandardOut> {
+		public:
+			ConsoleStandardOut(ConsoleStandardOut&&) = delete;
+			ConsoleStandardOut(const ConsoleStandardOut&) = delete;
+			ConsoleStandardOut& operator=(ConsoleStandardOut&&) = delete;
+			ConsoleStandardOut& operator=(const ConsoleStandardOut&) = delete;
+
+		private:
+			ConsoleStandardOut()
+				: ConsoleStreamRedirectType<StandardOut>(STDOUT_FILENO) {
+			}
+			~ConsoleStandardOut() = default;
+
+		public:
+			static ConsoleStandardOut& Instance()
+			{
+				static ConsoleStandardOut singleton;
+
+				return (singleton);
+			}
+		};
+
+		// TO-DO: Same as with the above class
+		class ConsoleStandardError : public ConsoleStreamRedirectType<StandardError> {
+		public:
+			ConsoleStandardError(ConsoleStandardError&&) = delete;
+			ConsoleStandardError(const ConsoleStandardError&) = delete;
+			ConsoleStandardError& operator=(ConsoleStandardError&&) = delete;
+			ConsoleStandardError& operator=(const ConsoleStandardError&) = delete;
+
+		private:
+			ConsoleStandardError()
+				: ConsoleStreamRedirectType<StandardError>(STDERR_FILENO) {
+			}
+			~ConsoleStandardError() = default;
+
+		public:
+			static ConsoleStandardError& Instance()
+			{
+				static ConsoleStandardError singleton;
+
+				return (singleton);
+			}
+		};
 	}
 }
