@@ -23,8 +23,7 @@ add_library(${TARGET}
         MessageUnit.cpp
         TraceCategories.cpp
         Logging.cpp
-        DirectOutput.cpp
-        ConsoleStreamRedirect.cpp)
+        DirectOutput.cpp)
 
 set(PUBLIC_HEADERS
         Module.h
