@@ -23,7 +23,8 @@ add_library(${TARGET}
         MessageUnit.cpp
         TraceCategories.cpp
         Logging.cpp
-        DirectOutput.cpp)
+        DirectOutput.cpp
+        ConsoleStreamRedirect.cpp)
 
 set(PUBLIC_HEADERS
         Module.h
@@ -42,23 +43,7 @@ set(PUBLIC_HEADERS
         TextMessage.h
         BaseCategory.h
         ConsoleStreamRedirect.h
-        OperationalCategories.h
         )
-
-set(SOURCES 
-        Module.cpp
-        MessageClient.cpp
-        MessageUnit.cpp
-        TraceCategories.cpp
-        Logging.cpp
-        DirectOutput.cpp
-        OperationalCategories.cpp
-)
-
-
-set(TARGET ${NAMESPACE}Messaging)
-
-add_library(${TARGET} SHARED ${SOURCES})
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
@@ -116,5 +101,3 @@ install(
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/tracing/
        )
 endif()
-
-
