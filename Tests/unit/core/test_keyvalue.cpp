@@ -54,6 +54,6 @@ TEST(test_textkeyvaluetype, simple_textkeyvaluetype)
    OptionalType<TextFragment> value = TextFragment(string(buffer));
    const bool CASESENSITIVE = true;
 
-   TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype();
+   TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype;
    TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype1(key, value);
 }

@@ -54,6 +54,7 @@ Run the following commands to build and then install Thunder. The available `-DC
 
 ```shell
 $ cmake -G Ninja -S Thunder -B build/Thunder \
+-DBUILD_SHARED_LIBS=ON \
 -DBINDING="127.0.0.1" \
 -DCMAKE_BUILD_TYPE="Debug" \
 -DCMAKE_INSTALL_PREFIX="install/usr" \

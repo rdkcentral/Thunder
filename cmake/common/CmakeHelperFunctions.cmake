@@ -140,6 +140,8 @@ function(get_if_link_libraries libs dirs target)
             if ("${_library}" MATCHES "LINK_ONLY")
                 string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_library})
                 string(REGEX REPLACE ">$" "" _library ${__fix})
+                message(AUTHOR_WARNING "${_library} is marked LINK_ONLY and is now skipped, if you experience link issues out of the blue; start here. :-)")
+                continue()
             endif()
 
             if(TARGET ${_library})

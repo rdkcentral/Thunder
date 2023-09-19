@@ -410,7 +410,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
 
                 _data.GetText(length, value);
 
@@ -420,7 +420,7 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
                 length += _data.GetText(length, value);  // skip proxyStub path
 
                 _data.GetText(length, value);
@@ -431,9 +431,9 @@ namespace RPC {
             {
                 string value;
 
-                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implentation and sequencenumber
+                uint16_t length = sizeof(Core::instance_id) + sizeof(uint32_t) + sizeof(Output::mode); // skip implementation and sequence number
                 length += _data.GetText(length, value);  // skip proxyStub path
-                length += _data.GetText(length, value);  // skip messagingcategories
+                length += _data.GetText(length, value);  // skip messaging categories
 
                 _data.GetText(length, value);
 

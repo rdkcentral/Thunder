@@ -42,6 +42,7 @@ set(EXIT_REASONS "Failure;MemoryExceeded;WatchdogExpired" CACHE STRING "Process 
 set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be associated for the Raw Device Id creation")
 set(GROUP "" CACHE STRING "Define which system group will be used")
 set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
+set(COMMUNICATOR "" CACHE STRING "Define the ComRPC socket e.g. 127.0.0.1:62000 or /tmp/communicator|750")
 
 # Controller Plugin Settings.
 set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI")
@@ -80,7 +81,7 @@ map_set(${CONFIG} proxystubpath ${PROXYSTUB_PATH})
 map_set(${CONFIG} postmortempath ${POSTMORTEM_PATH})
 map_set(${CONFIG} redirect "/Service/Controller/UI")
 map_set(${CONFIG} ethernetcard ${ETHERNETCARD_NAME})
-if(COMMUNICATOR)
+if(NOT COMMUNICATOR STREQUAL "")
     map_set(${CONFIG} communicator ${COMMUNICATOR})
 endif()
 
