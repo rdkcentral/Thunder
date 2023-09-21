@@ -376,17 +376,18 @@ namespace WPEFramework {
 					if (_handle != Core::IResource::INVALID) {
 						_copy = ::dup(_index);
 						::fsync(_index);
-						::dup2(_handle, _index);
 						int flags = fcntl(_handle, F_GETFL);
 						fcntl(_handle, F_SETFL, (flags | O_NONBLOCK));
+						::dup2(_handle, _index);
 						Core::ResourceMonitor::Instance().Register(*this);
 					}
-					return (_index != Core::IResource::INVALID);
+					return (_copy != Core::IResource::INVALID);
 				}
 
 				bool Close()
 				{
-					if (_copy != Core::IResource::INVALID) {
+					printf("Closing redirect !!!!!!!\n");
+					if (_copy != Core::IResource::INVALID) {	
 						::fsync(_copy);
 						::dup2(_copy, _index);
 						::close(_handle);
@@ -417,18 +418,19 @@ namespace WPEFramework {
 				void Handle(const uint16_t events) override
 				{
 					// If we have an event, read and see if we have a full line..
-					if ((events & POLLIN) != 0) {
+					// if ((events & POLLIN) != 0) {
 						int readBytes;
 
 						do {
 							readBytes = read(_handle, Reader::Buffer(), Reader::Length());
 
 							if (readBytes > 0) {
+						fprintf(stdout, "Read bytes %d on event %x.\n", readBytes, events);
 								Reader::ProcessBuffer(readBytes);
 							}
 
 						} while (readBytes > 0);
-					}
+					// }
 				}
 
 			private:
@@ -530,10 +532,10 @@ namespace WPEFramework {
 			void Output(const uint16_t length, const TCHAR buffer[])
 			{
 				// TO-DO: Remove the text, fprintf(), and fflush() when it works
-				string text(buffer, length);
-				fprintf(stdout, "Redirected: \"%s\"\n", text.c_str());
-				fflush(stdout);
 				if (OperationalStream::StandardError::IsEnabled() == true) {
+				string flow(buffer, length);
+				fprintf(stdout, "######### -> Redirected to MESSAGEPUMP: \"%s\"\n", flow.c_str());
+				fflush(stdout);
 					Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
 					Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
 					string text(buffer, length);
@@ -545,7 +547,7 @@ namespace WPEFramework {
 
 		// TO-DO: Make sure by asking Pierre if it is okay here to delete move/copy constructors and assignment operators
 		// And if so, does it matter if they are deleted as public or private? (since the constructor is private for this class)
-		class ConsoleStandardOut : public ConsoleStreamRedirectType<StandardOut> {
+		class EXTERNAL ConsoleStandardOut : public ConsoleStreamRedirectType<StandardOut> {
 		public:
 			ConsoleStandardOut(ConsoleStandardOut&&) = delete;
 			ConsoleStandardOut(const ConsoleStandardOut&) = delete;
@@ -556,9 +558,10 @@ namespace WPEFramework {
 			ConsoleStandardOut()
 				: ConsoleStreamRedirectType<StandardOut>(STDOUT_FILENO) {
 			}
-			~ConsoleStandardOut() = default;
 
 		public:
+			~ConsoleStandardOut() = default;
+
 			static ConsoleStandardOut& Instance()
 			{
 				static ConsoleStandardOut singleton;
@@ -568,7 +571,7 @@ namespace WPEFramework {
 		};
 
 		// TO-DO: Same as with the above class
-		class ConsoleStandardError : public ConsoleStreamRedirectType<StandardError> {
+		class EXTERNAL ConsoleStandardError : public ConsoleStreamRedirectType<StandardError> {
 		public:
 			ConsoleStandardError(ConsoleStandardError&&) = delete;
 			ConsoleStandardError(const ConsoleStandardError&) = delete;
@@ -579,9 +582,9 @@ namespace WPEFramework {
 			ConsoleStandardError()
 				: ConsoleStreamRedirectType<StandardError>(STDERR_FILENO) {
 			}
-			~ConsoleStandardError() = default;
 
 		public:
+			~ConsoleStandardError() = default;
 			static ConsoleStandardError& Instance()
 			{
 				static ConsoleStandardError singleton;
