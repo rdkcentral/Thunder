@@ -496,7 +496,8 @@ POP_WARNING()
         if (configFile.Open(true) == true) {
             Core::OptionalType<Core::JSON::Error> error;
             _config = new Config(configFile, _background, error);
-
+            std::string date = configFile.ModificationTime().ToRFC1123(true);
+            fprintf(stdout, "Config file last modifacation: %s\n", date.c_str());
             if (error.IsSet() == true) {
                 SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;

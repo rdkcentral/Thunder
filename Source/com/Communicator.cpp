@@ -254,6 +254,8 @@ namespace RPC {
 
                     if (library.IsLoaded() == true) {
                         processProxyStubs.push_back(library);
+                        auto flag = library.LoadFunction(_T("proxystubs_options"));
+                        SYSLOG(Logging::Startup, (_T("ProxyStub loaded with flags %i"), flag));
                     }
                 }
             }

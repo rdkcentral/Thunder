@@ -139,9 +139,11 @@ namespace Core {
 
         dlerror(); /* clear error code */
         function = dlsym(_refCountedHandle->_handle, functionName);
+        std::cout << "Loading function" << std::endl;
         char* error = dlerror();
         if (error != nullptr) {
             _error = error;
+            std::cout << "Function not found" << std::endl;
             /* handle error, the symbol wasn't found */
             function = nullptr;
         }
