@@ -87,6 +87,7 @@
 #include "SystemInfo.h"
 #include "TextFragment.h"
 #include "TextReader.h"
+#include "TextStreamRedirectType.h"
 #include "Thread.h"
 #include "ThreadPool.h"
 #include "Time.h"
