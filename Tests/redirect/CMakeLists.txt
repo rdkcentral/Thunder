@@ -17,12 +17,12 @@
 
 add_executable(redirect main.cpp)
 
-target_link_libraries(WPELibraryTestLoader
+target_link_libraries(redirect
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
-set_target_properties(WPELibraryTestLoader PROPERTIES
+set_target_properties(redirect PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         )

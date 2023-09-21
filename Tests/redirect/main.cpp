@@ -17,8 +17,8 @@ namespace WPEFramework {
             RedirectedStream& operator=(RedirectedStream&&) = delete;
             RedirectedStream& operator=(const RedirectedStream&) = delete;
 
-            RedirectedStream() = default;^M
-            ~RedirectedStream() = default;^M
+            RedirectedStream() = default;
+            ~RedirectedStream() = default;
 
         public:
             void Output(const uint16_t length, const TCHAR buffer[]) {
@@ -40,7 +40,9 @@ void help() {
 int main(int argc, char** argv)
 {
     {
+        int element;
         uint32_t counter = 0;
+        Core::TextStreamRedirectType<Test::RedirectedStream> redirector;
 
         help();
         do {
