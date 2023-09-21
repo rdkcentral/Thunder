@@ -20,9 +20,9 @@
  namespace WPEFramework {
 	namespace Core {
 		template<typename STREAMTYPE>
-		class TextStreamRedirect {
+		class TextStreamRedirectType {
 		private:
-			using ParentClass = TextStreamRedirect<STREAMTYPE>;
+			using ParentClass = TextStreamRedirectType<STREAMTYPE>;
 
 			class Reader {
 			private:
@@ -455,15 +455,15 @@
 #endif
 
 		public:
-			TextStreamRedirect(TextStreamRedirect<STREAMTYPE>&&) = delete;
-			TextStreamRedirect(const TextStreamRedirect<STREAMTYPE>&) = delete;
-			TextStreamRedirect<STREAMTYPE> operator=(TextStreamRedirect<STREAMTYPE>&&) = delete;
-			TextStreamRedirect<STREAMTYPE> operator=(const TextStreamRedirect<STREAMTYPE>&) = delete;
+			TextStreamRedirectType(TextStreamRedirectType<STREAMTYPE>&&) = delete;
+			TextStreamRedirectType(const TextStreamRedirectType<STREAMTYPE>&) = delete;
+			TextStreamRedirectType<STREAMTYPE> operator=(TextStreamRedirectType<STREAMTYPE>&&) = delete;
+			TextStreamRedirectType<STREAMTYPE> operator=(const TextStreamRedirectType<STREAMTYPE>&) = delete;
 
-			TextStreamRedirect(const Core::IResource::handle fileDescriptor)
+			TextStreamRedirectType(const Core::IResource::handle fileDescriptor)
 				: _channel(*this, fileDescriptor) {
 			}
-			~TextStreamRedirect() = default;
+			~TextStreamRedirectType() = default;
 
 		public:
 			bool Open() {
