@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     {
         int element;
         uint32_t counter = 0;
-        Core::TextStreamRedirectType<Test::RedirectedStream> redirector;
+        Core::TextStreamRedirectType<Test::RedirectedStream> redirector(fileno(stderr));
 
         help();
         do {
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
                 }
                 case 'O': {
                     fprintf(stdout, "Opening the redirection.\n");
-                    redirector.Open(_fileno(stderr));
+                    redirector.Open();
                     break;
                 }
                 case 'C': {
