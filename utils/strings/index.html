@@ -78,6 +78,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#trim-string" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -1067,6 +1072,17 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Strings
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1076,6 +1092,78 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#trim-string" class="md-nav__link">
+    Trim string
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#split-string-by-delimiter" class="md-nav__link">
+    Split string by delimiter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#formatting" class="md-nav__link">
+    Formatting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#string-conversion" class="md-nav__link">
+    String Conversion
+  </a>
+  
+    <nav class="md-nav" aria-label="String Conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#numbers" class="md-nav__link">
+    Numbers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base64" class="md-nav__link">
+    Base64
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hex" class="md-nav__link">
+    Hex
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1827,6 +1915,69 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#trim-string" class="md-nav__link">
+    Trim string
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#split-string-by-delimiter" class="md-nav__link">
+    Split string by delimiter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#formatting" class="md-nav__link">
+    Formatting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#string-conversion" class="md-nav__link">
+    String Conversion
+  </a>
+  
+    <nav class="md-nav" aria-label="String Conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#numbers" class="md-nav__link">
+    Numbers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base64" class="md-nav__link">
+    Base64
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hex" class="md-nav__link">
+    Hex
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1845,7 +1996,101 @@
 
   <h1>Strings</h1>
 
+<p>Thunder has a few useful utilities for common string manipulation and encoding tasks. Below are some examples of common functionality that can be implemented using these utilities.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>Throughout most Thunder code, the <code>string</code> type is used instead of <code>std::string</code> or <code>std::wstring</code>. This is recommended since Thunder will automatically pick the correct string type depending on platform (e.g. std::wstring on Windows).</p>
+</div>
+<h2 id="trim-string">Trim string</h2>
+<p>Remove characters (e.g. whitespace, quotes) from the start or end of the string in-place.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">&quot;   Test string&quot;</span><span class="p">);</span>
+<span class="n">sampleString</span><span class="p">.</span><span class="n">TrimBegin</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// Here we specify we want to trim whitespace</span>
 
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sampleString</span><span class="p">.</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Test string</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h2 id="split-string-by-delimiter">Split string by delimiter</h2>
+<p>Split a given string on a specified delimiter and generate an iterator to loop over the segments.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">TextFragment</span><span class="w"> </span><span class="n">sampleString</span><span class="p">(</span><span class="s">&quot;The;quick;brown;fox&quot;</span><span class="p">);</span>
+
+<span class="c1">// Setting the second argument to true will automatically ignore empty segments</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">TextSegmentIterator</span><span class="w"> </span><span class="n">segments</span><span class="p">(</span><span class="n">sampleString</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;;&quot;</span><span class="p">);</span>
+<span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">segments</span><span class="p">.</span><span class="n">Next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">       </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">segments</span><span class="p">.</span><span class="n">Current</span><span class="p">().</span><span class="n">Text</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">The</span>
+<span class="cm">quick</span>
+<span class="cm">brown</span>
+<span class="cm">fox</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h2 id="formatting">Formatting</h2>
+<p>The <code>Core::Format</code> API can be used to format strings using printf syntax as a safe alternative to traditional C <code>sprintf</code>-style APIs.</p>
+<div class="highlight"><pre><span></span><code><span class="n">string</span><span class="w"> </span><span class="n">formattedValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Format</span><span class="p">(</span><span class="n">_T</span><span class="p">(</span><span class="s">&quot;Hello %s&quot;</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;World&quot;</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">formattedValue</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">Hello World</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h2 id="string-conversion">String Conversion</h2>
+<p>The <code>Core::ToString()</code> and <code>Core::FromString()</code> APIs can be used to safely convert to/from various different types</p>
+<h3 id="numbers">Numbers</h3>
+<div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
+<span class="n">string</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ToString</span><span class="p">(</span><span class="n">number</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">32</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h3 id="base64">Base64</h3>
+<p>Convert from string to base64
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;The quick brown fox jumped over the lazy dog&quot;</span><span class="p">;</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">base64result</span><span class="p">;</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">ToString</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">sample</span><span class="p">.</span><span class="n">c_str</span><span class="p">()),</span><span class="w"> </span><span class="n">sample</span><span class="p">.</span><span class="n">length</span><span class="p">(),</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">base64result</span><span class="p">);</span>
+
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">base64result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* </span>
+<span class="cm">Output:</span>
+<span class="cm">VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c=</span>
+<span class="cm">*/</span>
+</code></pre></div></p>
+<p>Convert from base64 to string</p>
+<div class="highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">base64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c=&quot;</span><span class="p">;</span>
+
+<span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span>
+<span class="kt">uint16_t</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
+
+<span class="n">Core</span><span class="o">::</span><span class="n">FromString</span><span class="p">(</span><span class="n">base64</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="w"> </span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* </span>
+<span class="cm">Output:</span>
+<span class="cm">The quick brown fox jumped over the lazy dog</span>
+<span class="cm">*/</span>
+</code></pre></div>
+<h3 id="hex">Hex</h3>
+<p>This is useful for debugging and printing the contents of arrays in hexadecimal format</p>
+<div class="highlight"><pre><span></span><code><span class="kt">uint8_t</span><span class="w"> </span><span class="n">data</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0xAB</span><span class="p">,</span><span class="w"> </span><span class="mh">0x23</span><span class="p">,</span><span class="w"> </span><span class="mh">0x10</span><span class="p">};</span>
+
+<span class="n">string</span><span class="w"> </span><span class="n">dataString</span><span class="p">;</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">ToHexString</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="n">dataString</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dataString</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+<span class="cm">/* Output:</span>
+<span class="cm">01ab2310</span>
+<span class="cm">*/</span>
+</code></pre></div>
 
 
 
