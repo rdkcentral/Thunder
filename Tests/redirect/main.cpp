@@ -136,7 +136,7 @@ namespace WPEFramework {
 				TCHAR _buffer[1024];
 			};
 
-			#ifdef __WINDOWS__
+#ifdef __WINDOWS__
 
 			class ReaderImplementation : public Reader {
 			private:
@@ -348,7 +348,7 @@ namespace WPEFramework {
 
 			// friend class Core::SingletonType<ReaderImplementation::ResourceMonitor>;
 
-			#else
+#else
 
 			class ReaderImplementation : public Core::IResource, public Reader {
 			public:
@@ -368,6 +368,7 @@ namespace WPEFramework {
 				}
 				~ReaderImplementation() override {
 					Close();
+					_index = Core::IResource::INVALID;
 				}
 
 			public:
@@ -382,7 +383,7 @@ namespace WPEFramework {
 						fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
 						::dup2(_handle[1], _index);
 						close(_handle[1]);
-						_handle[1] == Core::IResource::INVALID;
+						_handle[1] = Core::IResource::INVALID;
 						Core::ResourceMonitor::Instance().Register(*this);
 					}
 					return (_handle[0] == Core::IResource::INVALID);
@@ -395,8 +396,8 @@ namespace WPEFramework {
 						::close(_handle[0]);
 						::close(_copy);
 						Core::ResourceMonitor::Instance().Unregister(*this);
-						_handle[0] == Core::IResource::INVALID;
-						_index = Core::IResource::INVALID;
+						_handle[0] = Core::IResource::INVALID;
+						_copy = Core::IResource::INVALID;
 						Reader::Flush();
 					}
 					return (true);
@@ -542,7 +543,7 @@ int main(int argc, char** argv)
                     break;
                 }
                 case 'C': {
-                    fprintf(stdout, "Opening the redirection.\n");
+                    fprintf(stdout, "Closing the redirection.\n");
                     redirector.Close();
                     break;
                 }

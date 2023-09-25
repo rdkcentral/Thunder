@@ -27,5 +27,7 @@ set_target_properties(redirect PROPERTIES
         CXX_STANDARD_REQUIRED YES
         )
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
 install(TARGETS redirect DESTINATION bin)
 
