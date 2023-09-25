@@ -599,6 +599,16 @@ namespace PluginHost {
                 SYSLOG(Logging::Shutdown, (_T("EVENT: Bluetooth")));
                 break;
             }
+            case CRYPTOGRAPHY: {
+                /* No information to set yet */
+                SYSLOG(Logging::Startup, (_T("EVENT: Cryptography")));
+                break;
+            }
+            case NOT_CRYPTOGRAPHY: {
+                /* No information to set yet */
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Cryptography")));
+                break;
+            }
             case SECURITY: {
                 PluginHost::ISubSystem::ISecurity* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ISecurity>() : nullptr);
 
