@@ -61,7 +61,11 @@ namespace WPEFramework {
 #endif
 #endif
 
-#pragma GCC system_header
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
 
 #ifdef __WINDOWS__
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
