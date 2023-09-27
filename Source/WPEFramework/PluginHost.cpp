@@ -600,6 +600,9 @@ POP_WARNING()
             // And if Thunder is running in the background, do the same for standard output
             Messaging::ConsoleStandardError::Instance().Open();
             if (_background == true) {
+                // Line buffering on stdout can still lead to messages not being displayed even if they end with a new line
+                // This is not a problem with stderr since, unlike stdout, it is not buffered by default
+                setvbuf(stdout, NULL, _IONBF, 0);
                 Messaging::ConsoleStandardOut::Instance().Open();
             }
             
