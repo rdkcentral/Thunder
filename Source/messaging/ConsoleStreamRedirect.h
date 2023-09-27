@@ -42,11 +42,7 @@ namespace WPEFramework {
 		public:
 			void Output(const uint16_t length, const TCHAR buffer[])
 			{
-				// TO-DO: Remove the text, fprintf(), and fflush() when it works
 				if (OperationalStream::StandardError::IsEnabled() == true) {
-				string flow(buffer, length);
-				fprintf(stdout, "######### -> Redirected to MESSAGEPUMP: \"%s\"\n", flow.c_str());
-				fflush(stdout);
 					Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
 					Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
 					string text(buffer, length);
