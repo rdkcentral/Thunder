@@ -817,7 +817,7 @@ namespace Core {
 #endif
 
 #ifdef __WINDOWS__
-        m_syncEvent = ::CreateEvent(nullptr, blManualReset, blSet, nullptr);
+        m_syncEvent = ::CreateEvent(nullptr, TRUE, blSet, nullptr);
 
         ASSERT(m_syncEvent != nullptr);
 #endif
@@ -1020,7 +1020,12 @@ namespace Core {
 #endif
 
 #ifdef __WINDOWS__
-        ::SetEvent(m_syncEvent);
+        if (m_blManualReset == true) {
+            ::SetEvent(m_syncEvent);
+        }
+        else {
+            ::PulseEvent(m_syncEvent);
+        }
 #endif
     }
 

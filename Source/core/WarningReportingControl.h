@@ -33,7 +33,11 @@
 #include <unordered_set>
 #include <vector>
 
-#pragma GCC system_header
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
 
 #ifndef __CORE_WARNING_REPORTING__
 
