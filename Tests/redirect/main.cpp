@@ -439,7 +439,7 @@ namespace Test {
 		TextStreamRedirectType<STREAMTYPE> operator=(TextStreamRedirectType<STREAMTYPE>&&) = delete;
 		TextStreamRedirectType<STREAMTYPE> operator=(const TextStreamRedirectType<STREAMTYPE>&) = delete;
 
-		TextStreamRedirectType(const Core::IResource::handle source) 
+		TextStreamRedirectType(const Core::IResource::handle source)
 			: _channel(*this, source) {
 		}
 		~TextStreamRedirectType() = default;
