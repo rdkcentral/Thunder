@@ -384,10 +384,10 @@ namespace Core {
 				if ((_handle[0] == Core::IResource::INVALID) && (::pipe(_handle) == 0)) {
 					_copy = ::dup(_index);
 					::fsync(_index);
-					int flags = fcntl(_handle[0], F_GETFL);
-					fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
+					int flags = ::fcntl(_handle[0], F_GETFL);
+					::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
 					::dup2(_handle[1], _index);
-					close(_handle[1]);
+					::close(_handle[1]);
 					_handle[1] = Core::IResource::INVALID;
 					Core::ResourceMonitor::Instance().Register(*this);
 				}

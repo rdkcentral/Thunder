@@ -547,6 +547,10 @@ int main(int argc, char** argv)
 
     Process::ConsoleOptions options(argc, argv);
 
+    if (_background == true) {
+        ::setvbuf(stdout, NULL, _IONBF, 0);
+    }
+
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
