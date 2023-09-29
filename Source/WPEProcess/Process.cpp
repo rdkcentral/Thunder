@@ -10,6 +10,7 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
+    static string _background = _T("false");
 
 namespace Process {
 
@@ -547,7 +548,7 @@ int main(int argc, char** argv)
 
     Process::ConsoleOptions options(argc, argv);
 
-    if (_background == true) {
+    if ((Core::SystemInfo::GetEnvironment(_T("THUNDER_BACKGROUND"), _background) == true) && (_background == "true")) {
         ::setvbuf(stdout, NULL, _IONBF, 0);
     }
 
