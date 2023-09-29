@@ -68,6 +68,7 @@ namespace PluginHost {
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
+                Core::SystemInfo::SetEnvironment(_T("THUNDER_BACKGROUND"), _T("true"));
                 break;
 #endif
             case 'h':
