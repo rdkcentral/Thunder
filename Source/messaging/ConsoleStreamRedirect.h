@@ -52,8 +52,6 @@ namespace WPEFramework {
 			}
 		};
 
-		// TO-DO: Make sure by asking Pierre if it is okay here to delete move/copy constructors and assignment operators
-		// And if so, does it matter if they are deleted as public or private? (since the constructor is private for this class)
 		class EXTERNAL ConsoleStandardOut : public Core::TextStreamRedirectType<StandardOut> {
 		public:
 			ConsoleStandardOut(ConsoleStandardOut&&) = delete;
@@ -77,7 +75,6 @@ namespace WPEFramework {
 			}
 		};
 
-		// TO-DO: Same as with the above class
 		class EXTERNAL ConsoleStandardError : public Core::TextStreamRedirectType<StandardError> {
 		public:
 			ConsoleStandardError(ConsoleStandardError&&) = delete;
