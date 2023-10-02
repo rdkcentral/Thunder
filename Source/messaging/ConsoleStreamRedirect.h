@@ -61,7 +61,7 @@ namespace WPEFramework {
 
 		private:
 			ConsoleStandardOut()
-				: Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO) {
+				: Core::TextStreamRedirectType<StandardOut>(::fileno(stdout)) {
 			}
 
 		public:
@@ -84,7 +84,7 @@ namespace WPEFramework {
 
 		private:
 			ConsoleStandardError()
-				: Core::TextStreamRedirectType<StandardError>(STDERR_FILENO) {
+				: Core::TextStreamRedirectType<StandardError>(::fileno(stderr)) {
 			}
 
 		public:
