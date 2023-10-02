@@ -370,7 +370,7 @@ namespace Core {
 			}
 			~ReaderImplementation() override {
 				Close();
-				_index = Core::IResource::INVALID;s
+				_index = Core::IResource::INVALID;
 			}
 
 		public:
