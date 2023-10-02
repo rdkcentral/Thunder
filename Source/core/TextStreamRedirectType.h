@@ -225,37 +225,35 @@ namespace Core {
 			ReaderImplementation& operator=(ReaderImplementation&&) = delete;
 			ReaderImplementation& operator=(const ReaderImplementation&) = delete;
 
-			ReaderImplementation(ParentClass& parent)
+			ReaderImplementation(ParentClass& parent, const Core::IResource::handle replacing)
 				: Reader(parent)
-				, _index(Core::IResource::INVALID)
+				, _index(replacing)
 				, _copy(Core::IResource::INVALID)
 				, _handle(nullptr) {
+				ASSERT(replacing != Core::IResource::INVALID);
 			}
 			~ReaderImplementation() {
 				Close();
+				_index = Core::IResource::INVALID;
 			}
 
 		public:
-			bool Open(const Core::IResource::handle replacing) {
+			bool Open() {
 
-				ASSERT(_index == Core::IResource::INVALID);
-				ASSERT(replacing != Core::IResource::INVALID);
+				ASSERT(_index != Core::IResource::INVALID);
 
-				if (replacing != Core::IResource::INVALID) {
-					Core::IResource::handle newDescriptor;
+				Core::IResource::handle newDescriptor;
 
-					if (CreateOverlappedPipe(_handle, newDescriptor) != false) {
-						_flushall();
-						_copy = ::_dup(replacing);
-						if (::_dup2(newDescriptor, replacing) == -1) {
-							::_close(newDescriptor);
-							::CloseHandle(_handle);
-						}
-						else {
-							_index = replacing;
-							ResourceMonitor::Instance().Register(*this);
-							::_close(newDescriptor);
-						}
+				if (CreateOverlappedPipe(_handle, newDescriptor) != false) {
+					_flushall();
+					_copy = ::_dup(_index);
+					if (::_dup2(newDescriptor, _index) == -1) {
+						::_close(newDescriptor);
+						::CloseHandle(_handle);
+					}
+					else {
+						ResourceMonitor::Instance().Register(*this);
+						::_close(newDescriptor);
 					}
 				}
 				return (_index != Core::IResource::INVALID);
@@ -266,12 +264,11 @@ namespace Core {
 					if (::_dup2(_copy, _index) != -1) {
 						::_close(_copy);
 						ResourceMonitor::Instance().Unregister(*this);
-						_index = Core::IResource::INVALID;
 						::CloseHandle(_handle);
 					}
 					Reader::Flush();
 				}
-				return (_index == Core::IResource::INVALID);
+				return (true);
 			}
 
 		private:
@@ -373,7 +370,7 @@ namespace Core {
 			}
 			~ReaderImplementation() override {
 				Close();
-				_index = Core::IResource::INVALID;
+				_index = Core::IResource::INVALID;s
 			}
 
 		public:
