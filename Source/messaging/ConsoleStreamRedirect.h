@@ -61,7 +61,11 @@ namespace WPEFramework {
 
 		private:
 			ConsoleStandardOut()
-				: Core::TextStreamRedirectType<StandardOut>(::fileno(stdout)) {
+#ifdef __WINDOWS__
+				: Core::TextStreamRedirectType<StandardOut>(::_fileno(stdout)) {
+#else
+				: Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO) {
+#endif
 			}
 
 		public:
@@ -84,7 +88,11 @@ namespace WPEFramework {
 
 		private:
 			ConsoleStandardError()
-				: Core::TextStreamRedirectType<StandardError>(::fileno(stderr)) {
+#ifdef __WINDOWS__
+				: Core::TextStreamRedirectType<StandardError>(::_fileno(stderr)) {
+#else
+				: Core::TextStreamRedirectType<StandardError>(STDERR_FILENO) {
+#endif
 			}
 
 		public:
