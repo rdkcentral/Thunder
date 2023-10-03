@@ -2352,6 +2352,315 @@ namespace Tests {
                            : count == 46
                ;
     }
+}
+
+    // ENUM_CONVERSION* does not check on uniqueness!
+
+
+    // Underlying type is integral
+    enum class TypicalEnum {A, B, C};
+
+    ENUM_CONVERSION_BEGIN(TypicalEnum)
+    // {T, const TCHAR*, uint32_t},
+    // _TXT() expands to _T() and size
+    { TypicalEnum::A, _TXT("TE_A") },
+    { TypicalEnum::B, _TXT("TE_B") },
+    // Always add ',' to last entry
+    { TypicalEnum::C, _TXT("TE_C") },
+    ENUM_CONVERSION_END(TypicalEnum)
+
+    //using IntegralEnum = uint32_t; // Fails in overload resultion
+    using IntegralEnum = uint64_t;
+
+    ENUM_CONVERSION_BEGIN(IntegralEnum)
+    { IntegralEnum(1), _TXT("IE_1") },
+    ENUM_CONVERSION_END(IntegralEnum)
+    // using uint32_t; // Fails
+
+//FIXME: using ArrayType<> and usng Container may fail
+
+    using DecUInt64WithoutSetEnum = Core::JSON::DecUInt64;
+    using DecSInt64WithSetEnum = Core::JSON::DecSInt64;
+
+    // Take a intializing value different than the default 0!
+
+    ENUM_CONVERSION_BEGIN(DecUInt64WithoutSetEnum)
+    { DecUInt64WithoutSetEnum(1), _TXT("DUI64_1") },
+    { DecUInt64WithoutSetEnum(2), _TXT("\"DUI64_2\"") },
+    ENUM_CONVERSION_END(DecUInt64WithoutSetEnum)
+
+    ENUM_CONVERSION_BEGIN(DecSInt64WithSetEnum)
+    { DecSInt64WithSetEnum(1) = 2, _TXT("DSI64_1") },
+    { DecSInt64WithSetEnum(3) = 4, _TXT("\"DSI64_3\"") },
+    ENUM_CONVERSION_END(DecSInt64WithSetEnum)
+
+    using HexUInt64WithoutSetEnum = Core::JSON::HexUInt64;
+    using HexSInt64WithSetEnum = Core::JSON::HexSInt64;
+
+    // Take a intializing value different than the default 0x0!
+
+    ENUM_CONVERSION_BEGIN(HexUInt64WithoutSetEnum)
+    { HexUInt64WithoutSetEnum(0x1), _TXT("HUI64_0x1") },
+    { HexUInt64WithoutSetEnum(0x2), _TXT("\"HUI64_0x2\"") },
+    ENUM_CONVERSION_END(HexUInt64WithoutSetEnum)
+
+    ENUM_CONVERSION_BEGIN(HexSInt64WithSetEnum)
+    { HexSInt64WithSetEnum(0x1) = 0x2, _TXT("HSI64_0x1") },
+    { HexSInt64WithSetEnum(0x3) = 0x4, _TXT("\"HSI64_0x3\"") },
+    ENUM_CONVERSION_END(HexSInt64WithSetEnum)
+
+    using OctUInt64WithoutSetEnum = Core::JSON::OctUInt64;
+    using OctSInt64WithSetEnum = Core::JSON::OctSInt64;
+
+    // Take a intializing value different than the default 00!
+
+    ENUM_CONVERSION_BEGIN(OctUInt64WithoutSetEnum)
+    { OctUInt64WithoutSetEnum(01), _TXT("OUI64_01") },
+    { OctUInt64WithoutSetEnum(02), _TXT("\"OUI64_02\"") },
+    ENUM_CONVERSION_END(OctUInt64WithoutSetEnum)
+
+    ENUM_CONVERSION_BEGIN(OctSInt64WithSetEnum)
+    { OctSInt64WithSetEnum(01) = 02, _TXT("OSI64_01") },
+    { OctSInt64WithSetEnum(03) = 04, _TXT("\"OSI64_03\"") },
+    ENUM_CONVERSION_END(OctSInt64WithSetEnum)
+
+    using DoubleWithoutSetEnum = Core::JSON::Float;
+
+    ENUM_CONVERSION_BEGIN(DoubleWithoutSetEnum)
+    { DoubleWithoutSetEnum(1.0), _TXT("D_1.0") },
+    { DoubleWithoutSetEnum(2.0), _TXT("\"D_2.0\"") },
+    ENUM_CONVERSION_END(DoubleWithoutSetEnum)
+
+    // Use another FloatType to avoid (global) redefinition
+    using DoubleWithSetEnum = Core::JSON::Double;
+
+    ENUM_CONVERSION_BEGIN(DoubleWithSetEnum)
+    { DoubleWithSetEnum(1.0) = 2.0, _TXT("D_1.0") },
+    { DoubleWithSetEnum(3.0) = 4.0, _TXT("\"D_3.0\"") },
+    ENUM_CONVERSION_END(DoubleWithSetEnum)
+
+    using BoolEnum = Core::JSON::Boolean;
+
+//#define _UNSET
+
+    ENUM_CONVERSION_BEGIN(BoolEnum)
+#ifdef _UNSET
+    // Without 'set'
+    { BoolEnum(true), _TXT("B_F") },
+    { BoolEnum(false), _TXT("\"B_T\"") },
+#else
+    // With 'set'
+    { BoolEnum(true) = false, _TXT("BW_F") },
+    { BoolEnum(false) = true, _TXT("\"BW_T\"") },
+#endif
+    ENUM_CONVERSION_END(BoolEnum)
+
+namespace Tests {
+
+    template <typename T>
+    bool TestEnumTypeFromString(bool malformed, uint8_t& count)
+    {
+        constexpr bool AllowChange = false;
+
+        count = 0;
+        bool FromTo = false;
+
+        do {
+            FromTo = !FromTo;
+
+            if (!malformed) {
+                // Correctly formatted
+                // ===================
+
+                // Internally EnumType uses String, hence that behavior influences match
+
+                count += TestJSONFormat<Core::JSON::EnumType<TypicalEnum>>("TE_C", FromTo, AllowChange);
+
+                count += TestJSONFormat<Core::JSON::EnumType<IntegralEnum>>("IE_1", FromTo, AllowChange);
+
+                if (   std::is_same<T, Core::JSON::DecUInt8>::value
+                    || std::is_same<T, Core::JSON::DecSInt8>::value
+                    || std::is_same<T, Core::JSON::DecUInt16>::value
+                    || std::is_same<T, Core::JSON::DecSInt16>::value
+                    || std::is_same<T, Core::JSON::DecUInt32>::value
+                    || std::is_same<T, Core::JSON::DecSInt32>::value
+                    || std::is_same<T, Core::JSON::DecUInt64>::value
+                    || std::is_same<T, Core::JSON::DecSInt64>::value
+                ) {
+                    count += TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("DSI64_1", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"DSI64_3\"", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"DSI64_3\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                }
+
+                if (   std::is_same<T, Core::JSON::HexUInt8>::value
+                    || std::is_same<T, Core::JSON::HexSInt8>::value
+                    || std::is_same<T, Core::JSON::HexUInt16>::value
+                    || std::is_same<T, Core::JSON::HexSInt16>::value
+                    || std::is_same<T, Core::JSON::HexUInt32>::value
+                    || std::is_same<T, Core::JSON::HexSInt32>::value
+                    || std::is_same<T, Core::JSON::HexUInt64>::value
+                    || std::is_same<T, Core::JSON::HexSInt64>::value
+                ) {
+                    count += TestJSONFormat<Core::JSON::EnumType<HexSInt64WithSetEnum>>("HSI64_0x1", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<HexSInt64WithSetEnum>>("\"HSI64_0x3\"", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<HexSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"HSI64_0x3\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                }
+
+                if (   std::is_same<T, Core::JSON::OctUInt8>::value
+                    || std::is_same<T, Core::JSON::OctSInt8>::value
+                    || std::is_same<T, Core::JSON::OctUInt16>::value
+                    || std::is_same<T, Core::JSON::OctSInt16>::value
+                    || std::is_same<T, Core::JSON::OctUInt32>::value
+                    || std::is_same<T, Core::JSON::OctSInt32>::value
+                    || std::is_same<T, Core::JSON::OctUInt64>::value
+                    || std::is_same<T, Core::JSON::OctSInt64>::value
+                ) {
+                    count += TestJSONFormat<Core::JSON::EnumType<OctSInt64WithSetEnum>>("OSI64_01", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<OctSInt64WithSetEnum>>("\"OSI64_03\"", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<OctSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"OSI64_03\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                }
+
+                if (   std::is_same<T, Core::JSON::Float>::value
+                    || std::is_same<T, Core::JSON::Double>::value
+                ) {
+                    count += TestJSONFormat<Core::JSON::EnumType<DoubleWithSetEnum>>("D_1.0", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<DoubleWithSetEnum>>("\"D_3.0\"", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<DoubleWithSetEnum>>("\u0009\u000A\u000D\u0020\"D_3.0\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+                }
+
+                if (std::is_same<T, Core::JSON::Boolean>::value ) {
+#ifdef _UNSET
+                    count += 3;
+#else
+                    count += TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("BW_F", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"BW_T\"", FromTo, AllowChange);
+                    count += TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\u0009\u000A\u000D\u0020\"BW_T\"\u0009\u000A\u000D\u0020", FromTo, !AllowChange);
+#endif
+                }
+            } else {
+                // Malformed
+                // =========
+                // Internally EnumType uses String, hence that behavior influences match
+
+                count += !TestJSONFormat<Core::JSON::EnumType<TypicalEnum>>("TE", FromTo, AllowChange); // Does not exist
+                count += !TestJSONFormat<Core::JSON::EnumType<TypicalEnum>>("\"TE_C\"", FromTo, AllowChange); // No exact match
+
+                count += !TestJSONFormat<Core::JSON::EnumType<IntegralEnum>>("IE", FromTo, AllowChange); // Does not exist
+                count += !TestJSONFormat<Core::JSON::EnumType<IntegralEnum>>("\"IE_1\"", FromTo, AllowChange); // No exact match
+
+                if (   std::is_same<T, Core::JSON::DecUInt8>::value
+                    || std::is_same<T, Core::JSON::DecSInt8>::value
+                    || std::is_same<T, Core::JSON::DecUInt16>::value
+                    || std::is_same<T, Core::JSON::DecSInt16>::value
+                    || std::is_same<T, Core::JSON::DecUInt32>::value
+                    || std::is_same<T, Core::JSON::DecSInt32>::value
+                    || std::is_same<T, Core::JSON::DecUInt64>::value
+                    || std::is_same<T, Core::JSON::DecSInt64>::value
+                ) {
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecUInt64WithoutSetEnum>>("DUI64_1", FromTo, AllowChange); // Fails, unset 'set'
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecUInt64WithoutSetEnum>>("\"DUI64_1\"", FromTo, AllowChange); // No exact match, unset 'set'
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("DSI64", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"DSI64_1\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020DSI64_1\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"DSI64_1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020DSI64_1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020DSI64_1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+                }
+
+                if (   std::is_same<T, Core::JSON::HexUInt8>::value
+                    || std::is_same<T, Core::JSON::HexSInt8>::value
+                    || std::is_same<T, Core::JSON::HexUInt16>::value
+                    || std::is_same<T, Core::JSON::HexSInt16>::value
+                    || std::is_same<T, Core::JSON::HexUInt32>::value
+                    || std::is_same<T, Core::JSON::HexSInt32>::value
+                    || std::is_same<T, Core::JSON::HexUInt64>::value
+                    || std::is_same<T, Core::JSON::HexSInt64>::value
+                ) {
+                    count += !TestJSONFormat<Core::JSON::EnumType<HexUInt64WithoutSetEnum>>("HUI64_0x1", FromTo, AllowChange); // Fails, unset 'set'
+                    count += !TestJSONFormat<Core::JSON::EnumType<HexUInt64WithoutSetEnum>>("\"HUI64_0x1\"", FromTo, AllowChange); // No exact match, unset 'set'
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<HexSInt64WithSetEnum>>("HSI64", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<HexSInt64WithSetEnum>>("\"HSI64_0x1\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020HSI64_0x1\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"HSI64_0x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020HSI64_0x1\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020HSI64_0x1\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+                }
+
+                if (   std::is_same<T, Core::JSON::OctUInt8>::value
+                    || std::is_same<T, Core::JSON::OctSInt8>::value
+                    || std::is_same<T, Core::JSON::OctUInt16>::value
+                    || std::is_same<T, Core::JSON::OctSInt16>::value
+                    || std::is_same<T, Core::JSON::OctUInt32>::value
+                    || std::is_same<T, Core::JSON::OctSInt32>::value
+                    || std::is_same<T, Core::JSON::OctUInt64>::value
+                    || std::is_same<T, Core::JSON::OctSInt64>::value
+                ) {
+                    count += !TestJSONFormat<Core::JSON::EnumType<OctUInt64WithoutSetEnum>>("OUI64_01", FromTo, AllowChange); // Fails, unset 'set'
+                    count += !TestJSONFormat<Core::JSON::EnumType<OctUInt64WithoutSetEnum>>("\"OUI64_01\"", FromTo, AllowChange); // No exact match, unset 'set'
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<OctSInt64WithSetEnum>>("OSI64", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<OctSInt64WithSetEnum>>("\"OSI64_01\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020OSI64_01\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"OSI64_01\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020OSI64_01\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020OSI64_01\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+                }
+
+                if (   std::is_same<T, Core::JSON::Float>::value
+                    || std::is_same<T, Core::JSON::Double>::value
+                ) {
+                    count += !TestJSONFormat<Core::JSON::EnumType<DoubleWithoutSetEnum>>("D_1.0", FromTo, AllowChange); // Fails, unset 'set'
+                    count += !TestJSONFormat<Core::JSON::EnumType<DoubleWithoutSetEnum>>("\"D_1.0\"", FromTo, AllowChange); // No exact match, unset 'set'
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DoubleWithSetEnum>>("D_1", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DoubleWithSetEnum>>("\"D_1.0\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020D_1.0\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\u0009\u000A\u000D\u0020\"D_1.0\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020D_1.0\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<DecSInt64WithSetEnum>>("\"\u0009\u000A\u000D\u0020D_1.0\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+                }
+
+                if (std::is_same<T, Core::JSON::Boolean>::value ) {
+#ifdef _UNSET
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("B_", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("B_T", FromTo, AllowChange); // No exact match
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"B_F\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\u0009\u000A\u000D\u0020B_F\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\u0009\u000A\u000D\u0020\"B_F\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"\u0009\u000A\u000D\u0020B_F\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"\u0009\u000A\u000D\u0020B_F\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+
+                    count += 1;
+#else
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("BW_", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"BW_F\"", FromTo, AllowChange); // No exact match
+
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\u0009\u000A\u000D\u0020BW_F\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, opaque
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\u0009\u000A\u000D\u0020\"BW_F\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"\u0009\u000A\u000D\u0020BW_F\"\u0009\u000A\u000D\u0020", FromTo, AllowChange); // Does not exist, invalid format
+                    count += !TestJSONFormat<Core::JSON::EnumType<BoolEnum>>("\"\u0009\u000A\u000D\u0020BW_F\u0009\u000A\u000D\u0020\"", FromTo, AllowChange); // Does not exist, invalid format
+
+                    count += 2;
+#endif
+                }
+            }
+        } while (FromTo);
+
+        return !malformed ? count == 10
+                          : count == 24
+               ;
+    }
+
+#ifdef _UNSET
+#undef _UNSET
+#endif
 
     template <typename T, typename S>
     bool TestDecUIntFromValue()
@@ -4324,6 +4633,47 @@ namespace Tests {
         EXPECT_EQ(count, 132);
         EXPECT_TRUE(TestContainerFromString<Core::JSON::String>(!malformed, count));
         EXPECT_EQ(count, 46);
+    }
+
+    TEST(JSONParser, EnumType)
+    {
+        constexpr const bool malformed = false;
+        uint8_t count = 0;
+
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::DecUInt8>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::DecUInt8>(!malformed, count));
+        EXPECT_EQ(count, 24);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::HexUInt8>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::HexUInt8>(!malformed, count));
+        EXPECT_EQ(count, 24);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::OctUInt8>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::OctUInt8>(!malformed, count));
+        EXPECT_EQ(count, 24);
+
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Float>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Float>(!malformed, count));
+        EXPECT_EQ(count, 24);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Double>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Double>(!malformed, count));
+        EXPECT_EQ(count, 24);
+
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Boolean>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::Boolean>(!malformed, count));
+        EXPECT_EQ(count, 24);
+
+        // String not viable for EnumType
+#ifdef _0
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::String>(malformed, count));
+        EXPECT_EQ(count, 10);
+        EXPECT_TRUE(TestEnumTypeFromString<Core::JSON::String>(!malformed, count));
+        EXPECT_EQ(count, 24);
+#endif
     }
 }
 }
