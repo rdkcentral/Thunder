@@ -250,25 +250,27 @@ namespace Core {
 					if (::_dup2(newDescriptor, _index) == -1) {
 						::_close(newDescriptor);
 						::CloseHandle(_handle);
+						_handle = Core::IResource::INVALID;
 					}
 					else {
 						ResourceMonitor::Instance().Register(*this);
 						::_close(newDescriptor);
 					}
 				}
-				return (_index != Core::IResource::INVALID);
+				return (_handle != Core::IResource::INVALID);
 			}
 			bool Close() {
-				if (_index != Core::IResource::INVALID) {
+				if (_handle != Core::IResource::INVALID) {
 					_flushall();
 					if (::_dup2(_copy, _index) != -1) {
 						::_close(_copy);
 						ResourceMonitor::Instance().Unregister(*this);
 						::CloseHandle(_handle);
+						_handle = Core::IResource::INVALID;
 					}
 					Reader::Flush();
 				}
-				return (true);
+				return (_handle == Core::IResource::INVALID);
 			}
 
 		private:
@@ -388,21 +390,23 @@ namespace Core {
 					_handle[1] = Core::IResource::INVALID;
 					Core::ResourceMonitor::Instance().Register(*this);
 				}
-				return (_handle[0] == Core::IResource::INVALID);
+				return (_handle[0] != Core::IResource::INVALID);
 			}
 			bool Close() {
 				if (_handle[0] != Core::IResource::INVALID) {
 
 					::fsync(_handle[0]);
-					::dup2(_copy, _index);
-					::close(_handle[0]);
-					::close(_copy);
-					Core::ResourceMonitor::Instance().Unregister(*this);
-					_handle[0] = Core::IResource::INVALID;
-					_copy = Core::IResource::INVALID;
-					Reader::Flush();
+
+					if (::dup2(_copy, _index) != -1) {
+						::close(_handle[0]);
+						::close(_copy);
+						Core::ResourceMonitor::Instance().Unregister(*this);
+						_handle[0] = Core::IResource::INVALID;
+						_copy = Core::IResource::INVALID;
+						Reader::Flush();
+					}
 				}
-				return (true);
+				return (_handle[0] == Core::IResource::INVALID);
 			}
 			Core::IResource::handle Origin() const {
 				return (_copy == Core::IResource::INVALID ? _index : _copy);
