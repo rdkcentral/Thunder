@@ -250,14 +250,14 @@ namespace Core {
 					if (::_dup2(newDescriptor, _index) == -1) {
 						::_close(newDescriptor);
 						::CloseHandle(_handle);
-						_handle = Core::IResource::INVALID;
+						_handle = nullptr;
 					}
 					else {
 						ResourceMonitor::Instance().Register(*this);
 						::_close(newDescriptor);
 					}
 				}
-				return (_handle != Core::IResource::INVALID);
+				return (_handle != nullptr);
 			}
 			bool Close() {
 				if (_handle != Core::IResource::INVALID) {
@@ -266,11 +266,11 @@ namespace Core {
 						::_close(_copy);
 						ResourceMonitor::Instance().Unregister(*this);
 						::CloseHandle(_handle);
-						_handle = Core::IResource::INVALID;
+						_handle = nullptr;
 					}
 					Reader::Flush();
 				}
-				return (_handle == Core::IResource::INVALID);
+				return (_handle == nullptr);
 			}
 
 		private:
