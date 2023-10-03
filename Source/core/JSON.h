@@ -443,29 +443,7 @@ namespace Core {
             INVALID,
             VALID
         };
-#ifdef _0
-        static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint32_t& offset, uint16_t& loaded)
-        {
-            ValueValidity validity = ValueValidity::INVALID;
-            const size_t nullTagLen = strlen(IElement::NullTag);
-            ASSERT(offset < nullTagLen);
-            while (offset < nullTagLen) {
-                if (loaded + 1 == maxLength) {
-                    validity = ValueValidity::UNKNOWN;
-                    break;
-                }
-                if (stream[loaded++] != IElement::NullTag[offset++]) {
-                    offset = 0;
-                    break;
-                }
-            }
 
-            if (offset == nullTagLen)
-                validity = ValueValidity::IS_NULL;
-
-            return validity;
-        }
-#endif
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
         class NumberType : public IElement, public IMessagePack {
         private:
@@ -642,8 +620,10 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[offset];
+
                 uint16_t loaded = 0;
 
                 bool completed = false, suffix = false;
@@ -1254,8 +1234,10 @@ namespace Core {
                 return loaded;
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[offset];
+
                 uint16_t loaded = 0;
 
                 bool completed = false, suffix = false;
@@ -1776,8 +1758,10 @@ namespace Core {
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[offset];
+
                 uint16_t loaded = 0;
 
                 bool completed = false, suffix = false;
@@ -2187,8 +2171,10 @@ namespace Core {
                 return loaded;
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[offset];
+
                 uint16_t loaded = 0;
 
                 bool completed = false, suffix = false, opaque = false;
@@ -2354,6 +2340,7 @@ namespace Core {
 
                 if (!(error.IsSet())) {
                     offset = 0;
+                    //_flagsAndCounters |= SetBit; only assignment operator should set the SetBit
                 } else {
                     _value.clear();
                     // Invalidate
@@ -2997,25 +2984,34 @@ namespace Core {
                     if ((_state & UNDEFINED) != 0) {
                         _parser.Null(true);
                     } else {
-                        _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
+                        _parser.FromString(Core::EnumerateType<ENUMERATE>(Value()).Data());
                     }
                 }
+
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[offset];
+
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset, error);
 
                 if (offset == 0) {
-
                     if (_parser.IsNull() == true) {
                         _state = (UNDEFINED|SET);
-                    } else if (_parser.IsSet() == true) {
+                    } else if (_parser.IsSet() == false) {
                         // Looks like we parsed the value. Lets see if we can find it..
                         Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
 
-                        if (converted.IsSet() == true) {
+                        // The 'string' might exist but the enum underlying type as JSON type might have a different value for intialization and assignment
+                        std::string sequence(converted.Data());
+
+                        sequence.append(sequence.length() < _parser.Value().length() ? _parser.Value().length() - sequence.length() : 0, '\0');
+
+                        bool result = sequence == _parser.Value();
+
+                        if (converted.IsSet() && result) {//sequence == _parser.Value()) {
                             _value = converted.Value();
                             _state = SET;
                         } else {
