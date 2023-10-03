@@ -4,11 +4,15 @@ on:
   push:
     branches: ["master"]
     paths-ignore:
+      - 'doc/**'
       - 'docs/**'
+      - 'ReleaseNotes/**'
   pull_request:
     branches: ["master"]
     paths-ignore:
+      - 'doc/**'
       - 'docs/**'
+      - 'ReleaseNotes/**'
   workflow_call:
 
 jobs:
