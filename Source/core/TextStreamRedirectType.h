@@ -260,7 +260,7 @@ namespace Core {
 				return (_handle != nullptr);
 			}
 			bool Close() {
-				if (_handle != Core::IResource::INVALID) {
+				if (_handle != nullptr) {
 					_flushall();
 					if (::_dup2(_copy, _index) != -1) {
 						::_close(_copy);
