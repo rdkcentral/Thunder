@@ -255,8 +255,8 @@ POP_WARNING()
     //------------------------------------------------------------------------
     // Serialize: binary buffer
     //------------------------------------------------------------------------
-    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result);
-    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength);
+    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter = '\0');
+    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter = '\0');
 
     //------------------------------------------------------------------------
     // Serialize: Base64
