@@ -10,6 +10,7 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
+    static string _background = _T("false");
 
 namespace Process {
 
@@ -546,6 +547,10 @@ int main(int argc, char** argv)
     // printf("Continueing, I hope you have attached the debugger\n");
 
     Process::ConsoleOptions options(argc, argv);
+
+    if ((Core::SystemInfo::GetEnvironment(_T("THUNDER_BACKGROUND"), _background) == true) && (_background == "true")) {
+        ::setvbuf(stdout, NULL, _IONBF, 0);
+    }
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");

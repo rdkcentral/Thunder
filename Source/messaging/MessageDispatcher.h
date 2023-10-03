@@ -79,9 +79,6 @@ namespace Messaging {
                 while (cursor.Offset() < cursor.Size()) {
                     uint16_t chunkSize = 0;
                     cursor.Peek(chunkSize);
-
-                    TRACE_L1("Flushing buffer data!");
-
                     cursor.Forward(chunkSize);
                 }
 
