@@ -4,16 +4,20 @@ on:
   push:
     branches: ["master"]
     paths-ignore:
+      - 'doc/**'
       - 'docs/**'
+      - 'ReleaseNotes/**'
   pull_request:
     branches: ["master"]
     paths-ignore:
+      - 'doc/**'
       - 'docs/**'
- 
+      - 'ReleaseNotes/**'
+
 jobs:
   Thunder:
     runs-on: ubuntu-20.04
-    
+
     strategy:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
@@ -32,7 +36,7 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        
+
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       id: thunder
@@ -41,7 +45,7 @@ jobs:
         regex_pattern: '(?<=\[DependsOn=Thunder:).*(?=\])'
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
-        
+
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
       uses: actions/checkout@v3
@@ -49,7 +53,7 @@ jobs:
         path: Thunder
         repository: rdkcentral/Thunder
         ref: ${{steps.thunder.outputs.first_match}}
-    
+
 # ----- ThunderTools -----
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
@@ -57,7 +61,7 @@ jobs:
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
- 
+
     - name: Regex ThunderTools
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
       id: tools
@@ -88,13 +92,13 @@ jobs:
           sudo apt install python3-pip
           pip install jsonref
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
-        
+
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
-        
+
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
@@ -117,10 +121,10 @@ jobs:
 
     - name: Run core unit tests
       run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
-        
+
     - name: Tar files
       run: tar -czvf ${{matrix.shared_libs == 'OFF' && 'Static-' || ''}}${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
-    
+
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
