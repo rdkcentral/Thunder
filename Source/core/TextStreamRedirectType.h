@@ -272,6 +272,10 @@ namespace Core {
 				}
 				return (_handle == nullptr);
 			}
+            Core::IResource::handle Origin() const
+            {
+                return (_copy == Core::IResource::INVALID ? _index : _copy);
+            }
 
 		private:
 			bool CreateOverlappedPipe(HANDLE& readPipe, int& writePipe)
@@ -475,7 +479,7 @@ namespace Core {
 			if (length > 0) {
 				dst.resize(length);
 				vsnprintf((char*)dst.data(), dst.size() + 1, format, ap);
-				write(_channel.Origin(), dst.c_str(), length);
+				_write(_channel.Origin(), dst.c_str(), length);
 			}
 			else {
 				dst = "Format error! format: ";

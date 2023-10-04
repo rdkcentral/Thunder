@@ -86,6 +86,7 @@
     <ClInclude Include="SystemInfo.h" />
     <ClInclude Include="TextFragment.h" />
     <ClInclude Include="TextReader.h" />
+    <ClInclude Include="TextStreamRedirectType.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />

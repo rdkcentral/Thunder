@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Module.h"
 #include "Control.h"
 #include "OperationalCategories.h"
 
@@ -60,13 +61,7 @@ namespace WPEFramework {
 			ConsoleStandardOut& operator=(const ConsoleStandardOut&) = delete;
 
 		private:
-			ConsoleStandardOut()
-#ifdef __WINDOWS__
-				: Core::TextStreamRedirectType<StandardOut>(::_fileno(stdout)) {
-#else
-				: Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO) {
-#endif
-			}
+            ConsoleStandardOut();
 
 		public:
 			~ConsoleStandardOut() = default;
@@ -87,16 +82,11 @@ namespace WPEFramework {
 			ConsoleStandardError& operator=(const ConsoleStandardError&) = delete;
 
 		private:
-			ConsoleStandardError()
-#ifdef __WINDOWS__
-				: Core::TextStreamRedirectType<StandardError>(::_fileno(stderr)) {
-#else
-				: Core::TextStreamRedirectType<StandardError>(STDERR_FILENO) {
-#endif
-			}
+            ConsoleStandardError();
 
 		public:
 			~ConsoleStandardError() = default;
+
 			static ConsoleStandardError& Instance()
 			{
 				static ConsoleStandardError singleton;
