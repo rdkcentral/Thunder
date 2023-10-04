@@ -31,6 +31,7 @@
     <ClInclude Include="MessageUnit.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="ConsoleStreamRedirect.h" />
+    <ClInclude Include="OperationalCategories.h" />
     <ClInclude Include="TextMessage.h" />
     <ClInclude Include="TraceCategories.h" />
     <ClInclude Include="TraceControl.h" />
@@ -38,11 +39,13 @@
     <ClInclude Include="messaging.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConsoleStreamRedirect.cpp" />
     <ClCompile Include="DirectOutput.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="MessageClient.cpp" />
     <ClCompile Include="MessageUnit.cpp" />
     <ClCompile Include="Module.cpp" />
+    <ClCompile Include="OperationalCategories.cpp" />
     <ClCompile Include="TraceCategories.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
