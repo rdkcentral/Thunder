@@ -193,7 +193,19 @@ public:
 
 Now we have created our generic client, we can construct a server. Here, the server will start and listen on a unix domain socket at `/tmp/testSocket` for 30 seconds before exiting.
 
+!!! hint
+	For UNIX domain sockets, The `Core::NodeId` allows supplying a group and/or permissions in the constructor. For example:
+	
+	```cpp
+	// Create a socket at /tmp/sampleSocket with permissions set to 0755
+	Core::NodeId("/tmp/sampleSocket|0755");
+	
+	// Create a socket with the group set to "administrator" and permissions set to 0655
+	Core::NodeId("/tmp/sampleSocket|0655,administrator");
+	```
+
 When `Open()` is called, it will register our socket with the resource monitor instance to monitor the socket for data. The `Open()` method takes a timeout time in seconds. If you want to wait forever, then supply `Core::infinite` as the timeout.
+
 
 ```c++ linenums="1"
 int main(int argc, char const* argv[])
