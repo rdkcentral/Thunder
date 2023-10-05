@@ -1,6 +1,6 @@
 ## Overview
 
-*ThunderShark* is a tool for analyzing COM-RPC traffic. It allows inspecting the out-of-process communication in a human-friendly presentation. 
+[*ThunderShark*](https://github.com/WebPlatformForEmbedded/ThunderShark) is a tool for analyzing COM-RPC traffic. It allows inspecting the out-of-process communication in a human-friendly presentation. 
 
 In particular it aids: 
 - profiling - surveying call duration and frame sizes, 
@@ -41,7 +41,7 @@ configuration field.
 
 For example in *Thunder*'s ```config.json```:
 ```json
-"communciator":"127.0.0.1:62000",
+"communicator":"127.0.0.1:62000",
 ```
 
 > Refer to plugin documentation on how to configure custom COM servers provided by plugins (e.g. *OpenCDM*).
