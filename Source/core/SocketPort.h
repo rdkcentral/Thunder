@@ -268,7 +268,7 @@ namespace WPEFramework {
         private:
             IResource::handle Descriptor() const override
             {
-                return (reinterpret_cast<IResource::handle>(m_Socket));
+                return (static_cast<IResource::handle>(m_Socket));
             }
             inline uint32_t SocketMode() const
             {
