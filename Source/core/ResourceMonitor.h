@@ -35,7 +35,7 @@ namespace Core {
         virtual ~IResource() = default;
 
 #ifdef __WINDOWS__
-        using handle = void*;
+        using handle = HANDLE;
         static constexpr handle INVALID = nullptr;
 #endif
 
