@@ -34,8 +34,15 @@ namespace Core {
     struct EXTERNAL IResource {
         virtual ~IResource() = default;
 
+#ifdef __WINDOWS__
+        using handle = void*;
+        static constexpr handle INVALID = nullptr;
+#endif
+
+#ifdef __UNIX__
         using handle = signed int;
         static constexpr handle INVALID = -1;
+#endif
 
         virtual handle Descriptor() const = 0;
         virtual uint16_t Events() = 0;
