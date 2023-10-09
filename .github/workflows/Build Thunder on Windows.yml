@@ -2,7 +2,7 @@ name: Build Thunder on Windows
 
 on:
   push:
-    branches: ["master"]
+    # branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
