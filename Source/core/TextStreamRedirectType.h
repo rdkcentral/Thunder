@@ -229,7 +229,7 @@ namespace Core {
 				: Reader(parent)
 				, _index(replacing)
 				, _copy(Core::IResource::INVALID)
-				, _handle(nullptr) {
+				, _handle(Core::IResource::INVALID) {
 				ASSERT(replacing != Core::IResource::INVALID);
 			}
 			~ReaderImplementation() {
@@ -250,27 +250,27 @@ namespace Core {
 					if (::_dup2(newDescriptor, _index) == -1) {
 						::_close(newDescriptor);
 						::CloseHandle(_handle);
-						_handle = nullptr;
+						_handle = Core::IResource::INVALID;
 					}
 					else {
 						ResourceMonitor::Instance().Register(*this);
 						::_close(newDescriptor);
 					}
 				}
-				return (_handle != nullptr);
+				return (_handle != Core::IResource::INVALID);
 			}
 			bool Close() {
-				if (_handle != nullptr) {
+				if (_handle != Core::IResource::INVALID) {
 					_flushall();
 					if (::_dup2(_copy, _index) != -1) {
 						::_close(_copy);
 						ResourceMonitor::Instance().Unregister(*this);
 						::CloseHandle(_handle);
-						_handle = nullptr;
+						_handle = Core::IResource::INVALID;
 					}
 					Reader::Flush();
 				}
-				return (_handle == nullptr);
+				return (_handle == Core::IResource::INVALID);
 			}
             Core::IResource::handle Origin() const
             {
@@ -352,7 +352,7 @@ namespace Core {
 		private:
 			Core::IResource::handle _index;
 			Core::IResource::handle _copy;
-			HANDLE _handle;
+			Core::IResource::handle _handle;
 		};
 
 		// friend class Core::SingletonType<ReaderImplementation::ResourceMonitor>;
