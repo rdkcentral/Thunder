@@ -1,0 +1,29 @@
+name: Documentation Required Checks
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - '!**'
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+  pull_request:
+    branches: ["master"]
+    paths:
+      - '!**'
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+
+jobs:
+  Thunder:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+
+    name: Build type - ${{matrix.build_type}}
+    steps:
+      - run: 'echo "Changes only to the documentation, so no build required" '
