@@ -123,6 +123,18 @@ namespace Web {
             uint16_t Decoder(uint8_t* dataFrame, uint16_t& receivedSize);
 
         private:
+            inline void GenerateMaskKey(uint8_t *maskKey)
+            {
+                uint32_t value;
+                // Generate a new mask value
+                Crypto::Random(value);
+                maskKey[0] = value & 0xFF;
+                maskKey[1] = (value >> 8) & 0xFF;
+                maskKey[2] = (value >> 16) & 0xFF;
+                maskKey[3] = (value >> 24) & 0xFF;
+            }
+
+        private:
             uint8_t _setFlags;
             uint8_t _progressInfo;
             uint32_t _pendingReceiveBytes;
