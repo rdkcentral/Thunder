@@ -479,7 +479,11 @@ namespace Core {
 			if (length > 0) {
 				dst.resize(length);
 				vsnprintf((char*)dst.data(), dst.size() + 1, format, ap);
+#ifdef __WINDOWS__
 				_write(_channel.Origin(), dst.c_str(), length);
+#else
+				write(_channel.Origin(), dst.c_str(), length);
+#endif
 			}
 			else {
 				dst = "Format error! format: ";
