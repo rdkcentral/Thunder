@@ -132,26 +132,30 @@ namespace Web {
                 result += usedSize;
             }
 
-            if (((_controlStatus & (REQUEST_CLOSE | REQUEST_PING | REQUEST_PONG)) != 0) && ((result + 1) < maxSendSize)) {
+            if (((_controlStatus & (REQUEST_CLOSE | REQUEST_PING | REQUEST_PONG)) != 0) && (result + (((_setFlags & MASKING_FRAME) != 0) ? 6 : 2) < maxSendSize)) {
                 if ((_controlStatus & REQUEST_CLOSE) != 0) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::CLOSE;
                     _controlStatus &= (~REQUEST_CLOSE);
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
                 if (((_controlStatus & REQUEST_PING) != 0) && ((result + 1) < maxSendSize)) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::PING;
                     _controlStatus &= (~REQUEST_PING);
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
                 if (((_controlStatus & REQUEST_PONG) != 0) && ((result + 1) < maxSendSize)) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::PONG;
                     _controlStatus &= (~REQUEST_PONG);
+                    dataFrame[result++] = (_setFlags & MASKING_FRAME);
                 }
 
-                dataFrame[result++] = (_setFlags & MASKING_FRAME);
-                // Now it seems only control message, hence append with masking keys
-                uint8_t maskKey[4];
-                GenerateMaskKey(maskKey);
-                ::memcpy(&dataFrame[result], &maskKey, 4);
-                result += 4;
+                if ((_setFlags & MASKING_FRAME) != 0) {
+                  // Now it seems only control message, hence append with masking keys
+                  uint8_t maskKey[4];
+                  GenerateMaskKey(maskKey);
+                  ::memcpy(&dataFrame[result], &maskKey, 4);
+                  result += 4;
+                }
             }
 
             return (result);
