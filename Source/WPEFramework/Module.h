@@ -40,7 +40,7 @@
 namespace WPEFramework {
 	namespace PluginHost {
 		static constexpr uint8_t Major = 4;
-		static constexpr uint8_t Minor = 0;
+		static constexpr uint8_t Minor = 4;
 		static constexpr uint8_t Patch = 0;
 	}
 }
