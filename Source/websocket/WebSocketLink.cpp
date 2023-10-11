@@ -91,14 +91,8 @@ namespace Web {
                         ::memmove(&dataFrame[2], &(dataFrame[4]), usedSize);
                     }
                 } else {
-                    uint32_t value;
-                    // Generate a new mask value
                     uint8_t maskKey[4];
-                    Crypto::Random(value);
-                    maskKey[0] = value & 0xFF;
-                    maskKey[1] = (value >> 8) & 0xFF;
-                    maskKey[2] = (value >> 16) & 0xFF;
-                    maskKey[3] = (value >> 24) & 0xFF;
+                    GenerateMaskKey(maskKey);
 
                     // Mask and insert the bytes on the right spots
                     uint8_t* source = &dataFrame[usedSize - 1 + 4];
@@ -138,7 +132,7 @@ namespace Web {
                 result += usedSize;
             }
 
-            if (((_controlStatus & (REQUEST_CLOSE | REQUEST_PING | REQUEST_PONG)) != 0) && ((result + 1) < maxSendSize)) {
+            if (((_controlStatus & (REQUEST_CLOSE | REQUEST_PING | REQUEST_PONG)) != 0) && (result + (((_setFlags & MASKING_FRAME) != 0) ? 6 : 2) < maxSendSize)) {
                 if ((_controlStatus & REQUEST_CLOSE) != 0) {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::CLOSE;
                     _controlStatus &= (~REQUEST_CLOSE);
@@ -153,6 +147,14 @@ namespace Web {
                     dataFrame[result++] = FINISHING_FRAME | Protocol::PONG;
                     _controlStatus &= (~REQUEST_PONG);
                     dataFrame[result++] = (_setFlags & MASKING_FRAME);
+                }
+
+                if ((_setFlags & MASKING_FRAME) != 0) {
+                  // Now it seems only control message, hence append with masking keys
+                  uint8_t maskKey[4];
+                  GenerateMaskKey(maskKey);
+                  ::memcpy(&dataFrame[result], &maskKey, 4);
+                  result += 4;
                 }
             }
 
