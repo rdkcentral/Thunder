@@ -81,7 +81,7 @@ namespace Core {
         ASSERT(err == 0);
 
         if ((err == 0) && (stackSize != 0)) {
-            size_t new_size = (stackSize < PTHREAD_STACK_MIN) ? PTHREAD_STACK_MIN : stackSize;
+            size_t new_size = (stackSize < static_cast<uint32_t>(PTHREAD_STACK_MIN)) ? PTHREAD_STACK_MIN : stackSize;
             err = pthread_attr_setstacksize(&attr, new_size);
             ASSERT(err == 0);
         }
