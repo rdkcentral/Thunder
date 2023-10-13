@@ -166,12 +166,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rdkcentral.github.com/Thunder/utils/networking/</loc>
+         <loc>https://rdkcentral.github.com/Thunder/utils/processes/</loc>
          <lastmod>2023-10-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rdkcentral.github.com/Thunder/utils/processes/</loc>
+         <loc>https://rdkcentral.github.com/Thunder/utils/sockets/</loc>
          <lastmod>2023-10-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
