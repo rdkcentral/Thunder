@@ -7,7 +7,7 @@ In particular it aids:
 - debugging - inspecting the parameters and return values passed, 
 - flow analysis - investigating the order of calls and notifications, keeping track of interfaces instance's lifetime. 
 
-It can also have an educational value - by showing their internals dissected it lets developers examine how COM frames are built.
+It can also have an educational value: by showing their internals dissected it lets developers examine how COM frames are built.
 
 *ThunderShark* consists of a dissector plugin for [*Wireshark*](https://www.wireshark.org) written in Lua and an extension to the *ProxyStubGenerator* (called "LuaGenerator") that compiles the 
 interface definitions to a format understandable by the plugin. *ThunderShark* is thus completely platform and operating system agnostic.
@@ -19,7 +19,7 @@ interface definitions to a format understandable by the plugin. *ThunderShark* i
 Firstly, the file ```protocol-thunder-comrpc.lua``` file needs to be placed in *Wireshark*'s plugins folder. In Windows this is typically ```%APPDATA%\Wireshark\plugins```
 or ```%APPDATA%\Roaming\Wireshark\plugins``` folder, while on Linux it's the ```~/.local/lib/wireshark/plugins``` folder.
 
-Secondly, using the *LuaGanerator* tool, interface definitions need to be created. 
+Secondly, using the [*LuaGanerator*](https://github.com/rdkcentral/ThunderTools/tree/master/LuaGenerator) tool, interface definitions need to be created. 
 
 Typical usage:
 ```
@@ -72,11 +72,11 @@ tied together and additionally the total call duration is calculated.
 
 > Tags are automatically assigned to instance IDs for convenince (i.e. the user can refer to "Shell_A" instead of actual value like 0x0074c18c).
 
-> The *TimeSync* plugin can alter system time during packet capture – this may break COM-RPC call duration calculation. For 100% reliable results the TimeSync plugin should be disabled.
+> The *TimeSync* plugin can alter system time during packet capture – this may break message order in the capture file and COM-RPC call duration calculation. For 100% reliable results the TimeSync plugin should be disabled.
 
 > With current Thunder COM-RPC implementation all ```AddRef()``` and many ```Release()``` calls are optimized away, being piggy-backed on other COM-RPC calls (note *Cached AddRef*, and *Cached Release* fields).
 
 Standard *Wireshark* practices can be used to build display filters and colorizing rules (e.g. to see failed calls use ```thunder-comrpc.invoke.hresult != 0```). Refer to *Wireshark* 
-[documenatation](https://www.wireshark.org/docs/) for more information about creating filtering rules.
+[documentation](https://www.wireshark.org/docs/) for more information about creating filtering rules.
 
 Several shortcuts in ```Tools/ThunderShark``` menu in *Wireshark* main window are provided for convenience.
