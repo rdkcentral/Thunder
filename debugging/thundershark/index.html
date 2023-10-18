@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.6a10b989.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.35e1ed30.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.356b1318.min.css">
@@ -77,6 +77,11 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
+      
+        
+        <a href="#overview" class="md-skip">
+          Skip to content
+        </a>
       
     </div>
     <div data-md-component="announce">
@@ -1544,6 +1549,17 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    ThunderShark
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1553,6 +1569,58 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capture" class="md-nav__link">
+    Capture
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analysis" class="md-nav__link">
+    Analysis
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1864,6 +1932,49 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capture" class="md-nav__link">
+    Capture
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analysis" class="md-nav__link">
+    Analysis
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1882,7 +1993,63 @@
 
   <h1>ThunderShark</h1>
 
-
+<h2 id="overview">Overview</h2>
+<p><a href="https://github.com/WebPlatformForEmbedded/ThunderShark"><em>ThunderShark</em></a> is a tool for analyzing COM-RPC traffic. It allows inspecting the out-of-process communication in a human-friendly presentation. </p>
+<p>In particular it aids: 
+- profiling - surveying call duration and frame sizes, 
+- debugging - inspecting the parameters and return values passed, 
+- flow analysis - investigating the order of calls and notifications, keeping track of interfaces instance's lifetime. </p>
+<p>It can also have an educational value: by showing their internals dissected it lets developers examine how COM frames are built.</p>
+<p><em>ThunderShark</em> consists of a dissector plugin for <a href="https://www.wireshark.org"><em>Wireshark</em></a> written in Lua and an extension to the <em>ProxyStubGenerator</em> (called "LuaGenerator") that compiles the 
+interface definitions to a format understandable by the plugin. <em>ThunderShark</em> is thus completely platform and operating system agnostic.</p>
+<blockquote>
+<p><em>Wireshark</em> version 4.0 or later is required.</p>
+</blockquote>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Firstly, the file <code>protocol-thunder-comrpc.lua</code> file needs to be placed in <em>Wireshark</em>'s plugins folder. In Windows this is typically <code>%APPDATA%\Wireshark\plugins</code>
+or <code>%APPDATA%\Roaming\Wireshark\plugins</code> folder, while on Linux it's the <code>~/.local/lib/wireshark/plugins</code> folder.</p>
+<p>Secondly, using the <a href="https://github.com/rdkcentral/ThunderTools/tree/master/LuaGenerator"><em>LuaGanerator</em></a> tool, interface definitions need to be created. </p>
+<p>Typical usage:
+<div class="highlight"><pre><span></span><code>./GenerateLua.sh [&lt;Thunder_dir&gt; &lt;ThunderInterfaces_dir&gt;]
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>LuaGenerator.bat [&lt;Thunder_dir&gt; &lt;ThunderInterfaces_dir&gt;]
+</code></pre></div></p>
+<p>The tool will produce a <code>protocol-thunder-comrpc.data</code> file that holds all interface definitions combined and converted to Lua data tables. This file must be
+placed in the same folder as <code>protocol-thunder-comrpc.lua</code> file (i.e. <em>Wireshark</em>'s plugins folder). This step should be repeated each time there is a change in the interfaces.</p>
+<blockquote>
+<p>No instrumentation (code changes) of <em>Thunder</em> core or plugins is required!</p>
+</blockquote>
+<h2 id="configuration">Configuration</h2>
+<p>COM servers that are going to be eavesdropped need to be configured to a socket port that can be easily captured, like TCP/IP. This is typically done by adjusting the appropriate
+configuration field.</p>
+<p>For example in <em>Thunder</em>'s <code>config.json</code>:
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;communicator&quot;</span><span class="p">:</span><span class="s2">&quot;127.0.0.1:62000&quot;</span><span class="p">,</span>
+</code></pre></div></p>
+<blockquote>
+<p>Refer to plugin documentation on how to configure custom COM servers provided by plugins (e.g. <em>OpenCDM</em>).</p>
+</blockquote>
+<p>This port configuration must be reflected in <em>ThunderShark</em>'s config in <em>Wireshark</em>: <code>Edit/Preferences/Protocols/Thunder COM-RPC Protocol</code>.</p>
+<p>An option to set instance ID size is also provided. It needs to be ensured that it matches the implementation (most often it will be 32-bit long).</p>
+<h2 id="capture">Capture</h2>
+<p>The COM traffic needs to be captured in a <em>Wireshark</em>-readable format, like <em>pcap</em>. </p>
+<p>On Linux <em>tcpdump</em> is the typical choice, but any other tool able to capture TCP/IP traffic and save it to a <em>pcap</em> file can be used. On Windows <em>Wireshark</em> itself can be used for this purpose.</p>
+<p>Example usage (executed on the DUT, normally before starting Thunder):
+<div class="highlight"><pre><span></span><code>tcpdump -i lo port 62000 -w /tmp/comrpc-traffic-dump.pcap
+</code></pre></div></p>
+<h2 id="analysis">Analysis</h2>
+<p>Once the <em>pcap</em> dump is loaded in <em>Wireshark</em> it's best to filter for <code>thunder-comrpc</code> protocol name to display only the relevant messages. Note that by the nature of TCP/IP protocol multiple COM-RPC 
+frames can be carried within a single TCP/IP packet and a single COM-RPC frame can be split over multiple TCP/IP packets.</p>
+<p>All fields dissected by the plugin can be filtered by, sorted by or searched for. Amongst others, they include: callsign, class, exchange_id for <em>announce</em> messages and method name, 
+parameters, results, interface instance_id and assigned tag for <em>invoke</em> messages. Each message is denoted from which process it originates and which process it addresses. Call and return messages are
+tied together and additionally the total call duration is calculated.</p>
+<blockquote>
+<p>Tags are automatically assigned to instance IDs for convenince (i.e. the user can refer to "Shell_A" instead of actual value like 0x0074c18c).</p>
+<p>The <em>TimeSync</em> plugin can alter system time during packet capture – this may break message order in the capture file and COM-RPC call duration calculation. For 100% reliable results the TimeSync plugin should be disabled.</p>
+<p>With current Thunder COM-RPC implementation all <code>AddRef()</code> and many <code>Release()</code> calls are optimized away, being piggy-backed on other COM-RPC calls (note <em>Cached AddRef</em>, and <em>Cached Release</em> fields).</p>
+</blockquote>
+<p>Standard <em>Wireshark</em> practices can be used to build display filters and colorizing rules (e.g. to see failed calls use <code>thunder-comrpc.invoke.hresult != 0</code>). Refer to <em>Wireshark</em> 
+<a href="https://www.wireshark.org/docs/">documentation</a> for more information about creating filtering rules.</p>
+<p>Several shortcuts in <code>Tools/ThunderShark</code> menu in <em>Wireshark</em> main window are provided for convenience.</p>
 
 
 
