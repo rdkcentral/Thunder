@@ -75,7 +75,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_tristate.cpp
    #test_valuerecorder.cpp
    #test_weblinkjson.cpp
-   #test_weblinktext.cpp
+   test_weblinktext.cpp
    #test_websocketjson.cpp
    #test_websockettext.cpp
    #test_workerpool.cpp
