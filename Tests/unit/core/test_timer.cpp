@@ -38,7 +38,7 @@ namespace Tests {
         }
 
     public:
-        uint64_t Timed(const uint64_t scheduledTime)
+        uint64_t Timed(VARIABLE_IS_NOT_USED const uint64_t scheduledTime)
         {
             if (!_timerDone) {
                 Core::Time nextTick = Core::Time::Now();
