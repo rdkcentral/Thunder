@@ -84,7 +84,7 @@ TEST(test_data, simple_data)
 TEST(test_linkeddata, simple_linkeddata)
 {
     uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};
-    uint8_t arr1[] ={};
+    uint8_t arr1[sizeof(arr)/sizeof(uint8_t)];
     const uint64_t offset= 0;
     DataElement objt1(10,arr);
     LinkedDataElement ob1;

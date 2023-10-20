@@ -23,7 +23,7 @@ add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_cyclicbuffer.cpp
    #test_databuffer.cpp
-   #test_dataelement.cpp
+   test_dataelement.cpp
    test_dataelementfile.cpp
    #test_doorbell.cpp
    test_enumerate.cpp
