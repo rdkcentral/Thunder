@@ -20,8 +20,8 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 
 add_executable(${TEST_RUNNER_NAME}
-   #../IPTestAdministrator.cpp
-   #test_cyclicbuffer.cpp
+   ../IPTestAdministrator.cpp
+   test_cyclicbuffer.cpp
    #test_databuffer.cpp
    #test_dataelement.cpp
    test_dataelementfile.cpp
