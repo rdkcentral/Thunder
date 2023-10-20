@@ -237,7 +237,7 @@ if(MESSAGING)
 
     map()
         kv(category "AnyCategory")
-        kv(enabled true)
+        kv(enabled false)
     end()
     ans(PLUGIN_TOOLONGWAIT_REPORTING)
 
