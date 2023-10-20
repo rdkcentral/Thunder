@@ -43,7 +43,7 @@ class ConsoleOptions : public Core::Options {
         }
 
      private:
-        virtual void Option(const TCHAR option, const TCHAR* argument)
+        virtual void Option(const TCHAR option, VARIABLE_IS_NOT_USED const TCHAR* argument)
         {
             switch (option) {
             case 'c':
