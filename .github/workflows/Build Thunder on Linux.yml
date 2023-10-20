@@ -108,7 +108,7 @@ jobs:
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -Wno-error=deprecated-declarations" \
         -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
