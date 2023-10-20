@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2022 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,28 @@
  */
 
 #include "Module.h"
+#include "ConsoleStreamRedirect.h"
 
-#ifdef BUILD_SHARED_LIBS
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+namespace WPEFramework {
+namespace Messaging {
+
+    ConsoleStandardOut::ConsoleStandardOut()
+#ifdef __WINDOWS__
+        : Core::TextStreamRedirectType<StandardOut>(::_fileno(stdout))
 #else
-MODULE_NAME_ARCHIVE_DECLARATION
+        : Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO)
 #endif
+    {
+    }
+
+    ConsoleStandardError::ConsoleStandardError()
+#ifdef __WINDOWS__
+        : Core::TextStreamRedirectType<StandardError>(::_fileno(stderr))
+#else
+        : Core::TextStreamRedirectType<StandardError>(STDERR_FILENO)
+#endif
+    {
+    }
+
+}
+}

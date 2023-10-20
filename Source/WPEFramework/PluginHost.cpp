@@ -68,6 +68,7 @@ namespace PluginHost {
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
+                Core::SystemInfo::SetEnvironment(_T("THUNDER_BACKGROUND"), _T("true"));
                 break;
 #endif
             case 'h':
@@ -595,6 +596,16 @@ POP_WARNING()
                     fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
             }
+
+            // Redirect the standard error to the messaging engine and the MessageControl plugin
+            // And if Thunder is running in the background, do the same for standard output
+            Messaging::ConsoleStandardError::Instance().Open();
+            if (_background == true) {
+                // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
+                // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
+                ::setvbuf(stdout, NULL, _IONBF, 0);
+                Messaging::ConsoleStandardOut::Instance().Open();
+            }
             
 #ifdef __CORE_WARNING_REPORTING__
             class GlobalConfig : public Core::JSON::Container {
@@ -835,6 +846,9 @@ POP_WARNING()
                                                                                               : "Unavailable");
                             printf("Bluetooth:    %s\n",
                                 (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
+                                                                                              : "Unavailable");
+                            printf("Cryptography: %s\n",
+                                (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
                                                                                               : "Unavailable");
                             printf("------------------------------------------------------------\n");
                             if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {

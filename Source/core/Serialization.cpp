@@ -158,42 +158,57 @@ POP_WARNING()
 
     static const TCHAR hex_chars[] = "0123456789abcdef";
 
-    void EXTERNAL ToHexString(const uint8_t object[], const uint16_t length, string& result)
+    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter)
     {
         ASSERT(object != nullptr);
 
-        uint16_t index = static_cast<uint16_t>(result.length());
-        result.resize(index + (length * 2));
+        uint32_t index = static_cast<uint32_t>(result.length());
+        result.resize(index + (length * 2) + (delimiter == '\0' ? 0 : (length - 1)));
 
         result[1] = hex_chars[object[0] & 0xF];
 
-        for (uint16_t i = 0, j = index; i < length; i++) {
-            if ((object[i] == '\\') && ((i + 3) < length) && (object[i + 1] == 'x')) {
-                result[j++] = object[i + 2];
-                result[j++] = object[i + 3];
-                i += 3;
-            } else {
-                result[j++] = hex_chars[object[i] >> 4];
-                result[j++] = hex_chars[object[i] & 0xF];
+        for (uint32_t i = 0, j = index; i < length; i++) {
+            if ((delimiter != '\0') && (i > 0)) {
+                result[j++] = delimiter;
             }
+            result[j++] = hex_chars[object[i] >> 4];
+            result[j++] = hex_chars[object[i] & 0xF];
         }
     }
 
-    uint16_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint16_t maxLength) {
+    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter)
+    {
         ASSERT(object != nullptr || maxLength == 0); 
         uint8_t highNibble;
         uint8_t lowNibble;
-        uint16_t bufferIndex = 0, strIndex = 0;
+        uint32_t bufferIndex = 0, strIndex = 0;
 
         // assume first character is 0 if length is odd. 
-        if (hexString.length() % 2 == 1) {
+        if ((delimiter == '\0') && (hexString.length() % 2 == 1)) {
             lowNibble = FromHexDigits(hexString[strIndex++]);
             object[bufferIndex++] = lowNibble;
         }
 
         while ((bufferIndex < maxLength) && (strIndex < hexString.length())) {
-            highNibble = FromHexDigits(hexString[strIndex++]);
-            lowNibble = FromHexDigits(hexString[strIndex++]);
+            if (delimiter == '\0') {
+                highNibble = FromHexDigits(hexString[strIndex++]);
+                lowNibble = FromHexDigits(hexString[strIndex++]);
+            }
+            else {
+                uint8_t nibble = FromHexDigits(hexString[strIndex++]);
+                if (hexString[strIndex] == delimiter) {
+                    highNibble = 0;
+                    lowNibble = nibble;
+                    ++strIndex;
+                }
+                else {
+                    highNibble = nibble;
+                    lowNibble = FromHexDigits(hexString[strIndex++]);
+                    if (hexString[strIndex] == delimiter) {
+                        ++strIndex;
+                    }
+                }
+            }
 
             object[bufferIndex++] = (highNibble << 4) + lowNibble; 
         }
@@ -206,10 +221,10 @@ POP_WARNING()
                                         "abcdefghijklmnopqrstuvwxyz"
                                         "0123456789+/";
 
-    void ToString(const uint8_t object[], const uint16_t length, const bool padding, string& result)
+    void ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result)
     {
         uint8_t state = 0;
-        uint16_t index = 0;
+        uint32_t index = 0;
         uint8_t lastStuff = 0;
 
         while (index < length) {
@@ -242,11 +257,11 @@ POP_WARNING()
         }
     }
 
-    uint16_t FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList)
+    uint32_t FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList)
     {
         uint8_t state = 0;
-        uint16_t index = 0;
-        uint16_t filler = 0;
+        uint32_t index = 0;
+        uint32_t filler = 0;
         uint8_t lastStuff = 0;
 
         while ((index < newValue.size()) && (filler < length)) {
@@ -289,6 +304,14 @@ POP_WARNING()
         length = filler;
 
         return (index);
+    }
+
+    uint16_t FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList)
+    {
+        uint32_t tempLength = length;
+        const uint16_t result = FromString(newValue, object, tempLength, ignoreList);
+        length = static_cast<uint16_t>(tempLength);
+        return (result);
     }
 
     bool CodePointToUTF16(const uint32_t codePoint, uint16_t& lowPart, uint16_t& highPart) {

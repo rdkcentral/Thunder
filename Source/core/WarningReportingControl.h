@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include <inttypes.h>
-
-#include "CallsignTLS.h"
-#include "IWarningReportingControl.h"
 #include "Module.h"
 #include "Optional.h"
 #include "SystemInfo.h"
@@ -30,10 +26,18 @@
 #include "Time.h"
 #include "Trace.h"
 #include "TypeTraits.h"
+#include "CallsignTLS.h"
+#include "IWarningReportingControl.h"
+
+#include <inttypes.h>
 #include <unordered_set>
 #include <vector>
 
-#pragma GCC system_header
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
 
 #ifndef __CORE_WARNING_REPORTING__
 
@@ -567,12 +571,21 @@ namespace WarningReporting {
         static WarningReportingControl<CATEGORY> _sWarningControl;
     };
 
+    #ifdef __WINDOWS__
+    template <typename CATEGORY>
+    typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
+    template <typename CONTROLCATEGORY>
+    std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
+    template <typename CONTROLCATEGORY>
+    std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
+    #else
     template <typename CATEGORY>
     EXTERNAL typename WarningReportingType<CATEGORY>::template WarningReportingControl<CATEGORY> WarningReportingType<CATEGORY>::_sWarningControl;
     template <typename CONTROLCATEGORY>
     EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_reportingBound(CONTROLCATEGORY::DefaultReportBound);
     template <typename CONTROLCATEGORY>
     EXTERNAL std::atomic<uint32_t> WarningReportingBoundsCategory<CONTROLCATEGORY>::_warningBound(CONTROLCATEGORY::DefaultWarningBound);
+    #endif
 }
 }
 

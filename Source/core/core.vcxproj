@@ -49,7 +49,6 @@
     <ClInclude Include="LockableContainer.h" />
     <ClInclude Include="Measurement.h" />
     <ClInclude Include="Media.h" />
-    <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="MessageException.h" />
     <ClInclude Include="MessageStore.h" />
     <ClInclude Include="Module.h" />
@@ -87,6 +86,7 @@
     <ClInclude Include="SystemInfo.h" />
     <ClInclude Include="TextFragment.h" />
     <ClInclude Include="TextReader.h" />
+    <ClInclude Include="TextStreamRedirectType.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
@@ -114,6 +114,7 @@
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageException.cpp" />
     <ClCompile Include="MessageStore.cpp" />
+    <ClCompile Include="Module.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
     <ClCompile Include="NodeId.cpp" />
     <ClCompile Include="Number.cpp" />

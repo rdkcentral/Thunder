@@ -37,7 +37,8 @@ namespace WPEFramework {
 namespace Core {
 
     namespace JSON {
-
+        constexpr size_t kContextMaxLength = 80;
+        
         struct EXTERNAL Error {
             explicit Error(string&& message)
                 : _message(std::move(message))
@@ -73,8 +74,6 @@ namespace Core {
                 , _pos(0)
             {
             }
-
-            static constexpr size_t kContextMaxLength = 80;
 
             string _message;
             string _context;

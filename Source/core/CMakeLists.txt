@@ -18,8 +18,13 @@
 set(TARGET ${NAMESPACE}Core)
 include(CompileSettings)
 
-add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
-	DoorBell.cpp
+find_package(Threads REQUIRED)
+find_package(ExecInfo)
+find_package(LIBRT)
+
+add_library(${TARGET}
+        Module.cpp
+	    DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -53,9 +58,6 @@ add_library(${TARGET} ${THUNDER_LIBRARY_TYPE}
         ResourceMonitor.cpp
         )
 
-if (NOT BUILD_LIB_AS_STATIC)
-	target_sources(${TARGET} PRIVATE Module.cpp)
-endif()
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -126,6 +128,7 @@ set(PUBLIC_HEADERS
         SystemInfo.h
         TextFragment.h
         TextReader.h
+        TextStreamRedirectType.h
         Thread.h
         ThreadPool.h
         Time.h
@@ -228,10 +231,10 @@ set_target_properties(${TARGET} PROPERTIES
           SOVERSION ${VERSION_MAJOR}
         )
 
-if (BUILD_LIB_AS_STATIC)
+if (NOT BUILD_SHARED_LIBS)
     set_property(TARGET  ${TARGET}
             APPEND PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE ON
-            )
+    )
 endif()
 
 

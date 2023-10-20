@@ -75,11 +75,6 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
 
-find_package(ZLIB REQUIRED)
-find_package(Threads REQUIRED)
-find_package(ExecInfo)
-find_package(LIBRT)
-
 if(CORE)
     add_subdirectory(core)
 endif()
