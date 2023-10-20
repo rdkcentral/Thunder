@@ -139,7 +139,7 @@ public:
         Core::SynchronousChannelType<Core::SocketPort>::Close(Core::infinite);
     }
 
-    virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
+    virtual uint16_t Deserialize(VARIABLE_IS_NOT_USED const uint8_t* dataFrame, VARIABLE_IS_NOT_USED const uint16_t availableData)
     {
         return 1;
     }
