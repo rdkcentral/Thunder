@@ -37,7 +37,7 @@ class SingletonTypeOne {
 
 class SingletonTypeTwo {
     public:
-        SingletonTypeTwo(string)
+        SingletonTypeTwo()
         {
         }
         virtual ~SingletonTypeTwo()
@@ -46,7 +46,7 @@ class SingletonTypeTwo {
 };
 class SingletonTypeThree {
     public:
-        SingletonTypeThree (string, string)
+        SingletonTypeThree ()
         {
         }
         virtual ~SingletonTypeThree()
@@ -59,11 +59,15 @@ TEST(test_singleton, simple_singleton)
     static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
     static SingletonTypeOne& object_sample = SingletonType<SingletonTypeOne>::Instance();
     EXPECT_EQ(&object1,&object_sample);
-    static SingletonTypeTwo& object2 = SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
-    static SingletonTypeThree& object3 = SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
-    SingletonType<SingletonTypeTwo>* x = (SingletonType<SingletonTypeTwo>*)&object2;
-    EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
-    SingletonType<SingletonTypeThree>* y = (SingletonType<SingletonTypeThree>*)&object3;
-    EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
+
+    static SingletonTypeTwo& object2 = SingletonType<SingletonTypeTwo>::Instance();
+    static SingletonTypeThree& object3 = SingletonType<SingletonTypeThree>::Instance();
+    EXPECT_NE(static_cast<void*>(&object2), static_cast<void*>(&object3));
+
+    SingletonType<SingletonTypeTwo>* x = static_cast<SingletonType<SingletonTypeTwo>*>(&object2);
+    SingletonType<SingletonTypeThree>* y = static_cast<SingletonType<SingletonTypeThree>*>(&object3);
+    // Implementation defined names
+    EXPECT_STRNE(x->ImplementationName().c_str(), y->ImplementationName().c_str());
+
     Singleton::Dispose();
 }

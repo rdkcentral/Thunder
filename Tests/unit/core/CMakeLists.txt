@@ -58,7 +58,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
-   #test_singleton.cpp
+   test_singleton.cpp
    #test_socketstreamjson.cpp
    #test_socketstreamtext.cpp
    test_statetrigger.cpp
