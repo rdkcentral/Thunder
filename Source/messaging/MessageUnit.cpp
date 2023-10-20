@@ -145,7 +145,14 @@ namespace WPEFramework {
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            string basePath = Core::Directory::Normalize(pathName) + _T("MessageDispatcher");
+            uint32_t permission = 0;
+            size_t position = pathName.find("|");
+            if (position != string::npos) {
+                Core::NumberType<uint16_t> number(pathName.substr(position + 1).c_str(), (pathName.length() - position));
+                permission = number.Value();
+            }
+
+            string basePath = Core::Directory::Normalize(pathName.substr(0, position));
             string identifier = _T("md");
 
             ASSERT(_dispatcher == nullptr);
@@ -153,10 +160,14 @@ namespace WPEFramework {
             if (Core::File(basePath).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
                 Core::Directory(basePath.c_str()).Destroy();
-            }
-
-            if (Core::Directory(basePath.c_str()).CreatePath() == false) {
-                TRACE_L1("Unable to create MessageDispatcher directory");
+            } else {
+                if (Core::Directory(basePath.c_str()).CreatePath() == false) {
+                    TRACE_L1("Unable to create MessageDispatcher directory");
+                } else {
+                    if (permission) {
+                        Core::Directory(basePath.c_str()).Permission(permission);
+                    }
+                }
             }
 
             _settings.Configure(basePath, identifier, socketPort, configuration, background, flushMode);

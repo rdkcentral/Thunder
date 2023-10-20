@@ -584,7 +584,7 @@ POP_WARNING()
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->MessageControlPath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
 
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__

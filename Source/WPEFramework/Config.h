@@ -357,6 +357,7 @@ namespace PluginHost {
 #endif
                 , ProxyStubPath()
                 , PostMortemPath(_T("/opt/minidumps"))
+                , MessageControlPath(_T("/tmp/MessageDispatcher"))
 #ifdef __WINDOWS__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
@@ -400,6 +401,7 @@ namespace PluginHost {
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
+                Add(_T("messagecontrolpath"), &MessageControlPath);
                 Add(_T("communicator"), &Communicator);
                 Add(_T("signature"), &Signature);
                 Add(_T("idletime"), &IdleTime);
@@ -444,6 +446,7 @@ namespace PluginHost {
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
+            Core::JSON::String MessageControlPath;
             Core::JSON::String Communicator;
             Core::JSON::String Redirect;
             Core::JSON::String Signature;
@@ -657,6 +660,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
+                _messageControlPath = config.MessageControlPath.Value();
                 _appPath = Core::File::PathName(Core::ProcessInfo().Executable());
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
@@ -830,6 +834,10 @@ POP_WARNING()
         inline const string& PostMortemPath() const
         {
             return (_postMortemPath);
+        }
+        inline const string& MessageControlPath() const
+        {
+            return (_messageControlPath);
         }
         inline bool PostMortemAllowed(PluginHost::IShell::reason why) const
         {
@@ -1028,6 +1036,7 @@ POP_WARNING()
         string _proxyStubPath;
         string _observableProxyStubPath;
         string _postMortemPath;
+        string _messageControlPath;
         string _pluginConfigPath;
         Core::NodeId _accessor;
         Core::NodeId _communicator;
