@@ -361,5 +361,102 @@ POP_WARNING()
         Monitor _monitor;
         uint32_t _connectionId;
     };
+
+    template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
+    class SmartControllerInterfaceType {
+
+    public:
+        SmartControllerInterfaceType(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
+        SmartControllerInterfaceType<INTERFACE, ENGINE>& operator=(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
+
+        SmartControllerInterfaceType()
+            : _controller(nullptr)
+            , _administrator()
+            , _connectionId(~0)
+        {
+        }
+        
+        ~SmartControllerInterfaceType()
+        {
+            ASSERT(_controller == nullptr);
+        }
+
+    public:
+        uint32_t ConnectionId() const {
+            return (_connectionId);
+        }
+        bool IsOperational() const
+        {
+            return (_controller != nullptr);
+        }
+        uint32_t Open(const uint32_t waitTime, const Core::NodeId& node)
+        {
+            Core::IUnknown* controller = RPC::ConnectorController::Instance().Controller();
+
+            ASSERT(_controller == nullptr);
+
+            if (controller != nullptr) {
+                // Seems like we already have a connection to the IShell of the Controller plugin, reuse it.
+                _controller = controller->QueryInterface<PluginHost::IShell>();
+                controller->Release();
+            }
+            if (_controller == nullptr) {
+                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
+            }
+            if (_controller != nullptr) {
+                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
+                if (channel.IsValid() == true) {
+                    _connectionId = channel->ConnectionId();
+                }
+            }
+
+            return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+        }
+        uint32_t Close(const uint32_t waitTime)
+        {
+            if (_controller != nullptr) {
+                _controller->Release();
+                _controller = nullptr;
+            }
+
+            return (Core::ERROR_NONE);
+        }
+
+        INTERFACE* Interface()
+        {
+            INTERFACE* result = nullptr;
+            if(_controller != nullptr) {
+                result = _controller->QueryInterface<INTERFACE>();
+            }
+            return result;
+        }
+        const INTERFACE* Interface() const
+        {
+            INTERFACE* result = nullptr;
+            if(_controller != nullptr) {
+                result = _controller->QueryInterface<INTERFACE>();
+            }
+            return result;
+        }
+        PluginHost::IShell* ControllerInterface()
+        {
+            return _controller;
+        }
+        const PluginHost::IShell* ControllerInterface() const
+        {
+            return _controller;
+        }
+
+        static Core::NodeId Connector()
+        {
+            return SmartInterfaceType<PluginHost::IShell>::Connector();
+        }
+
+    private:
+        PluginHost::IShell* _controller;
+        ConnectorType<ENGINE> _administrator;
+        uint32_t _connectionId;
+    };
+
 }
 }
