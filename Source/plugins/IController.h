@@ -21,11 +21,14 @@
 #include "Module.h"
 #include "IShell.h"
 
+#include "IControllerDeprecated.h"
+
 // @stubgen:include <plugins/IShell.h>
 
 namespace WPEFramework {
+
 namespace Exchange {
-namespace IController {
+namespace Controller {
 
     /* @json */
     struct EXTERNAL ISystemManagement : virtual public Core::IUnknown {
@@ -140,5 +143,7 @@ namespace IController {
         virtual Core::hresult CallStack(const string& index /* @index */, string& callstack /* @out @opaque */) const = 0;
     };
 }
+
 } // namespace Exchange
+
 } // namespace WPEFramework
