@@ -33,12 +33,12 @@ namespace Plugin {
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
-        , public Exchange::IController::IConfiguration
-        , public Exchange::IController::IDiscovery
-        , public Exchange::IController::ISystemManagement
-        , public Exchange::IController::IMetadata
-        , public Exchange::IController::ILifeTime
-        , public Exchange::IController::ILifeTime::INotification {
+        , public PluginHost::IController
+        , public Exchange::Controller::IConfiguration
+        , public Exchange::Controller::IDiscovery
+        , public Exchange::Controller::ISystemManagement
+        , public Exchange::Controller::IMetadata
+        , public Exchange::Controller::ILifeTime {
     public:
 	class SubsystemsData : public Core::JSON::Container {
         public:
@@ -333,8 +333,8 @@ namespace Plugin {
         Core::hresult Configuration(const string& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
-        Core::hresult Register(Exchange::IController::ILifeTime::INotification* notification) override;
-        Core::hresult Unregister(Exchange::IController::ILifeTime::INotification* notification) override;
+        Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification) override;
+        Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification) override;
 
         Core::hresult Activate(const string& callsign) override;
         Core::hresult Deactivate(const string& callsign) override;
@@ -351,21 +351,23 @@ namespace Plugin {
         Core::hresult Subsystems(string& response) const override;
         Core::hresult Version(string& response) const override;
 
-        void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) override;
-
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // for now we must support the deprecated interface for backwards compatibility reasons 
+
         BEGIN_INTERFACE_MAP(Controller)
         INTERFACE_ENTRY(PluginHost::IPlugin)
         INTERFACE_ENTRY(PluginHost::IWeb)
         INTERFACE_ENTRY(PluginHost::IDispatcher)
-        INTERFACE_ENTRY(Exchange::IController::IConfiguration)
-        INTERFACE_ENTRY(Exchange::IController::IDiscovery)
-        INTERFACE_ENTRY(Exchange::IController::ISystemManagement)
-        INTERFACE_ENTRY(Exchange::IController::IMetadata)
-        INTERFACE_ENTRY(Exchange::IController::ILifeTime)
-        INTERFACE_ENTRY(Exchange::IController::ILifeTime::INotification)
+        INTERFACE_ENTRY(PluginHost::IController)
+        INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
+        INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
+        INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
+        INTERFACE_ENTRY(Exchange::Controller::IMetadata)
+        INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
         END_INTERFACE_MAP
+
+POP_WARNING()
 
     private:
         //  ILocalDispatcher methods
@@ -407,7 +409,7 @@ namespace Plugin {
         std::list<string> _resumes;
         uint32_t _lastReported;
         std::vector<PluginHost::ISubSystem::subsystem> _externalSubsystems;
-        std::list<Exchange::IController::ILifeTime::INotification*> _observers;
+        std::list<Exchange::Controller::ILifeTime::INotification*> _observers;
     };
 }
 }
