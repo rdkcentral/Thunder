@@ -24,11 +24,12 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IShell.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::Exchange" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
+ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IControllerDeprecated.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::IController INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -56,6 +57,7 @@ set(PUBLIC_HEADERS
         IPlugin.h
         IShell.h
         IController.h
+        IControllerDeprecated.h
         Shell.h
         IStateControl.h
         StateControl.h
@@ -91,6 +93,10 @@ if (WARNING_REPORTING)
               ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
             )
 endif()
+
+# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
+# as usage of those deprecated methods is valid here
+target_compile_options(${TARGET_PROXYSTUBS} PRIVATE -Wno-deprecated-declarations)
 
 target_link_libraries(${TARGET_PROXYSTUBS}
         PRIVATE
