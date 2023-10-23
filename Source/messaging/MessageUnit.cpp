@@ -139,43 +139,33 @@ namespace WPEFramework {
         *        - create buffer where all InProcess components will write
         *
         * @param pathName volatile path (/tmp/ by default)
-        * @param socketPort triggers the use of using a IP socket in stead of a domain socket (in pathName) if the port value is not 0.
         */
-        uint32_t MessageUnit::Open(const string& pathName, const uint16_t socketPort, const string& configuration, const bool background, const flush flushMode)
+        uint32_t MessageUnit::Open(const string& pathName, const string& configuration, const bool background, const flush flushMode)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            uint32_t permission = 0;
-            size_t position = pathName.find("|");
-            if (position != string::npos) {
-                Core::NumberType<uint16_t> number(pathName.substr(position + 1).c_str(), (pathName.length() - position));
-                permission = number.Value();
-            }
-
-            string basePath = Core::Directory::Normalize(pathName.substr(0, position));
             string identifier = _T("md");
+            _settings.Configure(pathName, identifier, configuration, background, flushMode);
 
             ASSERT(_dispatcher == nullptr);
 
-            if (Core::File(basePath).IsDirectory() == true) {
+            if (Core::File(_settings.BasePath()).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
-                Core::Directory(basePath.c_str()).Destroy();
+                Core::Directory(_settings.BasePath().c_str()).Destroy();
             } else {
-                if (Core::Directory(basePath.c_str()).CreatePath() == false) {
+                if (Core::Directory(_settings.BasePath().c_str()).CreatePath() == false) {
                     TRACE_L1("Unable to create MessageDispatcher directory");
                 } else {
-                    if (permission) {
-                        Core::Directory(basePath.c_str()).Permission(permission);
+                    if (_settings.Permission()) {
+                        Core::Directory(_settings.BasePath().c_str()).Permission(_settings.Permission());
                     }
                 }
             }
 
-            _settings.Configure(basePath, identifier, socketPort, configuration, background, flushMode);
-
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, basePath, socketPort));
+            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
             if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {

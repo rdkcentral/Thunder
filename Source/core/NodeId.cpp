@@ -21,6 +21,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "FileSystem.h"
 #include "Portability.h"
 #include "Serialization.h"
 #include "TextFragment.h"
@@ -370,16 +371,8 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
                 hostName = hostName.substr(0, position);
             }
 
-            position = hostName.find("|");
-            if (position != string::npos) {
-                //string number = hostName.substr(position + 1);
-                Core::NumberType<uint16_t> number(hostName.substr(position + 1).c_str(), (hostName.length() - position));
-                m_structInfo.DomainSocket.un_access = number.Value();
-                m_hostName = hostName.substr(0, position);
-            } else {
-                m_structInfo.DomainSocket.un_access = static_cast<uint16_t>(~0);
-                m_hostName = hostName;
-            }
+            m_structInfo.DomainSocket.un_access = static_cast<uint16_t>(~0);
+            Core::ParsePathInfo<uint16_t>(hostName, m_hostName, m_structInfo.DomainSocket.un_access);
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
             strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path) - 1);

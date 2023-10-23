@@ -11,7 +11,6 @@ datapath = '@DATA_PATH@'
 systempath = '@SYSTEM_PATH@'
 proxystubpath = '@PROXYSTUB_PATH@'
 postmortempath = '@POSTMORTEM_PATH@'
-messagecontrolpath = '@MESSAGECONTROL_PATH@'
 redirect = '/Service/Controller/UI'
 ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
@@ -73,6 +72,8 @@ else:
 
 if boolean('@MESSAGING@'):
   messaging = JSON()
+  messaging.add("path", '@MESSAGECONTROL_PATH@')
+  messaging.add("port", '@MESSAGING_PORT@')
 
   __notification = {
        "category" : "Notification",

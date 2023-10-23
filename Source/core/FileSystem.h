@@ -21,6 +21,7 @@
 #define __FILESYSTEM_H
 
 #include "Portability.h"
+#include "Number.h"
 #include "Time.h"
 
 #ifdef __POSIX__
@@ -35,6 +36,18 @@
 
 namespace WPEFramework {
 namespace Core {
+
+    template <typename PERMISSIONTYPE>
+    static void ParsePathInfo(const string& pathInfo, string& path, PERMISSIONTYPE& permission)
+    {
+        size_t position = pathInfo.find("|");
+        if (position != string::npos) {
+            Core::NumberType<PERMISSIONTYPE> number(pathInfo.substr(position + 1).c_str(), (pathInfo.length() - position));
+            permission = number.Value();
+        }
+        path = pathInfo.substr(0, position);
+    }
+
     class EXTERNAL File {
     public:
 #ifdef __WINDOWS__
