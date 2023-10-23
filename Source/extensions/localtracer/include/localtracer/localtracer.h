@@ -110,7 +110,7 @@ namespace Messaging {
 
                 Core::Directory(Path.c_str()).CreatePath();
 
-                Messaging::MessageUnit::Instance().Open(Path, 0, "", false, Messaging::MessageUnit::OFF);
+                Messaging::MessageUnit::Instance().Open(Path, "", false, Messaging::MessageUnit::OFF);
 
                 singleton = new LocalTracer(Path);
             }
