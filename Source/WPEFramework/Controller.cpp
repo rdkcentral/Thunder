@@ -129,12 +129,11 @@ namespace Plugin {
             _service->DisableWebServer();
         }
 
-        Register(this);
-        Exchange::IController::JConfiguration::Register(*this, this);
-        Exchange::IController::JDiscovery::Register(*this, this);
-        Exchange::IController::JSystemManagement::Register(*this, this);
-        Exchange::IController::JLifeTime::Register(*this, this);
-        Exchange::IController::JMetadata::Register(*this, this);
+        Exchange::Controller::JConfiguration::Register(*this, this);
+        Exchange::Controller::JDiscovery::Register(*this, this);
+        Exchange::Controller::JSystemManagement::Register(*this, this);
+        Exchange::Controller::JLifeTime::Register(*this, this);
+        Exchange::Controller::JMetadata::Register(*this, this);
 
         // On succes return a name as a Callsign to be used in the URL, after the "service"prefix
         return (_T(""));
@@ -144,11 +143,11 @@ namespace Plugin {
     {
         ASSERT(_service == service);
 
-        Exchange::IController::JConfiguration::Unregister(*this);
-        Exchange::IController::JDiscovery::Unregister(*this);
-        Exchange::IController::JSystemManagement::Unregister(*this);
-        Exchange::IController::JLifeTime::Unregister(*this);
-        Exchange::IController::JMetadata::Unregister(*this);
+        Exchange::Controller::JConfiguration::Unregister(*this);
+        Exchange::Controller::JDiscovery::Unregister(*this);
+        Exchange::Controller::JSystemManagement::Unregister(*this);
+        Exchange::Controller::JLifeTime::Unregister(*this);
+        Exchange::Controller::JMetadata::Unregister(*this);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
@@ -165,7 +164,6 @@ namespace Plugin {
             _probe = nullptr;
         }
 
-        Unregister(this);
         _service->Unregister(&_systemInfoReport);
 
         /* stop the file serving over http.... */
@@ -835,7 +833,7 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Register(Exchange::IController::ILifeTime::INotification* notification)
+    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
     {
         _adminLock.Lock();
 
@@ -850,11 +848,11 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Unregister(Exchange::IController::ILifeTime::INotification* notification)
+    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
     {
         _adminLock.Lock();
 
-        std::list<Exchange::IController::ILifeTime::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
+        std::list<Exchange::Controller::ILifeTime::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
 
         // Make sure you do not unregister something you did not register !!!
         ASSERT(index != _observers.end());
@@ -1168,16 +1166,11 @@ ASSERT(_service != nullptr);
         return Core::ERROR_NONE;
     }
 
-    void Controller::StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
-    {
-        Exchange::IController::JLifeTime::Event::StateChange(*this, callsign, state, reason);
-    }
-
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         _adminLock.Lock();
 
-        std::list<Exchange::IController::ILifeTime::INotification*>::const_iterator index = _observers.begin();
+        std::list<Exchange::Controller::ILifeTime::INotification*>::const_iterator index = _observers.begin();
 
         while(index != _observers.end()) {
             (*index)->StateChange(callsign, state, reason);
@@ -1185,6 +1178,10 @@ ASSERT(_service != nullptr);
         }
 
         _adminLock.Unlock();
+
+        // also notify the JSON RPC listeners (if any)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+
     }
 }
 }
