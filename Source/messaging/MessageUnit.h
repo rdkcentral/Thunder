@@ -383,7 +383,7 @@ namespace WPEFramework {
                     return (_socketPort);
                 }
 
-                uint32_t Permission() const {
+                uint16_t Permission() const {
                     return (_permission);
                 }
 
@@ -415,7 +415,7 @@ namespace WPEFramework {
 
                     _settings.clear();
                     string messagingFolder;
-                    Core::ParsePathInfo<uint32_t>(jsonParsed.Path.Value(), messagingFolder, _permission);
+                    Core::ParsePathInfo(jsonParsed.Path.Value(), messagingFolder, _permission);
 
                     _path = Core::Directory::Normalize(basePath) + messagingFolder;
                     _identifier = identifier;
@@ -621,7 +621,7 @@ namespace WPEFramework {
                 string _path;
                 string _identifier;
                 uint16_t _socketPort;
-                uint32_t _permission;
+                uint16_t _permission;
                 uint8_t _mode;
             };
 

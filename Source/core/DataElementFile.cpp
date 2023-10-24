@@ -62,7 +62,7 @@ namespace Core {
 
         if ((type & File::CREATE) != 0) {
             m_File.Create(type);
-            m_File.Permission(type & ~(File::CREATE | Core::File::SHAREABLE));
+            m_File.Permission(type & 0xFFFF);
         } else {
             m_File.Open((type & File::USER_WRITE) == 0);
         }

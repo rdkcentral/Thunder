@@ -372,7 +372,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
             }
 
             m_structInfo.DomainSocket.un_access = static_cast<uint16_t>(~0);
-            Core::ParsePathInfo<uint16_t>(hostName, m_hostName, m_structInfo.DomainSocket.un_access);
+            Core::ParsePathInfo(hostName, m_hostName, m_structInfo.DomainSocket.un_access);
 
             m_structInfo.DomainSocket.sun_family = AF_UNIX;
             strncpy(m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof(m_structInfo.DomainSocket.sun_path) - 1);

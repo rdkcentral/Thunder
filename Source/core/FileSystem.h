@@ -37,16 +37,19 @@
 namespace WPEFramework {
 namespace Core {
 
-    template <typename PERMISSIONTYPE>
-    static void ParsePathInfo(const string& pathInfo, string& path, PERMISSIONTYPE& permission)
+    PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)
+
+    static void ParsePathInfo(const string& pathInfo, string& path, uint16_t& permission)
     {
         size_t position = pathInfo.find("|");
         if (position != string::npos) {
-            Core::NumberType<PERMISSIONTYPE> number(pathInfo.substr(position + 1).c_str(), (pathInfo.length() - position));
+            Core::NumberType<uint16_t> number(pathInfo.substr(position + 1).c_str(), (pathInfo.length() - position));
             permission = number.Value();
         }
         path = pathInfo.substr(0, position);
     }
+
+    POP_WARNING()
 
     class EXTERNAL File {
     public:
@@ -576,7 +579,7 @@ POP_WARNING()
 
         uint32_t User(const string& userName) const;
         uint32_t Group(const string& groupName) const;
-        uint32_t Permission(uint32_t flags) const;
+        uint32_t Permission(uint16_t flags) const;
 
     private:
         inline static uint32_t ExtensionOffset(const string& name)
@@ -785,7 +788,7 @@ POP_WARNING()
 
         uint32_t User(const string& userName) const;
         uint32_t Group(const string& groupName) const;
-        uint32_t Permission(uint32_t flags) const;
+        uint32_t Permission(uint16_t flags) const;
 
     private:
         string _name;
