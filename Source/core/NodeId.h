@@ -206,7 +206,7 @@ namespace Core {
             return (m_structInfo.Extension());
         }
 
-        inline uint32_t Rights() const
+        inline uint16_t Rights() const
         {
 #ifndef __WINDOWS__
             return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);

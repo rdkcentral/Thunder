@@ -378,7 +378,6 @@ namespace PluginHost {
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
-                , MessagingPort(0)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -418,7 +417,6 @@ namespace PluginHost {
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
-                Add(_T("messagingport"), &MessagingPort);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -462,7 +460,6 @@ namespace PluginHost {
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
-            Core::JSON::DecUInt16 MessagingPort;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -617,7 +614,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _stackSize(0)
-            , _messagingPort()
             , _inputInfo()
             , _processInfo()
             , _plugins()
@@ -676,7 +672,6 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
-                _messagingPort = config.MessagingPort.Value();
 
                 _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
                 if (_messagingCategoriesFile == true) {
@@ -875,9 +870,6 @@ POP_WARNING()
         inline string EthernetCard() const {
             return _ethernetCard;
         }
-        inline uint16_t MessagingPort() const {
-            return (_messagingPort);
-        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1048,7 +1040,6 @@ POP_WARNING()
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint32_t _stackSize;
-        uint16_t _messagingPort;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;

@@ -211,7 +211,7 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
-    uint32_t File::Permission(uint32_t flags) const
+    uint32_t File::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);
     }
@@ -395,7 +395,7 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
-    uint32_t Directory::Permission(uint32_t flags) const
+    uint32_t Directory::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);
     }
