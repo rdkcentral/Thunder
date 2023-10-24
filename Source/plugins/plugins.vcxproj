@@ -190,7 +190,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python  "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::IController -o "$(ProjectDir)generated\json" "$(ProjectDir)IController.h" --force</Command>
+      <Command>python  "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)generated\json" "$(ProjectDir)IController.h" --force</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
