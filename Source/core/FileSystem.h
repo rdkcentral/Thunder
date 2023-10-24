@@ -43,7 +43,7 @@ namespace Core {
     {
         size_t position = pathInfo.find("|");
         if (position != string::npos) {
-            Core::NumberType<uint16_t> number(pathInfo.substr(position + 1).c_str(), (pathInfo.length() - position));
+            Core::NumberType<uint16_t> number(pathInfo.substr(position + 1).c_str(), static_cast<uint32_t>(pathInfo.length() - position));
             permission = number.Value();
         }
         path = pathInfo.substr(0, position);

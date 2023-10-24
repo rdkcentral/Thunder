@@ -29,7 +29,8 @@
 namespace WPEFramework {
 namespace Plugin {
 
-    class Controller 
+    PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // for now we must support the deprecated interface for backwards compatibility reasons 
+    class Controller
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
@@ -353,21 +354,17 @@ namespace Plugin {
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // for now we must support the deprecated interface for backwards compatibility reasons 
-
         BEGIN_INTERFACE_MAP(Controller)
-        INTERFACE_ENTRY(PluginHost::IPlugin)
-        INTERFACE_ENTRY(PluginHost::IWeb)
-        INTERFACE_ENTRY(PluginHost::IDispatcher)
-        INTERFACE_ENTRY(PluginHost::IController)
-        INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
-        INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
-        INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
-        INTERFACE_ENTRY(Exchange::Controller::IMetadata)
-        INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
+            INTERFACE_ENTRY(PluginHost::IPlugin)
+            INTERFACE_ENTRY(PluginHost::IWeb)
+            INTERFACE_ENTRY(PluginHost::IDispatcher)
+            INTERFACE_ENTRY(PluginHost::IController)
+            INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
+            INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
+            INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
+            INTERFACE_ENTRY(Exchange::Controller::IMetadata)
+            INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
         END_INTERFACE_MAP
-
-POP_WARNING()
 
     private:
         //  ILocalDispatcher methods
@@ -411,6 +408,7 @@ POP_WARNING()
         std::vector<PluginHost::ISubSystem::subsystem> _externalSubsystems;
         std::list<Exchange::Controller::ILifeTime::INotification*> _observers;
     };
+    POP_WARNING()
 }
 }
 
