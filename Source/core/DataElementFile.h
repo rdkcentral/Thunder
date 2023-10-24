@@ -81,7 +81,7 @@ namespace Core {
         {
             return (m_File.Group(groupName));
         }
-        inline uint32_t Permission(uint32_t mode) const
+        inline uint32_t Permission(uint16_t mode) const
         {
             return (m_File.Permission(mode));
         }
