@@ -12,7 +12,7 @@ Values are depicted with respect to the [UTC timezone](https://en.wikipedia.org/
 
 ```c++
 // Local time instead of UTC
-Core::Time past(/*year*/ 2023, /*month* 10, /*day*/ 13, /*hours*/ 18, /*minutes*/ 02, /*seconds 0 ,/* milliseconds*/ 0, /*local time*/ true);
+Core::Time past(/*year*/ 2023, /*month*/ 10, /*day*/ 13, /*hours*/ 18, /*minutes*/ 02, /*seconds*/ 0 ,/* milliseconds*/ 0, /*local time*/ true);
 // Implicitly UTC
 const Core::Time now(Core::Time::Now());
 
@@ -35,9 +35,9 @@ In the given example a time object is intialized to October 10 of the year 2023 
 
 ## Date and time conversion options
 
-The external representation of time is a string formatted in a predefined pattern unless a single integer valued element is represented. Such patterns are intrinsically applied for the various conversions methods made available. Among such conversions  are the [RFC2311](https://www.rfc-editor.org/rfc/rfc2311) time and date specification, [RFC1036](https://www.rfc-editor.org/rfc/rfc1036) date specification, the [ISO8601]() date and time formats, and, [ANSI](https://webstore.ansi.org/standards/incits/ansiincits301997) date representation.
+The external representation of time is a string formatted in a predefined pattern unless a single integer valued element is represented. Such patterns are intrinsically applied for the various conversions methods made available.  It allows users to conveniently convert 'From' one representation 'To' another by using correspondingly named methods. Among such conversions are the [RFC2311](https://www.rfc-editor.org/rfc/rfc2311) time and date specification, [RFC1036](https://www.rfc-editor.org/rfc/rfc1036) date specification, the [ISO8601]() date and time formats, and, [ANSI](https://webstore.ansi.org/standards/incits/ansiincits301997) date representation.
 
-Users that are interested in a format other than any provided by the Gregorian calendar representations can use *clock ticks*. Ticks are merely a conversion unit given from the multiplication of a constant value and the milliseconds value. Historically, it was a measure of runtime code execution on a CPU. Thunder has defined the multiplier constant equal to 1000.
+Users that are interested in a format other than any provided by the Gregorian calendar representations may use *clock ticks*. Ticks are merely a conversion unit given from the multiplication of a constant value and the milliseconds value. Historically, it was a measure of runtime code execution on a CPU. Thunder has defined the multiplier constant equal to 1000.
 
 Although most people typically work with a Gregorian scheme time values can be easily converted to [Julian calendar](https://en.wikipedia.org/wiki/Julian_calendar) representation, and, back. With its corresponding [Julian days](https://en.wikipedia.org/wiki/Julian_day) being analogous to elapsed seconds since the epoch of Unix time.
 
