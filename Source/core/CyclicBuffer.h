@@ -169,7 +169,7 @@ namespace Core {
         {
             return (_buffer.Group(groupName));
         }
-        inline uint32_t Permission(uint32_t mode) const
+        inline uint32_t Permission(uint16_t mode) const
         {
             return (_buffer.Permission(mode));
         }

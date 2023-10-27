@@ -3,19 +3,19 @@
   "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "C:/ThunderWin/artifacts/Persistent",
-  "volatilepath": "C:/ThunderWin/artifacts/temp",
-  "datapath": "C:/ThunderWin/artifacts/Debug/Plugins",
-  "systempath": "C:/ThunderWin/artifacts/Debug",
-  "proxystubpath": "C:/ThunderWin/artifacts/ProxyStubs/Debug",
-  "communicator": "0.0.0.0:62000",
+  "persistentpath": "D:/Domotica/artifacts/Persistent",
+  "volatilepath": "D:/Domotica/artifacts/temp",
+  "datapath": "D:/Domotica/artifacts/Debug/Plugins",
+  "systempath": "D:/Domotica/artifacts/Debug",
+  "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
+  "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
-  "messagingport": 63000,
   "observe": {
-    "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
-    "configpath": "C:/ThunderWin/artifacts/dynamic/config"
+    "proxystubpath": "D:/Domotica/artifacts/dynamic/proxystubs",
+    "configpath": "D:/Domotica/artifacts/dynamic/config"
   },
   "messaging": {
+    "port": 63000,
     "logging": {
       "abbreviated": true,
       "settings": [
@@ -29,6 +29,14 @@
       "settings": [
         {
           "module": "ZWave",
+          "enabled": true
+        },
+        {
+          "module": "Plugin_ZWaveControl",
+          "enabled": true
+        },
+        {
+          "module": "Plugin_TestPlugin",
           "enabled": false
         },
         {
@@ -41,6 +49,10 @@
         },
         {
           "module": "Plugin_BridgeLink",
+          "enabled": false
+        },
+        {
+          "module": "Plugin_DNSServer",
           "enabled": true
         }
       ]
@@ -61,6 +73,17 @@
         "sleep": "1",
         "single": false,
         "crash": false,
+        "root": {
+          "mode": "Local"
+        }
+      }
+    },
+    {
+      "callsign": "TestPlugin",
+      "locator": "libTestPlugin.so",
+      "classname": "TestPlugin",
+      "autostart": false,
+      "configuration": {
         "root": {
           "mode": "Local"
         }
@@ -131,9 +154,10 @@
       "callsign": "ZWaveControl",
       "locator": "libZWaveControl.so",
       "classname": "ZWaveControl",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "port": "\\\\.\\COM5"
+        "port": "\\\\.\\COM4",
+        "key":  "ba:09:87:65:43:21:de:ad:be:ef:12:34:56:78:90:ab"
       }
     },
     {
@@ -258,9 +282,9 @@
     },
     {
       "autostart": false,
-      "callsign": "ScriptEngine",
-      "classname": "ScriptEngine",
-      "locator": "libScriptEngine.so"
+      "callsign": "RuleEngine",
+      "classname": "RuleEngine",
+      "locator": "libRuleEngine.so"
     },
     {
       "autostart": false,
@@ -291,7 +315,7 @@
       "callsign": "IOControl",
       "locator": "libIOControl.so",
       "classname": "IOControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "port": "\\\\.\\COM24",
         "pins": [
@@ -338,7 +362,7 @@
       "callsign": "OneWireControl",
       "locator": "libOneWireControl.so",
       "classname": "OneWireControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "port": "\\\\.\\COM24",
         "devices": [
@@ -354,7 +378,7 @@
       "callsign": "I2CControl",
       "locator": "libI2CControl.so",
       "classname": "I2CControl",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "port": "\\\\.\\COM24",
         "devices": [
@@ -386,7 +410,7 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": true
+      "autostart": false
     },
     {
       "callsign": "OpenCDMi",
@@ -431,6 +455,7 @@
       "locator": "libWebServer.so",
       "classname": "WebServer",
       "autostart": false,
+      "communicator": "127.0.0.1:2349",
       "configuration": {
         "port": 8080,
         "binding": "0.0.0.0",
@@ -455,7 +480,7 @@
     },
     {
       "callsign": "TimeSync",
-      "locator": "1libtimesync.so",
+      "locator": "libtimesync.so",
       "classname": "TimeSync",
       "autostart": false,
       "configuration": {
@@ -500,7 +525,8 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": false
+      "autostart": false,
+      "communicator": "127.0.0.1:5522"
     },
     {
       "callsign": "DIALServer",
@@ -554,6 +580,17 @@
       "autostart": false,
       "configuration": {
         "mapfile": "ir-remote.json"
+      }
+    },
+    {
+      "callsign": "DNSServer",
+      "locator": "libDNSServer.so",
+      "classname": "DNSServer",
+      "autostart": false,
+      "configuration": {
+        "bind": "0.0.0.0:53",
+        "multicast": "224.0.0.251:5353",
+        "server": [ "192.168.1.250:53", "8.8.8.8:53" ]
       }
     },
     {
