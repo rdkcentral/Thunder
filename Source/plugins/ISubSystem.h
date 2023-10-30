@@ -196,7 +196,7 @@ namespace PluginHost {
         virtual void Unregister(ISubSystem::INotification* notification) = 0;
 
         // Events setter and getters.
-        virtual void Set(const subsystem type, Core::IUnknown* information) = 0;
+        virtual Core::hresult Set(const subsystem type, Core::IUnknown* information) = 0;
         virtual const Core::IUnknown* Get(const subsystem type) const = 0;
         virtual bool IsActive(const subsystem type) const = 0;
 

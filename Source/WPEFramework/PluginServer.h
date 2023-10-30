@@ -1670,7 +1670,7 @@ namespace PluginHost {
             {
                 Lock();
 
-                uint32_t subsystems = _administrator.SubSystemInfo();
+                uint32_t subsystems = _administrator.SubSystemInfo().Value();
 
                 IShell::state current(State());
 
@@ -1882,7 +1882,7 @@ namespace PluginHost {
                         }
 
                         // Loading a library, in the static initializers, might register Service::MetaData structures. As
-                        // the dlopen has a process wide system lock, make sure that the, during open used lock of the 
+                        // the dlopen has a process wide system lock, make sure that the, during open used lock of the
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
@@ -1981,7 +1981,7 @@ namespace PluginHost {
                         _metadata = dynamic_cast<Core::IServiceMetadata*>(newIF);
                     }
 
-                    uint32_t events = _administrator.SubSystemInfo();
+                    uint32_t events = _administrator.SubSystemInfo().Value();
 
                     _precondition.Evaluate(events);
                     _termination.Evaluate(events);
@@ -1996,7 +1996,7 @@ namespace PluginHost {
                 _pluginHandling.Lock();
 
                 ASSERT(State() != ACTIVATED);
-  
+
                 IPlugin* currentIF = _handler;
 
                 if (_webRequest != nullptr) {
@@ -2822,6 +2822,87 @@ POP_WARNING()
                 ServiceMap& _parent;
                 Core::ThreadPool::JobType<Job> _job;
             };
+            class SubSystemsControlled : public ISubSystem {
+            public:
+                SubSystemsControlled() = delete;
+                SubSystemsControlled(const SubSystemsControlled&) = delete;
+                SubSystemsControlled& operator=(const SubSystemsControlled&) = delete;
+
+                SubSystemsControlled(SystemInfo& systemInfo, Server& server, Service* service)
+                    : _systemInfo(systemInfo)
+                    , _server(server)
+                    , _service(service)
+                {
+                }
+                ~SubSystemsControlled() override = default;
+
+            public:
+                Core::hresult Set(const ISubSystem::subsystem type, Core::IUnknown* information) override
+                {
+                    // This override attempts to block subsystem toggle calls that are not in CONTROLLED list of metadata.
+
+                    Core::hresult result = Core::ERROR_BAD_REQUEST;
+                    bool allowed = false;
+
+                    if ((_service == nullptr) || (_service->Callsign() == _server.Controller()->Callsign())) {
+                        allowed = true;
+                    }
+                    else {
+                        const ISubSystem::subsystem searchType = (type < ISubSystem::NEGATIVE_START ? type
+                            : static_cast<ISubSystem::subsystem>(type - ISubSystem::NEGATIVE_START));
+
+                        const std::vector<ISubSystem::subsystem>& controls = _service->SubSystemControl();
+
+                        allowed = (std::find(controls.begin(), controls.end(), searchType) != controls.end());
+                    }
+
+                    if (allowed == false) {
+                        SYSLOG(Logging::Error, (_T("Toggling a non-controlled state is not allowed")));
+                        ASSERT(false && "Toggiling a non-controlled subsystem is not allowed");
+                    }
+                    else {
+                        result = _systemInfo.Set(type, information);
+                    }
+
+                    return (result);
+                }
+
+            public:
+                void Register(ISubSystem::INotification* notification) override
+                {
+                    _systemInfo.Register(notification);
+                }
+                void Unregister(ISubSystem::INotification* notification) override
+                {
+                    _systemInfo.Unregister(notification);
+                }
+                const Core::IUnknown* Get(const ISubSystem::subsystem type) const override
+                {
+                    return (_systemInfo.Get(type));
+                }
+                bool IsActive(const ISubSystem::subsystem type) const override
+                {
+                    return (_systemInfo.IsActive(type));
+                }
+                string BuildTreeHash() const override
+                {
+                    return (_systemInfo.BuildTreeHash());
+                }
+                string Version() const override
+                {
+                    return (_systemInfo.Version());
+                }
+
+            public:
+                BEGIN_INTERFACE_MAP(SubSystemsControlled)
+                    INTERFACE_ENTRY(PluginHost::ISubSystem)
+                END_INTERFACE_MAP
+
+            private:
+                SystemInfo& _systemInfo;
+                Server& _server;
+                Service* _service;
+            };
             class ConfigObserver : public Core::FileSystemMonitor::ICallback {
             public:
                 ConfigObserver() = delete;
@@ -2938,13 +3019,17 @@ POP_WARNING()
             {
                 return (_server.Dispatcher().Submit(id, response));
             }
-            inline uint32_t SubSystemInfo() const
+            inline SystemInfo& SubSystemInfo()
             {
-                return (_subSystems.Value());
+                return (_subSystems);
             }
-            inline ISubSystem* SubSystemsInterface()
+            inline const SystemInfo& SubSystemInfo() const
             {
-                return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
+                return (_subSystems);
+            }
+            inline ISubSystem* SubSystemsInterface(Service* service = nullptr)
+            {
+                return (Core::Service<SubSystemsControlled>::Create<ISubSystem>(_subSystems, _server, service));
             }
             void Initialize(const string& callsign, PluginHost::IShell* entry)
             {
@@ -3244,7 +3329,7 @@ POP_WARNING()
                     {
                         MetaData::Channel& entry = metaData.Add();
                         entry.ID = element.Extension().Id();
-                        
+
                         entry.Activity = element.Source().IsOpen();
                         entry.JSONState = MetaData::Channel::state::COMRPC;
                         entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
@@ -3387,7 +3472,7 @@ POP_WARNING()
                 while (pluginDirectory.Next() == true) {
                     Core::File file(pluginDirectory.Current());
 
-                    if (file.IsDirectory() == false) { 
+                    if (file.IsDirectory() == false) {
                         if (file.Open(true) == false) {
                             SYSLOG(Logging::Fatal, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                         }
@@ -3464,18 +3549,19 @@ POP_WARNING()
                     _adminLock.Unlock();
                 }
             }
+            inline Core::WorkerPool& WorkerPool()
+            {
+                return (_server.WorkerPool());
+            }
+
+        public:
             void Evaluate()
             {
                 _adminLock.Lock();
 
-                // First stop all services running ...
                 ServiceContainer::iterator index(_services.begin());
 
                 RecursiveNotification(index);
-            }
-            inline Core::WorkerPool& WorkerPool()
-            {
-                return (_server.WorkerPool());
             }
 
         private:
@@ -3558,25 +3644,25 @@ POP_WARNING()
                 string Process(const string& message)
                 {
                     string result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);  
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, message);
                     return result;
                 }
                 Core::ProxyType<Core::JSONRPC::Message> Process(const string& token, const Core::ProxyType<Core::JSONRPC::Message>& message)
                 {
                     Core::ProxyType<Core::JSONRPC::Message> result;
-                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_DURATION_WARNING( { result = _service->Invoke(_ID, token, *message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Web::Response> Process(const Core::ProxyType<Web::Request>& message)
                 {
                     Core::ProxyType<Web::Response> result;
-                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_DURATION_WARNING( { result = _service->Process(*message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 Core::ProxyType<Core::JSON::IElement> Process(const Core::ProxyType<Core::JSON::IElement>& message)
                 {
                     Core::ProxyType<Core::JSON::IElement> result;
-                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);  
+                    REPORT_DURATION_WARNING( { result = _service->Inbound(_ID, message); }, WarningReporting::TooLongInvokeMessage, *message);
                     return result;
                 }
                 template <typename PACKAGE>
@@ -3635,7 +3721,7 @@ POP_WARNING()
                     _token = token;
                 }
                 void Dispatch() override
-                {            
+                {
                     ASSERT(_request.IsValid());
                     ASSERT(Job::HasService() == true);
 
@@ -3748,7 +3834,7 @@ POP_WARNING()
                     _request.Release();
 
                     Job::Clear();
-                    
+
                 }
                 string Identifier() const override {
                     string identifier;
@@ -3959,7 +4045,7 @@ POP_WARNING()
             {
                 PluginHost::Channel::Submit(entry);
             }
-            void Submit(const Core::ProxyType<Core::JSON::IElement>& entry) 
+            void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
             {
                 if (State() == Channel::ChannelState::WEB) {
                     Core::ProxyType<Web::Response> response = IFactories::Instance().Response();
@@ -4136,7 +4222,7 @@ POP_WARNING()
                     ASSERT(service.IsValid());
 
                     Core::ProxyType<Web::Response> response;
-                    
+
                     if (request->ServiceCall() == true) {
                         response = service->Evaluate(*request);
                     }
