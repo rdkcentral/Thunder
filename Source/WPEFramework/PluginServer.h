@@ -1046,14 +1046,18 @@ namespace PluginHost {
                         // Its a NOT value, so this bit should *not* be set and this 0
                         bitNr -= ISubSystem::NEGATIVE_START;
 
+                        ASSERT_VERBOSE(((_state & 0x3) == state::STATE_OR), "Must not use NOT_ in preconditions (subsystem 0x%08x)", input);
+
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        if (((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) != 0)) {
+                        if ((((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) != 0)) || ((_state & 0x3) == state::STATE_OR)) {
                             _state = STATE_ERROR;
                         }
                     }
                     else {
+                        ASSERT_VERBOSE(((_state & 0x3) == state::STATE_AND), "Must only use NOT_ in terminations (subsystem 0x%08x)", input);
+
                         // Make sure the event is only set once (POSITIVE or NEGATIVE)
-                        if (((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) == 0)) {
+                        if ((((_mask & (1 << bitNr)) != 0) && ((_events & (1 << bitNr)) == 0)) || ((_state & 0x3) == state::STATE_AND)) {
                             _state = STATE_ERROR;
                         }
                         else {
