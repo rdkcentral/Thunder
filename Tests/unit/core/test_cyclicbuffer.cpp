@@ -773,13 +773,12 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Try overwrite with size of Free()
-        uint8_t data3[buffer.Free()];
-        memset(&data3, 'C', sizeof(data3));
-        size = sizeof(data3) + 2;
+        std::vector<int8_t> data3(buffer.Free(), 'C');
+        size = data3.size() + 2;
         reserved = buffer.Reserve(size);
         if (reserved == size) {
             buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data3), sizeof(data3));
+            buffer.Write(reinterpret_cast<uint8_t*>(data3.data()), data3.size()*sizeof(uint8_t));
         }
         EXPECT_EQ(buffer.Used(), size);
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
@@ -829,7 +828,7 @@ namespace Tests {
     static int ClonedProcessFunc(void* arg) {
         Data* data = static_cast<Data*>(arg);
         uint32_t cyclicBufferSize = 10;
-        uint32_t shareableFlag = (data->shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (data->shareable == true) ? static_cast<std::underlying_type<Core::File::Mode>::type>(Core::File::SHAREABLE) : 0;
 
         CyclicBuffer buffer(data->bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
@@ -871,7 +870,7 @@ namespace Tests {
         SetSharePermissionsFromClonedProcess(bufferName, shareable);
 
         uint32_t cyclicBufferSize = 0;
-        uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (shareable == true) ? static_cast<std::underlying_type<Core::File::Mode>::type>(Core::File::SHAREABLE) : 0;
 
         CyclicBuffer buffer(bufferName.c_str(),
             Core::File::USER_READ | Core::File::USER_WRITE |
@@ -907,7 +906,7 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint32_t CyclicBufferSize = 10;
 
-        uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (shareable == true) ? static_cast<std::underlying_type<Core::File::Mode>::type>(Core::File::SHAREABLE) : 0;
         const uint32_t mode =
             (Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
             Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
@@ -924,7 +923,7 @@ namespace Tests {
             struct Data* data = (reinterpret_cast<struct Data*>(testAdmin.Data()));
             uint32_t result;
             uint32_t cyclicBufferSize = CyclicBufferSize;
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
 
             CyclicBufferTest* buffer = nullptr;
             DataElementFile* dataElementFile = nullptr;
@@ -938,7 +937,7 @@ namespace Tests {
 
             EXPECT_EQ(buffer->Size(), cyclicBufferSize);
             testAdmin.Sync("setup server");
-            EXPECT_EQ(buffer->Read(loadBuffer, buffer->Used()), 0u);
+            EXPECT_EQ(buffer->Read(loadBuffer.data(), buffer->Used()), 0u);
             testAdmin.Sync("setup client");
 
             if (data->shareable == true) {
@@ -958,19 +957,19 @@ namespace Tests {
 
                 testAdmin.Sync("client wrote");
 
-                result = buffer->Peek(loadBuffer, buffer->Used());
+                result = buffer->Peek(loadBuffer.data(), buffer->Used());
                 loadBuffer[result] = '\0';
                 EXPECT_EQ(result, 9u);
-                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
+                EXPECT_STREQ((char*)loadBuffer.data(), "bcdefghkl");
                 EXPECT_EQ(buffer->Used(), 9u);
 
                 testAdmin.Sync("server peek");
 
                 testAdmin.Sync("server start read");
-                result = buffer->Read(loadBuffer, buffer->Used());
+                result = buffer->Read(loadBuffer.data(), buffer->Used());
                 loadBuffer[result] = '\0';
                 EXPECT_EQ(result, 9u);
-                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
+                EXPECT_STREQ((char*)loadBuffer.data(), "bcdefghkl");
 
                 EXPECT_EQ(buffer->Used(), 0u);
                 testAdmin.Sync("server read");
@@ -992,7 +991,7 @@ namespace Tests {
 
             uint32_t result;
             uint32_t cyclicBufferSize = CyclicBufferSize;
-            uint8_t loadBuffer[cyclicBufferSize];
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize);
 
             CyclicBufferTest* buffer;
             DataElementFile* dataElementFile = nullptr;
@@ -1007,16 +1006,16 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             if (shareable == true) {
-                memset(loadBuffer, 0, cyclicBufferSize);
-                result = buffer->Read(loadBuffer, 1, false);
+                loadBuffer.assign(cyclicBufferSize, 0);
+                result = buffer->Read(loadBuffer.data(), 1, false);
                 EXPECT_EQ(result, static_cast<uint32_t>(0));
 
                 testAdmin.Sync("client read empty data");
                 testAdmin.Sync("server wrote");
-                result = buffer->Read(loadBuffer, 1, false);
+                result = buffer->Read(loadBuffer.data(), 1, false);
                 EXPECT_EQ(result, static_cast<uint32_t>(1));
                 loadBuffer[result] = '\0';
-                EXPECT_STREQ((char*)loadBuffer, "a");
+                EXPECT_STREQ((char*)loadBuffer.data(), "a");
                 testAdmin.Sync("client read");
 
                 string data = "kl";
@@ -1074,10 +1073,10 @@ namespace Tests {
             testAdmin.Sync("setup server");
             testAdmin.Sync("client wrote");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            uint32_t result = buffer.Read(loadBuffer, 4);
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            uint32_t result = buffer.Read(loadBuffer.data(), 4);
             loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "abcd");
+            EXPECT_STREQ((char*)loadBuffer.data(), "abcd");
 
             testAdmin.Sync("server read");
             string data = "klmnopq";
@@ -1122,8 +1121,8 @@ namespace Tests {
             testAdmin.Sync("setup client");
             testAdmin.Sync("setup server");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            EXPECT_EQ(buffer.Read(loadBuffer.data(), buffer.Used()), 0u);
 
             string data = "abcdefghi";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
@@ -1133,17 +1132,17 @@ namespace Tests {
             testAdmin.Sync("server read");
             testAdmin.Sync("server wrote");
 
-            result = buffer.Peek(loadBuffer, buffer.Used());
+            result = buffer.Peek(loadBuffer.data(), buffer.Used());
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
+            EXPECT_STREQ((char*)loadBuffer.data(), "efghi");
 
             testAdmin.Sync("client peek");
             testAdmin.Sync("client start read");
-            result = buffer.Read(loadBuffer, buffer.Used());
+            result = buffer.Read(loadBuffer.data(), buffer.Used());
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
+            EXPECT_STREQ((char*)loadBuffer.data(), "efghi");
 
             EXPECT_EQ(buffer.Used(), 0u);
             testAdmin.Sync("client read");
@@ -1179,13 +1178,13 @@ namespace Tests {
             testAdmin.Sync("server wrote");
             testAdmin.Sync("client wrote");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            result = buffer.Peek(loadBuffer, buffer.Used());
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            result = buffer.Peek(loadBuffer.data(), buffer.Used());
             loadBuffer[result] = '\0';
 
             testAdmin.Sync("server peek");
 
-            result = buffer.Read(loadBuffer, buffer.Used());
+            result = buffer.Read(loadBuffer.data(), buffer.Used());
             loadBuffer[result] = '\0';
 
             buffer.Alert();
@@ -1256,8 +1255,8 @@ namespace Tests {
 
             uint16_t size;
             buffer.Read(reinterpret_cast<uint8_t*>(&size), 2);
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            uint32_t result = buffer.Read(loadBuffer, size - 2);
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            uint32_t result = buffer.Read(loadBuffer.data(), size - 2);
             loadBuffer[result] = '\0';
 
             testAdmin.Sync("client read");
@@ -1307,8 +1306,8 @@ namespace Tests {
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            EXPECT_EQ(buffer.Read(loadBuffer.data(), buffer.Used()), 0u);
 
             uint16_t size = 9;
             string data = "abcdefi";
@@ -1322,19 +1321,19 @@ namespace Tests {
 
             buffer.Peek(reinterpret_cast<uint8_t*>(&size), 2);
             EXPECT_EQ(size, buffer.Used());
-            result = buffer.Peek(loadBuffer, size);
+            result = buffer.Peek(loadBuffer.data(), size);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 7u);
-            EXPECT_STREQ((char*)loadBuffer  +2, "lmnop");
+            EXPECT_STREQ((char*)loadBuffer.data() + 2, "lmnop");
 
             testAdmin.Sync("server peek");
             EXPECT_EQ(buffer.Free(), 3u);
             buffer.Read(reinterpret_cast<uint8_t*>(&size), 2);
             EXPECT_EQ(buffer.Used(), static_cast<uint32_t>(size - 2));
-            result = buffer.Read(loadBuffer, size - 2);
+            result = buffer.Read(loadBuffer.data(), size - 2);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "lmnop");
+            EXPECT_STREQ((char*)loadBuffer.data(), "lmnop");
             EXPECT_EQ(buffer.Free(), 10u);
             EXPECT_EQ(buffer.Used(), 0u);
 
@@ -1423,8 +1422,8 @@ namespace Tests {
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
             EXPECT_EQ(buffer.Used(), data.size() * 2);
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            result = buffer.Peek(loadBuffer, buffer.Used());
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            result = buffer.Peek(loadBuffer.data(), buffer.Used());
             loadBuffer[result] = '\0';
             testAdmin.Sync("server wrote and peeked");
 
@@ -1479,10 +1478,10 @@ namespace Tests {
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client unlocked");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
-            result = buffer.Read(loadBuffer, 4);
+            std::vector<uint8_t> loadBuffer(cyclicBufferSize + 1);
+            result = buffer.Read(loadBuffer.data(), 4);
             loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "jklm");
+            EXPECT_STREQ((char*)loadBuffer.data(), "jklm");
 
             testAdmin.Sync("client read");
 

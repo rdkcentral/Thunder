@@ -117,7 +117,7 @@ namespace Tests {
             this->Submit(jsonObject);
         }
 
-        virtual void Send(Core::ProxyType<Core::JSON::IElement>& jsonObject)
+        virtual void Send(VARIABLE_IS_NOT_USED Core::ProxyType<Core::JSON::IElement>& jsonObject)
         {
 	    }
 
@@ -172,7 +172,7 @@ namespace Tests {
             _dataPending.Unlock();
         }
 
-        virtual void Send(Core::ProxyType<Core::JSON::IElement>& jsonObject)
+        virtual void Send(VARIABLE_IS_NOT_USED Core::ProxyType<Core::JSON::IElement>& jsonObject)
 	    {
         }
 

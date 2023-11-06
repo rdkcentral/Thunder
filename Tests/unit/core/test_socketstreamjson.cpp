@@ -161,7 +161,7 @@ namespace Tests {
             }
         }
 
-        virtual void Send(Core::ProxyType<Core::JSON::IElement>& newElement)
+        virtual void Send(VARIABLE_IS_NOT_USED Core::ProxyType<Core::JSON::IElement>& newElement)
         {
         }
 

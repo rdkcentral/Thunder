@@ -61,7 +61,7 @@ namespace Tests {
             Submit(text);
         }
 
-        virtual void Send(const string& text)
+        virtual void Send(VARIABLE_IS_NOT_USED const string& text)
         {
         }
 
@@ -108,7 +108,7 @@ namespace Tests {
             _dataPending.Unlock();
 	    }
 
-        virtual void Send(const string& text)
+        virtual void Send(VARIABLE_IS_NOT_USED const string& text)
         {
         }
 

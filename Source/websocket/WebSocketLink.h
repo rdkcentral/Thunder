@@ -1155,17 +1155,17 @@ POP_WARNING()
                     BaseClass::Upgrade(_protocol, _path, _query, _origin);
                 }
             }
-            void Received(Core::ProxyType<Web::Response>& text) override
+            void Received(VARIABLE_IS_NOT_USED Core::ProxyType<Web::Response>& text) override
             {
                 // This is a pure WebSocket, no web responses !!!!
                 TRACE_L1("Received a response(full) on a Websocket (%d)", 0);
             }
-            void Send(const Core::ProxyType<Web::Request>& text) override
+            void Send(VARIABLE_IS_NOT_USED const Core::ProxyType<Web::Request>& text) override
             {
                 // This is a pure WebSocket, no web responses !!!!
                 ASSERT(false);
             }
-            void LinkBody(Core::ProxyType<Web::Response>& element) override
+            void LinkBody(VARIABLE_IS_NOT_USED Core::ProxyType<Web::Response>& element) override
             {
                 // This is a pure WebSocket, no web requests !!!!
                 TRACE_L1("Received a response(full) on a Websocket (%d)", 0);
@@ -1320,17 +1320,17 @@ POP_WARNING()
             {
                 _parent.StateChange();
             }
-            void Received(Core::ProxyType<Web::Request>& text) override
+            void Received(VARIABLE_IS_NOT_USED Core::ProxyType<Web::Request>& text) override
             {
                 // This is a pure WebSocket, no web responses !!!!
                 TRACE_L1("Received a request(full) on a Websocket (%d)", 0);
             }
-            void Send(const Core::ProxyType<Web::Response>& text) override
+            void Send(VARIABLE_IS_NOT_USED const Core::ProxyType<Web::Response>& text) override
             {
                 // This is a pure WebSocket, no web responses !!!!
                 ASSERT(false);
             }
-            void LinkBody(Core::ProxyType<Web::Request>& element) override
+            void LinkBody(VARIABLE_IS_NOT_USED Core::ProxyType<Web::Request>& element) override
             {
                 // This is a pure WebSocket, no web requests !!!!
                 TRACE_L1("Received a request(body) on a Websocket (%d)", 0);

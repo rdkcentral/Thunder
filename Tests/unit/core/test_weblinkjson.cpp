@@ -26,7 +26,6 @@
 namespace WPEFramework {
 namespace Tests {
 
-namespace {
     enum class CommandType {
         EXECUTESHELL,
         WIFISETTINGS,
@@ -96,8 +95,6 @@ namespace {
     };
 
     typedef Web::JSONBodyType<Command> CommandBody;
-
-    }
 
     class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> {
     private:
@@ -275,5 +272,4 @@ ENUM_CONVERSION_BEGIN(Tests::CommandType)
     { Tests::CommandType::FANCONTROL, _TXT("FanControl") },
     { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
 ENUM_CONVERSION_END(Tests::CommandType)
-
 } // WPEFramework
