@@ -130,7 +130,6 @@ namespace Core {
                 realObject.Clear();
 
                 while (handled < size) {
-
                     uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
@@ -145,7 +144,7 @@ namespace Core {
                     handled += loaded;
                 }
 
-                if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {
+                if (((offset != 0) /*|| (handled < size)*/) && (error.IsSet() == false)) {
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
@@ -222,10 +221,8 @@ namespace Core {
                     do {
                         readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
 
-                        if (readBytes == 0) {
-                            loaded = ~0;
-                        } else {
-                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset, error);
+                        if (readBytes) {
+                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, readBytes, offset, error);
 
                             ASSERT(loaded <= readBytes);
 
@@ -233,8 +230,7 @@ namespace Core {
                                 fileObject.Position(true, -(readBytes - loaded));
                             }
                         }
-
-                    } while ((loaded == readBytes) && (offset != 0));
+                    } while (readBytes && (loaded == readBytes) && offset);
 
                     if (offset != 0 && error.IsSet() == false) {
                         error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
@@ -270,6 +266,12 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
+            virtual bool IsCompleted() const
+            {
+// FIXME:
+                // Completed from successive data inputs
+                return true;
+            }
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const = 0;
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset)
             {
@@ -285,6 +287,7 @@ namespace Core {
                 return loaded;
             }
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) = 0;
+
         };
 
         struct EXTERNAL IMessagePack {
@@ -462,24 +465,32 @@ namespace Core {
                 : _set(0)
                 , _value(0)
                 , _default(0)
+                , _completed{false}
+                , _suffix{false}
             {
             }
             NumberType(const TYPE Value, const bool set = false)
                 : _set((set ? SET : 0) | (Value < 0 ? NEGATIVE : 0)) 
                 , _value(Value)
                 , _default(Value)
+                , _completed{false}
+                , _suffix{false}
             {
             }
             NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
             {
             }
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
             {
             }
             ~NumberType() override = default;
@@ -489,6 +500,9 @@ namespace Core {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+
                 return (*this);
             }
 
@@ -496,6 +510,9 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
 
                 return (*this);
             }
@@ -546,6 +563,9 @@ namespace Core {
             {
                 _set = 0;
                 _value = 0;
+
+                _completed = false;
+                _suffix = false;
             }
 
             // IElement iface:
@@ -610,10 +630,6 @@ namespace Core {
 
                 if (!offset) {
                     stream[loaded] = '\0';
-                } else {
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                 return (loaded);
@@ -621,16 +637,14 @@ namespace Core {
 
             uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
-                const char* stream = &data[offset];
+                const char* stream = &data[0];
 
                 uint16_t loaded = 0;
-
-                bool completed = false, suffix = false;
 
                 _value = 0;
                 _set = 0;
 
-                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
                     const char& ch = stream[loaded++];
 
                     switch (ch) {
@@ -642,15 +656,15 @@ namespace Core {
                                     FALLTHROUGH
                     case 0x20     : // Space
                                     // Insignificant white space
-                                    suffix = suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
+                                    _suffix = _suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && suffix) || ((_set & QUOTED) && suffix))) {
+                                    if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && _suffix) || ((_set & QUOTED) && _suffix))) {
                                         _set = ERROR;
                                         error = Error{"Terminated character sequence without (sufficient) data for NumberType<>"};
                                     }
 
-                                    completed = true;
+                                    _completed = true;
                                     continue;
                     case '-'    :   // Signed value
                                     if (!SIGNED) {
@@ -665,7 +679,7 @@ namespace Core {
                                         || (    (_set & NEGATIVE)
                                              && offset > 0
                                            )
-                                        || suffix
+                                        || _suffix
                                        ) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
@@ -675,19 +689,19 @@ namespace Core {
                                     _set |= NEGATIVE;
                                     break;
                     case '"'    :   // Quoted character sequence
-                                    if (!(_set & QUOTED) && offset > 0) {// || suffix) {
+                                    if (!(_set & QUOTED) && offset > 0) {// || _suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
-                                    if ((_set & QUOTED) && offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && suffix))) {
+                                    if ((_set & QUOTED) && offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && _suffix))) {
                                         _set = ERROR;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for NumberType<>"};
                                         continue;
                                     }
 
-                                    suffix = suffix || (_set & QUOTED);
+                                    _suffix = _suffix || (_set & QUOTED);
 
                                     _set |= QUOTED;
                                     break;
@@ -696,17 +710,17 @@ namespace Core {
                     case 'l'    :   // JSON value null
                                     ASSERT((offset - ((_set & QUOTED) ? 1 : 0)) < sizeof(NullTag));
 
-                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || ch != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || suffix) {
+                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || ch != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || _suffix) {
                                         _set = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
                                     }
 
-                                    suffix = suffix || (offset == 3 && !(_set & QUOTED)) || (offset == 4 && (_set & QUOTED));
+                                    _suffix = _suffix || (offset == 3 && !(_set & QUOTED)) || (offset == 4 && (_set & QUOTED));
 
                                     _set |= UNDEFINED;
                                     break;
-                    default     :   if (suffix || (_set & UNDEFINED)) {
+                    default     :   if (_suffix || (_set & UNDEFINED)) {
                                         _set = ERROR;
                                          error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
                                         continue;
@@ -818,7 +832,7 @@ namespace Core {
                     ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
+                if (_completed && loaded < maxLength) {
                     if (!(error.IsSet()) && !((_set & QUOTED) && stream[loaded] == '\0')) {
                         error = Error{"Input data contains trailing characters for NumberType<>"};
                     }
@@ -1051,6 +1065,9 @@ namespace Core {
             uint16_t _set;
             TYPE _value;
             TYPE _default;
+
+            bool _completed;
+            bool _suffix;
         };
 
         typedef NumberType<uint8_t, false, BASE_DECIMAL> DecUInt8;
@@ -1097,24 +1114,48 @@ namespace Core {
                 : _set(0)
                 , _value(0.0)
                 , _default(0.0)
+                , _completed{false}
+                , _suffix{false}
+                , _fraction{false}
+                , _exponent{false}
+                , _digit{false}
+                , _esign{false}
             {
             }
             FloatType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
+                , _completed{false}
+                , _suffix{false}
+                , _fraction{false}
+                , _exponent{false}
+                , _digit{false}
+                , _esign{false}
             {
             }
             FloatType(FloatType<TYPE>&& move)
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
+                , _fraction(std::move(move._fraction))
+                , _exponent(std::move(move._exponent))
+                , _digit(std::move(move._digit))
+                , _esign(std::move(move._esign))
             {
             }
             FloatType(const FloatType<TYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
+                , _fraction(copy._fraction)
+                , _exponent(copy._exponent)
+                , _digit(copy._digit)
+                , _esign(copy._esign)
             {
             }
             ~FloatType() override = default;
@@ -1124,6 +1165,13 @@ namespace Core {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _fraction = std::move(move._fraction);
+                _exponent = std::move(move._exponent);
+                _digit = std::move(move._digit);
+                _esign = std::move(move._esign);
+
                 return (*this);
             }
 
@@ -1131,6 +1179,13 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _fraction = RHS._fraction;
+                _exponent = RHS._exponent;
+                _digit = RHS._digit;
+                _esign = RHS._esign;
 
                 return (*this);
             }
@@ -1177,10 +1232,22 @@ namespace Core {
                 return ((_set & UNDEFINED) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _completed || _suffix || ((_fraction || (_exponent && _esign)) && _digit);
+            }
+
             void Clear() override
             {
                 _set = 0;
                 _value = 0;
+
+                _completed = false;
+                _suffix = false;
+                _fraction = false;
+                _exponent = false;
+                _digit = false;
+                _esign = false;
             }
 
             // IElement iface:
@@ -1235,28 +1302,22 @@ namespace Core {
 
             uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
-                const char* stream = &data[offset];
+                const char* stream = &data[0];
 
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false;
-
-                _value = 0.0;
-
-                bool fraction = false, exponent = false, digit = false, esign = false;
-
                 std::string strValue;
 
-                strValue.reserve(maxLength + 1);
+                strValue.reserve(strValue.size() + maxLength + 1);
 
-                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
                     const char& c = stream[loaded++];
 
                     if (c != '"') {
                         strValue += c;
                     }
 
-                    if (!exponent) {
+                    if (!_exponent) {
                         switch (c) {
                         case 0x09     : // Tabulation
                                         FALLTHROUGH
@@ -1268,14 +1329,14 @@ namespace Core {
                                         strValue.pop_back();
 
                                         // Insignificant white space
-                                        suffix = suffix || fraction || exponent || digit || (_set & UNDEFINED);
+                                        _suffix = _suffix || _fraction || _exponent || _digit || (_set & UNDEFINED);
                                         continue;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && !((digit && fraction) || ((_set & UNDEFINED) && suffix) || ((_set & QUOTED) && suffix))) {
+                                        if (offset > 0 && !((_digit && _fraction) || ((_set & UNDEFINED) && _suffix) || ((_set & QUOTED) && _suffix))) {
                                             _set = ERROR;
-                                            error = Error{"Terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
+                                            error = Error{"Terminated character sequence without (sufficient) data for _fractional part for FloatType<>"};
                                         }
-                                        completed = true;
+                                        _completed = true;
                                         continue;
                         case '-'    :   // Negative value
                                         if (   !(   !((_set & QUOTED) && offset == 0)
@@ -1285,29 +1346,29 @@ namespace Core {
                                                     && offset > 0
                                                    )
                                                 || (_set & UNDEFINED)
-                                                || suffix
+                                                || _suffix
                                            ) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
                                         _set |= NEGATIVE;
                                         break;
                         case '"'    :   // Quoted character sequence
-                                        if (!(_set & QUOTED) && offset > 0) {// || suffix) {
+                                        if (!(_set & QUOTED) && offset > 0) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
-                                        if ((_set & QUOTED) && offset > 0 && !((digit && fraction) || (_set & UNDEFINED))) {
+                                        if ((_set & QUOTED) && offset > 0 && !((_digit && _fraction) || (_set & UNDEFINED))) {
                                             _set = ERROR;
-                                            error = Error{"Quote terminated character sequence without (sufficient) data for fractional part for FloatType<>"};
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
-                                        suffix = suffix || (_set & QUOTED);
+                                        _suffix = _suffix || (_set & QUOTED);
 
                                         _set |= QUOTED;
                                         break;
@@ -1316,13 +1377,13 @@ namespace Core {
                         case 'l'    :   // JSON value null
                                         ASSERT(offset < sizeof(NullTag));
 
-                                        if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || suffix) {
+                                        if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || _suffix) {
                                             _set = ERROR;
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for FloatType<>"};
                                             continue;
                                         }
 
-                                        suffix = suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
+                                        _suffix = _suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
 
                                         _set = UNDEFINED;
                                         break;
@@ -1330,49 +1391,49 @@ namespace Core {
                                             || (offset == 0 && !(_set & QUOTED) && !(_set & NEGATIVE))
                                             || (offset == 1 && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
                                             || (offset == 2 && (_set & QUOTED) && (_set & NEGATIVE))
-                                            || (offset > 0 && fraction && !(_set & QUOTED) && !(_set & NEGATIVE))
-                                            || (offset > 1 && fraction && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
-                                            || (offset > 2 && fraction && (_set & QUOTED) && (_set & NEGATIVE))
-                                            || !digit
+                                            || (offset > 0 && _fraction && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                            || (offset > 1 && _fraction && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
+                                            || (offset > 2 && _fraction && (_set & QUOTED) && (_set & NEGATIVE))
+                                            || !_digit
                                             || (_set & UNDEFINED)
-                                            || suffix
+                                            || _suffix
                                            ) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional for FloatType<>"};
                                             continue;
                                         }
 
-                                        fraction = true;
+                                        _fraction = true;
 
-                                        // The next character should be a digit
-                                        digit = false;
+                                        // The next character should be a _digit
+                                        _digit = false;
                                         break;
                         case 'e'    :   FALLTHROUGH;
-                        case 'E'    :   if (suffix || (_set & UNDEFINED)) {
+                        case 'E'    :   if (_suffix || (_set & UNDEFINED)) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional for FloatType<>"};
                                             continue;
                                         }
 
-                                        if (!digit) {
+                                        if (!_digit) {
                                             _set = ERROR;
-                                            error = Error{"Character sequence without (sufficient) data to specify fractional part for FloatType<>"};
+                                            error = Error{"Character sequence without (sufficient) data to specify _fractional part for FloatType<>"};
                                             continue;
                                         }
 
-                                        exponent = true;
-                                        digit = false;
+                                        _exponent = true;
+                                        _digit = false;
                                         offset = 0;
                                         continue;
-                        default     :   if ((_set & UNDEFINED) || suffix) {
+                        default     :   if ((_set & UNDEFINED) || _suffix) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
                                         if (!(std::isdigit(c))) {
                                             _set = ERROR;
-                                            error = Error{"Invalid character '" + std::string(1, c) + "' for fractional part for FloatType<>"};
+                                            error = Error{"Invalid character '" + std::string(1, c) + "' for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
@@ -1382,11 +1443,11 @@ namespace Core {
                                             )
                                            ) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for fractional part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
                                             continue;
                                         }
 
-                                        digit = true;
+                                        _digit = true;
                         }
                     } else {
                         switch (c) {
@@ -1400,58 +1461,58 @@ namespace Core {
                                         strValue.pop_back();
 
                                         // Insignificant white space
-                                        suffix = suffix || digit || offset || esign;
+                                        _suffix = _suffix || _digit || offset || _esign;
                                         continue;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && !((digit && esign) || ((_set & QUOTED) && suffix))) {
+                                        if (offset > 0 && !((_digit && _esign) || ((_set & QUOTED) && _suffix))) {
                                             _set = ERROR;
-                                            error = Error{"Terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
+                                            error = Error{"Terminated character sequence without (sufficient) data for _exponential part for FloatType<>"};
                                         }
-                                        completed = true;
+                                        _completed = true;
                                         continue;
-                        case '"'    :   if (!(_set & QUOTED)) {// || suffix) {
+                        case '"'    :   if (!(_set & QUOTED)) {// || _suffix) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for exponential part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
                                             continue;
                                         }
 
-                                        if ((_set & QUOTED) && offset > 0 && !(digit && esign)) {
+                                        if ((_set & QUOTED) && offset > 0 && !(_digit && _esign)) {
                                             _set = ERROR;
-                                            error = Error{"Quote terminated character sequence without (sufficient) data for exponential part for FloatType<>"};
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for _exponential part for FloatType<>"};
                                             continue;
                                         }
 
-                                        suffix = suffix || (_set & QUOTED);
+                                        _suffix = _suffix || (_set & QUOTED);
                                         break;
                         case '-'    :   FALLTHROUGH;
-                        case '+'    :   if (offset || suffix) {
+                        case '+'    :   if (offset || _suffix) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for exponential part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
                                             continue;
                                         }
 
-                                        esign = true;
+                                        _esign = true;
                                         break;
-                        default     :   if (suffix) {
+                        default     :   if (_suffix) {
                                             _set = ERROR;
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for exponential part for FloatType<>"};
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
                                             continue;
                                         }
 
                                         if (!(std::isdigit(c))) {
                                             _set = ERROR;
-                                            error = Error{"Invalid Character '" + std::string(1, c) + "' for exponential part for FloatType<>"};
+                                            error = Error{"Invalid Character '" + std::string(1, c) + "' for _exponential part for FloatType<>"};
                                             continue;
                                         }
 
-                                        digit = true;
+                                        _digit = true;
                         }
                     }
 
                     ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
+                if (_completed && loaded < maxLength) {
                     if (!(error.IsSet()) && stream[loaded] != '\0') {
                         error = Error{"Input data contains trailing characters for FloatType<>"};
                     }
@@ -1589,6 +1650,13 @@ namespace Core {
             uint16_t _set;
             TYPE _value;
             TYPE _default;
+
+            bool _completed;
+            bool _suffix;
+            bool _fraction;
+            bool _exponent;
+            bool _digit;
+            bool _esign;
         };
 
         typedef FloatType<float> Float;
@@ -1607,21 +1675,29 @@ namespace Core {
         public:
             Boolean()
                 : _value(None)
+                , _completed{false}
+                , _suffix{false}
             {
             }
 
             Boolean(const bool Value)
                 : _value(Value ? DefaultBit : None)
+                , _completed{false}
+                , _suffix{false}
             {
             }
 
             Boolean(Boolean&& move) noexcept
                 : _value(std::move(move._value))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
             {
             }
 
             Boolean(const Boolean& copy)
                 : _value(copy._value)
+                , _completed{copy._completed}
+                , _suffix{copy._suffix}
             {
             }
 
@@ -1632,6 +1708,9 @@ namespace Core {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (move._value & (SetBit | ValueBit)) | ((move._value & (SetBit)) ? (move._value & DefaultBit) : (_value & DefaultBit));
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+
                 return (*this);
             }
 
@@ -1639,6 +1718,9 @@ namespace Core {
             {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (RHS._value & (SetBit | ValueBit)) | ((RHS._value & (SetBit)) ? (RHS._value & DefaultBit) : (_value & DefaultBit));
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
 
                 return (*this);
             }
@@ -1685,9 +1767,17 @@ namespace Core {
                 return ((_value & NullBit) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _completed || _suffix;
+            }
+
             void Clear() override
             {
                 _value = (_value & DefaultBit);
+
+                _completed = false;
+                _suffix = false;
             }
 
             // IElement iface:
@@ -1748,10 +1838,6 @@ namespace Core {
 
                 if (!offset) {
                     stream[loaded] = '\0';
-                } else {
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                 return (loaded);
@@ -1759,15 +1845,11 @@ namespace Core {
 
             uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
-                const char* stream = &data[offset];
+                const char* stream = &data[0];
 
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false;
-
-                _value = None;
-
-                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
                     const char& c = stream[loaded++];
 
                     switch (c) {
@@ -1779,42 +1861,42 @@ namespace Core {
                                     FALLTHROUGH
                     case 0x20     : // Space
                                     // Insignificant white space
-                                    suffix = suffix || (_value & SetBit) || (_value & NullBit);
+                                    _suffix = _suffix || (_value & SetBit) || (_value & NullBit);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if (offset > 0 && !(((_value & SetBit) && suffix) || ((_value & QuotedBit) && suffix) || ((_value & NullBit) && suffix))) {
+                                    if (offset > 0 && !(((_value & SetBit) && _suffix) || ((_value & QuotedBit) && _suffix) || ((_value & NullBit) && _suffix))) {
                                         _value = ErrorBit;
                                         error = Error{"Terminated character sequence without (sufficient) data for Boolean"};
                                     }
 
-                                    completed = true;
+                                    _completed = true;
                                     continue;
                     case '"'    :   // Quoted character sequence
-                                    if (!(_value & QuotedBit) && offset > 0) {// || suffix) {
+                                    if (!(_value & QuotedBit) && offset > 0) {// || _suffix) {
                                         _value = ErrorBit;
                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
                                         continue;
                                     }
 
-                                    if ((_value & QuotedBit) && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && suffix)))) {
+                                    if ((_value & QuotedBit) && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && _suffix)))) {
                                         _value = ErrorBit;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for Boolean"};
                                         continue;
                                     }
 
-                                    suffix = suffix || (_value & QuotedBit);
+                                    _suffix = _suffix || (_value & QuotedBit);
 
                                     _value |= QuotedBit;
                                     break;
                     case '1'    :   _value |= ValueBit;
                                     FALLTHROUGH;
-                    case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || suffix || (_value & NullBit)) {
+                    case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || _suffix || (_value & NullBit)) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
                                         continue;
                                     }
                                     _value |= SetBit;
-                                    suffix = true;
+                                    _suffix = true;
                                     break;
                     default     :   const uint32_t index = _value & QuotedBit ? offset - 1 : offset; // index = offset - quoted
 
@@ -1828,7 +1910,7 @@ namespace Core {
                                             ||  (index <= (sizeof(IElement::TrueTag)  - 1) && stream[loaded - 1] == IElement::TrueTag[index]  && !(_value & NullBit))
                                             ||  (index <= (sizeof(IElement::FalseTag) - 1) && stream[loaded - 1] == IElement::FalseTag[index] && !((_value & ValueBit) || (_value & NullBit)))
                                            )
-                                        || suffix
+                                        || _suffix
                                        ) {
                                         _value = ErrorBit;
                                          error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
@@ -1839,7 +1921,7 @@ namespace Core {
                                     _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::TrueTag[index]  ? SetBit | ValueBit : None;
                                     _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::FalseTag[index] ? SetBit            : None;
 
-                                    suffix =    ((_value & SetBit) && (_value & NullBit)  && index == (sizeof(IElement::NullTag)  - (IElement::NullTag[sizeof(IElement::NullTag)   - 1] == '\0' ? 2 : 1)))
+                                    _suffix =    ((_value & SetBit) && (_value & NullBit)  && index == (sizeof(IElement::NullTag)  - (IElement::NullTag[sizeof(IElement::NullTag)   - 1] == '\0' ? 2 : 1)))
                                              || ((_value & SetBit) && (_value & ValueBit) && index == (sizeof(IElement::TrueTag)  - (IElement::TrueTag[sizeof(IElement::TrueTag)   - 1] == '\0' ? 2 : 1)))
                                              || ((_value & SetBit)                        && index == (sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ? 2 : 1)))
                                              ;
@@ -1848,7 +1930,7 @@ namespace Core {
                     ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
+                if (_completed && loaded < maxLength) {
                     if (!(error.IsSet()) && !((_value & QuotedBit) && stream[loaded] == '\0')) {
                         error = Error{"Input data contains trailing characters for Boolean"};
                     }
@@ -1856,7 +1938,6 @@ namespace Core {
 
                 if (!(error.IsSet())) {
                     offset = 0;
-//                    _value != (_value & NullBit) ? None : SetBit;
                 }
 
                 return (loaded);
@@ -1896,6 +1977,9 @@ namespace Core {
 
         private:
             uint8_t _value;
+
+            bool _completed;
+            bool _suffix;
         };
 
         class EXTERNAL String : public IElement, public IMessagePack {
@@ -1919,6 +2003,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
             }
 
@@ -1927,6 +2018,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value.c_str(), _default);
             }
@@ -1936,6 +2034,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value, _default);
             }
@@ -1946,6 +2051,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value, _default);
             }
@@ -1956,6 +2068,13 @@ namespace Core {
                 , _value(std::move(move._value))
                 , _storage(std::move(move._storage))
                 , _flagsAndCounters(std::move(move._flagsAndCounters))
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
             }
 
@@ -1964,6 +2083,13 @@ namespace Core {
                 , _value(copy._value)
                 , _storage(copy._storage)
                 , _flagsAndCounters(copy._flagsAndCounters)
+                , _markerContainerStartCount{copy._markerContainerStartCount}
+                , _markerContainerEndCount{copy._markerContainerEndCount}
+                , _markerArrayStartCount{copy._markerArrayStartCount}
+                , _markerArrayEndCount{copy._markerArrayEndCount}
+                , _completed{copy._completed}
+                , _suffix{copy._suffix}
+                , _opaque{copy._opaque}
             {
             }
 
@@ -1974,6 +2100,14 @@ namespace Core {
                 Core::ToString(RHS.c_str(), _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 
@@ -1982,6 +2116,15 @@ namespace Core {
                 Core::ToString(RHS, _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 
@@ -1991,6 +2134,15 @@ namespace Core {
                 Core::ToString(RHS, _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
@@ -2001,6 +2153,14 @@ namespace Core {
                 _value = std::move(move._value);
                 _flagsAndCounters = std::move(move._flagsAndCounters);
 
+                _markerContainerStartCount = std::move(move._markerContainerStartCount);
+                _markerContainerEndCount = std::move(move._markerContainerEndCount);
+                _markerArrayStartCount = std::move(move._markerArrayStartCount);
+                _markerArrayEndCount = std::move(move._markerArrayEndCount);
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _opaque = std::move(move._opaque);
+ 
                 return (*this);
             }
 
@@ -2010,6 +2170,14 @@ namespace Core {
                 _value = RHS._value;
                 _flagsAndCounters = RHS._flagsAndCounters;
 
+                _markerContainerStartCount = RHS._markerContainerStartCount;
+                _markerContainerEndCount = RHS._markerContainerEndCount;
+                _markerArrayStartCount = RHS._markerArrayStartCount;
+                _markerArrayEndCount = RHS._markerArrayEndCount;
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _opaque = RHS._opaque;
+ 
                 return (*this);
             }
 
@@ -2069,12 +2237,11 @@ namespace Core {
 
             inline const string Value() const
             {
-                if (IsQuoted()) {
-                    return '"' + _value + '"';
+                // False if QuotedSerializeBit has been set eg then any quotes are ignored if not present in _value which is typical
+                if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
+                    return "\"" + _value + "\"";
                 }
-                else {
-                    return _value;
-                }
+                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? _value : _default);
             }
 
             inline const string& Default() const
@@ -2114,11 +2281,20 @@ namespace Core {
             {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
+
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
             }
 
             inline bool IsQuoted() const
             {
-                return ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0);
+                return (/*((_flagsAndCounters & NullBit) == 0) &&*/ ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
             }
 
             inline void SetQuoted(const bool enable)
@@ -2129,6 +2305,11 @@ namespace Core {
                 else {
                     _flagsAndCounters &= (~QuotedSerializeBit);
                 }
+            }
+
+            inline bool IsCompleted() const
+            {
+                return _completed || _suffix || _opaque;
             }
 
             // IElement iface:
@@ -2145,11 +2326,24 @@ namespace Core {
                         stream[loaded++] = '"';
                     }
 
-                    const std::string::size_type count = _value.size();
+                    if (_flagsAndCounters & NullBit) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
-                    if (count < static_cast<std::string::size_type>(available)) {
-                        memcpy(&stream[loaded], _value.c_str(), count);
-                        loaded += count;
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
+                    } else {
+                        const std::string::size_type count = _value.size();
+
+                        if (count < static_cast<std::string::size_type>(available)) {
+                            memcpy(&stream[loaded], _value.c_str(), count);
+                            loaded += count;
+                        }
                     }
 
                     if (IsQuoted()) {
@@ -2172,13 +2366,11 @@ namespace Core {
 
             uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
-                const char* stream = &data[offset];
+                const char* stream = &data[0];
 
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false, opaque = false;
-
-                while(!completed && loaded < maxLength && !(error.IsSet()) && !opaque) {
+                while (!_completed && loaded < maxLength && !(error.IsSet()) && !_opaque) {
                     const char& c = stream[loaded++];
 
                     if (!(_flagsAndCounters & SpecialSequenceBit)) {
@@ -2188,73 +2380,117 @@ namespace Core {
                         case 0x0A     : // Line feed
                                         FALLTHROUGH;
                         case 0x0D     : // Carriage return
-                                        if (     ((_flagsAndCounters & QuoteFoundBit) && !suffix)
-                                              || ((_flagsAndCounters & NullBit) && !suffix)
+                                        if (     ((_flagsAndCounters & QuoteFoundBit) && !_suffix)
+                                              || ((_flagsAndCounters & NullBit) && !_suffix)
                                            ) {
                                             error = Error{"Insignificant white space character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            _suffix = _suffix || offset;
+                                            continue;
                                         }
-                                        suffix = suffix || offset;
-                                        continue;
+
+                                        if (!(   !(_flagsAndCounters & QuoteFoundBit)
+                                              && (_markerContainerStartCount || _markerArrayStartCount)
+                                             )
+                                           ) {
+                                            continue;
+                                        }
+
+                                        break;
                         case '\0'     : // End of character sequence
-                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && suffix) || ((_flagsAndCounters & QuoteFoundBit) && suffix)))) {
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && _suffix) || ((_flagsAndCounters & QuoteFoundBit) && _suffix)))) {
                                             error = Error{"Terminated character sequence without (sufficient) data for String"};
                                         }
-                                        completed = true;
+                                        _completed = true;
+                                        _suffix = _completed;
                                         continue;
-                        case '"'    :   // Quoted character sequence
-                                        if (   (!(_flagsAndCounters & QuoteFoundBit) && offset > 0)
-                                            || ((_flagsAndCounters & QuoteFoundBit) && suffix)
+                        case '{'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerContainerStartCount;
+                                        }
+                                        break;
+                        case '}'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerContainerEndCount;
+
+                                            if (_markerContainerStartCount < _markerContainerEndCount) {
+                                                error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                                continue;
+                                            }
+                                        }
+                                        break;
+                        case '['      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerArrayStartCount;
+                                        }
+                                        break;
+                        case ']'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerArrayEndCount;
+
+                                            if (_markerArrayStartCount < _markerArrayEndCount) {
+                                                error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                                continue;
+                                            }
+                                        }
+                                        break;
+                        case '"'      : // Quoted character sequence
+                                        if (   /*(!(_flagsAndCounters & QuoteFoundBit) && offset > 0)
+                                            ||*/ ((_flagsAndCounters & QuoteFoundBit) && _suffix && !(_flagsAndCounters & NullBit))
                                            ) {
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
                                             continue;
                                         }
 
-                                        suffix = suffix || (_flagsAndCounters & QuoteFoundBit);
+                                        _suffix = _suffix || (_flagsAndCounters & QuoteFoundBit);
 
-                                        if ((_flagsAndCounters & NullBit) && !suffix) {
+                                        if ((_flagsAndCounters & NullBit) && !_suffix) {
                                             error = Error{"Quote terminated character sequence without (sufficient) data for String"};
                                             continue;
                                         }
 
-                                        _flagsAndCounters |= QuoteFoundBit;
+                                        // Unescaped quotes are allowed in _opaque strings
+                                        if (!offset){
+                                            // Expect a JSON String
+                                            _flagsAndCounters |= QuoteFoundBit;
+                                        }
                                         break;
-                        case '\\'   :   if (offset > 0 && ((_flagsAndCounters & NullBit) || !(_flagsAndCounters & QuoteFoundBit) || suffix)) {
+                        case '\\'   :   if (offset > 0 && ((_flagsAndCounters & NullBit) || /*!(_flagsAndCounters & QuoteFoundBit) ||*/ _suffix)) {
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
                                             continue;
                                         }
-                                        _flagsAndCounters |= SpecialSequenceBit;
+
+                                        // Unescaped 'special' characters are allowed in _opaque strings
+                                        if (_flagsAndCounters & QuoteFoundBit) {
+                                            // Expect a JSON String
+                                            _flagsAndCounters |= SpecialSequenceBit;
+                                        }
                                         break;
-                        default     :   if (c == ' ' && (  !(_flagsAndCounters & QuoteFoundBit)
-                                                         || ((_flagsAndCounters & QuoteFoundBit) && suffix))
+                        default     :   if (c == ' ' && (   (!offset && !(_flagsAndCounters & QuoteFoundBit))
+                                                         || (/*(_flagsAndCounters & QuoteFoundBit) &&*/ _suffix))
                                            ) {
                                             continue;
                                         }
 
                                         if (  (_flagsAndCounters & NullBit)
-                                            || suffix
+                                            || _suffix
                                            ) {
                                             error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
                                             continue;
                                         }
 
                                         if (   !(_flagsAndCounters & SpecialSequenceBit)
+                                            && (_flagsAndCounters & QuoteFoundBit) // Definitely not opaque
                                            ) {
+                                            // Characters that MUST be escaped
                                             switch (c) {
-                                            default     : if (!(c >= 0x0000 && c <= 0x001F)) {
-                                                              break;
-                                                          }
+                                            default     :   if (!(c >= 0x0000 && c <= 0x001F)) {
+                                                                break;
+                                                            }
                                                             FALLTHROUGH;
-                                            case 0x2F   :   // '/'  the solidus character
+                                            case 0x22   : // Quotation mark
                                                             FALLTHROUGH;
-                                            case 0x08   :   // '\b' backspace character
+                                            case 0x5C   : // Reverse solidus
                                                             FALLTHROUGH;
-                                            case 0x0C   :   // '\f' form feed character
-                                                            FALLTHROUGH;
-                                            case 0x0A   :   // '\n' line feed character
-                                                            FALLTHROUGH;
-                                            case 0x0D   :   // '\r' carriage return character
-                                                            FALLTHROUGH;
-                                            case 0x09   :   // '\t' tabulation character
                                                             error = Error{"Unescaped character of code point value '" + std::to_string(c) + "' for String"};
                                                             continue;
                                             }
@@ -2262,26 +2498,45 @@ namespace Core {
 
                                         const uint32_t index = _flagsAndCounters & QuoteFoundBit ? offset - 1 : offset;
 
-                                        if (index == (sizeof(IElement::NullTag) - 1 - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ? 1 : 0))) {
-                                            _flagsAndCounters |= std::string(IElement::NullTag, index + 1) == std::string(&stream[_flagsAndCounters & QuoteFoundBit ? 1 : 0], index + 1) ? NullBit : 0;
+                                        if (!_markerContainerStartCount && !_markerArrayStartCount && index == (sizeof(IElement::NullTag) - 1 - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ? 1 : 0))) {
+                                            _flagsAndCounters |= std::string(IElement::NullTag, index + 1) == std::string(&stream[_flagsAndCounters & QuoteFoundBit ? loaded - offset : loaded - offset - 1], index + 1) ? NullBit : 0;
+                                            _suffix |= (_flagsAndCounters & NullBit);
                                         }
                         }
 
-                        opaque = !offset && !(_flagsAndCounters & QuoteFoundBit);
+                        // An _opaque string is not quoted AND is enclosed between balancing JSON Array or JSON Object tokens
+                        _opaque =    !(_flagsAndCounters & QuoteFoundBit)
+                                 && (   _markerContainerStartCount
+                                     || _markerArrayStartCount
+                                    )
+                                 && (   (_markerContainerStartCount == _markerContainerEndCount)
+                                     && (_markerArrayStartCount == _markerArrayEndCount)
+                                    )
+                                 ;
 
-                        if (c != '"') {
-                            _value+= c;
+                        if (!(c == '"' && (_flagsAndCounters & QuoteFoundBit))) {
+                            _value += c;
                         }
                     } else {
                         switch (c) {
-                        case 0x22   :   // '"'  quotation mark character
-                        case 0x5C   :   // '\'  reverse solidus character
+                        // Characters that MUST be escaped
+                        case 0x22   :   // Quotation mark2
+                                        FALLTHROUGH;
+                        case 0x5C   :   // Reverse solidus
+                                        FALLTHROUGH;
+                        // Popular 2 character escape sequences
                         case 0x2F   :   // '/'  the solidus character
+                                        FALLTHROUGH;
                         case 0x08   :   // '\b' backspace character
+                                        FALLTHROUGH;
                         case 0x0C   :   // '\f' form feed character
+                                        FALLTHROUGH;
                         case 0x0A   :   // '\n' line feed character
+                                        FALLTHROUGH;
                         case 0x0D   :   // '\r' carriage return character
+                                        FALLTHROUGH;
                         case 0x09   :   // '\t' tabulation character
+
                                         if (_flagsAndCounters & 0x07) {
                                             error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
                                             continue;
@@ -2297,54 +2552,41 @@ namespace Core {
                                         _flagsAndCounters |= 0x04;
                                         break;
                         case '\0'   :   // End of character sequence
-                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && suffix) || (_flagsAndCounters & QuoteFoundBit)) || (_flagsAndCounters & 0x7))) {
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && _suffix) || (_flagsAndCounters & QuoteFoundBit)) || (_flagsAndCounters & 0x7))) {
                                             error = Error{"Terminated (special) character sequence without (sufficient) data for String"};
                                         }
                                         FALLTHROUGH;
-                        default     :   if (   ((_flagsAndCounters & 0x7) && !std::isxdigit(c))
-                                            || !(_flagsAndCounters & 0x7)
-                                           ) {
+                        default     :   if ((_flagsAndCounters & 0x7) && !std::isxdigit(c)) { // unicode sequence expected, characters 0-9 and A-F
                                             error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
                                             continue;
                                         }
 
+                                        // Any character may be escaped
+                                        // Only unicode affects the length of the sequence
                                         _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
                                         _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
                         }
 
-                        _value+= c;
+                        _value += c;
                     }
 
                     ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
-                    if (!(error.IsSet()) && !((_flagsAndCounters & QuoteFoundBit) && stream[loaded] == '\0')) {
-                        error = Error{"Input data contains trailing characters for String"};
-                    }
-                }
-
-                if (opaque || (!offset && !(_flagsAndCounters & QuoteFoundBit))) {
+                if (_opaque) {
                     _flagsAndCounters ^= _flagsAndCounters & QuotedAreaBit ? QuotedAreaBit : 0;
                     _flagsAndCounters ^= _flagsAndCounters & QuoteFoundBit ? QuoteFoundBit : 0;
-                    _flagsAndCounters ^= _flagsAndCounters & QuotedSerializeBit ? QuotedSerializeBit : 0;
                     _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
-
-                    loaded = maxLength;
-
-                    _value = std::string(stream, loaded);
-
-                    error.Clear();
                 }
 
-                if (!(error.IsSet())) {
+                if (!(_flagsAndCounters & NullBit) && !(_flagsAndCounters & QuoteFoundBit) && !(_markerContainerStartCount || _markerArrayStartCount)) {
+                    error = Error{"Start of sequence does not denote Opaque nor String"};
+                }
+
+                if (!(error.IsSet()) && (((_flagsAndCounters & QuoteFoundBit) && _suffix) || _opaque || (_flagsAndCounters & NullBit))) {
+                    _flagsAndCounters |= SetBit;
+                    // Signal done, without errors
                     offset = 0;
-                    //_flagsAndCounters |= SetBit; only assignment operator should set the SetBit
-                } else {
-                    _value.clear();
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                 return loaded;
@@ -2485,6 +2727,15 @@ namespace Core {
             // L Length of the bytes under process (8)
             // I Index to the written bytes (8).
             mutable uint16_t _flagsAndCounters;
+
+            uint32_t _markerContainerStartCount;
+            uint32_t _markerContainerEndCount;
+            uint32_t _markerArrayStartCount;
+            uint32_t _markerArrayEndCount;
+
+            bool _completed;
+            bool _suffix;
+            bool _opaque;
         };
 
         class EXTERNAL Buffer : public IElement, public IMessagePack {
@@ -2885,6 +3136,7 @@ namespace Core {
                 : _state(0)
                 , _value()
                 , _default(static_cast<ENUMERATE>(0))
+                , _parser(false)
             {
             }
 
@@ -2892,6 +3144,7 @@ namespace Core {
                 : _state(0)
                 , _value()
                 , _default(Value)
+                , _parser(false)
             {
             }
 
@@ -2899,6 +3152,7 @@ namespace Core {
                 : _state(std::move(move._state))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
+                , _parser(std::move(move._parser))
             {
             }
 
@@ -2906,6 +3160,7 @@ namespace Core {
                 : _state(copy._state)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _parser(copy._parser)
             {
             }
 
@@ -2913,15 +3168,19 @@ namespace Core {
 
             EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
             {
-                _value = std::move(move._value);
                 _state = std::move(move._state);
+                _value = std::move(move._value);
+                _default = std::move(move._default);
+                _parser = std::move(move._parser);
                 return (*this);
             }
 
             EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
             {
-                _value = RHS._value;
                 _state = RHS._state;
+                _value = RHS._value;
+                _default = RHS._default;
+                _parser = RHS._parser;
                 return (*this);
             }
 
@@ -2971,6 +3230,11 @@ namespace Core {
                 return ((_state & UNDEFINED) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _state & SET;
+            }
+
             void Clear() override
             {
                 _state = 0;
@@ -2992,25 +3256,21 @@ namespace Core {
 
             uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
-                const char* stream = &data[offset];
+                const char* stream = &data[0];
 
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset, error);
 
                 if (offset == 0) {
                     if (_parser.IsNull() == true) {
                         _state = (UNDEFINED|SET);
-                    } else if (_parser.IsSet() == false) {
+                    } else if (_parser.IsSet() == true) {
                         // Looks like we parsed the value. Lets see if we can find it..
                         Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
 
-                        // The 'string' might exist but the enum underlying type as JSON type might have a different value for intialization and assignment
                         std::string sequence(converted.Data());
-
                         sequence.append(sequence.length() < _parser.Value().length() ? _parser.Value().length() - sequence.length() : 0, '\0');
 
-                        bool result = sequence == _parser.Value();
-
-                        if (converted.IsSet() && result) {//sequence == _parser.Value()) {
+                        if (converted.IsSet()) {
                             _value = converted.Value();
                             _state = SET;
                         } else {
@@ -3369,6 +3629,18 @@ namespace Core {
                 , _count(0)
                 , _data()
                 , _iterator(_data)
+                , _completed{false}
+                , _suffix{false}
+                , _beforeStringScope{false}
+                , _afterStringScope{false} 
+                , _stringScope{false}
+                , _arrayStartMarkerCount{0}
+                , _arrayEndMarkerCount{0}
+                , _valueSeparatorCount{0}
+                , _containerStartMarkerCount{0}
+                , _containerEndMarkerCount{0}
+                , _valueStartPos{0}
+                , _valueSeparatorPos{0}
             {
             }
 
@@ -3377,6 +3649,18 @@ namespace Core {
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
                 , _iterator(std::move(move._iterator))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
+                , _beforeStringScope(std::move(move._beforeStringScope))
+                , _afterStringScope(std::move(move._afterStringScope)) 
+                , _stringScope(std::move(move._stringScope))
+                , _arrayStartMarkerCount(std::move(move._arrayStartMarkerCount))
+                , _arrayEndMarkerCount(std::move(move._arrayEndMarkerCount))
+                , _valueSeparatorCount(std::move(move._valueSeparatorCount))
+                , _containerStartMarkerCount(std::move(move._containerStartMarkerCount))
+                , _containerEndMarkerCount(std::move(move._containerEndMarkerCount))
+                , _valueStartPos(std::move(move._valueStartPos))
+                , _valueSeparatorPos(std::move(move._valueSeparatorPos))
             {
             }
 
@@ -3385,6 +3669,18 @@ namespace Core {
                 , _count(copy._count)
                 , _data(copy._data)
                 , _iterator(_data)
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
+                , _beforeStringScope(copy._beforeStringScope)
+                , _afterStringScope(copy._afterStringScope) 
+                , _stringScope(copy._stringScope)
+                , _arrayStartMarkerCount(copy._arrayStartMarkerCount)
+                , _arrayEndMarkerCount(copy._arrayEndMarkerCount)
+                , _valueSeparatorCount(copy._valueSeparatorCount)
+                , _containerStartMarkerCount(copy._containerStartMarkerCount)
+                , _containerEndMarkerCount(copy._containerEndMarkerCount)
+                , _valueStartPos(copy._valueStartPos)
+                , _valueSeparatorPos(copy._valueSeparatorPos)
             {
             }
 
@@ -3395,6 +3691,18 @@ namespace Core {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
                 _iterator = IteratorType<ELEMENT>(_data);
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _beforeStringScope = std::move(move._beforeStringScope);
+                _afterStringScope = std::move(move._afterStringScope);
+                _stringScope = std::move(move._stringScope);
+                _arrayStartMarkerCount = std::move(move._arrayStartMarkerCount);
+                _arrayEndMarkerCount = std::move(move._arrayEndMarkerCount);
+                _valueSeparatorCount = std::move(move._valueSeparatorCount);
+                _containerStartMarkerCount = std::move(move._containerStartMarkerCount);
+                _containerEndMarkerCount = std::move(move._containerEndMarkerCount);
+                _valueStartPos = std::move(move._valueStartPos);
+                _valueSeparatorPos = std::move(move._valueSeparatorPos);
 
                 return (*this);
             }
@@ -3404,6 +3712,18 @@ namespace Core {
                 _state = RHS._state;
                 _data = RHS._data;
                 _iterator = IteratorType<ELEMENT>(_data);
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _beforeStringScope = RHS._beforeStringScope;
+                _afterStringScope = RHS._afterStringScope; 
+                _stringScope = RHS._stringScope;
+                _arrayStartMarkerCount = RHS._arrayStartMarkerCount;
+                _arrayEndMarkerCount = RHS._arrayEndMarkerCount;
+                _valueSeparatorCount = RHS._valueSeparatorCount;
+                _containerStartMarkerCount = RHS._containerStartMarkerCount;
+                _containerEndMarkerCount = RHS._containerEndMarkerCount;
+                _valueStartPos = RHS._valueStartPos;
+                _valueSeparatorPos = RHS._valueSeparatorPos;
 
                 return (*this);
             }
@@ -3417,8 +3737,13 @@ namespace Core {
 
             bool IsNull() const override
             {
-                //TODO: Implement null for Arrays
+// FIXME: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            bool IsCompleted() const
+            {
+                return _completed || _suffix || _arrayStartMarkerCount == _arrayEndMarkerCount;
             }
 
             void Set(const bool enabled)
@@ -3435,6 +3760,19 @@ namespace Core {
             {
                 _state = 0;
                 _data.clear();
+
+                _completed = false;
+                _suffix = false;
+                _beforeStringScope = false;
+                _afterStringScope = false; 
+                _stringScope = false;
+                _arrayStartMarkerCount = 0;
+                _arrayEndMarkerCount = 0;
+                _valueSeparatorCount = 0;
+                _containerStartMarkerCount = 0;
+                _containerEndMarkerCount = 0;
+                _valueStartPos = 0;
+                _valueSeparatorPos = 0;
             }
 
             inline uint16_t Length() const
@@ -3622,15 +3960,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false, beforeStringScope = false, afterStringScope = false, stringScope = false;
-
-                uint16_t arrayStartMarkerCount = 0, arrayEndMarkerCount = 0, valueSeparatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0;
-
-                uint16_t valueStartPos = 0, valueSeparatorPos = 0;
-
-                _state = 0;
-
-                while(!completed && loaded < maxLength && !(error.IsSet())) {
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
                     const char& ch = stream[loaded++];
 
                     switch (ch) {
@@ -3642,102 +3972,102 @@ namespace Core {
                                     FALLTHROUGH
                     case 0x20     : // Space
                                     // Insignificant white space
-                                    suffix = suffix || (_state & UNDEFINED);
+                                    _suffix = _suffix || (_state & UNDEFINED);
                                     continue;
                     case '\0'   :   // End of character sequence
-                                    if ((offset > 0 && arrayStartMarkerCount != arrayEndMarkerCount) || !suffix) {
+                                    if ((offset > 0 && _arrayStartMarkerCount != _arrayEndMarkerCount) || !_suffix) {
                                         _state = ERROR;
                                         error = Error{"Terminated character sequence without (sufficient) data for ArrayType<>"};
                                     }
 
-                                    completed = true;
+                                    _completed = true;
                                     continue;
                                     break;
                     case '"'    :   // Quoted character sequence
-                                    if (   !suffix
-                                        && (   beforeStringScope
-                                            || afterStringScope
-                                            || (arrayStartMarkerCount && arrayStartMarkerCount != arrayEndMarkerCount)
+                                    if (   !_suffix
+                                        && (   _beforeStringScope
+                                            || _afterStringScope
+                                            || (_arrayStartMarkerCount && _arrayStartMarkerCount != _arrayEndMarkerCount)
                                            )
                                        ) {
-                                        stringScope = !stringScope;
+                                        _stringScope = !_stringScope;
                                         break;
                                     }
 
-                                    if (!arrayStartMarkerCount && !(_state & QUOTED) && offset > 0) {
+                                    if (!_arrayStartMarkerCount && !(_state & QUOTED) && offset > 0) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    if (arrayEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
+                                    if (_arrayEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && _suffix))) {
                                         _state = ERROR;
                                         error = Error{"Quote terminated character sequence without (sufficient) data for ArrayType<>"};
                                         continue;
                                     }
 
-                                    suffix = suffix || ((arrayStartMarkerCount == arrayEndMarkerCount) && (_state & QUOTED));
+                                    _suffix = _suffix || ((_arrayStartMarkerCount == _arrayEndMarkerCount) && (_state & QUOTED));
 
-                                    _state |= suffix ? QUOTED : NONE;
+                                    _state |= _suffix ? QUOTED : NONE;
 
-                                    valueSeparatorCount -= valueSeparatorCount && !suffix ? 1 : 0;
+                                    _valueSeparatorCount -= _valueSeparatorCount && !_suffix ? 1 : 0;
                                     break;
-                    case '{'    :   if (!stringScope && containerStartMarkerCount >= containerEndMarkerCount) {
-                                        ++containerStartMarkerCount;
+                    case '{'    :   if (!_stringScope && _containerStartMarkerCount >= _containerEndMarkerCount) {
+                                        ++_containerStartMarkerCount;
                                     }
                                     break;
-                    case '}'    :   if (!stringScope && containerStartMarkerCount < containerEndMarkerCount) {
-                                        ++containerEndMarkerCount;
+                    case '}'    :   if (!_stringScope && _containerStartMarkerCount < _containerEndMarkerCount) {
+                                        ++_containerEndMarkerCount;
                                     }
                                     break;
                     case '['    :   // Start marker
-                                    if (stringScope) {
+                                    if (_stringScope) {
                                         break;
                                     }
 
-                                    if (   (arrayStartMarkerCount == 0 && arrayStartMarkerCount < arrayEndMarkerCount)
-                                        || (arrayStartMarkerCount > 0 && arrayStartMarkerCount <= arrayEndMarkerCount)
+                                    if (   (_arrayStartMarkerCount == 0 && _arrayStartMarkerCount < _arrayEndMarkerCount)
+                                        || (_arrayStartMarkerCount > 0 && _arrayStartMarkerCount <= _arrayEndMarkerCount)
                                        ) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    ++arrayStartMarkerCount;
+                                    ++_arrayStartMarkerCount;
 
-                                    if (arrayStartMarkerCount == 1) {
-                                        valueStartPos = loaded;
+                                    if (_arrayStartMarkerCount == 1) {
+                                        _valueStartPos = loaded;
                                     }
 
-                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
 
-                                    beforeStringScope = !stringScope;
+                                    _beforeStringScope = !_stringScope;
                                     break;
                     case ']'    :   // End marker
-                                    if (stringScope) {
+                                    if (_stringScope) {
                                         break;
                                     }
 
-                                    if (   !(arrayStartMarkerCount > 0 && arrayStartMarkerCount >= arrayEndMarkerCount)
-                                        || valueSeparatorCount
-                                        ||( valueSeparatorPos == loaded - 1)
+                                    if (   !(_arrayStartMarkerCount > 0 && _arrayStartMarkerCount >= _arrayEndMarkerCount)
+                                        || _valueSeparatorCount
+                                        ||( _valueSeparatorPos == loaded - 1)
                                        ) {
                                          _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    ++arrayEndMarkerCount;
+                                    ++_arrayEndMarkerCount;
 
-                                    afterStringScope = !stringScope;
+                                    _afterStringScope = !_stringScope;
 
                                     FALLTHROUGH;
                     case ','    :   // Value separator
-                                    if (stringScope || containerStartMarkerCount != containerEndMarkerCount || (arrayStartMarkerCount > arrayEndMarkerCount && (arrayStartMarkerCount - arrayEndMarkerCount) > 1)) {
+                                    if (_stringScope || _containerStartMarkerCount != _containerEndMarkerCount || (_arrayStartMarkerCount > _arrayEndMarkerCount && (_arrayStartMarkerCount - _arrayEndMarkerCount) > 1)) {
                                         break;
                                     }
 
-                                    if (ch == ',' && (valueSeparatorCount || (loaded - 1 == valueStartPos) || arrayStartMarkerCount == arrayEndMarkerCount)
+                                    if (ch == ',' && (_valueSeparatorCount || (loaded - 1 == _valueStartPos) || _arrayStartMarkerCount == _arrayEndMarkerCount)
                                        ) {
                                          _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
@@ -3745,19 +4075,19 @@ namespace Core {
                                     }
 
                                     if (ch == ',') {
-                                        ++valueSeparatorCount;
-                                        valueSeparatorPos = loaded;
+                                        ++_valueSeparatorCount;
+                                        _valueSeparatorPos = loaded;
                                     }
 
-                                    if (arrayStartMarkerCount == arrayEndMarkerCount || ch == ',') {
+                                    if (_arrayStartMarkerCount == _arrayEndMarkerCount || ch == ',') {
                                         _data.push_back(ELEMENT());
 
-                                        if ((loaded - 1) > valueStartPos) {
+                                        if ((loaded - 1) > _valueStartPos) {
                                             uint32_t offset = 0;
                                             const uint16_t valueEndPos = loaded;
                                             uint16_t loaded = 0;
                                             // This does not allow us use the return error, one may be printed already be printed
-                                            loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[valueStartPos]), valueEndPos - valueStartPos - 1, offset/*, error*/);
+                                            loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[_valueStartPos]), valueEndPos - _valueStartPos - 1, offset/*, error*/);
 
                                             if (offset) {
                                                 _state = ERROR;
@@ -3769,49 +4099,49 @@ namespace Core {
                                             loaded += static_cast<IElement&>(_data.back()).FromString("", error);
                                         }
 
-                                        valueStartPos = loaded;
+                                        _valueStartPos = loaded;
 
-                                        valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
+                                        _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
                                     }
 
-                                    suffix = suffix || arrayStartMarkerCount == arrayEndMarkerCount;
+                                    _suffix = _suffix || _arrayStartMarkerCount == _arrayEndMarkerCount;
 
                                     break;
                     case 'n'    :   FALLTHROUGH;
                     case 'u'    :   FALLTHROUGH;
                     case 'l'    :   // JSON value null
-                                    ASSERT(arrayStartMarkerCount || ((offset - (_state & QUOTED ? 1 : 0)) < sizeof(NullTag)));
+                                    ASSERT(_arrayStartMarkerCount || ((offset - (_state & QUOTED ? 1 : 0)) < sizeof(NullTag)));
 
-                                    if (   (!arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
-                                        || suffix
+                                    if (   (!_arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
+                                        || _suffix
                                        ) {
                                         _state = ERROR;
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    suffix =    suffix
-                                             || (!arrayStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
+                                    _suffix =    _suffix
+                                             || (!_arrayStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
                                              ;
 
-                                    _state |= suffix ? UNDEFINED : NONE;
+                                    _state |= _suffix ? UNDEFINED : NONE;
 
-                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
 
                                     break;
-                    default     :   if (suffix || (_state & UNDEFINED)) {
+                    default     :   if (_suffix || (_state & UNDEFINED)) {
                                         _state = ERROR;
                                          error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
-                                    valueSeparatorCount -= valueSeparatorCount ? 1 : 0;
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
                     }
 
                     ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
+                if (_completed && loaded < maxLength) {
                     if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
                         error = Error{"Input data contains trailing characters for ArrayType<>"};
                     }
@@ -3820,10 +4150,6 @@ namespace Core {
                 if (!(error.IsSet())) {
                     offset = 0;
                     _state |= (_state & UNDEFINED) ? 0 : SET;
-                } else {
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                 return (loaded);
@@ -3919,6 +4245,19 @@ namespace Core {
             uint16_t _count;
             std::list<ELEMENT> _data;
             mutable IteratorType<ELEMENT> _iterator;
+
+            bool _completed;
+            bool _suffix;
+            bool _beforeStringScope;
+            bool _afterStringScope; 
+            bool _stringScope;
+            uint16_t _arrayStartMarkerCount;
+            uint16_t _arrayEndMarkerCount;
+            uint16_t _valueSeparatorCount;
+            uint16_t _containerStartMarkerCount;
+            uint16_t _containerEndMarkerCount;
+            uint16_t _valueStartPos;
+            uint16_t _valueSeparatorPos;
         };
 
         template <typename T, size_t N>
@@ -4034,6 +4373,20 @@ namespace Core {
                 , _data()
                 , _iterator()
                 , _fieldName(true)
+                , _completed{false}
+                , _suffix{false}
+                , _beforeStringScope{false}
+                , _afterStringScope{false}
+                , _stringScope{false}
+                , _arrayStartMarkerCount{0}
+                , _arrayEndMarkerCount{0}
+                , _keyValuePairSeparatorCount{0}
+                , _containerStartMarkerCount{0}
+                , _containerEndMarkerCount{0}
+                , _keyValueSeparatorCount{0}
+                , _keyValuePairStartPos{0}
+                , _keyValuePairSeparatorPos{0}
+                , _keyValueSeparatorPos{0}
             {
                 ::memset(&_current, 0, sizeof(_current));
             }
@@ -4068,7 +4421,7 @@ namespace Core {
 
             bool IsNull() const override
             {
-                // TODO: Implement null for conrtainers
+// FIXME: Implement null for containers
                 return ((_state & UNDEFINED) != 0);
             }
 
@@ -4081,6 +4434,23 @@ namespace Core {
                     index++;
                 }
                 _state = 0;
+
+                _completed = false;
+                _suffix = false;
+                _beforeStringScope = false;
+                _afterStringScope = false;
+                _stringScope = false;
+                _arrayStartMarkerCount = 0;
+                _arrayEndMarkerCount = 0;
+                _keyValuePairSeparatorCount = 0;
+                _containerStartMarkerCount = 0;
+                _containerEndMarkerCount = 0;
+                _keyValueSeparatorCount = 0;
+                _keyValuePairStartPos = 0;
+                _keyValuePairSeparatorPos = 0;
+                _keyValueSeparatorPos = 0;
+
+                ::memset(&_current, 0, sizeof(_current));
             }
 
             void Add(const TCHAR label[], IElement* element)
@@ -4112,14 +4482,6 @@ namespace Core {
 
                 if (index != _data.end()) {
                     _data.erase(index);
-                }
-
-                for (auto head = _allocated.begin(), tail = _allocated.end(), it = head; it != tail; it++) {
-                    if (!strcmp(std::get<0>(*it)->c_str(), label)) {
-                        delete std::get<0>(*it);
-                        delete std::get<1>(*it);
-                        break;
-                    }
                 }
             }
 
@@ -4164,14 +4526,17 @@ namespace Core {
                             if (key != nullptr && value != nullptr) { // Guaranteed and \'0' termination by Deserialize and user of Add
                                 const size_t count = strlen(key);
 
-                                if (count > 0 && count < static_cast<size_t>(available)) {
-                                    memcpy(&stream[loaded], key, count);
-                                    loaded += count;
+                                if ((loaded + count + 3) < static_cast<size_t>(available)) {
+
+                                    if (count) {
+                                        memcpy(&stream[loaded], key, count);
+                                        loaded += count;
+                                    }
+
+                                    stream[loaded++] = ':';
+
+                                    loaded += value->Serialize(&(stream[loaded]), available - loaded, offset);
                                 }
-
-                                stream[loaded++] = ':';
-
-                                loaded += value->Serialize(&(stream[loaded]), available - loaded, offset);
                             } else {
                                 offset = 1;
                             }
@@ -4193,10 +4558,6 @@ namespace Core {
 
                 if (!offset) {
                     stream[loaded] = '\0';
-                } else {
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                return (loaded);
@@ -4206,273 +4567,251 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                bool completed = false, suffix = false, beforeStringScope = false, afterStringScope = false, stringScope = false;
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    if (_current.json.element != nullptr && !(_current.json.element->IsCompleted())) {
+                        loaded += Deserialize(_current.json.element, "", &stream[loaded - 1], maxLength - loaded, _current.json.offset, error);
 
-                uint16_t arrayStartMarkerCount = 0, arrayEndMarkerCount = 0, keyValuePairSeparatorCount = 0, containerStartMarkerCount = 0, containerEndMarkerCount = 0, keyValueSeparatorCount = 0;
+                        _keyValuePairStartPos = loaded;
+                    } else {
+                        const char& ch = stream[loaded++];
 
-                uint16_t keyValuePairStartPos = 0, keyValuePairSeparatorPos = 0, keyValueSeparatorPos = 0;
+                        switch (ch) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH
+                        case 0x0D     : // Carriage return
+                                        FALLTHROUGH
+                        case 0x20     : // Space
+                                        // Insignificant white space
+                                        _suffix = _suffix || (_state & UNDEFINED);
+                                        continue;
+                        case '\0'   :   // End of character sequence
+                                        if ((offset > 0 && _containerStartMarkerCount != _containerEndMarkerCount) || !_suffix) {
+                                            _state = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for Container"};
+                                        }
 
-                _state = 0;
-
-                while(!completed && loaded < maxLength && !(error.IsSet())) {
-                    const char& ch = stream[loaded++];
-
-                    switch (ch) {
-                    case 0x09     : // Tabulation
-                                    FALLTHROUGH
-                    case 0x0A     : // Line feed
-                                    FALLTHROUGH
-                    case 0x0D     : // Carriage return
-                                    FALLTHROUGH
-                    case 0x20     : // Space
-                                    // Insignificant white space
-                                    suffix = suffix || (_state & UNDEFINED);
-                                    continue;
-                    case '\0'   :   // End of character sequence
-                                    if ((offset > 0 && containerStartMarkerCount != containerEndMarkerCount) || !suffix) {
-                                        _state = ERROR;
-                                        error = Error{"Terminated character sequence without (sufficient) data for Container"};
-                                    }
-
-                                    completed = true;
-                                    continue;
-                                    break;
-                    case '"'    :   // Quoted character sequence
-                                    if (   !suffix
-                                        && (   beforeStringScope
-                                            || afterStringScope
-                                            || (containerStartMarkerCount && containerStartMarkerCount != containerEndMarkerCount)
-                                           )
-                                       ) {
-                                        stringScope = !stringScope;
+                                        _completed = true;
+                                        continue;
                                         break;
-                                    }
-
-                                    if (!containerStartMarkerCount && !(_state & QUOTED) && offset > 0) {
-                                        _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    if (containerEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && suffix))) {
-                                        _state = ERROR;
-                                        error = Error{"Quote terminated character sequence without (sufficient) data for Container"};
-                                        continue;
-                                    }
-
-                                    suffix = suffix || ((containerStartMarkerCount == containerEndMarkerCount) && (_state & QUOTED));
-
-                                    _state |= suffix ? QUOTED : NONE;
-
-                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount && !suffix ? 1 : 0;
-                                    break;
-                    case ':'    :   if (stringScope) {
-                                        break;
-                                    }
-
-                                    if (keyValueSeparatorCount > 1) {
-                                        _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    // Only the first to keep
-                                    if (!keyValueSeparatorCount) {
-                                        ++keyValueSeparatorCount;
-                                        keyValueSeparatorPos = loaded;
-                                    }
-                                    break;
-                    case '['    :   if (!stringScope) {// && arrayStartMarkerCount >= arrayEndMarkerCount) {
-                                        ++arrayStartMarkerCount;
-                                    }
-                                    break;
-                    case ']'    :   if (!stringScope) {// && arrayStartMarkerCount < arrayEndMarkerCount) {
-                                        ++arrayEndMarkerCount;
-                                    }
-                                    break;
-                    case '{'    :   // Start marker
-                                    if (stringScope) {
-                                        break;
-                                    }
-
-                                    if (   (containerStartMarkerCount == 0 && containerStartMarkerCount < containerEndMarkerCount)
-                                        || (containerStartMarkerCount > 0 && containerStartMarkerCount <= containerEndMarkerCount)
-                                       ) {
-                                        _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    ++containerStartMarkerCount;
-
-                                    if (containerStartMarkerCount == 1) {
-                                        keyValuePairStartPos = loaded;
-                                    }
-
-                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
-
-                                    beforeStringScope = !stringScope;
-                                    break;
-                    case '}'    :   // End marker
-                                    if (stringScope) {
-                                        break;
-                                    }
-
-                                    if (   !(containerStartMarkerCount > 0 && containerStartMarkerCount >= containerEndMarkerCount)
-                                        || keyValuePairSeparatorCount
-                                        || (keyValuePairSeparatorPos == loaded - 1)
-                                       ) {
-                                         _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    ++containerEndMarkerCount;
-
-                                    afterStringScope = !stringScope;
-
-                                    FALLTHROUGH;
-                    case ','    :   // Value separator
-                                    if (stringScope || arrayStartMarkerCount > arrayEndMarkerCount) {
-                                        break;
-                                    }
-
-                                    if (ch == ',' && (keyValuePairSeparatorCount || (loaded - 1 == keyValuePairStartPos) || containerStartMarkerCount == containerEndMarkerCount)
-                                       ) {
-                                         _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    if (ch == ',') {
-                                        ++keyValuePairSeparatorCount;
-                                        keyValuePairSeparatorPos = loaded;
-                                    }
-
-                                    if (containerStartMarkerCount == containerEndMarkerCount || ch == ',') {
-                                        // Two modus operandi:
-                                        // - Existing element with label
-                                        // - No element
-                                        // Both have the format 'JSON String':'JSON Value', unless empty
-
-                                        if (   keyValueSeparatorPos > keyValuePairStartPos
-                                            && loaded > keyValueSeparatorPos
+                        case '"'    :   // Quoted character sequence
+                                        if (   !_suffix
+                                            && (   _beforeStringScope
+                                                || _afterStringScope
+                                                || (_containerStartMarkerCount && _containerStartMarkerCount != _containerEndMarkerCount)
+                                               )
                                            ) {
-                                            const std::string data(&stream[keyValuePairStartPos], keyValueSeparatorPos - keyValuePairStartPos - 1);
+                                            _stringScope = !_stringScope;
+                                            break;
+                                        }
 
-                                            JSON::String key;
+                                        if (!_containerStartMarkerCount && !(_state & QUOTED) && offset > 0) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
 
-                                            if (   !data.length()
-                                                || !(key.FromString(data))
+                                        if (_containerEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && _suffix))) {
+                                            _state = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for Container"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || ((_containerStartMarkerCount == _containerEndMarkerCount) && (_state & QUOTED));
+
+                                        _state |= _suffix ? QUOTED : NONE;
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount && !_suffix ? 1 : 0;
+                                        break;
+                        case ':'    :   if (_stringScope) {
+                                            break;
+                                        }
+
+                                        if (_keyValueSeparatorCount > 1) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        // Only the first to keep
+                                        if (!_keyValueSeparatorCount) {
+                                            ++_keyValueSeparatorCount;
+                                            _keyValueSeparatorPos = loaded;
+                                        }
+                                        break;
+                        case '['    :   if (!_stringScope) {
+                                            ++_arrayStartMarkerCount;
+                                        }
+                                        break;
+                        case ']'    :   if (!_stringScope) {
+                                            ++_arrayEndMarkerCount;
+                                        }
+                                        break;
+                        case '{'    :   // Start marker
+                                        if (_stringScope) {
+                                            break;
+                                        }
+
+                                        if (   (_containerStartMarkerCount == 0 && _containerStartMarkerCount < _containerEndMarkerCount)
+                                            || (_containerStartMarkerCount > 0 && _containerStartMarkerCount <= _containerEndMarkerCount)
+                                           ) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        ++_containerStartMarkerCount;
+
+                                        if (_containerStartMarkerCount == 1) {
+                                            _keyValuePairStartPos = loaded;
+                                        }
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                        _beforeStringScope = !_stringScope;
+                                        break;
+                        case '}'    :   // End marker
+                                        if (_stringScope) {
+                                            break;
+                                        }
+
+                                        if (   !(_containerStartMarkerCount > 0 && _containerStartMarkerCount >= _containerEndMarkerCount)
+                                            || _keyValuePairSeparatorCount
+                                            || (_keyValuePairSeparatorPos == loaded - 1)
+                                           ) {
+                                             _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        ++_containerEndMarkerCount;
+
+                                        _afterStringScope = !_stringScope;
+
+                                        FALLTHROUGH;
+                        case ','    :   // Value separator
+                                        if (_stringScope || _arrayStartMarkerCount > _arrayEndMarkerCount) {
+                                            break;
+                                        }
+
+                                        if (ch == ',' && (_keyValuePairSeparatorCount || (loaded - 1 == _keyValuePairStartPos) || _containerStartMarkerCount == _containerEndMarkerCount)
+                                           ) {
+                                             _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        if (ch == ',') {
+                                            ++_keyValuePairSeparatorCount;
+                                            _keyValuePairSeparatorPos = loaded;
+                                        }
+
+                                        if (_containerStartMarkerCount == _containerEndMarkerCount || ch == ',') {
+                                            // Two modus operandi:
+                                            // - Existing element with label
+                                            // - No element
+                                            // Both have the format 'JSON String':'JSON Value', unless empty
+
+                                            if (   _keyValueSeparatorPos > _keyValuePairStartPos
+                                                && loaded > _keyValueSeparatorPos
                                                ) {
-                                                _state = ERROR;
-                                                error = Error{"Failed to deserialize key for Container"};
-                                                continue;
-                                            }
+                                                const std::string data(&stream[_keyValuePairStartPos], _keyValueSeparatorPos - _keyValuePairStartPos - 1);
 
-                                            IElement* element = Find(key.Value().c_str());
+                                                JSON::String key;
 
-                                            const std::string value(&stream[keyValueSeparatorPos], loaded - keyValueSeparatorPos - 1);
+                                                if (   !data.length()
+                                                    || !key.FromString(data)
+                                                   ) {
+                                                    _state = ERROR;
+                                                    error = Error{"Failed to deserialize key for Container"};
+                                                    continue;
+                                                }
 
-                                            uint32_t offset = 0;
+                                                // Continue to process as C-style strings
+                                                if (key.IsQuoted()) {
+                                                    key.SetQuoted(false);
+                                                }
 
-                                            if (element != nullptr) {
-                                                element->Clear();
+                                                IElement*& element = _current.json.element;
+                                                uint32_t& offset = _current.json.offset;
 
-                                                uint16_t loaded = 0;
-                                                // This does not allow us to use the return error, one may be printed already
-                                                loaded += element->Deserialize(value.c_str(), value.length(), offset/*, error*/);
+                                                element = Find(key.Value());
+
+                                                // Continue from last run if incomplete or start over
+                                                if (element != nullptr && element->IsCompleted()) {
+                                                    element->Clear();
+                                                }
+
+                                                const std::string value(&stream[_keyValueSeparatorPos], loaded - _keyValueSeparatorPos - 1);
+
+                                                /*uint16_t loaded =*/ Deserialize(element, key, value.c_str(), value.length(), offset , error);
                                             } else {
-                                                element = TypeEstimate(value);
-
-                                                if (element != nullptr) {
-                                                    uint16_t loaded = 0;
-                                                    loaded += element->Deserialize(value.c_str(), value.length(), offset/*, error*/);
-
-                                                    if (!offset) {
-                                                        std::string* leakyKey = new std::string(key.Value());
-
-                                                        _allocated.push_back(std::pair<std::string*, IElement*>(leakyKey, element));
-                                                        _data.push_back(JSONLabelValue(leakyKey->c_str(), element));
-                                                    } else {
-                                                        delete element;
-                                                    }
-                                                } else {
-                                                    // Invalidate
-                                                    offset = 1;
+                                                // {}
+                                                // Both key and value have zero lenght and ':' and ',' are absent
+                                                if (   _keyValuePairSeparatorPos
+                                                    || _keyValueSeparatorCount
+                                                   ) {
+                                                    _state = ERROR;
+                                                    error = Error{"Character sequence without (sufficient) data for Container"};
+                                                    continue;
                                                 }
                                             }
 
-                                            if (offset) {
-                                                _state = ERROR;
-                                                error = Error{"Failed to deserialize type for Container"};
-                                                continue;
-                                            }
-                                        } else {
-                                            // {}
-                                            // Both key and value have zero lenght and ':' and ',' are absent
-                                            if (   keyValuePairSeparatorPos
-                                                || keyValueSeparatorCount
-                                               ) {
-                                                _state = ERROR;
-                                                error = Error{"Character sequence without (sufficient) data for Container"};
-                                                continue;
-                                            }
+                                            _keyValuePairStartPos = loaded;
+
+                                            _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                            _keyValueSeparatorCount -= _keyValueSeparatorCount ? 1 : 0;
                                         }
 
-                                        keyValuePairStartPos = loaded;
+                                        _suffix = _suffix || _containerStartMarkerCount == _containerEndMarkerCount;
 
-                                        keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
-
-                                        keyValueSeparatorCount -= keyValueSeparatorCount ? 1 : 0;
-                                    }
-
-                                    suffix = suffix || containerStartMarkerCount == containerEndMarkerCount;
-
-                                    break;
-                    case 'n'    :   FALLTHROUGH;
-                    case 'u'    :   FALLTHROUGH;
-                    case 'l'    :   // JSON value null
-                                    ASSERT(containerStartMarkerCount || ((offset - ((_state & QUOTED) || stringScope ? 1 : 0)) < sizeof(NullTag)));
-
-                                    if (keyValueSeparatorCount) {
-                                        continue;
-                                    }
-
-                                    if (   (!containerStartMarkerCount && ch != IElement::NullTag[offset - ((_state & QUOTED) || stringScope ? 1 : 0)])
-                                        || suffix
-                                       ) {
-                                        _state = ERROR;
-                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
-
-                                    suffix =    suffix
-                                             || (!containerStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
-                                             ;
-
-                                    _state |= suffix ? UNDEFINED : NONE;
-
-                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
-
-                                    break;
-                    default     :   if (stringScope || arrayStartMarkerCount != arrayEndMarkerCount) {
                                         break;
-                                    }
+                        case 'n'    :   FALLTHROUGH;
+                        case 'u'    :   FALLTHROUGH;
+                        case 'l'    :   // JSON value null
+                                        ASSERT(_containerStartMarkerCount || ((offset - ((_state & QUOTED) || _stringScope ? 1 : 0)) < sizeof(NullTag)));
 
-                                    if (suffix || (_state & UNDEFINED)) {
-                                        _state = ERROR;
-                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
-                                        continue;
-                                    }
+                                        if (_keyValueSeparatorCount) {
+                                            continue;
+                                        }
 
-                                    keyValuePairSeparatorCount -= keyValuePairSeparatorCount ? 1 : 0;
+                                        if (   (!_containerStartMarkerCount && ch != IElement::NullTag[offset - ((_state & QUOTED) || _stringScope ? 1 : 0)])
+                                            || _suffix
+                                           ) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        _suffix =    _suffix
+                                                 || (!_containerStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
+                                                 ;
+
+                                        _state |= _suffix ? UNDEFINED : NONE;
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                        break;
+                        default     :   if (_stringScope || _arrayStartMarkerCount != _arrayEndMarkerCount) {
+                                            break;
+                                        }
+
+                                        if (_suffix || (_state & UNDEFINED)) {
+                                            _state = ERROR;
+                                             error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+                        }
+
+                        ++offset;
                     }
-
-                    ++offset;
                 }
 
-                if (completed && loaded < maxLength) {
+                if (_completed && loaded < maxLength) {
                     if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
                         error = Error{"Input data contains trailing characters for Container"};
                     }
@@ -4481,10 +4820,6 @@ namespace Core {
                 if (!(error.IsSet())) {
                     offset = 0;
                     _state |= (_state & UNDEFINED) ? 0 : COMPLETE;
-                } else {
-                    // Invalidate
-                    loaded = 0;
-                    offset = 1;
                 }
 
                 return (loaded);
@@ -4616,14 +4951,35 @@ namespace Core {
             }
 
         protected:
+
+            virtual uint16_t Deserialize(IElement* element, VARIABLE_IS_NOT_USED const std::string& label, const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
+            {
+                uint16_t loaded = 0;
+
+                if (element != nullptr) {
+                    loaded += element->Deserialize(stream, maxLength, offset, error);
+
+                    if (element->IsCompleted()) {
+                        ::memset(&_current, 0, sizeof(_current));
+                        _stringScope = false;
+                        _beforeStringScope = false;
+                        _afterStringScope =false;
+                    }
+                } else {
+//                    error = Error{"Invalid element provided for Container."};
+                }
+
+                return loaded;
+            }
+
             void Reset()
             {
                 _data.clear();
+            }
 
-                for (auto head = _allocated.begin(), tail = _allocated.end(), it = head; it != tail; it++) {
-                    delete std::get<0>(*it);
-                    delete std::get<1>(*it);
-                }
+            virtual IElement* Find(const std::string& label)
+            {
+                return Find(label.c_str());
             }
 
             IElement* Find(const char label[])
@@ -4683,188 +5039,33 @@ namespace Core {
 
         private:
 
-            enum TypeEstimatedSupportedJSONTypes {
-                UNDETERMINED,
-                CONTAINER,
-                ARRAYTYPE,
-                DECIMALU64,
-                DECIMALS64,
-                HEXADECIMALU64,
-                HEXADECIMALS64,
-                OCTALU64,
-                OCTALS64,
-                DOUBLE,
-                BOOLEAN,
-                STRING,
-            };
-
-            IElement* TypeEstimate(const std::string& value) const
-            {
-                TypeEstimatedSupportedJSONTypes type = UNDETERMINED;
-                return TypeEstimate(value, type);
-            }
-
-            IElement* TypeEstimate(const std::string& value, enum TypeEstimatedSupportedJSONTypes& type) const
-            {
-                IElement* element = nullptr;
-
-                // Estimate type
-                std::string::size_type nonSpaceFirstPos = value.find_first_not_of("\u0009\u000A\u000D\u0020");
-                std::string::size_type nonSpaceLastPos = value.find_last_not_of("\u0009\u000A\u000D\u0020");
-
-                if (   nonSpaceFirstPos == std::string::npos
-                    || nonSpaceLastPos == std::string::npos
-                ) {
-                    // Empty?
-                    return element;
-                }
-
-                // All types can be quoted
-
-                if (value[nonSpaceFirstPos] == '"'
-                ) {
-                    // Type might be quoted or just String
-                    ++nonSpaceFirstPos;
-                }
-
-                switch (value[nonSpaceFirstPos]) {
-                    case '{' :  // Assume it is a Container
-                    case '}' :  // Assume a Container is intended but wrongly formatted
-                                element = new Container();
-                                type = CONTAINER;
-                                break;
-                    case '[' :  // Assume it is an ArrayType
-                    case ']' :  // Assume an ArrayType is intended but wringly formatted
-                                // ArrayType is of fixed type TYPE and as consequence does not support (compile time) type deducton recursion
-                                {
-                                    uint16_t depth = 0, typeStartPos = nonSpaceFirstPos, typeEndPos = nonSpaceFirstPos;
-
-                                    for (auto index = nonSpaceFirstPos, end = value.length(); index < end; index++) {
-                                        const char character = value[index];
-
-                                        if (character == ']') {
-                                            typeEndPos = index;
-                                            break;
-                                        }
-
-                                        if (character == '[') {
-                                            typeStartPos = index;
-                                            ++depth;
-                                        }
-                                    }
-
-                                    if ((typeStartPos + 1) < typeEndPos) {
-                                        // Determine type of contained element
-// FIXME: Inefficient
-                                        element = TypeEstimate(value.substr(typeStartPos + 1, typeEndPos - typeStartPos - 1), type);
-                                        delete element;
-
-// FIXME: Currently fallback to underlying String instead of actual type
-                                        switch(depth) {
-                                        case 1  : element = new ArrayType<String>;
-                                                  break;
-                                        case 2  : element = new NestedArrayType<String, 1>::type;
-                                                  break;
-                                        case 3  : FALLTHROUGH;
-                                                  // Maximum depth without warning
-                                        default : element = new NestedArrayType<String, 2>::type;
-                                        }
-
-                                        type = ARRAYTYPE;
-                                    } else {
-                                        // No contained element. Hence unknown contained type, thus (opaque) String is the most suitable option
-                                        element = new ArrayType<String>;
-                                        type = ARRAYTYPE;
-                                    }
-                                }
-                                break;
-                    case 't' :  {
-                                    const std::string T(IElement::TrueTag);
-                                    if (   T.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                        && T == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                    ) {
-                                        // Assume it is a Boolean
-                                        element = new Boolean;
-                                        type = BOOLEAN;
-                                        break;
-                                    }
-                                }
-                                FALLTHROUGH;
-                    case 'f' :  {
-                                    const std::string F(IElement::FalseTag);
-                                    if (   F.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                        && F == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                    ) {
-                                        // Assume it is a Boolean
-                                        element = new Boolean;
-                                        type = BOOLEAN;
-                                        break;
-                                    }
-                                }
-                                FALLTHROUGH;
-                    case 'n' :  {
-                                    const std::string N(IElement::NullTag);
-                                    if (   N.length() <= (nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                        && N == std::string(&value[nonSpaceFirstPos], nonSpaceLastPos - nonSpaceFirstPos + 1)
-                                    ) {
-                                        // Assume it is a nullified element of unknown type thus (opaque) String is the most suitable option
-                                        element = new String();
-                                        type = STRING;
-                                        break;
-                                    }
-                                }
-                                FALLTHROUGH;
-                    default  :  bool negative = value[nonSpaceFirstPos] == '-';
-
-                                if (negative) {
-                                    ++nonSpaceFirstPos;
-                                }
-
-                                if (std::isdigit(value[nonSpaceFirstPos])) {
-                                    // Assume it is a FloatType or NumberType
-                                    if (value.find_first_of(".eE") != std::string::npos) {
-                                        // Assume it is a FloatType
-                                        element = static_cast<IElement*>(new Double());
-                                        type = DOUBLE;
-                                    } else if (value.find_first_of("x") != std::string::npos) {
-                                        // Assume it is a Hex(S/U)Int(8/16/32/64)
-                                        element = negative ? static_cast<IElement*>(new HexSInt64()) : static_cast<IElement*>(new HexUInt64());
-                                        type = negative ? HEXADECIMALS64 : HEXADECIMALU64;
-                                    } else if (    (nonSpaceLastPos ==  nonSpaceFirstPos && value[nonSpaceFirstPos] == '0')
-                                                || (nonSpaceLastPos > nonSpaceFirstPos && value[nonSpaceFirstPos] == '0' && value[nonSpaceFirstPos + 1] != '0')
-                                              ) {
-                                        // Assume it is a Dec(S/U)Int(8/16/32/64)
-                                        element = negative ? static_cast<IElement*>(new DecSInt64()) : static_cast<IElement*>(new DecUInt64());
-                                        type = negative ? DECIMALS64 : DECIMALU64;
-                                    } else {
-                                        // Assume it is a Oct(S/U)Int(8/16/32/64)
-                                        element = negative ? static_cast<IElement*>(new OctSInt64()) : static_cast<IElement*>(new OctUInt64());
-                                        type = negative ? OCTALS64 : OCTALU64;
-                                    }
-
-                                    break;
-                                }
-
-                                // What remains should be considered as an opaque string
-                                element = static_cast<IElement*>(new String());
-                                type = STRING;
-                }
-
-                ASSERT(element != nullptr);
-
-                return element;
-            }
+            struct JSONElement {IElement* element; uint32_t offset;};
 
             uint8_t _state;
             uint16_t _count;
             union {
-                mutable IElement* json;
+                mutable struct JSONElement json;
                 mutable IMessagePack* pack;
             } _current;
             JSONElementList _data;
-            std::list<std::pair<std::string*, IElement*>> _allocated;
             mutable JSONElementList::const_iterator _iterator;
             mutable String _fieldName;
+
+            bool _completed;
+            bool _suffix;
+            bool _beforeStringScope;
+            bool _afterStringScope;
+            bool _stringScope;
+
+            uint16_t _arrayStartMarkerCount;
+            uint16_t _arrayEndMarkerCount;
+            uint16_t _keyValuePairSeparatorCount;
+            uint16_t _containerStartMarkerCount;
+            uint16_t _containerEndMarkerCount;
+            uint16_t _keyValueSeparatorCount;
+            uint16_t _keyValuePairStartPos;
+            uint16_t _keyValuePairSeparatorPos;
+            uint16_t _keyValueSeparatorPos;
         };
 
         class VariantContainer;
@@ -5698,5 +5899,3 @@ using JsonValue = WPEFramework::Core::JSON::Variant;
 using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
 
 #endif // __JSON_H
-
-#undef FALLTHROUGH
