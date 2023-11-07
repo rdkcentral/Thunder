@@ -63,6 +63,13 @@ bool SecureSocketPort::Handler::Initialize() {
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
     SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
 
+    // Enable SNI by default (Server Name Indication) in case there's a host name set in the remote
+    // node, so that the TLS "Client Hello" message contains a "server_name" extension with the host
+    // name, this way allowing a better interoperability with TLS servers.
+    if (!RemoteNode().RemoteHostName().empty()) {
+        SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().RemoteHostName().c_str());
+    }
+
     return (Core::SocketPort::Initialize());
 }
 

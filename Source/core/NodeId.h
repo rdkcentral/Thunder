@@ -243,6 +243,7 @@ namespace Core {
         }
 
         string HostName() const;
+        string RemoteHostName() const;
         void HostName(const TCHAR strHostName[]);
 
         NodeId AnyInterface() const;
@@ -285,6 +286,7 @@ namespace Core {
         }
 
         mutable string m_hostName;
+        string m_remoteHostName;
         SocketInfo m_structInfo;
         static bool m_isIPV6Enabled;
     };
