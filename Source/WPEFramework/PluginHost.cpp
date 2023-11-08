@@ -901,7 +901,6 @@ POP_WARNING()
                                 printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
                             }
                         }
-                        status->Release();
                         break;
                     }
                     case 'T': {
