@@ -143,7 +143,6 @@ void ReadDirectory (const string& name) {
 }
 
 int main(int argc, char *argv[]) {
-    
     if (ParseOptions(argc, argv) == true) {
 
         printf ("Iterating over %u entries.\n\n", static_cast<unsigned int>(_loadLocation.size()));
