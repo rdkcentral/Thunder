@@ -68,6 +68,7 @@ namespace PluginHost {
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
+                Core::SystemInfo::SetEnvironment(_T("THUNDER_BACKGROUND"), _T("true"));
                 break;
 #endif
             case 'h':
@@ -585,7 +586,7 @@ POP_WARNING()
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), messagingSettings, _background, options.flushMode);
 
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
@@ -596,6 +597,16 @@ POP_WARNING()
                 {
                     fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
+            }
+
+            // Redirect the standard error to the messaging engine and the MessageControl plugin
+            // And if Thunder is running in the background, do the same for standard output
+            Messaging::ConsoleStandardError::Instance().Open();
+            if (_background == true) {
+                // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
+                // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
+                ::setvbuf(stdout, NULL, _IONBF, 0);
+                Messaging::ConsoleStandardOut::Instance().Open();
             }
             
 #ifdef __CORE_WARNING_REPORTING__
@@ -845,6 +856,9 @@ POP_WARNING()
                                                                                               : "Unavailable");
                             printf("Bluetooth:    %s\n",
                                 (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
+                                                                                              : "Unavailable");
+                            printf("Cryptography: %s\n",
+                                (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
                                                                                               : "Unavailable");
                             printf("------------------------------------------------------------\n");
                             if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {

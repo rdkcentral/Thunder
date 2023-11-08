@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
+    <ClCompile Include="generated\ProxyStubs_ControllerDeprecated.cpp" />
     <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
     <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
     <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
@@ -116,6 +117,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,7 +128,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -141,6 +143,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -149,7 +152,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -164,6 +167,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -172,7 +176,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -189,6 +193,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -199,7 +204,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>

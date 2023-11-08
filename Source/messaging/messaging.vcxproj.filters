@@ -60,6 +60,9 @@
     <ClInclude Include="ConsoleStreamRedirect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OperationalCategories.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Logging.cpp">
@@ -78,6 +81,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DirectOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationalCategories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleStreamRedirect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

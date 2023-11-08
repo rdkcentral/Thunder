@@ -17,24 +17,29 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
-
-#include "MessageClient.h"
-#include "Logging.h"
-#include "LoggingCategories.h"
-#include "DirectOutput.h"
-#include "TraceCategories.h"
-#include "TraceControl.h"
-#include "Control.h"
-#include "TraceFactory.h"
-#include "TextMessage.h"
+#include "Module.h"
 #include "ConsoleStreamRedirect.h"
-#include "OperationalCategories.h"
 
+namespace WPEFramework {
+namespace Messaging {
+
+    ConsoleStandardOut::ConsoleStandardOut()
 #ifdef __WINDOWS__
-#pragma comment(lib, "messaging.lib")
+        : Core::TextStreamRedirectType<StandardOut>(::_fileno(stdout))
+#else
+        : Core::TextStreamRedirectType<StandardOut>(STDOUT_FILENO)
 #endif
+    {
+    }
+
+    ConsoleStandardError::ConsoleStandardError()
+#ifdef __WINDOWS__
+        : Core::TextStreamRedirectType<StandardError>(::_fileno(stderr))
+#else
+        : Core::TextStreamRedirectType<StandardError>(STDERR_FILENO)
+#endif
+    {
+    }
+
+}
+}

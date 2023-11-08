@@ -20,26 +20,30 @@
 #pragma once
 #include "Module.h"
 
-#include "IPluginStarter.h"
+namespace WPEFramework {
 
-using namespace WPEFramework;
+namespace PluginHost {
 
-/**
- * @brief COM-RPC implementation of a plugin starter
- *
- * Connects to Thunder over COM-RPC and attempts to start a given plugin
- */
-class COMRPCStarter : public IPluginStarter {
-public:
-    explicit COMRPCStarter(const string& pluginName);
-    ~COMRPCStarter() override;
+struct DEPRECATED EXTERNAL IController : public virtual Core::IUnknown {
 
-    bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
-    
-private:
-    using ControllerConnector = RPC::SmartControllerInterfaceType<Exchange::Controller::ILifeTime>;
+    enum { ID = RPC::ID_CONTROLLER };
 
-private:
-    ControllerConnector _connector;
-    const string _pluginName;
+    ~IController() override = default;
+
+    virtual uint32_t Persist() = 0;
+
+    virtual uint32_t Delete(const string& path) = 0;
+
+    virtual uint32_t Reboot() = 0;
+
+    virtual uint32_t Environment(const string& index, string& environment /* @out */ ) const = 0;
+
+    virtual uint32_t Configuration(const string& callsign, string& configuration /* @out */) const = 0;
+    virtual uint32_t Configuration(const string& callsign, const string& configuration) = 0;
+
+    virtual uint32_t Clone(const string& basecallsign, const string& newcallsign) = 0;
 };
+
+}
+
+} // namespace WPEFramework

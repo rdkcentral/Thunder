@@ -384,7 +384,7 @@ namespace ProcessContainers {
             TRACE(ProcessContainers::ProcessContainerization, (_T("started %s container! descriptor: %d"), _name.c_str(), _descriptor));
             result = true;
         }
-        _adminLock.UnLock();
+        _adminLock.Unlock();
 
         return result;
     }

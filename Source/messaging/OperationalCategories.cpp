@@ -17,24 +17,15 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
-
-#include "MessageClient.h"
-#include "Logging.h"
-#include "LoggingCategories.h"
-#include "DirectOutput.h"
-#include "TraceCategories.h"
-#include "TraceControl.h"
-#include "Control.h"
-#include "TraceFactory.h"
-#include "TextMessage.h"
-#include "ConsoleStreamRedirect.h"
 #include "OperationalCategories.h"
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "messaging.lib")
-#endif
+namespace WPEFramework {
+
+namespace OperationalStream {
+
+    // Announce upfront all OperationalStream categories...
+    OPERATIONAL_STREAM_ANNOUNCE(StandardOut);
+    OPERATIONAL_STREAM_ANNOUNCE(StandardError);
+
+}
+}
