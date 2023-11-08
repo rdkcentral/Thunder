@@ -256,12 +256,21 @@ namespace RPC {
                         if(!flagChecked) {
                             auto flag = reinterpret_cast<proxystubs_options_func_t>(library.LoadFunction(_T("proxystubs_options")));
                             flagChecked = true;
-                            std::cout << "Flag: " << flag << std::endl;
                             if (flag == nullptr) {
-                                SYSLOG(Logging::Startup, (_T("ProxyStubs loaded without flags")));
+                                SYSLOG(Logging::Error, (_T("Coudn't check ProxyStubs flags")));
                             }
                             else {
-                                SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with %d flag"), flag));
+                                if (flag() == (proxystubs_options_t::PROXYSTUBS_OPTIONS_COHERENT & proxystubs_options_t::PROXYSTUBS_OPTIONS_SECURE)) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with coherent and secure flag")));
+                                }
+                                else if(flag() == proxystubs_options_t::PROXYSTUBS_OPTIONS_COHERENT) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with coherent flag")));
+                                }
+                                else if(flag() == proxystubs_options_t::PROXYSTUBS_OPTIONS_SECURE) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with secure flag")));
+                                }
+                                else 
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded without flags")));
                             }
                         }
                     }
