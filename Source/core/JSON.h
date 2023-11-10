@@ -2945,6 +2945,7 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case ']':
+                                _state |= (modus::SET);
                                 offset = FIND_MARKER;
                                 loaded++;
                                 break;
