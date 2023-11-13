@@ -186,10 +186,10 @@ namespace Core {
 #endif
                 TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
                 delete _refCountedHandle;
+                _refCountedHandle = nullptr;
             } else {
                 Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
             }
-            _refCountedHandle = nullptr;
         }
         return (Core::ERROR_NONE);
     }
