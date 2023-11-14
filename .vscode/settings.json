@@ -4,5 +4,6 @@
         "PORT":"55555",
         "BINDING":"127.0.0.1",
         "IDLE_TIME":"180",
+        "BUILD_SHARED_LIBS" : "ON"
     }
 }
