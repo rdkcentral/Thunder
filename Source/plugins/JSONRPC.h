@@ -436,7 +436,7 @@ namespace PluginHost {
             }
             else if (realMethod == _T("exists")) {
                 result = Core::ERROR_NONE;
-                if (handler->Exists(realMethod) == Core::ERROR_NONE) {
+                if (handler->Exists(parameters) == Core::ERROR_NONE) {
                     response = _T("1");
                 }
                 else {
