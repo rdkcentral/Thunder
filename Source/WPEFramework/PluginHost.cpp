@@ -498,16 +498,18 @@ POP_WARNING()
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile));
+        bool defaultConfig(true);
         if (configFile.Open(true) == true) {
             Core::OptionalType<Core::JSON::Error> error;
             _config = new Config(configFile, _background, error);
-
+            if(_T(configFile.Name()) != _T(Server::ConfigFile)){
+                defaultConfig = false;
+            }       
             if (error.IsSet() == true) {
                 SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
                 delete _config;
                 _config = nullptr;
             }
-
             configFile.Close();
         } else {
 #ifndef __WINDOWS__
@@ -651,6 +653,14 @@ POP_WARNING()
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
             SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
+
+            // In case of not using default path for config file
+            if(!defaultConfig) {
+                std::string date = configFile.ModificationTime().ToRFC1123(true);
+                SYSLOG(Logging::Startup, (_T("Default config path is not being used.")));
+                SYSLOG(Logging::Startup, (_T("Config file path: %s"), configFile.Name().c_str()));
+                SYSLOG(Logging::Startup, (_T("Last modifacation of config file: %s"), date.c_str()));
+            }
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {

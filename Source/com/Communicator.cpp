@@ -239,9 +239,9 @@ namespace RPC {
 
         Core::TextSegmentIterator places(Core::TextFragment(pathName), false, '|');
 
+        bool flagChecked(false);
         while (places.Next() == true) {
             Core::Directory index(places.Current().Text().c_str(), _T("*.so"));
-
             while (index.Next() == true) {
                 // Check if this ProxySTub file is already loaded in this process space..
                 std::list<Core::Library>::const_iterator loop(processProxyStubs.begin());
@@ -251,13 +251,32 @@ namespace RPC {
 
                 if (loop == processProxyStubs.end()) {
                     Core::Library library(index.Current().c_str());
-
                     if (library.IsLoaded() == true) {
                         processProxyStubs.push_back(library);
+                        if(!flagChecked) {
+                            auto flag = reinterpret_cast<proxystubs_options_func_t>(library.LoadFunction(_T("proxystubs_options")));
+                            flagChecked = true;
+                            if (flag == nullptr) {
+                                SYSLOG(Logging::Error, (_T("Coudn't check ProxyStubs flags")));
+                            }
+                            else {
+                                if (flag() == (proxystubs_options_t::PROXYSTUBS_OPTIONS_COHERENT & proxystubs_options_t::PROXYSTUBS_OPTIONS_SECURE)) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with coherent and secure flag")));
+                                }
+                                else if(flag() == proxystubs_options_t::PROXYSTUBS_OPTIONS_COHERENT) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with coherent flag")));
+                                }
+                                else if(flag() == proxystubs_options_t::PROXYSTUBS_OPTIONS_SECURE) {
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded with secure flag")));
+                                }
+                                else 
+                                    SYSLOG(Logging::Startup, (_T("ProxyStubs loaded without flags")));
+                            }
+                        }
                     }
                 }
             }
-        }
+        }  
     }
 
     /* virtual */ uint32_t Communicator::RemoteConnection::Id() const

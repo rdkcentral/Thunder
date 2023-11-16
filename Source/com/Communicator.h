@@ -30,6 +30,7 @@
 #include "IUnknown.h"
 #include "Ids.h"
 
+#include "ProxyStubs.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
