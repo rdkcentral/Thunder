@@ -678,7 +678,7 @@ namespace Plugin {
     void Controller::StartupResume(const string& callsign, PluginHost::IShell* plugin)
     {
         if (_resumes.size() > 0) {
-            std::list<string>::iterator index(_resumes.begin());
+            Resumes::iterator index(_resumes.begin());
 
             ASSERT(_service != nullptr);
 
@@ -787,11 +787,7 @@ namespace Plugin {
         }
     }
 
-    uint32_t Controller::Validate(const string& token, const string& method, const string& paramaters) const /* override */ {
-        return(PluginHost::JSONRPC::Validate(token, Core::JSONRPC::Message::Method(method), paramaters));
-    }
-
-    uint32_t Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
+    Core::hresult Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
         string callsign(Core::JSONRPC::Message::Callsign(method));
@@ -814,16 +810,11 @@ namespace Plugin {
                 else {
                     ASSERT(service.IsValid());
 
-                    PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
+                    PluginHost::IDispatcher* dispatcher = service->QueryInterface<PluginHost::IDispatcher>();
 
                     if (dispatcher != nullptr) {
-                        PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
+                        result = dispatcher->Invoke(channelId, id, token, method, parameters, response);
 
-                        ASSERT(localDispatcher != nullptr);
-
-                        if (localDispatcher != nullptr) {
-                            result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
-                        }
                         dispatcher->Release();
                     }
                 }
@@ -838,9 +829,9 @@ namespace Plugin {
         _adminLock.Lock();
 
         // Make sure a sink is not registered multiple times.
-        ASSERT(std::find(_observers.begin(), _observers.end(), notification) == _observers.end());
+        ASSERT(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification) == _lifeTimeObservers.end());
 
-        _observers.push_back(notification);
+        _lifeTimeObservers.push_back(notification);
         notification->AddRef();
 
         _adminLock.Unlock();
@@ -852,17 +843,31 @@ namespace Plugin {
     {
         _adminLock.Lock();
 
-        std::list<Exchange::Controller::ILifeTime::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
+        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
 
         // Make sure you do not unregister something you did not register !!!
-        ASSERT(index != _observers.end());
+        ASSERT(index != _lifeTimeObservers.end());
 
-        if (index != _observers.end()) {
+        if (index != _lifeTimeObservers.end()) {
             (*index)->Release();
-            _observers.erase(index);
+            _lifeTimeObservers.erase(index);
         }
 
         _adminLock.Unlock();
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Register(Exchange::Controller::IShells::INotification* notification)
+    {
+        _pluginServer->Services().Register(notification);
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Unregister(Exchange::Controller::IShells::INotification* notification)
+    {
+        _pluginServer->Services().Unregister(notification);
 
         return (Core::ERROR_NONE);
     }
@@ -1015,8 +1020,13 @@ namespace Plugin {
     Core::hresult Controller::Clone(const string& callsign, const string& newcallsign, string& response)
     {
         Core::hresult result = Clone(callsign, newcallsign);
+
         if (result == Core::ERROR_NONE) {
-            response = newcallsign;
+            PluginHost::IShell* shell = reinterpret_cast<PluginHost::IShell*>(_pluginServer->Services().QueryInterfaceByCallsign(PluginHost::IShell::ID, newcallsign));
+
+            if (shell != nullptr) {
+                response = newcallsign;
+            }
         }
         return result;
     }
@@ -1121,7 +1131,7 @@ namespace Plugin {
     Core::hresult Controller::Subsystems(string& response) const
     {
         Core::JSON::ArrayType<SubsystemsData> jsonResponse;
-ASSERT(_service != nullptr);
+        ASSERT(_service != nullptr);
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
@@ -1170,9 +1180,9 @@ ASSERT(_service != nullptr);
     {
         _adminLock.Lock();
 
-        std::list<Exchange::Controller::ILifeTime::INotification*>::const_iterator index = _observers.begin();
+        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
 
-        while(index != _observers.end()) {
+        while(index != _lifeTimeObservers.end()) {
             (*index)->StateChange(callsign, state, reason);
             index++;
         }

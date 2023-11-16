@@ -116,19 +116,24 @@ namespace PluginHost {
     struct EXTERNAL ICompositPlugin : public virtual Core::IUnknown {
         enum { ID = RPC::ID_COMPOSIT_PLUGIN };
 
-        struct EXTERNAL INotification : public virtual Core::IUnknown {
-            enum { ID = RPC::ID_COMPOSIT_PLUGIN_NOTIFICATION };
+        struct EXTERNAL ICallback : public virtual Core::IUnknown {
+            enum { ID = RPC::ID_COMPOSIT_PLUGIN_CALLBACK };
 
-            ~INotification() override = default;
+            ~ICallback() override = default;
 
-            virtual uint32_t Activated(const string& callsign, IShell* plugin) = 0;
-            virtual uint32_t Deactivated(const string& callsign, IShell* plugin) = 0;
+            virtual void Created(const string& callsign, IShell* plugin) = 0;
+            virtual void Destroy(const string& callsign, IShell* plugin) = 0;
+
+            virtual void Activated(const string& callsign, IShell* plugin) = 0;
+            virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
+            virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
         };
 
         ~ICompositPlugin() override = default;
 
-        virtual uint32_t Register(INotification*) = 0;
-        virtual uint32_t Unregister(INotification*) = 0;
+        static constexpr TCHAR Delimiter = '/';
+
+        virtual uint32_t Callback(ICallback*) = 0;
     };
 
     /* @stubgen:omit */

@@ -82,27 +82,61 @@ namespace Core {
                     switch (frameworkError) {
                     case Core::ERROR_BAD_REQUEST:
                         Code = -32603; // Internal Error
+                        Text = _T("Unknown method.");
                         break;
                     case Core::ERROR_INVALID_DESIGNATOR:
+                        Text = _T("Invalid Request.");
                         Code = -32600; // Invalid request
                         break;
                     case Core::ERROR_INVALID_SIGNATURE:
                         Code = -32602; // Invalid parameters
+                        Text = _T("Invalid Parameters.");
                         break;
                     case Core::ERROR_UNKNOWN_KEY:
+                        Text = _T("Method not found.");
                         Code = -32601; // Method not found
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
+                        Text = _T("method invocation not allowed.");
+                        break;
+                    case Core::ERROR_PRIVILIGED_DEFERRED:
+                        Code = -32604;
+                        Text = _T("method invokation is deferred, Currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
+                        Text = _T("Call timed out.");
                         break;
                     case Core::ERROR_PARSE_FAILURE:
                         Code = -32700; // Parse error
+                        Text = _T("Parsing of the parameters failed");
                         break;
+                    case Core::ERROR_INVALID_RANGE:
+                        Code = Core::ERROR_INVALID_RANGE;
+                        Text = _T("Requested version is not supported.");
+                        break;
+                    case Core::ERROR_INCORRECT_URL:
+                        Code = Core::ERROR_INCORRECT_URL;
+                        Text = _T("Designator is invalid.");
+                        break;
+                    case Core::ERROR_ILLEGAL_STATE:
+                        Code = Core::ERROR_ILLEGAL_STATE;
+                        Text = _T("The service is in an illegal state!!!.");
+                    case Core::ERROR_FAILED_REGISTERED:
+                        Code = Core::ERROR_FAILED_REGISTERED;
+                        Text = _T("Registration already done!!!.");
+                        break;
+                    case Core::ERROR_FAILED_UNREGISTERED:
+                        Code = Core::ERROR_FAILED_UNREGISTERED;
+                        Text = _T("Unregister was already done!!!.");
+                        break;
+                    case Core::ERROR_HIBERNATED:
+                        Code = Core::ERROR_HIBERNATED;
+                        Text = _T("The service is in an Hibernated state!!!.");
                     default:
                         Code = static_cast<int32_t>(frameworkError);
+                        Text = _T("Non specific error!!!.");
                         break;
                     }
                 }

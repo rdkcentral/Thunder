@@ -369,561 +369,6 @@ namespace PluginHost {
             std::string _text;
         };
 
-        class CompositPlugin : public PluginHost::ICompositPlugin::INotification {
-        public:
-            static constexpr TCHAR RemotePluginDelimiter = '/';
-
-        private:
-            class ShellProxy : public PluginHost::IShell {
-            public:
-                ShellProxy() = delete;
-                ShellProxy(ShellProxy&&) = delete;
-                ShellProxy(const ShellProxy&) = delete;
-                ShellProxy& operator= (const ShellProxy&) = delete;
-
-                ShellProxy(PluginHost::IShell* real, const string callsign, const string& hostPlugin)
-                    : _adminLock()
-                    , _shell(real)
-                    , _callsign(hostPlugin + RemotePluginDelimiter + callsign) {
-                    _shell->AddRef();
-                }
-                ~ShellProxy() override {
-                    _adminLock.Lock();
-                    if (_shell != nullptr) {
-                        _shell->Release();
-                        _shell = nullptr;
-                    }
-                    _adminLock.Unlock();
-                }
-
-            public:
-                bool IsActive() const {
-                    return (_shell != nullptr);
-                }
-                void EnableWebServer(const string& URLPath, const string& fileSystemPath) override {
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        source->EnableWebServer(URLPath, fileSystemPath);
-                        source->Release();
-                    }
-                }
-                void DisableWebServer() override {
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        source->DisableWebServer();
-                        source->Release();
-                    }
-                }
-                //! Model: Returns a Human Readable name for the platform it is running on.
-                string Model() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Model();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Background: If enabled, the PluginHost is running in daemon mode
-                bool Background() const override {
-                    bool result = true;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Background();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Accessor: Identifier that can be used for Core:NodeId to connect to the webbridge.
-                string Accessor() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Accessor();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! WebPrefix: First part of the pathname in the HTTP request to select the webbridge components.
-                string WebPrefix() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->WebPrefix();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Locator: The name of the binary (so) that holds the given ClassName code.
-                string Locator() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Locator();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! ClassName: Name of the class to be instantiated for this IShell
-                string ClassName() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->ClassName();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Versions: Returns a JSON Array of versions (JSONRPC interfaces) supported by this plugin.
-                string Versions() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Versions();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
-                string Callsign() const override {
-                    return (_callsign);
-                }
-                //! PersistentPath: <config:persistentpath>/<plugin:callsign>/
-                string PersistentPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->PersistentPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
-                string VolatilePath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->VolatilePath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! DataPath: <config:datapath>/<plugin:classname>/
-                string DataPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->DataPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! ProxyStubPath: <config:proxystubpath>/
-                string ProxyStubPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->ProxyStubPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! SystemPath: <config:systempath>/
-                string SystemPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->SystemPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! SystemPath: <config:apppath>/Plugins/
-                string PluginPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->PluginPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! SystemPath: <config:systemrootpath>/
-                string SystemRootPath() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->SystemRootPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! SystemRootPath: Set <config:systemrootpath>/
-                uint32_t SystemRootPath(const string& systemRootPath) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->SystemRootPath(systemRootPath);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Startup: <config:startup>/
-                PluginHost::IShell::startup Startup() const override {
-                    PluginHost::IShell::startup result = PluginHost::IShell::startup::UNAVAILABLE;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Startup();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Startup: Set<startup,autostart,resumed states>/
-                uint32_t Startup(const startup value) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Startup(value);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Substituted Config value
-                string Substitute(const string& input) const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Substitute(input);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                bool Resumed() const override {
-                    bool result = true;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Resumed();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                uint32_t Resumed(const bool value) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Resumed(value);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                string HashKey() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->HashKey();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                string ConfigLine() const override {
-                    string result;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->SystemRootPath();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                uint32_t ConfigLine(const string& config) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->ConfigLine(config);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                //! Return whether the given version is supported by this IShell instance.
-                bool IsSupported(const uint8_t version) const override {
-                    bool result = true;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->IsSupported(version);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
-                // status of the sub systems is.
-                PluginHost::ISubSystem* SubSystems() override {
-                    PluginHost::ISubSystem* result = nullptr;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->SubSystems();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                // Notify all subscribers of this service with the given string.
-                // It is expected to be JSON formatted strings as it is assumed that this is for reaching websockets clients living in
-                // the web world that have build in functionality to parse JSON structs.
-                void Notify(const string& message) override {
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        source->Notify(message);
-                        source->Release();
-                    }
-                }
-                // Allow access to the Shells, configured for the different Plugins found in the configuration.
-                // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
-                // on the controller.
-                void Register(IPlugin::INotification* sink) override {
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        source->Register(sink);
-                        source->Release();
-                    }
-                }
-                void Unregister(IPlugin::INotification* sink) override {
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        source->Unregister(sink);
-                        source->Release();
-                    }
-                }
-                state State() const override {
-                    state result = state::DEACTIVATED;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->State();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) override {
-                    void* result = nullptr;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->QueryInterfaceByCallsign(id, name);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
-                // NOTE: These are Blocking calls!!!!!
-                uint32_t Activate(const reason why) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Activate(why);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                uint32_t Deactivate(const reason why) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Deactivate(why);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                uint32_t Unavailable(const reason why) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Unavailable(why);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                uint32_t Hibernate(const uint32_t timeout) override {
-                    uint32_t result = Core::ERROR_UNAVAILABLE;
-                    PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Hibernate(timeout);
-                        source->Release();
-                    }
-                    return (result);
-                }
-                reason Reason() const override {
-                    reason result = reason::FAILURE;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Reason();
-                        source->Release();
-                    }
-                    return (result);
-                }
-                Core::hresult Metadata(string& info /* @out */) const {
-                    Core::hresult result = Core::ERROR_UNAVAILABLE;
-                    const PluginHost::IShell* source = Source();
-                    if (source != nullptr) {
-                        result = source->Metadata(info);
-                        source->Release();
-                    }
-                    return (result);
-                }
-
-                // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
-                // This method will return a error if it is NOT in the main process.
-                /* @stubgen:stub */
-                uint32_t Submit(const uint32_t Id VARIABLE_IS_NOT_USED, const Core::ProxyType<Core::JSON::IElement>& response VARIABLE_IS_NOT_USED) override {
-                    return (Core::ERROR_NOT_SUPPORTED);
-                }
-
-                // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
-                // This method will return a nullptr if it is NOT in the main process.
-                /* @stubgen:stub */
-                ICOMLink* COMLink() override {
-                    return (nullptr);
-                }
-
-                BEGIN_INTERFACE_MAP(ShellProxy)
-                    INTERFACE_ENTRY(PluginHost::IShell)
-                END_INTERFACE_MAP
-
-            private:
-                PluginHost::IShell* Source() {
-                    _adminLock.Lock();
-                    PluginHost::IShell* result = _shell;
-                    if (result != nullptr) {
-                        result->AddRef();
-                    }
-                    _adminLock.Unlock();
-                    return (result);
-                }
-                const PluginHost::IShell* Source() const {
-                    _adminLock.Lock();
-                    const PluginHost::IShell* result = _shell;
-                    if (result != nullptr) {
-                        result->AddRef();
-                    }
-                    _adminLock.Unlock();
-                    return (result);
-                }
-
-            private:
-                mutable Core::CriticalSection _adminLock;
-                PluginHost::IShell* _shell;
-                const string _callsign;
-            };
-            using CompositPlugins = std::unordered_map<string, ShellProxy*>;
-
-        public:
-            CompositPlugin(ServiceMap& parent, const string& linkPlugin)
-                : _parent(parent)
-                , _adminLock()
-                , _linkPlugin(linkPlugin)
-                , _plugins() {
-            }
-            ~CompositPlugin() override {
-                ASSERT(_plugins.empty() == true);
-            }
-
-        public:
-            const string& Callsign() const {
-                return (_linkPlugin);
-            }
-            template<typename ACTION>
-            void Visit(ACTION&& action) {
-                _adminLock.Lock();
-                for (std::pair<const string, ShellProxy*>& entry : _plugins) {
-                    action(entry.first, entry.second);
-                }
-                _adminLock.Unlock();
-            }
-            template<typename ACTION>
-            void Visit(ACTION&& action) const {
-                _adminLock.Lock();
-                for (const std::pair<const string, ShellProxy*>& entry : _plugins) {
-                    action(entry.first, entry.second);
-                }
-                _adminLock.Unlock();
-            }
-            void* QueryInterfaceByCallsign(const uint32_t id, const string& name) {
-                void* result = nullptr;
-
-                _adminLock.Lock();
-                CompositPlugins::iterator index(_plugins.find(name));
-                if (index != _plugins.end()) {
-                    result = index->second->QueryInterfaceByCallsign(id, name);
-                }
-                _adminLock.Unlock();
-
-                return (result);
-            }
-            template<typename INTERFACE>
-            INTERFACE* QueryInterfaceByCallsign(const string& name) {
-                return (reinterpret_cast<INTERFACE*>(QueryInterfaceByCallsign(INTERFACE::ID, name)));
-            }
-            uint32_t Activated(const string& callsign, PluginHost::IShell* plugin) override {
-                ShellProxy* entry = nullptr;
-                _adminLock.Lock();
-                CompositPlugins::iterator index(_plugins.find(callsign));
-                if (index == _plugins.end()) {
-                    Core::ProxyType<ShellProxy> object = Core::ProxyType<ShellProxy>::Create(plugin, callsign, _linkPlugin);
-                    entry = object.operator->();
-                    entry->AddRef();
-                    TRACE(Activity, (_T("Activated composit plugin [%s]"), entry->Callsign().c_str()));
-                    _plugins.emplace(std::piecewise_construct,
-                        std::make_tuple(callsign),
-                        std::make_tuple(entry));
-                }
-                _adminLock.Unlock();
-
-                if (entry != nullptr) {
-                    _parent.Activated(entry->Callsign(), entry);
-                }
-
-                return (Core::ERROR_NONE);
-            }
-            uint32_t Deactivated(const string& callsign, PluginHost::IShell* plugin VARIABLE_IS_NOT_USED) override {
-                ShellProxy* entry = nullptr;
-
-                _adminLock.Lock();
-                CompositPlugins::iterator index(_plugins.find(callsign));
-                if (index != _plugins.end()) {
-                    entry = index->second;
-                    _plugins.erase(index);
-                }
-                _adminLock.Unlock();
-
-                if (entry != nullptr) {
-                    _parent.Deactivated(entry->Callsign(), entry);
-                    TRACE(Activity, (_T("Deactivated composit plugin [%s]"), entry->Callsign().c_str()));
-                    entry->Release();
-                }
-
-                return (Core::ERROR_NONE);
-            }
-            void Clear() {
-                std::vector<ShellProxy*> entries;
-
-                _adminLock.Lock();
-                for (auto& entry : _plugins) {
-                    entries.push_back(entry.second);
-                }
-                _plugins.clear();
-                _adminLock.Unlock();
-
-                for (auto& element : entries) {
-                    _parent.Deactivated(element->Callsign(), element);
-                    element->Release();
-                }
-            }
-
-            BEGIN_INTERFACE_MAP(RemoteLink)
-                INTERFACE_ENTRY(PluginHost::ICompositPlugin::INotification)
-            END_INTERFACE_MAP
-
-        private:
-            ServiceMap& _parent;
-            mutable Core::CriticalSection _adminLock;
-            const string _linkPlugin;
-            CompositPlugins _plugins;
-        };
         class Service : public IShell::ICOMLink, public PluginHost::Service {
         public:
             enum mode {
@@ -1309,19 +754,19 @@ namespace PluginHost {
                     _extended->Detach(channel);
                 }
             }
-            inline void Configuration(const string& config)
-            {
-                PluginHost::Service::ConfigLine(config);
-            }
-            string Configuration() const
-            {
+            //inline void Configuration(const string& config)
+            //{
+            //    PluginHost::Service::ConfigLine(config);
+            //}
+            //string Configuration() const
+            //{
 
-                Lock();
-                string result(PluginHost::Service::ConfigLine());
-                Unlock();
+            //    Lock();
+            //    string result(PluginHost::Service::ConfigLine());
+            //    Unlock();
 
-                return (result);
-            }
+            //    return (result);
+            //}
             bool Update(const Plugin::Config& config)
             {
                 bool succeeded = false;
@@ -1468,103 +913,33 @@ namespace PluginHost {
                     IncrementProcessedRequests();
 #endif
                     Core::InterlockedIncrement(_activity);
-                    uint32_t result;
-                    string method(message.Designator.Value());
+                    string output;
+                    uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
 
-                    if (message.Id.IsSet() == true) {
-                        response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                        response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-                        response->Id = message.Id.Value();
-                    }
+                    if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
 
-                    if ((message.Designator.IsSet() == false) || (method.empty())) {
-                        if (response.IsValid() == false) {
-                            response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                            response->Id.Null(true);
+                        response = IFactories::Instance().JSONRPC();
+                        
+                        if (message.Id.IsSet()) {
+                            response->Id = message.Id.Value();
                         }
 
-                        response->Error.SetError(Core::ERROR_PARSE_FAILURE);
-                        response->Error.Text = _T("Parsing of the method failed");
-                    }
-                    else if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation not allowed.");
-                        }
-                    }
-                    else if (result == Core::ERROR_UNAVAILABLE) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation is deferred, Currently not allowed.");
-                        }
-                    }
-                    else if (result != Core::ERROR_NONE) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation could not be validated.");
-                        }
-                    }
-                    else {
-                        string output;
-                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
-
-                        if (result == Core::ERROR_PARSE_FAILURE) {
-                            if (response.IsValid() == false) {
-                                response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                                response->Id.Null(true);
+                        if (result == Core::ERROR_NONE) {
+                            if (output.empty() == true) {
+                                response->Result.Null(true);;
                             }
-
-                            response->Error.SetError(Core::ERROR_PARSE_FAILURE);
-                            response->Error.Text = _T("Parsing of the parameters failed");
+                            else {
+                                response->Result = output;
+                            }
                         }
-                        else if (response.IsValid() == true) {
-                            switch (result) {
-                            case Core::ERROR_NONE:
-                                if (output.empty() == true) {
-                                    response->Result.Null(true);
-                                }
-                                else {
-                                    response->Result = output;
-                                }
-                                break;
-                            case Core::ERROR_INVALID_RANGE:
-                                response->Error.SetError(Core::ERROR_INVALID_RANGE);
-                                response->Error.Text = _T("Requested version is not supported.");
-                                break;
-                            case Core::ERROR_INCORRECT_URL:
-                                response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
-                                response->Error.Text = _T("Dessignator is invalid.");
-                                break;
-                            case Core::ERROR_BAD_REQUEST:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Unknown method.");
-                                break;
-                            case Core::ERROR_FAILED_REGISTERED:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Registration already done!!!.");
-                                break;
-                            case Core::ERROR_FAILED_UNREGISTERED:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Unregister was already done!!!.");
-                                break;
-                            case Core::ERROR_HIBERNATED:
-                                response->Error.SetError(Core::ERROR_HIBERNATED);
-                                response->Error.Text = _T("The service is in an Hibernated state!!!.");
-                                break;
-                            case Core::ERROR_ILLEGAL_STATE:
-                                response->Error.SetError(Core::ERROR_ILLEGAL_STATE);
-                                response->Error.Text = _T("The service is in an illegal state!!!.");
-                                break;
-                            case static_cast<uint32_t>(~0):
-                                response.Release();
-                                break;
-                            default:
-                                response->Error.Code = result;
-                                response->Error.Text = Core::ErrorToString(result);
-                                break;
+                        else {
+                            response->Error.SetError(result);
+                            if (output.empty() == false) {
+                                response->Error.Text = output;
                             }
                         }
                     }
+
                     Core::InterlockedDecrement(_activity);
                 }
 
@@ -2212,16 +1587,16 @@ namespace PluginHost {
 
                         if (current->second.IsSet() == true) {
                             if (current->second.Configuration.IsSet() == true) {
-                                (*index)->Configuration(current->second.Configuration.Value());
+                                index->ConfigLine(current->second.Configuration.Value());
                             }
                             if (current->second.SystemRootPath.IsSet() == true) {
-                                (*index)->SystemRootPath(current->second.SystemRootPath.Value());
+                                index->SystemRootPath(current->second.SystemRootPath.Value());
                             }
                             if (current->second.Startup.IsSet() == true) {
-                                (*index)->Startup(current->second.Startup.Value());
+                                index->Startup(current->second.Startup.Value());
                             }
                             if (current->second.Resumed.IsSet() == true) {
-                                (*index)->Resumed(current->second.Resumed.Value());
+                                index->Resumed(current->second.Resumed.Value());
                             }
                         }
                     }
@@ -2258,16 +1633,16 @@ namespace PluginHost {
                         // ServiceMap should *NOT* change runtime...
                         ASSERT(current != _callsigns.end());
 
-                        string config((*index)->Configuration());
+                        string config(index->ConfigLine());
 
                         if (config.empty() == true) {
                             current->second.Configuration = _T("{}");
                         } else {
                             current->second.Configuration = config;
                         }
-                        current->second.SystemRootPath = (index)->SystemRootPath();
-                        current->second.Startup = (index)->Startup();
-                        current->second.Resumed = (index)->Resumed();
+                        current->second.SystemRootPath = index->SystemRootPath();
+                        current->second.Startup = index->Startup();
+                        current->second.Resumed = index->Resumed();
                     }
 
                     // Persist the currently set information
@@ -2297,11 +1672,250 @@ namespace PluginHost {
         public:
             using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
-            using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
-            using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
+            using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
+
+            class Iterator {
+            public:
+                using Shells = std::unordered_map<string, Core::ProxyType<PluginHost::IShell> >;
+
+                Iterator()
+                    : _container()
+                    , _index()
+                    , _position(0) {
+                }
+                Iterator(const ServiceContainer& services, Shells&& composits)
+                    : _container(composits)
+                    , _index()
+                    , _position(0) {
+                    for (const std::pair<string, Core::ProxyType<Service>>& entry : services) {
+                        _container.emplace(std::piecewise_construct,
+                            std::make_tuple(entry.first),
+                            std::make_tuple(Core::ProxyType<PluginHost::IShell>(entry.second)));
+                    }
+                }
+                Iterator(Iterator&& move)
+                    : _container(std::move(move._container))
+                    , _index()
+                    , _position(0) {
+                }
+                Iterator(const Iterator& copy)
+                    : _container(copy._container)
+                    , _index()
+                    , _position(0) {
+                }
+                ~Iterator() = default;
+
+                Iterator& operator= (Iterator&& move) {
+                    _container = std::move(move._container);
+                    _index = std::move(move._index);
+                    _position = move._position;
+
+                    return (*this);
+                }
+                Iterator& operator= (const Iterator& copy) {
+                    _container = copy._container;
+                    _position = copy._position;
+                    if (_position > 0) {
+                        _index = _container.begin();
+                        uint32_t steps = _position - 1;
+                        while ((steps != 0) && (_index != _container.end())) {
+                            _index++;
+                            steps--;
+                        }
+                    }
+                    return (*this);
+                }
+
+            public:
+                bool IsValid() const {
+                    return ((_position > 0) && (_index != _container.end()));
+                }
+                void Reset() {
+                    _position = 0;
+                }
+                bool Next() {
+                    if (_position == 0) {
+                        _position = 1;
+                        _index = _container.begin();
+                    }
+                    else if (_index != _container.end()) {
+                        _position++;
+                        _index++;
+                    }
+                    return (_index != _container.end());
+                }
+                const Core::ProxyType<PluginHost::IShell>& Current() {
+                    ASSERT(IsValid());
+                    return (_index->second);
+                }
+                uint32_t Count() const {
+                    return (static_cast<uint32_t>(_container.size()));
+                }
+                const Core::ProxyType<PluginHost::IShell>& operator->()
+                {
+                    ASSERT(IsValid());
+
+                    return (_index->second);
+                }
+
+                Core::ProxyType<const PluginHost::IShell> operator->() const
+                {
+                    ASSERT(IsValid());
+
+                    return (Core::ProxyType<const PluginHost::IShell>(_index->second));
+                }
+
+            private:
+                 Shells _container;
+                 Shells::iterator _index;
+                 uint32_t _position;
+            }; 
 
         private:
+            class CompositPlugin : public PluginHost::ICompositPlugin::ICallback {
+            private:
+                using CompositPlugins = std::unordered_map<string, PluginHost::IShell*>;
+
+            public:
+                CompositPlugin(ServiceMap& parent, const string& linkPlugin)
+                    : _parent(parent)
+                    , _adminLock()
+                    , _linkPlugin(linkPlugin)
+                    , _plugins() {
+                }
+                ~CompositPlugin() override {
+                    ASSERT(_plugins.empty() == true);
+                }
+
+            public:
+                bool IsEmpty() const {
+                    return (_plugins.empty());
+                }
+                const string& Callsign() const {
+                    return (_linkPlugin);
+                }
+                template<typename ACTION>
+                void Visit(ACTION&& action) {
+                    _adminLock.Lock();
+                    for (std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
+                        action(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
+                    }
+                    _adminLock.Unlock();
+                }
+                template<typename ACTION>
+                void Visit(ACTION&& action) const {
+                    _adminLock.Lock();
+                    for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
+                        action(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
+                    }
+                    _adminLock.Unlock();
+                }
+                void* QueryInterfaceByCallsign(const uint32_t id, const string& name) {
+                    void* result = nullptr;
+
+                    _adminLock.Lock();
+                    CompositPlugins::iterator index(_plugins.find(name));
+                    if (index != _plugins.end()) {
+                        result = index->second->QueryInterfaceByCallsign(id, name);
+                    }
+                    _adminLock.Unlock();
+
+                    return (result);
+                }
+                template<typename INTERFACE>
+                INTERFACE* QueryInterfaceByCallsign(const string& name) {
+                    return (reinterpret_cast<INTERFACE*>(QueryInterfaceByCallsign(INTERFACE::ID, name)));
+                }
+
+                void Created(const string& callsign, IShell* plugin) override {
+                    bool report = false;
+
+                    _adminLock.Lock();
+
+                    CompositPlugins::iterator index(_plugins.find(callsign));
+
+                    if (index == _plugins.end()) {
+                        _plugins.emplace(std::piecewise_construct,
+                            std::make_tuple(callsign),
+                            std::make_tuple(plugin));
+                        TRACE(Activity, (_T("LinkPlugin [%s], added composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
+                        report = true;
+                    }
+                    _adminLock.Unlock();
+
+                    if (report == true) {
+                        _parent.Created(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                    }
+                }
+                void Destroy(const string& callsign, IShell* plugin) override {
+                    bool report = false;
+
+                    _adminLock.Lock();
+
+                    CompositPlugins::iterator index(_plugins.find(callsign));
+
+                    if (index != _plugins.end()) {
+                        _plugins.erase(index);
+                        TRACE(Activity, (_T("LinkPlugin [%s], removed composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
+                    }
+                    _adminLock.Unlock();
+
+                    if (report == true) {
+                        _parent.Destroy(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                    }
+                }
+                void Activated(const string& callsign, PluginHost::IShell* plugin) override {
+                    _adminLock.Lock();
+                    CompositPlugins::iterator index(_plugins.find(callsign));
+                    if (index != _plugins.end()) {
+                        _adminLock.Unlock();
+
+                        if (plugin != nullptr) {
+                            _parent.Activated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                        }
+                    }
+                }
+                void Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
+                    _adminLock.Lock();
+                    CompositPlugins::iterator index(_plugins.find(callsign));
+                    if (index != _plugins.end()) {
+                        _adminLock.Unlock();
+
+                        if (plugin != nullptr) {
+                            _parent.Deactivated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                        }
+                    }
+                }
+                void Unavailable(const string& callsign, PluginHost::IShell* plugin) override {
+                    _adminLock.Lock();
+                    CompositPlugins::iterator index(_plugins.find(callsign));
+                    if (index != _plugins.end()) {
+                        _adminLock.Unlock();
+
+                        if (plugin != nullptr) {
+                            _parent.Unavailable(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                        }
+                    }
+                }
+                void Copy(Iterator::Shells& list) {
+                    for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
+                        list.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first),
+                            std::forward_as_tuple(*static_cast<Core::IReferenceCounted*>(entry.second), *static_cast<PluginHost::IShell*>(entry.second)));
+                    }
+                }
+
+                BEGIN_INTERFACE_MAP(RemoteLink)
+                    INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
+                END_INTERFACE_MAP
+
+            private:
+                ServiceMap& _parent;
+                mutable Core::CriticalSection _adminLock;
+                const string _linkPlugin;
+                CompositPlugins _plugins;
+            };
             class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
@@ -2942,6 +2556,8 @@ POP_WARNING()
                 string _observerPath;
             };
 
+            using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
+
         public:
             ServiceMap() = delete;
             ServiceMap(const ServiceMap&) = delete;
@@ -3052,6 +2668,23 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
+            void Deinitialized(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                Notifiers::iterator index(_notifiers.begin());
+
+                while (index != _notifiers.end()) {
+                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                    if (lifetime != nullptr) {
+                        lifetime->Deinitialized(callsign, entry);
+                        lifetime->Release();
+                    }
+                    index++;
+                }
+
+                _notificationLock.Unlock();
+            }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -3078,23 +2711,6 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
-            void Deinitialized(const string& callsign, PluginHost::IShell* entry)
-            {
-                _notificationLock.Lock();
-
-                Notifiers::iterator index(_notifiers.begin());
-
-                while (index != _notifiers.end()) {
-                    PluginHost::IPlugin::ILifeTime* lifetime = (*index)->QueryInterface<PluginHost::IPlugin::ILifeTime>();
-                    if (lifetime != nullptr) {
-                        lifetime->Deinitialized(callsign, entry);
-                        lifetime->Release();
-                    }
-                    index++;
-                }
-
-                _notificationLock.Unlock();
-            }
             void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
                 _notificationLock.Lock();
@@ -3107,6 +2723,21 @@ POP_WARNING()
                 }
 
                 _notificationLock.Unlock();
+            }
+            void Created(const string& callsign, PluginHost::IShell* entry) {
+                _notificationLock.Lock();
+                for (auto observer : _shellObservers) {
+                    observer->Created(callsign, entry);
+                }
+                _notificationLock.Unlock();
+            }
+            void Destroy(const string& callsign, PluginHost::IShell* entry) {
+                _notificationLock.Lock();
+                for (auto observer : _shellObservers) {
+                    observer->Destroy(callsign, entry);
+                }
+                _notificationLock.Unlock();
+
             }
             void Register(PluginHost::IPlugin::INotification* sink)
             {
@@ -3196,6 +2827,42 @@ POP_WARNING()
             {
                 _processAdministrator.Unregister(sink);
             }
+            void Register(Exchange::Controller::IShells::INotification* sink) {
+                _notificationLock.Lock();
+
+                // Make sure a sink is not registered multiple times.
+                ASSERT(std::find(_shellObservers.begin(), _shellObservers.end(), sink) == _shellObservers.end());
+
+                _shellObservers.push_back(sink);
+                sink->AddRef();
+
+                for (const std::pair<string, Core::ProxyType<Service>>& entry : _services) {
+                    sink->Created(entry.first, entry.second.operator->());
+                }
+                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                    entry.Visit([&](const string& callsign, IShell* proxy) {
+                            sink->Created(callsign, proxy);
+                        });
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Unregister(Exchange::Controller::IShells::INotification* sink) {
+                _notificationLock.Lock();
+
+                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
+
+                // Make sure you do not unregister something you did not register !!!
+                ASSERT(index != _shellObservers.end());
+
+                if (index != _shellObservers.end()) {
+                    (*index)->Release();
+                    _shellObservers.erase(index);
+                }
+
+                _notificationLock.Unlock();
+            }
+
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
@@ -3242,7 +2909,7 @@ POP_WARNING()
                 if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
                     Plugin::Config newConfiguration;
-                    newConfiguration.FromString(original->Configuration());
+                    newConfiguration.FromString(original->ConfigLine());
                     newConfiguration.Callsign = newCallsign;
 
                     Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
@@ -3281,7 +2948,11 @@ POP_WARNING()
             }
             inline Iterator Services()
             {
-                return (Iterator(_services));
+                Iterator::Shells composits;
+                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                    entry.Copy(composits);
+                }
+                return (Iterator(_services, std::move(composits)));
             }
             inline void Notification(const ForwardMessage& message)
             {
@@ -3351,7 +3022,7 @@ POP_WARNING()
                 uint32_t result = Core::ERROR_UNAVAILABLE;
                 size_t pos;
 
-                if ((pos = callSign.find_first_of(CompositPlugin::RemotePluginDelimiter)) != string::npos) {
+                if ((pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter)) != string::npos) {
                     // This is a Composit plugin identifier..
                     string linkingPin = callSign.substr(0, pos);
                     _adminLock.Lock();
@@ -3406,7 +3077,9 @@ POP_WARNING()
 
             uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
 
-            void Destroy();
+            void Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled);
+            void Startup(); 
+            void Close();
 
             inline const PluginHost::Config& Configuration() const
             {
@@ -3416,7 +3089,7 @@ POP_WARNING()
                 _adminLock.Lock();
                 // Seems this is a plugin that can be a composition of more plugins..
                 _compositPlugins.emplace_back(*this, callsign);
-                composit->Register(&_compositPlugins.back());
+                composit->Callback(&_compositPlugins.back());
                 _adminLock.Unlock();
             }
             void RemoveComposit(const string& callsign, ICompositPlugin* composit) {
@@ -3428,12 +3101,20 @@ POP_WARNING()
                 }
 
                 if (index != _compositPlugins.end()) {
-                    index->Clear();
-                    composit->Unregister(&(*index));
+                    composit->Callback(nullptr);
+                    ASSERT(index->IsEmpty() == true);
                     _compositPlugins.erase(index);
                 }
 
                 _adminLock.Unlock();
+            }
+            void Evaluate()
+            {
+                _adminLock.Lock();
+
+                ServiceContainer::iterator index(_services.begin());
+
+                RecursiveNotification(index);
             }
 
         private:
@@ -3558,16 +3239,6 @@ POP_WARNING()
                 return (_server.WorkerPool());
             }
 
-        public:
-            void Evaluate()
-            {
-                _adminLock.Lock();
-
-                ServiceContainer::iterator index(_services.begin());
-
-                RecursiveNotification(index);
-            }
-
         private:
             Server& _server;
             mutable Core::CriticalSection _adminLock;
@@ -3581,6 +3252,7 @@ POP_WARNING()
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
             CompositPlugins _compositPlugins;
+            ShellNotifiers _shellObservers;
         };
 
         // Connection handler is the listening socket and keeps track of all open
