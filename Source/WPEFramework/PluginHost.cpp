@@ -227,6 +227,10 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
+            Messaging::ConsoleStandardError::Instance().Close();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Close();
+            }
 
 #ifndef __WINDOWS__
             if (_background) {
