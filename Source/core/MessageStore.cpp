@@ -162,8 +162,8 @@ namespace Core {
                 length = (static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
 
                 if (_type == TRACING) {
-                    length += (static_cast<uint16_t>(_module.size()) + 1);
                     _module = frameReader.NullTerminatedText();
+                    length += (static_cast<uint16_t>(_module.size()) + 1);
                 }
                 else if (_type == LOGGING) {
                     _module = MODULE_LOGGING;

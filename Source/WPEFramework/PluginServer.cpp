@@ -234,32 +234,31 @@ namespace PluginHost
     {
         _adminLock.Lock();
 
-        ServiceContainer::iterator index(_services.begin());
-        std::list< Core::ProxyType<Service> > deactivationList;
-
         // First, move them all to deactivated except Controller
         Core::ProxyType<Service> controller (_server.Controller());
 
-        while (index != _services.end()) {
+        TRACE_L1("Destructing %d plugins", static_cast<uint32_t>(_services.size()));
+
+        while (_services.empty() == false) {
+
+            auto index = _services.begin();
 
             Core::ProxyType<Service> service(index->second);
 
             ASSERT(service.IsValid());
 
             if (index->first.c_str() != controller->Callsign()) {
-                deactivationList.push_back(service);
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
             }
 
-            index = _services.erase(index);
+            _services.erase(index);
         }
 
         _adminLock.Unlock();
-
-        TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
-
-        for (Core::ProxyType<Service>& entry : deactivationList) {
-            entry->Deactivate(PluginHost::IShell::SHUTDOWN);
-        }
 
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
@@ -280,7 +279,7 @@ namespace PluginHost
         if (id == Core::IUnknown::ID) {
             AddRef();
             result = static_cast<IUnknown*>(this);
-        } 
+        }
         else if (id == PluginHost::IShell::ID) {
             AddRef();
             result = static_cast<PluginHost::IShell*>(this);
@@ -360,7 +359,7 @@ namespace PluginHost
                 if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
-                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo()));
+                    uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));
 
                     while (delta != 0) {
                         if ((delta & 0x01) != 0) {
@@ -392,7 +391,7 @@ namespace PluginHost
                 TRACE(Activity, (_T("Activation plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
                 _administrator.Initialize(callSign, this);
-                
+
                 State(ACTIVATION);
 
                 Unlock();
@@ -534,7 +533,21 @@ namespace PluginHost
                 ASSERT(_handler != nullptr);
 
                 State(DEACTIVATION);
+
+                SystemInfo& systeminfo = _administrator.SubSystemInfo();
+
+                // On behalf of the plugin stop all subsystems it was controlling.
+                for (const PluginHost::ISubSystem::subsystem sys : SubSystemControl()) {
+                    systeminfo.Unset(sys);
+                }
+
                 Unlock();
+
+                // Reevaluate status. In case some plugins were dependant on the subsystems
+                // that have been just disabled, deactivate them too, recursively.
+                _administrator.Evaluate();
+
+                // And finally start tearing down this plugin...
 
                 if (currentState == IShell::ACTIVATED) {
                     TRACE(Activity, (_T("Deactivating plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -557,22 +570,21 @@ namespace PluginHost
                 if (_jsonrpc != nullptr) {
                     _jsonrpc->Deactivate();
                 }
+
                 if (_external.Connector().empty() == false) {
                     _external.Close(0);
                 }
-            }
 
-            if (currentState != IShell::state::ACTIVATION) {
+                if (currentState != IShell::state::ACTIVATION) {
+                    SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-                SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+    #if THUNDER_RESTFULL_API
+                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+    #endif
 
+                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
-#if THUNDER_RESTFULL_API
-                _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
-
-                _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
-
+                }
             }
 
             State(why == CONDITIONS ? PRECONDITION : DEACTIVATED);
@@ -582,7 +594,6 @@ namespace PluginHost
             // We have no need for his module anymore..
             ReleaseInterfaces();
         }
-
 
         Unlock();
 
@@ -836,7 +847,7 @@ namespace PluginHost
 
     /* virtual */ ISubSystem* Server::Service::SubSystems()
     {
-        return (_administrator.SubSystemsInterface());
+        return (_administrator.SubSystemsInterface(this));
     }
 
     /* virtual */ void Server::Service::Notify(const string& message)
@@ -1083,7 +1094,7 @@ POP_WARNING()
 
         controller->SetServer(this, std::move(externallyControlled));
 
-        if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) != 0) {
+        if ((_services.SubSystemInfo().Value() & (1 << ISubSystem::SECURITY)) != 0) {
             // The controller is in control of the security, so I guess all systems green
             // as the controller does not know anything about security :-)
             securityProvider->Security(false);

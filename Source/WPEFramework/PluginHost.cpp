@@ -227,6 +227,10 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
+            Messaging::ConsoleStandardError::Instance().Close();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Close();
+            }
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -901,7 +905,6 @@ POP_WARNING()
                                 printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
                             }
                         }
-                        status->Release();
                         break;
                     }
                     case 'T': {
