@@ -25,6 +25,8 @@
 #include "IPlugin.h"
 #include "IDispatcher.h"
 
+#include <set>
+
 namespace WPEFramework {
 
 namespace PluginHost {
@@ -140,7 +142,7 @@ namespace PluginHost {
                     }
                 }
             }
-            void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
+            void Event(JSONRPC& parent, const string event, const string& parameter, const std::function<bool(const string&)>& sendifmethod) {
                 for (const Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.second)) {
                         parent.Notify(entry.first, entry.second + '.' + event, parameter);
@@ -155,8 +157,10 @@ namespace PluginHost {
             Remotes _callbacks;
             Destinations _designators;
         };
+
         using HandlerList = std::list<Core::JSONRPC::Handler>;
         using ObserverMap = std::unordered_map<string, Observer>;
+        using EventAliasesMap = std::map<string, std::set<string>>;
 
         class VersionInfo {
         public:
@@ -342,6 +346,10 @@ namespace PluginHost {
         {
             _handlers.front().Register(methodName, lambda);
         }
+        void Register(const string& methodName, const string& originalName)
+        {
+            _handlers.front().Register(methodName, originalName);
+        }
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);
@@ -352,6 +360,43 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch) {
             _versions.emplace_back(name, major, minor, patch);
+        }
+
+        //
+        // Methods to register alternative event names
+        // ------------------------------------------------------------------------------------------------------------------------------
+        void RegisterEventAlias(const string& event, const string& primary)
+        {
+            ASSERT(event.empty() == false);
+            ASSERT(primary.empty() == false);
+
+            _adminLock.Lock();
+
+            _eventAliases[primary].emplace(event);
+
+            _adminLock.Unlock();
+        }
+        void UnregisterEventAlias(const string& event, const string& primary)
+        {
+            ASSERT(event.empty() == false);
+            ASSERT(primary.empty() == false);
+
+            _adminLock.Lock();
+
+            auto const& entry = _eventAliases.find(primary);
+            ASSERT(entry != _eventAliases.end());
+
+            if (entry != _eventAliases.end()) {
+                auto const& count = entry->second.erase(event);
+                DEBUG_VARIABLE(count);
+                ASSERT(count == 1);
+
+                if (entry->second.empty() == true) {
+                    _eventAliases.erase(entry);
+                }
+            }
+
+            _adminLock.Unlock();
         }
 
         //
@@ -544,18 +589,7 @@ namespace PluginHost {
         // Inherited via IDispatcher::ICallback
         // ---------------------------------------------------------------------------------
         Core::hresult Event(const string& eventId, const string& parameters) override {
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.find(eventId);
-
-            if (index != _observers.end()) {
-                index->second.Event(*this, eventId, parameters, std::function<bool(const string&)>());
-            }
-
-            _adminLock.Unlock();
-
-            return (Core::ERROR_NONE);
-
+            return (InternalNotify(eventId, parameters));
         }
         Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& errorText) override {
             Core::ProxyType<Web::JSONRPC::Body> message = IFactories::Instance().JSONRPC();
@@ -710,7 +744,7 @@ namespace PluginHost {
             }
             return (result);
         }
-        uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+        uint32_t InternalNotify(const string& event, const string& parameters, const std::function<bool(const string&)>& sendifmethod = std::function<bool(const string&)>()) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -719,7 +753,22 @@ namespace PluginHost {
             ObserverMap::const_iterator index = _observers.find(event);
 
             if (index != _observers.end()) {
-                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, std::move(sendifmethod));
+                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, sendifmethod);
+            }
+
+            // See if this is perhaps a registered alias for an event...
+
+            EventAliasesMap::const_iterator iter = _eventAliases.find(event);
+
+            if (iter != _eventAliases.end()) {
+
+                for (const string& alias : iter->second) {
+                    ObserverMap::const_iterator index = _observers.find(alias);
+
+                    if (index != _observers.end()) {
+                        const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), alias, parameters, sendifmethod);
+                    }
+                }
             }
 
             _adminLock.Unlock();
@@ -750,6 +799,7 @@ namespace PluginHost {
         TokenCheckFunction _validate;
         VersionList _versions;
         ObserverMap _observers;
+        EventAliasesMap _eventAliases;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
