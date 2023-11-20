@@ -56,8 +56,8 @@ namespace Messaging {
         }
 
     private:
-        Core::ProxyPoolType<METADATA> _metadataPool;
         Core::ProxyPoolType<EVENT> _eventPool;
+        Core::ProxyPoolType<METADATA> _metadataPool;
     };
 
 } // namespace Messaging
