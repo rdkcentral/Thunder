@@ -134,6 +134,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Trace.cpp" />
+    <ClCompile Include="WarningReportingCategories.cpp" />
     <ClCompile Include="WarningReportingControl.cpp" />
     <ClCompile Include="WorkerPool.cpp" />
     <ClCompile Include="XGetopt.cpp" />
