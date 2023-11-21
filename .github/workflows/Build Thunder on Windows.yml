@@ -19,6 +19,7 @@ env:
   comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
   solution: Thunder.sln
+  warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
 
 jobs:
   Thunder:
@@ -122,6 +123,7 @@ jobs:
         cd ThunderOnWindows
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
+        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
