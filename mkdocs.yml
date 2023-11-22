@@ -46,6 +46,7 @@ nav:
     - Threading:
       - Worker Pool: utils/threading/worker-pool.md
       - Mutexes: utils/threading/mutex.md
+    - Time: utils/time.md
     - Timers: utils/timers.md
     - Web Requests: utils/web.md
     - Sockets: utils/sockets.md
