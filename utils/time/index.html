@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/private-comrpc/">
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/utils/time/">
       
       
-        <link rel="prev" href="../proxypool/">
+        <link rel="prev" href="../threading/mutex/">
       
       
-        <link rel="next" href="../composite/">
+        <link rel="next" href="../timers/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Private COM-RPC - Thunder (WPEFramework)</title>
+        <title>Time - Thunder (WPEFramework)</title>
       
     
     
@@ -78,6 +78,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#time" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -110,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Private COM-RPC
+              Time
             
           </span>
         </div>
@@ -624,8 +629,6 @@
       
   
   
-    
-  
   
     
     
@@ -635,12 +638,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -654,7 +657,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Plugin Development
@@ -667,7 +670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../intro/" class="md-nav__link">
+      <a href="../../plugin/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -687,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -707,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lifecycle/" class="md-nav__link">
+      <a href="../../plugin/lifecycle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -727,7 +730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../principles/" class="md-nav__link">
+      <a href="../../plugin/principles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -783,7 +786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/interfaces/" class="md-nav__link">
+      <a href="../../plugin/interfaces/interfaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -803,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/docs/" class="md-nav__link">
+      <a href="../../plugin/interfaces/docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -823,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/tags/" class="md-nav__link">
+      <a href="../../plugin/interfaces/tags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -851,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../plugin/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -871,7 +874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../plugin/errors/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -891,7 +894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../versioning/" class="md-nav__link">
+      <a href="../../plugin/versioning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -911,7 +914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../messaging/" class="md-nav__link">
+      <a href="../../plugin/messaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -931,7 +934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../subsystems/" class="md-nav__link">
+      <a href="../../plugin/subsystems/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -951,7 +954,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../proxypool/" class="md-nav__link">
+      <a href="../../plugin/proxypool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -969,16 +972,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../plugin/private-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -987,7 +983,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -999,7 +994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../split-implementation.md" class="md-nav__link">
+      <a href="../../plugin/split-implementation.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1019,7 +1014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../composite/" class="md-nav__link">
+      <a href="../../plugin/composite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1044,6 +1039,8 @@
       
   
   
+    
+  
   
     
     
@@ -1053,12 +1050,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -1072,7 +1069,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Common Utilities
@@ -1085,7 +1082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/strings/" class="md-nav__link">
+      <a href="../strings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1141,7 +1138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/files/" class="md-nav__link">
+      <a href="../files/files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1161,7 +1158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/observer/" class="md-nav__link">
+      <a href="../files/observer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1189,7 +1186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/json/" class="md-nav__link">
+      <a href="../json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1245,7 +1242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/worker-pool/" class="md-nav__link">
+      <a href="../threading/worker-pool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1265,7 +1262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/mutex/" class="md-nav__link">
+      <a href="../threading/mutex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1291,9 +1288,29 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../utils/time/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Time
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1302,6 +1319,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#internal-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Internal) representation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date-and-time-conversion-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Date and time conversion options
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1313,7 +1368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/timers/" class="md-nav__link">
+      <a href="../timers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1333,7 +1388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/web/" class="md-nav__link">
+      <a href="../web/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1353,7 +1408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/sockets/" class="md-nav__link">
+      <a href="../sockets/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1373,7 +1428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/processes/" class="md-nav__link">
+      <a href="../processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1883,6 +1938,34 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#internal-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Internal) representation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#date-and-time-conversion-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Date and time conversion options
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1900,9 +1983,50 @@
   
 
 
-  <h1>Private COM-RPC</h1>
+<h1 id="time">Time</h1>
+<p>Time as a non-constant continues to progress while existence of various events is being linked to each instance of time irrespective of the nature of such an event. Thunder has many types of events in which instances of time play a role. Their nature may be in the field of (process) communication by exchanging various messages, it may be related to the scheduling of (future) tasks or it may play some other role. The list of options is non-exhaustive.</p>
+<h2 id="internal-representation">(Internal) representation</h2>
+<p>Thunder models time with instances described by elements of the <a href="https://en.wikipedia.org/wiki/Gregorian_calendar">Gregorian calendar</a> with its epoch defined by <a href="https://en.wikipedia.org/wiki/Unix_time">Unix time</a>. That is, it models time as (strictly) monotomic increasing integer values. The elements year, month, day, hour, second, and millisecond allow for unique descriptions of Gregorian calendar time instances.</p>
+<p>Set values can be individually retrieved. Time instances can be used in calculations and these instances can also be adjusted in millisecond decrements and increments.</p>
+<p>Values are depicted with respect to the <a href="https://en.wikipedia.org/wiki/Coordinated_Universal_Time">UTC timezone</a> unless otherwise specified. Alternatively, a derived convenience model incorporates local time and date offset by the timezone configured for the platform. The user conveniently can ignore any (underlying) offset.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Local time instead of UTC</span>
+<span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="nf">past</span><span class="p">(</span><span class="cm">/*year*/</span><span class="w"> </span><span class="mi">2023</span><span class="p">,</span><span class="w"> </span><span class="cm">/*month*/</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="cm">/*day*/</span><span class="w"> </span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="cm">/*hours*/</span><span class="w"> </span><span class="mi">18</span><span class="p">,</span><span class="w"> </span><span class="cm">/*minutes*/</span><span class="w"> </span><span class="mo">02</span><span class="p">,</span><span class="w"> </span><span class="cm">/*seconds*/</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">,</span><span class="cm">/* milliseconds*/</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="cm">/*local time*/</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="c1">// Implicitly UTC</span>
+<span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="nf">now</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">());</span>
 
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">past</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;More than second has elapsed since &quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">WeekDayName</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">MonthName</span><span class="p">()</span><span class="w">   </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; &quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">Day</span><span class="p">()</span><span class="w">         </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">Hours</span><span class="p">()</span><span class="w">       </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;:&quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">Minutes</span><span class="p">()</span><span class="w">     </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;:&quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">Seconds</span><span class="p">()</span><span class="w">     </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;.&quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
 
+<span class="c1">// Internally represent the past with our local timezone instead of UTC</span>
+<span class="n">TimeAsLocal</span><span class="w"> </span><span class="n">local</span><span class="p">(</span><span class="n">past</span><span class="p">);</span>
+</code></pre></div>
+<p>In the given example a time object is intialized to October 10 of the year 2023 at 18:02h and a second time object is initialized to the value of the system time. Note that the second object does not specify local time and hence it is silently set to reflect values for the UTC timezone. A final check is executed to test if past time is more than a second ago. For completeness a local time object is created from the object representing the past.</p>
+<h2 id="date-and-time-conversion-options">Date and time conversion options</h2>
+<p>The external representation of time is a string formatted in a predefined pattern unless a single integer valued element is represented. Such patterns are intrinsically applied for the various conversions methods made available.  It allows users to conveniently convert 'From' one representation 'To' another by using correspondingly named methods. Among such conversions are the <a href="https://www.rfc-editor.org/rfc/rfc2311">RFC2311</a> time and date specification, <a href="https://www.rfc-editor.org/rfc/rfc1036">RFC1036</a> date specification, the <a href="">ISO8601</a> date and time formats, and, <a href="https://webstore.ansi.org/standards/incits/ansiincits301997">ANSI</a> date representation.</p>
+<p>Users that are interested in a format other than any provided by the Gregorian calendar representations may use <em>clock ticks</em>. Ticks are merely a conversion unit given from the multiplication of a constant value and the milliseconds value. Historically, it was a measure of runtime code execution on a CPU. Thunder has defined the multiplier constant equal to 1000.</p>
+<p>Although most people typically work with a Gregorian scheme time values can be easily converted to <a href="https://en.wikipedia.org/wiki/Julian_calendar">Julian calendar</a> representation, and, back. With its corresponding <a href="https://en.wikipedia.org/wiki/Julian_day">Julian days</a> being analogous to elapsed seconds since the epoch of Unix time.</p>
+<p>Finally, NTP conversions allows for incorporation of a different epoch. NTP epoch equals to 25567 seconds offset from its Unix time equivalent.</p>
+<p><div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">past</span><span class="p">.</span><span class="n">ToISO8601</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">ToRFC1123</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;It is very surprising to get here.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;This is more likley to happen.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">past</span><span class="p">.</span><span class="n">FromString</span><span class="p">(</span><span class="s">&quot;Sun Nov 6 08:49:00 1994&quot;</span><span class="p">);</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">past</span><span class="p">.</span><span class="n">JulianDate</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">94310</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;The Julian date is equivalent to &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">past</span><span class="p">.</span><span class="n">Ticks</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">TicksPerMilliSecond</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">MilliSecondsPerSecond</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; seconds from the epoch of Unix Time.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span><span class="s">&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+The depicted example continues the previous example. Here, the different strings from the conversion methods typically have different patterns and do not equate equal. In addition, the past time object is re-inialized using the ANSI pattern to November 6 of the year 1994 at 08:49h which is equivalent to 94310 Julian days.</p>
 
 
 
@@ -1930,7 +2054,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../proxypool/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ProxyPool">
+          <a href="../threading/mutex/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Mutexes">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
@@ -1940,20 +2064,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ProxyPool
+                Mutexes
               </div>
             </div>
           </a>
         
         
           
-          <a href="../composite/" class="md-footer__link md-footer__link--next" aria-label="Next: Composite Plugins">
+          <a href="../timers/" class="md-footer__link md-footer__link--next" aria-label="Next: Timers">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Composite Plugins
+                Timers
               </div>
             </div>
             <div class="md-footer__button md-icon">
