@@ -93,6 +93,38 @@
                 "focus": true,
                 "close": true
             }
+        },
+        {
+            "label": "Start multi gdbserver",
+            "type": "process",
+            "command": "ssh",
+            "args": [
+                "-i",
+                "${config:thunder.remoteTargetID}",
+                "${config:thunder.remoteTargetUser}@${config:thunder.remoteTargetHost}",
+                "killall -9 gdbserver; gdbserver --multi :55550"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*",
+                    "file": 1,
+                    "line": 1,
+                    "message": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Listening on port*",
+                    "endsPattern": "^.*"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "focus": true,
+                "close": true
+            }
         }
     ],
 }
