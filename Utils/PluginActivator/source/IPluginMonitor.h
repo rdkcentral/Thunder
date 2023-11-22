@@ -21,30 +21,42 @@
 
 #include "IShellProvider.h"
 
+#include <functional>
+
+using namespace WPEFramework;
+
+using Callback = std::function<void()>;
+
 /**
- * Interface to start a specified plugin
+ * Interface to configure monitoring of a Plugin
  *
- * Could be implemented with JSON-RPC or COM-RPC
+ * This monitor can also be configured to re-activate the failed/crashed plugin with specified timeout delays & retries
+ * The Monitor actually reuses the retry & delays configured by COMRPCStarter. It simply does COMRPCStarter::activatePlugin(retry, timeout)
+ * on detection of deactivation
+ *
  */
-class IPluginStarter {
-public:
-    virtual ~IPluginStarter() = default;
+class IPluginMonitor {
+    public:
+    IPluginMonitor() = delete;
+    IPluginMonitor(const IPluginMonitor &) = delete;
+    IPluginMonitor& operator = (const IPluginMonitor &) = delete;
+
+    IPluginMonitor(IShellProvider *provider) {};
+    virtual ~IPluginMonitor() = default;
 
     /**
-     * @brief Activate a Thunder plugin
-     *
-     * Will block until either the Thunder plugin has activated or until the maximum amount of retires has occurred
+     * @brief Configure the retry count & delay between retries
      *
      * @param[in]   maxRetries          Maximum amount of attempts to activate the plugin - if plugin is not activated within the amount of retries
      *                                  this method will return false
      * @param[in]   retryDelayMs        Amount of time to wait after a failed activation before retrying again
      */
-    virtual bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) = 0;
+    void configureMonitor(const uint8_t maxRetries, const uint16_t retryDelayMs);
 
     /**
-     * @brief Activate a Thunder plugin
+     * @brief Sets a handler to deal with the case where the attempts to reactivate the plugin failed
      *
-     * Will block until either the Thunder plugin has deactivated or until default timeout of 3 seconds
+     * @param[in]   handler          A function object that carries out certain steps to deal with resurrection failure
      */
-    virtual bool deactivatePlugin() = 0;
+    void onReactivationFailure(Callback &&handler);
 };
