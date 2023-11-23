@@ -123,7 +123,7 @@ jobs:
       shell: cmd
       run: >
         cd ThunderOnWindows
-        && "%msbuild%" %solution% /t:core:Rebuild /p:DefineConstants="__CORE_WARNING_REPORTING__" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
+        && "%msbuild%" %solution% /t:core /p:DefineConstants="__CORE_WARNING_REPORTING__" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
       # run: >
       #  cd ThunderOnWindows
       #  && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
