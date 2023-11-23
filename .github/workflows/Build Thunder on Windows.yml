@@ -19,6 +19,7 @@ env:
   core: Thunder\Source\core\core.vcxproj
   comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
+  msbuild: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe
   solution: Thunder.sln
   warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
 
@@ -122,10 +123,12 @@ jobs:
       shell: cmd
       run: >
         cd ThunderOnWindows
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%core%" /D "__CORE__WARNING_REPORTING__"  "%solution%"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
+        && "%msbuild%" %solution% /t:core:Rebuild /p:DefineConstants="__CORE_WARNING_REPORTING__" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
+      # run: >
+      #  cd ThunderOnWindows
+      #  && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
+      #  && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
+      #  && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
