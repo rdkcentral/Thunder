@@ -121,9 +121,9 @@ jobs:
 
     - name: Build Thunder
       shell: cmd
+      # && "%msbuild%" %solution% "/t:bridge\core" /p:DefineConstants="__CORE_WARNING_REPORTING__;$(DefineConstants)" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
       run: >
         cd ThunderOnWindows
-        && "%msbuild%" %solution% "/t:bridge\core" /p:DefineConstants="__CORE_WARNING_REPORTING__;$(DefineConstants)" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
         && "%msbuild%" %solution% "/t:bridge\bridge" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
       # run: >
       #  cd ThunderOnWindows
