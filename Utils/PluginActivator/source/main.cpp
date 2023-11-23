@@ -19,12 +19,40 @@
 
 #include "COMRPCStarter.h"
 #include "Module.h"
+#include "Log.h"
 
 #include <memory>
 
-static int gRetryCount = 100;
-static int gRetryDelayMs = 500;
+static int gDeactivatePlugin = 0;
+static int gRetryCount = 3;
+static int gRetryDelayMs = 3000;
 static string gPluginName;
+JsonObject gConfigOptions;
+
+/**
+ * @brief Check given string starts with a '--' to denote they are long options
+ */
+static inline bool isLongOption(const char *arg)
+{
+    return arg && strncmp(arg, "--", 2) == 0;
+}
+
+/*
+ * @brief A wrapper to convert string / a file to JsonObject
+ */
+struct JSONConfig
+{
+    static bool fromString(const char *str, JsonObject &obj) {
+        return obj.IElement::FromString(str);
+    }
+
+    static bool fromFile(const char *file, JsonObject &obj) {
+        Core::File fObj(file);
+        if (!fObj.Open(true))
+            return false;
+        return obj.IElement::FromFile(fObj);
+    }
+};
 
 /**
  * @brief Display a help message for the tool
@@ -33,11 +61,20 @@ static void displayUsage()
 {
     printf("Usage: PluginActivator <option(s)> [callsign]\n");
     printf("    Utility that starts a given thunder plugin\n\n");
-    printf("    -h, --help          Print this help and exit\n");
-    printf("    -r, --retries       Maximum amount of retries to attempt to start the plugin before giving up\n");
-    printf("    -d, --delay         Delay (in ms) between each attempt to start the plugin if it fails\n");
+    printf("    -h, --help              Print this help and exit\n");
+    printf("    -r, --retries           Maximum amount of retries to attempt to start the plugin before giving up\n");
+    printf("    -d, --delay             Delay (in ms) between each attempt to start the plugin if it fails\n");
+    printf("    -k, --deactivate        Deactivate given plugin\n");
+    printf("    -c, --config-string     JSON string to override plugin configuration\n");
+    printf("    --config-file           JSON config file to override plugin configuration\n");
     printf("\n");
     printf("    [callsign]          Callsign of the plugin to activate (Required)\n");
+    printf("\n");
+    printf("Example Uses:\n");
+    printf("PluginActivator HtmlApp\n");
+    printf("PluginActivator --config-string \"{\\\"environmentvariable\\\":[{\\\"name\\\":\\\"GST_DEBUG\\\",\\\"value\\\":\\\"westeros:*\\\"}]}\" HtmlApp\n");
+    printf("PluginActivator --config-file /tmp/override.json HtmlApp\n");
+    printf("PluginActivator -- --localstorageenabled true HtmlApp\n");
 }
 
 /**
@@ -57,6 +94,9 @@ static void parseArgs(const int argc, char** argv)
         { "help", no_argument, nullptr, (int)'h' },
         { "retries", required_argument, nullptr, (int)'r' },
         { "delay", required_argument, nullptr, (int)'d' },
+        { "config-string", required_argument, nullptr, (int)'c' },
+        { "config-file", required_argument, nullptr, (int)'f' },
+        { "deactivate", no_argument, nullptr, (int)'k' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -65,8 +105,11 @@ static void parseArgs(const int argc, char** argv)
     int option;
     int longindex;
 
-    while ((option = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1) {
+    while ((option = getopt_long(argc, argv, "hkc:f:r:d:", longopts, &longindex)) != -1) {
         switch (option) {
+        case 'k':
+            gDeactivatePlugin = 1;
+            break;
         case 'h':
             displayUsage();
             exit(EXIT_SUCCESS);
@@ -85,6 +128,23 @@ static void parseArgs(const int argc, char** argv)
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'c':
+        case 'f':
+            {
+                if (gDeactivatePlugin)
+                    break;
+
+                JsonObject options;
+                if ((option == 'c') ? JSONConfig::fromString(optarg, options) : JSONConfig::fromFile(optarg, options)) {
+                    auto iterator = options.Variants();
+                    while (iterator.Next())
+                        gConfigOptions[iterator.Label()] = iterator.Current();
+                    printf("Read configurations %d, %d\n", options.Size(), gConfigOptions.Size());
+                } else {
+                    fprintf(stderr, "Error: Couldn't parse config string, ignoring values");
+                }
+            }
+            break;
         case '?':
             if (optopt == 'c')
                 fprintf(stderr, "Warning: Option -%c requires an argument.\n", optopt);
@@ -97,6 +157,18 @@ static void parseArgs(const int argc, char** argv)
             break;
         default:
             exit(EXIT_FAILURE);
+            break;
+        }
+    }
+
+    while ((1 + optind) < argc) {
+        if (isLongOption(argv[optind + 0]) && !isLongOption(argv[optind + 1])) {
+            const char *opt = argv[optind + 0];
+            const char *val = argv[optind + 1];
+            gConfigOptions[&opt[2]] = val;
+            optind += 2;
+        } else {
+            printf("Unrecognized extra arg : %s, @ %d\n", argv[optind + 0], optind);
             break;
         }
     }
@@ -116,16 +188,29 @@ static void parseArgs(const int argc, char** argv)
 
 int main(int argc, char* argv[])
 {
+    initLogging();
+
     parseArgs(argc, argv);
 
     // For now, we only implement the starter in COM-RPC but could do a JSON-RPC version
     // in the future
-    bool success;
-    std::unique_ptr<IPluginStarter> starter(new COMRPCStarter(gPluginName));
-    success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
+    bool success = false;
+    std::unique_ptr<COMRPCStarter> starter(new COMRPCStarter(gPluginName));
+
+    if (!gDeactivatePlugin) {
+        starter->setConfigOverride(std::move(gConfigOptions));
+        success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
+    } else {
+        success = starter->deactivatePlugin(gRetryCount, gRetryDelayMs);
+    }
+
+    if (!success) {
+        LOG_ERROR(gPluginName.c_str(), "Error: Failed to %s plugin\n", (gDeactivatePlugin ? "deactivate" : "activate"));
+    }
+
+    starter.reset();
 
     // Destruct the COM-RPC starter so it cleans up after itself before we dispose WPEFramework singletons
-    starter.reset();
     Core::Singleton::Dispose();
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

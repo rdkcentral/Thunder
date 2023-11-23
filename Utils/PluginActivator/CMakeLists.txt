@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME}
     source/Module.cpp
     source/main.cpp
     source/COMRPCStarter.cpp
+    source/Log.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

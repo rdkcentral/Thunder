@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <string>
-
 /**
  * Interface to start a specified plugin
  *
@@ -40,4 +38,15 @@ public:
      * @param[in]   retryDelayMs        Amount of time to wait after a failed activation before retrying again
      */
     virtual bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) = 0;
+
+    /**
+     * @brief Deactivate a Thunder plugin
+     *
+     * Will block until either the Thunder plugin is deactivated or until the request times out
+     *
+     * @param[in]   maxRetries          Maximum amount of attempts to deactivate the plugin - if plugin is not deactivated within the amount of retries
+     *                                  this method will return false
+     * @param[in]   retryDelayMs        Amount of time to wait after a failed deactivation before retrying again
+     */
+    virtual bool deactivatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) = 0;
 };

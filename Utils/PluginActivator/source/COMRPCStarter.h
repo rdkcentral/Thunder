@@ -20,6 +20,7 @@
 #pragma once
 #include "Module.h"
 
+#include "IPluginConfigurer.h"
 #include "IPluginStarter.h"
 
 using namespace WPEFramework;
@@ -29,14 +30,22 @@ using namespace WPEFramework;
  *
  * Connects to Thunder over COM-RPC and attempts to start a given plugin
  */
-class COMRPCStarter : public IPluginStarter {
+class COMRPCStarter : public IPluginConfigurer, public IPluginStarter {
 public:
     explicit COMRPCStarter(const string& pluginName);
-    ~COMRPCStarter() override;
+    virtual ~COMRPCStarter() override;
 
+    const string &pluginName() { return _pluginName; }
+    void setConfigOverride(const JsonObject &overrides) override;
     bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
+    bool deactivatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
+
+protected:
+    uint8_t connectToShell(const uint8_t &maxRetries, const uint16_t &retryDelayMs);
 
 private:
+    bool applyConfigOverrides() override;
+    bool pluginActivationDeactivationHelper(const uint8_t &maxRetries, const uint16_t &retryDelayMs, PluginHost::IShell::state targetState);
     Core::NodeId getConnectionEndpoint() const;
 
 private:
@@ -44,4 +53,9 @@ private:
 
     Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> _engine;
     Core::ProxyType<RPC::CommunicatorClient> _client;
+    PluginHost::IShell *_shell;
+
+    JsonObject _overrides;
+    string _defaultConfigLine;
+    string _modifiedConfigLine;
 };
