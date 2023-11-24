@@ -2,7 +2,7 @@ name: Build Thunder on Windows
 
 on:
   push:
-    # branches: ["master"]
+    branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -121,11 +121,9 @@ jobs:
 
     - name: Build Thunder
       shell: cmd
-      # && "%msbuild%" %solution% "/t:bridge\core" /p:DefineConstants="__CORE_WARNING_REPORTING__;$(DefineConstants)" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
-      # && "%msbuild%" %solution% /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
       run: >
         cd ThunderOnWindows
-        && set Warnings="__CORE_WARNING_REPORTING__"
+        && set CoreDefines="__CORE_WARNING_REPORTING__"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
