@@ -2,7 +2,7 @@ name: Build Thunder on Windows
 
 on:
   push:
-    # branches: ["master"]
+    branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -16,10 +16,8 @@ on:
 
 env:
   bridge: Thunder\Source\WPEFramework\bridge.vcxproj
-  core: Thunder\Source\core\core.vcxproj
   comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
-  msbuild: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe
   solution: Thunder.sln
   warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
 
@@ -121,11 +119,9 @@ jobs:
 
     - name: Build Thunder
       shell: cmd
-      # && "%msbuild%" %solution% "/t:bridge\core" /p:DefineConstants="__CORE_WARNING_REPORTING__;$(DefineConstants)" /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
-      # && "%msbuild%" %solution% /p:Configuration="${{matrix.type}}" /p:Platform="x${{matrix.version}}"
       run: >
         cd ThunderOnWindows
-        && set Warnings="__CORE_WARNING_REPORTING__"
+        && set CoreDefines="__CORE_WARNING_REPORTING__"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
