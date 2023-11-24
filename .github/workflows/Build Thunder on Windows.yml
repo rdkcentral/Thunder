@@ -121,7 +121,7 @@ jobs:
       shell: cmd
       run: >
         cd ThunderOnWindows
-        && set CoreDefines="__CORE_WARNING_REPORTING__"
+        && set CoreConsole="__CORE_WARNING_REPORTING__"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
         && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
