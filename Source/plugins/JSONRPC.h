@@ -25,8 +25,6 @@
 #include "IPlugin.h"
 #include "IDispatcher.h"
 
-#include <set>
-
 namespace WPEFramework {
 
 namespace PluginHost {
@@ -160,7 +158,7 @@ namespace PluginHost {
 
         using HandlerList = std::list<Core::JSONRPC::Handler>;
         using ObserverMap = std::unordered_map<string, Observer>;
-        using EventAliasesMap = std::map<string, std::set<string>>;
+        using EventAliasesMap = std::map<string, std::vector<string>>;
 
         class VersionInfo {
         public:
@@ -372,7 +370,9 @@ namespace PluginHost {
 
             _adminLock.Lock();
 
-            _eventAliases[primary].emplace(event);
+            _eventAliases[primary].emplace_back(event);
+
+            ASSERT(std::count(_eventAliases[primary].begin(), _eventAliases[primary].end(), event) == 1);
 
             _adminLock.Unlock();
         }
@@ -387,12 +387,15 @@ namespace PluginHost {
             ASSERT(entry != _eventAliases.end());
 
             if (entry != _eventAliases.end()) {
-                auto const& count = entry->second.erase(event);
-                DEBUG_VARIABLE(count);
-                ASSERT(count == 1);
+                auto it = std::find(entry->second.begin(), entry->second.end(), event);
+                ASSERT(it != entry->second.end());
 
-                if (entry->second.empty() == true) {
-                    _eventAliases.erase(entry);
+                if (it != entry->second.end()) {
+                    entry->second.erase(it);
+
+                    if (entry->second.empty() == true) {
+                        _eventAliases.erase(entry);
+                    }
                 }
             }
 
