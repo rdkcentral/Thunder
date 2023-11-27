@@ -639,7 +639,7 @@ POP_WARNING()
                 ReportingSettings WarningReporting;
             } gc;
 
-            gc.FromString(_config->MessagingCategories());
+            gc.FromString(messagingSettings);
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
