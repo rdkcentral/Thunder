@@ -149,8 +149,8 @@ functionality in Thunder, which will be further described in a different documen
 
 To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.
 
-# Scheduler
-## Overview
+## Scheduler
+### Overview
 `Workerpool` has the ability to schedule `jobs` using the `Scheduler` class. This can be very helpful when you do not want to start a `job` immediately but at a specific time. To learn more about how to create a `job` read [Workerpool](../threading/worker-pool) section of documentation.
 
  To schedule a `job` we use several methods for this:
@@ -159,9 +159,9 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 * `Reschedule()`
 * `Revoke()`
 
-## Scheduler methods
+### Scheduler methods
 
-### Schedule
+#### Schedule
 `Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We specify the `job` and the date on which to start performing it in the appropriate format.
 !!! note
     In case the given time would point to the past, the task will start executing immediately.
@@ -182,7 +182,7 @@ void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) ove
 ```
 
 
-### Reschedule
+#### Reschedule
 `Reschedule()` method is used to change the execution date of an already scheduled `job`. It is used in the same way as the `Schedule()` method. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
 !!! note
     `Reschedule()` returns true when the `job` cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using `Schedule()`
@@ -199,7 +199,7 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 ```
 
 
-### Revoke
+#### Revoke
 `Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the `job` will be canceled immediately. The `Reschedule` method returns a numeric value.
 
  Error codes that can be returned:
@@ -226,7 +226,7 @@ uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime =
         }
 ```
 
-## Example
+### Example
 `Scheduler` is used for example in rdkservices repository. Here is example use of `Schedule()` from there.
 ```cpp
 void CFrontPanel::startBlinkTimer(int numberOfBlinkRepeats)
