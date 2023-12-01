@@ -229,9 +229,8 @@ namespace PluginHost {
                         index++;
                     }
                 }
-            }
-            void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
-                for (Destination& entry : _designators) {
+            void Event(JSONRPC& parent, const string event, const string& parameter, const std::function<bool(const string&)>& sendifmethod) {
+                for (const Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
                             parent.Notify(entry.ChannelId(), entry.Designator() + '.' + event, parameter);
@@ -246,8 +245,10 @@ namespace PluginHost {
         private:
             Destinations _designators;
         };
+
         using HandlerList = std::list<Core::JSONRPC::Handler>;
         using ObserverMap = std::unordered_map<string, Observer>;
+        using EventAliasesMap = std::map<string, std::vector<string>>;
 
         class VersionInfo {
         public:
@@ -434,6 +435,10 @@ namespace PluginHost {
         {
             _handlers.front().Register(methodName, lambda);
         }
+        void Register(const string& methodName, const string& originalName)
+        {
+            _handlers.front().Register(methodName, originalName);
+        }
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);
@@ -444,6 +449,48 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch) {
             _versions.emplace_back(name, major, minor, patch);
+        }
+
+        //
+        // Methods to register alternative event names
+        // ------------------------------------------------------------------------------------------------------------------------------
+        void RegisterEventAlias(const string& event, const string& primary)
+        {
+            ASSERT(event.empty() == false);
+            ASSERT(primary.empty() == false);
+
+            _adminLock.Lock();
+
+            _eventAliases[primary].emplace_back(event);
+
+            ASSERT(std::count(_eventAliases[primary].begin(), _eventAliases[primary].end(), event) == 1);
+
+            _adminLock.Unlock();
+        }
+        void UnregisterEventAlias(const string& event, const string& primary)
+        {
+            ASSERT(event.empty() == false);
+            ASSERT(primary.empty() == false);
+
+            _adminLock.Lock();
+
+            auto const& entry = _eventAliases.find(primary);
+            ASSERT(entry != _eventAliases.end());
+
+            if (entry != _eventAliases.end()) {
+                auto it = std::find(entry->second.begin(), entry->second.end(), event);
+                ASSERT(it != entry->second.end());
+
+                if (it != entry->second.end()) {
+                    entry->second.erase(it);
+
+                    if (entry->second.empty() == true) {
+                        _eventAliases.erase(entry);
+                    }
+                }
+            }
+
+            _adminLock.Unlock();
         }
 
         //
@@ -628,8 +675,13 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
         }
-        void Dropped(const IDispatcher::ICallback* callback)
-        {
+
+        // Inherited via IDispatcher::ICallback
+        // ---------------------------------------------------------------------------------
+        Core::hresult Event(const string& eventId, const string& parameters) override {
+            return (InternalNotify(eventId, parameters));
+        }
+        void Dropped(const IDispatcher::ICallback* callback) {
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.begin();
@@ -647,19 +699,7 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
         }
-
-        void Event(const string& eventId, const string& parameters) {
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.find(eventId);
-
-            if (index != _observers.end()) {
-                index->second.Event(*this, eventId, parameters, std::function<bool(const string&)>());
-            }
-
-            _adminLock.Unlock();
-        }
-
+          
     protected:
         uint32_t RegisterMethod(const uint8_t version, const string& methodName) {
             _adminLock.Lock();
@@ -738,7 +778,7 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+        uint32_t InternalNotify(const string& event, const string& parameters, const std::function<bool(const string&)>& sendifmethod = std::function<bool(const string&)>()) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -747,7 +787,22 @@ namespace PluginHost {
             ObserverMap::const_iterator index = _observers.find(event);
 
             if (index != _observers.end()) {
-                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, std::move(sendifmethod));
+                const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), event, parameters, sendifmethod);
+            }
+
+            // See if this is perhaps a registered alias for an event...
+
+            EventAliasesMap::const_iterator iter = _eventAliases.find(event);
+
+            if (iter != _eventAliases.end()) {
+
+                for (const string& alias : iter->second) {
+                    ObserverMap::const_iterator index = _observers.find(alias);
+
+                    if (index != _observers.end()) {
+                        const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), alias, parameters, sendifmethod);
+                    }
+                }
             }
 
             _adminLock.Unlock();
@@ -778,6 +833,7 @@ namespace PluginHost {
         TokenCheckFunction _validate;
         VersionList _versions;
         ObserverMap _observers;
+        EventAliasesMap _eventAliases;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {

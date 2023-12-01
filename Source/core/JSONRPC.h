@@ -720,7 +720,7 @@ namespace Core {
                 auto retval = _handlers.emplace(std::piecewise_construct,
                                     std::make_tuple(methodName),
                                     std::make_tuple(lambda));
-                    
+
                 if ( retval.second == false ) {
                     retval.first->second = lambda;
                 }
@@ -736,6 +736,25 @@ namespace Core {
 
                 if ( retval.second == false ) {
                     retval.first->second = lambda;
+                }
+            }
+            void Register(const string& methodName, const string& primaryName)
+            {
+                ASSERT(methodName.empty() == false);
+                ASSERT(primaryName.empty() == false);
+
+                auto retval = _handlers.find(primaryName);
+                ASSERT(retval != _handlers.end());
+
+                auto retvalAlias = _handlers.find(methodName);
+                ASSERT(retvalAlias == _handlers.end());
+
+                // Register the handler under an alternative name.
+
+                if ((retval != _handlers.end()) && (retvalAlias == _handlers.end()))  {
+                    _handlers.emplace(std::piecewise_construct,
+                        std::make_tuple(methodName),
+                        std::make_tuple(retval->second));
                 }
             }
             void Unregister(const string& methodName)
@@ -1112,8 +1131,8 @@ namespace Core {
                     else {
                         code = Core::ERROR_PARSE_FAILURE;
                         result = report.Value().Message();
-                    }                    
-                    
+                    }
+
                     return (code);
                 };
                 Register(methodName, implementation);
