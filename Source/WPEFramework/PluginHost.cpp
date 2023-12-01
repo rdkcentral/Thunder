@@ -227,6 +227,10 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
+            Messaging::ConsoleStandardError::Instance().Close();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Close();
+            }
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -251,7 +255,10 @@ POP_WARNING()
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.\n");
                 fflush(stderr);
             }
+
             _atExitActive = false;
+
+            exit(0);
         }
 
     private:
@@ -326,7 +333,6 @@ POP_WARNING()
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
             sigaction(SIGABRT, &_originalAbortHandler, nullptr);
 
-
             ExitHandler::DumpMetadata();
 
             if (_background) {
@@ -336,7 +342,7 @@ POP_WARNING()
                 fflush(stderr);
             }
 
-            ExitHandler::StartShutdown();
+            raise(signo);
         }
         else if (signo == SIGUSR1) {
             ExitHandler::DumpMetadata();
