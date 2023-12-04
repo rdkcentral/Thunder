@@ -68,14 +68,14 @@ private:
 TEST(test_criticalsection, simple_criticalsection)
 {
     Core::CriticalSection lock;
-    std::thread::id parentId;
 
-    ThreadClass object(lock,parentId);
+    ThreadClass object(lock, std::this_thread::get_id());
     object.Run();
     lock.Lock();
     g_shared++;
     lock.Unlock();
     object.Stop();
+    object.Wait(Core::Thread::STOPPED, Core::infinite);
     EXPECT_EQ(g_shared,2);
 }
 
