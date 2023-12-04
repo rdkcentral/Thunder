@@ -574,7 +574,14 @@ POP_WARNING()
 
             if (_config->MessagingCategoriesFile()) {
 
-                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
+                string messagingCategories = _config->MessagingCategories();
+
+                if (Core::File::IsPathAbsolute(messagingCategories)) {
+                    messagingSettings = messagingCategories;
+                }
+                else {
+                    messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + messagingCategories;
+                }
 
                 std::ifstream inputFile (messagingSettings, std::ifstream::in);
                 std::stringstream buffer;
