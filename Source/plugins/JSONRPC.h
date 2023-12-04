@@ -229,8 +229,9 @@ namespace PluginHost {
                         index++;
                     }
                 }
+            }
             void Event(JSONRPC& parent, const string event, const string& parameter, const std::function<bool(const string&)>& sendifmethod) {
-                for (const Destination& entry : _designators) {
+                for (Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
                             parent.Notify(entry.ChannelId(), entry.Designator() + '.' + event, parameter);
@@ -675,12 +676,12 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
         }
+        Core::hresult Event(const string& eventId, const string& parameters) {
+            return (InternalNotify(eventId, parameters));
+        }
 
         // Inherited via IDispatcher::ICallback
         // ---------------------------------------------------------------------------------
-        Core::hresult Event(const string& eventId, const string& parameters) override {
-            return (InternalNotify(eventId, parameters));
-        }
         void Dropped(const IDispatcher::ICallback* callback) {
             _adminLock.Lock();
 
