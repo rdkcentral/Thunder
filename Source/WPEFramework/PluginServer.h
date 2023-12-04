@@ -1688,7 +1688,7 @@ namespace PluginHost {
                     : _container(composits)
                     , _index()
                     , _position(0) {
-                    for (const std::pair<string, Core::ProxyType<Service>>& entry : services) {
+                    for (auto entry : services) {
                         _container.emplace(std::piecewise_construct,
                             std::make_tuple(entry.first),
                             std::make_tuple(Core::ProxyType<PluginHost::IShell>(entry.second)));
@@ -2836,7 +2836,7 @@ POP_WARNING()
                 _shellObservers.push_back(sink);
                 sink->AddRef();
 
-                for (const std::pair<string, Core::ProxyType<Service>>& entry : _services) {
+                for (auto entry : _services) {
                     sink->Created(entry.first, entry.second.operator->());
                 }
                 for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {

@@ -123,6 +123,7 @@ namespace Core {
                     case Core::ERROR_ILLEGAL_STATE:
                         Code = Core::ERROR_ILLEGAL_STATE;
                         Text = _T("The service is in an illegal state!!!.");
+                        break;
                     case Core::ERROR_FAILED_REGISTERED:
                         Code = Core::ERROR_FAILED_REGISTERED;
                         Text = _T("Registration already done!!!.");
@@ -134,6 +135,7 @@ namespace Core {
                     case Core::ERROR_HIBERNATED:
                         Code = Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         Text = _T("Non specific error!!!.");

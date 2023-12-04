@@ -807,7 +807,7 @@ namespace PluginHost {
     // -----------------------------------------------------------------------------------------------------------------------------------
     void Server::ServiceMap::Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled) {
         // Load the metadata for the subsystem information..
-        for (const std::pair<string, Core::ProxyType<Service>>& service : _services)
+        for (auto service : _services)
         {
             service.second->LoadMetadata();
             for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {
@@ -928,7 +928,7 @@ namespace PluginHost {
         // sort plugins based on StartupOrder from configuration
         std::vector<Core::ProxyType<Service>> configured_services;
 
-        for (const std::pair<string, Core::ProxyType<Service>>& service : _services) {
+        for (auto service : _services) {
             configured_services.emplace_back(service.second);
         }
 
