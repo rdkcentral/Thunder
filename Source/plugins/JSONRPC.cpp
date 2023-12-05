@@ -29,6 +29,9 @@ namespace WPEFramework {
             , _service(nullptr)
             , _callsign()
             , _validate()
+            , _versions()
+            , _observers()
+            , _eventAliases()
         {
             std::vector<uint8_t> versions = { 1 };
 
@@ -41,6 +44,9 @@ namespace WPEFramework {
             , _service(nullptr)
             , _callsign()
             , _validate()
+            , _versions()
+            , _observers()
+            , _eventAliases()
         {
             _handlers.emplace_back(versions);
         }
@@ -51,6 +57,9 @@ namespace WPEFramework {
             , _service(nullptr)
             , _callsign()
             , _validate(validation)
+            , _versions()
+            , _observers()
+            , _eventAliases()
         {
             std::vector<uint8_t> versions = { 1 };
 
@@ -63,6 +72,9 @@ namespace WPEFramework {
             , _service(nullptr)
             , _callsign()
             , _validate(validation)
+            , _versions()
+            , _observers()
+            , _eventAliases()
         {
             _handlers.emplace_back(versions);
         }
