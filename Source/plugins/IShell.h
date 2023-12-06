@@ -315,11 +315,11 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnablePersistentStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(PersistentPath(), permission, user, group));
         }
-        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnableVolatileStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
@@ -349,7 +349,7 @@ namespace PluginHost {
         }
 
     private:
-        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        inline uint32_t EnableStoragePath(const string& storagePath, uint16_t permission, const string& user, const string& group)
         {
             uint32_t result = Core::ERROR_NONE;
 

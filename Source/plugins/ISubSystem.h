@@ -29,7 +29,7 @@ namespace PluginHost {
         enum {
             ID = RPC::ID_SYSTEM_METADATA
         };
-        
+
         // Software information
         virtual string BuildTreeHash() const = 0;
         virtual uint8_t Major() const = 0;
@@ -57,6 +57,7 @@ namespace PluginHost {
             WEBSOURCE, // Content exposed via a local web server is available.
             STREAMING, // Content can be streamed.
             BLUETOOTH, // The bluetooth subsystem is up and running.
+            CRYPTOGRAPHY, // Cryptographic functionality is available.
             END_LIST,
 
             // Also define a "negative" value.
@@ -73,7 +74,8 @@ namespace PluginHost {
             NOT_DECRYPTION, // Decryption functionality is NOT available.
             NOT_WEBSOURCE, // Content exposed via a local web server is NOT available.
             NOT_STREAMING, // Content can NOT be streamed.
-            NOT_BLUETOOTH // The Bluetooth communication system is NOT available.
+            NOT_BLUETOOTH, // The Bluetooth communication system is NOT available.
+            NOT_CRYPTOGRAPHY // Cryptographic functionality is NOT available.
         };
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {
@@ -93,7 +95,7 @@ namespace PluginHost {
             enum { SUBSYSTEM = SECURITY };
 
             // Security information
-            virtual string Callsign() const = 0;    
+            virtual string Callsign() const = 0;
         };
 
         struct EXTERNAL IInternet : virtual public Core::IUnknown {
@@ -194,7 +196,7 @@ namespace PluginHost {
         virtual void Unregister(ISubSystem::INotification* notification) = 0;
 
         // Events setter and getters.
-        virtual void Set(const subsystem type, Core::IUnknown* information) = 0;
+        virtual Core::hresult Set(const subsystem type, Core::IUnknown* information) = 0;
         virtual const Core::IUnknown* Get(const subsystem type) const = 0;
         virtual bool IsActive(const subsystem type) const = 0;
 

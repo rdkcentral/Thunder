@@ -68,6 +68,7 @@ namespace PluginHost {
 #ifndef __WINDOWS__
             case 'b':
                 _background = true;
+                Core::SystemInfo::SetEnvironment(_T("THUNDER_BACKGROUND"), _T("true"));
                 break;
 #endif
             case 'h':
@@ -226,6 +227,10 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
+            Messaging::ConsoleStandardError::Instance().Close();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Close();
+            }
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -250,7 +255,10 @@ POP_WARNING()
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.\n");
                 fflush(stderr);
             }
+
             _atExitActive = false;
+
+            exit(0);
         }
 
     private:
@@ -325,7 +333,6 @@ POP_WARNING()
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
             sigaction(SIGABRT, &_originalAbortHandler, nullptr);
 
-
             ExitHandler::DumpMetadata();
 
             if (_background) {
@@ -335,7 +342,7 @@ POP_WARNING()
                 fflush(stderr);
             }
 
-            ExitHandler::StartShutdown();
+            raise(signo);
         }
         else if (signo == SIGUSR1) {
             ExitHandler::DumpMetadata();
@@ -569,7 +576,14 @@ POP_WARNING()
 
             if (_config->MessagingCategoriesFile()) {
 
-                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
+                string messagingCategories = _config->MessagingCategories();
+
+                if (Core::File::IsPathAbsolute(messagingCategories)) {
+                    messagingSettings = messagingCategories;
+                }
+                else {
+                    messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + messagingCategories;
+                }
 
                 std::ifstream inputFile (messagingSettings, std::ifstream::in);
                 std::stringstream buffer;
@@ -583,7 +597,7 @@ POP_WARNING()
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), messagingSettings, _background, options.flushMode);
 
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
@@ -594,6 +608,16 @@ POP_WARNING()
                 {
                     fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
+            }
+
+            // Redirect the standard error to the messaging engine and the MessageControl plugin
+            // And if Thunder is running in the background, do the same for standard output
+            Messaging::ConsoleStandardError::Instance().Open();
+            if (_background == true) {
+                // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
+                // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
+                ::setvbuf(stdout, NULL, _IONBF, 0);
+                Messaging::ConsoleStandardOut::Instance().Open();
             }
             
 #ifdef __CORE_WARNING_REPORTING__
@@ -624,7 +648,7 @@ POP_WARNING()
                 ReportingSettings WarningReporting;
             } gc;
 
-            gc.FromString(_config->MessagingCategories());
+            gc.FromString(messagingSettings);
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
@@ -836,6 +860,9 @@ POP_WARNING()
                             printf("Bluetooth:    %s\n",
                                 (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
                                                                                               : "Unavailable");
+                            printf("Cryptography: %s\n",
+                                (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
+                                                                                              : "Unavailable");
                             printf("------------------------------------------------------------\n");
                             if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                                 printf("Network Type: %s\n",
@@ -887,7 +914,6 @@ POP_WARNING()
                                 printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
                             }
                         }
-                        status->Release();
                         break;
                     }
                     case 'T': {

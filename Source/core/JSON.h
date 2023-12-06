@@ -2752,6 +2752,7 @@ namespace Core {
             enum modus : uint8_t {
                 ERROR = 0x80,
                 SET = 0x20,
+                EXTRACT = 0x01,
                 UNDEFINED = 0x40
             };
 
@@ -3102,6 +3103,21 @@ namespace Core {
                 }
             }
 
+            void SetExtractOnSingle(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= (modus::EXTRACT);
+                }
+                else {
+                    _state &= (~modus::EXTRACT);
+                }
+            }
+
+            void IsExtractOnSigleSet() const
+            {
+                return ((_state & (modus::EXTRACT)) != 0);
+            }
+
             void Clear() override
             {
                 _state = 0;
@@ -3235,7 +3251,9 @@ namespace Core {
 
                 if (offset == FIND_MARKER) {
                     _iterator.Reset();
-                    stream[loaded++] = '[';
+                    if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                        stream[loaded++] = '[';
+                    }
                     offset = (_iterator.Next() == false ? ~0 : PARSE);
                 } else if (offset == END_MARKER) {
                     offset = ~0;
@@ -3252,7 +3270,9 @@ namespace Core {
                 }
                 if (offset == static_cast<uint32_t>(~0)) {
                     if (loaded < maxLength) {
-                        stream[loaded++] = ']';
+                        if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                            stream[loaded++] = ']';
+                        }
                         offset = FIND_MARKER;
                     } else {
                         offset = END_MARKER;
@@ -3305,12 +3325,13 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case ']':
+                                _state |= (modus::SET);
                                 offset = FIND_MARKER;
                                 loaded++;
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
+                                    _state = (ERROR | (_state & 0xF));
                                     error = Error{ "Expected new element, \",\" found." };
                                     offset = FIND_MARKER;
                                 } else {
@@ -3390,7 +3411,7 @@ namespace Core {
 
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
-                        _state = UNDEFINED;
+                        _state = (UNDEFINED | (_state & 0xF));
                         loaded = 1;
                     } else if ((stream[0] & 0xF0) == 0x90) {
                         _count = (stream[0] & 0x0F);

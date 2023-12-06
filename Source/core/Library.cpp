@@ -169,7 +169,8 @@ namespace Core {
     uint32_t Library::Release()
     {
         if (_refCountedHandle != nullptr) {
-            if (_refCountedHandle->_referenceCount == 1) {
+            ASSERT(_refCountedHandle->_referenceCount > 0);
+            if (Core::InterlockedDecrement(_refCountedHandle->_referenceCount) == 0) {
 
                 ModuleUnload function = reinterpret_cast<ModuleUnload>(LoadFunction(_T("ModuleUnload")));
 
@@ -186,8 +187,6 @@ namespace Core {
 #endif
                 TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
                 delete _refCountedHandle;
-            } else {
-                Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
             }
             _refCountedHandle = nullptr;
         }

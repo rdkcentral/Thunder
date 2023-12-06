@@ -33,7 +33,7 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
-     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" ON) 
+     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
 option(BUILD_PLUGIN_ACTIVATOR
      "Build the standalone plugin activator utility to activate plugins using systemd" OFF)
 

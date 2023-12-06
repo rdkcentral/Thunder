@@ -35,13 +35,11 @@ public:
     ~COMRPCStarter() override;
 
     bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
+    
+private:
+    using ControllerConnector = RPC::SmartControllerInterfaceType<Exchange::Controller::ILifeTime>;
 
 private:
-    Core::NodeId getConnectionEndpoint() const;
-
-private:
+    ControllerConnector _connector;
     const string _pluginName;
-
-    Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> _engine;
-    Core::ProxyType<RPC::CommunicatorClient> _client;
 };

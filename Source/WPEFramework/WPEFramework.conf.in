@@ -72,20 +72,27 @@ else:
 
 if boolean('@MESSAGING@'):
   messaging = JSON()
+  messaging.add("path", '@MESSAGECONTROL_PATH@')
+  messaging.add("port", '@MESSAGING_PORT@')
 
   __notification = {
-       "category" : "Notification",
+       "category" : "AnyCategory",
        "enabled" : False
       }
   
   __fatal = {
-       "category" : "Fatal",
+       "category" : "AnyCategory",
+       "enabled" : True
+      }
+
+  __tracing = {
+       "module" : "Plugin_AnyModule",
        "enabled" : True
       }
   
   __warningReporting = {
-       "category" : "TooLongWaitingForLock",
-       "enabled" : True
+       "category" : "AnyCategory",
+       "enabled" : False
       }
 
   __logging_settings = []
@@ -99,6 +106,7 @@ if boolean('@MESSAGING@'):
   
   __tracing_settings = []
   __tracing_settings.append(__fatal)
+  __tracing_settings.append(__tracing)
   
   __tracing = JSON()
   __tracing.add("settings", __tracing_settings)

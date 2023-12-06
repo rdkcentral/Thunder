@@ -289,11 +289,13 @@ namespace Core {
 
                 const uint16_t payloadSize((nFds <= maxFdsPerRequest) ? (sizeof(int) * nFds) : (sizeof(int) * maxFdsPerRequest));
 
-                char buf[CMSG_SPACE(payloadSize)];
-                memset(buf, 0, sizeof(buf));
+                char* buf = static_cast<char*>(ALLOCA(CMSG_SPACE(payloadSize)));
+                memset(buf, 0, CMSG_SPACE(payloadSize));
 
                 uint32_t identifier(id);
-                struct iovec io = { .iov_base = &identifier, .iov_len = sizeof(identifier) };
+                struct iovec io {
+                    &identifier, sizeof(identifier)
+                };
 
                 msg.msg_name = &client;
                 msg.msg_namelen = length;
@@ -354,7 +356,9 @@ namespace Core {
                     memset(buf, 0, sizeof(buf));
 
                     uint32_t identifier;
-                    struct iovec io = { .iov_base = &identifier, .iov_len = sizeof(identifier) };
+                    struct iovec io {
+                        &identifier, sizeof(identifier)
+                    };
 
                     msg.msg_name = NULL;
                     msg.msg_namelen = 0;

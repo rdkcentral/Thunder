@@ -33,6 +33,7 @@
 #include "TraceFactory.h"
 #include "TextMessage.h"
 #include "ConsoleStreamRedirect.h"
+#include "OperationalCategories.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "messaging.lib")

@@ -21,10 +21,7 @@
               },
             "externalConsole": false,
             "linux": {
-                "name": "Local Debug WPEFramework on Linux",
                 "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
-                "type":"cppdbg",
-                "request": "launch",
                 "MIMode": "gdb",
                 "miDebuggerPath": "gdb",
                 "setupCommands": [
@@ -34,11 +31,16 @@
                         "ignoreFailures": true
                     }
                 ],
-                "sourceFileMap": {
-                },
+                "sourceFileMap": {},
                 "environment": [
-                    { "name": "LD_LIBRARY_PATH", "value": "${config:thunder.installPath}/usr/lib" },
-                    { "name": "PATH", "value": "${config:thunder.installPath}/usr/bin"},
+                    {
+                        "name": "LD_LIBRARY_PATH",
+                        "value": "${config:thunder.installPath}/usr/lib"
+                    },
+                    {
+                        "name": "PATH",
+                        "value": "${config:thunder.installPath}/usr/bin"
+                    },
                 ],
                 "additionalSOLibSearchPath": "${config:thunder.installPath}/usr/lib;/usr/local/lib;/usr/lib;/lib",
             },
@@ -55,21 +57,17 @@
                 "trace": false,
                 "traceResponse": false,
                 "engineLogging": false,
-              },
+            },
             "linux": {
-                "name": "Remote Debug WPEFramework on Linux",
                 "program": "${config:thunder.installPath}/usr/bin/WPEFramework",
-                "type":"cppdbg",
-                "request": "launch",
                 "MIMode": "gdb",
                 "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
                 "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}gdb",
                 "miDebuggerArgs": "",
                 "setupCommands": [
-                    {"text": "-enable-pretty-printing"},
-                    // commands if gdbserver is started with --multi
-                    // {"text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}"},
-                    // {"text": "set remote exec-file WPEFramework"}
+                    {
+                        "text": "-enable-pretty-printing"
+                    },
                 ],
                 "sourceFileMap": {
                     // "remote": "local"
@@ -80,6 +78,64 @@
                 "preLaunchTask": "Prepare WPEFramework for remote gdb debugging",
                 "postDebugTask": "Clean debugging run"
             }
-        }
+        },
+        // Start GBD on target with: 
+        // sshpass -v -p <password> ssh -t <user>:<address> "killall -9 gdbserver; gdbserver --multi :55550"
+        // or with a certificate:
+        // ssh -i <path/to/private/key> -t <user>:<address> "killall -9 gdbserver; gdbserver --multi :55550"
+        {
+            "name": "Remote GDB (multi) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${config:thunder.installPath}/usr/bin/WPEFramework-1.0.0",
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "stopAtEntry": false,
+            "targetArchitecture": "arm",
+            "MIMode": "gdb",
+            "miDebuggerPath": "${config:thunder.crossToolsPath}/${config:thunder.crossToolsPrefix}gdb",
+            "miDebuggerServerAddress": "${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+            ],
+            "customLaunchSetupCommands": [
+                {
+                    "text": "file ${config:thunder.installPath}/usr/bin/WPEFramework-1.0.0",
+                    "description": "Load symbols",
+                    "ignoreFailures": false
+                },
+                {
+                    "text": "target extended-remote ${config:thunder.remoteTargetHost}:${config:thunder.remoteTargetDebugPort}",
+                    "description": "Connect to gdbserver",
+                    "ignoreFailures": false
+                },
+                {
+                    "text": "remote put ${config:thunder.installPath}/usr/bin/WPEFramework-1.0.0 /usr/bin/WPEFramework-1.0.0",
+                    "description": "Copy the locally cross-compiled executable to the target",
+                    "ignoreFailures": false
+                },
+                {
+                    "text": "set remote exec-file /usr/bin/WPEFramework-1.0.0",
+                    "description": "Set the executable to be debugged",
+                    "ignoreFailures": false
+                },
+                {
+                    "text": "set args -c/etc/WPEFramework/config.json",
+                    "description": "Set Arguments for the executable",
+                    "ignoreFailures": false
+                },
+                {
+                    "text": "tbreak main",
+                    "description": "Set temporary breakpoint @main()",
+                    "ignoreFailures": false
+                }
+            ],
+            "launchCompleteCommand": "exec-run"
+        },
     ]
 }

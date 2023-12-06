@@ -91,7 +91,11 @@
   #endif
 #endif
 
-#pragma GCC system_header
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
 
 #ifdef __WINDOWS__
     #define DO_PRAGMA(x) __pragma(x)
@@ -198,7 +202,7 @@
 #if defined(__clang__) || (__GNUC__ >= 4)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS PUSH_WARNING_ARG_("-Wmissing-field-initializers")
 #define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_("-Wunused-variable")
-#define DISABLE_WARNING_UNUSED_PARAMTERS PUSH_WARNING_ARG_("-Wunused-parameter")
+#define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_("-Wunused-parameter")
 #define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_("-Wunused-function")
 #define DISABLE_WARNING_UNUSED_RESULT PUSH_WARNING_ARG_("-Wunused-result")
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_("-Wdeprecated-declarations")

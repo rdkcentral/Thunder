@@ -333,10 +333,14 @@ namespace WPEFramework {
                         , Tracing()
                         , Logging()
                         , Reporting()
+                        , Port(0)
+                        , Path(_T("MessageDispatcher"))
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
                         Add(_T("reporting"), &Reporting);
+                        Add(_T("path"), &Path);
+                        Add(_T("port"), &Port);
                     }
                     ~Config() = default;
                     Config(const Config& other) = delete;
@@ -346,6 +350,8 @@ namespace WPEFramework {
                     TracingSection Tracing;
                     LoggingSection Logging;
                     ReportingSection Reporting;
+                    Core::JSON::DecUInt16 Port;
+                    Core::JSON::String Path;
                 };
 
             public:
@@ -358,6 +364,7 @@ namespace WPEFramework {
                     , _path()
                     , _identifier()
                     , _socketPort()
+                    , _permission(0)
                     , _mode()
                 {
                 }
@@ -374,6 +381,10 @@ namespace WPEFramework {
 
                 uint16_t SocketPort() const {
                     return (_socketPort);
+                }
+
+                uint16_t Permission() const {
+                    return (_permission);
                 }
 
                 bool IsBackground() const {
@@ -397,16 +408,20 @@ namespace WPEFramework {
                     return (abbreviate);
                 }
 
-                void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)
+                void Configure (const string& basePath, const string& identifier, const string& config, const bool background, const flush flushMode)
                 {
-                    _settings.clear();
-                    _path = path;
-                    _identifier = identifier;
-                    _socketPort = socketPort;
-                    _mode = (background ? mode::BACKGROUND : 0) | (flushMode != flush::OFF ? mode::DIRECT : 0) | (flushMode == FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0);
-
                     Config jsonParsed;
                     jsonParsed.FromString(config);
+
+                    _settings.clear();
+                    string messagingFolder;
+                    Core::ParsePathInfo(jsonParsed.Path.Value(), messagingFolder, _permission);
+
+                    _path = Core::Directory::Normalize(basePath) + messagingFolder;
+                    _identifier = identifier;
+                    _socketPort = jsonParsed.Port.Value();
+                    _mode = (background ? mode::BACKGROUND : 0) | (flushMode != flush::OFF ? mode::DIRECT : 0) | (flushMode == FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0);
+
                     FromConfig(jsonParsed);
                 }
 
@@ -606,6 +621,7 @@ namespace WPEFramework {
                 string _path;
                 string _identifier;
                 uint16_t _socketPort;
+                uint16_t _permission;
                 uint8_t _mode;
             };
 
@@ -842,7 +858,7 @@ namespace WPEFramework {
                 return (_settings.SocketPort());
             }
 
-            uint32_t Open(const string& pathName, const uint16_t doorbell, const string& configuration, const bool background, const flush flushMode);
+            uint32_t Open(const string& pathName, const string& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();
 

@@ -29,6 +29,7 @@ namespace Core {
 
         extern EXTERNAL const char* MODULE_LOGGING;
         extern EXTERNAL const char* MODULE_REPORTING;
+        extern EXTERNAL const char* MODULE_OPERATIONAL_STREAM;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -44,12 +45,11 @@ namespace Core {
         class EXTERNAL Metadata {
         public:
             enum type : uint8_t {
-                INVALID        = 0,
-                TRACING        = 1,
-                LOGGING        = 2,
-                REPORTING      = 3,
-                STANDARD_OUT   = 4,
-                STANDARD_ERROR = 5
+                INVALID             = 0,
+                TRACING             = 1,
+                LOGGING             = 2,
+                REPORTING           = 3,
+                OPERATIONAL_STREAM  = 4
             };
 
 // @stop
@@ -281,6 +281,26 @@ namespace Core {
 
             private:
                 string _callsign;
+            };
+
+           /**
+            * @brief Data-Carrier, extended information about the operational-stream-type message.
+            *        No additional info for now, used for function overloading.
+            */
+            class EXTERNAL OperationalStream : public MessageInfo {
+            public:
+                OperationalStream(const OperationalStream&) = default;
+                OperationalStream& operator=(const OperationalStream&) = default;
+
+                OperationalStream()
+                    : MessageInfo()
+                {
+                }
+                OperationalStream(const MessageInfo& messageInfo)
+                    : MessageInfo(messageInfo)
+                {
+                }
+                ~OperationalStream() = default;
             };
 
 	    public:

@@ -201,7 +201,7 @@ namespace Core {
 
             return result;
         }
-        uint32_t Permission(uint32_t mode) const
+        uint32_t Permission(uint16_t mode) const
         {
             uint32_t result = _administrationBuffer.Permission(mode);
 
