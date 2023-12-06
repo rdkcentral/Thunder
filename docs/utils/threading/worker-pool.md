@@ -159,6 +159,7 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 * `Reschedule()`
 * `Revoke()`
 
+Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether. 
 ### Scheduler methods
 
 #### Schedule
@@ -206,6 +207,9 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 
 * `ERROR_NONE` - 0 (no errors)
 * `ERROR_UNKNOWN_KEY` - 22
+
+!!!warning
+    `ERROR_UNKNOWN_KEY` will be returned in case the job was not previously scheduled!
 
 ```cpp
 uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) override
