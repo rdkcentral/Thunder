@@ -2494,6 +2494,7 @@ functionality in Thunder, which will be further described in a different documen
 <li><code>Reschedule()</code></li>
 <li><code>Revoke()</code></li>
 </ul>
+<p>Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether. </p>
 <h3 id="scheduler-methods">Scheduler methods</h3>
 <h4 id="schedule">Schedule</h4>
 <p><code>Schedule()</code> is used to plan when to perform the <code>job</code> we specified. Using this method is very simple. We specify the <code>job</code> and the date on which to start performing it in the appropriate format.</p>
@@ -2536,6 +2537,10 @@ functionality in Thunder, which will be further described in a different documen
 <li><code>ERROR_NONE</code> - 0 (no errors)</li>
 <li><code>ERROR_UNKNOWN_KEY</code> - 22</li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>ERROR_UNKNOWN_KEY</code> will be returned in case the job was not previously scheduled!</p>
+</div>
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Revoke</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">waitTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="p">(</span><span class="n">_timer</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">Timer</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">))</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_UNKNOWN_KEY</span><span class="p">);</span>
