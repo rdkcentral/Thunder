@@ -1440,6 +1440,81 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scheduler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scheduler methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schedule
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reschedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reschedule
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revoke
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2215,6 +2290,81 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scheduler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scheduler methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schedule
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reschedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reschedule
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revoke
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2335,8 +2485,8 @@ the next section. Additionally, it was mentioned that the job can be submitted, 
 functionality in Thunder, which will be further described in a different document.</p>
 <h2 id="conclusions">Conclusions</h2>
 <p>To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.</p>
-<h1 id="scheduler">Scheduler</h1>
-<h2 id="overview">Overview</h2>
+<h2 id="scheduler">Scheduler</h2>
+<h3 id="overview">Overview</h3>
 <p><code>Workerpool</code> has the ability to schedule <code>jobs</code> using the <code>Scheduler</code> class. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time. To learn more about how to create a <code>job</code> read <a href="../threading/worker-pool">Workerpool</a> section of documentation.</p>
 <p>To schedule a <code>job</code> we use several methods for this:</p>
 <ul>
@@ -2344,8 +2494,8 @@ functionality in Thunder, which will be further described in a different documen
 <li><code>Reschedule()</code></li>
 <li><code>Revoke()</code></li>
 </ul>
-<h2 id="scheduler-methods">Scheduler methods</h2>
-<h3 id="schedule">Schedule</h3>
+<h3 id="scheduler-methods">Scheduler methods</h3>
+<h4 id="schedule">Schedule</h4>
 <p><code>Schedule()</code> is used to plan when to perform the <code>job</code> we specified. Using this method is very simple. We specify the <code>job</code> and the date on which to start performing it in the appropriate format.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2364,7 +2514,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h3 id="reschedule">Reschedule</h3>
+<h4 id="reschedule">Reschedule</h4>
 <p><code>Reschedule()</code> method is used to change the execution date of an already scheduled <code>job</code>. It is used in the same way as the <code>Schedule()</code> method. It works as follows, first the scheduled <code>job</code> is attempted to be canceled and then the Schedule with the newly specified time is used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2379,7 +2529,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">revoked</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h3 id="revoke">Revoke</h3>
+<h4 id="revoke">Revoke</h4>
 <p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the <code>job</code> will be canceled immediately. The <code>Reschedule</code> method returns a numeric value.</p>
 <p>Error codes that can be returned:</p>
 <ul>
@@ -2403,7 +2553,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h2 id="example">Example</h2>
+<h3 id="example">Example</h3>
 <p><code>Scheduler</code> is used for example in rdkservices repository. Here is example use of <code>Schedule()</code> from there.
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">CFrontPanel::startBlinkTimer</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">numberOfBlinkRepeats</span><span class="p">)</span>
 <span class="w">        </span><span class="p">{</span>
