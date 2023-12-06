@@ -247,18 +247,26 @@ void CFrontPanel::startBlinkTimer(int numberOfBlinkRepeats)
         }
 ```
 
-Below is another example of using it.
+Below is test example of using it.
 ```cpp
-void ScheduleJobs(Core::ProxyType<IDispatch>& job, const uint16_t scheduledTime)
-    {
-        InsertJobData(job, scheduledTime);
-        _parent.Schedule(Core::Time::Now().Add(scheduledTime), job);
-    }
-void RescheduleJobs(Core::ProxyType<IDispatch>& job, const uint16_t scheduledTime)
-    {
-        InsertJobData(job, scheduledTime);
-        _parent.Reschedule(Core::Time::Now().Add(scheduledTime), job);
-    }
+void test_scheduler(Core::ProxyType<IDispatch> job) {
+    // Schedule the job to run 5 seconds from now
+    Core::Time scheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(5);
+    _scheduler.Schedule(scheduledTime, job);
+
+    // Wait for a while to see the scheduled job execution
+    Core::Thread::Sleep(Core::TimeSpan::FromSeconds(10));
+
+    // Reschedule the job to run 10 seconds from now
+    Core::Time rescheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(10);
+    _scheduler.Reschedule(rescheduledTime, job);
+
+    // Wait for a while to see the rescheduled job execution
+    Core::Thread::Sleep(Core::TimeSpan::FromSeconds(15));
+
+    // Revoke the job (cancel its execution)
+    _scheduler.Revoke(job);
+}
 ```
 
 For more examples you can check `Thunder/Tests/unit/core/test_workerpool.cpp` file.
