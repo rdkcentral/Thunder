@@ -255,7 +255,10 @@ POP_WARNING()
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.\n");
                 fflush(stderr);
             }
+
             _atExitActive = false;
+
+            exit(0);
         }
 
     private:
@@ -330,7 +333,6 @@ POP_WARNING()
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
             sigaction(SIGABRT, &_originalAbortHandler, nullptr);
 
-
             ExitHandler::DumpMetadata();
 
             if (_background) {
@@ -340,7 +342,7 @@ POP_WARNING()
                 fflush(stderr);
             }
 
-            ExitHandler::StartShutdown();
+            raise(signo);
         }
         else if (signo == SIGUSR1) {
             ExitHandler::DumpMetadata();
@@ -574,7 +576,14 @@ POP_WARNING()
 
             if (_config->MessagingCategoriesFile()) {
 
-                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
+                string messagingCategories = _config->MessagingCategories();
+
+                if (Core::File::IsPathAbsolute(messagingCategories)) {
+                    messagingSettings = messagingCategories;
+                }
+                else {
+                    messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + messagingCategories;
+                }
 
                 std::ifstream inputFile (messagingSettings, std::ifstream::in);
                 std::stringstream buffer;
@@ -639,7 +648,7 @@ POP_WARNING()
                 ReportingSettings WarningReporting;
             } gc;
 
-            gc.FromString(_config->MessagingCategories());
+            gc.FromString(messagingSettings);
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif

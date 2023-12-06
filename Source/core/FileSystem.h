@@ -198,6 +198,14 @@ namespace Core {
 
             return (result);
         }
+        inline static bool IsPathAbsolute(const string& path)
+        {
+#ifdef __WINDOWS__
+            return ((path.size() > 0 && (path[0] == '\\' || path[0] == '/')) || (path.size() > 2 && path[1] == ':' && (path[2] == '\\' || path[2] == '/')));
+#else
+            return (path.size() > 0 && path[0] == '/');
+#endif
+        }
         inline static string Extension(const string& name)
         {
             string result;
