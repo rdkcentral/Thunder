@@ -2572,17 +2572,25 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div></p>
-<p>Below is another example of using it.
-<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJobs</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">scheduledTime</span><span class="p">)</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">InsertJobData</span><span class="p">(</span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="n">scheduledTime</span><span class="p">);</span>
-<span class="w">        </span><span class="n">_parent</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">().</span><span class="n">Add</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">),</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">RescheduleJobs</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">scheduledTime</span><span class="p">)</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">InsertJobData</span><span class="p">(</span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="n">scheduledTime</span><span class="p">);</span>
-<span class="w">        </span><span class="n">_parent</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">().</span><span class="n">Add</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">),</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
-<span class="w">    </span><span class="p">}</span>
+<p>Below is test example of using it.
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">test_scheduler</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Schedule the job to run 5 seconds from now</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">scheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Wait for a while to see the scheduled job execution</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
+
+<span class="w">    </span><span class="c1">// Reschedule the job to run 10 seconds from now</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">rescheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">rescheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Wait for a while to see the rescheduled job execution</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">15</span><span class="p">));</span>
+
+<span class="w">    </span><span class="c1">// Revoke the job (cancel its execution)</span>
+<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
+<span class="p">}</span>
 </code></pre></div></p>
 <p>For more examples you can check <code>Thunder/Tests/unit/core/test_workerpool.cpp</code> file.</p>
 
