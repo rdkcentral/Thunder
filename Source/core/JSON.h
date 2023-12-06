@@ -2317,11 +2317,14 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                ASSERT(maxLength > 0);
+                offset = 0;
+
+                ASSERT(maxLength > (IsQuoted() ? 1 : 0));
 
                 const int32_t available = maxLength - (IsQuoted() ? 2 : 0);
 
-                if (0 < available) {
+                if (static_cast<int32_t>(_opaque ? _value.length() : 0) < available) {
+
                     if (IsQuoted()) {
                         stream[loaded++] = '"';
                     }
@@ -2338,11 +2341,122 @@ namespace Core {
                             loaded += static_cast<uint16_t>(count);
                         }
                     } else {
-                        const std::string::size_type count = _value.size();
+                        if (_opaque) {
+                            const size_t count = _value.length();
 
-                        if (count < static_cast<std::string::size_type>(available)) {
-                            memcpy(&stream[loaded], _value.c_str(), count);
-                            loaded += count;
+                            offset = !(count < static_cast<size_t>(available));
+
+                            if (!offset) {
+                                memcpy(&stream[loaded], _value.c_str(), count);
+                                loaded += static_cast<uint16_t>(count);
+                            }
+                        } else {
+                            _flagsAndCounters &= ~SpecialSequenceBit;
+                            _storage = 0;
+
+                            while(loaded < available && offset < _value.size()) {
+                                const char& ch = _value[offset++];
+
+                                if (!(_flagsAndCounters & SpecialSequenceBit)) {
+                                    switch (ch) {
+                                    case 'u'    :   // Possible start of unicode
+                                                    if (offset > 1 && _value[offset - 2] == '\\') {
+                                                        _flagsAndCounters |= SpecialSequenceBit;
+                                                        _flagsAndCounters |= 0x6;
+                                                        --loaded; // 'eat away' the surplus '\'
+                                                    }
+                                                    break;
+                                    // Characters that MUST be escaped, others may (have been, but there is no way to tell)
+                                    default     :   if (!(ch >= 0x0000 && ch <= 0x001F)) {
+                                                        if (offset > 1 && _value[offset - 2] == '\\') {
+                                                            // it was a non-mandatory escape
+                                                            --loaded; // 'eat away' the surplus '\'
+                                                        }
+                                                        break;
+                                                    }
+                                                    FALLTHROUGH;
+                                    case 0x22   :   // Quotation mark
+                                                    FALLTHROUGH;
+                                    case 0x5C   :   // Reverse solidus
+                                                    stream[loaded++] = '\\';
+                                    }
+                                } else {
+                                    // Converting unicode sequence to integral
+                                    _storage =   (_storage << 4)
+                                               | (  0xF
+                                                  & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
+                                                 )
+                                               ;
+
+                                    _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
+
+                                    //unicode has 4, 5 or 6 characters
+
+                                    if ((_flagsAndCounters & 0x7) <= 0x2) {
+                                        // Surrogate pairs were mapped to 0x010000 to 0x10FFFF
+                                        // If the next character is std::xdigit run again
+
+                                        if (   offset < _value.length()
+                                            && std::isxdigit(_value[offset])
+//                                            && _storage < 0x010000
+                                           ) {
+                                            continue;
+                                        }
+
+                                        constexpr uint16_t mask = 0x7;
+
+                                        // Valid characters in the BMP plane are within 0000-7DFF and E000-FFFF
+
+                                        if (   (/*_storage >= 0x0000 &&*/ _storage <= 0x7DFF)
+                                            || (_storage >= 0xE000 && _storage <= 0xFFFF)
+                                           ) {
+                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                            _flagsAndCounters &= ~mask;
+                                            _storage = 0;
+                                        } else {
+                                            // Convert (back) to surrogate pair
+
+                                            loaded -= 4 - (_flagsAndCounters & 0x7);
+
+                                            uint16_t highPart{0}, lowPart{0};
+                                            if (!(CodePointToUTF16(_storage, lowPart, highPart))) {
+                                                // Error
+                                                TRACE_L1("Unable to create surrogate pair from code point for String");
+                                                continue;
+                                            }
+
+                                            if ((loaded + (4 + 2 + 4)) <= available)  {
+                                                loaded +=  AddUnicode4Integral(highPart, &stream[loaded], maxLength - loaded);
+
+                                                stream[loaded++] = '\\';
+                                                stream[loaded++] = 'u';
+
+                                                loaded +=  AddUnicode4Integral(lowPart, &stream[loaded], maxLength - loaded);
+
+                                                _flagsAndCounters ^= SpecialSequenceBit;
+                                                _flagsAndCounters &= ~mask;
+                                                _storage = 0;
+
+                                                continue; // Avoid writing an extra character
+                                            }
+
+                                            loaded = available + 1;
+                                        }
+                                    }
+                                }
+
+                                if (loaded <= available) {
+                                    stream[loaded++] = ch;
+                                } else {
+                                    TRACE_L1("Insufficient space to serialize String");
+                                    continue;
+                                }
+                            }
+
+                            if (_flagsAndCounters & SpecialSequenceBit) {
+                                // Error, unicode was incomplete
+                                TRACE_L1("Unicode character sequence incomplete for String");
+                            }
                         }
                     }
 
@@ -2371,10 +2485,10 @@ namespace Core {
                 uint16_t loaded = 0;
 
                 while (!_completed && loaded < maxLength && !(error.IsSet()) && !_opaque) {
-                    const char& c = stream[loaded++];
+                    const char& ch = stream[loaded++];
 
                     if (!(_flagsAndCounters & SpecialSequenceBit)) {
-                        switch (c) {
+                        switch (ch) {
                         case 0x09     : // Tabulation
                                         FALLTHROUGH;
                         case 0x0A     : // Line feed
@@ -2383,7 +2497,7 @@ namespace Core {
                                         if (     ((_flagsAndCounters & QuoteFoundBit) && !_suffix)
                                               || ((_flagsAndCounters & NullBit) && !_suffix)
                                            ) {
-                                            error = Error{"Insignificant white space character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            error = Error{"Insignificant white space character '" + std::to_string(ch) + "' at unsupported position for String"};
                                             _suffix = _suffix || offset;
                                             continue;
                                         }
@@ -2413,7 +2527,7 @@ namespace Core {
                                             ++_markerContainerEndCount;
 
                                             if (_markerContainerStartCount < _markerContainerEndCount) {
-                                                error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                                error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
                                                 continue;
                                             }
                                         }
@@ -2428,7 +2542,7 @@ namespace Core {
                                             ++_markerArrayEndCount;
 
                                             if (_markerArrayStartCount < _markerArrayEndCount) {
-                                                error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                                error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
                                                 continue;
                                             }
                                         }
@@ -2437,7 +2551,7 @@ namespace Core {
                                         if (   /*(!(_flagsAndCounters & QuoteFoundBit) && offset > 0)
                                             ||*/ ((_flagsAndCounters & QuoteFoundBit) && _suffix && !(_flagsAndCounters & NullBit))
                                            ) {
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
                                             continue;
                                         }
 
@@ -2455,7 +2569,7 @@ namespace Core {
                                         }
                                         break;
                         case '\\'   :   if (offset > 0 && ((_flagsAndCounters & NullBit) || /*!(_flagsAndCounters & QuoteFoundBit) ||*/ _suffix)) {
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
                                             continue;
                                         }
 
@@ -2465,7 +2579,7 @@ namespace Core {
                                             _flagsAndCounters |= SpecialSequenceBit;
                                         }
                                         break;
-                        default     :   if (c == ' ' && (   (!offset && !(_flagsAndCounters & QuoteFoundBit))
+                        default     :   if (ch == ' ' && (   (!offset && !(_flagsAndCounters & QuoteFoundBit))
                                                          || (/*(_flagsAndCounters & QuoteFoundBit) &&*/ _suffix))
                                            ) {
                                             continue;
@@ -2474,7 +2588,7 @@ namespace Core {
                                         if (  (_flagsAndCounters & NullBit)
                                             || _suffix
                                            ) {
-                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for String"};
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
                                             continue;
                                         }
 
@@ -2482,8 +2596,8 @@ namespace Core {
                                             && (_flagsAndCounters & QuoteFoundBit) // Definitely not opaque
                                            ) {
                                             // Characters that MUST be escaped
-                                            switch (c) {
-                                            default     :   if (!(c >= 0x0000 && c <= 0x001F)) {
+                                            switch (ch) {
+                                            default     :   if (!(ch >= 0x0000 && ch <= 0x001F)) {
                                                                 break;
                                                             }
                                                             FALLTHROUGH;
@@ -2491,7 +2605,7 @@ namespace Core {
                                                             FALLTHROUGH;
                                             case 0x5C   : // Reverse solidus
                                                             FALLTHROUGH;
-                                                            error = Error{"Unescaped character of code point value '" + std::to_string(c) + "' for String"};
+                                                            error = Error{"Unescaped character of code point value '" + std::to_string(ch) + "' for String"};
                                                             continue;
                                             }
                                         }
@@ -2514,11 +2628,11 @@ namespace Core {
                                     )
                                  ;
 
-                        if (!(c == '"' && (_flagsAndCounters & QuoteFoundBit))) {
-                            _value += c;
+                        if (!(ch == '"' && (_flagsAndCounters & QuoteFoundBit))) {
+                            _value += ch;
                         }
                     } else {
-                        switch (c) {
+                        switch (ch) {
                         // Characters that MUST be escaped
                         case 0x22   :   // Quotation mark2
                                         FALLTHROUGH;
@@ -2538,17 +2652,20 @@ namespace Core {
                         case 0x09   :   // '\t' tabulation character
 
                                         if (_flagsAndCounters & 0x07) {
-                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
                                             continue;
+                                        }
+
+                                        if (!(_value.empty())) {
+                                            _value.erase(_value.end() - 1); // 'eat away' '\'
                                         }
 
                                         _flagsAndCounters ^= SpecialSequenceBit;
                                         break;
                         case 'u'    :   // unicode
                                         if (_flagsAndCounters & 0x07) {
-                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
                                         }
-
                                         _flagsAndCounters |= 0x04;
                                         break;
                         case '\0'   :   // End of character sequence
@@ -2556,18 +2673,73 @@ namespace Core {
                                             error = Error{"Terminated (special) character sequence without (sufficient) data for String"};
                                         }
                                         FALLTHROUGH;
-                        default     :   if ((_flagsAndCounters & 0x7) && !std::isxdigit(c)) { // unicode sequence expected, characters 0-9 and A-F
-                                            error = Error{"Character '" + std::to_string(c) + "' at unsupported position for String"};
+                        default     :   if ((_flagsAndCounters & 0x7) && !std::isxdigit(ch)) { // unicode sequence expected, characters 0-9 and A-F
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
                                             continue;
                                         }
+
+                                        // Converting unicode sequence to integral
+                                        _storage =   (_storage << 4)
+                                                   | (  0xF
+                                                      & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
+                                                     )
+                                                   ;
 
                                         // Any character may be escaped
                                         // Only unicode affects the length of the sequence
                                         _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
                                         _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
+
+                                        if (!(_flagsAndCounters & 0x7)) {
+                                            // One unicode completed
+
+                                            // Is it part of a surrogate pair?
+
+                                            // A surrogate pair consists of two consecutive UTF16 pairs,eg, high and low range
+                                            // The high ranges map to D800-DBFF, the low ranges map to DC00-DFFF
+                                            // Surrogate pairs are disjoint from valid characters in the BMP plane that consists of 0000-7DFF and E000-FFFF
+
+                                            if (   (_storage & 0xFFFF0000) >= 0xD8000000
+                                                && (_storage & 0xFFFF0000) <= 0xDBFF0000
+                                                && (_storage & 0x0000FFFF) >= 0x0000DC00
+                                                && (_storage & 0x0000FFFF) <= 0x0000DFFF
+                                               ) {
+                                                uint32_t codePoint{0};
+
+                                                if (!UTF16ToCodePoint(static_cast<uint16_t>(_storage & 0x0000FFFF), static_cast<uint16_t>((_storage >> 16) & 0x0000FFFF), codePoint)) {
+                                                    error = Error{"Invalid integral equivalent " + std::to_string(_storage) + " for unicode character sequence for String"};
+                                                    continue;
+                                                }
+
+                                                // Convert the code point to a character sequence
+
+                                                // Replace \uABCD\u1234 by \u followed by new content
+                                                // The last character has not yet been stored
+
+                                                _value.erase(_value.end() - 9, _value.end());
+
+                                                /* uint16_t */  AddUnicode56Integral(codePoint);
+
+                                                _storage = 0;
+
+                                                continue;
+                                            } else if (   (   _storage > 0x0000FFFF
+                                                           && _storage < 0xD800DC00
+                                                          )
+                                                       || (   _storage > 0xD800DFFF
+                                                           && _storage < 0xDBFFDC00
+                                                          )
+                                                       || _storage > 0xDBFFDFFF
+                                                      ) {
+
+                                                error = Error{"Invalid surrogate pair for unicode for String"};
+                                                continue;
+                                            }
+
+                                        }
                         }
 
-                        _value += c;
+                        _value += ch;
                     }
 
                     ++offset;
@@ -2713,6 +2885,47 @@ namespace Core {
 
 
         private:
+
+            // 4 hexadecimal characters per unicode
+            uint8_t AddUnicode4Integral(uint16_t unicode, char stream[], const uint16_t maxLength) const
+            {
+                uint8_t loaded = 0;
+
+                for (uint8_t count = 0; count < 4; count++) {
+                    char value = ((unicode << (count * 4)) & 0xF000) >> 12;
+
+                    if (loaded < maxLength) {
+                        char digit = value < 10 ? value + '0' : value + 'A' - 10;
+                        stream[loaded++] = digit;
+                    }
+                }
+
+                return loaded;
+            }
+
+            // 5 to 6 hexadecimal characters per unicode
+            uint8_t AddUnicode56Integral(uint32_t unicode)
+            {
+                uint8_t loaded = 0;
+
+                bool skip = true;
+                for (uint8_t count = 0; count < 8; count++) {
+                    char value = ((unicode << (count * 4)) & 0xF0000000) >> 28;
+
+                    skip = skip && !value;
+
+                    if (!skip) {
+                        char digit = value < 10 ? value + '0' : value + 'A' - 10;
+                        _value += digit;
+                        ++loaded;
+                    }
+                }
+
+                ASSERT(loaded > 4);
+
+                return loaded;
+            }
+
             std::string _default;
             std::string _value;
 
