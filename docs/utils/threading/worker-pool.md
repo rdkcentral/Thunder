@@ -201,7 +201,7 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 
 
 #### Revoking job
-`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until `job` is cancelled or an error occurs. The `Reschedule` method returns a numeric value.
+`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value.
 
  Error codes that can be returned:
 
