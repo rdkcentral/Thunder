@@ -42,6 +42,8 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonEnum_Metadata.cpp>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonEnum_LifeTime.cpp>
         )
 
 file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
@@ -110,6 +112,7 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/>
         )
 
 target_include_directories( ${TARGET_PROXYSTUBS}

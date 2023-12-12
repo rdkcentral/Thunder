@@ -24,31 +24,6 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
-
-    { PluginHost::MetaData::Channel::state::WEBSERVER, _TXT("WebServer") },
-    { PluginHost::MetaData::Channel::state::WEBSOCKET, _TXT("WebSocket") },
-    { PluginHost::MetaData::Channel::state::RAWSOCKET, _TXT("RawSocket") },
-    { PluginHost::MetaData::Channel::state::CLOSED,    _TXT("Closed")    },
-    { PluginHost::MetaData::Channel::state::COMRPC,    _TXT("COMRPC")    },
-    { PluginHost::MetaData::Channel::state::SUSPENDED, _TXT("Suspended") },
-
-    ENUM_CONVERSION_END(PluginHost::MetaData::Channel::state)
-
-    ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Service::state)
-
-    { PluginHost::MetaData::Service::UNAVAILABLE, _TXT("unavailable") },
-    { PluginHost::MetaData::Service::DEACTIVATED, _TXT("deactivated") },
-    { PluginHost::MetaData::Service::DEACTIVATION, _TXT("deactivation") },
-    { PluginHost::MetaData::Service::ACTIVATED, _TXT("activated") },
-    { PluginHost::MetaData::Service::ACTIVATION, _TXT("activation") },
-    { PluginHost::MetaData::Service::SUSPENDED, _TXT("suspended") },
-    { PluginHost::MetaData::Service::RESUMED, _TXT("resumed") },
-    { PluginHost::MetaData::Service::PRECONDITION, _TXT("precondition") },
-    { PluginHost::MetaData::Service::HIBERNATED, _TXT("hibernated") },
-
-    ENUM_CONVERSION_END(PluginHost::MetaData::Service::state)
-
     ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
 
     { PluginHost::ISubSystem::IInternet::UNKNOWN, _TXT("Unknown") },
@@ -74,7 +49,7 @@ namespace PluginHost
             PluginHost::IStateControl* mode = const_cast<PluginHost::IShell*>(RHS)->QueryInterface<PluginHost::IStateControl>();
 
             if (mode != nullptr) {
-                Core::JSON::EnumType<state>::operator=(mode->State() == PluginHost::IStateControl::RESUMED ? RESUMED : SUSPENDED);
+                Core::JSON::EnumType<state>::operator=(mode->State() == PluginHost::IStateControl::RESUMED ? state::RESUMED : state::SUSPENDED);
                 mode->Release();
             }
         }
@@ -224,45 +199,6 @@ namespace PluginHost
         Name = RHS.Name;
 
         return (*this);
-    }
-
-    MetaData::Bridge::Bridge()
-        : Core::JSON::Container()
-    {
-        Add(_T("locator"), &Locator);
-        Add(_T("latency"), &Latency);
-        Add(_T("model"), &Model);
-        Add(_T("secure"), &Secure);
-    }
-    MetaData::Bridge::Bridge(const string& text, const uint32_t latency, const string& model, const bool secure)
-        : Core::JSON::Container()
-    {
-        Add(_T("locator"), &Locator);
-        Add(_T("latency"), &Latency);
-        Add(_T("model"), &Model);
-        Add(_T("secure"), &Secure);
-
-        Locator = text;
-        Latency = latency;
-        Secure = secure;
-        if (model.empty() == false) {
-            Model = model;
-        }
-    }
-    MetaData::Bridge::Bridge(const Bridge& copy)
-        : Core::JSON::Container()
-        , Locator(copy.Locator)
-        , Latency(copy.Latency)
-        , Model(copy.Model)
-        , Secure(copy.Secure)
-    {
-        Add(_T("locator"), &Locator);
-        Add(_T("latency"), &Latency);
-        Add(_T("model"), &Model);
-        Add(_T("secure"), &Secure);
-    }
-    MetaData::Bridge::~Bridge()
-    {
     }
 
     MetaData::Server::Minion::Minion() 
