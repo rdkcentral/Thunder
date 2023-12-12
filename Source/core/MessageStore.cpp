@@ -1,4 +1,4 @@
-/*
+/* 
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -40,6 +40,7 @@ namespace WPEFramework {
                 _adminLock.Lock();
 
                 while (_controlList.size() > 0) {
+                    TRACE_L1(_T("tracecontrol %s, size = %u was not disposed before"), typeid(*_controlList.front()).name(), _controlList.size());
                     _controlList.front()->Destroy();
                 }
 
@@ -89,7 +90,15 @@ namespace WPEFramework {
             ControlList _controlList;
         };
 
-        static Controls _registeredControls;
+        Controls& ControlsInstance()
+        {
+            // do not use the SingleTonType as ControlsInstance will be referenced 
+            // the SingleTonType dispose and the Controls would be newly created instead
+            // of the current one used
+            static Controls instance;
+            return instance;
+        }
+
         static Core::Messaging::IStore* _storage;
     }
 
