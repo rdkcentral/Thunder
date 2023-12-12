@@ -31,6 +31,12 @@
     <ClCompile Include="System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="generated\json\JsonEnum_Metadata.cpp">
+      <Filter>Source Files\generated</Filter>
+    </ClCompile>
+    <ClCompile Include="generated\json\JsonEnum_LifeTime.cpp">
+      <Filter>Source Files\generated</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -100,6 +106,9 @@
     </Filter>
     <Filter Include="Interface Files">
       <UniqueIdentifier>{4ca8a196-74dd-4e20-98ef-051e5a446b67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\generated">
+      <UniqueIdentifier>{2ef8c592-a7e4-4c2e-9d00-d54599022486}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

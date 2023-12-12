@@ -24,8 +24,8 @@
 #include "Configuration.h"
 
 #include "IController.h"
-#include "jsonrpc/JsonData_Metadata.h"
-#include "jsonrpc/JsonData_Discovery.h"
+#include "JsonData_Metadata.h"
+#include "JsonData_Discovery.h"
 
 
 namespace WPEFramework {

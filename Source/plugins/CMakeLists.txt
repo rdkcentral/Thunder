@@ -112,7 +112,7 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc>
         )
 
 target_include_directories( ${TARGET_PROXYSTUBS}
