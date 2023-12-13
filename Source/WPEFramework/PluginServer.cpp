@@ -219,7 +219,7 @@ namespace PluginHost
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::RAWSOCKET : MetaData::Channel::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::WEBSERVER : MetaData::Channel::SUSPENDED));
+            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::state::RAWSOCKET : MetaData::Channel::state::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::state::WEBSERVER : MetaData::Channel::state::SUSPENDED));
             string name = client->Name();
 
             if (name.empty() == false) {

@@ -31,6 +31,9 @@ ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_S
 
 JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
 
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonEnum_*.cpp")
+file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonData_*.h")
+
 add_library(${TARGET} SHARED
         Channel.cpp
         JSONRPC.cpp
@@ -42,6 +45,7 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        ${JSON_ENUM_SOURCES}
         )
 
 file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
@@ -74,6 +78,7 @@ set(PUBLIC_HEADERS
         VirtualInput.h
         IVirtualInput.h
         Module.h
+        ${JSON_DATA_HEADERS}
         )
 
 target_link_libraries(${TARGET}
@@ -110,6 +115,7 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc>
         )
 
 target_include_directories( ${TARGET_PROXYSTUBS}

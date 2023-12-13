@@ -324,11 +324,11 @@ namespace Plugin {
         // -------------------------------------------------------------------------------------------------------
         Core::hresult Delete(const string& path) override;
         Core::hresult Reboot() override;
-        Core::hresult Environment(const string& index, string& environment) const override;
-        Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) override;
+        Core::hresult Environment(const string& variable, string& value) const override;
+        Core::hresult Clone(const string& callsign, const string& newcallsign, string& response) override;
 
         Core::hresult StartDiscovery(const uint8_t& ttl) override;
-        Core::hresult DiscoveryResults(string& response) const override;
+        Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         Core::hresult Persist() override;
         Core::hresult Configuration(const string& callsign, string& configuration) const override;
@@ -342,15 +342,17 @@ namespace Plugin {
         Core::hresult Unavailable(const string& callsign) override;
         Core::hresult Suspend(const string& callsign) override;
         Core::hresult Resume(const string& callsign) override;
-        Core::hresult Hibernate(const string& callsign, const Core::hresult timeout);
+        Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
 
-        Core::hresult Proxies(string& response) const override;
-        Core::hresult Status(const string& index, string& response) const override;
-        Core::hresult CallStack(const string& index, string& callstack) const override;
-        Core::hresult Links(string& response) const override;
-        Core::hresult ProcessInfo(string& response) const override;
-        Core::hresult Subsystems(string& response) const override;
-        Core::hresult Version(string& response) const override;
+        // IMetadata overrides
+        Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
+        Core::hresult Proxies(const uint32_t& linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
+        Core::hresult Services(const string& callsign, IMetadata::Data::IServicesIterator*& services) const override;
+        Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
+        Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
+        Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
+        Core::hresult Subsystems(IMetadata::Data::ISubsystemsIterator*& subsystems) const override;
+        Core::hresult Version(IMetadata::Data::Version& version) const override;
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
