@@ -33,7 +33,7 @@ JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CU
 
 file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonEnum_*.cpp")
 file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc/JsonData_*.h")
-message(${JSON_DATA_HEADERS} ${JSON_DATA_HEADERS})
+
 add_library(${TARGET} SHARED
         Channel.cpp
         JSONRPC.cpp
