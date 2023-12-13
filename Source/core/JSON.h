@@ -2390,7 +2390,7 @@ namespace Core {
 
                                     _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
 
-                                    //unicode has 4, 5 or 6 characters
+                                    // Unicode has 4, 5 or 6 characters
 
                                     if ((_flagsAndCounters & 0x7) <= 0x2) {
                                         // Surrogate pairs were mapped to 0x010000 to 0x10FFFF
@@ -2400,23 +2400,22 @@ namespace Core {
                                             && std::isxdigit(_value[offset])
 //                                            && _storage < 0x010000
                                            ) {
+                                            stream[loaded++] = ch;
                                             continue;
                                         }
 
                                         constexpr uint16_t mask = 0x7;
 
                                         // Valid characters in the BMP plane are within 0000-7DFF and E000-FFFF
-
-                                        if (   (/*_storage >= 0x0000 &&*/ _storage <= 0x7DFF)
-                                            || (_storage >= 0xE000 && _storage <= 0xFFFF)
-                                           ) {
+                                        // Surrogate pairs are always mapped to code points in the range 0x010000 - 0x1F0000
+                                        if (!( _storage >= 0x010000 && _storage <= 0x10FFFF)) {
                                             _flagsAndCounters ^= SpecialSequenceBit;
                                             _flagsAndCounters &= ~mask;
                                             _storage = 0;
                                         } else {
                                             // Convert (back) to surrogate pair
 
-                                            loaded -= 4 - (_flagsAndCounters & 0x7);
+                                            loaded -= 5 - (_flagsAndCounters & 0x7);
 
                                             uint16_t highPart{0}, lowPart{0};
                                             if (!(CodePointToUTF16(_storage, lowPart, highPart))) {
@@ -2634,7 +2633,7 @@ namespace Core {
                     } else {
                         switch (ch) {
                         // Characters that MUST be escaped
-                        case 0x22   :   // Quotation mark2
+                        case 0x22   :   // Quotation mark
                                         FALLTHROUGH;
                         case 0x5C   :   // Reverse solidus
                                         FALLTHROUGH;
@@ -2666,7 +2665,8 @@ namespace Core {
                                         if (_flagsAndCounters & 0x07) {
                                             error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
                                         }
-                                        _flagsAndCounters |= 0x04;
+                                        // Unicode has 4 to 6 hexadecimal characters
+                                        _flagsAndCounters |= 0x06;
                                         break;
                         case '\0'   :   // End of character sequence
                                         if (offset > 0 && (!(((_flagsAndCounters & NullBit) && _suffix) || (_flagsAndCounters & QuoteFoundBit)) || (_flagsAndCounters & 0x7))) {
@@ -2678,23 +2678,25 @@ namespace Core {
                                             continue;
                                         }
 
-                                        // Converting unicode sequence to integral
-                                        _storage =   (_storage << 4)
-                                                   | (  0xF
-                                                      & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
-                                                     )
-                                                   ;
-
-                                        // Any character may be escaped
-                                        // Only unicode affects the length of the sequence
-                                        _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
-                                        _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
-
                                         if (!(_flagsAndCounters & 0x7)) {
-                                            // One unicode completed
+                                            // Just an escaped character
+                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                            break;
+                                        } else {
+                                            // Converting unicode sequence to integral
+                                            _storage =   (_storage << 4)
+                                                       | (  0xF
+                                                          & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
+                                                         )
+                                                       ;
+
+                                            _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
+                                            _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
 
                                             // Is it part of a surrogate pair?
 
+                                            // Codepoints outside the BMP are encoded as two sequences called surrogate pairs.
+                                            // The range of these codepoint values is in the range 0x010000 to 0x10FFFF
                                             // A surrogate pair consists of two consecutive UTF16 pairs,eg, high and low range
                                             // The high ranges map to D800-DBFF, the low ranges map to DC00-DFFF
                                             // Surrogate pairs are disjoint from valid characters in the BMP plane that consists of 0000-7DFF and E000-FFFF
@@ -2722,20 +2724,64 @@ namespace Core {
 
                                                 _storage = 0;
 
-                                                continue;
-                                            } else if (   (   _storage > 0x0000FFFF
-                                                           && _storage < 0xD800DC00
-                                                          )
-                                                       || (   _storage > 0xD800DFFF
-                                                           && _storage < 0xDBFFDC00
-                                                          )
-                                                       || _storage > 0xDBFFDFFF
-                                                      ) {
+                                                _flagsAndCounters &= ~0x7;
+                                                _flagsAndCounters ^= SpecialSequenceBit;
 
-                                                error = Error{"Invalid surrogate pair for unicode for String"};
                                                 continue;
+                                            } else {
+                                                switch (_flagsAndCounters & 0x7) {
+                                                case 5 :    // 1 character processed
+                                                            FALLTHROUGH;
+                                                case 4 :    // 2 characters processed
+                                                            FALLTHROUGH;
+                                                case 3 :    // 3 characters processed
+                                                            break;
+                                                case 2 :    // Regular unicode or part of surrogate pair
+                                                            if (  loaded < maxLength
+                                                                && std::isxdigit(stream[loaded])
+                                                               ) {
+                                                                // The next character is a hexadecimal digit
+                                                                break;
+                                                            }
+
+                                                            if (   _storage >= 0xD800
+                                                                && _storage <= 0xDBFF
+                                                            ) {
+                                                                // High part
+                                                                _flagsAndCounters &= ~0x7;
+                                                                _flagsAndCounters ^= SpecialSequenceBit;
+                                                                break;
+                                                            }
+
+                                                            // Nothing follows that is part of the unicode
+
+                                                            _flagsAndCounters &= ~0x7;
+                                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                                            break;
+                                                case 1 :    // 5 or 6 character hexadecimal codepoint, 6 if next character is hexadecimal
+                                                            if (  loaded < maxLength
+                                                                && std::isxdigit(stream[loaded])
+                                                               ) {
+                                                                // The next character is a hexadecimal digit
+                                                                break;
+                                                            }
+
+                                                            _flagsAndCounters &= ~0x7;
+                                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                                            break;
+                                                case 0 :    // possibly exceeding 10000-10FFFF
+                                                            if (   _storage >= 0x010000
+                                                                && _storage <= 0x10FFFF
+                                                               ) {
+                                                               break;
+                                                            }
+                                                            FALLTHROUGH;
+                                                default :   // Error
+                                                            error = Error{"Unsupported unicode specification for String"};
+                                                            continue;
+                                                }
+
                                             }
-
                                         }
                         }
 
