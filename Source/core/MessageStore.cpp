@@ -194,17 +194,17 @@ namespace Core {
         }
 
         /* static */ void IControl::Announce(IControl* control) {
-            _registeredControls.Announce(control);
+            ControlsInstance().Announce(control);
 
             if (_storage != nullptr) {
                 control->Enable(_storage->Default(control->Metadata()));
             }
         }
         /* static */ void IControl::Revoke(IControl* control) {
-            _registeredControls.Revoke(control);
+            ControlsInstance().Revoke(control);
         }
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
-            _registeredControls.Iterate(handler);
+            ControlsInstance().Iterate(handler);
         }
 
         /* static */ IStore* IStore::Instance() {
