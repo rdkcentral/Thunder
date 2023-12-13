@@ -716,9 +716,9 @@ POP_WARNING()
 
                                 for (const auto& proxy : proxies) {
                                     MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
-                                    info.InstanceId = proxy->Implementation();
-                                    info.InterfaceId = proxy->InterfaceId();
-                                    info.RefCount = proxy->ReferenceCount();
+                                    info.Instance = proxy->Implementation();
+                                    info.Interface = proxy->InterfaceId();
+                                    info.Count = proxy->ReferenceCount();
                                 }
                             }
                         );
@@ -733,8 +733,8 @@ POP_WARNING()
                             Core::JSON::ArrayType<MetaData::COMRPC::Proxy>::Iterator loop(index.Current().Proxies.Elements());
 
                             while (loop.Next() == true) {
-                                uint64_t instanceId = loop.Current().InstanceId.Value();
-                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().RefCount.Value(), loop.Current().InterfaceId.Value(), loop.Current().InterfaceId.Value());
+                                uint64_t instanceId = loop.Current().Instance.Value();
+                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().Count.Value(), loop.Current().Interface.Value(), loop.Current().Interface.Value());
                             }
                             printf("\n");
                         }

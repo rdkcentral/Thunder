@@ -210,10 +210,76 @@ namespace PluginHost {
     #endif
     }
 
-    //
-    // class Server::Service
-    // -----------------------------------------------------------------------------------------------------------------------------------
-    void* Server::Service::QueryInterface(const uint32_t id) /* override */
+    void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
+    {
+        Core::SocketServerType<Channel>::Iterator index(Core::SocketServerType<Channel>::Clients());
+
+        while (index.Next() == true) {
+
+            MetaData::Channel newInfo;
+            // Let the Channel,report it's metadata
+
+            Core::ProxyType<Channel> client(index.Client());
+
+            newInfo.ID = client->Id();
+
+            newInfo.Activity = client->HasActivity();
+            newInfo.Remote = client->RemoteId();
+            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::state::RAWSOCKET : MetaData::Channel::state::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::state::WEBSERVER : MetaData::Channel::state::SUSPENDED));
+            string name = client->Name();
+
+            if (name.empty() == false) {
+                newInfo.Name = name;
+            }
+
+            metaData.Add(newInfo);
+        }
+    }
+
+    void Server::ServiceMap::Destroy()
+    {
+        _adminLock.Lock();
+
+        // First, move them all to deactivated except Controller
+        Core::ProxyType<Service> controller (_server.Controller());
+
+        TRACE_L1("Destructing %d plugins", static_cast<uint32_t>(_services.size()));
+
+        while (_services.empty() == false) {
+
+            auto index = _services.begin();
+
+            Core::ProxyType<Service> service(index->second);
+
+            ASSERT(service.IsValid());
+
+            if (index->first.c_str() != controller->Callsign()) {
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
+            }
+
+            _services.erase(index);
+        }
+
+        _adminLock.Unlock();
+
+        // Now deactivate controller plugin, once other plugins are deactivated
+        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
+        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
+        }
+
+        _processAdministrator.Close(Core::infinite);
+
+        _processAdministrator.Destroy();
+    }
+
+    /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
