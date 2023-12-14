@@ -2382,65 +2382,55 @@ namespace Core {
                                     }
                                 } else {
                                     // Converting unicode sequence to integral
-                                    _storage =   (_storage << 4)
-                                               | (  0xF
-                                                  & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
-                                                 )
-                                               ;
 
-                                    _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
+                                    int8_t bytes = ToCodePoint(&_value[offset - 1], _value.length() - offset + 1, _storage);
 
-                                    // Unicode has 4, 5 or 6 characters
+                                    if (bytes <= 0 || 4 > available) {
+                                        // Error
+                                        TRACE_L1("Unable to decompress UTF-8 encoding for String");
+                                        continue;
+                                    }
 
-                                    if ((_flagsAndCounters & 0x7) <= 0x2) {
-                                        // Surrogate pairs were mapped to 0x010000 to 0x10FFFF
-                                        // If the next character is std::xdigit run again
+                                    offset += bytes - 1;
 
-                                        if (   offset < _value.length()
-                                            && std::isxdigit(_value[offset])
-//                                            && _storage < 0x010000
-                                           ) {
-                                            stream[loaded++] = ch;
+                                    constexpr uint16_t mask = 0x7;
+
+                                    // Valid characters in the BMP plane are within 0000-7DFF and E000-FFFF
+                                    // Surrogate pairs are always mapped to code points in the range 0x010000 - 0x1F0000
+                                    if (!( _storage >= 0x010000 && _storage <= 0x10FFFF)) {
+                                        loaded += AddUnicode4Integral(_storage, &stream[loaded], maxLength - loaded);
+
+                                        _flagsAndCounters ^= SpecialSequenceBit;
+                                        _flagsAndCounters &= ~mask;
+                                        _storage = 0;
+
+                                         continue;
+                                    } else {
+                                        // Convert (back) to surrogate pair
+
+                                        uint16_t highPart{0}, lowPart{0};
+                                        if (!(CodePointToUTF16(_storage, lowPart, highPart))) {
+                                            // Error
+                                            TRACE_L1("Unable to create surrogate pair from code point for String");
                                             continue;
                                         }
 
-                                        constexpr uint16_t mask = 0x7;
+                                        if ((loaded + (4 + 2 + 4)) <= available)  {
+                                            loaded += AddUnicode4Integral(highPart, &stream[loaded], maxLength - loaded);
 
-                                        // Valid characters in the BMP plane are within 0000-7DFF and E000-FFFF
-                                        // Surrogate pairs are always mapped to code points in the range 0x010000 - 0x1F0000
-                                        if (!( _storage >= 0x010000 && _storage <= 0x10FFFF)) {
+                                            stream[loaded++] = '\\';
+                                            stream[loaded++] = 'u';
+
+                                            loaded += AddUnicode4Integral(lowPart, &stream[loaded], maxLength - loaded);
+
                                             _flagsAndCounters ^= SpecialSequenceBit;
                                             _flagsAndCounters &= ~mask;
                                             _storage = 0;
-                                        } else {
-                                            // Convert (back) to surrogate pair
 
-                                            loaded -= 5 - (_flagsAndCounters & 0x7);
-
-                                            uint16_t highPart{0}, lowPart{0};
-                                            if (!(CodePointToUTF16(_storage, lowPart, highPart))) {
-                                                // Error
-                                                TRACE_L1("Unable to create surrogate pair from code point for String");
-                                                continue;
-                                            }
-
-                                            if ((loaded + (4 + 2 + 4)) <= available)  {
-                                                loaded +=  AddUnicode4Integral(highPart, &stream[loaded], maxLength - loaded);
-
-                                                stream[loaded++] = '\\';
-                                                stream[loaded++] = 'u';
-
-                                                loaded +=  AddUnicode4Integral(lowPart, &stream[loaded], maxLength - loaded);
-
-                                                _flagsAndCounters ^= SpecialSequenceBit;
-                                                _flagsAndCounters &= ~mask;
-                                                _storage = 0;
-
-                                                continue; // Avoid writing an extra character
-                                            }
-
-                                            loaded = available + 1;
+                                            continue; // Avoid writing an extra character
                                         }
+
+                                        loaded = available + 1;
                                     }
                                 }
 
@@ -2720,7 +2710,19 @@ namespace Core {
 
                                                 _value.erase(_value.end() - 9, _value.end());
 
-                                                /* uint16_t */  AddUnicode56Integral(codePoint);
+                                                constexpr uint8_t length = 6;
+
+                                                TCHAR buffer[length];
+
+                                                int8_t bytes = FromCodePoint(codePoint, &buffer[0], length);
+
+                                                if (bytes <=0) {
+                                                    // Error converion to UTF-8 failed
+                                                    error = Error{"Unable to compress surrogate pair to UTF-8 encoding for String"};
+                                                    continue;
+                                                }
+
+                                                _value += std::string(buffer, bytes);
 
                                                 _storage = 0;
 
@@ -2753,11 +2755,50 @@ namespace Core {
                                                                 break;
                                                             }
 
+                                                            if (   (_storage & 0xFFFF0000) >= 0xD8000000
+                                                                && (_storage & 0xFFFF0000) <= 0xDBFF0000
+                                                            ) {
+                                                                // The low part of the surrogate is invalid
+                                                                // Encode as two separate unicode sequences
+                                                                constexpr uint8_t length = 6;
+
+                                                                TCHAR buffer[length];
+
+                                                                int8_t bytes = FromCodePoint((_storage & 0xFFFF0000) >> 16, &buffer[0], length);
+
+                                                                if (bytes <=0) {
+                                                                    // Error converion to UTF-8 failed
+                                                                    error = Error{"Unable to compress low part of surrogate pair to UTF-8 encoding for String"};
+                                                                    continue;
+                                                                }
+
+                                                                _value.erase(_value.end() - 9, _value.end());
+
+                                                                _value += std::string(buffer, bytes);
+                                                                _value += '\\';
+                                                                _value += 'u';
+                                                            } else {
+                                                                _value.erase(_value.end() - 3, _value.end());
+                                                            }
+
                                                             // Nothing follows that is part of the unicode
+                                                            {
+                                                            constexpr uint8_t length = 6;
+
+                                                            TCHAR buffer[length];
+                                                            int8_t bytes = FromCodePoint(_storage & 0x0000FFFF, &buffer[0], length);
+
+                                                            if (bytes <=0) {
+                                                                // Error converion to UTF-8 failed
+                                                                error = Error{"Unable to compress 4 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                            }
+
+                                                            _value += std::string(buffer, bytes);
+                                                            }
 
                                                             _flagsAndCounters &= ~0x7;
                                                             _flagsAndCounters ^= SpecialSequenceBit;
-                                                            break;
+                                                            continue;
                                                 case 1 :    // 5 or 6 character hexadecimal codepoint, 6 if next character is hexadecimal
                                                             if (  loaded < maxLength
                                                                 && std::isxdigit(stream[loaded])
@@ -2765,15 +2806,44 @@ namespace Core {
                                                                 // The next character is a hexadecimal digit
                                                                 break;
                                                             }
+                                                            {
+                                                            constexpr uint8_t length = 6;
 
+                                                            TCHAR buffer[length];
+                                                            int8_t bytes = FromCodePoint(_storage, &buffer[0], length);
+
+                                                            if (bytes <=0) {
+                                                                // Error converion to UTF-8 failed
+                                                                error = Error{"Unable to compress 5 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                            }
+
+                                                            _value.erase(_value.end() - 4, _value.end());
+
+                                                            _value += std::string(buffer, bytes);
+                                                            }
                                                             _flagsAndCounters &= ~0x7;
                                                             _flagsAndCounters ^= SpecialSequenceBit;
-                                                            break;
+                                                            continue;
                                                 case 0 :    // possibly exceeding 10000-10FFFF
                                                             if (   _storage >= 0x010000
                                                                 && _storage <= 0x10FFFF
                                                                ) {
-                                                               break;
+                                                                {
+                                                                constexpr uint8_t length = 6;
+
+                                                                TCHAR buffer[length];
+                                                                int8_t bytes = FromCodePoint(_storage, &buffer[0], length);
+
+                                                                if (bytes <=0) {
+                                                                    // Error converion to UTF-8 failed
+                                                                    error = Error{"Unable to compress 6 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                                }
+
+                                                                _value.erase(_value.end() - 5, _value.end());
+
+                                                                _value += std::string(buffer, bytes);
+                                                                }
+                                                               continue;
                                                             }
                                                             FALLTHROUGH;
                                                 default :   // Error
