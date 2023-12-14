@@ -754,19 +754,6 @@ namespace PluginHost {
                     _extended->Detach(channel);
                 }
             }
-            //inline void Configuration(const string& config)
-            //{
-            //    PluginHost::Service::ConfigLine(config);
-            //}
-            //string Configuration() const
-            //{
-
-            //    Lock();
-            //    string result(PluginHost::Service::ConfigLine());
-            //    Unlock();
-
-            //    return (result);
-            //}
             bool Update(const Plugin::Config& config)
             {
                 bool succeeded = false;
@@ -1811,36 +1798,32 @@ namespace PluginHost {
                     }
                     _adminLock.Unlock();
                 }
-                void* QueryInterfaceByCallsign(const uint32_t id, const string& name) {
-                    void* result = nullptr;
+                Core::ProxyType<PluginHost::IShell> Source(const string& name) {
+                    Core::ProxyType<PluginHost::IShell> result;
 
                     _adminLock.Lock();
                     CompositPlugins::iterator index(_plugins.find(name));
                     if (index != _plugins.end()) {
-                        result = index->second->QueryInterfaceByCallsign(id, name);
+                        result = Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*(index->second)), *(index->second));
                     }
                     _adminLock.Unlock();
 
                     return (result);
                 }
-                template<typename INTERFACE>
-                INTERFACE* QueryInterfaceByCallsign(const string& name) {
-                    return (reinterpret_cast<INTERFACE*>(QueryInterfaceByCallsign(INTERFACE::ID, name)));
-                }
-
                 void Created(const string& callsign, IShell* plugin) override {
-                    bool report = false;
-
                     _adminLock.Lock();
 
                     CompositPlugins::iterator index(_plugins.find(callsign));
 
-                    if (index == _plugins.end()) {
+                    ASSERT(index == _plugins.end());
+
+                    bool report = (index == _plugins.end());
+
+                    if (report == true) {
                         _plugins.emplace(std::piecewise_construct,
                             std::make_tuple(callsign),
                             std::make_tuple(plugin));
                         TRACE(Activity, (_T("LinkPlugin [%s], added composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
-                        report = true;
                     }
                     _adminLock.Unlock();
 
@@ -1849,13 +1832,15 @@ namespace PluginHost {
                     }
                 }
                 void Destroy(const string& callsign, IShell* plugin) override {
-                    bool report = false;
-
                     _adminLock.Lock();
 
                     CompositPlugins::iterator index(_plugins.find(callsign));
 
-                    if (index != _plugins.end()) {
+                    ASSERT(index != _plugins.end());
+
+                    bool report = (index != _plugins.end());
+
+                    if (report == true) {
                         _plugins.erase(index);
                         TRACE(Activity, (_T("LinkPlugin [%s], removed composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
                     }
@@ -1866,37 +1851,19 @@ namespace PluginHost {
                     }
                 }
                 void Activated(const string& callsign, PluginHost::IShell* plugin) override {
-                    _adminLock.Lock();
-                    CompositPlugins::iterator index(_plugins.find(callsign));
-                    if (index != _plugins.end()) {
-                        _adminLock.Unlock();
-
-                        if (plugin != nullptr) {
-                            _parent.Activated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                        }
-                    }
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent.Activated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
                 void Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
-                    _adminLock.Lock();
-                    CompositPlugins::iterator index(_plugins.find(callsign));
-                    if (index != _plugins.end()) {
-                        _adminLock.Unlock();
-
-                        if (plugin != nullptr) {
-                            _parent.Deactivated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                        }
-                    }
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent.Deactivated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
                 void Unavailable(const string& callsign, PluginHost::IShell* plugin) override {
-                    _adminLock.Lock();
-                    CompositPlugins::iterator index(_plugins.find(callsign));
-                    if (index != _plugins.end()) {
-                        _adminLock.Unlock();
-
-                        if (plugin != nullptr) {
-                            _parent.Unavailable(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                        }
-                    }
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent.Unavailable(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
                 void Copy(Iterator::Shells& list) {
                     for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
@@ -2614,7 +2581,7 @@ POP_WARNING()
                         _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
                     } else {
                         // Remove the security from all the channels.
-                        _server.Dispatcher().SecurityRevoke(Configuration().Security());
+                        _server.SecurityRevoke(Configuration().Security());
                     }
                 }
 
@@ -2637,7 +2604,13 @@ POP_WARNING()
             }
             inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
             {
-                return (_server.Dispatcher().Submit(id, response));
+                Core::ProxyType<Server::Channel> entry(_server.Connection(id));
+                
+                if (entry.IsValid() == true) {
+                    entry->Submit(response);
+                    return (Core::ERROR_NONE);
+                }
+                return (Core::ERROR_UNAVAILABLE);
             }
             inline SystemInfo& SubSystemInfo()
             {
@@ -3030,14 +3003,14 @@ POP_WARNING()
                     while ((index != _compositPlugins.end()) && (index->Callsign() != linkingPin)) {
                         index++;
                     }
-                    if (index != _compositPlugins.end()) {
-                        IShell* found = index->QueryInterfaceByCallsign<IShell>(callSign.substr(pos + 1));
 
-                        if (found != nullptr) {
-                            service = Core::ProxyType<IShell>(static_cast<Core::IReferenceCounted&>(*found), *found);
-                        }
+                    if (index != _compositPlugins.end()) {
+                        service = index->Source(callSign.substr(pos + 1));
                     }
+
                     _adminLock.Unlock();
+
+                    result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
                 }
                 else {
                     _adminLock.Lock();
@@ -3260,10 +3233,12 @@ POP_WARNING()
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        public:
+        private:
             class Job : public Core::IDispatch {
             public:
+                Job(Job&&) = delete;
                 Job(const Job&) = delete;
+                Job& operator=(Job&&) = delete;
                 Job& operator=(const Job&) = delete;
 
                 Job()
@@ -3284,7 +3259,11 @@ POP_WARNING()
                 void Close()
                 {
                     TRACE(Activity, (_T("HTTP Request with direct close on [%d]"), _ID));
-                    _server->Dispatcher().Suspend(_ID);
+                    ASSERT(_server != nullptr);
+                    Core::ProxyType<Channel> channel(_server->Connection(_ID));
+                    if (channel.IsValid() == true) {
+                        channel->Close(0);
+                    }
                 }
                 bool HasService() const
                 {
@@ -3345,15 +3324,30 @@ POP_WARNING()
                 void Submit(PACKAGE package)
                 {
                     ASSERT(_server != nullptr);
-                    _server->Dispatcher().Submit(_ID, package);
+                    Core::ProxyType<Channel> channel(_server->Connection(_ID));
+                    if (channel.IsValid() == true) {
+                        channel->Submit(package);
+                    }
                 }
                 void RequestClose() {
                     ASSERT(_server != nullptr);
-                    _server->Dispatcher().RequestClose(_ID);
+                    Core::ProxyType<Channel> channel (_server->Connection(_ID));
+                    if (channel.IsValid() == true) {
+                        channel->RequestClose();
+                    }
                 }
                 string Callsign() const {
                     ASSERT(_service.IsValid() == true);
                     return _service->Callsign();
+                }
+                void Completed() {
+                    ASSERT(_ID != static_cast<uint32_t>(~0));
+                    ASSERT(_server != nullptr);
+                    Core::ProxyType<Channel> channel(_server->Connection(_ID));
+                    if (channel.IsValid() == true) {
+                        channel->Pop();
+                    }
+                    Clear();
                 }
             private:
                 uint32_t _ID;
@@ -3362,7 +3356,9 @@ POP_WARNING()
             };
             class WebRequestJob : public Job {
             public:
+                WebRequestJob(WebRequestJob&&) = delete;
                 WebRequestJob(const WebRequestJob&) = delete;
+                WebRequestJob& operator=(WebRequestJob&&) = delete;
                 WebRequestJob& operator=(const WebRequestJob&) = delete;
 
                 WebRequestJob()
@@ -3509,8 +3505,7 @@ POP_WARNING()
                     // We are done, clear all info
                     _request.Release();
 
-                    Job::Clear();
-
+                    Job::Completed();
                 }
                 string Identifier() const override {
                     string identifier;
@@ -3534,7 +3529,9 @@ POP_WARNING()
             };
             class JSONElementJob : public Job {
             public:
+                JSONElementJob(JSONElementJob&&) = delete;
                 JSONElementJob(const JSONElementJob&) = delete;
+                JSONElementJob& operator=(JSONElementJob&&) = delete;
                 JSONElementJob& operator=(const JSONElementJob&) = delete;
 
                 JSONElementJob()
@@ -3612,7 +3609,7 @@ POP_WARNING()
                         _element.Release();
                     }
 
-                    Job::Clear();
+                    Job::Completed();
                 }
                 string Identifier() const override {
                     if (_jsonrpc == true) {
@@ -3633,17 +3630,13 @@ POP_WARNING()
             };
             class TextJob : public Job {
             public:
+                TextJob(TextJob&&) = delete;
                 TextJob(const TextJob&) = delete;
+                TextJob& operator=(TextJob&&) = delete;
                 TextJob& operator=(const TextJob&) = delete;
 
-                TextJob()
-                    : Job()
-                    , _text()
-                {
-                }
-                ~TextJob() override
-                {
-                }
+                TextJob() = default;
+                ~TextJob() override = default;
 
             public:
                 void Set(const uint32_t id, Server* server, Core::ProxyType<Service>& service, const string& text)
@@ -3663,7 +3656,7 @@ POP_WARNING()
                         _text.clear();
                     }
 
-                    Job::Clear();
+                    Job::Completed();
                 }
                 string Identifier() const override {
                     return(_T("PluginServer::Channel::TextJob::") + Callsign());
@@ -3673,9 +3666,13 @@ POP_WARNING()
                 string _text;
             };
 
+            using Jobs = std::vector< Core::ProxyType<Core::IDispatch> >;
+
         public:
             Channel() = delete;
+            Channel(Channel&& copy) = delete;
             Channel(const Channel& copy) = delete;
+            Channel& operator=(Channel&&) = delete;
             Channel& operator=(const Channel&) = delete;
 
             Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent);
@@ -3742,6 +3739,25 @@ POP_WARNING()
             }
             inline void RequestClose() {
                 _requestClose = true;
+            }
+            inline void Push(Core::ProxyType<Core::IDispatch>&& job) {
+                _adminLock.Lock();
+                if (_jobs.empty()) {
+                    _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
+                }
+                _jobs.emplace(_jobs.begin(), job);
+                _adminLock.Unlock();
+            }
+            inline void Pop() {
+                _adminLock.Lock();
+                ASSERT(_jobs.empty() == false);
+                if (_jobs.empty() == false) {
+                    _jobs.pop_back();
+                    if (_jobs.empty() == false) {
+                        _parent.Submit(_jobs.back());
+                    }
+                }
+                _adminLock.Unlock();
             }
 
         private:
@@ -3916,7 +3932,7 @@ POP_WARNING()
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(request);
                             job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
-                            _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
+                            Push(Core::ProxyType<Core::IDispatch>(job));
                         }
                     }
                     break;
@@ -3993,7 +4009,7 @@ POP_WARNING()
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                         job->Set(Id(), &_parent, _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
-                        _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
+                        Push(Core::ProxyType<Core::IDispatch>(job));
                     }
                 }
             }
@@ -4011,7 +4027,7 @@ POP_WARNING()
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
                     job->Set(Id(), &_parent, _service, value);
-                    _parent.Submit(Core::ProxyType<Core::IDispatch>(job));
+                    Push(Core::ProxyType<Core::IDispatch>(job));
                 }
             }
 
@@ -4056,8 +4072,6 @@ POP_WARNING()
                     }
 
                     State(CLOSED, false);
-                    _parent.Closed(Id());
-                    _parent.Dispatcher().TriggerCleanup();
 
                 } else if (IsUpgrading() == true) {
 
@@ -4105,7 +4119,6 @@ POP_WARNING()
                 SetId(id);
             }
 
-        private:
             inline string SelectSupportedProtocol(const Web::ProtocolsArray& protocols)
             {
                 for (const auto& protocol : protocols) {
@@ -4132,9 +4145,11 @@ POP_WARNING()
             }
 
             Server& _parent;
+            Core::CriticalSection _adminLock;
             PluginHost::ISecurity* _security;
             Core::ProxyType<Service> _service;
             bool _requestClose;
+            Jobs _jobs;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
@@ -4163,34 +4178,29 @@ POP_WARNING()
             ChannelMap& operator=(const ChannelMap&) = delete;
 
             PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-            ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
+            ChannelMap(Server& parent, const Core::NodeId& listeningNode)
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
-                , _connectionCheckTimer(connectionCheckTimer * 1000)
+                , _connectionCheckTimer(0)
                 , _job(*this)
             {
-                if (connectionCheckTimer != 0) {
-                    Core::Time NextTick = Core::Time::Now();
-
-                    NextTick.Add(_connectionCheckTimer);
-
-                    Core::ProxyType<Core::IDispatch> job(_job.Submit());
-                    if (job.IsValid() == true) {
-                        _parent.Schedule(NextTick.Ticks(), job);
-                    }
-                }
             }
             POP_WARNING()
-            ~ChannelMap()
-            {
-                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
-                if (job.IsValid() == true) {
-                    _parent.Revoke(job);
-                    _job.Revoked();
+            ~ChannelMap() = default;
+
+        public:
+            uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
+                _connectionCheckTimer = connectionCheckTimer * 1000;
+                if (connectionCheckTimer != 0) {
+                    _job.Reschedule(Core::Time::Now().Add(_connectionCheckTimer).Ticks());
                 }
+                return(BaseClass::Open(waitTime));
+            }
+            uint32_t Close(const uint32_t waitTime) {
+                _job.Revoke();
 
                 // Start by closing the server thread..
-                Close(100);
+                BaseClass::Close(waitTime);
 
                 // Kill all open connections, we are shutting down !!!
                 BaseClass::Iterator index(BaseClass::Clients());
@@ -4198,14 +4208,14 @@ POP_WARNING()
                 while (index.Next() == true) {
                     // Oops nothing hapened for a long time, kill the connection
                     // give it 100ms to actually close, if not do it forcefully !!
-                    index.Client()->Close(100);
+                    index.Client()->Close(waitTime);
                 }
 
                 // Cleanup the closed sockets we created..
-                Cleanup();
-            }
+                ValidateConnections();
 
-        public:
+                return (Core::ERROR_NONE);
+            }
             void SecurityRevoke(ISecurity* fallback)
             {
                 BaseClass::Lock();
@@ -4226,20 +4236,13 @@ POP_WARNING()
             {
                 return (Core::SocketServerType<Channel>::Count());
             }
-            inline void RequestClose(const uint32_t id) {
-                Core::ProxyType<Channel> client(BaseClass::Client(id));
-
-                if (client.IsValid() == true) {
-                    client->RequestClose();
-                }
+            inline Core::ProxyType<Channel> Connection(const uint32_t id) {
+                return(BaseClass::Client(id));
             }
-            void TriggerCleanup()
+            void Cleanup()
             {
                 if (_connectionCheckTimer == 0) {
-                    Core::ProxyType<Core::IDispatch> job(_job.Reschedule(Core::Time::Now()));
-                    if (job.IsValid() == true) {
-                        _parent.Submit(job);
-                    }
+                    _job.Submit();
                 }
             }
             void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
@@ -4254,8 +4257,10 @@ POP_WARNING()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                // First clear all shit from last time..
-                Cleanup();
+                // Next Clean all Id's from JSONRPC nolonger available
+                // 
+                // First check and clear, closed connections
+                ValidateConnections();
 
                 if (_connectionCheckTimer != 0) {
                     // Now suspend those that have no activity.
@@ -4280,11 +4285,22 @@ POP_WARNING()
                     _job.Reschedule(NextTick);
                 }
             }
+            void ValidateConnections() {
+                BaseClass::Iterator index(BaseClass::Clients());
+
+                while (index.Next() == true) {
+                    if (index.Client()->IsOpen() == false) {
+                        TRACE(Activity, (_T("Client closed, that is reported closed"), index.Client()->Id()));
+                        _parent.Services().Closed(index.Client()->Id());
+                    }
+                }
+                BaseClass::Cleanup();
+            }
 
         private:
             Server& _parent;
-            const uint32_t _connectionCheckTimer;
-            Core::ThreadPool::JobType<ChannelMap&> _job;
+            uint32_t _connectionCheckTimer;
+            Core::WorkerPool::JobType<ChannelMap&> _job;
         };
 
     public:
@@ -4302,9 +4318,17 @@ POP_WARNING()
         inline void Statistics(uint32_t& requests, uint32_t& responses, uint32_t& fileBodies, uint32_t& jsonrpc) const {
             _factoriesImplementation.Statistics(requests, responses, fileBodies, jsonrpc);
         }
-        inline ChannelMap& Dispatcher()
+        inline void SecurityRevoke(PluginHost::ISecurity* security)
         {
-            return (_connections);
+            return (_connections.SecurityRevoke(security));
+        }
+        inline void Cleanup()
+        {
+            return (_connections.Cleanup());
+        }
+        inline Core::ProxyType<Server::Channel> Connection(const uint32_t id)
+        {
+            return (_connections.Connection(id));
         }
         inline void DumpMetadata() {
             PostMortemData data;
@@ -4338,12 +4362,20 @@ POP_WARNING()
         {
             return (_services);
         }
-        inline void Metadata(PluginHost::MetaData::Version& data)
+        inline void Metadata(PluginHost::MetaData::Version& data) const
         {
             data.Major = PluginHost::Major;
             data.Minor = PluginHost::Minor;
             data.Patch = PluginHost::Patch;
             data.Hash = string(Core::System::ModuleBuildRef());
+        }
+        inline void Metadata(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& data) const
+        {
+            _connections.GetMetaData(data);
+            _services.GetMetaData(data);
+        }
+        inline void Metadata(Core::JSON::ArrayType<PluginHost::MetaData::Service>& data) const {
+            _services.GetMetaData(data);
         }
         inline Server::WorkerPoolImplementation& WorkerPool()
         {
@@ -4399,9 +4431,6 @@ POP_WARNING()
         ISecurity* Officer()
         {
             return (_config.Security());
-        }
-        void Closed(const uint32_t id) {
-            _services.Closed(id);
         }
 
     private:

@@ -19,6 +19,9 @@
     <ClCompile Include="generated\ProxyStubs_ControllerDeprecated.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="generated\ProxyStubs_Dispatcher.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Generated Files">

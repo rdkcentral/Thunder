@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
     <ClCompile Include="generated\ProxyStubs_ControllerDeprecated.cpp" />
+    <ClCompile Include="generated\ProxyStubs_Dispatcher.cpp" />
     <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
     <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
     <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
@@ -128,7 +129,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -152,7 +153,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -176,7 +177,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -204,7 +205,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>

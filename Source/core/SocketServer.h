@@ -225,19 +225,6 @@ namespace Core {
 
                 return (result);
             }
-            inline void Suspend(const uint32_t ID)
-            {
-                _lock.Lock();
-
-                typename ClientMap::iterator index = _clients.find(ID);
-
-                if (index != _clients.end()) {
-                    // Oke connection still exists, send the message..
-                    index->second->Close(0);
-                }
-
-                _lock.Unlock();
-            }
             inline void CloseClients(const uint32_t waiTime)
             {
                 _lock.Lock();
