@@ -2731,6 +2731,12 @@ namespace Core {
 
                                                 continue;
                                             } else {
+                                                constexpr uint8_t length = 6;
+
+                                                TCHAR buffer[length];
+
+                                                int8_t bytes = 0;
+
                                                 switch (_flagsAndCounters & 0x7) {
                                                 case 5 :    // 1 character processed
                                                             FALLTHROUGH;
@@ -2760,11 +2766,7 @@ namespace Core {
                                                             ) {
                                                                 // The low part of the surrogate is invalid
                                                                 // Encode as two separate unicode sequences
-                                                                constexpr uint8_t length = 6;
-
-                                                                TCHAR buffer[length];
-
-                                                                int8_t bytes = FromCodePoint((_storage & 0xFFFF0000) >> 16, &buffer[0], length);
+                                                                bytes = FromCodePoint((_storage & 0xFFFF0000) >> 16, &buffer[0], length);
 
                                                                 if (bytes <=0) {
                                                                     // Error converion to UTF-8 failed
@@ -2782,11 +2784,8 @@ namespace Core {
                                                             }
 
                                                             // Nothing follows that is part of the unicode
-                                                            {
-                                                            constexpr uint8_t length = 6;
 
-                                                            TCHAR buffer[length];
-                                                            int8_t bytes = FromCodePoint(_storage & 0x0000FFFF, &buffer[0], length);
+                                                            bytes = FromCodePoint(_storage & 0x0000FFFF, &buffer[0], length);
 
                                                             if (bytes <=0) {
                                                                 // Error converion to UTF-8 failed
@@ -2794,10 +2793,10 @@ namespace Core {
                                                             }
 
                                                             _value += std::string(buffer, bytes);
-                                                            }
 
                                                             _flagsAndCounters &= ~0x7;
                                                             _flagsAndCounters ^= SpecialSequenceBit;
+
                                                             continue;
                                                 case 1 :    // 5 or 6 character hexadecimal codepoint, 6 if next character is hexadecimal
                                                             if (  loaded < maxLength
@@ -2806,11 +2805,8 @@ namespace Core {
                                                                 // The next character is a hexadecimal digit
                                                                 break;
                                                             }
-                                                            {
-                                                            constexpr uint8_t length = 6;
 
-                                                            TCHAR buffer[length];
-                                                            int8_t bytes = FromCodePoint(_storage, &buffer[0], length);
+                                                            bytes = FromCodePoint(_storage, &buffer[0], length);
 
                                                             if (bytes <=0) {
                                                                 // Error converion to UTF-8 failed
@@ -2820,19 +2816,16 @@ namespace Core {
                                                             _value.erase(_value.end() - 4, _value.end());
 
                                                             _value += std::string(buffer, bytes);
-                                                            }
+
                                                             _flagsAndCounters &= ~0x7;
                                                             _flagsAndCounters ^= SpecialSequenceBit;
+
                                                             continue;
                                                 case 0 :    // possibly exceeding 10000-10FFFF
                                                             if (   _storage >= 0x010000
                                                                 && _storage <= 0x10FFFF
                                                                ) {
-                                                                {
-                                                                constexpr uint8_t length = 6;
-
-                                                                TCHAR buffer[length];
-                                                                int8_t bytes = FromCodePoint(_storage, &buffer[0], length);
+                                                                bytes = FromCodePoint(_storage, &buffer[0], length);
 
                                                                 if (bytes <=0) {
                                                                     // Error converion to UTF-8 failed
@@ -2842,8 +2835,8 @@ namespace Core {
                                                                 _value.erase(_value.end() - 5, _value.end());
 
                                                                 _value += std::string(buffer, bytes);
-                                                                }
-                                                               continue;
+
+                                                                continue;
                                                             }
                                                             FALLTHROUGH;
                                                 default :   // Error
