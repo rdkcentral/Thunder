@@ -3047,13 +3047,6 @@ POP_WARNING()
 
                 return (result);
             }
-
-            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
-
-            void Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled);
-            void Startup(); 
-            void Close();
-
             inline const PluginHost::Config& Configuration() const
             {
                 return _server.Configuration();
@@ -3089,6 +3082,13 @@ POP_WARNING()
 
                 RecursiveNotification(index);
             }
+
+            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
+
+            void Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled);
+            void Startup();
+            void Close();
+            void Destroy();
 
         private:
             void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {

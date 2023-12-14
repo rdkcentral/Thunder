@@ -19,16 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
-    <ClCompile Include="generated\ProxyStubs_ControllerDeprecated.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Dispatcher.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
-    <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
-    <ClCompile Include="generated\ProxyStubs_SubSystem.cpp" />
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubsMetadata.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Controller.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_ControllerDeprecated.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Dispatcher.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Plugin.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Shell.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_StateControl.cpp" />
+    <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_SubSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -129,7 +130,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -153,7 +154,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -177,7 +178,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -205,7 +206,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(ProjectDir)generated" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IControllerDeprecated.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>

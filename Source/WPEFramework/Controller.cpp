@@ -20,16 +20,16 @@
 #include "Controller.h"
 #include "SystemInfo.h"
 
-#include "JsonData_SystemManagement.h"
-#include "JsonData_LifeTime.h"
-#include "JsonData_Discovery.h"
-#include "JsonData_Metadata.h"
+#include <plugins/json/JsonData_SystemManagement.h>
+#include <plugins/json/JsonData_LifeTime.h>
+#include <plugins/json/JsonData_Discovery.h>
+#include <plugins/json/JsonData_Metadata.h>
 
-#include "JDiscovery.h"
-#include "JConfiguration.h"
-#include "JSystemManagement.h"
-#include "JLifeTime.h"
-#include "JMetadata.h"
+#include <plugins/json/JDiscovery.h>
+#include <plugins/json/JConfiguration.h>
+#include <plugins/json/JSystemManagement.h>
+#include <plugins/json/JLifeTime.h>
+#include <plugins/json/JMetadata.h>
 
 namespace WPEFramework {
 
@@ -380,17 +380,15 @@ namespace Plugin {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
             // No more parameters, flush it all..
-            _pluginServer->Dispatcher().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Plugins);
+            _pluginServer->Metadata(response->Channels);
+            _pluginServer->Metadata(response->Plugins);
             WorkerPoolMetaData(response->Process);
 
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Links")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            _pluginServer->Dispatcher().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Channels);
+            _pluginServer->Metadata(response->Channels);
 
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Plugins")) {
@@ -1206,8 +1204,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        _pluginServer->Dispatcher().GetMetaData(meta);
-        _pluginServer->Services().GetMetaData(meta);
+        _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
             std::list<IMetadata::Data::Link> links;

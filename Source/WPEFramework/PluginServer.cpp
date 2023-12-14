@@ -1052,41 +1052,12 @@ namespace PluginHost {
     }
 
     //
-    // class Server::ChannelMap
-    // -----------------------------------------------------------------------------------------------------------------------------------
-    void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const
-    {
-        Core::SocketServerType<Channel>::Iterator index(Core::SocketServerType<Channel>::Clients());
-
-        while (index.Next() == true) {
-
-            MetaData::Channel newInfo;
-            // Let the Channel,report it's metadata
-
-            Core::ProxyType<Channel> client(index.Client());
-
-            newInfo.ID = client->Id();
-
-            newInfo.Activity = client->HasActivity();
-            newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::RAWSOCKET : MetaData::Channel::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::WEBSERVER : MetaData::Channel::SUSPENDED));
-            string name = client->Name();
-
-            if (name.empty() == false) {
-                newInfo.Name = name;
-            }
-
-            metaData.Add(newInfo);
-        }
-    }
-
-    //
     // class Server
     // -----------------------------------------------------------------------------------------------------------------------------------
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.StackSize())
-        , _connections(*this, configuration.Binder(), configuration.IdleTime())
+        , _connections(*this, configuration.Binder())
         , _config(configuration)
         , _services(*this)
         , _controller()
@@ -1223,7 +1194,7 @@ namespace PluginHost {
         securityProvider->Release();
 
         _dispatcher.Run();
-        Dispatcher().Open(MAX_EXTERNAL_WAITS);
+        _connections.Open(MAX_EXTERNAL_WAITS, _config.IdleTime());
 
         _services.Startup();
     }

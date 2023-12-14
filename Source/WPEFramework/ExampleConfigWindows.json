@@ -128,7 +128,7 @@
       "classname": "BridgeLink",
       "autostart": false,
       "configuration": {
-        "source": "192.168.1.102:62000",
+        "source": "192.168.11.24:62000",
         "retries": 255,
         "interval": 10
       }

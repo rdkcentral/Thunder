@@ -373,6 +373,7 @@ namespace Plugin {
             INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
             INTERFACE_ENTRY(Exchange::Controller::IMetadata)
             INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
+            INTERFACE_ENTRY(Exchange::Controller::IShells)
         END_INTERFACE_MAP
 
     private:
