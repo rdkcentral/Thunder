@@ -30,6 +30,7 @@
 namespace WPEFramework {
 
 namespace Exchange {
+
 namespace Controller {
 
     /* @json */
@@ -127,6 +128,23 @@ namespace Controller {
 
         // @brief Resumes a plugin
         virtual Core::hresult Resume(const string& callsign) = 0;
+    };
+
+    struct EXTERNAL IShells : virtual public Core::IUnknown {
+        enum { ID = RPC::ID_CONTROLLER_SHELLS };
+
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_CONTROLLER_SHELLS_NOTIFICATION };
+
+            // @brief Notifies the creation of a Shell (Startup or Clone)
+            virtual void Created(const string& callsign, PluginHost::IShell* plugin /* @in */) = 0;
+            // @brief Notifies the destruction of a shell (Destroy)
+            virtual void Destroy(const string& callsign, PluginHost::IShell* plugin /* @in */) = 0;
+        };
+
+        // Pushing notifications to interested sinks
+        virtual Core::hresult Register(INotification* sink) = 0;
+        virtual Core::hresult Unregister(INotification* sink) = 0;
     };
 
     /* @json */
