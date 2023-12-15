@@ -742,8 +742,7 @@ POP_WARNING()
                     }
                     case 'C': {
                         Core::JSON::ArrayType<MetaData::Channel> metaData;
-                        _dispatcher->Dispatcher().GetMetaData(metaData);
-                        _dispatcher->Services().GetMetaData(metaData);
+                        _dispatcher->Metadata(metaData);
                         Core::JSON::ArrayType<MetaData::Channel>::Iterator index(metaData.Elements());
 
                         printf("\nChannels:\n");

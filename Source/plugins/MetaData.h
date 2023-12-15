@@ -24,9 +24,8 @@
 #include "Configuration.h"
 
 #include "IController.h"
-#include "JsonData_Metadata.h"
-#include "JsonData_Discovery.h"
-
+#include <plugins/json/JsonData_Metadata.h>
+#include <plugins/json/JsonData_Discovery.h>
 
 namespace WPEFramework {
 namespace PluginHost {
