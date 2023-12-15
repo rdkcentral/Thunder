@@ -227,6 +227,10 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
+            Messaging::ConsoleStandardError::Instance().Close();
+            if (_background == true) {
+                Messaging::ConsoleStandardOut::Instance().Close();
+            }
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -251,7 +255,10 @@ POP_WARNING()
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " completely stopped.\n");
                 fflush(stderr);
             }
+
             _atExitActive = false;
+
+            exit(0);
         }
 
     private:
@@ -326,7 +333,6 @@ POP_WARNING()
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
             sigaction(SIGABRT, &_originalAbortHandler, nullptr);
 
-
             ExitHandler::DumpMetadata();
 
             if (_background) {
@@ -336,7 +342,7 @@ POP_WARNING()
                 fflush(stderr);
             }
 
-            ExitHandler::StartShutdown();
+            raise(signo);
         }
         else if (signo == SIGUSR1) {
             ExitHandler::DumpMetadata();
@@ -570,7 +576,14 @@ POP_WARNING()
 
             if (_config->MessagingCategoriesFile()) {
 
-                messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + _config->MessagingCategories();
+                string messagingCategories = _config->MessagingCategories();
+
+                if (Core::File::IsPathAbsolute(messagingCategories)) {
+                    messagingSettings = messagingCategories;
+                }
+                else {
+                    messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + messagingCategories;
+                }
 
                 std::ifstream inputFile (messagingSettings, std::ifstream::in);
                 std::stringstream buffer;
@@ -584,7 +597,7 @@ POP_WARNING()
             // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Messaging files, if it is not already set.
             uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), _config->MessagingPort(), messagingSettings, _background, options.flushMode);
+            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), messagingSettings, _background, options.flushMode);
 
             if ( messagingErrorCode != Core::ERROR_NONE){
 #ifndef __WINDOWS__
@@ -635,7 +648,7 @@ POP_WARNING()
                 ReportingSettings WarningReporting;
             } gc;
 
-            gc.FromString(_config->MessagingCategories());
+            gc.FromString(messagingSettings);
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
 #endif
@@ -703,9 +716,9 @@ POP_WARNING()
 
                                 for (const auto& proxy : proxies) {
                                     MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
-                                    info.InstanceId = proxy->Implementation();
-                                    info.InterfaceId = proxy->InterfaceId();
-                                    info.RefCount = proxy->ReferenceCount();
+                                    info.Instance = proxy->Implementation();
+                                    info.Interface = proxy->InterfaceId();
+                                    info.Count = proxy->ReferenceCount();
                                 }
                             }
                         );
@@ -720,8 +733,8 @@ POP_WARNING()
                             Core::JSON::ArrayType<MetaData::COMRPC::Proxy>::Iterator loop(index.Current().Proxies.Elements());
 
                             while (loop.Next() == true) {
-                                uint64_t instanceId = loop.Current().InstanceId.Value();
-                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().RefCount.Value(), loop.Current().InterfaceId.Value(), loop.Current().InterfaceId.Value());
+                                uint64_t instanceId = loop.Current().Instance.Value();
+                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().Count.Value(), loop.Current().Interface.Value(), loop.Current().Interface.Value());
                             }
                             printf("\n");
                         }
@@ -901,7 +914,6 @@ POP_WARNING()
                                 printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
                             }
                         }
-                        status->Release();
                         break;
                     }
                     case 'T': {

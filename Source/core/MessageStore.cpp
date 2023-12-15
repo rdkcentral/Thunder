@@ -1,4 +1,4 @@
-/*
+/* 
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -52,6 +52,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Lock();
 
                 while (_controlList.size() > 0) {
+                    TRACE_L1(_T("tracecontrol %s, size = %u was not disposed before"), typeid(*_controlList.front()).name(), _controlList.size());
                     _controlList.front()->Destroy();
                 }
 
@@ -106,7 +107,11 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
         Controls& ControlsInstance()
         {
-            return (Core::SingletonType<Controls>::Instance());
+            // do not use the SingleTonType as ControlsInstance will be referenced 
+            // the SingleTonType dispose and the Controls would be newly created instead
+            // of the current one used
+            static Controls instance;
+            return instance;
         }
 
         static Core::Messaging::IStore* _storage;
@@ -162,8 +167,8 @@ namespace Core {
                 length = (static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
 
                 if (_type == TRACING) {
-                    length += (static_cast<uint16_t>(_module.size()) + 1);
                     _module = frameReader.NullTerminatedText();
+                    length += (static_cast<uint16_t>(_module.size()) + 1);
                 }
                 else if (_type == LOGGING) {
                     _module = MODULE_LOGGING;

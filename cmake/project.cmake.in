@@ -76,8 +76,6 @@ if(NOT DEFINED LEGACY_CONFIG_GENERATOR)
     set(LEGACY_CONFIG_GENERATOR @LEGACY_CONFIG_GENERATOR@ CACHE INTERNAL "" FORCE)
 endif()
 
-set(CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@ CACHE INTERNAL "" FORCE)
-
 # FIX_ME: Disable fortify source.
 #         https://jira.rdkcentral.com/jira/browse/METROL-483
 #         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.

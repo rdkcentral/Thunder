@@ -23,6 +23,11 @@
 #include "Module.h"
 #include "Configuration.h"
 
+#include "IController.h"
+#include "JsonData_Metadata.h"
+#include "JsonData_Discovery.h"
+
+
 namespace WPEFramework {
 namespace PluginHost {
 
@@ -30,65 +35,11 @@ namespace PluginHost {
     // this class holds interesting information that can be requested from the Server
     class EXTERNAL MetaData : public Core::JSON::Container {
     public:
-        class EXTERNAL Version : public Core::JSON::Container {
-        public:
-            Version(Version&&) = delete;
+        using Version = JsonData::Metadata::VersionInfo;
 
-            Version()
-                : Core::JSON::Container()
-                , Hash()
-                , Major(1)
-                , Minor(0)
-                , Patch(0) {
-                Add(_T("hash"), &Hash);
-                Add(_T("major"), &Major);
-                Add(_T("minor"), &Minor);
-                Add(_T("patch"), &Patch);
-            }
-            Version(const Version& copy)
-                : Core::JSON::Container() 
-                , Hash(copy.Hash)
-                , Major(copy.Major)
-                , Minor(copy.Minor)
-                , Patch(copy.Patch) {
-                Add(_T("hash"), &Hash);
-                Add(_T("major"), &Major);
-                Add(_T("minor"), &Minor);
-                Add(_T("patch"), &Patch);
-            }
-
-            Version& operator= (const Version& rhs) {
-
-                Hash = rhs.Hash;
-                Major = rhs.Major;
-                Minor = rhs.Minor;
-                Patch = rhs.Patch;
-
-                return (*this);
-            }
-            ~Version() override = default;
-
-        public:
-            Core::JSON::String Hash;
-            Core::JSON::DecUInt8 Major;
-            Core::JSON::DecUInt8 Minor;
-            Core::JSON::DecUInt8 Patch;
-        };        
-        
         class EXTERNAL Service : public Plugin::Config {
         public:
-            enum state {
-                UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
-                DEACTIVATED = PluginHost::IShell::DEACTIVATED,
-                DEACTIVATION = PluginHost::IShell::DEACTIVATION,
-                ACTIVATED = PluginHost::IShell::ACTIVATED,
-                ACTIVATION = PluginHost::IShell::ACTIVATION,
-                DESTROYED = PluginHost::IShell::DESTROYED,
-                PRECONDITION = PluginHost::IShell::PRECONDITION,
-                HIBERNATED = PluginHost::IShell::HIBERNATED,
-                SUSPENDED,
-                RESUMED
-            };
+            using state = Exchange::Controller::IMetadata::Data::Service::state;
 
             class EXTERNAL State : public Core::JSON::EnumType<state> {
             public:
@@ -136,14 +87,8 @@ namespace PluginHost {
 
         class EXTERNAL Channel : public Core::JSON::Container {
         public:
-            enum state {
-                CLOSED,
-                WEBSERVER,
-                WEBSOCKET,
-                RAWSOCKET,
-                COMRPC,
-                SUSPENDED
-            };
+            using state = Exchange::Controller::IMetadata::Data::Link::state;
+
             class EXTERNAL State : public Core::JSON::EnumType<state> {
             public:
                 inline State()
@@ -180,21 +125,7 @@ namespace PluginHost {
             Core::JSON::String Name;
         };
 
-        class EXTERNAL Bridge : public Core::JSON::Container {
-        public:
-            Bridge& operator=(const Bridge&) = delete;
-
-            Bridge();
-            Bridge(const string& text, const uint32_t latency, const string& model, const bool secure);
-            Bridge(const Bridge& copy);
-            ~Bridge();
-
-        public:
-            Core::JSON::String Locator;
-            Core::JSON::DecUInt32 Latency;
-            Core::JSON::String Model;
-            Core::JSON::Boolean Secure;
-        };
+        using Bridge = JsonData::Discovery::DiscoveryResultData;
 
         class EXTERNAL Server : public Core::JSON::Container {
         public:
@@ -264,35 +195,7 @@ namespace PluginHost {
         };
         class EXTERNAL COMRPC : public Core::JSON::Container {
         public:
-            class EXTERNAL Proxy : public Core::JSON::Container {
-            public:
-                Proxy& operator=(const Proxy&) = delete;
-
-                Proxy()
-                    : Core::JSON::Container()
-                    , InterfaceId()
-                    , InstanceId()
-                    , RefCount() {
-                    Add(_T("interface"), &InterfaceId);
-                    Add(_T("instance"), &InstanceId);
-                    Add(_T("count"), &RefCount);
-                }
-                Proxy(const Proxy& copy)
-                    : Core::JSON::Container()
-                    , InterfaceId(copy.InterfaceId)
-                    , InstanceId(copy.InstanceId)
-                    , RefCount(copy.RefCount) {
-                    Add(_T("interface"), &InterfaceId);
-                    Add(_T("instance"), &InstanceId);
-                    Add(_T("count"), &RefCount);
-                }
-                ~Proxy() override = default;
-
-            public:
-                Core::JSON::DecUInt32 InterfaceId;
-                Core::JSON::InstanceId InstanceId;
-                Core::JSON::DecUInt32 RefCount;
-            };
+            using Proxy = JsonData::Metadata::ProxyData;
 
         public:
             COMRPC& operator= (const COMRPC&) = delete;

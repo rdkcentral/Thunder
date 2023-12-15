@@ -33,10 +33,9 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
-     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" ON) 
+     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
 option(BUILD_PLUGIN_ACTIVATOR
      "Build the standalone plugin activator utility to activate plugins using systemd" OFF)
-
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -78,16 +77,7 @@ if(NOT CMAKE_BUILD_TYPE)
     message(AUTHOR_WARNING "CMAKE_BUILD_TYPE not set, assuming '${CMAKE_BUILD_TYPE}'")
 endif()
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR
-   "${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized" OR
-   "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo" OR
-   "${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR
-   "${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
-
-    message(STATUS "CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
-else()
-    message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
-endif()
+message(STATUS "CMake build type: '${CMAKE_BUILD_TYPE}'")
 
 # Remove optimization flags added by the build system
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

@@ -54,28 +54,28 @@ namespace PluginHost {
             TIME, // Time has been synchronized.
             PROVISIONING, // Provisioning information is available.
             DECRYPTION, // Decryption functionality is available.
-            WEBSOURCE, // Content exposed via a local web server is available.
+            WEBSOURCE /* @text WebSource */, // Content exposed via a local web server is available.
             STREAMING, // Content can be streamed.
             BLUETOOTH, // The bluetooth subsystem is up and running.
             CRYPTOGRAPHY, // Cryptographic functionality is available.
-            END_LIST,
+            END_LIST /* @end */,
 
             // Also define a "negative" value.
             NEGATIVE_START = 0x80000000,
-            NOT_PLATFORM = NEGATIVE_START, // platform is NOT available.
-            NOT_SECURITY, // A security system can validate external requests (JSONRPC/WebRequest)
-            NOT_NETWORK, // Network connectivity has NOT been established.
-            NOT_IDENTIFIER, // System identification has NOT been accomplished.
-            NOT_GRAPHICS, // Graphics screen EGL is NOT available.
-            NOT_INTERNET, // Network connectivity to the outside world has been established.
-            NOT_LOCATION, // Location of the device has NOT been set.
-            NOT_TIME, // Time has been NOT synchronized.
-            NOT_PROVISIONING, // Provisioning information is NOT available.
-            NOT_DECRYPTION, // Decryption functionality is NOT available.
-            NOT_WEBSOURCE, // Content exposed via a local web server is NOT available.
-            NOT_STREAMING, // Content can NOT be streamed.
-            NOT_BLUETOOTH, // The Bluetooth communication system is NOT available.
-            NOT_CRYPTOGRAPHY // Cryptographic functionality is NOT available.
+            NOT_PLATFORM = NEGATIVE_START /* @text:!Platform */, // platform is NOT available.
+            NOT_SECURITY /* @text !Security */, // A security system can validate external requests (JSONRPC/WebRequest)
+            NOT_NETWORK /* @text !Network */, // Network connectivity has NOT been established.
+            NOT_IDENTIFIER /* @text !Identifier */, // System identification has NOT been accomplished.
+            NOT_GRAPHICS /* @text !Graphics */, // Graphics screen EGL is NOT available.
+            NOT_INTERNET /* @text !Internet */, // Network connectivity to the outside world has been established.
+            NOT_LOCATION /* @text !Location */, // Location of the device has NOT been set.
+            NOT_TIME /* @text !Time */, // Time has been NOT synchronized.
+            NOT_PROVISIONING /* @text !Provisioning */, // Provisioning information is NOT available.
+            NOT_DECRYPTION /* @text !Decryption */, // Decryption functionality is NOT available.
+            NOT_WEBSOURCE /* @text !WebSource */, // Content exposed via a local web server is NOT available.
+            NOT_STREAMING /* @text !Streaming */, // Content can NOT be streamed.
+            NOT_BLUETOOTH /* @text !Bluetooth */, // The Bluetooth communication system is NOT available.
+            NOT_CRYPTOGRAPHY /* @text !Cryptography */ // Cryptographic functionality is NOT available.
         };
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {
@@ -196,7 +196,7 @@ namespace PluginHost {
         virtual void Unregister(ISubSystem::INotification* notification) = 0;
 
         // Events setter and getters.
-        virtual void Set(const subsystem type, Core::IUnknown* information) = 0;
+        virtual Core::hresult Set(const subsystem type, Core::IUnknown* information) = 0;
         virtual const Core::IUnknown* Get(const subsystem type) const = 0;
         virtual bool IsActive(const subsystem type) const = 0;
 

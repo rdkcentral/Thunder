@@ -69,13 +69,13 @@ namespace Core {
             return result;
         }
     
-        static uint32_t Permission(const string& node, const uint32_t modeFlags){
+        static uint32_t Permission(const string& node, const uint16_t modeFlags){
             uint32_t result(Core::ERROR_NONE);
 
 #ifdef __POSIX__
             // Lucky us we mapped File::Mode 1:1 to POSIX mode, 
             // so we only have to filter some values :-). 
-            mode_t mode = modeFlags & 0x0FFFFF;
+            mode_t mode = modeFlags & 0xFFFF;
 
             if (::chmod(node.c_str(), mode) != 0) {
                 result = Core::ERROR_GENERAL;
