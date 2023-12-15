@@ -3255,6 +3255,116 @@ namespace Tests {
     }
 
     template <typename T, typename S>
+    bool TestArrayFromValue()
+    {
+        static_assert(std::is_same<T, Core::JSON::ArrayType<S>>::value, "Type mismatch");
+
+        auto TestEquality = [](const std::string& in, const std::string& out) -> bool
+        {
+            Core::JSON::ArrayType<S> object;
+
+            Core::OptionalType<Core::JSON::Error> status;
+
+            std::string stream;
+
+            bool result = object.FromString(in);
+
+            // FromString clears the object, so, (re)do settings after
+
+            object.SetExtractOnSingle(true);
+
+            result =    result
+                     && object.IsExtractOnSingleSet()
+                     && object.ToString(stream)
+                     && !(status.IsSet())
+                     ;
+
+            if (   std::is_same<S, Core::JSON::Float>::value
+                || std::is_same<S, Core::JSON::Double>::value
+               ) {
+            } else {
+                result = result && stream == out;
+            }
+
+            return result;
+        };
+
+        uint8_t count = 0;
+
+        if (   std::is_same<S, Core::JSON::DecUInt8>::value
+            || std::is_same<S, Core::JSON::DecSInt8>::value
+            || std::is_same<S, Core::JSON::DecUInt16>::value
+            || std::is_same<S, Core::JSON::DecSInt16>::value
+            || std::is_same<S, Core::JSON::DecUInt32>::value
+            || std::is_same<S, Core::JSON::DecSInt32>::value
+            || std::is_same<S, Core::JSON::DecUInt64>::value
+            || std::is_same<S, Core::JSON::DecSInt64>::value
+           ) {
+            count += TestEquality("[1]", "1");
+            count += !TestEquality("[1]", "[1]");
+            count += !TestEquality("[1,2]", "1");
+        }
+
+        if (   std::is_same<S, Core::JSON::HexUInt8>::value
+            || std::is_same<S, Core::JSON::HexSInt8>::value
+            || std::is_same<S, Core::JSON::HexUInt16>::value
+            || std::is_same<S, Core::JSON::HexSInt16>::value
+            || std::is_same<S, Core::JSON::HexUInt32>::value
+            || std::is_same<S, Core::JSON::HexSInt32>::value
+            || std::is_same<S, Core::JSON::HexUInt64>::value
+            || std::is_same<S, Core::JSON::HexSInt64>::value
+            || std::is_same<S, Core::JSON::InstanceId>::value
+            || std::is_same<S, Core::JSON::Pointer>::value
+        ) {
+            count += TestEquality("[0x1]", "0X1");
+            count += !TestEquality("[0x1]", "[0X1]");
+            count += !TestEquality("[0x1,0x2]", "0X1");
+        }
+
+        if (   std::is_same<S, Core::JSON::OctUInt8>::value
+            || std::is_same<S, Core::JSON::OctSInt8>::value
+            || std::is_same<S, Core::JSON::OctUInt16>::value
+            || std::is_same<S, Core::JSON::OctSInt16>::value
+            || std::is_same<S, Core::JSON::OctUInt32>::value
+            || std::is_same<S, Core::JSON::OctSInt32>::value
+            || std::is_same<S, Core::JSON::OctUInt64>::value
+            || std::is_same<S, Core::JSON::OctSInt64>::value
+        ) {
+            count += TestEquality("[01]", "01");
+            count += !TestEquality("[01]", "[01]");
+            count += !TestEquality("[01,02]", "01");
+        }
+
+        if (   std::is_same<S, Core::JSON::Float>::value
+            || std::is_same<S, Core::JSON::Double>::value
+           ) {
+            count += TestEquality("[0.1]", "0.1");
+            count += !TestEquality("[0.1]", "[0.1]");
+            count += !TestEquality("[0.1,0.2]", "0.1");
+        }
+
+        if (std::is_same<S, Core::JSON::String>::value) {
+            count += TestEquality("[\"ABC\"]", "\"ABC\"");
+            count += !TestEquality("[\"ABC\"]", "[\"ABC\"]");
+            count += !TestEquality("[\"ABC\",\"DEF\"]", "\"ABC\"");
+        }
+
+        if (std::is_same<S, Core::JSON::Boolean>::value) {
+            count += TestEquality("[true]", "true");
+            count += !TestEquality("[true]", "[true]");
+            count += !TestEquality("[true,false]", "true");
+        }
+
+        if (std::is_same<S, Core::JSON::Container>::value) {
+            count += TestEquality("[{}]", "{}");
+            count += !TestEquality("[{}]", "[{}]");
+            count += !TestEquality("[{},{}]", "{}");
+        }
+
+        return count == 3;
+    }
+
+    template <typename T, typename S>
     bool TestContainerFromValue()
     {
         static_assert(std::is_same<T, Core::JSON::Container>::value, "Type mismatch");
@@ -4702,6 +4812,15 @@ namespace Tests {
         constexpr const bool malformed = false;
         uint8_t count = 0;
 
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecUInt8>, Core::JSON::DecUInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecUInt16>, Core::JSON::DecUInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecUInt32>, Core::JSON::DecUInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecUInt64>, Core::JSON::DecUInt64>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecSInt8>, Core::JSON::DecSInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecSInt16>, Core::JSON::DecSInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecSInt32>, Core::JSON::DecSInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::DecSInt64>, Core::JSON::DecSInt64>()));
+
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(malformed, count));
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecUInt8>(!malformed, count));
@@ -4734,6 +4853,15 @@ namespace Tests {
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::DecSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexUInt8>, Core::JSON::HexUInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexUInt16>, Core::JSON::HexUInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexUInt32>, Core::JSON::HexUInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexUInt64>, Core::JSON::HexUInt64>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexSInt8>, Core::JSON::HexSInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexSInt16>, Core::JSON::HexSInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexSInt32>, Core::JSON::HexSInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::HexSInt64>, Core::JSON::HexSInt64>()));
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexUInt8>(malformed, count));
         EXPECT_EQ(count, 98);
@@ -4768,6 +4896,15 @@ namespace Tests {
         EXPECT_TRUE(TestArrayFromString<Core::JSON::HexSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
 
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctUInt8>, Core::JSON::OctUInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctUInt16>, Core::JSON::OctUInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctUInt32>, Core::JSON::OctUInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctUInt64>, Core::JSON::OctUInt64>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctSInt8>, Core::JSON::OctSInt8>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctSInt16>, Core::JSON::OctSInt16>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctSInt32>, Core::JSON::OctSInt32>()));
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::OctSInt64>, Core::JSON::OctSInt64>()));
+
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(malformed, count));
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctUInt8>(!malformed, count));
@@ -4801,15 +4938,22 @@ namespace Tests {
         EXPECT_TRUE(TestArrayFromString<Core::JSON::OctSInt64>(!malformed, count));
         EXPECT_EQ(count, 34);
 
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::InstanceId>, Core::JSON::InstanceId>()));
+
         EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(malformed, count));
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::InstanceId>(!malformed, count));
         EXPECT_EQ(count, 34);
 
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::Pointer>, Core::JSON::Pointer>()));
+
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(malformed, count));
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Pointer>(!malformed, count));
         EXPECT_EQ(count, 34);
+
+//        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::Float>, Core::JSON::Float>()));
+//        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::Double>, Core::JSON::Double>()));
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Float>(malformed, count));
         EXPECT_EQ(count, 98);
@@ -4820,10 +4964,14 @@ namespace Tests {
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Double>(!malformed, count));
         EXPECT_EQ(count, 34);
 
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::Boolean>, Core::JSON::Boolean>()));
+
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(malformed, count));
         EXPECT_EQ(count, 98);
         EXPECT_TRUE(TestArrayFromString<Core::JSON::Boolean>(!malformed, count));
         EXPECT_EQ(count, 34);
+
+        EXPECT_TRUE((TestArrayFromValue<Core::JSON::ArrayType<Core::JSON::String>, Core::JSON::String>()));
 
         EXPECT_TRUE(TestArrayFromString<Core::JSON::String>(malformed, count));
         EXPECT_EQ(count, 98);

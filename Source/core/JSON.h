@@ -3660,6 +3660,7 @@ namespace Core {
         private:
             enum modus : uint8_t {
                 NONE = 0x0,
+                EXTRACT = 0x01,
                 QUOTED= 0x10,
                 SET = 0x20,
                 UNDEFINED = 0x40,
@@ -4070,12 +4071,25 @@ namespace Core {
 
             void Set(const bool enabled)
             {
-                if (enabled == true) {
+                if (enabled) {
                     _state |= (modus::SET);
-                }
-                else {
+                } else {
                     _state &= (~modus::SET);
                 }
+            }
+
+            void SetExtractOnSingle(const bool enabled)
+            {
+                if (enabled) {
+                    _state |= (modus::EXTRACT);
+                } else {
+                    _state &= (~modus::EXTRACT);
+                }
+            }
+
+            bool IsExtractOnSingleSet() const
+            {
+                return (_state & (modus::EXTRACT));
             }
 
             void Clear() override
@@ -4221,7 +4235,10 @@ namespace Core {
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
                 const int32_t available =   maxLength
-                                          - (_state & UNDEFINED ? 0 : 2)
+                                          - (  _state & UNDEFINED
+                                             ? 0
+                                             : ((_state & EXTRACT) && _data.size() == 1 ? 0 : 2)
+                                            )
                                           - (_state & QUOTED ? 2 : 0)
                                           ;
 
@@ -4243,7 +4260,11 @@ namespace Core {
 
                         loaded += count;
                     } else {
-                        stream[loaded++] ='[';
+
+                        // Skip square brackets if EXTRACT is set and the array consists of one element
+                        if (!((_state & EXTRACT) && _data.size() == 1)) {
+                            stream[loaded++] ='[';
+                        }
 
                         for (auto begin = _data.begin(), end = _data.end(), it = begin; it != end; it++){
                             if (it != begin) {
@@ -4257,7 +4278,10 @@ namespace Core {
                             }
                         }
 
-                        stream[loaded++] =']';
+                        // Skip square brackets if EXTRACT is set and the array consists of one element
+                        if (!((_state & EXTRACT) && _data.size() == 1)) {
+                            stream[loaded++] =']';
+                        }
                     }
 
                     if (_state & QUOTED) {
@@ -4298,7 +4322,7 @@ namespace Core {
                                     continue;
                     case '\0'   :   // End of character sequence
                                     if ((offset > 0 && _arrayStartMarkerCount != _arrayEndMarkerCount) || !_suffix) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Terminated character sequence without (sufficient) data for ArrayType<>"};
                                     }
 
@@ -4317,13 +4341,13 @@ namespace Core {
                                     }
 
                                     if (!_arrayStartMarkerCount && !(_state & QUOTED) && offset > 0) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
 
                                     if (_arrayEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && _suffix))) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Quote terminated character sequence without (sufficient) data for ArrayType<>"};
                                         continue;
                                     }
@@ -4350,7 +4374,7 @@ namespace Core {
                                     if (   (_arrayStartMarkerCount == 0 && _arrayStartMarkerCount < _arrayEndMarkerCount)
                                         || (_arrayStartMarkerCount > 0 && _arrayStartMarkerCount <= _arrayEndMarkerCount)
                                        ) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -4374,7 +4398,7 @@ namespace Core {
                                         || _valueSeparatorCount
                                         ||( _valueSeparatorPos == loaded - 1)
                                        ) {
-                                         _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -4391,7 +4415,7 @@ namespace Core {
 
                                     if (ch == ',' && (_valueSeparatorCount || (loaded - 1 == _valueStartPos) || _arrayStartMarkerCount == _arrayEndMarkerCount)
                                        ) {
-                                         _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -4412,7 +4436,7 @@ namespace Core {
                                             loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[_valueStartPos]), valueEndPos - _valueStartPos - 1, offset/*, error*/);
 
                                             if (offset) {
-                                                _state = ERROR;
+                                                _state = ERROR | (_state & 0xF);
                                                 error = Error{"Failed to deserialize type for ArrayType"};
                                                 continue;
                                             }
@@ -4437,7 +4461,7 @@ namespace Core {
                                     if (   (!_arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
                                         || _suffix
                                        ) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -4452,7 +4476,7 @@ namespace Core {
 
                                     break;
                     default     :   if (_suffix || (_state & UNDEFINED)) {
-                                        _state = ERROR;
+                                        _state = ERROR | (_state & 0xF);
                                          error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
                                         continue;
                                     }
@@ -4522,7 +4546,7 @@ namespace Core {
 
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
-                        _state = UNDEFINED;
+                        _state = (UNDEFINED | (_state & 0xF));
                         loaded = 1;
                     } else if ((stream[0] & 0xF0) == 0x90) {
                         _count = (stream[0] & 0x0F);
