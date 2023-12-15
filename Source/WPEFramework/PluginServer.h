@@ -3233,7 +3233,7 @@ POP_WARNING()
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
         class Channel : public PluginHost::Channel {
-        private:
+        public:
             class Job : public Core::IDispatch {
             public:
                 Job(Job&&) = delete;
@@ -3354,6 +3354,8 @@ POP_WARNING()
                 Server* _server;
                 Core::ProxyType<Service> _service;
             };
+
+        private:
             class WebRequestJob : public Job {
             public:
                 WebRequestJob(WebRequestJob&&) = delete;
