@@ -35,6 +35,12 @@ namespace Core {
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
+            // Arbitraty code base selected in discussion with the team to use 
+            // this magical value as a base for Thunder error codes (0..999).
+            // These error code are *not* related to the JSONRPC transport
+            // layer relate to the layer on top of the transport layer.
+            static constexpr int32_t AppliationErrorCodeBase = -33000;
+
             class Info : public Core::JSON::Container {
             public:
                 Info()
@@ -113,31 +119,31 @@ namespace Core {
                         Text = _T("Parsing of the parameters failed");
                         break;
                     case Core::ERROR_INVALID_RANGE:
-                        Code = -33000 - Core::ERROR_INVALID_RANGE;
+                        Code = AppliationErrorCodeBase - Core::ERROR_INVALID_RANGE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
-                        Code = -33000 - Core::ERROR_INCORRECT_URL;
+                        Code = AppliationErrorCodeBase - Core::ERROR_INCORRECT_URL;
                         Text = _T("Designator is invalid.");
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
-                        Code = -33000 - Core::ERROR_ILLEGAL_STATE;
+                        Code = AppliationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
                         Text = _T("The service is in an illegal state!!!.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
-                        Code = -33000 - Core::ERROR_FAILED_REGISTERED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
                         Text = _T("Registration already done!!!.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
-                        Code = -33000 - Core::ERROR_FAILED_UNREGISTERED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
                         Text = _T("Unregister was already done!!!.");
                         break;
                     case Core::ERROR_HIBERNATED:
-                        Code = -33000 - Core::ERROR_HIBERNATED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
                     default:
-                        Code = -33000 - static_cast<int32_t>(frameworkError);
+                        Code = AppliationErrorCodeBase - static_cast<int32_t>(frameworkError);
                         Text = _T("Non specific error!!!.");
                         break;
                     }
