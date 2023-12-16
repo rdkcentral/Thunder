@@ -39,7 +39,7 @@ namespace Core {
             // this magical value as a base for Thunder error codes (0..999).
             // These error codes are *not* related to the JSONRPC transport
             // layer but relate to the application layer.
-            // Seems the spec is expecting a value <= 0xFFFF, so with a value
+            // Seems the spec is expecting a value > -32767, so with a value
             // range of 0-999 Thunder codes, -31000 should be oke :-)
             static constexpr int32_t AppliationErrorCodeBase = -31000;
 
