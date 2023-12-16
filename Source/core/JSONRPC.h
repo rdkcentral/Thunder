@@ -35,10 +35,10 @@ namespace Core {
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
-            // Arbitraty code base selected in discussion with the team to use 
+            // Arbitrary code base selected in discussion with the team to use 
             // this magical value as a base for Thunder error codes (0..999).
-            // These error code are *not* related to the JSONRPC transport
-            // layer relate to the layer on top of the transport layer.
+            // These error codes are *not* related to the JSONRPC transport
+            // layer but relate to the application layer.
             static constexpr int32_t AppliationErrorCodeBase = -33000;
 
             class Info : public Core::JSON::Container {
