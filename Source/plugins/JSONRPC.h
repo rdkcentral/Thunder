@@ -251,53 +251,71 @@ namespace PluginHost {
         using ObserverMap = std::unordered_map<string, Observer>;
         using EventAliasesMap = std::map<string, std::vector<string>>;
 
-        class VersionInfo {
+        class VersionInfo : public Core::JSON::Container {
         public:
-            VersionInfo() = delete;
-            VersionInfo& operator= (const VersionInfo&) = delete;
-
-            VersionInfo(const string& interfaceName, const uint8_t major, const uint8_t minor, const uint8_t patch)
-                : _name(interfaceName)
-                , _major(major)
-                , _minor(minor)
-                , _patch(patch) {
-            }
-            VersionInfo(VersionInfo&& move) noexcept
-                : _name(move._name)
-                , _major(move._major)
-                , _minor(move._minor)
-                , _patch(move._patch) {
+            VersionInfo()
+                : Core::JSON::Container()
+                , Name()
+                , Major()
+                , Minor()
+                , Patch()
+            {
+                Init();
             }
             VersionInfo(const VersionInfo& copy)
-                : _name(copy._name)
-                , _major(copy._major)
-                , _minor(copy._minor)
-                , _patch(copy._patch) {
+                : Core::JSON::Container()
+                , Name(copy.Name)
+                , Major(copy.Major)
+                , Minor(copy.Minor)
+                , Patch(copy.Patch)
+            {
+                Init();
             }
+            VersionInfo(VersionInfo&& move)
+                : Core::JSON::Container()
+                , Name(std::move(move.Name))
+                , Major(std::move(move.Major))
+                , Minor(std::move(move.Minor))
+                , Patch(std::move(move.Patch))
+            {
+                Init();
+            }
+            VersionInfo(const string& interfaceName, const uint8_t major, const uint8_t minor, const uint8_t patch)
+                : VersionInfo()
+            {
+                Name = interfaceName;
+                Major = major;
+                Minor = minor;
+                Patch = patch;
+            }
+            VersionInfo& operator=(const VersionInfo& rhs)
+            {
+                Name = rhs.Name;
+                Major = rhs.Major;
+                Minor = rhs.Minor;
+                Patch = rhs.Patch;
+                return (*this);
+            }
+
             ~VersionInfo() = default;
 
-        public:
-            const string& Name() const {
-                return(_name);
-            }
-            uint8_t Major() const {
-                return(_major);
-            }
-            uint8_t Minor() const {
-                return(_minor);
-            }
-            uint8_t Patch() const {
-                return(_patch);
+        private:
+            void Init()
+            {
+                Add(_T("name"), &Name);
+                Add(_T("major"), &Major);
+                Add(_T("minor"), &Minor);
+                Add(_T("patch"), &Patch);
             }
 
-        private:
-            const string  _name;
-            const uint8_t _major;
-            const uint8_t _minor;
-            const uint8_t _patch;
+        public:
+            Core::JSON::String Name;
+            Core::JSON::DecUInt8 Major;
+            Core::JSON::DecUInt8 Minor;
+            Core::JSON::DecUInt8 Patch;
         };
 
-        using VersionList = std::vector<VersionInfo>;
+        using VersionList = Core::JSON::ArrayType<VersionInfo>;
 
         class Registration : public Core::JSON::Container {
         public:
@@ -448,8 +466,13 @@ namespace PluginHost {
         //
         // Register/Unregister methods for interface versioning..
         // ------------------------------------------------------------------------------------------------------------------------------
-        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch) {
-            _versions.emplace_back(name, major, minor, patch);
+        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch)
+        {
+            VersionInfo& version = _versions.Add();
+            version.Name = name;
+            version.Major = major;
+            version.Minor = minor;
+            version.Patch = patch;
         }
 
         //
@@ -546,7 +569,11 @@ namespace PluginHost {
                     // now see if someone supports this version
                     string realMethod(Core::JSONRPC::Message::Method(method));
 
-                    if (realMethod == _T("exists")) {
+                    if (realMethod == _T("versions")) {
+                        _versions.ToString(response);
+                        result = Core::ERROR_NONE;
+                    }
+                    else if (realMethod == _T("exists")) {
                         if (Handler(parameters) == nullptr) {
                             response = _T("0");
                         }
@@ -554,7 +581,7 @@ namespace PluginHost {
                             response = _T("1");
                         }
                     }
-                    if (realMethod == _T("register")) {
+                    else if (realMethod == _T("register")) {
                         Registration info;  info.FromString(parameters);
 
                         result = Subscribe(channelId, info.Event.Value(), info.Callsign.Value());
