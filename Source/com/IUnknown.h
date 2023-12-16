@@ -300,6 +300,11 @@ namespace ProxyStub {
                 // Oops something failed on the communication. Report it.
                 TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
             }
+            else if (message->Response().Length() == 0) {
+                // Oops something failed on the communication. Report it.
+                TRACE_L1("Response empty for [%d]/[%d]. Is this the closing of the connection????", message->Parameters().InterfaceId(), message->Parameters().MethodId());
+                result = COM_ERROR;
+            }
 
             return (result);
         }
