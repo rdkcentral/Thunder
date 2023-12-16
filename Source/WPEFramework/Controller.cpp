@@ -20,10 +20,7 @@
 #include "Controller.h"
 #include "SystemInfo.h"
 
-#include <plugins/json/JsonData_SystemManagement.h>
-#include <plugins/json/JsonData_LifeTime.h>
-#include <plugins/json/JsonData_Discovery.h>
-#include <plugins/json/JsonData_Metadata.h>
+#include <plugins/json/json_IController.h>
 
 #include <plugins/json/JDiscovery.h>
 #include <plugins/json/JConfiguration.h>
@@ -328,7 +325,7 @@ namespace Plugin {
 
     Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
-        Core::hresult result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
         const string controllerName = _pluginServer->Controller()->Callsign();
 
         ASSERT(_pluginServer != nullptr);
@@ -339,15 +336,12 @@ namespace Plugin {
             if (_pluginServer->Services().FromIdentifier(basecallsign, baseService) != Core::ERROR_NONE) {
                 result = Core::ERROR_UNKNOWN_KEY;
             }
-            else if (_pluginServer->Services().FromIdentifier(newcallsign, newService) != Core::ERROR_NONE) {
+            else if (_pluginServer->Services().FromIdentifier(newcallsign, newService) == Core::ERROR_NONE) {
+                result = Core::ERROR_DUPLICATE_KEY;
+            }
+            else {
                 result = _pluginServer->Services().Clone(baseService, newcallsign, newService);
             }
-            else if (baseService->ClassName() != newService->ClassName()) {
-                result = Core::ERROR_GENERAL;
-            }
-        }
-        else {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
         }
 
         return result;
@@ -1027,11 +1021,7 @@ namespace Plugin {
         Core::hresult result = Clone(callsign, newcallsign);
 
         if (result == Core::ERROR_NONE) {
-            PluginHost::IShell* shell = reinterpret_cast<PluginHost::IShell*>(_pluginServer->Services().QueryInterfaceByCallsign(PluginHost::IShell::ID, newcallsign));
-
-            if (shell != nullptr) {
-                response = newcallsign;
-            }
+            response = newcallsign;
         }
         return result;
     }
