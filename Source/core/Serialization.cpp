@@ -329,7 +329,7 @@ POP_WARNING()
             uint32_t adjustedCodePoint = codePoint - 0x10000;
 
             // According to the specification the code point can not exceed 20 bits than..
-            if (adjustedCodePoint >= 0xFFFFF) {
+            if (adjustedCodePoint > 0xFFFFF) {
                 lowPart = 0x20; // It becomes a SPACE
                 highPart = 0x00;
                 translated = false;
