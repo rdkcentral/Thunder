@@ -48,14 +48,6 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Projectdir)/json/JConfiguration.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Projectdir)/json/JConfiguration.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Projectdir)/json/JConfiguration.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Projectdir)/json/JConfiguration.h</Outputs>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClInclude</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClInclude</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClInclude</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClInclude</OutputItemType>
     </CustomBuild>
     <ClInclude Include="IDispatcher.h">
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
@@ -191,8 +183,8 @@
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
-      <Outputs>$(ProjectDir)json/JSystemManagement.h</Outputs>
-      <OutputItemType>ClCompile</OutputItemType>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuild>
   </ItemDefinitionGroup>
@@ -230,8 +222,8 @@
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
-      <Outputs>$(ProjectDir)json/JSystemManagement.h</Outputs>
-      <OutputItemType>ClCompile</OutputItemType>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuild>
   </ItemDefinitionGroup>
@@ -269,8 +261,8 @@
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
-      <Outputs>$(ProjectDir)json/JSystemManagement.h</Outputs>
-      <OutputItemType>ClCompile</OutputItemType>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuild>
   </ItemDefinitionGroup>
@@ -312,8 +304,8 @@
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
-      <Outputs>$(ProjectDir)json/JSystemManagement.h</Outputs>
-      <OutputItemType>ClCompile</OutputItemType>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuild>
   </ItemDefinitionGroup>
