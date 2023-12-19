@@ -35,6 +35,14 @@ namespace Core {
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
+            // Arbitrary code base selected in discussion with the team to use 
+            // this magical value as a base for Thunder error codes (0..999).
+            // These error codes are *not* related to the JSONRPC transport
+            // layer but relate to the application layer.
+            // Seems the spec is expecting a value > -32767, so with a value
+            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            static constexpr int32_t AppliationErrorCodeBase = -31000;
+
             class Info : public Core::JSON::Container {
             public:
                 Info()
@@ -80,19 +88,19 @@ namespace Core {
                 void SetError(const uint32_t frameworkError)
                 {
                     switch (frameworkError) {
-                    case Core::ERROR_BAD_REQUEST:
+                    case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
                         Text = _T("Unknown method.");
                         break;
-                    case Core::ERROR_INVALID_DESIGNATOR:
+                    case Core::ERROR_INVALID_ENVELOPPE:
                         Text = _T("Invalid Request.");
                         Code = -32600; // Invalid request
                         break;
-                    case Core::ERROR_INVALID_SIGNATURE:
+                    case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
                         Text = _T("Invalid Parameters.");
                         break;
-                    case Core::ERROR_UNKNOWN_KEY:
+                    case Core::ERROR_UNKNOWN_METHOD:
                         Text = _T("Method not found.");
                         Code = -32601; // Method not found
                         break;
@@ -108,36 +116,36 @@ namespace Core {
                         Code = -32000; // Server defined, now mapped to Timed out
                         Text = _T("Call timed out.");
                         break;
-                    case Core::ERROR_PARSE_FAILURE:
+                    case Core::ERROR_PARSING_ENVELOPPE:
                         Code = -32700; // Parse error
                         Text = _T("Parsing of the parameters failed");
                         break;
                     case Core::ERROR_INVALID_RANGE:
-                        Code = Core::ERROR_INVALID_RANGE;
+                        Code = AppliationErrorCodeBase - Core::ERROR_INVALID_RANGE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
-                        Code = Core::ERROR_INCORRECT_URL;
+                        Code = AppliationErrorCodeBase - Core::ERROR_INCORRECT_URL;
                         Text = _T("Designator is invalid.");
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
-                        Code = Core::ERROR_ILLEGAL_STATE;
+                        Code = AppliationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
                         Text = _T("The service is in an illegal state!!!.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
-                        Code = Core::ERROR_FAILED_REGISTERED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
                         Text = _T("Registration already done!!!.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
-                        Code = Core::ERROR_FAILED_UNREGISTERED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
                         Text = _T("Unregister was already done!!!.");
                         break;
                     case Core::ERROR_HIBERNATED:
-                        Code = Core::ERROR_HIBERNATED;
+                        Code = AppliationErrorCodeBase - Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
                     default:
-                        Code = static_cast<int32_t>(frameworkError);
+                        Code = AppliationErrorCodeBase - static_cast<int32_t>(frameworkError);
                         Text = _T("Non specific error!!!.");
                         break;
                     }
@@ -497,7 +505,7 @@ namespace Core {
                             result = ~0;
                         }
                         else {
-                            result = Core::ERROR_PARSE_FAILURE;
+                            result = Core::ERROR_PARSING_ENVELOPPE;
                             response = report.Value().Message();
                         }
                     } else {
