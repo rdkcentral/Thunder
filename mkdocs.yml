@@ -67,6 +67,7 @@ nav:
         - COM-RPC: walkthrough/hello-world/client-comrpc.md
   - Misc:
     - Documentation: docs.md
+    - Reference: https://github.com/WebPlatformForEmbedded/Documentation/blob/master/Thunder/WPE-API-WPEFramework/WPE-API-WPEFramework.pdf
 
 
 markdown_extensions:
