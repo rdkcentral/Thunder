@@ -113,5 +113,5 @@ install(DIRECTORY
 if (ENABLE_INITSCRIPT_SUPPORT)
     add_subdirectory(scripts)
 endif()
-include(GenericConfig.cmake)
 
+include(GenericConfig.cmake)

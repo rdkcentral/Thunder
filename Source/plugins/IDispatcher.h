@@ -29,28 +29,26 @@ namespace WPEFramework {
         struct EXTERNAL ILocalDispatcher;
 
         struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
-            virtual ~IDispatcher() override = default;
+            ~IDispatcher() override = default;
 
             enum { ID = RPC::ID_DISPATCHER };
 
             struct EXTERNAL ICallback : public virtual Core::IUnknown {
-                virtual ~ICallback() override = default;
+                ~ICallback() override = default;
 
                 enum { ID = RPC::ID_DISPATCHER_CALLBACK };
 
-                virtual Core::hresult Event(const string& event, const string& parameters /* @restrict:(4M-1) */) = 0;
-                virtual Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& message) = 0;
-                virtual Core::hresult Response(const uint32_t channel, const uint32_t id, const string& response /* @restrict:(4M-1) */) = 0;
-
-                virtual Core::hresult Subscribe(const uint32_t channel, const string& event, const string& designator) = 0;
-                virtual Core::hresult Unsubscribe(const uint32_t channel, const string& event, const string& designator) = 0;
+                virtual Core::hresult Event(const string& event, const string& designator, const string& parameters /* @restrict:(4M-1) */) = 0;
             };
 
-            virtual Core::hresult Validate(const string& token, const string& method, const string& paramaters /* @restrict:(4M-1) */) const = 0;
-            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters /* @restrict:(4M-1) */, string& response /* @restrict:(4M-1) @out */) = 0;
-            virtual Core::hresult Revoke(ICallback* callback) = 0;
+            virtual uint32_t Invoke(const uint32_t channelid, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) = 0;
 
-            // If we need to activate this locally, we can get access to the base..
+            virtual Core::hresult Subscribe(ICallback* callback, const string& event, const string& designator) = 0;
+            virtual Core::hresult Unsubscribe(ICallback* callback, const string& event, const string& designator) = 0;
+
+            // If this is a local instance of this interface, we get access to the IShell
+            // of this service which in turn allows access to the channels and thus the 
+            // possibility to return responses on the right JSONRPC channels.
             /* @stubgen:stub */
             virtual ILocalDispatcher* Local() = 0;
         };

@@ -51,8 +51,11 @@ ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
 ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-namespace PluginHost
-{
+namespace PluginHost {
+    //
+    // STATIC declarations
+    // -----------------------------------------------------------------------------------------------------------------------------------
+
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
@@ -177,6 +180,9 @@ namespace PluginHost
         return (result);
     }
 
+    //
+    // class Server::WorkerPoolImplementation
+    // -----------------------------------------------------------------------------------------------------------------------------------
     void Server::WorkerPoolImplementation::Dispatcher::Dispatch(Core::IDispatch* job) /* override */ {
     #if defined(__CORE_EXCEPTION_CATCHING__) || defined(__CORE_WARNING_REPORTING__)
         string callsign(_T("Callsign Unknown"));
@@ -219,7 +225,7 @@ namespace PluginHost
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::RAWSOCKET : MetaData::Channel::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::WEBSERVER : MetaData::Channel::SUSPENDED));
+            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::state::RAWSOCKET : MetaData::Channel::state::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::state::WEBSERVER : MetaData::Channel::state::SUSPENDED));
             string name = client->Name();
 
             if (name.empty() == false) {
@@ -299,23 +305,23 @@ namespace PluginHost
         return (result);
     }
 
-    /* virtual */ void* Server::Service::QueryInterfaceByCallsign(const uint32_t id, const string& name)
+    void* Server::Service::QueryInterfaceByCallsign(const uint32_t id, const string& name) /* override */
     {
         return (_administrator.QueryInterfaceByCallsign(id, name));
     }
 
-    /* virtual */ void Server::Service::Register(IPlugin::INotification * sink)
+    void Server::Service::Register(IPlugin::INotification * sink) /* override */
     {
         _administrator.Register(sink);
     }
 
-    /* virtual */ void Server::Service::Unregister(IPlugin::INotification * sink)
+    void Server::Service::Unregister(IPlugin::INotification * sink) /* override */
     {
         _administrator.Unregister(sink);
     }
 
     // Methods to stop/start/update the service.
-    /* virtual */ Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why)
+    Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why) /* override */
     {
         Core::hresult result = Core::ERROR_NONE;
 
@@ -460,7 +466,7 @@ namespace PluginHost
         return (result);
     }
 
-    uint32_t Server::Service::Resume(const reason why) {
+    uint32_t Server::Service::Resume(const reason why) /* override */ {
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
@@ -496,7 +502,7 @@ namespace PluginHost
         return (result);
     }
 
-    /* virtual */ Core::hresult Server::Service::Deactivate(const reason why)
+    Core::hresult Server::Service::Deactivate(const reason why) /* override */
     {
         Core::hresult result = Core::ERROR_NONE;
 
@@ -638,7 +644,7 @@ namespace PluginHost
         return (result);
     }
 
-    /* virtual */ Core::hresult Server::Service::Unavailable(const reason why) {
+    Core::hresult Server::Service::Unavailable(const reason why) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
         Lock();
@@ -840,17 +846,17 @@ namespace PluginHost
     }
 #endif
 
-    /* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
+    uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) /* override */
     {
         return (_administrator.Submit(id, response));
     }
 
-    /* virtual */ ISubSystem* Server::Service::SubSystems()
+    ISubSystem* Server::Service::SubSystems() /* override */
     {
         return (_administrator.SubSystemsInterface(this));
     }
 
-    /* virtual */ void Server::Service::Notify(const string& message)
+    void Server::Service::Notify(const string& message) /* override */
     {
         const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
@@ -860,6 +866,73 @@ namespace PluginHost
 #endif
 
         _administrator.Notification(forwarder);
+    }
+
+    //
+    // class Server::ServiceMap
+    // -----------------------------------------------------------------------------------------------------------------------------------
+    void Server::ServiceMap::Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled) {
+        // Load the metadata for the subsystem information..
+        for (auto service : _services)
+        {
+            service.second->LoadMetadata();
+            for (const PluginHost::ISubSystem::subsystem& entry : service.second->SubSystemControl()) {
+                Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
+                if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), service.second->Callsign().c_str())));
+                }
+                else if (entry >= PluginHost::ISubSystem::END_LIST) {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), service.second->Callsign().c_str())));
+                }
+                else {
+                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), service.second->Callsign().c_str())));
+                    externallyControlled.emplace_back(entry);
+                }
+            }
+        }
+    }
+
+    void Server::ServiceMap::Close()
+    {
+        _adminLock.Lock();
+
+        // First, move them all to deactivated except Controller
+        Core::ProxyType<Service> controller(_server.Controller());
+
+        TRACE_L1("Destructing %d plugins", static_cast<uint32_t>(_services.size()));
+
+        while (_services.empty() == false) {
+
+            auto index = _services.begin();
+
+            Core::ProxyType<Service> service(index->second);
+
+            ASSERT(service.IsValid());
+
+            if (index->first.c_str() != controller->Callsign()) {
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
+            }
+
+            _services.erase(index);
+        }
+
+        _adminLock.Unlock();
+
+        // Now deactivate controller plugin, once other plugins are deactivated
+        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
+        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
+        }
+
+        _processAdministrator.Close(Core::infinite);
+
+        _processAdministrator.Destroy();
     }
 
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
@@ -916,6 +989,40 @@ namespace PluginHost
         return (result);
     }
 
+    void Server::ServiceMap::Startup() {
+
+        // sort plugins based on StartupOrder from configuration
+        std::vector<Core::ProxyType<Service>> configured_services;
+
+        for (auto service : _services) {
+            configured_services.emplace_back(service.second);
+        }
+
+        std::sort(configured_services.begin(), configured_services.end(),
+            [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>& rhs)
+            {
+                return lhs->StartupOrder() < rhs->StartupOrder();
+            });
+
+        for (auto service : configured_services)
+        {
+            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
+                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
+                    SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
+                        service->ClassName().c_str(), service->Callsign().c_str()));
+                    service->Activate(PluginHost::IShell::STARTUP);
+                }
+                else {
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
+                        service->ClassName().c_str(), service->Callsign().c_str()));
+                }
+            }
+        }
+    }
+
+    //
+    // class Server::Channel
+    // -----------------------------------------------------------------------------------------------------------------------------------
     Server::Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent)
         : PluginHost::Channel(connector, remoteId)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
@@ -944,11 +1051,13 @@ namespace PluginHost
         Close(0);
     }
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-
+    //
+    // class Server
+    // -----------------------------------------------------------------------------------------------------------------------------------
+    PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.StackSize())
-        , _connections(*this, configuration.Binder(), configuration.IdleTime())
+        , _connections(*this, configuration.Binder())
         , _config(configuration)
         , _services(*this)
         , _controller()
@@ -987,11 +1096,11 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                     metaDataConfig.Configuration = entry.Configuration;
                 } else {
                     // Let's raise an error, this is a bit strange, again, the controller is initialized !!!
-#ifndef __WINDOWS__
+                    #ifndef __WINDOWS__
                     if (background == true) {
                         syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
                     } else
-#endif
+                    #endif
                     {
                         fprintf(stdout, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
                     }
@@ -1022,14 +1131,13 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
 
-#ifdef PROCESSCONTAINERS_ENABLED
+        #ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
         admin.Logging(_config.VolatilePath(), configuration.ProcessContainersLogging());
-#endif
+        #endif
     }
-
-POP_WARNING()
+    POP_WARNING()
 
     Server::~Server()
     {
@@ -1065,26 +1173,7 @@ POP_WARNING()
         _config.Security(securityProvider);
 
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
-        ServiceMap::Iterator iterator(_services.Services());
-
-        // Load the metadata for the subsystem information..
-        while (iterator.Next() == true)
-        {
-            iterator->LoadMetadata();
-            for (const PluginHost::ISubSystem::subsystem& entry : iterator->SubSystemControl()) {
-                Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
-                if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), iterator->Callsign().c_str())));
-                }
-                else if (entry >= PluginHost::ISubSystem::END_LIST) {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), iterator->Callsign().c_str())));
-                }
-                else {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), iterator->Callsign().c_str())));
-                    externallyControlled.emplace_back(entry);
-                }
-            }
-        }
+        _services.Open(externallyControlled);
 
         _controller->Activate(PluginHost::IShell::STARTUP);
 
@@ -1105,36 +1194,9 @@ POP_WARNING()
         securityProvider->Release();
 
         _dispatcher.Run();
-        Dispatcher().Open(MAX_EXTERNAL_WAITS);
+        _connections.Open(MAX_EXTERNAL_WAITS, _config.IdleTime());
 
-        // Right we have the shells for all possible services registered, time to activate what is needed :-)
-        iterator.Reset(0);
-
-        // sort plugins based on StartupOrder from configuration
-        std::vector<Core::ProxyType<Service>> configured_services;
-        while (iterator.Next())
-          configured_services.push_back(*iterator);
-
-        std::sort(configured_services.begin(), configured_services.end(),
-          [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>&rhs)
-          {
-            return lhs->StartupOrder() < rhs->StartupOrder();
-          });
-
-        for (auto service : configured_services)
-        {
-            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
-                    SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
-                    service->Activate(PluginHost::IShell::STARTUP);
-                }
-                else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
-                }
-            }
-        }
+        _services.Startup();
     }
 
     void Server::Close()
@@ -1143,7 +1205,7 @@ POP_WARNING()
         destructor->AddRef();
         _connections.Close(100);
         destructor->Stopped();
-        _services.Destroy();
+        _services.Close();
         _dispatcher.Stop();
         destructor->Release();
         _inputHandler.Deinitialize();

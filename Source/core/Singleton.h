@@ -103,6 +103,7 @@ namespace Core {
         {
            ListInstance().Unregister(this);
            ASSERT(g_TypedSingleton != nullptr);
+           g_TypedSingleton = nullptr;
         }
 
     public:
@@ -160,14 +161,18 @@ namespace Core {
 
             ASSERT(g_TypedSingleton != nullptr);
         }
-        inline static void Dispose()
+        inline static bool Dispose()
         {
             // Unprotected. Make sure the dispose is *ONLY* called
             // after all usage of the singlton is completed!!!
+            bool disposed = false;
             if (g_TypedSingleton != nullptr) {
 
                 delete g_TypedSingleton;
+                // note destructor will set g_TypedSingleton to nullptr;
+                disposed = true;
             }
+            return disposed;
         }
 
     private:

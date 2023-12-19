@@ -20,15 +20,13 @@
 #include "Controller.h"
 #include "SystemInfo.h"
 
-#include "JsonData_SystemManagement.h"
-#include "JsonData_LifeTime.h"
-#include "JsonData_Discovery.h"
+#include <plugins/json/json_IController.h>
 
-#include "JDiscovery.h"
-#include "JConfiguration.h"
-#include "JSystemManagement.h"
-#include "JLifeTime.h"
-#include "JMetadata.h"
+#include <plugins/json/JDiscovery.h>
+#include <plugins/json/JConfiguration.h>
+#include <plugins/json/JSystemManagement.h>
+#include <plugins/json/JLifeTime.h>
+#include <plugins/json/JMetadata.h>
 
 namespace WPEFramework {
 
@@ -78,9 +76,9 @@ namespace Plugin {
 
         _resumes.clear();
         _service = service;
-        
+
         RPC::ConnectorController::Instance().Announce(service);
-        
+
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
         Config config;
@@ -280,11 +278,11 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Environment(const string& index, string& environment) const
+    Core::hresult Controller::Environment(const string& variable, string& value) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        if (Core::SystemInfo::GetEnvironment(index, environment) == true) {
+        if (Core::SystemInfo::GetEnvironment(variable, value) == true) {
             result = Core::ERROR_NONE;
         }
 
@@ -327,7 +325,7 @@ namespace Plugin {
 
     Core::hresult Controller::Clone(const string& basecallsign, const string& newcallsign)
     {
-        Core::hresult result = Core::ERROR_NONE;
+        Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
         const string controllerName = _pluginServer->Controller()->Callsign();
 
         ASSERT(_pluginServer != nullptr);
@@ -338,15 +336,12 @@ namespace Plugin {
             if (_pluginServer->Services().FromIdentifier(basecallsign, baseService) != Core::ERROR_NONE) {
                 result = Core::ERROR_UNKNOWN_KEY;
             }
-            else if (_pluginServer->Services().FromIdentifier(newcallsign, newService) != Core::ERROR_NONE) {
+            else if (_pluginServer->Services().FromIdentifier(newcallsign, newService) == Core::ERROR_NONE) {
+                result = Core::ERROR_DUPLICATE_KEY;
+            }
+            else {
                 result = _pluginServer->Services().Clone(baseService, newcallsign, newService);
             }
-            else if (baseService->ClassName() != newService->ClassName()) {
-                result = Core::ERROR_GENERAL;
-            }
-        }
-        else {
-            result = Core::ERROR_PRIVILIGED_REQUEST;
         }
 
         return result;
@@ -379,17 +374,15 @@ namespace Plugin {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
             // No more parameters, flush it all..
-            _pluginServer->Dispatcher().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Plugins);
+            _pluginServer->Metadata(response->Channels);
+            _pluginServer->Metadata(response->Plugins);
             WorkerPoolMetaData(response->Process);
 
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Links")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            _pluginServer->Dispatcher().GetMetaData(response->Channels);
-            _pluginServer->Services().GetMetaData(response->Channels);
+            _pluginServer->Metadata(response->Channels);
 
             result->Body(Core::ProxyType<Web::IBody>(response));
         } else if (index.Current() == _T("Plugins")) {
@@ -450,7 +443,7 @@ namespace Plugin {
             }
             else {
                 Core::NumberType<uint8_t> threadIndex(index.Current());
-                
+
                 Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::CallstackData>>> response = jsonBodyCallstackFactory.Element();
                 Callstack(_pluginServer->WorkerPool().Id(threadIndex.Value()), *response);
                 result->Body(Core::ProxyType<Web::IBody>(response));
@@ -472,7 +465,13 @@ namespace Plugin {
                 Probe::Iterator index(_probe->Instances());
 
                 while (index.Next() == true) {
-                    PluginHost::MetaData::Bridge newElement((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+                    PluginHost::MetaData::Bridge newElement;
+                    newElement.Locator = (*index).URL().Text();
+                    newElement.Latency = (*index).Latency();
+                    if ((*index).Model().empty() == false) {
+                        newElement.Model = (*index).Model();
+                    }
+                    newElement.Secure = (*index).IsSecure();
                     response->Bridges.Add(newElement);
                 }
 
@@ -627,7 +626,7 @@ namespace Plugin {
                     result->Message = _T("Discovery cycle initiated");
                 }
             } else if (index.Current() == _T("Persist")) {
-                
+
                 _pluginServer->Persist();
 
                 result->ErrorCode = Web::STATUS_OK;
@@ -678,7 +677,7 @@ namespace Plugin {
     void Controller::StartupResume(const string& callsign, PluginHost::IShell* plugin)
     {
         if (_resumes.size() > 0) {
-            std::list<string>::iterator index(_resumes.begin());
+            Resumes::iterator index(_resumes.begin());
 
             ASSERT(_service != nullptr);
 
@@ -723,9 +722,9 @@ namespace Plugin {
 
                 for (const auto& proxy : proxies) {
                     PluginHost::MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
-                    info.InstanceId = proxy->Implementation();
-                    info.InterfaceId = proxy->InterfaceId();
-                    info.RefCount = proxy->ReferenceCount();
+                    info.Instance = proxy->Implementation();
+                    info.Interface = proxy->InterfaceId();
+                    info.Count = proxy->ReferenceCount();
                 }
             }
         );
@@ -787,18 +786,14 @@ namespace Plugin {
         }
     }
 
-    uint32_t Controller::Validate(const string& token, const string& method, const string& paramaters) const /* override */ {
-        return(PluginHost::JSONRPC::Validate(token, Core::JSONRPC::Message::Method(method), paramaters));
-    }
-
-    uint32_t Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
+    Core::hresult Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
         string callsign(Core::JSONRPC::Message::Callsign(method));
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
-        } 
+        }
         else {
             Core::ProxyType<PluginHost::IShell> service;
 
@@ -814,16 +809,11 @@ namespace Plugin {
                 else {
                     ASSERT(service.IsValid());
 
-                    PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
+                    PluginHost::IDispatcher* dispatcher = service->QueryInterface<PluginHost::IDispatcher>();
 
                     if (dispatcher != nullptr) {
-                        PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
+                        result = dispatcher->Invoke(channelId, id, token, method, parameters, response);
 
-                        ASSERT(localDispatcher != nullptr);
-
-                        if (localDispatcher != nullptr) {
-                            result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
-                        }
                         dispatcher->Release();
                     }
                 }
@@ -838,9 +828,9 @@ namespace Plugin {
         _adminLock.Lock();
 
         // Make sure a sink is not registered multiple times.
-        ASSERT(std::find(_observers.begin(), _observers.end(), notification) == _observers.end());
+        ASSERT(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification) == _lifeTimeObservers.end());
 
-        _observers.push_back(notification);
+        _lifeTimeObservers.push_back(notification);
         notification->AddRef();
 
         _adminLock.Unlock();
@@ -852,17 +842,31 @@ namespace Plugin {
     {
         _adminLock.Lock();
 
-        std::list<Exchange::Controller::ILifeTime::INotification*>::iterator index(std::find(_observers.begin(), _observers.end(), notification));
+        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
 
         // Make sure you do not unregister something you did not register !!!
-        ASSERT(index != _observers.end());
+        ASSERT(index != _lifeTimeObservers.end());
 
-        if (index != _observers.end()) {
+        if (index != _lifeTimeObservers.end()) {
             (*index)->Release();
-            _observers.erase(index);
+            _lifeTimeObservers.erase(index);
         }
 
         _adminLock.Unlock();
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Register(Exchange::Controller::IShells::INotification* notification)
+    {
+        _pluginServer->Services().Register(notification);
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Unregister(Exchange::Controller::IShells::INotification* notification)
+    {
+        _pluginServer->Services().Unregister(notification);
 
         return (Core::ERROR_NONE);
     }
@@ -1015,6 +1019,7 @@ namespace Plugin {
     Core::hresult Controller::Clone(const string& callsign, const string& newcallsign, string& response)
     {
         Core::hresult result = Clone(callsign, newcallsign);
+
         if (result == Core::ERROR_NONE) {
             response = newcallsign;
         }
@@ -1031,14 +1036,6 @@ namespace Plugin {
         return Persist();
     }
 
-    Core::hresult Controller::Proxies(string& response) const
-    {
-        Core::JSON::ArrayType<PluginHost::MetaData::COMRPC> jsonResponse;
-        Proxies(jsonResponse);
-        jsonResponse.ToString(response);
-        return(Core::ERROR_NONE);
-    }
-
     Core::hresult Controller::StartDiscovery(const uint8_t& ttl)
     {
         if (_probe != nullptr) {
@@ -1048,131 +1045,349 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    Core::hresult Controller::Status(const string& index, string& response) const
+    Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+        std::list<IDiscovery::Data::DiscoveryResult> results;
 
-        Core::JSON::ArrayType<PluginHost::MetaData::Service> jsonResponse;
-        Core::ProxyType<PluginHost::IShell> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (index.empty() == true) {
-            _pluginServer->Services().GetMetaData(jsonResponse);
-            result = Core::ERROR_NONE;
-        }
-        else {
-            if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
-                string info;
-                result = Core::ERROR_BAD_REQUEST;
-
-                if (service->Metadata(info) == Core::ERROR_NONE) {
-                    PluginHost::MetaData::Service status;
-                    status.FromString(info);
-                    jsonResponse.Add(status);
-                    result = Core::ERROR_NONE;
-                }
-            }
-        }
-        jsonResponse.ToString(response);
-
-        return result;
-    }
-
-    Core::hresult Controller::CallStack(const string& index, string& callstack) const
-    {
-        Core::JSON::ArrayType<PluginHost::CallstackData> jsonResponse;
-        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-
-        if (index.empty() == true) {
-            uint8_t indexValue = Core::NumberType<uint8_t>(Core::TextFragment(index)).Value();
-
-            result = Core::ERROR_NONE;
-
-            Callstack(_pluginServer->WorkerPool().Id(indexValue), jsonResponse);
-        }
-        jsonResponse.ToString(callstack);
-
-        return result;
-    }
-
-    Core::hresult Controller::Links(string& response) const
-    {
-        Core::JSON::ArrayType<PluginHost::MetaData::Channel> jsonResponse;
-        ASSERT(_pluginServer != nullptr);
-
-        _pluginServer->Dispatcher().GetMetaData(jsonResponse);
-        _pluginServer->Services().GetMetaData(jsonResponse);
-        jsonResponse.ToString(response);
-
-        return Core::ERROR_NONE;
-    }
-
-    Core::hresult Controller::ProcessInfo(string& response) const
-    {
-        PluginHost::MetaData::Server jsonResponse;
-        WorkerPoolMetaData(jsonResponse);
-        jsonResponse.ToString(response);
-
-        return Core::ERROR_NONE;
-    }
-
-    Core::hresult Controller::Subsystems(string& response) const
-    {
-        Core::JSON::ArrayType<SubsystemsData> jsonResponse;
-ASSERT(_service != nullptr);
-        PluginHost::ISubSystem* subSystem = _service->SubSystems();
-
-        if (subSystem != nullptr) {
-            uint8_t i = 0;
-            while (i < PluginHost::ISubSystem::END_LIST) {
-                PluginHost::ISubSystem::subsystem current(static_cast<PluginHost::ISubSystem::subsystem>(i));
-                SubsystemsData status;
-                status.Subsystem = current;
-                status.Active = subSystem->IsActive(current);
-                jsonResponse.Add(status);
-                ++i;
-            }
-            subSystem->Release();
-        }
-
-        jsonResponse.ToString(response);
-
-        return Core::ERROR_NONE;
-    }
-    Core::hresult Controller::DiscoveryResults(string& response) const
-    {
-        Core::JSON::ArrayType<PluginHost::MetaData::Bridge> jsonResponse;
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
 
             while (index.Next() == true) {
-                PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
-                jsonResponse.Add(element);
+                results.push_back({ (*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure() });
             }
         }
-        jsonResponse.ToString(response);
 
-        return Core::ERROR_NONE;
+        if (results.empty() == false) {
+            using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
+
+            outResults = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            ASSERT(outResults != nullptr);
+        }
+        else {
+            outResults = nullptr;
+        }
+
+        return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Version(string& response) const
+    Core::hresult Controller::Services(const string& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
-        PluginHost::MetaData::Version jsonResponse;
-        _pluginServer->Metadata(jsonResponse);
-        jsonResponse.ToString(response);
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        return Core::ERROR_NONE;
+        std::list<IMetadata::Data::Service> services;
+
+        auto _Populate = [&services, this](const string& callsign) -> uint32_t {
+
+            Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+            Core::ProxyType<PluginHost::IShell> service;
+
+            ASSERT(_pluginServer != nullptr);
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+
+                string info;
+
+                if (service->Metadata(info) == Core::ERROR_NONE) {
+                    PluginHost::MetaData::Service meta;
+                    meta.FromString(info);
+
+                    IMetadata::Data::Service service{};
+
+                    service.Callsign = meta.Callsign;
+                    service.Locator = meta.Locator;
+                    service.ClassName = meta.ClassName;
+                    service.Module = meta.Module;
+                    service.StartMode = meta.Startup;
+                    service.AutoStart = meta.AutoStart;
+                    service.State = meta.JSONState;
+                    service.Version = meta.ServiceVersion;
+                    service.Communicator = meta.Communicator;
+                    service.PersistentPathPostfix = meta.PersistentPathPostfix;
+                    service.VolatilePathPostfix = meta.VolatilePathPostfix;
+                    service.SystemRootPath = meta.SystemRootPath;
+                    service.AutoStart = meta.AutoStart;
+                    service.Configuration = meta.Configuration;
+                    service.Precondition = meta.Precondition;
+                    service.Termination = meta.Termination;
+
+#if THUNDER_RESTFULL_API
+                    service.Observers = meta.Observers;
+#endif
+
+#if THUNDER_RUNTIME_STATISTICS
+                    service.ProcessedRequests = meta.ProcessedRequests;
+                    service.ProcessedObjects = meta.ProcessedObjects;
+#endif
+
+                    services.push_back(service);
+                }
+
+                result = Core::ERROR_NONE;
+            }
+
+            return (result);
+        };
+
+        if (callsign.empty() == true) {
+            auto it = _pluginServer->Services().Services();
+
+            while (it.Next() == true) {
+                _Populate(it.Current()->Callsign());
+            }
+
+            result = Core::ERROR_NONE;
+        }
+        else {
+            result = _Populate(callsign);
+        }
+
+        if (services.empty() == false) {
+            using Iterator = IMetadata::Data::IServicesIterator;
+
+            outServices = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            ASSERT(outServices != nullptr);
+        }
+        else {
+            outServices = nullptr;
+        }
+
+        return (result);
+    }
+
+    Core::hresult Controller::CallStack(const uint8_t thread, IMetadata::Data::ICallStackIterator*& outCallStack) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        std::list<Core::callstack_info> callStackInfo;
+
+        ASSERT(_pluginServer != nullptr);
+
+        ::DumpCallStack(_pluginServer->WorkerPool().Id(thread), callStackInfo);
+
+        if (callStackInfo.empty() == false) {
+
+            std::list<IMetadata::Data::CallStack> callstack;
+
+            for (const Core::callstack_info& entry : callStackInfo) {
+                callstack.push_back({ reinterpret_cast<Core::instance_id>(entry.address), entry.function, entry.module,
+                                      (entry.line != static_cast<uint32_t>(~0)? entry.line : 0) });
+            }
+
+            using Iterator = IMetadata::Data::ICallStackIterator;
+
+            outCallStack = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            ASSERT(outCallStack != nullptr);
+
+            result = Core::ERROR_NONE;
+        }
+        else {
+            outCallStack = nullptr;
+        }
+
+        return (result);
+    }
+
+    Core::hresult Controller::Links(IMetadata::Data::ILinksIterator*& outLinks) const
+    {
+        Core::JSON::ArrayType<PluginHost::MetaData::Channel> meta;
+
+        ASSERT(_pluginServer != nullptr);
+
+        _pluginServer->Metadata(meta);
+
+        if (meta.Length() > 0) {
+            std::list<IMetadata::Data::Link> links;
+
+            auto it = meta.Elements();
+
+            while (it.Next() == true) {
+                auto const& entry = it.Current();
+                links.push_back({ entry.Remote.Value(), entry.JSONState.Value(), entry.Name.Value(), entry.ID.Value(), entry.Activity.Value() });
+            }
+
+            using Iterator = IMetadata::Data::ILinksIterator;
+
+            outLinks = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            ASSERT(outLinks != nullptr);
+        }
+        else {
+            outLinks = nullptr;
+        }
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Proxies(const uint32_t& linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
+    {
+        Core::hresult result = Core::ERROR_UNKNOWN_KEY;
+
+        Core::JSON::ArrayType<PluginHost::MetaData::Channel> meta;
+       _pluginServer->Services().GetMetaData(meta);
+
+        Core::JSON::ArrayType<PluginHost::MetaData::COMRPC> comrpc;
+        Proxies(comrpc);
+
+        string link;
+        std::list<IMetadata::Data::Proxy> proxies;
+
+        auto it = meta.Elements();
+
+        while (it.Next() == true) {
+
+            if (it.Current().ID.Value() == linkId) {
+                link = it.Current().Remote.Value();
+                break;
+            }
+        }
+
+        if (link.empty() == false) {
+            auto it = comrpc.Elements();
+
+            while (it.Next() == true) {
+
+                if (it.Current().Remote.Value() == link) {
+                    auto it2 = it.Current().Proxies.Elements();
+
+                    while (it2.Next() == true) {
+                        auto const& entry = it2.Current();
+
+                        proxies.push_back({ entry.Interface.Value(), entry.Instance.Value(), entry.Count.Value() });
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        if (proxies.empty() == false) {
+            using Iterator = IMetadata::Data::IProxiesIterator;
+
+            outProxies = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(proxies);
+            ASSERT(outProxies != nullptr);
+
+            result = Core::ERROR_NONE;
+        }
+        else {
+            outProxies = nullptr;
+        }
+
+        return (result);
+    }
+
+    Core::hresult Controller::Threads(IMetadata::Data::IThreadsIterator*& outThreads) const
+    {
+        PluginHost::MetaData::Server meta;
+
+        WorkerPoolMetaData(meta);
+
+        if (meta.ThreadPoolRuns.Length() > 0) {
+
+            std::list<IMetadata::Data::Thread> threads;
+
+            auto it = meta.ThreadPoolRuns.Elements();
+
+            while (it.Next() == true) {
+                auto const& entry = it.Current();
+                threads.push_back({ entry.Id.Value(), entry.Job.Value(), entry.Runs.Value() });
+            }
+
+            using Iterator = IMetadata::Data::IThreadsIterator;
+
+            outThreads = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            ASSERT(outThreads != nullptr);
+        }
+        else {
+            outThreads = nullptr;
+        }
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::PendingRequests(IMetadata::Data::IPendingRequestsIterator*& outRequests) const
+    {
+        PluginHost::MetaData::Server meta;
+
+        WorkerPoolMetaData(meta);
+
+        if (meta.PendingRequests.Length() > 0) {
+
+            std::list<string> requests;
+
+            auto it = meta.PendingRequests.Elements();
+
+            while (it.Next() == true) {
+                requests.push_back(it.Current().Value());
+            }
+
+            using Iterator = IMetadata::Data::IPendingRequestsIterator;
+
+            outRequests = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            ASSERT(outRequests != nullptr);
+        }
+        else {
+            outRequests = nullptr;
+        }
+
+        return (Core::ERROR_NONE);
+    }
+
+
+    Core::hresult Controller::Subsystems(IMetadata::Data::ISubsystemsIterator*& outSubsystems) const
+    {
+        ASSERT(_service != nullptr);
+
+        PluginHost::ISubSystem* subSystem = _service->SubSystems();
+
+        if (subSystem != nullptr) {
+            std::list<IMetadata::Data::Subsystem> subsystems;
+
+            std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
+
+            while (i < PluginHost::ISubSystem::END_LIST) {
+
+                const PluginHost::ISubSystem::subsystem subsystem = static_cast<PluginHost::ISubSystem::subsystem>(i);
+
+                subsystems.push_back({ subsystem, subSystem->IsActive(subsystem)});
+
+                i++;
+            }
+
+            subSystem->Release();
+
+            using Iterator = IMetadata::Data::ISubsystemsIterator;
+
+            outSubsystems = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(subsystems);
+            ASSERT(outSubsystems != nullptr);
+        }
+        else {
+            outSubsystems = nullptr;
+        }
+
+        return (Core::ERROR_NONE);
+    }
+
+    Core::hresult Controller::Version(IMetadata::Data::Version& version) const
+    {
+        PluginHost::MetaData::Version ver;
+
+        _pluginServer->Metadata(ver);
+
+        version.Hash = ver.Hash;
+        version.Major = ver.Major;
+        version.Minor = ver.Minor;
+        version.Patch = ver.Patch;
+
+        return (Core::ERROR_NONE);
     }
 
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         _adminLock.Lock();
 
-        std::list<Exchange::Controller::ILifeTime::INotification*>::const_iterator index = _observers.begin();
+        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
 
-        while(index != _observers.end()) {
+        while(index != _lifeTimeObservers.end()) {
             (*index)->StateChange(callsign, state, reason);
             index++;
         }
@@ -1181,7 +1396,6 @@ ASSERT(_service != nullptr);
 
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
-
     }
 }
 }

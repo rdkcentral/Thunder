@@ -165,8 +165,7 @@ namespace Core {
 				ResourceMonitor& operator= (const ResourceMonitor&) = delete;
 
 				static ResourceMonitor& Instance() {
-					static ResourceMonitor instance;
-					return (instance);
+					return (Core::SingletonType<ResourceMonitor>::Instance());
 				}
 				~ResourceMonitor() override {
 					Core::Thread::Stop();

@@ -29,7 +29,10 @@ ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_S
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
+file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -42,6 +45,7 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        ${JSON_ENUM_SOURCES}
         )
 
 file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
@@ -108,7 +112,7 @@ target_link_libraries(${TARGET_PROXYSTUBS}
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
@@ -146,6 +150,10 @@ install(
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+)
+
+install(
+        FILES ${JSON_DATA_HEADERS} DESTINATION include/${NAMESPACE}/plugins/json COMPONENT devel # for mac
 )
 
 install(
