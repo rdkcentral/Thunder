@@ -3113,7 +3113,7 @@ namespace Core {
                 }
             }
 
-            void IsExtractOnSigleSet() const
+            bool IsExtractOnSingleSet() const
             {
                 return ((_state & (modus::EXTRACT)) != 0);
             }
