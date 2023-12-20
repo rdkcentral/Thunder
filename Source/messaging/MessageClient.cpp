@@ -165,6 +165,7 @@ namespace Messaging {
         _adminLock.Lock();
 
         for (auto& client : _clients) {
+            client.second.Validate();
             uint16_t size = sizeof(_readBuffer);
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
