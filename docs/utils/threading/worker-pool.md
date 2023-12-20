@@ -151,7 +151,7 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 
 ## Scheduler
 ### Overview
-`Workerpool` has the ability to schedule `jobs` using the `Scheduler` class. This can be very helpful when you do not want to start a `job` immediately but at a specific time.
+`Workerpool` has the ability to schedule `jobs` using the `Scheduler` class. This can be very helpful when you do not want to start a `job` immediately but at a specific time. To learn more about how to create a `job` read [Workerpool](../threading/worker-pool) section of documentation.
 
  To schedule a `job` we use several methods for this:
 
@@ -162,8 +162,8 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether. 
 ### Scheduler methods
 
-#### Scheduling job
-`Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We just need to specify the `job` with a point in time when it should be performed.
+#### Schedule
+`Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We specify the `job` and the date on which to start performing it in the appropriate format.
 !!! note
     In case the given time would point to the past, the task will start executing immediately.
 
@@ -183,8 +183,8 @@ void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) ove
 ```
 
 
-#### Rescheduling job
-`Reschedule()` method is used to change the execution date of an already scheduled `job`. Method takes as arguments the new execution time of the specified `job` and the `job` whose execution time we want to change. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
+#### Reschedule
+`Reschedule()` method is used to change the execution date of an already scheduled `job`. It is used in the same way as the `Schedule()` method. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
 !!! note
     `Reschedule()` returns true when the `job` cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using `Schedule()`
 
@@ -200,8 +200,8 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 ```
 
 
-#### Revoking job
-`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until `job` is cancelled or an error occurs. The `Reschedule` method returns a numeric value.
+#### Revoke
+`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the `job` will be canceled immediately. The `Reschedule` method returns a numeric value.
 
  Error codes that can be returned:
 
