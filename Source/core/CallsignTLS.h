@@ -106,7 +106,7 @@ namespace Core {
     };
 
     template <const char** MODULENAME>
-    EXTERNAL_HIDDEN const string typename CallsignTLS::CallsignAccess<MODULENAME>::_moduleName(string(_T("??? (Module: ")) + string(*MODULENAME) + ')');
+    EXTERNAL_HIDDEN const string typename CallsignTLS::CallsignAccess<MODULENAME>::_moduleName(*MODULENAME);
 }
 
 } 
