@@ -75,17 +75,17 @@ namespace Core {
             static const char* Callsign() {
                 const char* callsign = CallsignTLS::Callsign();
                 if (callsign == nullptr) {
-                    callsign = _moduleName.c_str();
+                    callsign = _moduleName;
                 }
                 return callsign;
             }
 
         private:
-            static const string _moduleName;
+            static const TCHAR* _moduleName;
         };
 
         template <const char** MODULENAME>
-        EXTERNAL_HIDDEN const string typename CallsignAccess<MODULENAME>::_moduleName;
+        EXTERNAL_HIDDEN const TCHAR* typename CallsignAccess<MODULENAME>::_moduleName = *MODULENAME;
 
         static const TCHAR* Callsign();
         static void Callsign(const TCHAR* callsign);
