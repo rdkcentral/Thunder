@@ -253,8 +253,6 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-#define MODULE_NAME_VERBOSE 
-
 #define MODULE_NAME_DECLARATION(buildref)                                                                     \
     extern "C" {                                                                                              \
     namespace WPEFramework {                                                                                  \
