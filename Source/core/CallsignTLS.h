@@ -81,7 +81,7 @@ namespace Core {
             }
 
         private:
-            static const string _moduleName;
+            static string _moduleName;
         };
 
         static const TCHAR* Callsign();
@@ -106,7 +106,7 @@ namespace Core {
     };
 
     template <const char** MODULENAME>
-    EXTERNAL_HIDDEN const string typename CallsignTLS::CallsignAccess<MODULENAME>::_moduleName(*MODULENAME);
+    EXTERNAL_HIDDEN string typename CallsignTLS::CallsignAccess<MODULENAME>::_moduleName(*MODULENAME);
 }
 
 } 
