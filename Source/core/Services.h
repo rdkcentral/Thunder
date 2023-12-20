@@ -37,6 +37,87 @@
 namespace WPEFramework {
 namespace Core {
 
+    class EXTERNAL ServiceAdministrator {
+    private:
+        ServiceAdministrator();
+
+        using Services = std::vector<IService*>;
+
+    public:
+        struct EXTERNAL ICallback {
+            virtual ~ICallback() = default;
+
+            virtual void Destructed() = 0;
+        };
+
+    public:
+        ServiceAdministrator(ServiceAdministrator&&) = delete;
+        ServiceAdministrator(const ServiceAdministrator&) = delete;
+        ServiceAdministrator& operator=(ServiceAdministrator&&) = delete;
+        ServiceAdministrator& operator=(const ServiceAdministrator&) = delete;
+        virtual ~ServiceAdministrator();
+
+        static ServiceAdministrator& Instance();
+
+    public:
+        Library LoadLibrary(const TCHAR libraryName[]) {
+            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+            return (Library(libraryName));
+        }
+        // There is *NO* locking around the _callback pointer. SO this callback 
+        // must be set, before any Service Object is created or released!!!
+        void Callback(ICallback* callback)
+        {
+            ASSERT((callback == nullptr) ^ (_callback == nullptr));
+            _callback = callback;
+        }
+        void AddRef() const
+        {
+            Core::InterlockedIncrement(_instanceCount);
+        }
+        uint32_t Release() const
+        {
+            ASSERT(_instanceCount > 0);
+
+            Core::InterlockedDecrement(_instanceCount);
+
+            if (_callback != nullptr) {
+                _callback->Destructed();
+            }
+
+            return (Core::ERROR_NONE);
+        }
+        inline uint32_t Instances() const
+        {
+            return (_instanceCount);
+        }
+        void FlushLibraries();
+        void ReleaseLibrary(Library&& reference);
+        void Announce(IService* service);
+        void Revoke(IService* service);
+        void* Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber);
+
+        template <typename REQUESTEDINTERFACE>
+        REQUESTEDINTERFACE* Instantiate(const Library& library, const char name[], const uint32_t version)
+        {
+            void* baseInterface(Instantiate(library, name, version, REQUESTEDINTERFACE::ID));
+
+            if (baseInterface != nullptr) {
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+            }
+
+            return (nullptr);
+        }
+
+    private:
+        Core::CriticalSection _adminLock;
+        Services _services;
+        mutable uint32_t _instanceCount;
+        ICallback* _callback;
+        std::list<Library> _unreferencedLibraries;
+        static ServiceAdministrator _systemServiceAdministrator;
+    };
+
     template <typename ACTUALSINK>
     class SinkType : public ACTUALSINK {
     private:
@@ -121,11 +202,15 @@ namespace Core {
         }
     };
 
+    /*
+    * 
     template <typename TYPE>
     using Sink = SinkType<TYPE>;
 
     template <typename TYPE>
     using Service = ServiceType<TYPE>;
+
+    */
 
     typedef DEPRECATED IService::IMetadata IServiceMetadata;
 
@@ -244,87 +329,6 @@ namespace Core {
 
     private:
         Info<ACTUALSERVICE> _info;
-    };
-
-    class EXTERNAL ServiceAdministrator {
-    private:
-        ServiceAdministrator();
-
-        using Services = std::vector<IService*>;
-
-    public:
-        struct EXTERNAL ICallback {
-            virtual ~ICallback() = default;
-
-            virtual void Destructed() = 0;
-        };
-
-    public:
-        ServiceAdministrator(ServiceAdministrator&&) = delete;
-        ServiceAdministrator(const ServiceAdministrator&) = delete;
-        ServiceAdministrator& operator=(ServiceAdministrator&&) = delete;
-        ServiceAdministrator& operator=(const ServiceAdministrator&) = delete;
-        virtual ~ServiceAdministrator();
-
-        static ServiceAdministrator& Instance();
-
-    public:
-        Library LoadLibrary(const TCHAR libraryName[]) {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-            return (Library(libraryName));
-        }
-        // There is *NO* locking around the _callback pointer. SO this callback 
-        // must be set, before any Service Object is created or released!!!
-        void Callback(ICallback* callback)
-        {
-            ASSERT((callback == nullptr) ^ (_callback == nullptr));
-            _callback = callback;
-        }
-        void AddRef() const
-        {
-            Core::InterlockedIncrement(_instanceCount);
-        }
-        uint32_t Release() const
-        {
-            ASSERT(_instanceCount > 0);
-
-            Core::InterlockedDecrement(_instanceCount);
-
-            if (_callback != nullptr) {
-                _callback->Destructed();
-            }
-
-            return (Core::ERROR_NONE);
-        }
-        inline uint32_t Instances() const
-        {
-            return (_instanceCount);
-        }
-        void FlushLibraries();
-        void ReleaseLibrary(Library&& reference);
-        void Announce(IService* service);
-        void Revoke(IService* service);
-        void* Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber);
-
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const Library& library, const char name[], const uint32_t version)
-        {
-            void* baseInterface(Instantiate(library, name, version, REQUESTEDINTERFACE::ID));
-
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-
-    private:
-        Core::CriticalSection _adminLock;
-        Services _services;
-        mutable uint32_t _instanceCount;
-        ICallback* _callback;
-        std::list<Library> _unreferencedLibraries;
-        static ServiceAdministrator _systemServiceAdministrator;
     };
 
 
