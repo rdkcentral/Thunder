@@ -1060,7 +1060,7 @@ namespace Plugin {
         if (results.empty() == false) {
             using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
 
-            outResults = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            outResults = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
             ASSERT(outResults != nullptr);
         }
         else {
@@ -1145,7 +1145,7 @@ namespace Plugin {
         if (services.empty() == false) {
             using Iterator = IMetadata::Data::IServicesIterator;
 
-            outServices = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            outServices = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
             ASSERT(outServices != nullptr);
         }
         else {
@@ -1176,7 +1176,7 @@ namespace Plugin {
 
             using Iterator = IMetadata::Data::ICallStackIterator;
 
-            outCallStack = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            outCallStack = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
             ASSERT(outCallStack != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1208,7 +1208,7 @@ namespace Plugin {
 
             using Iterator = IMetadata::Data::ILinksIterator;
 
-            outLinks = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            outLinks = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
             ASSERT(outLinks != nullptr);
         }
         else {
@@ -1263,7 +1263,7 @@ namespace Plugin {
         if (proxies.empty() == false) {
             using Iterator = IMetadata::Data::IProxiesIterator;
 
-            outProxies = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(proxies);
+            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(proxies);
             ASSERT(outProxies != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1294,7 +1294,7 @@ namespace Plugin {
 
             using Iterator = IMetadata::Data::IThreadsIterator;
 
-            outThreads = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            outThreads = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
             ASSERT(outThreads != nullptr);
         }
         else {
@@ -1322,7 +1322,7 @@ namespace Plugin {
 
             using Iterator = IMetadata::Data::IPendingRequestsIterator;
 
-            outRequests = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            outRequests = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
             ASSERT(outRequests != nullptr);
         }
         else {
@@ -1357,7 +1357,7 @@ namespace Plugin {
 
             using Iterator = IMetadata::Data::ISubsystemsIterator;
 
-            outSubsystems = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(subsystems);
+            outSubsystems = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(subsystems);
             ASSERT(outSubsystems != nullptr);
         }
         else {

@@ -1165,7 +1165,7 @@ namespace PluginHost {
     {
         // Before we do anything with the subsystems (notifications)
         // Lets see if security is already set..
-        DefaultSecurity* securityProvider = Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
+        DefaultSecurity* securityProvider = Core::ServiceType<DefaultSecurity>::Create<DefaultSecurity>(
             _config.WebPrefix(),
             _config.JSONRPCPrefix(),
             _controller->Callsign());
