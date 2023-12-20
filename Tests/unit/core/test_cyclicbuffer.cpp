@@ -225,7 +225,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(bufferName.c_str()), (cyclicBufferSize + sizeof(CyclicBuffer::control)));
@@ -245,7 +245,7 @@ namespace Tests {
             EXPECT_STREQ(buffer1.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer1.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer1.IsValid(), true);
-            EXPECT_EQ(buffer1.Validate(), true);
+            EXPECT_EQ(buffer1.Open(), true);
 
             buffer1.~CyclicBuffer();
             EXPECT_EQ(IsFileExist(bufferName.c_str()), true);
@@ -257,7 +257,7 @@ namespace Tests {
             EXPECT_STREQ(buffer2.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer2.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer2.IsValid(), true);
-            EXPECT_EQ(buffer2.Validate(), true);
+            EXPECT_EQ(buffer2.Open(), true);
 
             // Remove after usage before destruction
             const_cast<File&>(buffer2.Storage()).Destroy();
@@ -280,7 +280,7 @@ namespace Tests {
         EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
-        EXPECT_EQ(buffer.Validate(), true);
+        EXPECT_EQ(buffer.Open(), true);
 
         EXPECT_EQ(buffer.Storage().IsOpen(), true);
         buffer.Storage().Close();
@@ -324,7 +324,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
             EXPECT_EQ(CheckBufferIsSharable(&buffer), true);
 
@@ -345,7 +345,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
 
             // Remove after usage before destruction
@@ -365,7 +365,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
             EXPECT_EQ(CheckBufferIsSharable(&buffer), true);
 
@@ -609,7 +609,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize);
@@ -640,7 +640,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
