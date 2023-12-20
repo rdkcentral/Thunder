@@ -1470,27 +1470,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#schedule" class="md-nav__link">
+  <a href="#scheduling-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Schedule
+      Scheduling job
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#reschedule" class="md-nav__link">
+  <a href="#rescheduling-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Reschedule
+      Rescheduling job
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#revoke" class="md-nav__link">
+  <a href="#revoking-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Revoke
+      Revoking job
     </span>
   </a>
   
@@ -2320,27 +2320,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#schedule" class="md-nav__link">
+  <a href="#scheduling-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Schedule
+      Scheduling job
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#reschedule" class="md-nav__link">
+  <a href="#rescheduling-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Reschedule
+      Rescheduling job
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#revoke" class="md-nav__link">
+  <a href="#revoking-job" class="md-nav__link">
     <span class="md-ellipsis">
-      Revoke
+      Revoking job
     </span>
   </a>
   
@@ -2487,7 +2487,7 @@ functionality in Thunder, which will be further described in a different documen
 <p>To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.</p>
 <h2 id="scheduler">Scheduler</h2>
 <h3 id="overview">Overview</h3>
-<p><code>Workerpool</code> has the ability to schedule <code>jobs</code> using the <code>Scheduler</code> class. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time. To learn more about how to create a <code>job</code> read <a href="../threading/worker-pool">Workerpool</a> section of documentation.</p>
+<p><code>Workerpool</code> has the ability to schedule <code>jobs</code> using the <code>Scheduler</code> class. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time.</p>
 <p>To schedule a <code>job</code> we use several methods for this:</p>
 <ul>
 <li><code>Schedule()</code></li>
@@ -2496,8 +2496,8 @@ functionality in Thunder, which will be further described in a different documen
 </ul>
 <p>Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether. </p>
 <h3 id="scheduler-methods">Scheduler methods</h3>
-<h4 id="schedule">Schedule</h4>
-<p><code>Schedule()</code> is used to plan when to perform the <code>job</code> we specified. Using this method is very simple. We specify the <code>job</code> and the date on which to start performing it in the appropriate format.</p>
+<h4 id="scheduling-job">Scheduling job</h4>
+<p><code>Schedule()</code> is used to plan when to perform the <code>job</code> we specified. Using this method is very simple. We just need to specify the <code>job</code> with a point in time when it should be performed.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>In case the given time would point to the past, the task will start executing immediately.</p>
@@ -2515,8 +2515,8 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="reschedule">Reschedule</h4>
-<p><code>Reschedule()</code> method is used to change the execution date of an already scheduled <code>job</code>. It is used in the same way as the <code>Schedule()</code> method. It works as follows, first the scheduled <code>job</code> is attempted to be canceled and then the Schedule with the newly specified time is used.</p>
+<h4 id="rescheduling-job">Rescheduling job</h4>
+<p><code>Reschedule()</code> method is used to change the execution date of an already scheduled <code>job</code>. Method takes as arguments the new execution time of the specified <code>job</code> and the <code>job</code> whose execution time we want to change. It works as follows, first the scheduled <code>job</code> is attempted to be canceled and then the Schedule with the newly specified time is used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code>Reschedule()</code> returns true when the <code>job</code> cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using <code>Schedule()</code></p>
@@ -2530,8 +2530,8 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">revoked</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="revoke">Revoke</h4>
-<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the <code>job</code> will be canceled immediately. The <code>Reschedule</code> method returns a numeric value.</p>
+<h4 id="revoking-job">Revoking job</h4>
+<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until <code>job</code> is cancelled or an error occurs. The <code>Reschedule</code> method returns a numeric value.</p>
 <p>Error codes that can be returned:</p>
 <ul>
 <li><code>ERROR_NONE</code> - 0 (no errors)</li>
