@@ -85,7 +85,7 @@ namespace Core {
         };
 
         template <const char** MODULENAME>
-        EXTERNAL_HIDDEN string CallsignAccess<MODULENAME>::_moduleName(string(_T("???  (Module:")) + *MODULENAME + _T(')'));
+        EXTERNAL_HIDDEN string CallsignAccess<MODULENAME>::_moduleName = string(_T("???  (Module:")) + string(*MODULENAME) + ')';
 
         static const TCHAR* Callsign();
         static void Callsign(const TCHAR* callsign);
