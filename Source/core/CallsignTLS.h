@@ -48,13 +48,14 @@ namespace Core {
         template <const char** MODULENAME>
         struct CallsignAccess {
             static const char* Callsign() {
-                string modulename(string(_T("???  (Module:"))+*MODULENAME+_T(')')); 
                 const char* callsign = CallsignTLS::Callsign();
                 if( callsign == nullptr ) {
-                    callsign = modulename.c_str();
+                    callsign = _moduleName.c_str();
                 }
                 return callsign;
             }
+        private:
+            static string _moduleName;
         };
 
         class EXTERNAL CallSignTLSGuard {
@@ -98,6 +99,10 @@ namespace Core {
     private:
         string _name;
     };
+
+    template <const char** MODULENAME>
+    EXTERNAL_HIDDEN string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
+
 }
 
 } 
