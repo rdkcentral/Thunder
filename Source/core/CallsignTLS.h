@@ -70,10 +70,10 @@ namespace Core {
             }
         };
 
-        template <const char** MODULENAME>
+        template <const TCHAR** MODULENAME>
         struct CallsignAccess {
-            static const char* Callsign() {
-                const char* callsign = CallsignTLS::Callsign();
+            static const TCHAR* Callsign() {
+                const TCHAR* callsign = CallsignTLS::Callsign();
                 if (callsign == nullptr) {
                     callsign = _moduleName.c_str();
                 }
@@ -81,7 +81,7 @@ namespace Core {
             }
 
         private:
-            static string _moduleName;
+            static const string _moduleName;
         };
 
         static const TCHAR* Callsign();
@@ -90,14 +90,14 @@ namespace Core {
     private:
         friend class Core::ThreadLocalStorageType<CallsignTLS>;
     
-        void Name(const char* name) {  
+        void Name(const TCHAR* name) {  
             if ( name != nullptr ) {
                 _name = name; 
             } else {
                 _name.clear(); 
             }
         }
-        const char* Name() const { 
+        const TCHAR* Name() const { 
             return ( _name.empty() == false ? _name.c_str() : nullptr ); 
         }
 
@@ -105,8 +105,8 @@ namespace Core {
         string _name;
     };
 
-    template <const char** MODULENAME>
-    EXTERNAL_HIDDEN string typename CallsignTLS::CallsignAccess<MODULENAME>::_moduleName(*MODULENAME);
+    template <const TCHAR** MODULENAME>
+    EXTERNAL_HIDDEN const string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
 }
 
 } 
