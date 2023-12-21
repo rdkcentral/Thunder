@@ -55,9 +55,9 @@ namespace Core {
     };
 
     namespace System {
-        extern "C" const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA;
+        extern "C" EXTERNAL const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA;
 
-        extern "C" const char* MODULE_NAME;
+        extern "C" EXTERNAL const char* MODULE_NAME;
 
         extern "C" EXTERNAL uint32_t Reboot();
         extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
