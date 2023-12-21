@@ -153,10 +153,11 @@ namespace Core {
     {
     }
 
-    bool CyclicBuffer::Validate() {
+    bool CyclicBuffer::Open()
+    {
         bool loaded = (_administration != nullptr);
 
-        if (loaded == false)  {
+        if (loaded == false) {
             loaded = _buffer.Load();
             if (loaded == true) {
                 _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
@@ -165,6 +166,13 @@ namespace Core {
         }
 
         return (loaded);
+    }
+
+    void CyclicBuffer::Close()
+    {
+        _buffer.Destroy();
+        _realBuffer = nullptr;
+        _administration = nullptr;
     }
 
     void CyclicBuffer::AdminLock()
