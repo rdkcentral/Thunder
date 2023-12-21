@@ -48,6 +48,7 @@ namespace Core {
         template <const char** MODULENAME>
         struct CallsignAccess {
             static const char* Callsign() {
+                _moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
                 const char* callsign = CallsignTLS::Callsign();
                 if( callsign == nullptr ) {
                     callsign = _moduleName.c_str();
