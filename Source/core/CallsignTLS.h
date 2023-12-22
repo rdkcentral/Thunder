@@ -44,56 +44,60 @@ namespace Core {
 
     class EXTERNAL CallsignTLS {
     public:
+        CallsignTLS(CallsignTLS&&) = delete;
+        CallsignTLS(const CallsignTLS&) = delete;
+        CallsignTLS& operator=(CallsignTLS&&) = delete;
+        CallsignTLS& operator=(const CallsignTLS&) = delete;
 
-        template <const char** MODULENAME>
-        struct CallsignAccess {
-            static const char* Callsign() {
-                _moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
-                const char* callsign = CallsignTLS::Callsign();
-                if( callsign == nullptr ) {
-                    callsign = _moduleName.c_str();
-                }
-                return callsign;
-            }
-        private:
-            static string _moduleName;
-        };
+    private:
+        CallsignTLS() : _name() {};
+        ~CallsignTLS() = default;
 
+    public:
         class EXTERNAL CallSignTLSGuard {
         public:
+            CallSignTLSGuard(CallSignTLSGuard&&) = delete;
             CallSignTLSGuard(const CallSignTLSGuard&) = delete;
+            CallSignTLSGuard& operator=(CallSignTLSGuard&&) = delete;
             CallSignTLSGuard& operator=(const CallSignTLSGuard&) = delete;
 
-            explicit CallSignTLSGuard(const char* callsign) {
+            explicit CallSignTLSGuard(const TCHAR* callsign) {
                 CallsignTLS::Callsign(callsign);
             }
 
             ~CallSignTLSGuard() {
                 CallsignTLS::Callsign(nullptr);
             }
-
         };
 
-        static const char* Callsign();
-        static void Callsign(const char* callsign);
+        template <const TCHAR** MODULENAME>
+        struct CallsignAccess {
+            static const TCHAR* Callsign() {
+                const TCHAR* callsign = CallsignTLS::Callsign();
+                if (callsign == nullptr) {
+                    callsign = _moduleName.c_str();
+                }
+                return callsign;
+            }
+
+        private:
+            static const string _moduleName;
+        };
+
+        static const TCHAR* Callsign();
+        static void Callsign(const TCHAR* callsign);
 
     private:
         friend class Core::ThreadLocalStorageType<CallsignTLS>;
     
-        CallsignTLS(const CallsignTLS&) = delete;
-        CallsignTLS& operator=(const CallsignTLS&) = delete;
-
-        CallsignTLS() : _name() {};
-        ~CallsignTLS() = default;
-
-        void Name(const char* name) {  
+        void Name(const TCHAR* name) {  
             if ( name != nullptr ) {
                 _name = name; 
             } else {
                 _name.clear(); 
             }
         }
-        const char* Name() const { 
+        const TCHAR* Name() const { 
             return ( _name.empty() == false ? _name.c_str() : nullptr ); 
         }
 
@@ -101,9 +105,8 @@ namespace Core {
         string _name;
     };
 
-    template <const char** MODULENAME>
-    EXTERNAL_HIDDEN string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName;
-
+    template <const TCHAR** MODULENAME>
+    EXTERNAL_HIDDEN const string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
 }
 
 } 
