@@ -69,17 +69,13 @@ namespace PluginHost {
             {
                 _config.Startup = value;
             }
-            inline void AutoStart(const bool value)
+            inline void SystemRootPath(const string& value)
             {
-                _config.AutoStart = value;
+                _config.SystemRootPath = value;
             }
             inline void Resumed(const bool value)
             {
                 _config.Resumed = value;
-            }
-            inline void SystemRootPath(const string& value)
-            {
-                _config.SystemRootPath = value;
             }
             inline const Plugin::Config& Configuration() const
             {
@@ -137,10 +133,6 @@ namespace PluginHost {
                 if (_versions.empty() == true) {
                     _versions.push_back(1);
                 }
-
-                _config.Startup = ((_config.AutoStart.Value() == true) ?
-                                   PluginHost::IShell::startup::ACTIVATED :
-                                   PluginHost::IShell::startup::DEACTIVATED);
             }
 
         private:
@@ -268,7 +260,6 @@ namespace PluginHost {
         Core::hresult Startup(const PluginHost::IShell::startup value) override
         {
             _config.Startup(value);
-            _config.AutoStart(value == PluginHost::IShell::startup::ACTIVATED);
 
             return (Core::ERROR_NONE);
         }

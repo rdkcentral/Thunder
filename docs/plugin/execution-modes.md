@@ -21,7 +21,7 @@ As with other config options, this can be changed via the Controller plugin at r
 {
    "locator":"libWPEFrameworkSamplePlugin.so",
    "classname":"SamplePlugin",
-   "autostart":true,
+   "startmode":"activated",
    "configuration":{
       "root":{
          "mode":"Local"

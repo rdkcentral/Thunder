@@ -1013,8 +1013,9 @@ namespace PluginHost {
                     service->Activate(PluginHost::IShell::STARTUP);
                 }
                 else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, start mode is %s"),
+                        service->ClassName().c_str(), service->Callsign().c_str(),
+                        Core::EnumerateType<PluginHost::IShell::startup>(service->Startup()).Data()));
                 }
             }
         }

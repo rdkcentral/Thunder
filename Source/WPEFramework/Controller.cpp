@@ -1099,14 +1099,12 @@ namespace Plugin {
                     service.ClassName = meta.ClassName;
                     service.Module = meta.Module;
                     service.StartMode = meta.Startup;
-                    service.AutoStart = meta.AutoStart;
                     service.State = meta.JSONState;
                     service.Version = meta.ServiceVersion;
                     service.Communicator = meta.Communicator;
                     service.PersistentPathPostfix = meta.PersistentPathPostfix;
                     service.VolatilePathPostfix = meta.VolatilePathPostfix;
                     service.SystemRootPath = meta.SystemRootPath;
-                    service.AutoStart = meta.AutoStart;
                     service.Configuration = meta.Configuration;
                     service.Precondition = meta.Precondition;
                     service.Termination = meta.Termination;

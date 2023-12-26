@@ -201,7 +201,6 @@ namespace Plugin {
             , Locator()
             , ClassName()
             , Versions()
-            , AutoStart(true)
             , Resumed(false)
             , WebUI()
             , Precondition()
@@ -218,7 +217,6 @@ namespace Plugin {
             Add(_T("locator"), &Locator);
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
-            Add(_T("autostart"), &AutoStart);
             Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
@@ -237,7 +235,6 @@ namespace Plugin {
             , Locator(copy.Locator)
             , ClassName(copy.ClassName)
             , Versions(copy.Versions)
-            , AutoStart(copy.AutoStart)
             , Resumed(copy.Resumed)
             , WebUI(copy.WebUI)
             , Precondition(copy.Precondition)
@@ -254,7 +251,6 @@ namespace Plugin {
             Add(_T("locator"), &Locator);
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
-            Add(_T("autostart"), &AutoStart);
             Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
@@ -275,7 +271,6 @@ namespace Plugin {
             Locator = RHS.Locator;
             ClassName = RHS.ClassName;
             Versions = RHS.Versions;
-            AutoStart = RHS.AutoStart;
             Resumed = RHS.Resumed;
             WebUI = RHS.WebUI;
             Configuration = RHS.Configuration;
@@ -308,7 +303,6 @@ namespace Plugin {
         Core::JSON::String Locator;
         Core::JSON::String ClassName;
         Core::JSON::String Versions;
-        Core::JSON::Boolean AutoStart;
         Core::JSON::Boolean Resumed;
         Core::JSON::String WebUI;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;

@@ -62,9 +62,7 @@ namespace PluginHost {
         enum class startup : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
-            ACTIVATED,
-            SUSPENDED,
-            RESUMED
+            ACTIVATED
         };
 
         // State of the IPlugin interface associated with this shell.
@@ -213,7 +211,7 @@ namespace PluginHost {
         //! Startup: <config:startup>/
         virtual PluginHost::IShell::startup Startup() const = 0;
 
-        //! Startup: Set<startup,autostart,resumed states>/
+        //! Startup: Set<startup states>/
         virtual Core::hresult Startup(const startup value) = 0;
 
         //! Substituted Config value

@@ -215,7 +215,6 @@ namespace Controller {
                     RESUMED /* @text resumed */
                 };
 
-                bool AutoStart /* @brief Determines if the plugin is to be started automatically along with the framework */;
                 string Callsign /* @brief Plugin callsign */;
                 string Locator /* @brief Shared library path */;
                 string ClassName /* @brief Plugin class name */;
