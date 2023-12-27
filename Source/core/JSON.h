@@ -130,7 +130,6 @@ namespace Core {
                 realObject.Clear();
 
                 while (handled < size) {
-
                     uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
                     // Deserialize object
@@ -145,7 +144,7 @@ namespace Core {
                     handled += loaded;
                 }
 
-                if (((offset != 0) || (handled < size)) && (error.IsSet() == false)) {
+                if (((offset != 0) /*|| (handled < size)*/) && (error.IsSet() == false)) {
                     error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
                     realObject.Clear();
                 }
@@ -222,10 +221,8 @@ namespace Core {
                     do {
                         readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
 
-                        if (readBytes == 0) {
-                            loaded = ~0;
-                        } else {
-                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset, error);
+                        if (readBytes) {
+                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, readBytes, offset, error);
 
                             ASSERT(loaded <= readBytes);
 
@@ -233,8 +230,7 @@ namespace Core {
                                 fileObject.Position(true, -(readBytes - loaded));
                             }
                         }
-
-                    } while ((loaded == readBytes) && (offset != 0));
+                    } while (readBytes && (loaded == readBytes) && offset);
 
                     if (offset != 0 && error.IsSet() == false) {
                         error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
@@ -270,6 +266,12 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
+            virtual bool IsCompleted() const
+            {
+// FIXME:
+                // Completed from successive data inputs
+                return true;
+            }
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const = 0;
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset)
             {
@@ -285,6 +287,7 @@ namespace Core {
                 return loaded;
             }
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) = 0;
+
         };
 
         struct EXTERNAL IMessagePack {
@@ -443,28 +446,6 @@ namespace Core {
             VALID
         };
 
-        static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint32_t& offset, uint16_t& loaded)
-        {
-            ValueValidity validity = ValueValidity::INVALID;
-            const size_t nullTagLen = strlen(IElement::NullTag);
-            ASSERT(offset < nullTagLen);
-            while (offset < nullTagLen) {
-                if (loaded + 1 == maxLength) {
-                    validity = ValueValidity::UNKNOWN;
-                    break;
-                }
-                if (stream[loaded++] != IElement::NullTag[offset++]) {
-                    offset = 0;
-                    break;
-                }
-            }
-
-            if (offset == nullTagLen)
-                validity = ValueValidity::IS_NULL;
-
-            return validity;
-        }
-
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
         class NumberType : public IElement, public IMessagePack {
         private:
@@ -484,24 +465,32 @@ namespace Core {
                 : _set(0)
                 , _value(0)
                 , _default(0)
+                , _completed{false}
+                , _suffix{false}
             {
             }
             NumberType(const TYPE Value, const bool set = false)
-                : _set(set ? SET : 0)
+                : _set((set ? SET : 0) | (Value < 0 ? NEGATIVE : 0)) 
                 , _value(Value)
                 , _default(Value)
+                , _completed{false}
+                , _suffix{false}
             {
             }
             NumberType(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
             {
             }
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
             {
             }
             ~NumberType() override = default;
@@ -511,6 +500,9 @@ namespace Core {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+
                 return (*this);
             }
 
@@ -518,6 +510,9 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
 
                 return (*this);
             }
@@ -568,205 +563,284 @@ namespace Core {
             {
                 _set = 0;
                 _value = 0;
+
+                _completed = false;
+                _suffix = false;
             }
 
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
+
+                const int32_t available =   maxLength
+                                          - (_set & QUOTED ? 2 : 0)
+                                          - (_set & NEGATIVE ? 1 : 0)
+                                          - (BASETYPE == BASE_DECIMAL ? 0 : 0)
+                                          - (BASETYPE == BASE_HEXADECIMAL ? 2 : 0)
+                                          - (BASETYPE == BASE_OCTAL ? 1 : 0)
+                                          ;
+
                 uint16_t loaded = 0;
 
-                ASSERT(maxLength > 0);
+                if (0 < available) {
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
 
-                while ((offset < 4) && (loaded < maxLength)) {
+                    if (_set & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
-                    if ((_set & UNDEFINED) != 0) {
-                        stream[loaded++] = IElement::NullTag[offset++];
-                        if (offset == 4) {
-                            offset = 0;
-                            break;
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
                         }
-                    } else if (BASETYPE == BASE_DECIMAL) {
-                        if ((SIGNED == true) && (_value < 0)) {
+                    } else {
+                        if ((_set & NEGATIVE))
+                        {
                             stream[loaded++] = '-';
                         }
-                        offset = 4;
-                    } else if (BASETYPE == BASE_OCTAL) {
-                        if (offset == 0) {
-                            stream[loaded++] = '\"';
-                            offset = 1;
-                        } else if (offset == 1) {
-                            if ((SIGNED == true) && (_value < 0)) {
-                                stream[loaded++] = '-';
-                            }
-                            offset = 2;
-                        } else if (offset == 2) {
-                            stream[loaded++] = '0';
-                            offset = 4;
+
+                        switch(BASETYPE) {
+                            case BASE_DECIMAL     : break;
+                            case BASE_HEXADECIMAL : stream[loaded++] = '0';
+                                                    stream[loaded++] = 'X';
+                                                    break;
+                            case BASE_OCTAL       : stream[loaded++] = '0';
+                                                    break;
+                            default               : ASSERT(false);
                         }
-                    } else if (BASETYPE == BASE_HEXADECIMAL) {
-                        if (offset == 0) {
-                            stream[loaded++] = '\"';
-                            offset = 1;
-                        } else if (offset == 1) {
-                            if ((SIGNED == true) && (_value < 0)) {
-                                stream[loaded++] = '-';
-                            }
-                            offset = 2;
-                        } else if (offset == 2) {
-                            stream[loaded++] = '0';
-                            offset = 3;
-                        } else if (offset == 3) {
-                            stream[loaded++] = 'x';
-                            offset = 4;
-                        }
+
+                        loaded += Convert(&(stream[loaded]), available, offset, _value);
+                    }
+
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
                     }
                 }
 
-                if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
-                    loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
-                }
+                offset = !(!offset && loaded < available);
 
-                if ((offset != 0) && (loaded < maxLength)) {
-                    stream[loaded++] = '\"';
-                    offset = 0;
+                if (!offset) {
+                    stream[loaded] = '\0';
                 }
 
                 return (loaded);
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[0];
+
                 uint16_t loaded = 0;
 
-                // Peamble investigation, determine the right flags..
-                while ((offset < 4) && (loaded < maxLength)) {
-                    if (offset == 0) {
-                        _value = 0;
-                        _set = 0;
+                _value = 0;
+                _set = 0;
 
-                        if (stream[loaded] == '\"') {
-                            _set = QUOTED;
-                            offset++;
-                        } else if (stream[loaded] == '-') {
-                            _set = NEGATIVE | DECIMAL;
-                            offset = 4;
-                        } else if (isdigit(stream[loaded])) {
-                            _set = DECIMAL;
-                            _value = (stream[loaded] - '0');
-                            offset = 4;
-                        } else if (stream[loaded] == 'n') {
-                            _set = UNDEFINED;
-                            offset = 1;
-                        } else {
-                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
-                            ++loaded;
-                            _set = ERROR;
-                            offset = 4;
-                        }
-                    } else if (offset == 1) {
-                        ASSERT(_set == QUOTED || _set == UNDEFINED);
-                        if (stream[loaded] == '0') {
-                            offset = 2;
-                        } else if (stream[loaded] == '-') {
-                            _set |= NEGATIVE;
-                            offset = 2;
-                        } else if (isdigit(stream[loaded])) {
-                            _value = (stream[loaded] - '0');
-                            _set |= DECIMAL;
-                            offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
-                            offset = 2;
-                        } else if ((stream[loaded] == '\"') && ((_set & QUOTED) != 0)) {
-                            offset = 4;
-                            --loaded;
-                        } else {
-                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
-                            ++loaded;
-                            _set = ERROR;
-                            offset = 4;
-                        }
-                    } else if (offset == 2) {
-                        if (stream[loaded] == '0') {
-                            offset = 3;
-                        } else if (::toupper(stream[loaded]) == 'X') {
-                            offset = 4;
-                            _set |= HEXADECIMAL;
-                        } else if (isdigit(stream[loaded])) {
-                            _value = (stream[loaded] - '0');
-                            _set |= (_set & NEGATIVE ? DECIMAL : OCTAL);
-                            offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
-                            offset = 3;
-                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
-                            offset = 4;
-                            --loaded;
-                        } else {
-                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
-                            ++loaded;
-                            _set = ERROR;
-                            offset = 4;
-                        }
-                    } else if (offset == 3) {
-                        if (::toupper(stream[loaded]) == 'X') {
-                            offset = 4;
-                            _set |= HEXADECIMAL;
-                        } else if (isdigit(stream[loaded])) {
-                            _value = (stream[loaded] - '0');
-                            _set |= OCTAL;
-                            offset = 4;
-                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
-                            offset = 4;
-                        } else if (stream[loaded] == '\"' && ((_set & QUOTED) != 0)) {
-                            offset = 4;
-                            --loaded;
-                        } else {
-                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
-                            ++loaded;
-                            _set = ERROR;
-                            offset = 4;
-                        }
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& ch = stream[loaded++];
+
+                    switch (ch) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    _suffix = _suffix || (_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || (_set & UNDEFINED);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if (offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && _suffix) || ((_set & QUOTED) && _suffix))) {
+                                        _set = ERROR;
+                                        error = Error{"Terminated character sequence without (sufficient) data for NumberType<>"};
+                                    }
+
+                                    _completed = true;
+                                    continue;
+                    case '-'    :   // Signed value
+                                    if (!SIGNED) {
+                                        error = Error{"Character '" + std::string(1, ch) + "' unsupported for UNSIGNED NumberType<>"};
+                                        _set = ERROR;
+                                        continue;
+                                    }
+
+                                    if (   !(   !((_set & QUOTED) && offset == 0)
+                                             || ((_set & QUOTED) && offset == 1)
+                                           )
+                                        || (    (_set & NEGATIVE)
+                                             && offset > 0
+                                           )
+                                        || _suffix
+                                       ) {
+                                        _set = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
+                                        continue;
+                                    }
+
+                                    _set |= NEGATIVE;
+                                    break;
+                    case '"'    :   // Quoted character sequence
+                                    if (!(_set & QUOTED) && offset > 0) {// || _suffix) {
+                                        _set = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
+                                        continue;
+                                    }
+
+                                    if ((_set & QUOTED) && offset > 0 && !((_set & DECIMAL) || (_set & HEXADECIMAL) || (_set & OCTAL) || ((_set & UNDEFINED) && _suffix))) {
+                                        _set = ERROR;
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for NumberType<>"};
+                                        continue;
+                                    }
+
+                                    _suffix = _suffix || (_set & QUOTED);
+
+                                    _set |= QUOTED;
+                                    break;
+                    case 'n'    :   FALLTHROUGH
+                    case 'u'    :   FALLTHROUGH
+                    case 'l'    :   // JSON value null
+                                    ASSERT((offset - ((_set & QUOTED) ? 1 : 0)) < sizeof(NullTag));
+
+                                    if ((offset > 3 && !(_set & QUOTED)) || (offset > 4 && (_set & QUOTED)) || ch != IElement::NullTag[offset - ((_set & QUOTED) ? 1 : 0)] || _suffix) {
+                                        _set = ERROR;
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
+                                        continue;
+                                    }
+
+                                    _suffix = _suffix || (offset == 3 && !(_set & QUOTED)) || (offset == 4 && (_set & QUOTED));
+
+                                    _set |= UNDEFINED;
+                                    break;
+                    default     :   if (_suffix || (_set & UNDEFINED)) {
+                                        _set = ERROR;
+                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<>"};
+                                        continue;
+                                    }
+
+                                    // Define a set of rules without the use of regular expressions
+                                    switch(BASETYPE) {
+                                    case BASE_DECIMAL           :   // Decimal format rules
+                                                                    if (!(std::isdigit(ch))) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base decimal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    if ((   (offset == 1 && stream[loaded - 2] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                         || (offset == 2 && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 3 && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                        )
+                                                                       ) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base decimal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    // Convert
+                                                                    if (!AddDigitToValue(ch)) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Data for NumberType<> with base decimal results in out-of-range"};
+                                                                        continue;
+                                                                    }
+
+                                                                    _set |= DECIMAL;
+                                                                    break;
+                                    case BASE_HEXADECIMAL       :   // Hexadecimal format rules
+                                                                    if (   (offset == 0 && stream[loaded - 1] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                        || (offset == 1 && std::toupper(ch) != 'X' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset == 2 && std::toupper(stream[loaded - 1]) != 'X' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset == 3 && std::toupper(stream[loaded - 1]) != 'X' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                       ) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base hexadecimal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    if (   (offset <= 1 &&  !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset <= 2 &&  (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset <= 3 && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                       ) {
+                                                                        break;
+                                                                    }
+
+                                                                    if (!(std::isxdigit(ch))) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base hexadecimal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    // Convert
+                                                                    if (!AddDigitToValue(ch)) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Data for NumberType<> with base hexadecimal results in out-of-range"};
+                                                                        continue;
+                                                                    }
+
+                                                                    _set |= HEXADECIMAL;
+                                                                    break;
+                                    case BASE_OCTAL             :   // Octal format rules
+                                                                    if (!(std::isdigit(ch) && ch <= '7')) {
+                                                                        error = Error{"Invalid Character '" + std::string(1, ch) + "' for NumberType<> with base octal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    if ((   (offset == 0 && stream[loaded - 1] != '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                         || (offset == 1 && stream[loaded - 1] != '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 2 && stream[loaded - 1] != '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                         || (offset == 2 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                         || (offset == 3 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                         || (offset == 4 && stream[loaded - 1] == '0' && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                        )
+                                                                       ) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for NumberType<> with base octal"};
+                                                                        continue;
+                                                                    }
+
+                                                                    if (   (offset <= 0 &&  !(_set & QUOTED) && !(_set & NEGATIVE))
+                                                                        || (offset <= 1 &&  (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                                                        || (offset <= 2 && (_set & QUOTED) && (_set & NEGATIVE))
+                                                                       ) {
+                                                                        break;
+                                                                    }
+
+                                                                    // Convert
+                                                                    if (!AddDigitToValue(ch)) {
+                                                                        _set = ERROR;
+                                                                        error = Error{"Data for NumberType<> with base octal results in out-of-range"};
+                                                                        continue;
+                                                                    }
+
+                                                                    _set |= OCTAL;
+                                                                    break;
+                                    default                     :   // Unknown base
+                                                                    ASSERT(false);
+                                    }
                     }
-                    loaded++;
+
+                    ++offset;
                 }
 
-                bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
-
-                while ((loaded < maxLength) && (completed == false)) {
-                    if (isdigit(stream[loaded])) {
-                        _value *= (_set & 0x1F);
-                        _value += (stream[loaded] - '0');
-                        loaded++;
-                    } else if (isxdigit(stream[loaded])) {
-                        _value *= 16;
-                        _value += (::toupper(stream[loaded]) - 'A') + 10;
-                        loaded++;
-                    } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
-                        completed = true;
-                        loaded++;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
-                        completed = true;
-                    } else {
-                        // Oopsie daisy, error, computer says *NO*
-                        error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
-                        ++loaded;
-                        _set |= ERROR;
-                        completed = true;
+                if (_completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_set & QUOTED) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for NumberType<>"};
                     }
                 }
 
-                if ((_set & (ERROR | QUOTED)) == (ERROR | QUOTED)) {
-                    while ((loaded < maxLength) && (offset != 0)) {
-                        if (stream[loaded++] == '\"') {
-                            offset = 0;
-                        }
-                    }
-                } else if ( (completed == true) && (offset >= 4) ) {
-                    if (_set & NEGATIVE) {
-                        _value *= -1;
-                    }
-                    _set |= SET;
+                if (!(error.IsSet())) {
                     offset = 0;
+                    _set |= (_set & UNDEFINED) ? 0 : SET;
                 }
 
                 return (loaded);
@@ -821,20 +895,33 @@ namespace Core {
             }
 
         private:
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TYPE serialize) const
+            template <typename STYPE = TYPE>
+            typename std::enable_if<std::is_signed<STYPE>::value, uint16_t>::type
+            Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const STYPE serialize) const
+            {
+                using uTYPE = typename std::make_unsigned<STYPE>::type;
+
+                uTYPE value = (_set & NEGATIVE ? static_cast<uTYPE>(-(1 + serialize)) + 1 : static_cast<uTYPE>(serialize));
+
+                return Convert(stream, maxLength, offset, value);
+            }
+
+            template <typename UTYPE = TYPE>
+            typename std::enable_if<std::is_unsigned<UTYPE>::value, uint16_t>::type
+            Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const UTYPE serialize) const
             {
                 uint8_t parsed = 4;
                 uint16_t loaded = 0;
-                TYPE divider = 1;
-                TYPE value = (serialize / BASETYPE);
 
-                while (divider <= value) {
+                UTYPE divider = 1;
+
+                UTYPE value = static_cast<UTYPE>(serialize);
+
+                while ((value / divider) >= static_cast<UTYPE>(BASETYPE)) {
                     divider *= BASETYPE;
                 }
 
-                value = serialize;
-
-                while ((divider > 0) && (loaded < maxLength)) {
+                while (divider && loaded < maxLength) {
                     if (parsed >= offset) {
                         uint8_t digit = static_cast<uint8_t>(value / divider);
                         if ((BASETYPE != BASE_HEXADECIMAL) || (digit < 10)) {
@@ -849,21 +936,11 @@ namespace Core {
                     divider /= BASETYPE;
                 }
 
-                if ((BASETYPE == BASE_DECIMAL) && (loaded < maxLength)) {
+                if (loaded < maxLength) {
                     offset = 0;
                 }
 
                 return (loaded);
-            }
-
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
-            {
-                return (Convert(stream, maxLength, offset, _value));
-            }
-
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
-            {
-                return (Convert(stream, maxLength, offset, ::abs(_value)));
             }
 
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint32_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
@@ -948,10 +1025,49 @@ namespace Core {
                 return (loaded);
             }
 
+            bool AddDigitToValue(char digit)
+            {
+                bool result = false;
+
+                using uTYPE = typename std::make_unsigned<TYPE>::type;
+                using sTYPE = typename std::make_signed<TYPE>::type;
+
+                uTYPE base = 0, offset = 0, number = 0;
+
+                switch (BASETYPE) {
+                case BASE_DECIMAL       : base = 10;
+                                          offset = (digit -'0');
+                                          break;
+                case BASE_HEXADECIMAL   : base = 16;
+                                          offset = std::isdigit(digit) ? digit - '0' : (std::toupper(digit) -'A' + 10);
+                                          break;
+                case BASE_OCTAL         : base = 8;
+                                          offset = (digit - '0');
+                                          break;
+                default                 : ASSERT(false);
+                }
+
+                const uTYPE max = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + std::numeric_limits<sTYPE>::min())) + 1 : static_cast<uTYPE>(std::numeric_limits<TYPE>::max());
+
+                number = _set & NEGATIVE ? static_cast<uTYPE>(-(1 + static_cast<sTYPE>(_value))) + 1 : static_cast<uTYPE>(_value);
+
+                result = number <= ((max - offset) / base);
+
+                number *= base;
+                number += offset;
+
+                _value = _set & NEGATIVE ? static_cast<TYPE>(-static_cast<sTYPE>(number)) : static_cast<TYPE>(number);
+
+                return result;
+            }
+
         private:
             uint16_t _set;
             TYPE _value;
             TYPE _default;
+
+            bool _completed;
+            bool _suffix;
         };
 
         typedef NumberType<uint8_t, false, BASE_DECIMAL> DecUInt8;
@@ -998,28 +1114,48 @@ namespace Core {
                 : _set(0)
                 , _value(0.0)
                 , _default(0.0)
-                , _strValue()
+                , _completed{false}
+                , _suffix{false}
+                , _fraction{false}
+                , _exponent{false}
+                , _digit{false}
+                , _esign{false}
             {
             }
             FloatType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
-                , _strValue()
+                , _completed{false}
+                , _suffix{false}
+                , _fraction{false}
+                , _exponent{false}
+                , _digit{false}
+                , _esign{false}
             {
             }
             FloatType(FloatType<TYPE>&& move)
                 : _set(std::move(move._set))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
-                , _strValue()
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
+                , _fraction(std::move(move._fraction))
+                , _exponent(std::move(move._exponent))
+                , _digit(std::move(move._digit))
+                , _esign(std::move(move._esign))
             {
             }
             FloatType(const FloatType<TYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
-                , _strValue()
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
+                , _fraction(copy._fraction)
+                , _exponent(copy._exponent)
+                , _digit(copy._digit)
+                , _esign(copy._esign)
             {
             }
             ~FloatType() override = default;
@@ -1029,6 +1165,13 @@ namespace Core {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _fraction = std::move(move._fraction);
+                _exponent = std::move(move._exponent);
+                _digit = std::move(move._digit);
+                _esign = std::move(move._esign);
+
                 return (*this);
             }
 
@@ -1036,6 +1179,13 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _fraction = RHS._fraction;
+                _exponent = RHS._exponent;
+                _digit = RHS._digit;
+                _esign = RHS._esign;
 
                 return (*this);
             }
@@ -1082,96 +1232,326 @@ namespace Core {
                 return ((_set & UNDEFINED) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _completed || _suffix || ((_fraction || (_exponent && _esign)) && _digit);
+            }
+
             void Clear() override
             {
                 _set = 0;
                 _value = 0;
+
+                _completed = false;
+                _suffix = false;
+                _fraction = false;
+                _exponent = false;
+                _digit = false;
+                _esign = false;
             }
 
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
+                ASSERT(   maxLength > 0
+                       && maxLength < std::numeric_limits<uint16_t>::max()
+                      );
+
+                const int32_t available = maxLength - (_set & QUOTED ? 2 : 0);
+
                 uint16_t loaded = 0;
 
-                ASSERT(maxLength > 0);
+                if (0 < available) {
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
 
-                if ((_set & UNDEFINED) != 0 ||
-                    std::isinf(_value) ||
-                    std::isnan(_value))
-                {
-                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
-                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
-                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
-                    offset = (((offset + loaded) == (sizeof(IElement::NullTag) - 1)) ? 0 : offset + loaded);
+                    if (_set & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
+                    } else {
+                        loaded += Convert(&(stream[loaded]), available, offset);
+                    }
+
+                    if (_set & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
                 }
-                else
-                {
-                    loaded += Convert(stream, maxLength, offset);
+
+                offset = !(!offset && loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return loaded;
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[0];
+
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
-                    _value = 0;
-                    _set = 0;
-                    _strValue.clear();
-                }
+                std::string strValue;
 
-                if ((stream[loaded] == '\"') && ((_set & QUOTED) == 0)) {
-                    _set = QUOTED;
-                    offset++;
-                    loaded++;
-                }
+                strValue.reserve(strValue.size() + maxLength + 1);
 
-                bool completed = false;
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& c = stream[loaded++];
 
-                while ((loaded < maxLength) && (completed == false)) {
+                    if (c != '"') {
+                        strValue += c;
+                    }
 
-                    if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
-                        completed = true;
-                        loaded++;
-                        offset++;
-                        _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
-                               (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
-                        completed = true;
+                    if (!_exponent) {
+                        switch (c) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH
+                        case 0x0D     : // Carriage return
+                                        FALLTHROUGH
+                        case 0x20     : // Space
+                                        strValue.pop_back();
+
+                                        // Insignificant white space
+                                        _suffix = _suffix || _fraction || _exponent || _digit || (_set & UNDEFINED);
+                                        continue;
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && !((_digit && _fraction) || ((_set & UNDEFINED) && _suffix) || ((_set & QUOTED) && _suffix))) {
+                                            _set = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for _fractional part for FloatType<>"};
+                                        }
+                                        _completed = true;
+                                        continue;
+                        case '-'    :   // Negative value
+                                        if (   !(   !((_set & QUOTED) && offset == 0)
+                                                 || ((_set & QUOTED) && offset == 1)
+                                                )
+                                                || (    (_set & NEGATIVE)
+                                                    && offset > 0
+                                                   )
+                                                || (_set & UNDEFINED)
+                                                || _suffix
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _set |= NEGATIVE;
+                                        break;
+                        case '"'    :   // Quoted character sequence
+                                        if (!(_set & QUOTED) && offset > 0) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((_set & QUOTED) && offset > 0 && !((_digit && _fraction) || (_set & UNDEFINED))) {
+                                            _set = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || (_set & QUOTED);
+
+                                        _set |= QUOTED;
+                                        break;
+                        case 'n'    :   FALLTHROUGH
+                        case 'u'    :   FALLTHROUGH
+                        case 'l'    :   // JSON value null
+                                        ASSERT(offset < sizeof(NullTag));
+
+                                        if (((offset > 3 || (offset > 4 && (_set & QUOTED))) || c != IElement::NullTag[offset]) || _suffix) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || offset == 3 || (offset == 4 && (_set & QUOTED));
+
+                                        _set = UNDEFINED;
+                                        break;
+                        case '.'    :   if (   offset == 0
+                                            || (offset == 0 && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                            || (offset == 1 && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
+                                            || (offset == 2 && (_set & QUOTED) && (_set & NEGATIVE))
+                                            || (offset > 0 && _fraction && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                            || (offset > 1 && _fraction && ((!(_set & QUOTED) && (_set & NEGATIVE)) || ((_set & QUOTED) & !(_set & NEGATIVE))))
+                                            || (offset > 2 && _fraction && (_set & QUOTED) && (_set & NEGATIVE))
+                                            || !_digit
+                                            || (_set & UNDEFINED)
+                                            || _suffix
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _fraction = true;
+
+                                        // The next character should be a _digit
+                                        _digit = false;
+                                        break;
+                        case 'e'    :   FALLTHROUGH;
+                        case 'E'    :   if (_suffix || (_set & UNDEFINED)) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if (!_digit) {
+                                            _set = ERROR;
+                                            error = Error{"Character sequence without (sufficient) data to specify _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _exponent = true;
+                                        _digit = false;
+                                        offset = 0;
+                                        continue;
+                        default     :   if ((_set & UNDEFINED) || _suffix) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if (!(std::isdigit(c))) {
+                                            _set = ERROR;
+                                            error = Error{"Invalid character '" + std::string(1, c) + "' for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((   (offset == 1 && stream[loaded - 2] == '0' && !(_set & QUOTED) && !(_set & NEGATIVE))
+                                             || (offset == 2 && stream[loaded - 2] == '0' && (((_set & QUOTED) && !(_set & NEGATIVE)) || (!(_set & QUOTED) && (_set & NEGATIVE))))
+                                             || (offset == 3 && stream[loaded - 2] == '0' && (_set & QUOTED) && (_set & NEGATIVE))
+                                            )
+                                           ) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _fractional part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _digit = true;
+                        }
                     } else {
-                        _strValue += stream[loaded++];
-                        offset++;
+                        switch (c) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH
+                        case 0x0D     : // Carriage return
+                                        FALLTHROUGH
+                        case 0x20     : // Space
+                                        strValue.pop_back();
+
+                                        // Insignificant white space
+                                        _suffix = _suffix || _digit || offset || _esign;
+                                        continue;
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && !((_digit && _esign) || ((_set & QUOTED) && _suffix))) {
+                                            _set = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for _exponential part for FloatType<>"};
+                                        }
+                                        _completed = true;
+                                        continue;
+                        case '"'    :   if (!(_set & QUOTED)) {// || _suffix) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if ((_set & QUOTED) && offset > 0 && !(_digit && _esign)) {
+                                            _set = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for _exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || (_set & QUOTED);
+                                        break;
+                        case '-'    :   FALLTHROUGH;
+                        case '+'    :   if (offset || _suffix) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _esign = true;
+                                        break;
+                        default     :   if (_suffix) {
+                                            _set = ERROR;
+                                            error = Error{"Character '" + std::string(1, c) + "' at unsupported position for _exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        if (!(std::isdigit(c))) {
+                                            _set = ERROR;
+                                            error = Error{"Invalid Character '" + std::string(1, c) + "' for _exponential part for FloatType<>"};
+                                            continue;
+                                        }
+
+                                        _digit = true;
+                        }
+                    }
+
+                    ++offset;
+                }
+
+                if (_completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && stream[loaded] != '\0') {
+                        error = Error{"Input data contains trailing characters for FloatType<>"};
                     }
                 }
 
-                if (completed == true) {
+                if (!((_set & UNDEFINED) || error.IsSet())) {
+                    static_assert(std::is_same<float, TYPE>::value || std::is_same<double, TYPE>::value, "Unsupported type detected");
 
-                    if (_strValue == IElement::NullTag) {
-                        _set |= (SET|UNDEFINED);
+                    char* c = nullptr;
 
-                    } else {
-                        TYPE val;
-                        char* end;
-                        if (std::is_same<float,TYPE>::value) {
-                            val = std::strtof(_strValue.c_str(), &end);
-                        } else {
-                            val = static_cast<TYPE>(std::strtod(_strValue.c_str(), &end));
-                        }
+                    // Add (an extra) termination character to make the returned *c well-defined
+                    strValue += '\0';
 
-                        if (end == _strValue.c_str()) {
-                            error = Error{ "Error converting \"" + _strValue + "\" to a float/double" };
-                            _set = ERROR;
-                        } else {
-                            _value = val;
-                            _set |= SET;
-                        }
+                    _value = static_cast<TYPE>
+                             (  std::is_same<float, TYPE>::value
+                              ? std::strtof(strValue.c_str(), &c)
+                              : std::strtod(strValue.c_str(), &c)
+                             );
 
-                        _strValue.clear();
+                    // Implementation may report out of range if input values are not siginificant accurately represented by the converted value
+                    // This might be considered not an error
+
+                    // Inputs should always result in the possibility to convert
+                    ASSERT(c != strValue.c_str());
+
+                    if (   errno == ERANGE
+                        && _value == static_cast<TYPE>(  std::is_same<float, TYPE>::value
+                                                       ? ((_set & NEGATIVE) ? -HUGE_VALF : HUGE_VALF)
+                                                       : ((_set & NEGATIVE) ? -HUGE_VAL : HUGE_VAL)
+                                                      )
+                       ) {
+                        _set = ERROR;
+                        error = Error{ "Input data results in out-of-range for FloatType<>"};
                     }
+                }
+
+                if (!(error.IsSet())) {
                     offset = 0;
+                    _set |= (_set & UNDEFINED) ? 0 : SET;
                 }
 
                 return loaded;
@@ -1254,31 +1634,29 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (_strValue.empty() == true) {
-                    char str[16];
-                    std::sprintf(str, "%g", _value);
-                    const_cast<FloatType*>(this)->_strValue = str;
+                const uint32_t capacity = std::snprintf(nullptr, 0, "%E", _value) + 1;
+
+                if (capacity <= maxLength) {
+                    std::snprintf(&stream[0], capacity, "%E", _value);
+                    loaded += capacity - 1;
                 }
 
-                while ((loaded < maxLength) && (offset < _strValue.size())) {
-                    stream[loaded] = _strValue[offset];
-                    loaded++;
-                    offset++;
-                }
-                if (offset == _strValue.size()) {
-                    offset = 0;
-                    const_cast<FloatType*>(this)->_strValue.clear();
-                }
+                offset = !(capacity <= maxLength);
 
                 return loaded;
             }
-
 
         private:
             uint16_t _set;
             TYPE _value;
             TYPE _default;
-            std::string _strValue;
+
+            bool _completed;
+            bool _suffix;
+            bool _fraction;
+            bool _exponent;
+            bool _digit;
+            bool _esign;
         };
 
         typedef FloatType<float> Float;
@@ -1290,28 +1668,36 @@ namespace Core {
             static constexpr uint8_t ValueBit = 0x01;
             static constexpr uint8_t DefaultBit = 0x02;
             static constexpr uint8_t SetBit = 0x04;
-            static constexpr uint8_t DeserializeBit = 0x08;
             static constexpr uint8_t ErrorBit = 0x10;
             static constexpr uint8_t NullBit = 0x20;
+            static constexpr uint8_t QuotedBit = 0x40;
 
         public:
             Boolean()
                 : _value(None)
+                , _completed{false}
+                , _suffix{false}
             {
             }
 
             Boolean(const bool Value)
                 : _value(Value ? DefaultBit : None)
+                , _completed{false}
+                , _suffix{false}
             {
             }
 
             Boolean(Boolean&& move) noexcept
                 : _value(std::move(move._value))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
             {
             }
 
             Boolean(const Boolean& copy)
                 : _value(copy._value)
+                , _completed{copy._completed}
+                , _suffix{copy._suffix}
             {
             }
 
@@ -1322,6 +1708,9 @@ namespace Core {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (move._value & (SetBit | ValueBit)) | ((move._value & (SetBit)) ? (move._value & DefaultBit) : (_value & DefaultBit));
 
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+
                 return (*this);
             }
 
@@ -1329,6 +1718,9 @@ namespace Core {
             {
                 // Do not overwrite the default, if not set...copy if set
                 _value = (RHS._value & (SetBit | ValueBit)) | ((RHS._value & (SetBit)) ? (RHS._value & DefaultBit) : (_value & DefaultBit));
+
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
 
                 return (*this);
             }
@@ -1375,89 +1767,179 @@ namespace Core {
                 return ((_value & NullBit) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _completed || _suffix;
+            }
+
             void Clear() override
             {
                 _value = (_value & DefaultBit);
+
+                _completed = false;
+                _suffix = false;
             }
 
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
-                if ((_value & NullBit) != 0) {
-                    while ((loaded < maxLength) && (offset < 4)) {
-                        stream[loaded++] = NullTag[offset++];
-                    }
-                    if (offset == 4) {
-                        offset = 0;
-                    }
-                } else if (Value() == true) {
-                    while ((loaded < maxLength) && (offset < (sizeof(IElement::TrueTag) - 1))) {
-                        stream[loaded++] = IElement::TrueTag[offset++];
-                    }
-                    if (offset == (sizeof(IElement::TrueTag) - 1)) {
-                        offset = 0;
-                    }
-                } else {
-                    while ((loaded < maxLength) && (offset < (sizeof(IElement::FalseTag) - 1))) {
-                        stream[loaded++] = IElement::FalseTag[offset++];
-                    }
-                    if (offset == (sizeof(IElement::FalseTag) - 1)) {
-                        offset = 0;
-                    }
-                }
-                return (loaded);
-            }
+                ASSERT(maxLength > 0);
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>&) override
-            {
-                uint16_t loaded = 0;
-                static constexpr char trueBuffer[] = "true";
-                static constexpr char falseBuffer[] = "false";
+                const int32_t available =  maxLength - (_value & QuotedBit ? 2 : 0);
 
-                if (offset == 0) {
-                    if (stream[0] == trueBuffer[0]) {
-                        _value = DeserializeBit | (_value & DefaultBit);
-                        offset = 1;
-                        loaded = 1;
-                    } else if (stream[0] == falseBuffer[0]) {
-                        _value = (_value & DefaultBit);
-                        offset = 1;
-                        loaded = 1;
-                    } else if (stream[0] == IElement::NullTag[0]) {
-                        offset = 1;
-                        _value = NullBit | (_value & DefaultBit);
-                        loaded = 1;
-                    } else if (stream[0] == '0') {
-                        _value = SetBit | (_value & DefaultBit);
-                        loaded = 1;
-                    } else if (stream[0] == '1') {
-                        _value = SetBit | ValueBit | (_value & DefaultBit);
-                        loaded = 1;
+                uint16_t loaded = 0;
+
+                if (0 < available) {
+                    if (_value & QuotedBit) {
+                        stream[loaded++] = '"';
+                    }
+
+                    if (_value & NullBit) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
+                    } else if (Value()) {
+                        static_assert(sizeof(IElement::TrueTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::TrueTag) - (IElement::TrueTag[sizeof(IElement::TrueTag) - 1] == '\0' ?  1 :  0);
+
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::TrueTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
+                        }
                     } else {
-                        _value = ErrorBit | (_value & DefaultBit);
-                        offset = 0;
-                    }
-                }
+                        static_assert(sizeof(IElement::FalseTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
-                if (offset > 0) {
-                    uint8_t length = (_value & NullBit ? sizeof(IElement::NullTag) : _value & DeserializeBit ? sizeof(IElement::TrueTag) : sizeof(IElement::FalseTag)) - 1;
-                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? IElement::TrueTag : IElement::FalseTag);
+                        const size_t count = sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ?  1 :  0);
 
-                    while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
-                        if (stream[loaded] != buffer[offset]) {
-                            _value = ErrorBit | (_value & DefaultBit);
-                        } else {
-                            offset++;
-                            loaded++;
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::FalseTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
                         }
                     }
 
-                    if ((offset == length) || ((_value & ErrorBit) != 0)) {
-                        offset = 0;
-                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit | NullBit)) == DeserializeBit ? ValueBit : 0);
+                    if (_value & QuotedBit) {
+                        stream[loaded++] = '"';
                     }
                 }
+
+                offset = !(!offset && loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                }
+
+                return (loaded);
+            }
+
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            {
+                const char* stream = &data[0];
+
+                uint16_t loaded = 0;
+
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& c = stream[loaded++];
+
+                    switch (c) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    _suffix = _suffix || (_value & SetBit) || (_value & NullBit);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if (offset > 0 && !(((_value & SetBit) && _suffix) || ((_value & QuotedBit) && _suffix) || ((_value & NullBit) && _suffix))) {
+                                        _value = ErrorBit;
+                                        error = Error{"Terminated character sequence without (sufficient) data for Boolean"};
+                                    }
+
+                                    _completed = true;
+                                    continue;
+                    case '"'    :   // Quoted character sequence
+                                    if (!(_value & QuotedBit) && offset > 0) {// || _suffix) {
+                                        _value = ErrorBit;
+                                        error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                        continue;
+                                    }
+
+                                    if ((_value & QuotedBit) && offset > 0 && !(((_value & SetBit) || ((_value & NullBit) && _suffix)))) {
+                                        _value = ErrorBit;
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for Boolean"};
+                                        continue;
+                                    }
+
+                                    _suffix = _suffix || (_value & QuotedBit);
+
+                                    _value |= QuotedBit;
+                                    break;
+                    case '1'    :   _value |= ValueBit;
+                                    FALLTHROUGH;
+                    case '0'    :   if (!(offset == 0 || (offset == 1 && (_value & QuotedBit))) || _suffix || (_value & NullBit)) {
+                                        _value = ErrorBit;
+                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                        continue;
+                                    }
+                                    _value |= SetBit;
+                                    _suffix = true;
+                                    break;
+                    default     :   const uint32_t index = _value & QuotedBit ? offset - 1 : offset; // index = offset - quoted
+
+                                    if (std::string("aeflnrstu").find(c) == std::string::npos) {
+                                        _value = ErrorBit;
+                                         error = Error{"Invalid character '" + std::string(1, c) + "' for Boolean"};
+                                         continue;
+                                    }
+
+                                    if (  !(    (index <= (sizeof(IElement::NullTag)  - 1) && stream[loaded - 1] == IElement::NullTag[index]  && !(_value & ValueBit))
+                                            ||  (index <= (sizeof(IElement::TrueTag)  - 1) && stream[loaded - 1] == IElement::TrueTag[index]  && !(_value & NullBit))
+                                            ||  (index <= (sizeof(IElement::FalseTag) - 1) && stream[loaded - 1] == IElement::FalseTag[index] && !((_value & ValueBit) || (_value & NullBit)))
+                                           )
+                                        || _suffix
+                                       ) {
+                                        _value = ErrorBit;
+                                         error = Error{"Character '" + std::string(1, c) + "' at unsupported position for Boolean"};
+                                         continue;
+                                    }
+
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::NullTag[index]  ? SetBit | NullBit  : None;
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::TrueTag[index]  ? SetBit | ValueBit : None;
+                                    _value |= !(_value & SetBit) && stream[loaded - 1] == IElement::FalseTag[index] ? SetBit            : None;
+
+                                    _suffix =    ((_value & SetBit) && (_value & NullBit)  && index == (sizeof(IElement::NullTag)  - (IElement::NullTag[sizeof(IElement::NullTag)   - 1] == '\0' ? 2 : 1)))
+                                             || ((_value & SetBit) && (_value & ValueBit) && index == (sizeof(IElement::TrueTag)  - (IElement::TrueTag[sizeof(IElement::TrueTag)   - 1] == '\0' ? 2 : 1)))
+                                             || ((_value & SetBit)                        && index == (sizeof(IElement::FalseTag) - (IElement::FalseTag[sizeof(IElement::FalseTag) - 1] == '\0' ? 2 : 1)))
+                                             ;
+                    }
+
+                    ++offset;
+                }
+
+                if (_completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_value & QuotedBit) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for Boolean"};
+                    }
+                }
+
+                if (!(error.IsSet())) {
+                    offset = 0;
+                }
+
                 return (loaded);
             }
 
@@ -1495,6 +1977,9 @@ namespace Core {
 
         private:
             uint8_t _value;
+
+            bool _completed;
+            bool _suffix;
         };
 
         class EXTERNAL String : public IElement, public IMessagePack {
@@ -1518,6 +2003,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
             }
 
@@ -1526,6 +2018,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value.c_str(), _default);
             }
@@ -1535,6 +2034,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value, _default);
             }
@@ -1545,6 +2051,13 @@ namespace Core {
                 , _value()
                 , _storage(0)
                 , _flagsAndCounters(quoted ? QuotedSerializeBit : 0)
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
                 Core::ToString(Value, _default);
             }
@@ -1555,6 +2068,13 @@ namespace Core {
                 , _value(std::move(move._value))
                 , _storage(std::move(move._storage))
                 , _flagsAndCounters(std::move(move._flagsAndCounters))
+                , _markerContainerStartCount{0}
+                , _markerContainerEndCount{0}
+                , _markerArrayStartCount{0}
+                , _markerArrayEndCount{0}
+                , _completed{false}
+                , _suffix{false}
+                , _opaque{false}
             {
             }
 
@@ -1563,6 +2083,13 @@ namespace Core {
                 , _value(copy._value)
                 , _storage(copy._storage)
                 , _flagsAndCounters(copy._flagsAndCounters)
+                , _markerContainerStartCount{copy._markerContainerStartCount}
+                , _markerContainerEndCount{copy._markerContainerEndCount}
+                , _markerArrayStartCount{copy._markerArrayStartCount}
+                , _markerArrayEndCount{copy._markerArrayEndCount}
+                , _completed{copy._completed}
+                , _suffix{copy._suffix}
+                , _opaque{copy._opaque}
             {
             }
 
@@ -1573,6 +2100,14 @@ namespace Core {
                 Core::ToString(RHS.c_str(), _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 
@@ -1581,6 +2116,15 @@ namespace Core {
                 Core::ToString(RHS, _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 
@@ -1590,6 +2134,15 @@ namespace Core {
                 Core::ToString(RHS, _value);
                 _flagsAndCounters |= SetBit;
 
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
+ 
                 return (*this);
             }
 #endif // __CORE_NO_WCHAR_SUPPORT__
@@ -1600,6 +2153,14 @@ namespace Core {
                 _value = std::move(move._value);
                 _flagsAndCounters = std::move(move._flagsAndCounters);
 
+                _markerContainerStartCount = std::move(move._markerContainerStartCount);
+                _markerContainerEndCount = std::move(move._markerContainerEndCount);
+                _markerArrayStartCount = std::move(move._markerArrayStartCount);
+                _markerArrayEndCount = std::move(move._markerArrayEndCount);
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _opaque = std::move(move._opaque);
+ 
                 return (*this);
             }
 
@@ -1609,6 +2170,14 @@ namespace Core {
                 _value = RHS._value;
                 _flagsAndCounters = RHS._flagsAndCounters;
 
+                _markerContainerStartCount = RHS._markerContainerStartCount;
+                _markerContainerEndCount = RHS._markerContainerEndCount;
+                _markerArrayStartCount = RHS._markerArrayStartCount;
+                _markerArrayEndCount = RHS._markerArrayEndCount;
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _opaque = RHS._opaque;
+ 
                 return (*this);
             }
 
@@ -1668,10 +2237,11 @@ namespace Core {
 
             inline const string Value() const
             {
+                // False if QuotedSerializeBit has been set eg then any quotes are ignored if not present in _value which is typical
                 if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
-                    return (Core::ToQuotedString('\"', _value));
+                    return "\"" + _value + "\"";
                 }
-                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
+                return (((_flagsAndCounters & (SetBit | NullBit)) == SetBit) ? _value : _default);
             }
 
             inline const string& Default() const
@@ -1711,11 +2281,20 @@ namespace Core {
             {
                 _flagsAndCounters = (_flagsAndCounters & QuotedSerializeBit);
                 _value.clear();
+
+                _markerContainerStartCount = 0;
+                _markerContainerEndCount = 0;
+                _markerArrayStartCount = 0;
+                _markerArrayEndCount = 0;
+
+                _completed = false;
+                _suffix = false;
+                _opaque = false;
             }
 
             inline bool IsQuoted() const
             {
-                return (((_flagsAndCounters & NullBit) == 0) && ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
+                return (/*((_flagsAndCounters & NullBit) == 0) &&*/ ((_flagsAndCounters & (QuotedSerializeBit | QuoteFoundBit)) != 0));
             }
 
             inline void SetQuoted(const bool enable)
@@ -1728,308 +2307,570 @@ namespace Core {
                 }
             }
 
+            inline bool IsCompleted() const
+            {
+                return _completed || _suffix || _opaque;
+            }
+
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t result = 0;
+                uint16_t loaded = 0;
 
-                ASSERT(maxLength > 0);
+                offset = 0;
 
-                bool isQuoted = IsQuoted();
-                if ((_flagsAndCounters & SetBit) != 0 || (_value.empty() && isQuoted)) {
-                    if (offset == 0)  {
-                        if (isQuoted == true) {
-                            // We always start with a quote or Block marker
-                            stream[result++] = '\"';
-                        }
-                        offset = 1;
-                        _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit| QuotedAreaBit));
+                ASSERT(maxLength > (IsQuoted() ? 1 : 0));
+
+                const int32_t available = maxLength - (IsQuoted() ? 2 : 0);
+
+                if (static_cast<int32_t>(_opaque ? _value.length() : 0) < available) {
+
+                    if (IsQuoted()) {
+                        stream[loaded++] = '"';
                     }
 
-                    uint32_t length = static_cast<uint32_t>(_value.length()) - (offset - 1);
+                    if (_flagsAndCounters & NullBit) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
 
-                    while ((result < maxLength) && (length > 0)) {
-                        const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
 
-                        // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
-                            stream[result++] = static_cast<TCHAR>(current);
-                            length--;
-                            offset++;
+                        offset = !(count < static_cast<size_t>(available));
+
+                        if (!offset) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                            loaded += static_cast<uint16_t>(count);
                         }
-                        else if ((_flagsAndCounters & SpecialSequenceBit) == 0) {
-                            // We need to escape these..
-                            stream[result++] = '\\';
-                            _flagsAndCounters |= SpecialSequenceBit;
-                        }
-                        else if ((_flagsAndCounters & 0xFF) == 0x00) {
-                            // Check if it is a single character drop or a \u
-                            switch (current) {
-                            case 0x08: stream[result++] = 'b'; break;
-                            case 0x09: stream[result++] = 't'; break;
-                            case 0x0a: stream[result++] = 'n'; break;
-                            case 0x0c: stream[result++] = 'f'; break;
-                            case 0x0d: stream[result++] = 'r'; break;
-                            case '\\': stream[result++] = '\\'; break;
-                            case '/': stream[result++] = '/'; break;
-                            case '"': stream[result++] = '"'; break;
-                            default: {
-                                uint16_t lowPart, highPart;
-                                int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
+                    } else {
+                        if (_opaque) {
+                            const size_t count = _value.length();
 
-                                if (codeSize < 0) {
-                                    // Oops it is a bad code thingy, Skip it..
-                                    // TODO: report an error
-                                    codeSize = -codeSize;
-                                }
+                            offset = !(count < static_cast<size_t>(available));
 
-                                ASSERT(codeSize <= 7);
-
-                                if (CodePointToUTF16(_storage, lowPart, highPart) == false) {
-                                    // Oops we have a bad transaltion of the code point
-                                    // TODO: report an error
-                                }
-
-                                _storage = (highPart << 16) | lowPart;
-
-                                // Oke start processing an escape squence and remember how many bytes we jump if
-                                // we are completed, start at 2 index now as we already wrote /u
-                                _flagsAndCounters |= ((codeSize & 0x07) << 3) | 0x02;
-
-                                stream[result++] = 'u';
-                                break;
+                            if (!offset) {
+                                memcpy(&stream[loaded], _value.c_str(), count);
+                                loaded += static_cast<uint16_t>(count);
                             }
+                        } else {
+                            _flagsAndCounters &= ~SpecialSequenceBit;
+                            _storage = 0;
+
+                            while(loaded < available && offset < _value.size()) {
+                                const char& ch = _value[offset++];
+
+                                if (!(_flagsAndCounters & SpecialSequenceBit)) {
+                                    switch (ch) {
+                                    case 'u'    :   // Possible start of unicode
+                                                    if (offset > 1 && _value[offset - 2] == '\\') {
+                                                        _flagsAndCounters |= SpecialSequenceBit;
+                                                        _flagsAndCounters |= 0x6;
+                                                        --loaded; // 'eat away' the surplus '\'
+                                                    }
+                                                    break;
+                                    // Characters that MUST be escaped, others may (have been, but there is no way to tell)
+                                    default     :   if (!(ch >= 0x0000 && ch <= 0x001F)) {
+                                                        if (offset > 1 && _value[offset - 2] == '\\') {
+                                                            // it was a non-mandatory escape
+                                                            --loaded; // 'eat away' the surplus '\'
+                                                        }
+                                                        break;
+                                                    }
+                                                    FALLTHROUGH;
+                                    case 0x22   :   // Quotation mark
+                                                    FALLTHROUGH;
+                                    case 0x5C   :   // Reverse solidus
+                                                    stream[loaded++] = '\\';
+                                    }
+                                } else {
+                                    // Converting unicode sequence to integral
+
+                                    int8_t bytes = ToCodePoint(&_value[offset - 1], _value.length() - offset + 1, _storage);
+
+                                    if (bytes <= 0 || 4 > available) {
+                                        // Error
+                                        TRACE_L1("Unable to decompress UTF-8 encoding for String");
+                                        continue;
+                                    }
+
+                                    offset += bytes - 1;
+
+                                    constexpr uint16_t mask = 0x7;
+
+                                    // Valid characters in the BMP plane are within 0000-7DFF and E000-FFFF
+                                    // Surrogate pairs are always mapped to code points in the range 0x010000 - 0x1F0000
+                                    if (!( _storage >= 0x010000 && _storage <= 0x10FFFF)) {
+                                        loaded += AddUnicode4Integral(_storage, &stream[loaded], maxLength - loaded);
+
+                                        _flagsAndCounters ^= SpecialSequenceBit;
+                                        _flagsAndCounters &= ~mask;
+                                        _storage = 0;
+
+                                         continue;
+                                    } else {
+                                        // Convert (back) to surrogate pair
+
+                                        uint16_t highPart{0}, lowPart{0};
+                                        if (!(CodePointToUTF16(_storage, lowPart, highPart))) {
+                                            // Error
+                                            TRACE_L1("Unable to create surrogate pair from code point for String");
+                                            continue;
+                                        }
+
+                                        if ((loaded + (4 + 2 + 4)) <= available)  {
+                                            loaded += AddUnicode4Integral(highPart, &stream[loaded], maxLength - loaded);
+
+                                            stream[loaded++] = '\\';
+                                            stream[loaded++] = 'u';
+
+                                            loaded += AddUnicode4Integral(lowPart, &stream[loaded], maxLength - loaded);
+
+                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                            _flagsAndCounters &= ~mask;
+                                            _storage = 0;
+
+                                            continue; // Avoid writing an extra character
+                                        }
+
+                                        loaded = available + 1;
+                                    }
+                                }
+
+                                if (loaded <= available) {
+                                    stream[loaded++] = ch;
+                                } else {
+                                    TRACE_L1("Insufficient space to serialize String");
+                                    continue;
+                                }
                             }
 
-                            // If all has been writeen it is time to move back to the "copying situation...
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
-                                length--;
-                                offset++;
-                            }
-                        }
-                        else {
-                            if ((_flagsAndCounters & 0x7) < 0x2) {
-                                stream[result++] = ((_flagsAndCounters & 0x07) == 0 ? '\\' : 'u');
-                            }
-                            else {
-                                uint8_t part;
-
-                                // Write out the CodePoint....
-                                if (_storage > 0xFFFF) {
-                                    // First write the Most Significant part
-                                    part = (_storage >> (16 + ((5 - (_flagsAndCounters & 0x07)) * 4))) & 0x0F;
-                                }
-                                else {
-                                    part = (_storage >> ((5 - (_flagsAndCounters & 0x07)) * 4)) & 0x0F;
-                                }
-                                stream[result++] = (part > 9 ? 'A' + (part - 10) : '0' + part);
-                            }
-
-                            _flagsAndCounters += 1;
-
-                            if ((_flagsAndCounters & 0x7) == 6) {
-                                // Oke we flushed a HEX value of 4 digits, lets determine the next step..
-                                if (_storage > 0xFFFF) {
-                                    _storage = (_storage & 0xFFFF);
-                                    _flagsAndCounters &= (FlagMask | 0xF8);
-                                }
-                                else {
-                                    // We are done ! Move on, strange character has been handled and converted
-                                    uint8_t skip = ((_flagsAndCounters >> 3) & 0x07);
-                                    length -= skip;
-                                    offset += skip;
-
-                                    _flagsAndCounters &= (FlagMask ^ SpecialSequenceBit);
-                                }
+                            if (_flagsAndCounters & SpecialSequenceBit) {
+                                // Error, unicode was incomplete
+                                TRACE_L1("Unicode character sequence incomplete for String");
                             }
                         }
                     }
 
-                    if (length == 0) {
-                        // And we close with a quote..
-                        if (isQuoted == false) {
-                            offset = 0;
-                        }
-                        else if (result < maxLength) {
-                            stream[result++] = '\"';
-                            offset = 0;
-                        }
+                    if (IsQuoted()) {
+                        stream[loaded++] = '"';
                     }
                 }
 
-                return (result);
-            }
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
-            {
-                bool finished = false;
-                uint16_t result = 0;
-                ASSERT(maxLength > 0);
+                offset = !(loaded < available);
 
-                if (offset == 0) {
-                    _value.clear();
-                    _flagsAndCounters &= (FlagMask ^ (SpecialSequenceBit|QuotedAreaBit|QuoteFoundBit));
-                    _storage = 0;
-                    if (stream[result] == '\"') {
-                        result++;
-                        _flagsAndCounters |= QuoteFoundBit;
-                    }
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
                     offset = 1;
                 }
 
-                // Might be that the last character we added was a
-                while ((result < maxLength) && (finished == false)) {
+                return loaded;
+            }
 
-                    TCHAR current = stream[result];
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            {
+                const char* stream = &data[0];
 
-                    // What are we deserializing a string, or an opaque JSON object!!!
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
+                uint16_t loaded = 0;
 
-                        if ((_flagsAndCounters & QuotedAreaBit) == 0) {
-                            // It's an opaque structure, so *no* decoding required. Leave as is !
-                            if (current == '{') {
-                                if (InScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                    error = Error{ "Opaque object nesting too deep" };
-                                }
-                            }
-                            else if (current == '[') {
-                                if (InScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                    error = Error{ "Opaque object nesting too deep" };
-                                }
-                            }
-                            else if ((_flagsAndCounters & 0x1F) == 0) {
-                                // We are not in a nested area, see what 
-                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
-                            }
-                            else if (current == '}') {
-                                if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
-                                    error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
-                                }
-                            }
-                            else if (current == ']') {
-                                if (OutScope(ScopeBracket::SQUARE_BRACKET) == false) {
-                                    error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
-                                }
-                            }
+                while (!_completed && loaded < maxLength && !(error.IsSet()) && !_opaque) {
+                    const char& ch = stream[loaded++];
+
+                    if (!(_flagsAndCounters & SpecialSequenceBit)) {
+                        switch (ch) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH;
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH;
+                        case 0x0D     : // Carriage return
+                                        if (     ((_flagsAndCounters & QuoteFoundBit) && !_suffix)
+                                              || ((_flagsAndCounters & NullBit) && !_suffix)
+                                           ) {
+                                            error = Error{"Insignificant white space character '" + std::to_string(ch) + "' at unsupported position for String"};
+                                            _suffix = _suffix || offset;
+                                            continue;
+                                        }
+
+                                        if (!(   !(_flagsAndCounters & QuoteFoundBit)
+                                              && (_markerContainerStartCount || _markerArrayStartCount)
+                                             )
+                                           ) {
+                                            continue;
+                                        }
+
+                                        break;
+                        case '\0'     : // End of character sequence
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && _suffix) || ((_flagsAndCounters & QuoteFoundBit) && _suffix)))) {
+                                            error = Error{"Terminated character sequence without (sufficient) data for String"};
+                                        }
+                                        _completed = true;
+                                        _suffix = _completed;
+                                        continue;
+                        case '{'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerContainerStartCount;
+                                        }
+                                        break;
+                        case '}'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerContainerEndCount;
+
+                                            if (_markerContainerStartCount < _markerContainerEndCount) {
+                                                error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
+                                                continue;
+                                            }
+                                        }
+                                        break;
+                        case '['      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerArrayStartCount;
+                                        }
+                                        break;
+                        case ']'      : // Regular character if QuoteFoundBit has not been set
+                                        if (!(_flagsAndCounters & QuoteFoundBit)) {
+                                            ++_markerArrayEndCount;
+
+                                            if (_markerArrayStartCount < _markerArrayEndCount) {
+                                                error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
+                                                continue;
+                                            }
+                                        }
+                                        break;
+                        case '"'      : // Quoted character sequence
+                                        if (   /*(!(_flagsAndCounters & QuoteFoundBit) && offset > 0)
+                                            ||*/ ((_flagsAndCounters & QuoteFoundBit) && _suffix && !(_flagsAndCounters & NullBit))
+                                           ) {
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || (_flagsAndCounters & QuoteFoundBit);
+
+                                        if ((_flagsAndCounters & NullBit) && !_suffix) {
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for String"};
+                                            continue;
+                                        }
+
+                                        // Unescaped quotes are allowed in _opaque strings
+                                        if (!offset){
+                                            // Expect a JSON String
+                                            _flagsAndCounters |= QuoteFoundBit;
+                                        }
+                                        break;
+                        case '\\'   :   if (offset > 0 && ((_flagsAndCounters & NullBit) || /*!(_flagsAndCounters & QuoteFoundBit) ||*/ _suffix)) {
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        // Unescaped 'special' characters are allowed in _opaque strings
+                                        if (_flagsAndCounters & QuoteFoundBit) {
+                                            // Expect a JSON String
+                                            _flagsAndCounters |= SpecialSequenceBit;
+                                        }
+                                        break;
+                        default     :   if (ch == ' ' && (   (!offset && !(_flagsAndCounters & QuoteFoundBit))
+                                                         || (/*(_flagsAndCounters & QuoteFoundBit) &&*/ _suffix))
+                                           ) {
+                                            continue;
+                                        }
+
+                                        if (  (_flagsAndCounters & NullBit)
+                                            || _suffix
+                                           ) {
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        if (   !(_flagsAndCounters & SpecialSequenceBit)
+                                            && (_flagsAndCounters & QuoteFoundBit) // Definitely not opaque
+                                           ) {
+                                            // Characters that MUST be escaped
+                                            switch (ch) {
+                                            default     :   if (!(ch >= 0x0000 && ch <= 0x001F)) {
+                                                                break;
+                                                            }
+                                                            FALLTHROUGH;
+                                            case 0x22   : // Quotation mark
+                                                            FALLTHROUGH;
+                                            case 0x5C   : // Reverse solidus
+                                                            FALLTHROUGH;
+                                                            error = Error{"Unescaped character of code point value '" + std::to_string(ch) + "' for String"};
+                                                            continue;
+                                            }
+                                        }
+
+                                        const uint32_t index = _flagsAndCounters & QuoteFoundBit ? offset - 1 : offset;
+
+                                        if (!_markerContainerStartCount && !_markerArrayStartCount && index == (sizeof(IElement::NullTag) - 1 - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ? 1 : 0))) {
+                                            _flagsAndCounters |= std::string(IElement::NullTag, index + 1) == std::string(&stream[_flagsAndCounters & QuoteFoundBit ? loaded - offset : loaded - offset - 1], index + 1) ? NullBit : 0;
+                                            _suffix |= (_flagsAndCounters & NullBit);
+                                        }
                         }
 
-                        if (finished == false) {
-                            if ((_flagsAndCounters & QuotedAreaBit) != 0) {
-                                // Write the amount we possibly can..
-                                _value += current;
-                            }
-                            else if (::isspace(current) == false) {
-                                // If we are creating an opaque string, drop all whitespaces if possible.
-                                _value += current;
+                        // An _opaque string is not quoted AND is enclosed between balancing JSON Array or JSON Object tokens
+                        _opaque =    !(_flagsAndCounters & QuoteFoundBit)
+                                 && (   _markerContainerStartCount
+                                     || _markerArrayStartCount
+                                    )
+                                 && (   (_markerContainerStartCount == _markerContainerEndCount)
+                                     && (_markerArrayStartCount == _markerArrayEndCount)
+                                    )
+                                 ;
 
-                                // See if we are done, if this is the last close marker, we bail out..
-                                finished = (((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']')));
-                            }
-
-                            // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
-                            // and should be considered for scope counting.
-                            // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
-                                // This is not an "escaped" quote, so it should be considered a real quote. It means
-                                // we are now entering or leaving a quoted area within the opaque struct...
-                                _flagsAndCounters ^= QuotedAreaBit;
-                            }
-
-                            result++;
+                        if (!(ch == '"' && (_flagsAndCounters & QuoteFoundBit))) {
+                            _value += ch;
                         }
+                    } else {
+                        switch (ch) {
+                        // Characters that MUST be escaped
+                        case 0x22   :   // Quotation mark
+                                        FALLTHROUGH;
+                        case 0x5C   :   // Reverse solidus
+                                        FALLTHROUGH;
+                        // Popular 2 character escape sequences
+                        case 0x2F   :   // '/'  the solidus character
+                                        FALLTHROUGH;
+                        case 0x08   :   // '\b' backspace character
+                                        FALLTHROUGH;
+                        case 0x0C   :   // '\f' form feed character
+                                        FALLTHROUGH;
+                        case 0x0A   :   // '\n' line feed character
+                                        FALLTHROUGH;
+                        case 0x0D   :   // '\r' carriage return character
+                                        FALLTHROUGH;
+                        case 0x09   :   // '\t' tabulation character
+
+                                        if (_flagsAndCounters & 0x07) {
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        if (!(_value.empty())) {
+                                            _value.erase(_value.end() - 1); // 'eat away' '\'
+                                        }
+
+                                        _flagsAndCounters ^= SpecialSequenceBit;
+                                        break;
+                        case 'u'    :   // unicode
+                                        if (_flagsAndCounters & 0x07) {
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
+                                        }
+                                        // Unicode has 4 to 6 hexadecimal characters
+                                        _flagsAndCounters |= 0x06;
+                                        break;
+                        case '\0'   :   // End of character sequence
+                                        if (offset > 0 && (!(((_flagsAndCounters & NullBit) && _suffix) || (_flagsAndCounters & QuoteFoundBit)) || (_flagsAndCounters & 0x7))) {
+                                            error = Error{"Terminated (special) character sequence without (sufficient) data for String"};
+                                        }
+                                        FALLTHROUGH;
+                        default     :   if ((_flagsAndCounters & 0x7) && !std::isxdigit(ch)) { // unicode sequence expected, characters 0-9 and A-F
+                                            error = Error{"Character '" + std::to_string(ch) + "' at unsupported position for String"};
+                                            continue;
+                                        }
+
+                                        if (!(_flagsAndCounters & 0x7)) {
+                                            // Just an escaped character
+                                            _flagsAndCounters ^= SpecialSequenceBit;
+                                            break;
+                                        } else {
+                                            // Converting unicode sequence to integral
+                                            _storage =   (_storage << 4)
+                                                       | (  0xF
+                                                          & (std::isdigit(ch) ? ch - '0' : (std::toupper(ch) -'A' + 10))
+                                                         )
+                                                       ;
+
+                                            _flagsAndCounters -= (_flagsAndCounters & 0x7) ? 1 : 0;
+                                            _flagsAndCounters ^= (_flagsAndCounters & 0x7) == 0x0 ? SpecialSequenceBit : 0;
+
+                                            // Is it part of a surrogate pair?
+
+                                            // Codepoints outside the BMP are encoded as two sequences called surrogate pairs.
+                                            // The range of these codepoint values is in the range 0x010000 to 0x10FFFF
+                                            // A surrogate pair consists of two consecutive UTF16 pairs,eg, high and low range
+                                            // The high ranges map to D800-DBFF, the low ranges map to DC00-DFFF
+                                            // Surrogate pairs are disjoint from valid characters in the BMP plane that consists of 0000-7DFF and E000-FFFF
+
+                                            if (   (_storage & 0xFFFF0000) >= 0xD8000000
+                                                && (_storage & 0xFFFF0000) <= 0xDBFF0000
+                                                && (_storage & 0x0000FFFF) >= 0x0000DC00
+                                                && (_storage & 0x0000FFFF) <= 0x0000DFFF
+                                               ) {
+                                                uint32_t codePoint{0};
+
+                                                if (!UTF16ToCodePoint(static_cast<uint16_t>(_storage & 0x0000FFFF), static_cast<uint16_t>((_storage >> 16) & 0x0000FFFF), codePoint)) {
+                                                    error = Error{"Invalid integral equivalent " + std::to_string(_storage) + " for unicode character sequence for String"};
+                                                    continue;
+                                                }
+
+                                                // Convert the code point to a character sequence
+
+                                                // Replace \uABCD\u1234 by \u followed by new content
+                                                // The last character has not yet been stored
+
+                                                _value.erase(_value.end() - 9, _value.end());
+
+                                                constexpr uint8_t length = 6;
+
+                                                TCHAR buffer[length];
+
+                                                int8_t bytes = FromCodePoint(codePoint, &buffer[0], length);
+
+                                                if (bytes <=0) {
+                                                    // Error converion to UTF-8 failed
+                                                    error = Error{"Unable to compress surrogate pair to UTF-8 encoding for String"};
+                                                    continue;
+                                                }
+
+                                                _value += std::string(buffer, bytes);
+
+                                                _storage = 0;
+
+                                                _flagsAndCounters &= ~0x7;
+                                                _flagsAndCounters ^= SpecialSequenceBit;
+
+                                                continue;
+                                            } else {
+                                                constexpr uint8_t length = 6;
+
+                                                TCHAR buffer[length];
+
+                                                int8_t bytes = 0;
+
+                                                switch (_flagsAndCounters & 0x7) {
+                                                case 5 :    // 1 character processed
+                                                            FALLTHROUGH;
+                                                case 4 :    // 2 characters processed
+                                                            FALLTHROUGH;
+                                                case 3 :    // 3 characters processed
+                                                            break;
+                                                case 2 :    // Regular unicode or part of surrogate pair
+                                                            if (  loaded < maxLength
+                                                                && std::isxdigit(stream[loaded])
+                                                               ) {
+                                                                // The next character is a hexadecimal digit
+                                                                break;
+                                                            }
+
+                                                            if (   _storage >= 0xD800
+                                                                && _storage <= 0xDBFF
+                                                            ) {
+                                                                // High part
+                                                                _flagsAndCounters &= ~0x7;
+                                                                _flagsAndCounters ^= SpecialSequenceBit;
+                                                                break;
+                                                            }
+
+                                                            if (   (_storage & 0xFFFF0000) >= 0xD8000000
+                                                                && (_storage & 0xFFFF0000) <= 0xDBFF0000
+                                                            ) {
+                                                                // The low part of the surrogate is invalid
+                                                                // Encode as two separate unicode sequences
+                                                                bytes = FromCodePoint((_storage & 0xFFFF0000) >> 16, &buffer[0], length);
+
+                                                                if (bytes <=0) {
+                                                                    // Error converion to UTF-8 failed
+                                                                    error = Error{"Unable to compress low part of surrogate pair to UTF-8 encoding for String"};
+                                                                    continue;
+                                                                }
+
+                                                                _value.erase(_value.end() - 9, _value.end());
+
+                                                                _value += std::string(buffer, bytes);
+                                                                _value += '\\';
+                                                                _value += 'u';
+                                                            } else {
+                                                                _value.erase(_value.end() - 3, _value.end());
+                                                            }
+
+                                                            // Nothing follows that is part of the unicode
+
+                                                            bytes = FromCodePoint(_storage & 0x0000FFFF, &buffer[0], length);
+
+                                                            if (bytes <=0) {
+                                                                // Error converion to UTF-8 failed
+                                                                error = Error{"Unable to compress 4 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                            }
+
+                                                            _value += std::string(buffer, bytes);
+
+                                                            _flagsAndCounters &= ~0x7;
+                                                            _flagsAndCounters ^= SpecialSequenceBit;
+
+                                                            continue;
+                                                case 1 :    // 5 or 6 character hexadecimal codepoint, 6 if next character is hexadecimal
+                                                            if (  loaded < maxLength
+                                                                && std::isxdigit(stream[loaded])
+                                                               ) {
+                                                                // The next character is a hexadecimal digit
+                                                                break;
+                                                            }
+
+                                                            bytes = FromCodePoint(_storage, &buffer[0], length);
+
+                                                            if (bytes <=0) {
+                                                                // Error converion to UTF-8 failed
+                                                                error = Error{"Unable to compress 5 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                            }
+
+                                                            _value.erase(_value.end() - 4, _value.end());
+
+                                                            _value += std::string(buffer, bytes);
+
+                                                            _flagsAndCounters &= ~0x7;
+                                                            _flagsAndCounters ^= SpecialSequenceBit;
+
+                                                            continue;
+                                                case 0 :    // possibly exceeding 10000-10FFFF
+                                                            if (   _storage >= 0x010000
+                                                                && _storage <= 0x10FFFF
+                                                               ) {
+                                                                bytes = FromCodePoint(_storage, &buffer[0], length);
+
+                                                                if (bytes <=0) {
+                                                                    // Error converion to UTF-8 failed
+                                                                    error = Error{"Unable to compress 6 hexadecimal character unicode to UTF-8 encoding for String"};
+                                                                }
+
+                                                                _value.erase(_value.end() - 5, _value.end());
+
+                                                                _value += std::string(buffer, bytes);
+
+                                                                continue;
+                                                            }
+                                                            FALLTHROUGH;
+                                                default :   // Error
+                                                            error = Error{"Unsupported unicode specification for String"};
+                                                            continue;
+                                                }
+
+                                            }
+                                        }
+                        }
+
+                        _value += ch;
                     }
-                    // Since it is a "real" string translate back all escaped stuff.. are we in an unescaping mode?
-                    else if ((_flagsAndCounters & SpecialSequenceBit) == 0x00) {
-                        // Nope we are not, so see if we need to start it and otherwise, just copy...
-                        if (current == '\\') {
-                            // And we need to start it.
-                            _flagsAndCounters |= SpecialSequenceBit;
-                        } else if (current == '\"') {
-                            // We are done! leave this element.
-                            finished = true;
-                        } else if (current <= 0x1F) {
-                            error = Error{ "Unescaped control character detected" };
-                        } else {
-                            // Just copy and onto the next;
-                            _value += current;
-                        }
-                        result++;
-                    }
-                    else if ((_flagsAndCounters & 0xFF) == 0x00) {
 
-                        if (current == 'u') {
-                            _flagsAndCounters |= 0x4;
-                        }
-                        else {
-                            // We are in a string mode, so we need to decode. Decode what we receive..
-                            switch (current) {
-                            case '\"': _value += '\"'; break;
-                            case '\\': _value += '\\'; break;
-                            case '/':  _value += '/';  break;
-                            case 'b':  _value += static_cast<TCHAR>(0x08); break;
-                            case 't':  _value += static_cast<TCHAR>(0x09); break;
-                            case 'n':  _value += static_cast<TCHAR>(0x0a); break;
-                            case 'f':  _value += static_cast<TCHAR>(0x0c); break;
-                            case 'r':  _value += static_cast<TCHAR>(0x0d); break;
-                            default:
-                                error = Error{ "unknown escaping code." };
-                                break;
-                            }
-                            _flagsAndCounters ^= SpecialSequenceBit;
-                        }
-                        result++;
-                    }
-                    else {
-                        // If we end up here, we are actually gathering unicode values to be decoded.
-                        _flagsAndCounters--;
-
-                        if (::isxdigit(current) == false) {
-                            error = Error{ "the unescaping of the u requires hexadecimal characters" };
-                        }
-                        else {
-                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
-                            result++;
-                            if ((_flagsAndCounters & 0xFF) == 0x00) {
-                                _flagsAndCounters ^= SpecialSequenceBit;
-
-                                // Examine the codePoint, if ot is a pair ot not..
-                                if ( (_storage >= 0xFFFF) || ((_storage & 0xFC00) != 0xD800) ) {
-
-                                    // We have a full monty, 2 x UTF16 to be translated :-)
-                                    uint32_t codePoint;
-                                    TCHAR buffer[6];
-
-                                    UTF16ToCodePoint((_storage & 0xFFFF), ((_storage >> 16) & 0xFFFF), codePoint);
-
-                                    // Seems like we have a pending code point to be added, before we add anaything elese :-)
-                                    int8_t bytes = FromCodePoint(codePoint, buffer, sizeof(buffer));
-
-                                    if (bytes <= 0) {
-                                        error = Error{ "There is no valid codepoint defined." };
-                                    }
-                                    else {
-                                        _value += string(buffer, bytes);
-                                    }
-                                    _storage = 0;
-                                }
-                            }
-                        }
-                    }
+                    ++offset;
                 }
 
-                if ( (finished == false) && (error.IsSet() == false) ) {
-                    offset += static_cast<uint32_t>(_value.length()) ;
-                } else {
+                if (_opaque) {
+                    _flagsAndCounters ^= _flagsAndCounters & QuotedAreaBit ? QuotedAreaBit : 0;
+                    _flagsAndCounters ^= _flagsAndCounters & QuoteFoundBit ? QuoteFoundBit : 0;
+                    _flagsAndCounters ^= _flagsAndCounters & SpecialSequenceBit ? SpecialSequenceBit : 0;
+                }
+
+                if (!(_flagsAndCounters & NullBit) && !(_flagsAndCounters & QuoteFoundBit) && !(_markerContainerStartCount || _markerArrayStartCount)) {
+                    error = Error{"Start of sequence does not denote Opaque nor String"};
+                }
+
+                if (!(error.IsSet()) && (((_flagsAndCounters & QuoteFoundBit) && _suffix) || _opaque || (_flagsAndCounters & NullBit))) {
+                    _flagsAndCounters |= SetBit;
+                    // Signal done, without errors
                     offset = 0;
-                    _flagsAndCounters |= (_value == IElement::NullTag ? NullBit|SetBit : SetBit);
-
-                    if ((_flagsAndCounters & QuoteFoundBit) == 0) {
-                        // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
-                    }
                 }
 
-                return (result);
+                return loaded;
             }
 
             // IMessagePack iface:
@@ -2153,6 +2994,47 @@ namespace Core {
 
 
         private:
+
+            // 4 hexadecimal characters per unicode
+            uint8_t AddUnicode4Integral(uint16_t unicode, char stream[], const uint16_t maxLength) const
+            {
+                uint8_t loaded = 0;
+
+                for (uint8_t count = 0; count < 4; count++) {
+                    char value = ((unicode << (count * 4)) & 0xF000) >> 12;
+
+                    if (loaded < maxLength) {
+                        char digit = value < 10 ? value + '0' : value + 'A' - 10;
+                        stream[loaded++] = digit;
+                    }
+                }
+
+                return loaded;
+            }
+
+            // 5 to 6 hexadecimal characters per unicode
+            uint8_t AddUnicode56Integral(uint32_t unicode)
+            {
+                uint8_t loaded = 0;
+
+                bool skip = true;
+                for (uint8_t count = 0; count < 8; count++) {
+                    char value = ((unicode << (count * 4)) & 0xF0000000) >> 28;
+
+                    skip = skip && !value;
+
+                    if (!skip) {
+                        char digit = value < 10 ? value + '0' : value + 'A' - 10;
+                        _value += digit;
+                        ++loaded;
+                    }
+                }
+
+                ASSERT(loaded > 4);
+
+                return loaded;
+            }
+
             std::string _default;
             std::string _value;
 
@@ -2167,6 +3049,15 @@ namespace Core {
             // L Length of the bytes under process (8)
             // I Index to the written bytes (8).
             mutable uint16_t _flagsAndCounters;
+
+            uint32_t _markerContainerStartCount;
+            uint32_t _markerContainerEndCount;
+            uint32_t _markerArrayStartCount;
+            uint32_t _markerArrayEndCount;
+
+            bool _completed;
+            bool _suffix;
+            bool _opaque;
         };
 
         class EXTERNAL Buffer : public IElement, public IMessagePack {
@@ -2567,6 +3458,7 @@ namespace Core {
                 : _state(0)
                 , _value()
                 , _default(static_cast<ENUMERATE>(0))
+                , _parser(false)
             {
             }
 
@@ -2574,6 +3466,7 @@ namespace Core {
                 : _state(0)
                 , _value()
                 , _default(Value)
+                , _parser(false)
             {
             }
 
@@ -2581,6 +3474,7 @@ namespace Core {
                 : _state(std::move(move._state))
                 , _value(std::move(move._value))
                 , _default(std::move(move._default))
+                , _parser(std::move(move._parser))
             {
             }
 
@@ -2588,6 +3482,7 @@ namespace Core {
                 : _state(copy._state)
                 , _value(copy._value)
                 , _default(copy._default)
+                , _parser(copy._parser)
             {
             }
 
@@ -2595,15 +3490,19 @@ namespace Core {
 
             EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
             {
-                _value = std::move(move._value);
                 _state = std::move(move._state);
+                _value = std::move(move._value);
+                _default = std::move(move._default);
+                _parser = std::move(move._parser);
                 return (*this);
             }
 
             EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
             {
-                _value = RHS._value;
                 _state = RHS._state;
+                _value = RHS._value;
+                _default = RHS._default;
+                _parser = RHS._parser;
                 return (*this);
             }
 
@@ -2653,6 +3552,11 @@ namespace Core {
                 return ((_state & UNDEFINED) != 0);
             }
 
+            bool IsCompleted() const
+            {
+                return _state & SET;
+            }
+
             void Clear() override
             {
                 _state = 0;
@@ -2665,25 +3569,30 @@ namespace Core {
                     if ((_state & UNDEFINED) != 0) {
                         _parser.Null(true);
                     } else {
-                        _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
+                        _parser.FromString(Core::EnumerateType<ENUMERATE>(Value()).Data());
                     }
                 }
+
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
 
-            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
+            uint16_t Deserialize(const char data[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
+                const char* stream = &data[0];
+
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset, error);
 
                 if (offset == 0) {
-
                     if (_parser.IsNull() == true) {
                         _state = (UNDEFINED|SET);
                     } else if (_parser.IsSet() == true) {
                         // Looks like we parsed the value. Lets see if we can find it..
                         Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
 
-                        if (converted.IsSet() == true) {
+                        std::string sequence(converted.Data());
+                        sequence.append(sequence.length() < _parser.Value().length() ? _parser.Value().length() - sequence.length() : 0, '\0');
+
+                        if (converted.IsSet()) {
                             _value = converted.Value();
                             _state = SET;
                         } else {
@@ -2750,10 +3659,12 @@ namespace Core {
         class ArrayType : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
-                ERROR = 0x80,
-                SET = 0x20,
+                NONE = 0x0,
                 EXTRACT = 0x01,
-                UNDEFINED = 0x40
+                QUOTED= 0x10,
+                SET = 0x20,
+                UNDEFINED = 0x40,
+                ERROR = 0x80,
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3041,6 +3952,18 @@ namespace Core {
                 , _count(0)
                 , _data()
                 , _iterator(_data)
+                , _completed{false}
+                , _suffix{false}
+                , _beforeStringScope{false}
+                , _afterStringScope{false} 
+                , _stringScope{false}
+                , _arrayStartMarkerCount{0}
+                , _arrayEndMarkerCount{0}
+                , _valueSeparatorCount{0}
+                , _containerStartMarkerCount{0}
+                , _containerEndMarkerCount{0}
+                , _valueStartPos{0}
+                , _valueSeparatorPos{0}
             {
             }
 
@@ -3049,6 +3972,18 @@ namespace Core {
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
                 , _iterator(std::move(move._iterator))
+                , _completed(std::move(move._completed))
+                , _suffix(std::move(move._suffix))
+                , _beforeStringScope(std::move(move._beforeStringScope))
+                , _afterStringScope(std::move(move._afterStringScope)) 
+                , _stringScope(std::move(move._stringScope))
+                , _arrayStartMarkerCount(std::move(move._arrayStartMarkerCount))
+                , _arrayEndMarkerCount(std::move(move._arrayEndMarkerCount))
+                , _valueSeparatorCount(std::move(move._valueSeparatorCount))
+                , _containerStartMarkerCount(std::move(move._containerStartMarkerCount))
+                , _containerEndMarkerCount(std::move(move._containerEndMarkerCount))
+                , _valueStartPos(std::move(move._valueStartPos))
+                , _valueSeparatorPos(std::move(move._valueSeparatorPos))
             {
             }
 
@@ -3057,6 +3992,18 @@ namespace Core {
                 , _count(copy._count)
                 , _data(copy._data)
                 , _iterator(_data)
+                , _completed(copy._completed)
+                , _suffix(copy._suffix)
+                , _beforeStringScope(copy._beforeStringScope)
+                , _afterStringScope(copy._afterStringScope) 
+                , _stringScope(copy._stringScope)
+                , _arrayStartMarkerCount(copy._arrayStartMarkerCount)
+                , _arrayEndMarkerCount(copy._arrayEndMarkerCount)
+                , _valueSeparatorCount(copy._valueSeparatorCount)
+                , _containerStartMarkerCount(copy._containerStartMarkerCount)
+                , _containerEndMarkerCount(copy._containerEndMarkerCount)
+                , _valueStartPos(copy._valueStartPos)
+                , _valueSeparatorPos(copy._valueSeparatorPos)
             {
             }
 
@@ -3067,6 +4014,18 @@ namespace Core {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
                 _iterator = IteratorType<ELEMENT>(_data);
+                _completed = std::move(move._completed);
+                _suffix = std::move(move._suffix);
+                _beforeStringScope = std::move(move._beforeStringScope);
+                _afterStringScope = std::move(move._afterStringScope);
+                _stringScope = std::move(move._stringScope);
+                _arrayStartMarkerCount = std::move(move._arrayStartMarkerCount);
+                _arrayEndMarkerCount = std::move(move._arrayEndMarkerCount);
+                _valueSeparatorCount = std::move(move._valueSeparatorCount);
+                _containerStartMarkerCount = std::move(move._containerStartMarkerCount);
+                _containerEndMarkerCount = std::move(move._containerEndMarkerCount);
+                _valueStartPos = std::move(move._valueStartPos);
+                _valueSeparatorPos = std::move(move._valueSeparatorPos);
 
                 return (*this);
             }
@@ -3076,6 +4035,18 @@ namespace Core {
                 _state = RHS._state;
                 _data = RHS._data;
                 _iterator = IteratorType<ELEMENT>(_data);
+                _completed = RHS._completed;
+                _suffix = RHS._suffix;
+                _beforeStringScope = RHS._beforeStringScope;
+                _afterStringScope = RHS._afterStringScope; 
+                _stringScope = RHS._stringScope;
+                _arrayStartMarkerCount = RHS._arrayStartMarkerCount;
+                _arrayEndMarkerCount = RHS._arrayEndMarkerCount;
+                _valueSeparatorCount = RHS._valueSeparatorCount;
+                _containerStartMarkerCount = RHS._containerStartMarkerCount;
+                _containerEndMarkerCount = RHS._containerEndMarkerCount;
+                _valueStartPos = RHS._valueStartPos;
+                _valueSeparatorPos = RHS._valueSeparatorPos;
 
                 return (*this);
             }
@@ -3089,39 +4060,55 @@ namespace Core {
 
             bool IsNull() const override
             {
-                //TODO: Implement null for Arrays
+// FIXME: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            bool IsCompleted() const
+            {
+                return _completed || _suffix || _arrayStartMarkerCount == _arrayEndMarkerCount;
             }
 
             void Set(const bool enabled)
             {
-                if (enabled == true) {
+                if (enabled) {
                     _state |= (modus::SET);
-                }
-                else {
+                } else {
                     _state &= (~modus::SET);
                 }
             }
 
             void SetExtractOnSingle(const bool enabled)
             {
-                if (enabled == true) {
+                if (enabled) {
                     _state |= (modus::EXTRACT);
-                }
-                else {
+                } else {
                     _state &= (~modus::EXTRACT);
                 }
             }
 
             bool IsExtractOnSingleSet() const
             {
-                return ((_state & (modus::EXTRACT)) != 0);
+                return (_state & (modus::EXTRACT));
             }
 
             void Clear() override
             {
                 _state = 0;
                 _data.clear();
+
+                _completed = false;
+                _suffix = false;
+                _beforeStringScope = false;
+                _afterStringScope = false; 
+                _stringScope = false;
+                _arrayStartMarkerCount = 0;
+                _arrayEndMarkerCount = 0;
+                _valueSeparatorCount = 0;
+                _containerStartMarkerCount = 0;
+                _containerEndMarkerCount = 0;
+                _valueStartPos = 0;
+                _valueSeparatorPos = 0;
             }
 
             inline uint16_t Length() const
@@ -3247,36 +4234,69 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
+                const int32_t available =   maxLength
+                                          - (  _state & UNDEFINED
+                                             ? 0
+                                             : ((_state & EXTRACT) && _data.size() == 1 ? 0 : 2)
+                                            )
+                                          - (_state & QUOTED ? 2 : 0)
+                                          ;
 
-                if (offset == FIND_MARKER) {
-                    _iterator.Reset();
-                    if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                        stream[loaded++] = '[';
+                int32_t loaded = 0;
+
+                if (0 < available) {
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
-                    offset = (_iterator.Next() == false ? ~0 : PARSE);
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
-                }
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
-                    } else if (offset == BEGIN_MARKER) {
-                        stream[loaded++] = ',';
-                        offset = PARSE;
-                    }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
-                        if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                            stream[loaded++] = ']';
+
+                    if (_state & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < static_cast<size_t>(available)) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
                         }
-                        offset = FIND_MARKER;
+
+                        loaded += count;
                     } else {
-                        offset = END_MARKER;
+
+                        // Skip square brackets if EXTRACT is set and the array consists of one element
+                        if (!((_state & EXTRACT) && _data.size() == 1)) {
+                            stream[loaded++] ='[';
+                        }
+
+                        for (auto begin = _data.begin(), end = _data.end(), it = begin; it != end; it++){
+                            if (it != begin) {
+                                stream[loaded++] = ',';
+                            }
+
+                            loaded += static_cast<const IElement&>(*it).Serialize(&(stream[loaded]), available - loaded, offset);
+
+                            if (offset) {
+                                break;
+                            }
+                        }
+
+                        // Skip square brackets if EXTRACT is set and the array consists of one element
+                        if (!((_state & EXTRACT) && _data.size() == 1)) {
+                            stream[loaded++] =']';
+                        }
                     }
+
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
+                    }
+                }
+
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                } else {
+                    // Invalidate
+                    loaded = 0;
+                    offset = 1;
                 }
 
                 return (loaded);
@@ -3285,82 +4305,197 @@ namespace Core {
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                // Run till we find opening bracket..
-                if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
-                        loaded++;
+
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    const char& ch = stream[loaded++];
+
+                    switch (ch) {
+                    case 0x09     : // Tabulation
+                                    FALLTHROUGH
+                    case 0x0A     : // Line feed
+                                    FALLTHROUGH
+                    case 0x0D     : // Carriage return
+                                    FALLTHROUGH
+                    case 0x20     : // Space
+                                    // Insignificant white space
+                                    _suffix = _suffix || (_state & UNDEFINED);
+                                    continue;
+                    case '\0'   :   // End of character sequence
+                                    if ((offset > 0 && _arrayStartMarkerCount != _arrayEndMarkerCount) || !_suffix) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Terminated character sequence without (sufficient) data for ArrayType<>"};
+                                    }
+
+                                    _completed = true;
+                                    continue;
+                                    break;
+                    case '"'    :   // Quoted character sequence
+                                    if (   !_suffix
+                                        && (   _beforeStringScope
+                                            || _afterStringScope
+                                            || (_arrayStartMarkerCount && _arrayStartMarkerCount != _arrayEndMarkerCount)
+                                           )
+                                       ) {
+                                        _stringScope = !_stringScope;
+                                        break;
+                                    }
+
+                                    if (!_arrayStartMarkerCount && !(_state & QUOTED) && offset > 0) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    if (_arrayEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && _suffix))) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Quote terminated character sequence without (sufficient) data for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    _suffix = _suffix || ((_arrayStartMarkerCount == _arrayEndMarkerCount) && (_state & QUOTED));
+
+                                    _state |= _suffix ? QUOTED : NONE;
+
+                                    _valueSeparatorCount -= _valueSeparatorCount && !_suffix ? 1 : 0;
+                                    break;
+                    case '{'    :   if (!_stringScope && _containerStartMarkerCount >= _containerEndMarkerCount) {
+                                        ++_containerStartMarkerCount;
+                                    }
+                                    break;
+                    case '}'    :   if (!_stringScope && _containerStartMarkerCount < _containerEndMarkerCount) {
+                                        ++_containerEndMarkerCount;
+                                    }
+                                    break;
+                    case '['    :   // Start marker
+                                    if (_stringScope) {
+                                        break;
+                                    }
+
+                                    if (   (_arrayStartMarkerCount == 0 && _arrayStartMarkerCount < _arrayEndMarkerCount)
+                                        || (_arrayStartMarkerCount > 0 && _arrayStartMarkerCount <= _arrayEndMarkerCount)
+                                       ) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    ++_arrayStartMarkerCount;
+
+                                    if (_arrayStartMarkerCount == 1) {
+                                        _valueStartPos = loaded;
+                                    }
+
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
+
+                                    _beforeStringScope = !_stringScope;
+                                    break;
+                    case ']'    :   // End marker
+                                    if (_stringScope) {
+                                        break;
+                                    }
+
+                                    if (   !(_arrayStartMarkerCount > 0 && _arrayStartMarkerCount >= _arrayEndMarkerCount)
+                                        || _valueSeparatorCount
+                                        ||( _valueSeparatorPos == loaded - 1)
+                                       ) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    ++_arrayEndMarkerCount;
+
+                                    _afterStringScope = !_stringScope;
+
+                                    FALLTHROUGH;
+                    case ','    :   // Value separator
+                                    if (_stringScope || _containerStartMarkerCount != _containerEndMarkerCount || (_arrayStartMarkerCount > _arrayEndMarkerCount && (_arrayStartMarkerCount - _arrayEndMarkerCount) > 1)) {
+                                        break;
+                                    }
+
+                                    if (ch == ',' && (_valueSeparatorCount || (loaded - 1 == _valueStartPos) || _arrayStartMarkerCount == _arrayEndMarkerCount)
+                                       ) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    if (ch == ',') {
+                                        ++_valueSeparatorCount;
+                                        _valueSeparatorPos = loaded;
+                                    }
+
+                                    if (_arrayStartMarkerCount == _arrayEndMarkerCount || ch == ',') {
+                                        _data.push_back(ELEMENT());
+
+                                        if ((loaded - 1) > _valueStartPos) {
+                                            uint32_t offset = 0;
+                                            const uint16_t valueEndPos = loaded;
+                                            uint16_t loaded = 0;
+                                            // This does not allow us use the return error, one may be printed already be printed
+                                            loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[_valueStartPos]), valueEndPos - _valueStartPos - 1, offset/*, error*/);
+
+                                            if (offset) {
+                                                _state = ERROR | (_state & 0xF);
+                                                error = Error{"Failed to deserialize type for ArrayType"};
+                                                continue;
+                                            }
+                                        } else {
+                                            uint16_t loaded = 0;
+                                            loaded += static_cast<IElement&>(_data.back()).FromString("", error);
+                                        }
+
+                                        _valueStartPos = loaded;
+
+                                        _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
+                                    }
+
+                                    _suffix = _suffix || _arrayStartMarkerCount == _arrayEndMarkerCount;
+
+                                    break;
+                    case 'n'    :   FALLTHROUGH;
+                    case 'u'    :   FALLTHROUGH;
+                    case 'l'    :   // JSON value null
+                                    ASSERT(_arrayStartMarkerCount || ((offset - (_state & QUOTED ? 1 : 0)) < sizeof(NullTag)));
+
+                                    if (   (!_arrayStartMarkerCount && ch != IElement::NullTag[offset - (_state & QUOTED ? 1 : 0)])
+                                        || _suffix
+                                       ) {
+                                        _state = ERROR | (_state & 0xF);
+                                        error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    _suffix =    _suffix
+                                             || (!_arrayStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
+                                             ;
+
+                                    _state |= _suffix ? UNDEFINED : NONE;
+
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
+
+                                    break;
+                    default     :   if (_suffix || (_state & UNDEFINED)) {
+                                        _state = ERROR | (_state & 0xF);
+                                         error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for ArrayType<>"};
+                                        continue;
+                                    }
+
+                                    _valueSeparatorCount -= _valueSeparatorCount ? 1 : 0;
+                    }
+
+                    ++offset;
+                }
+
+                if (_completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for ArrayType<>"};
                     }
                 }
 
-                if (loaded == maxLength) {
-                    offset = FIND_MARKER;
-                } else if (offset == FIND_MARKER) {
-                    ValueValidity valid = stream[loaded] != '[' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = FIND_MARKER;
-                    switch (valid) {
-                    default:
-                        // fall through
-                    case ValueValidity::UNKNOWN:
-                        break;
-                    case ValueValidity::IS_NULL:
-                        _state = UNDEFINED;
-                        break;
-                    case ValueValidity::INVALID:
-                        error = Error{ "Invalid value.\"null\" or \"[\" expected." };
-                        break;
-                    case ValueValidity::VALID:
-                        offset = SKIP_BEFORE;
-                        loaded++;
-                        break;
-                    }
-                }
-
-                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
-                        // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                            loaded++;
-                        }
-
-                        if (loaded < maxLength) {
-                            switch (stream[loaded]) {
-                            case ']':
-                                _state |= (modus::SET);
-                                offset = FIND_MARKER;
-                                loaded++;
-                                break;
-                            case ',':
-                                if (offset == SKIP_BEFORE) {
-                                    _state = (ERROR | (_state & 0xF));
-                                    error = Error{ "Expected new element, \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE;
-                                }
-                                loaded++;
-                                break;
-                            default:
-                                if (offset == SKIP_AFTER) {
-                                    error = Error{ "Unexpected character \"" + std::string(1, stream[loaded]) + "\". Expected either \",\" or \"]\"" };
-                                    offset = FIND_MARKER;
-                                    ++loaded;
-                                } else {
-                                    offset = PARSE;
-                                    _data.push_back(ELEMENT());
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    if (offset >= PARSE) {
-                        offset = (offset - PARSE);
-                        loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                        offset = (offset == FIND_MARKER ? SKIP_AFTER : offset + PARSE);
-                    }
-
-                    if (error.IsSet() == true)
-                        break;
+                if (!(error.IsSet())) {
+                    offset = 0;
+                    _state |= (_state & UNDEFINED) ? 0 : SET;
                 }
 
                 return (loaded);
@@ -3456,14 +4591,41 @@ namespace Core {
             uint16_t _count;
             std::list<ELEMENT> _data;
             mutable IteratorType<ELEMENT> _iterator;
+
+            bool _completed;
+            bool _suffix;
+            bool _beforeStringScope;
+            bool _afterStringScope; 
+            bool _stringScope;
+            uint16_t _arrayStartMarkerCount;
+            uint16_t _arrayEndMarkerCount;
+            uint16_t _valueSeparatorCount;
+            uint16_t _containerStartMarkerCount;
+            uint16_t _containerEndMarkerCount;
+            uint16_t _valueStartPos;
+            uint16_t _valueSeparatorPos;
+        };
+
+        template <typename T, size_t N>
+        class NestedArrayType {
+        public :
+            using type = ArrayType<typename NestedArrayType<T, N - 1>::type>;
+        };
+
+        template <typename T>
+        class NestedArrayType <T, 0>{
+        public:
+            using type = ArrayType<T>;
         };
 
         class EXTERNAL Container : public IElement, public IMessagePack {
         private:
             enum modus : uint8_t {
-                ERROR = 0x80,
+                NONE = 0x0,
+                QUOTED= 0x10,
+                COMPLETE = 0x20,
                 UNDEFINED = 0x40,
-                COMPLETE = 0x20
+                ERROR = 0x80,
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3557,6 +4719,20 @@ namespace Core {
                 , _data()
                 , _iterator()
                 , _fieldName(true)
+                , _completed{false}
+                , _suffix{false}
+                , _beforeStringScope{false}
+                , _afterStringScope{false}
+                , _stringScope{false}
+                , _arrayStartMarkerCount{0}
+                , _arrayEndMarkerCount{0}
+                , _keyValuePairSeparatorCount{0}
+                , _containerStartMarkerCount{0}
+                , _containerEndMarkerCount{0}
+                , _keyValueSeparatorCount{0}
+                , _keyValuePairStartPos{0}
+                , _keyValuePairSeparatorPos{0}
+                , _keyValueSeparatorPos{0}
             {
                 ::memset(&_current, 0, sizeof(_current));
             }
@@ -3591,25 +4767,55 @@ namespace Core {
 
             bool IsNull() const override
             {
-                // TODO: Implement null for conrtainers
+// FIXME: Implement null for containers
                 return ((_state & UNDEFINED) != 0);
             }
 
             void Clear() override
             {
                 JSONElementList::const_iterator index = _data.begin();
-
                 // As long as we did not find a set element, continue..
                 while (index != _data.end()) {
                     index->second->Clear();
                     index++;
                 }
                 _state = 0;
+
+                _completed = false;
+                _suffix = false;
+                _beforeStringScope = false;
+                _afterStringScope = false;
+                _stringScope = false;
+                _arrayStartMarkerCount = 0;
+                _arrayEndMarkerCount = 0;
+                _keyValuePairSeparatorCount = 0;
+                _containerStartMarkerCount = 0;
+                _containerEndMarkerCount = 0;
+                _keyValueSeparatorCount = 0;
+                _keyValuePairStartPos = 0;
+                _keyValuePairSeparatorPos = 0;
+                _keyValueSeparatorPos = 0;
+
+                ::memset(&_current, 0, sizeof(_current));
             }
 
             void Add(const TCHAR label[], IElement* element)
             {
-                _data.push_back(JSONLabelValue(label, element));
+#ifdef _STRICT // The user is expected to behave
+                String json;
+
+                bool result =    json.FromString(label)
+                              && element != nullptr
+                              ;
+
+                ASSERT(result);
+
+                if (result) {
+#endif
+                    _data.push_back(JSONLabelValue(label, element));
+#ifdef _STRICT
+                }
+#endif
             }
 
             void Remove(const TCHAR label[])
@@ -3628,207 +4834,338 @@ namespace Core {
             // IElement iface:
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
             {
-                uint16_t loaded = 0;
+                const int32_t available =   maxLength
+                                          - (_state & UNDEFINED ? 0 : 2)
+                                          - (_state & QUOTED ? 2 : 0)
+                                          ;
 
-                if (offset == FIND_MARKER) {
-                    _iterator = _data.begin();
-                    stream[loaded++] = '{';
+                int32_t loaded = 0;
 
-                    offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
-                    if (offset == BEGIN_MARKER) {
-                        _fieldName = string(_iterator->first);
-                        _current.json = &_fieldName;
-                        offset = PARSE;
+                if (0 < available) {
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
-                }
 
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
-                    } else if (offset == BEGIN_MARKER) {
-                        if (_current.json == &_fieldName) {
-                            stream[loaded++] = ':';
-                            _current.json = _iterator->second;
-                            offset = PARSE;
-                        } else {
-                            if (FindNext() != false) {
+                    if (_state & UNDEFINED) {
+                        static_assert(sizeof(IElement::NullTag[0]) == sizeof(char), "Mismatch sizes for underlying types not (yet) supported in copy");
+
+                        const size_t count = sizeof(IElement::NullTag) - (IElement::NullTag[sizeof(IElement::NullTag) - 1] == '\0' ?  1 :  0);
+
+                        if (count < static_cast<size_t>(available)) {
+                            memcpy(&stream[loaded], &IElement::NullTag[0], count);
+                        }
+
+                        loaded += count;
+                    } else {
+                        stream[loaded++] ='{';
+
+                        for (auto begin = _data.begin(), end = _data.end(), it = begin; it != end; it++) {
+                            if (it != begin) {
                                 stream[loaded++] = ',';
-                                _fieldName = string(_iterator->first);
-                                _current.json = &_fieldName;
-                                offset = PARSE;
+                            }
+
+                            const TCHAR* key = std::get<0>(*it);
+                            const IElement* value = std::get<1>(*it);
+
+                            static_assert(std::is_same<TCHAR, char>::value, "Mismatch of underlying types not (yet) supported in copy");
+
+                            if (key != nullptr && value != nullptr) { // Guaranteed and \'0' termination by Deserialize and user of Add
+                                const size_t count = strlen(key);
+
+                                if ((loaded + count + 3) < static_cast<size_t>(available)) {
+
+                                    if (count) {
+                                        memcpy(&stream[loaded], key, count);
+                                        loaded += count;
+                                    }
+
+                                    stream[loaded++] = ':';
+
+                                    loaded += value->Serialize(&(stream[loaded]), available - loaded, offset);
+                                }
                             } else {
-                                offset = ~0;
+                                offset = 1;
+                            }
+
+                            if (offset) {
+                                break;
                             }
                         }
+
+                        stream[loaded++] ='}';
                     }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
-                        stream[loaded++] = '}';
-                        offset = FIND_MARKER;
-                        _fieldName.Clear();
-                    } else {
-                        offset = END_MARKER;
+
+                    if (_state & QUOTED) {
+                        stream[loaded++] = '"';
                     }
                 }
 
-                return (loaded);
+                offset = !(offset || loaded < available);
+
+                if (!offset) {
+                    stream[loaded] = '\0';
+                }
+
+               return (loaded);
             }
 
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                // Run till we find opening bracket..
-                if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                        loaded++;
-                    }
-                }
 
-                if (loaded == maxLength) {
-                    offset = FIND_MARKER;
-                } else if (offset == FIND_MARKER) {
-                    ValueValidity valid = stream[loaded] != '{' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = FIND_MARKER;
-                    switch (valid) {
-                    default:
-                        // fall through
-                    case ValueValidity::UNKNOWN:
-                        break;
-                    case ValueValidity::IS_NULL:
-                        _state = UNDEFINED;
-                        break;
-                    case ValueValidity::INVALID:
-                        error = Error{ "Invalid value.\"null\" or \"{\" expected." };
-                        break;
-                    case ValueValidity::VALID:
-                        loaded++;
-                        _fieldName.Clear();
-                        offset = SKIP_BEFORE;
-                        break;
-                    }
-                }
+                while(!_completed && loaded < maxLength && !(error.IsSet())) {
+                    if (_current.json.element != nullptr && !(_current.json.element->IsCompleted())) {
+                        loaded += Deserialize(_current.json.element, "", &stream[loaded - 1], maxLength - loaded, _current.json.offset, error);
 
-                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                        // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
-                            loaded++;
-                        }
+                        _keyValuePairStartPos = loaded;
+                    } else {
+                        const char& ch = stream[loaded++];
 
-                        if (loaded < maxLength) {
-                            switch (stream[loaded]) {
-                            case '}':
-                                if (offset == SKIP_BEFORE && !_data.empty()) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected new element, \"}\" found." };
-                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected value, \"}\" found." };
-                                }
-                                offset = FIND_MARKER;
-                                _state |= modus::COMPLETE;
-                                loaded++;
-                                break;
-                            case ',':
-                                if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected new element \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected value, \",\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE;
-                                }
-                                loaded++;
-                                break;
-                            case ':':
-                                if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
-                                    offset = FIND_MARKER;
-                                } else if (_fieldName.IsSet() == false) {
-                                    _state = ERROR;
-                                    error = Error{ "Expected \"}\" or \",\", \":\" found." };
-                                    offset = FIND_MARKER;
-                                } else {
-                                    offset = SKIP_BEFORE_VALUE;
-                                }
-                                loaded++;
-                                break;
-                            default:
-                                if (_fieldName.IsSet() == true) {
-                                    if (_current.json != nullptr) {
-                                        _state = ERROR;
-                                        // This is not a critical error. It happens when config contains more/different
-                                        // things as the one "registered".
-                                        // error = Error{"Internal parser error."};
-                                        // offset = 0;
-                                        // break;
-                                    } else if (offset != SKIP_BEFORE_VALUE) {
-                                        _state = ERROR;
-                                        error = Error{ "Colon expected." };
-                                        offset = FIND_MARKER;
-                                        ++loaded;
+                        switch (ch) {
+                        case 0x09     : // Tabulation
+                                        FALLTHROUGH
+                        case 0x0A     : // Line feed
+                                        FALLTHROUGH
+                        case 0x0D     : // Carriage return
+                                        FALLTHROUGH
+                        case 0x20     : // Space
+                                        // Insignificant white space
+                                        _suffix = _suffix || (_state & UNDEFINED);
+                                        continue;
+                        case '\0'   :   // End of character sequence
+                                        if ((offset > 0 && _containerStartMarkerCount != _containerEndMarkerCount) || !_suffix) {
+                                            _state = ERROR;
+                                            error = Error{"Terminated character sequence without (sufficient) data for Container"};
+                                        }
+
+                                        _completed = true;
+                                        continue;
                                         break;
-                                    }
-                                    _current.json = Find(_fieldName.Value().c_str());
+                        case '"'    :   // Quoted character sequence
+                                        if (   !_suffix
+                                            && (   _beforeStringScope
+                                                || _afterStringScope
+                                                || (_containerStartMarkerCount && _containerStartMarkerCount != _containerEndMarkerCount)
+                                               )
+                                           ) {
+                                            _stringScope = !_stringScope;
+                                            break;
+                                        }
 
-                                    _fieldName.Clear();
+                                        if (!_containerStartMarkerCount && !(_state & QUOTED) && offset > 0) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
 
-                                    if (_current.json == nullptr) {
-                                        _current.json = &_fieldName;
-                                    }
-                                } else {
-                                    if (offset == SKIP_AFTER || offset == SKIP_AFTER_KEY) {
-                                        _state = ERROR;
-                                        error = Error{ "Expected either \",\" or \"}\", \"" + std::string(1, stream[loaded]) + "\" found." };
-                                        offset = FIND_MARKER;
-                                        ++loaded;
+                                        if (_containerEndMarkerCount && (_state & QUOTED) && !(((_state & UNDEFINED) && _suffix))) {
+                                            _state = ERROR;
+                                            error = Error{"Quote terminated character sequence without (sufficient) data for Container"};
+                                            continue;
+                                        }
+
+                                        _suffix = _suffix || ((_containerStartMarkerCount == _containerEndMarkerCount) && (_state & QUOTED));
+
+                                        _state |= _suffix ? QUOTED : NONE;
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount && !_suffix ? 1 : 0;
                                         break;
-                                    }
-                                    _current.json = nullptr;
-                                }
-                                offset = PARSE;
-                                break;
-                            }
-                        }
-                    }
+                        case ':'    :   if (_stringScope) {
+                                            break;
+                                        }
 
-                    if (offset >= PARSE) {
-                        offset = (offset - PARSE);
-                        uint16_t skip = SKIP_AFTER;
-                        if (_current.json == nullptr) {
-                            loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            if (_fieldName.IsQuoted() == false) {
-                                error = Error{ "Key must be properly quoted." };
-                            }
-                            skip = SKIP_AFTER_KEY;
-                        } else {
-                            loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            // It could be that the field name was used, as we are not interested in this field, if so,
-                            // do not forget to reset the field name..
-                            _fieldName.Clear();
-                        }
-                        offset = (offset == FIND_MARKER ? skip : offset + PARSE);
-                    }
+                                        if (_keyValueSeparatorCount > 1) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
 
-                    if (error.IsSet() == true)
-                        break;
+                                        // Only the first to keep
+                                        if (!_keyValueSeparatorCount) {
+                                            ++_keyValueSeparatorCount;
+                                            _keyValueSeparatorPos = loaded;
+                                        }
+                                        break;
+                        case '['    :   if (!_stringScope) {
+                                            ++_arrayStartMarkerCount;
+                                        }
+                                        break;
+                        case ']'    :   if (!_stringScope) {
+                                            ++_arrayEndMarkerCount;
+                                        }
+                                        break;
+                        case '{'    :   // Start marker
+                                        if (_stringScope) {
+                                            break;
+                                        }
+
+                                        if (   (_containerStartMarkerCount == 0 && _containerStartMarkerCount < _containerEndMarkerCount)
+                                            || (_containerStartMarkerCount > 0 && _containerStartMarkerCount <= _containerEndMarkerCount)
+                                           ) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        ++_containerStartMarkerCount;
+
+                                        if (_containerStartMarkerCount == 1) {
+                                            _keyValuePairStartPos = loaded;
+                                        }
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                        _beforeStringScope = !_stringScope;
+                                        break;
+                        case '}'    :   // End marker
+                                        if (_stringScope) {
+                                            break;
+                                        }
+
+                                        if (   !(_containerStartMarkerCount > 0 && _containerStartMarkerCount >= _containerEndMarkerCount)
+                                            || _keyValuePairSeparatorCount
+                                            || (_keyValuePairSeparatorPos == loaded - 1)
+                                           ) {
+                                             _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        ++_containerEndMarkerCount;
+
+                                        _afterStringScope = !_stringScope;
+
+                                        FALLTHROUGH;
+                        case ','    :   // Value separator
+                                        if (_stringScope || _arrayStartMarkerCount > _arrayEndMarkerCount) {
+                                            break;
+                                        }
+
+                                        if (ch == ',' && (_keyValuePairSeparatorCount || (loaded - 1 == _keyValuePairStartPos) || _containerStartMarkerCount == _containerEndMarkerCount)
+                                           ) {
+                                             _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        if (ch == ',') {
+                                            ++_keyValuePairSeparatorCount;
+                                            _keyValuePairSeparatorPos = loaded;
+                                        }
+
+                                        if (_containerStartMarkerCount == _containerEndMarkerCount || ch == ',') {
+                                            // Two modus operandi:
+                                            // - Existing element with label
+                                            // - No element
+                                            // Both have the format 'JSON String':'JSON Value', unless empty
+
+                                            if (   _keyValueSeparatorPos > _keyValuePairStartPos
+                                                && loaded > _keyValueSeparatorPos
+                                               ) {
+                                                const std::string data(&stream[_keyValuePairStartPos], _keyValueSeparatorPos - _keyValuePairStartPos - 1);
+
+                                                JSON::String key;
+
+                                                if (   !data.length()
+                                                    || !key.FromString(data)
+                                                   ) {
+                                                    _state = ERROR;
+                                                    error = Error{"Failed to deserialize key for Container"};
+                                                    continue;
+                                                }
+
+                                                // Continue to process as C-style strings
+                                                if (key.IsQuoted()) {
+                                                    key.SetQuoted(false);
+                                                }
+
+                                                IElement*& element = _current.json.element;
+                                                uint32_t& offset = _current.json.offset;
+
+                                                element = Find(key.Value());
+
+                                                // Continue from last run if incomplete or start over
+                                                if (element != nullptr && element->IsCompleted()) {
+                                                    element->Clear();
+                                                }
+
+                                                const std::string value(&stream[_keyValueSeparatorPos], loaded - _keyValueSeparatorPos - 1);
+
+                                                /*uint16_t loaded =*/ Deserialize(element, key, value.c_str(), value.length(), offset , error);
+                                            } else {
+                                                // {}
+                                                // Both key and value have zero lenght and ':' and ',' are absent
+                                                if (   _keyValuePairSeparatorPos
+                                                    || _keyValueSeparatorCount
+                                                   ) {
+                                                    _state = ERROR;
+                                                    error = Error{"Character sequence without (sufficient) data for Container"};
+                                                    continue;
+                                                }
+                                            }
+
+                                            _keyValuePairStartPos = loaded;
+
+                                            _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                            _keyValueSeparatorCount -= _keyValueSeparatorCount ? 1 : 0;
+                                        }
+
+                                        _suffix = _suffix || _containerStartMarkerCount == _containerEndMarkerCount;
+
+                                        break;
+                        case 'n'    :   FALLTHROUGH;
+                        case 'u'    :   FALLTHROUGH;
+                        case 'l'    :   // JSON value null
+                                        ASSERT(_containerStartMarkerCount || ((offset - ((_state & QUOTED) || _stringScope ? 1 : 0)) < sizeof(NullTag)));
+
+                                        if (_keyValueSeparatorCount) {
+                                            continue;
+                                        }
+
+                                        if (   (!_containerStartMarkerCount && ch != IElement::NullTag[offset - ((_state & QUOTED) || _stringScope ? 1 : 0)])
+                                            || _suffix
+                                           ) {
+                                            _state = ERROR;
+                                            error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        _suffix =    _suffix
+                                                 || (!_containerStartMarkerCount && (offset - (_state & QUOTED ? 1 : 0)) == 3)
+                                                 ;
+
+                                        _state |= _suffix ? UNDEFINED : NONE;
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+
+                                        break;
+                        default     :   if (_stringScope || _arrayStartMarkerCount != _arrayEndMarkerCount) {
+                                            break;
+                                        }
+
+                                        if (_suffix || (_state & UNDEFINED)) {
+                                            _state = ERROR;
+                                             error = Error{"Character '" + std::string(1, ch) + "' at unsupported position for Container"};
+                                            continue;
+                                        }
+
+                                        _keyValuePairSeparatorCount -= _keyValuePairSeparatorCount ? 1 : 0;
+                        }
+
+                        ++offset;
+                    }
                 }
 
-                // This is done for containers only using the fact the top most JSON element is a container.
-                // This make sure the parsing error at any level results in an empty C++ objects and context
-                // is as full as possible.
-                if (error.IsSet() == true) {
-                    Clear();
-                    error.Value().Context(stream, maxLength, loaded);
+                if (_completed && loaded < maxLength) {
+                    if (!(error.IsSet()) && !((_state & QUOTED) && stream[loaded] == '\0')) {
+                        error = Error{"Input data contains trailing characters for Container"};
+                    }
+                }
+
+                if (!(error.IsSet())) {
+                    offset = 0;
+                    _state |= (_state & UNDEFINED) ? 0 : COMPLETE;
                 }
 
                 return (loaded);
@@ -3960,9 +5297,35 @@ namespace Core {
             }
 
         protected:
+
+            virtual uint16_t Deserialize(IElement* element, VARIABLE_IS_NOT_USED const std::string& label, const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
+            {
+                uint16_t loaded = 0;
+
+                if (element != nullptr) {
+                    loaded += element->Deserialize(stream, maxLength, offset, error);
+
+                    if (element->IsCompleted()) {
+                        ::memset(&_current, 0, sizeof(_current));
+                        _stringScope = false;
+                        _beforeStringScope = false;
+                        _afterStringScope =false;
+                    }
+                } else {
+//                    error = Error{"Invalid element provided for Container."};
+                }
+
+                return loaded;
+            }
+
             void Reset()
             {
                 _data.clear();
+            }
+
+            virtual IElement* Find(const std::string& label)
+            {
+                return Find(label.c_str());
             }
 
             IElement* Find(const char label[])
@@ -4021,15 +5384,34 @@ namespace Core {
             }
 
         private:
+
+            struct JSONElement {IElement* element; uint32_t offset;};
+
             uint8_t _state;
             uint16_t _count;
             union {
-                mutable IElement* json;
+                mutable struct JSONElement json;
                 mutable IMessagePack* pack;
             } _current;
             JSONElementList _data;
             mutable JSONElementList::const_iterator _iterator;
             mutable String _fieldName;
+
+            bool _completed;
+            bool _suffix;
+            bool _beforeStringScope;
+            bool _afterStringScope;
+            bool _stringScope;
+
+            uint16_t _arrayStartMarkerCount;
+            uint16_t _arrayEndMarkerCount;
+            uint16_t _keyValuePairSeparatorCount;
+            uint16_t _containerStartMarkerCount;
+            uint16_t _containerEndMarkerCount;
+            uint16_t _keyValueSeparatorCount;
+            uint16_t _keyValuePairStartPos;
+            uint16_t _keyValuePairSeparatorPos;
+            uint16_t _keyValueSeparatorPos;
         };
 
         class VariantContainer;

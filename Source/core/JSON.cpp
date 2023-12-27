@@ -78,7 +78,8 @@ namespace Core {
                 ss << iterator.Current().GetDebugString(iterator.Label(), indent);
             return ss.str();
         }
-    }
-}
 
-} //namespace Core::JSON
+} // namespace JSON
+} // namespace Core
+} //namespace WPEframework
+

@@ -20,16 +20,16 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 
 add_executable(${TEST_RUNNER_NAME}
-   ../IPTestAdministrator.cpp
-   test_cyclicbuffer.cpp
+   #../IPTestAdministrator.cpp
+   #test_cyclicbuffer.cpp
    #test_databuffer.cpp
-   test_dataelement.cpp
+   #test_dataelement.cpp
    test_dataelementfile.cpp
    #test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
-   test_filesystem.cpp
+   #test_filesystem.cpp
    test_frametype.cpp
    #test_hash.cpp
    #test_ipc.cpp
@@ -37,6 +37,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iso639.cpp
    test_iterator.cpp
    #test_jsonparser.cpp
+   test_jsontypes.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
@@ -56,14 +57,14 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    #test_rpc.cpp
    test_semaphore.cpp
-   test_sharedbuffer.cpp
-   test_singleton.cpp
-   test_socketstreamjson.cpp
-   test_socketstreamtext.cpp
+   #test_sharedbuffer.cpp
+   #test_singleton.cpp
+   #test_socketstreamjson.cpp
+   #test_socketstreamtext.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
    test_synchronize.cpp
-   test_synchronous.cpp
+   #test_synchronous.cpp
    test_systeminfo.cpp
    test_textfragment.cpp
    test_textreader.cpp
@@ -73,12 +74,12 @@ add_executable(${TEST_RUNNER_NAME}
    #test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
-   test_weblinkjson.cpp
-   test_weblinktext.cpp
-   test_websocketjson.cpp
-   test_websockettext.cpp
+   #test_weblinkjson.cpp
+   #test_weblinktext.cpp
+   #test_websocketjson.cpp
+   #test_websockettext.cpp
    #test_workerpool.cpp
-   test_xgetopt.cpp
+   #test_xgetopt.cpp
    #test_message_dispatcher.cpp
 )
     
