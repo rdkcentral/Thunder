@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
     
     
       
@@ -2086,6 +2086,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2317,21 +2338,14 @@
 </tr>
 <tr>
 <td>startmode</td>
-<td>Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will behave the same as the <code>autostart</code> option</td>
+<td>Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will automatically start the plugin</td>
 <td>enum</td>
 <td>Deactivated</td>
 <td>Activated</td>
 </tr>
 <tr>
-<td>autostart</td>
-<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: Use <code>startmode</code> instead<br /><br />Whether to automatically start the plugin when starting WPEFramework. If false, the plugin must be activated manually using the Controller plugin</td>
-<td>bool</td>
-<td>true</td>
-<td>false</td>
-</tr>
-<tr>
 <td>resumed</td>
-<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: Use <code>startmode</code> instead<br /><br />When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended</td>
+<td>When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended</td>
 <td>bool</td>
 <td>false</td>
 <td>true</td>
@@ -2401,7 +2415,7 @@
 </tr>
 <tr>
 <td>configuration.root.outofprocess</td>
-<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: use <code>configuration.root.mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
+<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: use <code>configuration.root.mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
 <td>bool</td>
 <td>false</td>
 <td>true</td>
@@ -2454,7 +2468,7 @@
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libWPEFrameworkSamplePlugin.so&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;classname&quot;</span><span class="p">:</span><span class="s2">&quot;SamplePlugin&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;autostart&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;startmode&quot;</span><span class="p">:</span><span class="s2">&quot;activated&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;configuration&quot;</span><span class="p">:{</span>
 <span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:{</span>
 <span class="w">         </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="s2">&quot;Off&quot;</span>
@@ -2470,7 +2484,7 @@
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libWPEFrameworkGreeterPlugin.so&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;classname&quot;</span><span class="p">:</span><span class="s2">&quot;Greeter&quot;</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">&quot;autostart&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;startmode&quot;</span><span class="p">:</span><span class="s2">&quot;activated&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;configuration&quot;</span><span class="p">:{</span>
 <span class="w">      </span><span class="nt">&quot;greetings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Good Morning&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Hi&quot;</span><span class="p">]</span>
 <span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:{</span>
@@ -2513,7 +2527,7 @@
 <p>Anything surrounded by <code>@</code> symbols will be replaced with a value from CMake - see <a href="https://cmake.org/cmake/help/latest/command/configure_file.html">here</a> for more detail. This allows setting default values in the CMake file, which can then be customised at build time.</p>
 <p>To edit config options, simply create variables with the corresponding name. Nested config options can be built by constructing <code>Json</code> objects. The <code>locator</code> and <code>classname</code> values will be automatically assumed at build time, although can be overridden with custom values if required.</p>
 <p>For example, the below will create default values for our Greeter plugin</p>
-<div class="highlight"><pre><span></span><code><span class="n">autostart</span> <span class="o">=</span> <span class="kc">True</span>
+<div class="highlight"><pre><span></span><code><span class="n">startmode</span> <span class="o">=</span> <span class="s2">&quot;activated&quot;</span>
 
 <span class="n">configuration</span> <span class="o">=</span> <span class="n">JSON</span><span class="p">()</span>
 <span class="n">greetings</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span> <span class="s2">&quot;Good Morning&quot;</span><span class="p">,</span> <span class="s2">&quot;Hi&quot;</span><span class="p">]</span>
@@ -2531,7 +2545,7 @@
 </div>
 <p>The legacy config generator uses <a href="https://github.com/toeb/cmakepp/blob/master/cmake/quickmap/README.md">CMakepp QuickMap</a> syntax to build the config JSON file. To use the legacy syntax, create a file called <code>&lt;PluginName&gt;.conf</code> in your plugin source code.</p>
 <p>Example for our Greeter plugin:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">set</span><span class="w"> </span><span class="p">(</span><span class="s">autostart</span><span class="w"> </span><span class="s">true</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nb">set</span><span class="w"> </span><span class="p">(</span><span class="s">startmode</span><span class="w"> </span><span class="s2">&quot;activated&quot;</span><span class="p">)</span>
 
 <span class="nb">map</span><span class="p">()</span>
 <span class="w">    </span><span class="nb">kv</span><span class="p">(</span><span class="s">mode</span><span class="w"> </span><span class="s2">&quot;Off&quot;</span><span class="p">)</span>
@@ -2566,14 +2580,14 @@
 <p>The Controller plugin can be used to retrieve and modify the configuration of a plugin at runtime.</p>
 <h4 id="get-config">Get Config</h4>
 <p>Make a JSON-RPC call to <code>Controller.configuration@&lt;PluginName&gt;</code> with no parameters</p>
-<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.configuration@SamplePlugin&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response:</p>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/2b05.svg" title=":arrow_left:" /> Response:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -2596,7 +2610,7 @@
 <p>It is only possible to modify plugin configuration when the plugin is not currently activated. If the plugin is activated and an attempt is made to modify the config, an <code>ERROR_GENERAL</code> error will be returned. Deactivate the plugin and try again.</p>
 </div>
 <p>Make a request to <code>Controller.configuration@&lt;PluginName&gt;</code> with the parameters containing the entire config object that should be set. It is not possible to modify some options, including callsign and locator</p>
-<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -2612,7 +2626,7 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code>{
     &quot;jsonrpc&quot;: &quot;2.0&quot;,
     &quot;id&quot;: 1,

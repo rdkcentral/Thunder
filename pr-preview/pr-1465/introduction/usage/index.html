@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
     
     
       
@@ -2046,6 +2046,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2257,12 +2278,12 @@ $<span class="w"> </span>WPEFramework<span class="w"> </span>-f<span class="w"> 
 <p>The main way to interact with Thunder is JSON-RPC requests. Thunder is JSON-RPC 2.0 compliant - read more about the JSON-RPC specification <a href="https://www.jsonrpc.org/specification">here</a>.</p>
 <h4 id="json-rpc-over-http">JSON-RPC over HTTP</h4>
 <p>To make a JSON-RPC call to Thunder, make a <code>POST</code> request to the <code>/jsonrpc</code> endpoint, where the body of the request contains the JSON-RPC object. For this example, curl is used to make the request - but use whatever API testing tool you are familiar with (<a href="https://www.postman.com/">Postman</a> and <a href="https://insomnia.rest/">Insomnia</a> are popular choices)</p>
-<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
 -d<span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;Controller.1.activate&quot;,&quot;params&quot;:{&quot;callsign&quot;:&quot;TestPlugin&quot;}}&#39;</span><span class="w"> </span><span class="se">\</span>
 http://localhost:55555/jsonrpc
 </code></pre></div>
-<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">}</span>
 </code></pre></div>
 <h4 id="json-rpc-over-web-sockets">JSON-RPC over Web Sockets</h4>
