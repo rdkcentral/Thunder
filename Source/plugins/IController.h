@@ -221,7 +221,7 @@ namespace Controller {
                 string Module /* @brief Module name */;
                 state State /* @brief Current state */;
                 PluginHost::IShell::startmode StartMode /* @brief Startup mode */;
-                bool Resume /* @brief Determines if the plugin is to be activated in resume or suspend mode */;
+                bool Resumed /* @brief Determines if the plugin is to be activated in resume or suspend mode */;
                 Data::Version Version /* @brief Version */;
 
                 string Communicator /* @optional */;
