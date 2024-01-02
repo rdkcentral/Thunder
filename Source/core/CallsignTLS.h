@@ -73,6 +73,9 @@ namespace Core {
         template <const TCHAR** MODULENAME>
         struct CallsignAccess {
             static const TCHAR* Callsign() {
+                if (_moduleName.empty()) {
+                    _moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
+                }
                 const TCHAR* callsign = CallsignTLS::Callsign();
                 if (callsign == nullptr) {
                     callsign = _moduleName.c_str();
@@ -81,7 +84,7 @@ namespace Core {
             }
 
         private:
-            static const string _moduleName;
+            static string _moduleName;
         };
 
         static const TCHAR* Callsign();
@@ -106,7 +109,7 @@ namespace Core {
     };
 
     template <const TCHAR** MODULENAME>
-    EXTERNAL_HIDDEN const string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
+    EXTERNAL_HIDDEN string CallsignTLS::CallsignAccess<MODULENAME>::_moduleName;
 }
 
 } 
