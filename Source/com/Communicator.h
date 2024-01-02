@@ -687,7 +687,7 @@ namespace RPC {
         };
         class LocalProcess : public MonitorableProcess {
         public:
-            friend class Core::Service<LocalProcess>;
+            friend Core::ServiceType<LocalProcess>;
 
             LocalProcess() = delete;
             LocalProcess(LocalProcess&&) = delete;
@@ -780,7 +780,7 @@ namespace RPC {
             };
 
         public:
-            friend class Core::Service<ContainerProcess>;
+            friend Core::ServiceType<ContainerProcess>;
 
             ContainerProcess(ContainerProcess&&) = delete;
             ContainerProcess(const ContainerProcess&) = delete;
@@ -1165,7 +1165,7 @@ namespace RPC {
                         // This is an announce message from a process that wasn't created by us. So typically this is
                         // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
                         // listens for clients requesting service.
-                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
+                        Communicator::RemoteConnection* remoteConnection = Core::ServiceType<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
 
                         channel->Extension().Link(*this, remoteConnection->Id());
                         ASSERT(remoteConnection != nullptr);
@@ -1411,11 +1411,11 @@ POP_WARNING()
             RemoteConnection* result = nullptr;
 
             if (instance.Type() == Object::HostType::LOCAL) {
-                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
+                result = Core::ServiceType<LocalProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
             }
             else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
+                result = Core::ServiceType<ContainerProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
 #else
                 SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
@@ -1701,7 +1701,7 @@ POP_WARNING()
                 Core::ProxyType<Core::IPCChannel> baseChannel(*this);
                 ASSERT(baseChannel.IsValid() == true);
 
-                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), INTERFACE::ID }, { 0, 0 } };
+                const RPC::InstanceRecord localInstances[] = { { RPC::instance_cast(offer), static_cast<uint32_t>(INTERFACE::ID) }, { 0, 0 } };
                 baseChannel->CustomData(localInstances);
 
                 BaseClass::Invoke(Core::ProxyType<RPC::AnnounceMessage>(_announceMessage), waitTime);

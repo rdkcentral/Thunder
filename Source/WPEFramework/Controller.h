@@ -411,7 +411,7 @@ namespace Plugin {
         PluginHost::Server* _pluginServer;
         PluginHost::IShell* _service;
         Probe* _probe;
-        Core::Sink<Sink> _systemInfoReport;
+        Core::SinkType<Sink> _systemInfoReport;
         Resumes _resumes;
         uint32_t _lastReported;
         ExternalSubSystems _externalSubsystems;
