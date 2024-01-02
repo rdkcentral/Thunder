@@ -202,15 +202,11 @@ namespace Core {
         }
     };
 
-    /*
-    * 
     template <typename TYPE>
     using Sink = SinkType<TYPE>;
 
     template <typename TYPE>
     using Service = ServiceType<TYPE>;
-
-    */
 
     typedef DEPRECATED IService::IMetadata IServiceMetadata;
 
