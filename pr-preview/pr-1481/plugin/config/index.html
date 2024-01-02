@@ -2415,7 +2415,7 @@
 </tr>
 <tr>
 <td>configuration.root.outofprocess</td>
-<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: use <code>configuration.root.mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
+<td><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/26a0.svg" title=":warning:" /> <strong>Deprecated</strong>: use <code>configuration.root.mode</code> instead.<br /><br />Set to true to run plugin out of process</td>
 <td>bool</td>
 <td>false</td>
 <td>true</td>
@@ -2580,14 +2580,14 @@
 <p>The Controller plugin can be used to retrieve and modify the configuration of a plugin at runtime.</p>
 <h4 id="get-config">Get Config</h4>
 <p>Make a JSON-RPC call to <code>Controller.configuration@&lt;PluginName&gt;</code> with no parameters</p>
-<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Controller.1.configuration@SamplePlugin&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response:</p>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/2b05.svg" title=":arrow_left:" /> Response:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -2610,7 +2610,7 @@
 <p>It is only possible to modify plugin configuration when the plugin is not currently activated. If the plugin is activated and an attempt is made to modify the config, an <code>ERROR_GENERAL</code> error will be returned. Deactivate the plugin and try again.</p>
 </div>
 <p>Make a request to <code>Controller.configuration@&lt;PluginName&gt;</code> with the parameters containing the entire config object that should be set. It is not possible to modify some options, including callsign and locator</p>
-<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
+<p><img alt="➡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/27a1.svg" title=":arrow_right:" /> Request</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -2626,7 +2626,7 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
+<p><img alt="⬅" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.0.3/assets/svg/2b05.svg" title=":arrow_left:" /> Response</p>
 <div class="highlight"><pre><span></span><code>{
     &quot;jsonrpc&quot;: &quot;2.0&quot;,
     &quot;id&quot;: 1,
