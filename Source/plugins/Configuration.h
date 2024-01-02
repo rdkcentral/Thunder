@@ -210,7 +210,7 @@ namespace Plugin {
             , VolatilePathPostfix()
             , SystemRootPath()
             , StartupOrder(50)
-            , Startup(PluginHost::IShell::startup::DEACTIVATED)
+            , StartMode(PluginHost::IShell::startmode::DEACTIVATED)
             , Communicator()
         {
             Add(_T("callsign"), &Callsign);
@@ -226,7 +226,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("startmode"), &Startup);
+            Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
         }
         Config(const Config& copy)
@@ -244,7 +244,7 @@ namespace Plugin {
             , VolatilePathPostfix(copy.VolatilePathPostfix)
             , SystemRootPath(copy.SystemRootPath)
             , StartupOrder(copy.StartupOrder)
-            , Startup(copy.Startup)
+            , StartMode(copy.StartMode)
             , Communicator(copy.Communicator)
         {
             Add(_T("callsign"), &Callsign);
@@ -260,7 +260,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("startmode"), &Startup);
+            Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
         }
         ~Config() override = default;
@@ -280,7 +280,7 @@ namespace Plugin {
             VolatilePathPostfix = RHS.VolatilePathPostfix;
             SystemRootPath = RHS.SystemRootPath;
             StartupOrder = RHS.StartupOrder;
-            Startup = RHS.Startup;
+            StartMode = RHS.StartMode;
             Communicator = RHS.Communicator;
 
             return (*this);
@@ -312,7 +312,7 @@ namespace Plugin {
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
-        Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
+        Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
         Core::JSON::String Communicator;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);

@@ -1098,7 +1098,7 @@ namespace Plugin {
                     service.Locator = meta.Locator;
                     service.ClassName = meta.ClassName;
                     service.Module = meta.Module;
-                    service.StartMode = meta.Startup;
+                    service.StartMode = meta.StartMode;
                     service.State = meta.JSONState;
                     service.Version = meta.ServiceVersion;
                     service.Communicator = meta.Communicator;
