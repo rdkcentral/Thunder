@@ -67,7 +67,7 @@ At runtime, this version information can be retrieved from the Controller plugin
 			"callsign": "TestPlugin",
 			"locator": "libWPEFrameworkTestPlugin.so",
 			"classname": "TestPlugin",
-			"autostart": true,
+			"startmode": "activated",
 			"configuration": {},
 			"startmode": "Activated",
 			"state": "activated",

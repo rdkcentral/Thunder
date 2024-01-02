@@ -215,13 +215,13 @@ namespace Controller {
                     RESUMED /* @text resumed */
                 };
 
-                bool AutoStart /* @brief Determines if the plugin is to be started automatically along with the framework */;
                 string Callsign /* @brief Plugin callsign */;
                 string Locator /* @brief Shared library path */;
                 string ClassName /* @brief Plugin class name */;
                 string Module /* @brief Module name */;
                 state State /* @brief Current state */;
-                PluginHost::IShell::startup StartMode /* @brief Startup mode */;
+                PluginHost::IShell::startmode StartMode /* @brief Startup mode */;
+                bool Resumed /* @brief Determines if the plugin is to be activated in resume or suspend mode */;
                 Data::Version Version /* @brief Version */;
 
                 string Communicator /* @optional */;

@@ -1462,36 +1462,36 @@ namespace PluginHost {
                     : Core::JSON::Container()
                     , Configuration(_T("{}"), false)
                     , SystemRootPath()
-                    , Startup()
+                    , StartMode()
                     , Resumed()
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
-                    Add(_T("startup"), &Startup);
+                    Add(_T("startmode"), &StartMode);
                     Add(_T("resumed"), &Resumed);
                 }
-                Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startup value, const bool resumed)
+                Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startmode value, const bool resumed)
                     : Core::JSON::Container()
                     , Configuration(config, false)
                     , SystemRootPath(systemRootPath)
-                    , Startup(value)
+                    , StartMode(value)
                     , Resumed(resumed)
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
-                    Add(_T("startup"), &Startup);
+                    Add(_T("startmode"), &StartMode);
                     Add(_T("resumed"), &Resumed);
                 }
                 Plugin(Plugin const& copy)
                     : Core::JSON::Container()
                     , Configuration(copy.Configuration)
                     , SystemRootPath(copy.SystemRootPath)
-                    , Startup(copy.Startup)
+                    , StartMode(copy.StartMode)
                     , Resumed(copy.Resumed)
                 {
                     Add(_T("configuration"), &Configuration);
                     Add(_T("systemrootpath"), &SystemRootPath);
-                    Add(_T("startup"), &Startup);
+                    Add(_T("startmode"), &StartMode);
                     Add(_T("resumed"), &Resumed);
                 }
 
@@ -1500,7 +1500,7 @@ namespace PluginHost {
             public:
                 Core::JSON::String Configuration;
                 Core::JSON::String SystemRootPath;
-                Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
+                Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
                 Core::JSON::Boolean Resumed;
             };
 
@@ -1531,7 +1531,7 @@ namespace PluginHost {
                     Callsigns::iterator index(_callsigns.emplace(
                         std::piecewise_construct,
                         std::forward_as_tuple(name),
-                        std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startup::UNAVAILABLE, false)).first);
+                        std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false)).first);
 
                     // Store the override config in the JSON String created in the map
                     Services.Add(index->first.c_str(), &(index->second));
@@ -1579,8 +1579,8 @@ namespace PluginHost {
                             if (current->second.SystemRootPath.IsSet() == true) {
                                 index->SystemRootPath(current->second.SystemRootPath.Value());
                             }
-                            if (current->second.Startup.IsSet() == true) {
-                                index->Startup(current->second.Startup.Value());
+                            if (current->second.StartMode.IsSet() == true) {
+                                index->StartMode(current->second.StartMode.Value());
                             }
                             if (current->second.Resumed.IsSet() == true) {
                                 index->Resumed(current->second.Resumed.Value());
@@ -1628,7 +1628,7 @@ namespace PluginHost {
                             current->second.Configuration = config;
                         }
                         current->second.SystemRootPath = index->SystemRootPath();
-                        current->second.Startup = index->Startup();
+                        current->second.StartMode = index->StartMode();
                         current->second.Resumed = index->Resumed();
                     }
 
