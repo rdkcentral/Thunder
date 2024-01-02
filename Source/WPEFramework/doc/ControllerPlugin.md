@@ -70,7 +70,7 @@ The table below lists configuration options of the plugin.
 | callsign | string | Plugin instance name (default: *Controller*) |
 | classname | string | Class name: *Controller* |
 | locator | string | Library name: *(built-in)* |
-| autostart | boolean | Determines if the plugin shall be started automatically along with the framework |
+| startmode | string | Determines if the plugin shall be started automatically along with the framework |
 
 <a name="head.Interfaces"></a>
 # Interfaces
@@ -793,7 +793,6 @@ Provides access to the provides status of a service, including their configurati
 | :-------- | :-------- | :-------- |
 | result | array | Provides status of a service, including their configurations<br>*If only one element is present the array will be omitted.* |
 | result[#] | object |  |
-| result[#].autostart | boolean | Determines if the plugin is to be started automatically along with the framework |
 | result[#].callsign | string | Plugin callsign |
 | result[#].locator | string | Shared library path |
 | result[#].classname | string | Plugin class name |
@@ -836,7 +835,6 @@ Provides access to the provides status of a service, including their configurati
   "id": 42,
   "result": [
     {
-      "autostart": false,
       "callsign": "...",
       "locator": "...",
       "classname": "...",

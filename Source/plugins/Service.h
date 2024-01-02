@@ -65,21 +65,17 @@ namespace PluginHost {
             {
                 _config.Configuration = value;
             }
-            inline void Startup(const PluginHost::IShell::startup value)
+            inline void StartMode(const PluginHost::IShell::startmode value)
             {
-                _config.Startup = value;
-            }
-            inline void AutoStart(const bool value)
-            {
-                _config.AutoStart = value;
-            }
-            inline void Resumed(const bool value)
-            {
-                _config.Resumed = value;
+                _config.StartMode = value;
             }
             inline void SystemRootPath(const string& value)
             {
                 _config.SystemRootPath = value;
+            }
+            inline void Resumed(const bool value)
+            {
+                _config.Resumed = value;
             }
             inline const Plugin::Config& Configuration() const
             {
@@ -137,10 +133,6 @@ namespace PluginHost {
                 if (_versions.empty() == true) {
                     _versions.push_back(1);
                 }
-
-                _config.Startup = ((_config.AutoStart.Value() == true) ?
-                                   PluginHost::IShell::startup::ACTIVATED :
-                                   PluginHost::IShell::startup::DEACTIVATED);
             }
 
         private:
@@ -174,7 +166,7 @@ namespace PluginHost {
             , _notifiers()
             #endif
         {
-            if ( (plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == PluginHost::IShell::startup::UNAVAILABLE) ) {
+            if ( (plugin.StartMode.IsSet() == true) && (plugin.StartMode.Value() == PluginHost::IShell::startmode::UNAVAILABLE) ) {
                 _state = UNAVAILABLE;
             }
         }
@@ -254,21 +246,20 @@ namespace PluginHost {
         }
         bool Resumed() const override
         {
-            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED)));
+            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().StartMode.Value() == PluginHost::IShell::startmode::ACTIVATED)));
         }
         Core::hresult Resumed(const bool resumed) override
         {
             _config.Resumed(resumed);
             return (Core::ERROR_NONE);
         }
-        PluginHost::IShell::startup Startup() const override
+        PluginHost::IShell::startmode StartMode() const override
         {
-            return _config.Configuration().Startup.Value();
+            return _config.Configuration().StartMode.Value();
         }
-        Core::hresult Startup(const PluginHost::IShell::startup value) override
+        Core::hresult StartMode(const PluginHost::IShell::startmode value) override
         {
-            _config.Startup(value);
-            _config.AutoStart(value == PluginHost::IShell::startup::ACTIVATED);
+            _config.StartMode(value);
 
             return (Core::ERROR_NONE);
         }

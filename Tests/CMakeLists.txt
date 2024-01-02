@@ -3,6 +3,7 @@ option(HTTPSCLIENT_TEST "Example how to do https requests with Thunder." OFF)
 option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
+option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -26,4 +27,8 @@ endif()
 
 if(WORKERPOOL_TEST)
     add_subdirectory(workerpool-test)
+endif()
+
+if(MESSAGEBUFFER_TEST)
+    add_subdirectory(message-buffer)
 endif()

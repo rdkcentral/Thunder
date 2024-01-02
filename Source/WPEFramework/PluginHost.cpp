@@ -780,7 +780,7 @@ POP_WARNING()
                             printf("State:      %s\n", index.Current().JSONState.Data().c_str());
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
-                            printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
+                            printf("StartMode:  %s\n", index.Current().StartMode.Data());
 #if THUNDER_RESTFULL_API
 
                             printf("Observers:  %d\n", index.Current().Observers.Value());
@@ -905,7 +905,7 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-                           printf("  Thread%02d|0x%16lX: %10d", (index + 1), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
@@ -1013,7 +1013,7 @@ POP_WARNING()
                                 counter++;
                             }
                         } else {
-                           printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
+                           printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT + 1);
                         }
 
                         break;
@@ -1028,7 +1028,7 @@ POP_WARNING()
                         printf("  [T]rigger resource monitor\n");
                         printf("  [M]etadata resource monitor\n");
                         printf("  [R]esource monitor stack\n");
-                        printf("  [0..%d] Workerpool stacks\n", THREADPOOL_COUNT);
+                        printf("  [0..%d] Threadpool stacks\n", THREADPOOL_COUNT + 1);
                         printf("  [Q]uit\n\n");
                         break;
 
