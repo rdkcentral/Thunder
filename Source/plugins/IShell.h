@@ -62,7 +62,9 @@ namespace PluginHost {
         enum class startup : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
-            ACTIVATED
+            ACTIVATED,
+            SUSPENDED,
+            RESUMED
         };
 
         // State of the IPlugin interface associated with this shell.

@@ -194,14 +194,6 @@ namespace Plugin {
             Core::JSON::String Configuration;
         };
 
-        public:
-            enum startup : uint8_t {
-            UNAVAILABLE,
-            DEACTIVATED,
-            SUSPENDED,
-            RESUMED
-        };
-
     public:
         Config()
             : Core::JSON::Container()
