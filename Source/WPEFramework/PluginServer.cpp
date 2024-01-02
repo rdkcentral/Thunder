@@ -610,7 +610,7 @@ namespace PluginHost {
 
         uint32_t result = Core::ERROR_NONE;
 
-        if (Startup() == PluginHost::IShell::startup::DEACTIVATED) {
+        if (StartMode() == PluginHost::IShell::startmode::DEACTIVATED) {
             // We need to shutdown completely
             result = Deactivate(why);
         }
@@ -1007,14 +1007,15 @@ namespace PluginHost {
         for (auto service : configured_services)
         {
             if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
+                if (service->StartMode() == PluginHost::IShell::startmode::ACTIVATED) {
                     SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
                         service->ClassName().c_str(), service->Callsign().c_str()));
                     service->Activate(PluginHost::IShell::STARTUP);
                 }
                 else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, start mode is %s"),
+                        service->ClassName().c_str(), service->Callsign().c_str(),
+                        Core::EnumerateType<PluginHost::IShell::startmode>(service->StartMode()).Data()));
                 }
             }
         }
