@@ -55,11 +55,11 @@ namespace Core {
     };
 
     namespace System {
-        extern "C" EXTERNAL const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA;
+        extern "C" EXTERNAL_EXPORT const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA;
 
-        extern "C" EXTERNAL const char* MODULE_NAME;
+        extern "C" EXTERNAL_EXPORT const char* MODULE_NAME;
 
-        extern "C" EXTERNAL uint32_t Reboot();
+        extern "C" EXTERNAL_EXPORT uint32_t Reboot();
         extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
         extern "C" EXTERNAL_EXPORT const IService::IMetadata* ModuleServiceMetadata();
     }
@@ -258,10 +258,10 @@ namespace Core {
     namespace WPEFramework {                                                                                  \
         namespace Core {                                                                                      \
             namespace System {                                                                                \
-                const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA = nullptr;                     \
-                const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                                         \
-                const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }                            \
-                const IService::IMetadata* ModuleServiceMetadata() { return (ROOT_META_DATA); }               \
+                EXTERNAL_EXPORT const WPEFramework::Core::IService::IMetadata* ROOT_META_DATA = nullptr;      \
+                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                         \
+                EXTERNAL_EXPORT const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }            \
+                EXTERNAL_EXPORT const IService::IMetadata* ModuleServiceMetadata() {return(ROOT_META_DATA);}  \
             }                                                                                                 \
         }                                                                                                     \
     }                                                                                                         \
@@ -272,7 +272,7 @@ namespace Core {
     namespace WPEFramework {                                                                        \
         namespace Core {                                                                            \
             namespace System {                                                                      \
-                const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                               \
+                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);               \
             }                                                                                       \
         }                                                                                           \
     }                                                                                               \
