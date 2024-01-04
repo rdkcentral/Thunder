@@ -17,29 +17,27 @@
  * limitations under the License.
  */
 
-#pragma once
-#include "Module.h"
+#include "Log.h"
 
-#include "IPluginStarter.h"
+int gActivatorLogLevel = LEVEL_ERROR;
 
-using namespace WPEFramework;
+void initLogging(int logLevel)
+{
+    gActivatorLogLevel = logLevel;
+}
 
-/**
- * @brief COM-RPC implementation of a plugin starter
- *
- * Connects to Thunder over COM-RPC and attempts to start a given plugin
- */
-class COMRPCStarter : public IPluginStarter {
-public:
-    explicit COMRPCStarter(const string& pluginName);
-    ~COMRPCStarter() override = default;
-
-    bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
-
-private:
-    using ControllerConnector = RPC::SmartControllerInterfaceType<Exchange::Controller::ILifeTime>;
-
-private:
-    ControllerConnector _connector;
-    const string _pluginName;
-};
+const char* getLogLevel(int level)
+{
+    switch (level) {
+    case LEVEL_DEBUG:
+        return "[DBG]";
+    case LEVEL_INFO:
+        return "[NFO]";
+    case LEVEL_WARN:
+        return "[WRN]";
+    case LEVEL_ERROR:
+        return "[ERR]";
+    default:
+        return "";
+    }
+}

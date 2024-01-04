@@ -17,14 +17,16 @@
  * limitations under the License.
  */
 
-#include "COMRPCStarter.h"
 #include "Module.h"
 
+#include "Log.h"
+#include "COMRPCStarter.h"
 #include <memory>
 
 static int gRetryCount = 100;
 static int gRetryDelayMs = 500;
 static string gPluginName;
+static int gLogLevel = LEVEL_INFO;
 
 /**
  * @brief Display a help message for the tool
@@ -36,6 +38,7 @@ static void displayUsage()
     printf("    -h, --help          Print this help and exit\n");
     printf("    -r, --retries       Maximum amount of retries to attempt to start the plugin before giving up\n");
     printf("    -d, --delay         Delay (in ms) between each attempt to start the plugin if it fails\n");
+    printf("    -v, --verbose       Increase log level\n");
     printf("\n");
     printf("    [callsign]          Callsign of the plugin to activate (Required)\n");
 }
@@ -57,6 +60,7 @@ static void parseArgs(const int argc, char** argv)
         { "help", no_argument, nullptr, (int)'h' },
         { "retries", required_argument, nullptr, (int)'r' },
         { "delay", required_argument, nullptr, (int)'d' },
+        { "verbose", no_argument, nullptr, (int)'v' },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -65,7 +69,7 @@ static void parseArgs(const int argc, char** argv)
     int option;
     int longindex;
 
-    while ((option = getopt_long(argc, argv, "hr:d:", longopts, &longindex)) != -1) {
+    while ((option = getopt_long(argc, argv, "hr:d:v", longopts, &longindex)) != -1) {
         switch (option) {
         case 'h':
             displayUsage();
@@ -83,6 +87,11 @@ static void parseArgs(const int argc, char** argv)
             if (gRetryDelayMs < 0) {
                 fprintf(stderr, "Error: Delay ms must be > 0\n");
                 exit(EXIT_FAILURE);
+            }
+            break;
+        case 'v':
+            if (gLogLevel < LEVEL_DEBUG) {
+                gLogLevel++;
             }
             break;
         case '?':
@@ -118,15 +127,17 @@ int main(int argc, char* argv[])
 {
     parseArgs(argc, argv);
 
+    initLogging(gLogLevel);
+
     // For now, we only implement the starter in COM-RPC but could do a JSON-RPC version
     // in the future
     bool success;
-    std::unique_ptr<IPluginStarter> starter(new COMRPCStarter(gPluginName));
-    success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
 
-    // Destruct the COM-RPC starter so it cleans up after itself before we dispose WPEFramework singletons
-    starter.reset();
+    {
+        auto starter = std::unique_ptr<IPluginStarter>(new COMRPCStarter(gPluginName));
+        success = starter->activatePlugin(gRetryCount, gRetryDelayMs);
+    }
+
     Core::Singleton::Dispose();
-
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

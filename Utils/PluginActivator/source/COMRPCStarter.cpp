@@ -31,10 +31,6 @@ COMRPCStarter::COMRPCStarter(const string& pluginName)
 {
 }
 
-COMRPCStarter::~COMRPCStarter()
-{
-}
-
 /**
  * @brief Attempt to activate the plugin and automatically retry on failure
  *
@@ -45,7 +41,6 @@ COMRPCStarter::~COMRPCStarter()
  */
 bool COMRPCStarter::activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs)
 {
-
     // Attempt to open the plugin shell
     bool success = false;
     int currentRetry = 1;
@@ -53,11 +48,11 @@ bool COMRPCStarter::activatePlugin(const uint8_t maxRetries, const uint16_t retr
     while (!success && currentRetry <= maxRetries) {
         LOG_INF(_pluginName.c_str(), "Attempting to activate plugin - attempt %d/%d", currentRetry, maxRetries);
 
-        auto start = Core::Time::Now();
+        Core::StopWatch stopwatch;
 
         if (_connector.IsOperational() == false) {
             uint32_t result = _connector.Open(RPC::CommunicationTimeOut, ControllerConnector::Connector());
-            if(result != Core::ERROR_NONE) {
+            if (result != Core::ERROR_NONE) {
                 LOG_ERROR(_pluginName.c_str(), "Failed to get controller interface, error %u (%s)", result, Core::ErrorToString(result));
             }
         }
@@ -65,33 +60,34 @@ bool COMRPCStarter::activatePlugin(const uint8_t maxRetries, const uint16_t retr
         Exchange::Controller::ILifeTime* lifetime = _connector.Interface();
 
         if (lifetime == nullptr) {
-            LOG_ERROR(_pluginName.c_str(), "Failed to open ILifeTime interface" );
+            LOG_ERROR(_pluginName.c_str(), "Failed to open ILifeTime interface, will retry after %dms", retryDelayMs);
             currentRetry++;
 
             _connector.Close(RPC::CommunicationTimeOut);
 
             // Sleep, then try again
-            std::this_thread::sleep_for(std::chrono::milliseconds(retryDelayMs));
+            SleepMs(retryDelayMs);
         } else {
             // Will block until plugin is activated
-            uint32_t result = lifetime->Activate(_pluginName.c_str());
+            Core::hresult result = lifetime->Activate(_pluginName.c_str());
 
-            auto duration = Core::Time::Now().Sub(start.MilliSeconds());
+            auto duration = stopwatch.Elapsed() / Core::Time::TicksPerMillisecond;
 
             if (result != Core::ERROR_NONE) {
                 if (result == Core::ERROR_PENDING_CONDITIONS) {
                     // Ideally we'd print out which preconditions are un-met for debugging, but that data is not exposed through the IShell interface
-                    LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin due to unmet preconditions after %dms", duration.MilliSeconds());
+                    LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin due to unmet preconditions after %ldms", duration);
                 } else {
-                    LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin with error %u (%s) after %dms", result, Core::ErrorToString(result), duration.MilliSeconds());
+                    LOG_ERROR(_pluginName.c_str(), "Failed to activate plugin with error %u (%s) after %ldms (COM-RPC link error: %s)", result, Core::ErrorToString(result), duration, result & COM_ERROR ? "true" : "false");
                 }
 
                 // Try activation again up until the max number of retries
                 currentRetry++;
-                std::this_thread::sleep_for(std::chrono::milliseconds(retryDelayMs));
+                LOG_DBG(_pluginName.c_str(), "Will retry activation again in %dms", retryDelayMs);
+                SleepMs(retryDelayMs);
             } else {
                 // Our work here is done!
-                LOG_INF(_pluginName.c_str(), "Successfully activated plugin after %dms", duration.MilliSeconds());
+                LOG_INF(_pluginName.c_str(), "Successfully activated plugin after %ldms", duration);
                 success = true;
             }
             lifetime->Release();
