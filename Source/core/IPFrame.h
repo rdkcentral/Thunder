@@ -51,7 +51,7 @@ namespace Core {
         ~EthernetFrameType() = default;
 
     public:
-        static constexpr uint16_t MACSize = 6;
+        static constexpr uint8_t  MACSize = 6;
         static constexpr uint16_t FrameSize = SIZE;
         static constexpr uint16_t HeaderSize = EthernetFrameSize;
 
@@ -67,12 +67,11 @@ namespace Core {
             memcpy(&(_buffer[MACSize]), MACAddress, MACSize);
         }
         const uint8_t* DestinationMAC() const {
-            return (&(_buffer[MACSize]));
+            return (&(_buffer[0]));
         }
         void DestinationMAC(const uint8_t MACAddress[]) {
             memcpy(&(_buffer[0]), &MACAddress, MACSize);
         }
-
         uint8_t* Frame() {
             return (SIZE > 0 ? &(_buffer[HeaderSize]) : nullptr);
         }
@@ -81,6 +80,9 @@ namespace Core {
         }
         const uint8_t* Data() const {
             return _buffer;
+        }
+        bool IsBroadcastMAC(const uint8_t MAC[6]) const {
+            return ( (MAC[0] == 0xFF) && (MAC[1] == 0xFF) && (MAC[2] == 0xFF) && (MAC[3] == 0xFF) && (MAC[4] == 0xFF) && (MAC[5] == 0xFF) );
         }
      
     private:
