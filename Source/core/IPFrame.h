@@ -81,7 +81,7 @@ namespace Core {
         const uint8_t* Data() const {
             return _buffer;
         }
-        bool IsBroadcastMAC(const uint8_t MAC[6]) const {
+        bool IsBroadcastMAC(const uint8_t MAC[MACSize]) const {
             return ( (MAC[0] == 0xFF) && (MAC[1] == 0xFF) && (MAC[2] == 0xFF) && (MAC[3] == 0xFF) && (MAC[4] == 0xFF) && (MAC[5] == 0xFF) );
         }
      
