@@ -654,7 +654,7 @@ namespace Core {
         {
             ASSERT(IsValid());
 
-            (*_index)->MAC(buffer);
+            return((*_index)->MAC(buffer));
         }
         inline IPV4AddressIterator IPV4Addresses() const {
             ASSERT(IsValid());
