@@ -1589,7 +1589,7 @@ namespace Core {
             struct ifreq ifr;
 
             ::bzero(ifr.ifr_name, IFNAMSIZ);
-            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
             ::memcpy(ifr.ifr_hwaddr.sa_data, buffer, 6);
             ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
