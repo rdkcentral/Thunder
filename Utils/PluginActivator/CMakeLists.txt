@@ -24,6 +24,7 @@ set( CMAKE_CXX_STANDARD 11 )
 
 add_executable(${PROJECT_NAME}
     source/Module.cpp
+    source/Log.cpp
     source/main.cpp
     source/COMRPCStarter.cpp
 )
