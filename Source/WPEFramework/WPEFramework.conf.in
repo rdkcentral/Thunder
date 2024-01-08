@@ -72,6 +72,8 @@ if boolean('@MESSAGING@'):
   messaging = JSON()
   messaging.add("path", '@MESSAGECONTROL_PATH@')
   messaging.add("port", '@MESSAGING_PORT@')
+  messaging.add("stdout", '@MESSAGING_STDOUT@')
+  messaging.add("stderr", '@MESSAGING_STDERR@')
 
   __notification = {
        "category" : "AnyCategory",

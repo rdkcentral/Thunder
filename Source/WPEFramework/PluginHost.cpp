@@ -227,10 +227,6 @@ POP_WARNING()
 #endif
 
             Messaging::MessageUnit::Instance().Close();
-            Messaging::ConsoleStandardError::Instance().Close();
-            if (_background == true) {
-                Messaging::ConsoleStandardOut::Instance().Close();
-            }
 
 #ifndef __WINDOWS__
             if (_background) {
@@ -436,6 +432,82 @@ POP_WARNING()
         ExitHandler::Destruct();
     }
 
+    void MessagingInitialization(const string& pathName, const Messaging::MessageUnit::flush flushMode) {
+        string messagingSettings;
+
+        if (_config->MessagingCategoriesFile()) {
+
+            string messagingCategories = _config->MessagingCategories();
+
+            if (Core::File::IsPathAbsolute(messagingCategories)) {
+                messagingSettings = messagingCategories;
+            }
+            else {
+                messagingSettings = Core::Directory::Normalize(Core::File::PathName(pathName)) + messagingCategories;
+            }
+
+            std::ifstream inputFile (messagingSettings, std::ifstream::in);
+            std::stringstream buffer;
+            buffer << inputFile.rdbuf();
+            messagingSettings = buffer.str();
+        }
+        else {
+            messagingSettings = _config->MessagingCategories();
+        }
+
+        Messaging::MessageUnit::Settings::Config jsonParsed;
+        jsonParsed.FromString(messagingSettings);
+
+        // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
+        // Define the environment variable for Messaging files, if it is not already set.
+        uint32_t messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), jsonParsed, _background, flushMode);
+
+        if ( messagingErrorCode != Core::ERROR_NONE){
+        #ifndef __WINDOWS__
+            if (_background == true) {
+                syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging/tracing functionality!");
+            } else
+        #endif
+            {
+                fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
+            }
+        }
+        else {
+            #ifdef __CORE_WARNING_REPORTING__
+            class GlobalConfig : public Core::JSON::Container {
+            public:
+                class ReportingSettings : public Core::JSON::Container {
+                public:
+                    ReportingSettings()
+                        : Core::JSON::Container()
+                        , Settings()
+                    {
+                        Add("settings", &Settings);
+                    }
+
+                public:
+                    Core::JSON::String Settings;
+                };
+
+            public:
+                GlobalConfig()
+                    : Core::JSON::Container()
+                    , WarningReporting()
+                {
+                    Add("reporting", &WarningReporting);
+                }
+
+             public:
+                ReportingSettings WarningReporting;
+            } gc;
+
+            gc.FromString(messagingSettings);
+
+            WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
+            #endif
+        }
+    }
+
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
@@ -566,92 +638,13 @@ POP_WARNING()
                 pluginPath = Core::Directory::Normalize(pluginPath);
             }
 
-            string messagingSettings (options.configFile);
- 
             // Create PostMortem path
             Core::Directory postMortemPath(_config->PostMortemPath().c_str());
             if (postMortemPath.Next() != true) {
                 postMortemPath.CreatePath();
             }
 
-            if (_config->MessagingCategoriesFile()) {
-
-                string messagingCategories = _config->MessagingCategories();
-
-                if (Core::File::IsPathAbsolute(messagingCategories)) {
-                    messagingSettings = messagingCategories;
-                }
-                else {
-                    messagingSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + messagingCategories;
-                }
-
-                std::ifstream inputFile (messagingSettings, std::ifstream::in);
-                std::stringstream buffer;
-                buffer << inputFile.rdbuf();
-                messagingSettings = buffer.str();
-            }
-            else {
-                messagingSettings = _config->MessagingCategories();
-            }
-
-            // Time to open up, the message buffer for this process and define it for the out-of-proccess systems
-            // Define the environment variable for Messaging files, if it is not already set.
-            uint32_t messagingErrorCode = Core::ERROR_GENERAL;
-            messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), messagingSettings, _background, options.flushMode);
-
-            if ( messagingErrorCode != Core::ERROR_NONE){
-#ifndef __WINDOWS__
-                if (_background == true) {
-                    syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging/tracing functionality!");
-                } else
-#endif
-                {
-                    fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
-                }
-            }
-
-            // Redirect the standard error to the messaging engine and the MessageControl plugin
-            // And if Thunder is running in the background, do the same for standard output
-            Messaging::ConsoleStandardError::Instance().Open();
-            if (_background == true) {
-                // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
-                // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
-                ::setvbuf(stdout, NULL, _IONBF, 0);
-                Messaging::ConsoleStandardOut::Instance().Open();
-            }
-            
-#ifdef __CORE_WARNING_REPORTING__
-            class GlobalConfig : public Core::JSON::Container {
-            public:
-                class ReportingSettings : public Core::JSON::Container {
-                public:
-                    ReportingSettings()
-                        : Core::JSON::Container()
-                        , Settings()
-                    {
-                        Add("settings", &Settings);
-                    }
-
-                public:
-                    Core::JSON::String Settings;
-                };
-
-            public:
-                GlobalConfig()
-                    : Core::JSON::Container()
-                    , WarningReporting()
-                {
-                    Add("reporting", &WarningReporting);
-                }
-
-             public:
-                ReportingSettings WarningReporting;
-            } gc;
-
-            gc.FromString(messagingSettings);
-
-            WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
-#endif
+            MessagingInitialization(options.configFile, options.flushMode);
 
             SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
             SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
@@ -659,7 +652,12 @@ POP_WARNING()
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
-            SYSLOG(Logging::Startup, (_T("Messages:        %s"), messagingSettings.c_str()));
+            if (_config->MessagingCategoriesFile() == false) {
+                SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
+            }
+            else {
+                SYSLOG(Logging::Startup, (_T("Messages [EXT]:  %s"), _config->MessagingCategories().c_str()));
+            }
 
             // Before we do any translation of IP, make sure we have the right network info...
             if (_config->IPv6() == false) {
