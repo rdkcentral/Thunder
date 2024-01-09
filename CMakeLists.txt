@@ -34,8 +34,6 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
-option(BUILD_PLUGIN_ACTIVATOR
-     "Build the standalone plugin activator utility to activate plugins using systemd" OFF)
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -140,6 +138,3 @@ add_subdirectory(Source)
 
 add_subdirectory(Tests)
 
-if (BUILD_PLUGIN_ACTIVATOR)
-  add_subdirectory(Utils/PluginActivator)
-endif()
