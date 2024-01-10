@@ -2992,7 +2992,7 @@ namespace PluginHost {
 
                 workingList.reserve(_services.size());
 
-                for (const std::pair<string, Core::ProxyType<Service>>& entry : _services) {
+                for (auto entry : _services) {
 
                     std::vector<Core::ProxyType<Service>>::iterator index = workingList.begin();
 
@@ -3021,7 +3021,7 @@ namespace PluginHost {
                         locals.insert(index, std::pair<string,string>(callsign, metadata));
                     });
 
-                    for (const std::pair<const string, const string>& entry : locals) {
+                    for (auto entry : locals) {
                         metaData.Add().FromString(entry.second);
                     }
                 }
