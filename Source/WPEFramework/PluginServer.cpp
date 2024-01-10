@@ -1079,7 +1079,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins();
 
         // First register all services, than if we got them, start "activating what is required.
-        // Whatever plugin is needed, we at least have our Metdata plugin available (as the first entry :-).
+        // Whatever plugin is needed, we at least have our Metadata plugin available (as the first entry :-).
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
