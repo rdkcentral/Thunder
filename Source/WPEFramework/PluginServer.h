@@ -1215,28 +1215,6 @@ namespace PluginHost {
 
                 return (nullptr);
             }
-            template <typename REQUESTEDINTERFACE>
-            REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
-            {
-                void* baseInterface(Service::QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
-
-                if (baseInterface != nullptr) {
-                    return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-                }
-
-                return (nullptr);
-            }
-            template <typename REQUESTEDINTERFACE>
-            const REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name) const
-            {
-                const void* baseInterface(const_cast<Service*>(this)->QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
-
-                if (baseInterface != nullptr) {
-                    return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
-                }
-
-                return (nullptr);
-            }
  
             void Register(IPlugin::INotification* sink) override;
             void Unregister(IPlugin::INotification* sink) override;
