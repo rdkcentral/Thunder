@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "Channel.h"
 #include "Configuration.h"
-#include "MetaData.h"
+#include "Metadata.h"
 #include "System.h"
 #include "IPlugin.h"
 #include "IShell.h"

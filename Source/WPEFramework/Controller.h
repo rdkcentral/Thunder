@@ -34,7 +34,6 @@ namespace Plugin {
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
-        , public PluginHost::IController
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystemManagement
@@ -367,7 +366,6 @@ namespace Plugin {
             INTERFACE_ENTRY(PluginHost::IPlugin)
             INTERFACE_ENTRY(PluginHost::IWeb)
             INTERFACE_ENTRY(PluginHost::IDispatcher)
-            INTERFACE_ENTRY(PluginHost::IController)
             INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
             INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
             INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
@@ -394,8 +392,6 @@ namespace Plugin {
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
-        uint32_t Harakiri();
-        uint32_t Storeconfig();
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
         void Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;

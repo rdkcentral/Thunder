@@ -1026,16 +1026,6 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Harakiri()
-    {
-        return (Reboot());
-    }
-
-    Core::hresult Controller::Storeconfig()
-    {
-        return Persist();
-    }
-
     Core::hresult Controller::StartDiscovery(const uint8_t& ttl)
     {
         if (_probe != nullptr) {

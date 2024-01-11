@@ -18,7 +18,7 @@
  */
 
 #include "Module.h"
-#include "MetaData.h"
+#include "Metadata.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"
 
@@ -125,12 +125,6 @@ namespace PluginHost
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
-#ifdef DEPRECATED_CODE 
-        Add(_T("hash"), &(ServiceVersion.Hash));
-        Add(_T("major"), &(ServiceVersion.Major));
-        Add(_T("minor"), &(ServiceVersion.Minor));
-        Add(_T("patch"), &(ServiceVersion.Patch));
-#endif
         Add(_T("version"), &ServiceVersion);
         Add(_T("interface"), &InterfaceVersion);
     }
@@ -157,12 +151,6 @@ namespace PluginHost
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
-#ifdef DEPRECATED_CODE 
-        Add(_T("hash"), &(ServiceVersion.Hash));
-        Add(_T("major"), &(ServiceVersion.Major));
-        Add(_T("minor"), &(ServiceVersion.Minor));
-        Add(_T("patch"), &(ServiceVersion.Patch));
-#endif
         Add(_T("version"), &ServiceVersion);
 
         Add(_T("interface"), &InterfaceVersion);
@@ -190,12 +178,6 @@ namespace PluginHost
         Add(_T("observers"), &Observers);
 #endif
         Add(_T("module"), &Module);
-#ifdef DEPRECATED_CODE 
-        Add(_T("hash"), &(ServiceVersion.Hash));
-        Add(_T("major"), &(ServiceVersion.Major));
-        Add(_T("minor"), &(ServiceVersion.Minor));
-        Add(_T("patch"), &(ServiceVersion.Patch));
-#endif
         Add(_T("version"), &ServiceVersion);
 
         Add(_T("interface"), &InterfaceVersion);

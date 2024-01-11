@@ -21,8 +21,6 @@
 #include "Module.h"
 #include "IShell.h"
 
-#include "IControllerDeprecated.h"
-
 // @stubgen:include <plugins/IShell.h>
 // @stubgen:include <plugins/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
