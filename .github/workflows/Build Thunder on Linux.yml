@@ -2,7 +2,7 @@ name: Build Thunder on Linux
 
 on:
   push:
-    # branches: ["master"]
+    branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -16,24 +16,24 @@ on:
 
 jobs:
   Thunder:
-    uses: VeithMetro/Thunder/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
 
 #  ThunderInterfaces:
 #    needs: Thunder
-#    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@development/actions
+#    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
 
 #  ThunderLibraries:
 #    needs: Thunder
-#    uses: rdkcentral/ThunderLibraries/.github/workflows/Linux build template.yml@development/actions
+#    uses: rdkcentral/ThunderLibraries/.github/workflows/Linux build template.yml@master
 
 #  ThunderClientLibraries:
 #    needs: ThunderInterfaces
-#    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@development/actions
+#    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
 
 #  ThunderNanoServices:
 #    needs: ThunderInterfaces
-#    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@development/actions
+#    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
 
 #  ThunderNanoServicesRDK:
 #    needs: ThunderInterfaces
-#    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@development/actions
+#    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
