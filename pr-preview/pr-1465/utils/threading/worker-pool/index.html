@@ -1441,13 +1441,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scheduler" class="md-nav__link">
+  <a href="#scheduling-jobs" class="md-nav__link">
     <span class="md-ellipsis">
-      Scheduler
+      Scheduling jobs
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scheduler">
+    <nav class="md-nav" aria-label="Scheduling jobs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1460,13 +1460,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scheduler-methods" class="md-nav__link">
+  <a href="#workerpool-class-methods" class="md-nav__link">
     <span class="md-ellipsis">
-      Scheduler methods
+      Workerpool class methods
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scheduler methods">
+    <nav class="md-nav" aria-label="Workerpool class methods">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1496,17 +1496,68 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-        
           <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-class-scheduling-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Job class scheduling methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Job class scheduling methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rescheduling-job_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rescheduling job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revoking-job_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revoking job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2312,13 +2363,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scheduler" class="md-nav__link">
+  <a href="#scheduling-jobs" class="md-nav__link">
     <span class="md-ellipsis">
-      Scheduler
+      Scheduling jobs
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scheduler">
+    <nav class="md-nav" aria-label="Scheduling jobs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2331,13 +2382,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scheduler-methods" class="md-nav__link">
+  <a href="#workerpool-class-methods" class="md-nav__link">
     <span class="md-ellipsis">
-      Scheduler methods
+      Workerpool class methods
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scheduler methods">
+    <nav class="md-nav" aria-label="Workerpool class methods">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2367,17 +2418,68 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-        
           <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scheduler class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-class-scheduling-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Job class scheduling methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Job class scheduling methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rescheduling-job_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rescheduling job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revoking-job_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revoking job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2506,17 +2608,18 @@ the next section. Additionally, it was mentioned that the job can be submitted, 
 functionality in Thunder, which will be further described in a different document.</p>
 <h2 id="conclusions">Conclusions</h2>
 <p>To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.</p>
-<h2 id="scheduler">Scheduler</h2>
+<h2 id="scheduling-jobs">Scheduling jobs</h2>
 <h3 id="overview">Overview</h3>
-<p><code>Workerpool</code> has the ability to schedule <code>jobs</code> using the <code>Scheduler</code> class. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time.</p>
-<p>To schedule a <code>job</code> we use several methods for this:</p>
+<p><code>Workerpool</code> has the ability to schedule <code>jobs</code>. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time. <code>Workerpool</code> has several ways of scheduling <code>jobs</code>. The first is to use the <code>Workerpool</code> class methods. Another way is to use the <code>Scheduler</code> class. The most common case of scheduling tasks is to refer directly to a specific <code>job</code> and use its methods.</p>
+<p>To schedule a <code>job</code> you should use the <code>Scheduler</code> class or a direct reference to a specific <code>job</code>. The methods of the <code>Workerpool</code> class are described below mainly for illustrative purposes and to see how jobs are scheduled inside <code>Workerpool</code>.</p>
+<h3 id="workerpool-class-methods">Workerpool class methods</h3>
+<p>To schedule a <code>job</code> using <code>Workerpool</code> class we use several methods:</p>
 <ul>
 <li><code>Schedule()</code></li>
 <li><code>Reschedule()</code></li>
 <li><code>Revoke()</code></li>
 </ul>
 <p>Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether.</p>
-<h3 id="scheduler-methods">Scheduler methods</h3>
 <h4 id="scheduling-job">Scheduling job</h4>
 <p><code>Schedule()</code> is used to plan when to perform the <code>job</code> we specified. Using this method is very simple. We just need to specify the <code>job</code> with a point in time when it should be performed.</p>
 <div class="admonition note">
@@ -2552,7 +2655,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="revoking-job">Revoking job</h4>
-<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until <code>job</code> is cancelled or an error occurs. The <code>Revoke()</code> method returns a numeric value.</p>
+<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and and waiting time for <code>job</code> cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until <code>job</code> is cancelled or an error occurs. The <code>Revoke()</code> method returns a numeric value.</p>
 <p>Error codes that can be returned:</p>
 <ul>
 <li><code>ERROR_NONE</code> - 0 (no errors)</li>
@@ -2579,46 +2682,123 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h3 id="example">Example</h3>
-<p><code>Scheduler</code> is used for example in rdkservices repository. Here is example use of <code>Schedule()</code> from there.
-<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">CFrontPanel::startBlinkTimer</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">numberOfBlinkRepeats</span><span class="p">)</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="n">LOGWARN</span><span class="p">(</span><span class="s">&quot;startBlinkTimer numberOfBlinkRepeats: %d m_blinkList.length : %zu&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">numberOfBlinkRepeats</span><span class="p">,</span><span class="w"> </span><span class="n">m_blinkList</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
-<span class="w">            </span><span class="n">stopBlinkTimer</span><span class="p">();</span>
-<span class="w">            </span><span class="n">m_numberOfBlinks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">            </span><span class="n">m_isBlinking</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
-<span class="w">            </span><span class="n">m_maxNumberOfBlinkRepeats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numberOfBlinkRepeats</span><span class="p">;</span>
-<span class="w">            </span><span class="n">m_currentBlinkListIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m_blinkList</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
-<span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="n">FrontPanelBlinkInfo</span><span class="w"> </span><span class="n">blinkInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_blinkList</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-<span class="w">                </span><span class="n">setBlinkLed</span><span class="p">(</span><span class="n">blinkInfo</span><span class="p">);</span>
-<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m_isBlinking</span><span class="p">)</span>
-<span class="w">                    </span><span class="n">blinkTimer</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">().</span><span class="n">Add</span><span class="p">(</span><span class="n">blinkInfo</span><span class="p">.</span><span class="n">durationInMs</span><span class="p">),</span><span class="w"> </span><span class="n">m_blinkTimer</span><span class="p">);</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">}</span>
-</code></pre></div></p>
+<h4 id="example">Example</h4>
 <p>Below is test example of using it.
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">test_scheduler</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// Schedule the job to run 5 seconds from now</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">scheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
-<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Wait for a while to see the scheduled job execution</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">// Reschedule the job to run 10 seconds from now</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">rescheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
-<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">rescheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">rescheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Wait for a while to see the rescheduled job execution</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">15</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">// Revoke the job (cancel its execution)</span>
-<span class="w">    </span><span class="n">_scheduler</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
 <span class="p">}</span>
+</code></pre></div>
+For more examples you can check <code>Thunder/Tests/unit/core/test_workerpool.cpp</code> file.</p>
+<h3 id="scheduler-class">Scheduler class</h3>
+<p><code>Scheduler</code> is a small class designed to schedule jobs in the future. It has one public method <code>Schedule()</code>. It takes as arguments the <code>job</code> whose execution is to be scheduled in the future and the time after which the execution of the <code>job</code> should start.
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">Schedule</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Time</span><span class="o">&amp;</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">_timer</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">Timer</span><span class="p">(</span><span class="n">_pool</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">));</span>
+<span class="w">            </span><span class="p">}</span>
+</code></pre></div>
+The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> class as a privileged class. How the <code>Timer</code> class is built and how it works can be seen in the <code>Timer.h</code> file.</p>
+<h3 id="job-class-scheduling-methods">Job class scheduling methods</h3>
+<p>Each <code>job</code> has two methods by which we can reschedule them for future execution and cancel them.
+ These methods are:</p>
+<ul>
+<li><code>Reschedule()</code></li>
+<li><code>Revoke()</code></li>
+</ul>
+<h4 id="rescheduling-job_1">Rescheduling job</h4>
+<p><code>Reschedule()</code> allows the scheduled <code>job</code> execution time to be changed. The id argument takes the time by which we should postpone the execution of the job. The method returns <code>true</code> if the operation is successful.
+<div class="highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">Reschedule</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">&amp;</span><span class="w"> </span><span class="n">time</span><span class="p">)</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">bool</span><span class="w"> </span><span class="n">rescheduled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+
+<span class="w">                </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">time</span><span class="p">));</span>
+
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">IsValid</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">                    </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoke</span><span class="p">();</span>
+
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">IsValid</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">rescheduled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">IWorkerPool</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoked</span><span class="p">();</span>
+<span class="w">                    </span><span class="p">}</span>
+
+<span class="w">                    </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Idle</span><span class="p">());</span>
+
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">IsValid</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">IWorkerPool</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Schedule</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
+<span class="w">                    </span><span class="p">}</span>
+<span class="w">                </span><span class="p">}</span>
+
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">rescheduled</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">IsIdle</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">));</span>
+<span class="w">            </span><span class="p">}</span>
 </code></pre></div></p>
-<p>For more examples you can check <code>Thunder/Tests/unit/core/test_workerpool.cpp</code> file.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code>Job</code> must first be submitted to be rescheduled!</p>
+</div>
+<h4 id="revoking-job_1">Revoking job</h4>
+<p><code>Revoke()</code> is used to revoke the execution of <code>job</code>.
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">Revoke</span><span class="p">()</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoke</span><span class="p">());</span>
+
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">IsValid</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">IWorkerPool</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
+<span class="w">                    </span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoked</span><span class="p">();</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+</code></pre></div></p>
+<h4 id="example_1">Example</h4>
+<p>Below is an example of the use of the <code>Reschedule()</code> method in the <code>ChannelMap</code> class in the <code>PluginServer.h</code> file.
+<div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Open</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">waitTime</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">connectionCheckTimer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">_connectionCheckTimer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">connectionCheckTimer</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connectionCheckTimer</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">_job</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">().</span><span class="n">Add</span><span class="p">(</span><span class="n">_connectionCheckTimer</span><span class="p">).</span><span class="n">Ticks</span><span class="p">());</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">                </span><span class="k">return</span><span class="p">(</span><span class="n">BaseClass</span><span class="o">::</span><span class="n">Open</span><span class="p">(</span><span class="n">waitTime</span><span class="p">));</span>
+<span class="w">            </span><span class="p">}</span>
+</code></pre></div></p>
+<p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here is few examples:
+TimeSync/NTPClient.cpp
+<div class="highlight"><pre><span></span><code><span class="c1">// See if we need rescheduling</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="nf">timestamp</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">());</span>
+<span class="w">            </span><span class="n">timestamp</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+<span class="w">            </span><span class="n">_job</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">timestamp</span><span class="p">);</span>
+</code></pre></div></p>
+<p>ProcessMonitor/ProcessMonitor.h
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJob</span><span class="p">()</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">_processMap</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">exitTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">itr</span><span class="p">.</span><span class="n">second</span><span class="p">.</span><span class="n">ExitTime</span><span class="p">();</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exitTime</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">exitTime</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exitTime</span><span class="p">;</span>
+<span class="w">                    </span><span class="p">}</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">_job</span><span class="p">.</span><span class="n">Revoke</span><span class="p">();</span>
+<span class="w">                </span><span class="n">_job</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">scheduleTime</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+</code></pre></div></p>
 
 
 
