@@ -2771,15 +2771,15 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <span class="w">                </span><span class="k">return</span><span class="p">(</span><span class="n">BaseClass</span><span class="o">::</span><span class="n">Open</span><span class="p">(</span><span class="n">waitTime</span><span class="p">));</span>
 <span class="w">            </span><span class="p">}</span>
 </code></pre></div></p>
-<p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here is few examples:
-TimeSync/NTPClient.cpp
+<p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here is few examples:</p>
+<p><code>TimeSync/NTPClient.cpp</code>
 <div class="highlight"><pre><span></span><code><span class="c1">// See if we need rescheduling</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="nf">timestamp</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">());</span>
 <span class="w">            </span><span class="n">timestamp</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
 <span class="w">            </span><span class="n">_job</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">timestamp</span><span class="p">);</span>
 </code></pre></div></p>
-<p>ProcessMonitor/ProcessMonitor.h
+<p><code>ProcessMonitor/ProcessMonitor.h</code>
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJob</span><span class="p">()</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
