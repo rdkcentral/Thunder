@@ -64,12 +64,26 @@ namespace PluginHost
         return (*this);
     }
 
+    MetaData::Service::State& MetaData::Service::State::operator=(MetaData::Service::State&& RHS)
+    {
+        Core::JSON::EnumType<state>::operator= (RHS);
+
+        return (*this);
+    }
+
     string MetaData::Service::State::Data() const
     {
         return (Core::JSON::EnumType<state>::Data());
     }
 
     MetaData::Channel::State& MetaData::Channel::State::operator=(const MetaData::Channel::state RHS)
+    {
+        Core::JSON::EnumType<state>::operator=(RHS);
+
+        return (*this);
+    }
+
+    MetaData::Channel::State& MetaData::Channel::State::operator=(MetaData::Channel::State&& RHS)
     {
         Core::JSON::EnumType<state>::operator=(RHS);
 
@@ -120,6 +134,39 @@ namespace PluginHost
         Add(_T("version"), &ServiceVersion);
         Add(_T("interface"), &InterfaceVersion);
     }
+    MetaData::Service::Service(MetaData::Service&& move)
+        : Plugin::Config(move)
+        , JSONState(move.JSONState)
+#if THUNDER_RUNTIME_STATISTICS
+        , ProcessedRequests(move.ProcessedRequests)
+        , ProcessedObjects(move.ProcessedObjects)
+#endif
+#if THUNDER_RESTFULL_API
+        , Observers(move.Observers)
+#endif
+        , ServiceVersion(move.ServiceVersion)
+        , Module(move.Module)
+        , InterfaceVersion(move.InterfaceVersion)
+    {
+        Add(_T("state"), &JSONState);
+#if THUNDER_RUNTIME_STATISTICS
+        Add(_T("processedrequests"), &ProcessedRequests);
+        Add(_T("processedobjects"), &ProcessedObjects);
+#endif
+#if THUNDER_RESTFULL_API
+        Add(_T("observers"), &Observers);
+#endif
+        Add(_T("module"), &Module);
+#ifdef DEPRECATED_CODE 
+        Add(_T("hash"), &(ServiceVersion.Hash));
+        Add(_T("major"), &(ServiceVersion.Major));
+        Add(_T("minor"), &(ServiceVersion.Minor));
+        Add(_T("patch"), &(ServiceVersion.Patch));
+#endif
+        Add(_T("version"), &ServiceVersion);
+
+        Add(_T("interface"), &InterfaceVersion);
+    }
     MetaData::Service::Service(const MetaData::Service& copy)
         : Plugin::Config(copy)
         , JSONState(copy.JSONState)
@@ -153,9 +200,6 @@ namespace PluginHost
 
         Add(_T("interface"), &InterfaceVersion);
     }
-    MetaData::Service::~Service()
-    {
-    }
 
     MetaData::Service& MetaData::Service::operator=(const Plugin::Config& RHS)
     {
@@ -165,6 +209,20 @@ namespace PluginHost
 
     MetaData::Channel::Channel()
         : Core::JSON::Container()
+    {
+        Core::JSON::Container::Add(_T("remote"), &Remote);
+        Core::JSON::Container::Add(_T("state"), &JSONState);
+        Core::JSON::Container::Add(_T("activity"), &Activity);
+        Core::JSON::Container::Add(_T("id"), &ID);
+        Core::JSON::Container::Add(_T("name"), &Name);
+    }
+    MetaData::Channel::Channel(MetaData::Channel&& move)
+        : Core::JSON::Container()
+        , Remote(move.Remote)
+        , JSONState(move.JSONState)
+        , Activity(move.Activity)
+        , ID(move.ID)
+        , Name(move.Name)
     {
         Core::JSON::Container::Add(_T("remote"), &Remote);
         Core::JSON::Container::Add(_T("state"), &JSONState);
@@ -186,10 +244,17 @@ namespace PluginHost
         Core::JSON::Container::Add(_T("id"), &ID);
         Core::JSON::Container::Add(_T("name"), &Name);
     }
-    MetaData::Channel::~Channel()
-    {
-    }
 
+    MetaData::Channel& MetaData::Channel::operator=(MetaData::Channel&& RHS)
+    {
+        Remote = RHS.Remote;
+        JSONState = RHS.JSONState;
+        Activity = RHS.Activity;
+        ID = RHS.ID;
+        Name = RHS.Name;
+
+        return (*this);
+    }
     MetaData::Channel& MetaData::Channel::operator=(const MetaData::Channel& RHS)
     {
         Remote = RHS.Remote;
@@ -210,17 +275,14 @@ namespace PluginHost
         Add(_T("job"), &Job);
         Add(_T("runs"), &Runs);
     }
-    MetaData::Server::Minion& MetaData::Server::Minion::operator=(const Core::ThreadPool::Metadata& info) {
-        Id = (Core::instance_id) info.WorkerId;
-
-        Runs = info.Runs;
-        if (info.Job.IsSet() == false) {
-            Job.Clear();
-        }
-        else {
-            Job = info.Job.Value();
-        }
-        return (*this);
+    MetaData::Server::Minion::Minion(Minion&& move)
+        : Core::JSON::Container()
+        , Id(move.Id)
+        , Job(move.Job)
+        , Runs(move.Runs) {
+        Add(_T("id"), &Id);
+        Add(_T("job"), &Job);
+        Add(_T("runs"), &Runs);
     }
     MetaData::Server::Minion::Minion(const Minion& copy)
         : Core::JSON::Container()
@@ -231,7 +293,17 @@ namespace PluginHost
         Add(_T("job"), &Job);
         Add(_T("runs"), &Runs);
     }
-    MetaData::Server::Minion::~Minion() {
+    MetaData::Server::Minion& MetaData::Server::Minion::operator=(const Core::ThreadPool::Metadata& info) {
+        Id = (Core::instance_id)info.WorkerId;
+
+        Runs = info.Runs;
+        if (info.Job.IsSet() == false) {
+            Job.Clear();
+        }
+        else {
+            Job = info.Job.Value();
+        }
+        return (*this);
     }
 
     MetaData::Server::Server()
@@ -241,9 +313,6 @@ namespace PluginHost
     {
         Core::JSON::Container::Add(_T("threads"), &ThreadPoolRuns);
         Core::JSON::Container::Add(_T("pending"), &PendingRequests);
-    }
-    MetaData::Server::~Server()
-    {
     }
 
     MetaData::MetaData()
@@ -273,26 +342,35 @@ namespace PluginHost
         , _subSystems()
     {
     }
-    MetaData::SubSystem::SubSystem(const SubSystem& copy)
+    MetaData::SubSystem::SubSystem(SubSystem&& move)
         : Core::JSON::Container()
-        , _subSystems(copy._subSystems)
+        , _subSystems(move._subSystems)
     {
-        Iterator index(_subSystems.begin());
+        SubSystems::iterator index(_subSystems.begin());
 
         while (index != _subSystems.end()) {
             Core::JSON::Container::Add(index->first.c_str(), &(index->second));
             index++;
         }
     }
-    MetaData::SubSystem::~SubSystem()
+    MetaData::SubSystem::SubSystem(const SubSystem& copy)
+        : Core::JSON::Container()
+        , _subSystems(copy._subSystems)
     {
+        SubSystems::iterator index(_subSystems.begin());
+
+        while (index != _subSystems.end()) {
+            Core::JSON::Container::Add(index->first.c_str(), &(index->second));
+            index++;
+        }
     }
+
     void MetaData::SubSystem::Add(const PluginHost::ISubSystem::subsystem type, const bool available)
     {
         const string name(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(type).Data());
 
         // Create an element for this service with its callsign
-        std::pair<Iterator, bool> index(_subSystems.insert(std::pair<string, Core::JSON::Boolean>(name, Core::JSON::Boolean())));
+        std::pair<SubSystems::iterator, bool> index(_subSystems.insert(std::pair<string, Core::JSON::Boolean>(name, Core::JSON::Boolean())));
 
         // Store the override config in the JSON String created in the map
         Core::JSON::Container::Add(index.first->first.c_str(), &(index.first->second));

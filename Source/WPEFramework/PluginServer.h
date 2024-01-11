@@ -44,7 +44,7 @@ namespace Core {
         extern "C" {
         typedef const char* (*ModuleNameImpl)();
         typedef const char* (*ModuleBuildRefImpl)();
-        typedef const IServiceMetadata* (*ModuleServiceMetadataImpl)();
+        typedef const IService::IMetadata* (*ModuleServiceMetadataImpl)();
         }
     }
 }
@@ -537,7 +537,7 @@ namespace PluginHost {
                 }
                 ~ControlData() = default;
 
-                ControlData& operator= (const Core::IServiceMetadata* info) {
+                ControlData& operator= (const Core::IService::IMetadata* info) {
                     if (info != nullptr) {
                         const Plugin::IMetadata* extended = dynamic_cast<const Plugin::IMetadata*>(info);
 
@@ -1344,7 +1344,7 @@ namespace PluginHost {
                     _handler = newIF;
 
                     if (_metadata.IsValid() == false) {
-                        _metadata = dynamic_cast<Core::IServiceMetadata*>(newIF);
+                        _metadata = dynamic_cast<Core::IService::IMetadata*>(newIF);
                     }
 
                     uint32_t events = _administrator.SubSystemInfo().Value();
@@ -1891,7 +1891,7 @@ namespace PluginHost {
 
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
-                    friend class Core::Service<RemoteHost>;
+                    friend Core::ServiceType<RemoteHost>;
 
                 public:
                     RemoteHost(RemoteHost&&) = delete;
@@ -2219,7 +2219,7 @@ namespace PluginHost {
                     RPC::Communicator::RemoteConnection* result = nullptr;
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
+                        result = Core::ServiceType<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
                     }
                     else {
                         result = RPC::Communicator::CreateStarter(config, instance);
@@ -2523,7 +2523,7 @@ POP_WARNING()
                 string _observerPath;
             };
 
-            using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
+            using CompositPlugins = std::list< Core::SinkType<CompositPlugin> >;
 
         public:
             ServiceMap() = delete;
@@ -2622,7 +2622,7 @@ POP_WARNING()
             }
             inline ISubSystem* SubSystemsInterface(Service* service = nullptr)
             {
-                return (Core::Service<SubSystemsControlled>::Create<ISubSystem>(_subSystems, _server, service));
+                return (Core::ServiceType<SubSystemsControlled>::Create<ISubSystem>(_subSystems, _server, service));
             }
             void Initialize(const string& callsign, PluginHost::IShell* entry)
             {
@@ -2738,7 +2738,7 @@ POP_WARNING()
 
                     index++;
                 }
-                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
                     entry.Visit([&](const string& callsign, IShell* proxy) {
                         sink->Activated(callsign, proxy);
                     });
@@ -2812,7 +2812,7 @@ POP_WARNING()
                 for (auto entry : _services) {
                     sink->Created(entry.first, entry.second.operator->());
                 }
-                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
                     entry.Visit([&](const string& callsign, IShell* proxy) {
                             sink->Created(callsign, proxy);
                         });
@@ -2922,7 +2922,7 @@ POP_WARNING()
             inline Iterator Services()
             {
                 Iterator::Shells composits;
-                for (Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
                     entry.Copy(composits);
                 }
                 return (Iterator(_services, std::move(composits)));
@@ -2959,7 +2959,7 @@ POP_WARNING()
                     entry.FromString(data);
                 }
 
-                for (const Core::Sink<CompositPlugin>& entry : _compositPlugins) {
+                for (const Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
                     entry.Visit([&](const string& callsign, const IShell* proxy)
                         {
                             string data;
@@ -3221,7 +3221,7 @@ POP_WARNING()
             Notifiers _notifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
-            Core::Sink<SubSystems> _subSystems;
+            Core::SinkType<SubSystems> _subSystems;
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
             CompositPlugins _compositPlugins;

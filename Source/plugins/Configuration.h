@@ -210,7 +210,7 @@ namespace Plugin {
             , VolatilePathPostfix()
             , SystemRootPath()
             , StartupOrder(50)
-            , StartMode(PluginHost::IShell::startmode::DEACTIVATED)
+            , StartMode(PluginHost::IShell::startmode::ACTIVATED)
             , Communicator()
         {
             Add(_T("callsign"), &Callsign);

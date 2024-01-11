@@ -229,7 +229,7 @@ namespace PluginHost {
 
     private:
         HANDLER _reporter;
-        Core::Sink<Sink> _sink;
+        Core::SinkType<Sink> _sink;
     };
 }
 
