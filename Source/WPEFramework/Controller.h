@@ -112,11 +112,11 @@ namespace Plugin {
             Core::WorkerPool::JobType<Job> _job;
         };
 
-        // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Configure
-        // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Deactivate/<Callsign>
-        // DELETE -> URL /<MetaDataCallsign>/Plugin/<Callsign>
+        // GET -> URL /<MetadataCallsign>/Plugin/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Configure
+        // PUT -> URL /<MetadataCallsign>/Activate/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Deactivate/<Callsign>
+        // DELETE -> URL /<MetadataCallsign>/Plugin/<Callsign>
     public:
         class SubsystemsData : public Core::JSON::Container {
         public:
@@ -389,7 +389,7 @@ namespace Plugin {
 
             return (service);
         }
-        void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const {
+        void WorkerPoolMetadata(PluginHost::Metadata::Server& data) const {
             _pluginServer->WorkerPool().Snapshot(data);
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
@@ -397,7 +397,7 @@ namespace Plugin {
         uint32_t Harakiri();
         uint32_t Storeconfig();
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
-        void Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& info) const;
+        void Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
