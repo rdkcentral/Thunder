@@ -149,18 +149,20 @@ functionality in Thunder, which will be further described in a different documen
 
 To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.
 
-## Scheduler
+## Scheduling jobs
 ### Overview
-`Workerpool` has the ability to schedule `jobs` using the `Scheduler` class. This can be very helpful when you do not want to start a `job` immediately but at a specific time.
+`Workerpool` has the ability to schedule `jobs`. This can be very helpful when you do not want to start a `job` immediately but at a specific time. `Workerpool` has several ways of scheduling `jobs`. The first is to use the `Workerpool` class methods. Another way is to use the `Scheduler` class. The most common case of scheduling tasks is to refer directly to a specific `job` and use its methods.
 
- To schedule a `job` we use several methods for this:
+To schedule a `job` you should use the `Scheduler` class or a direct reference to a specific `job`. The methods of the `Workerpool` class are described below mainly for illustrative purposes and to see how jobs are scheduled inside `Workerpool`.
+
+### Workerpool class methods
+ To schedule a `job` using `Workerpool` class we use several methods:
 
 * `Schedule()`
 * `Reschedule()`
 * `Revoke()`
 
 Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether.
-### Scheduler methods
 
 #### Scheduling job
 `Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We just need to specify the `job` with a point in time when it should be performed.
@@ -201,7 +203,7 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 
 
 #### Revoking job
-`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and the time after which it should be cancelled. We do not need to specify the time, if we leave the default value, the method will wait until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value.
+`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and and waiting time for `job` cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value.
 
  Error codes that can be returned:
 
@@ -229,48 +231,133 @@ uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime =
             return (result);
         }
 ```
-
-### Example
-`Scheduler` is used for example in rdkservices repository. Here is example use of `Schedule()` from there.
-```cpp
-void CFrontPanel::startBlinkTimer(int numberOfBlinkRepeats)
-        {
-            LOGWARN("startBlinkTimer numberOfBlinkRepeats: %d m_blinkList.length : %zu", numberOfBlinkRepeats, m_blinkList.size());
-            stopBlinkTimer();
-            m_numberOfBlinks = 0;
-            m_isBlinking = true;
-            m_maxNumberOfBlinkRepeats = numberOfBlinkRepeats;
-            m_currentBlinkListIndex = 0;
-            if (m_blinkList.size() > 0)
-            {
-                FrontPanelBlinkInfo blinkInfo = m_blinkList.at(0);
-                setBlinkLed(blinkInfo);
-                if (m_isBlinking)
-                    blinkTimer.Schedule(Core::Time::Now().Add(blinkInfo.durationInMs), m_blinkTimer);
-            }
-        }
-```
+#### Example
 
 Below is test example of using it.
 ```cpp
 void test_scheduler(Core::ProxyType<IDispatch> job) {
     // Schedule the job to run 5 seconds from now
     Core::Time scheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(5);
-    _scheduler.Schedule(scheduledTime, job);
+    _workerpool.Schedule(scheduledTime, job);
 
     // Wait for a while to see the scheduled job execution
     Core::Thread::Sleep(Core::TimeSpan::FromSeconds(10));
 
     // Reschedule the job to run 10 seconds from now
     Core::Time rescheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(10);
-    _scheduler.Reschedule(rescheduledTime, job);
+    _workerpool.Reschedule(rescheduledTime, job);
 
     // Wait for a while to see the rescheduled job execution
     Core::Thread::Sleep(Core::TimeSpan::FromSeconds(15));
 
     // Revoke the job (cancel its execution)
-    _scheduler.Revoke(job);
+    _workerpool.Revoke(job);
 }
 ```
-
 For more examples you can check `Thunder/Tests/unit/core/test_workerpool.cpp` file.
+
+
+### Scheduler class
+`Scheduler` is a small class designed to schedule jobs in the future. It has one public method `Schedule()`. It takes as arguments the `job` whose execution is to be scheduled in the future and the time after which the execution of the `job` should start.
+```cpp
+void Schedule(const Time& time, const ProxyType<IDispatch>& job) override {
+                _timer.Schedule(time, Timer(_pool, job));
+            }
+```
+The Scheduler uses the `Timer` class of the `Workerpool` class as a privileged class. How the `Timer` class is built and how it works can be seen in the `Timer.h` file.
+
+### Job class scheduling methods
+Each `job` has two methods by which we can reschedule them for future execution and cancel them.
+ These methods are:
+
+* `Reschedule()`
+* `Revoke()`
+
+#### Rescheduling job
+`Reschedule()` allows the scheduled `job` execution time to be changed. The id argument takes the time by which we should postpone the execution of the job. The method returns `true` if the operation is successful.
+```cpp
+bool Reschedule(const Core::Time& time)
+            {
+                bool rescheduled = false;
+
+                Core::ProxyType<IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Reschedule(time));
+
+                if (job.IsValid() == true) {
+
+                    job = ThreadPool::JobType<IMPLEMENTATION>::Revoke();
+
+                    if (job.IsValid() == true) {
+                        rescheduled = (IWorkerPool::Instance().Revoke(job) == Core::ERROR_NONE);
+                        ThreadPool::JobType<IMPLEMENTATION>::Revoked();
+                    }
+
+                    job = (ThreadPool::JobType<IMPLEMENTATION>::Idle());
+
+                    if (job.IsValid() == true) {
+                        IWorkerPool::Instance().Schedule(time, job);
+                    }
+                }
+
+                return (rescheduled && (ThreadPool::JobType<IMPLEMENTATION>::IsIdle() == false));
+            }
+```
+!!!warning
+    The `Job` must first be submitted to be rescheduled!
+
+#### Revoking job
+`Revoke()` is used to revoke the execution of `job`.
+```cpp
+void Revoke()
+            {
+                Core::ProxyType<IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Revoke());
+
+                if (job.IsValid() == true) {
+                    Core::IWorkerPool::Instance().Revoke(job);
+                    ThreadPool::JobType<IMPLEMENTATION>::Revoked();
+                }
+            }
+```
+
+#### Example
+Below is an example of the use of the `Reschedule()` method in the `ChannelMap` class in the `PluginServer.h` file.
+```cpp
+uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
+                _connectionCheckTimer = connectionCheckTimer * 1000;
+                if (connectionCheckTimer != 0) {
+                    _job.Reschedule(Core::Time::Now().Add(_connectionCheckTimer).Ticks());
+                }
+                return(BaseClass::Open(waitTime));
+            }
+```
+
+`Reschedule` method is used also in `ThunderNanoServices` repository. Here is few examples:
+TimeSync/NTPClient.cpp
+```cpp
+// See if we need rescheduling
+        if (result != Core::infinite) {
+            Core::Time timestamp(Core::Time::Now());
+            timestamp.Add(result);
+            _job.Reschedule(timestamp);
+```
+
+ProcessMonitor/ProcessMonitor.h
+```cpp
+void ScheduleJob()
+        {
+            uint64_t scheduleTime = 0;
+
+            for (auto itr : _processMap) {
+                uint64_t exitTime = itr.second.ExitTime();
+                if (exitTime != 0) {
+                    if ((scheduleTime == 0) || (scheduleTime > exitTime)) {
+                        scheduleTime = exitTime;
+                    }
+                }
+            }
+
+            if (scheduleTime != 0) {
+                _job.Revoke();
+                _job.Reschedule(scheduleTime);
+            }
+        }
+```
