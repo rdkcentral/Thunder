@@ -64,9 +64,13 @@ namespace PluginHost {
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
+        using Shells = std::unordered_map<string, PluginHost::IShell*>;
+
         class ForwardMessage : public Core::JSON::Container {
         private:
+            ForwardMessage(ForwardMessage&&) = delete;
             ForwardMessage(const ForwardMessage&) = delete;
+            ForwardMessage& operator=(ForwardMessage&&) = delete;
             ForwardMessage& operator=(const ForwardMessage&) = delete;
 
         public:
@@ -89,9 +93,7 @@ namespace PluginHost {
                 Callsign = callsign;
                 Data = message;
             }
-            ~ForwardMessage()
-            {
-            }
+            ~ForwardMessage() = default;
 
         public:
             Core::JSON::String Callsign;
@@ -99,11 +101,16 @@ namespace PluginHost {
         };
 
     private:
+        class ServiceMap;
+        friend class Plugin::Controller;
+
         class WorkerPoolImplementation : public Core::WorkerPool, public Core::ThreadPool::ICallback {
         private:
             class Dispatcher : public Core::ThreadPool::IDispatcher {
             public:
+                Dispatcher(Dispatcher&&) = delete;
                 Dispatcher(const Dispatcher&) = delete;
+                Dispatcher& operator=(Dispatcher&&) = delete;
                 Dispatcher& operator=(const Dispatcher&) = delete;
 
                 Dispatcher() = default;
@@ -119,7 +126,9 @@ namespace PluginHost {
 
         public:
             WorkerPoolImplementation() = delete;
+            WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+            WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
@@ -135,7 +144,7 @@ namespace PluginHost {
                 // Could be that we can now drop the dynamic library...
                 Core::ServiceAdministrator::Instance().FlushLibraries();
             }
-            void Snapshot(PluginHost::MetaData::Server& data) const
+            void Snapshot(PluginHost::Metadata::Server& data) const
             {
                 const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Snapshot();
 
@@ -156,7 +165,9 @@ namespace PluginHost {
 
         class FactoriesImplementation : public IFactories {
         public:
+            FactoriesImplementation(FactoriesImplementation&&) = delete;
             FactoriesImplementation(const FactoriesImplementation&) = delete;
+            FactoriesImplementation& operator=(FactoriesImplementation&&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
 
             FactoriesImplementation()
@@ -199,23 +210,14 @@ namespace PluginHost {
             Core::ProxyPoolType<PluginHost::JSONRPCMessage> _jsonRPCFactory;
         };
 
-        class ServiceMap;
-        friend class Plugin::Controller;
-
         // Trace class for internal information of the PluginHost
         class Activity {
-        private:
-            // -------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error/link error.
-            // -------------------------------------------------------------------
-            Activity(const Activity& a_Copy) = delete;
+        public:
+            Activity(Activity&&) = delete;
+            Activity(const Activity&) = delete;
+            Activity& operator=(Activity&&) = delete;
             Activity& operator=(const Activity& a_RHS) = delete;
 
-        public:
             Activity(const TCHAR formatter[], ...)
             {
                 va_list ap;
@@ -227,9 +229,7 @@ namespace PluginHost {
                 : _text(Core::ToString(text))
             {
             }
-            ~Activity()
-            {
-            }
+            ~Activity() = default;
 
         public:
             inline const char* Data() const
@@ -245,18 +245,12 @@ namespace PluginHost {
             std::string _text;
         };
         class WebFlow {
-        private:
-            // -------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error/link error.
-            // -------------------------------------------------------------------
-            WebFlow(const WebFlow& a_Copy) = delete;
-            WebFlow& operator=(const WebFlow& a_RHS) = delete;
-
         public:
+            WebFlow(WebFlow&&) = delete;
+            WebFlow(const WebFlow&) = delete;
+            WebFlow& operator=(WebFlow&&) = delete;
+            WebFlow& operator=(const WebFlow&) = delete;
+
             WebFlow(const Core::ProxyType<Request>& request)
             {
                 if (request.IsValid() == true) {
@@ -277,9 +271,7 @@ namespace PluginHost {
                     _text = Core::ToString(string('\n' + text + '\n'));
                 }
             }
-            ~WebFlow()
-            {
-            }
+            ~WebFlow() = default;
 
         public:
             inline const char* Data() const
@@ -295,18 +287,12 @@ namespace PluginHost {
             std::string _text;
         };
         class SocketFlow {
-        private:
-            // -------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error/link error.
-            // -------------------------------------------------------------------
-            SocketFlow(const SocketFlow& a_Copy) = delete;
-            SocketFlow& operator=(const SocketFlow& a_RHS) = delete;
-
         public:
+            SocketFlow(SocketFlow&&) = delete;
+            SocketFlow(const SocketFlow&) = delete;
+            SocketFlow& operator=(SocketFlow&&) = delete;
+            SocketFlow& operator=(const SocketFlow&) = delete;
+
             SocketFlow(const Core::ProxyType<Core::JSON::IElement>& object)
             {
                 if (object.IsValid() == true) {
@@ -317,9 +303,7 @@ namespace PluginHost {
                     _text = Core::ToString(text);
                 }
             }
-            ~SocketFlow()
-            {
-            }
+            ~SocketFlow() = default;
 
         public:
             inline const char* Data() const
@@ -335,25 +319,17 @@ namespace PluginHost {
             std::string _text;
         };
         class TextFlow {
-        private:
-            // -------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error/link error.
-            // -------------------------------------------------------------------
-            TextFlow(const TextFlow& a_Copy) = delete;
-            TextFlow& operator=(const TextFlow& a_RHS) = delete;
-
         public:
+            TextFlow(TextFlow&&) = delete;
+            TextFlow(const TextFlow&) = delete;
+            TextFlow& operator=(TextFlow&&) = delete;
+            TextFlow& operator=(const TextFlow&) = delete;
+
             TextFlow(const string& text)
                 : _text(Core::ToString(text))
             {
             }
-            ~TextFlow()
-            {
-            }
+            ~TextFlow() = default;
 
         public:
             inline const char* Data() const
@@ -378,6 +354,146 @@ namespace PluginHost {
             };
 
         private:
+            class Composit : public PluginHost::ICompositPlugin::ICallback {
+            public:
+                Composit() = delete;
+                Composit(Composit&&) = delete;
+                Composit(const Composit&&) = delete;
+                Composit& operator= (Composit&&) = delete;
+                Composit& operator= (const Composit&&) = delete;
+
+                Composit(Service& parent)
+                    : _parent(parent)
+                    , _adminLock()
+                    , _composit(nullptr)
+                    , _plugins() {
+                }
+                ~Composit() override {
+                    ASSERT(_plugins.empty() == true);
+                    ASSERT(_composit == nullptr);
+                }
+
+            public:
+                void AquireInterfaces(IPlugin* plugin) {
+                    _composit = plugin->QueryInterface<ICompositPlugin>();
+                    if (_composit != nullptr) {
+                        // Seems this is a plugin that can be a composition of more plugins..
+                        _composit->Callback(this);
+                    }
+                }
+                void ReleaseInterfaces() {
+                    if (_composit != nullptr) {
+                        _composit->Callback(nullptr);
+                        _composit->Release();
+                        _composit = nullptr;
+                    }
+                }
+                bool IsEmpty() const {
+                    return (_plugins.empty());
+                }
+                template<typename ACTION>
+                void Visit(ACTION&& action) {
+                    const string callsign = _parent.Callsign();
+                    _adminLock.Lock();
+                    for (std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
+                        action(callsign + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
+                    }
+                    _adminLock.Unlock();
+                }
+                template<typename ACTION>
+                void Visit(ACTION&& action) const {
+                    const string callsign = _parent.Callsign();
+                    _adminLock.Lock();
+                    for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
+                        action(callsign + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
+                    }
+                    _adminLock.Unlock();
+                }
+                Core::ProxyType<PluginHost::IShell> Source(const string& name) {
+                    Core::ProxyType<PluginHost::IShell> result;
+
+                    _adminLock.Lock();
+                    Shells::iterator index(_plugins.find(name));
+                    if (index != _plugins.end()) {
+                        result = Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*(index->second)), *(index->second));
+                    }
+                    _adminLock.Unlock();
+
+                    return (result);
+                }
+                void Created(const string& callsign, IShell* plugin) override {
+                    const string link = _parent.Callsign();
+
+                    _adminLock.Lock();
+
+                    Shells::iterator index(_plugins.find(callsign));
+
+                    ASSERT(index == _plugins.end());
+
+                    bool report = (index == _plugins.end());
+
+                    if (report == true) {
+                        _plugins.emplace(std::piecewise_construct,
+                            std::make_tuple(callsign),
+                            std::make_tuple(plugin));
+                        TRACE(Activity, (_T("LinkPlugin [%s], added composit plugin [%s]"), link.c_str(), callsign.c_str()));
+                    }
+                    _adminLock.Unlock();
+
+                    if (report == true) {
+                        _parent._administrator.Created(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                    }
+                }
+                void Destroy(const string& callsign, IShell* plugin) override {
+                    const string link = _parent.Callsign();
+
+                    _adminLock.Lock();
+
+                    Shells::iterator index(_plugins.find(callsign));
+
+                    ASSERT(index != _plugins.end());
+
+                    bool report = (index != _plugins.end());
+
+                    if (report == true) {
+                        _plugins.erase(index);
+                        TRACE(Activity, (_T("LinkPlugin [%s], removed composit plugin [%s]"), link.c_str(), callsign.c_str()));
+                    }
+                    _adminLock.Unlock();
+
+                    if (report == true) {
+                        _parent._administrator.Destroy(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                    }
+                }
+                void Activated(const string& callsign, PluginHost::IShell* plugin) override {
+                    const string link = _parent.Callsign();
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent._administrator.Activated(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                }
+                void Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
+                    const string link = _parent.Callsign();
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent._administrator.Deactivated(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                }
+                void Unavailable(const string& callsign, PluginHost::IShell* plugin) override {
+                    const string link = _parent.Callsign();
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                }
+
+                BEGIN_INTERFACE_MAP(Composit)
+                    INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
+                END_INTERFACE_MAP
+
+            private:
+                Service& _parent;
+                mutable Core::CriticalSection _adminLock;
+                ICompositPlugin* _composit;
+                Shells _plugins;
+            };
             class ExternalAccess : public RPC::Communicator {
             public:
                 ExternalAccess() = delete;
@@ -659,7 +775,6 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
-                , _composit(nullptr)
                 , _reason(IShell::reason::SHUTDOWN)
                 , _precondition(true, plugin.Precondition)
                 , _termination(false, plugin.Termination)
@@ -670,6 +785,7 @@ namespace PluginHost {
                 , _library()
                 , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
                 , _administrator(administrator)
+                , _composit(*this)
             {
             }
             ~Service() override
@@ -729,7 +845,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-#if THUNDER_RESTFULL_API
+                #if THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -737,19 +853,20 @@ namespace PluginHost {
                 }
 
                 return (result);
-#else
+                #else
                 if (_extended != nullptr) {
                     _extended->Attach(channel);
                 }
 
                 return (_extended != nullptr);
-#endif
+                #endif
             }
             inline void Unsubscribe(Channel& channel)
             {
-#if THUNDER_RESTFULL_API
+                #if THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
-#endif
+                #endif
+
                 if (_extended != nullptr) {
                     _extended->Detach(channel);
                 }
@@ -857,9 +974,10 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#if THUNDER_RUNTIME_STATISTICS
+                    #if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
-#endif
+                    #endif
+
                     Core::InterlockedIncrement(_activity);
                     result = service->Process(request);
                     Core::InterlockedDecrement(_activity);
@@ -896,9 +1014,10 @@ namespace PluginHost {
                 else {
                     Unlock();
 
-#if THUNDER_RUNTIME_STATISTICS
+                    #if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedRequests();
-#endif
+                    #endif
+
                     Core::InterlockedIncrement(_activity);
                     string output;
                     uint32_t result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, message.Designator.Value(), message.Parameters.Value(), output);
@@ -943,9 +1062,9 @@ namespace PluginHost {
                     service->AddRef();
                     Unlock();
 
-#if THUNDER_RUNTIME_STATISTICS
+                    #if THUNDER_RUNTIME_STATISTICS
                     IncrementProcessedObjects();
-#endif
+                    #endif
                     Core::InterlockedIncrement(_activity);
                     result = service->Inbound(ID, element);
                     Core::InterlockedDecrement(_activity);
@@ -1008,7 +1127,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            inline void GetMetaData(MetaData::Service& metaData) const
+            inline void GetMetadata(Metadata::Service& metaData) const
             {
                 _pluginHandling.Lock();
 
@@ -1030,7 +1149,7 @@ namespace PluginHost {
 
                 _pluginHandling.Unlock();
 
-                PluginHost::Service::GetMetaData(metaData);
+                PluginHost::Service::GetMetadata(metaData);
             }
             inline void Evaluate()
             {
@@ -1065,12 +1184,38 @@ namespace PluginHost {
 
                 Unlock();
             }
-
+            bool PostMortemAllowed(PluginHost::IShell::reason why) const {
+                return (_administrator.Configuration().PostMortemAllowed(why));
+            }
+ 
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
             void* QueryInterface(const uint32_t id) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
+            template <typename REQUESTEDINTERFACE>
+            REQUESTEDINTERFACE* QueryInterface()
+            {
+                void* baseInterface(Service::QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
+            template <typename REQUESTEDINTERFACE>
+            const REQUESTEDINTERFACE* QueryInterface() const
+            {
+                const void* baseInterface(const_cast<Service*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
+ 
             void Register(IPlugin::INotification* sink) override;
             void Unregister(IPlugin::INotification* sink) override;
 
@@ -1098,12 +1243,9 @@ namespace PluginHost {
             string Substitute(const string& input) const override {
                 return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
             }
-            bool PostMortemAllowed(PluginHost::IShell::reason why) const {
-                return (_administrator.Configuration().PostMortemAllowed(why));
-            }
-            Core::hresult Metadata(string& info /* @out */) const {
-                MetaData::Service result;
-                GetMetaData(result);
+           Core::hresult Metadata(string& info /* @out */) const override {
+                Metadata::Service result;
+                GetMetadata(result);
                 result.ToString(info);
                 return (Core::ERROR_NONE);
             }
@@ -1183,14 +1325,24 @@ namespace PluginHost {
                     }
                 }
             }
+            
+            Composit& Composits() {
+                return (_composit);
+            }
+
+            const Composit& Composits() const {
+                return (_composit);
+            }
 
         private:
             uint32_t Wakeup(const uint32_t timeout);
-#ifdef HIBERNATE_SUPPORT_ENABLED
+
+            #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
-#endif
-            virtual std::vector<string> GetLibrarySearchPaths(const string& locator) const override
+            #endif
+
+            std::vector<string> GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
 
@@ -1247,7 +1399,7 @@ namespace PluginHost {
                             progressedState = 1;
                         }
 
-                        // Loading a library, in the static initializers, might register Service::MetaData structures. As
+                        // Loading a library, in the static initializers, might register Service::Metadata structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
@@ -1331,10 +1483,7 @@ namespace PluginHost {
                     if (jsonrpc != nullptr) {
                         _jsonrpc = jsonrpc->Local();
                     }
-                    _composit = newIF->QueryInterface<ICompositPlugin>();
-                    if (_composit != nullptr) {
-                        _administrator.AddComposit(Callsign(), _composit);
-                    }
+                    _composit.AquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
                         _webSecurity->AddRef();
@@ -1393,11 +1542,7 @@ namespace PluginHost {
                     _jsonrpc->Release();
                     _jsonrpc = nullptr;
                 }
-                if (_composit != nullptr) {
-                    _administrator.RemoveComposit(Callsign(), _composit);
-                    _composit->Release();
-                    _composit = nullptr;
-                }
+                _composit.ReleaseInterfaces();
                 if (_connection != nullptr) {
                     // Lets record the ID associated with this connection.
                     // If the other end of this connection (indicated by the
@@ -1436,7 +1581,6 @@ namespace PluginHost {
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
             ILocalDispatcher* _jsonrpc;
-            ICompositPlugin* _composit;
             reason _reason;
             Condition _precondition;
             Condition _termination;
@@ -1448,6 +1592,7 @@ namespace PluginHost {
             void* _hibernateStorage;
             ExternalAccess _external;
             ServiceMap& _administrator;
+            Core::SinkType<Composit> _composit;
 
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
@@ -1657,29 +1802,22 @@ namespace PluginHost {
 
         class ServiceMap {
         public:
-            using ServiceContainer = std::map<string, Core::ProxyType<Service>>;
+            using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
 
             class Iterator {
             public:
-                using Shells = std::unordered_map<string, Core::ProxyType<PluginHost::IShell> >;
-
                 Iterator()
                     : _container()
                     , _index()
                     , _position(0) {
                 }
-                Iterator(const ServiceContainer& services, Shells&& composits)
-                    : _container(composits)
+                Iterator(Shells&& services)
+                    : _container(services)
                     , _index()
                     , _position(0) {
-                    for (auto entry : services) {
-                        _container.emplace(std::piecewise_construct,
-                            std::make_tuple(entry.first),
-                            std::make_tuple(Core::ProxyType<PluginHost::IShell>(entry.second)));
-                    }
                 }
                 Iterator(Iterator&& move)
                     : _container(std::move(move._container))
@@ -1691,7 +1829,11 @@ namespace PluginHost {
                     , _index()
                     , _position(0) {
                 }
-                ~Iterator() = default;
+                ~Iterator() {
+                    for (const std::pair<const string, PluginHost::IShell*>& entry :  _container) {
+                        entry.second->Release();
+                    }
+                }
 
                 Iterator& operator= (Iterator&& move) {
                     _container = std::move(move._container);
@@ -1732,25 +1874,25 @@ namespace PluginHost {
                     }
                     return (_index != _container.end());
                 }
-                const Core::ProxyType<PluginHost::IShell>& Current() {
+                Core::ProxyType<PluginHost::IShell> Current() {
                     ASSERT(IsValid());
-                    return (_index->second);
+                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
                 uint32_t Count() const {
                     return (static_cast<uint32_t>(_container.size()));
                 }
-                const Core::ProxyType<PluginHost::IShell>& operator->()
+                Core::ProxyType<PluginHost::IShell> operator->()
                 {
                     ASSERT(IsValid());
 
-                    return (_index->second);
+                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
 
                 Core::ProxyType<const PluginHost::IShell> operator->() const
                 {
                     ASSERT(IsValid());
 
-                    return (Core::ProxyType<const PluginHost::IShell>(_index->second));
+                    return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
 
             private:
@@ -1760,130 +1902,7 @@ namespace PluginHost {
             }; 
 
         private:
-            class CompositPlugin : public PluginHost::ICompositPlugin::ICallback {
-            private:
-                using CompositPlugins = std::unordered_map<string, PluginHost::IShell*>;
-
-            public:
-                CompositPlugin(ServiceMap& parent, const string& linkPlugin)
-                    : _parent(parent)
-                    , _adminLock()
-                    , _linkPlugin(linkPlugin)
-                    , _plugins() {
-                }
-                ~CompositPlugin() override {
-                    ASSERT(_plugins.empty() == true);
-                }
-
-            public:
-                bool IsEmpty() const {
-                    return (_plugins.empty());
-                }
-                const string& Callsign() const {
-                    return (_linkPlugin);
-                }
-                template<typename ACTION>
-                void Visit(ACTION&& action) {
-                    _adminLock.Lock();
-                    for (std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
-                        action(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
-                    }
-                    _adminLock.Unlock();
-                }
-                template<typename ACTION>
-                void Visit(ACTION&& action) const {
-                    _adminLock.Lock();
-                    for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
-                        action(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first, entry.second);
-                    }
-                    _adminLock.Unlock();
-                }
-                Core::ProxyType<PluginHost::IShell> Source(const string& name) {
-                    Core::ProxyType<PluginHost::IShell> result;
-
-                    _adminLock.Lock();
-                    CompositPlugins::iterator index(_plugins.find(name));
-                    if (index != _plugins.end()) {
-                        result = Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*(index->second)), *(index->second));
-                    }
-                    _adminLock.Unlock();
-
-                    return (result);
-                }
-                void Created(const string& callsign, IShell* plugin) override {
-                    _adminLock.Lock();
-
-                    CompositPlugins::iterator index(_plugins.find(callsign));
-
-                    ASSERT(index == _plugins.end());
-
-                    bool report = (index == _plugins.end());
-
-                    if (report == true) {
-                        _plugins.emplace(std::piecewise_construct,
-                            std::make_tuple(callsign),
-                            std::make_tuple(plugin));
-                        TRACE(Activity, (_T("LinkPlugin [%s], added composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
-                    }
-                    _adminLock.Unlock();
-
-                    if (report == true) {
-                        _parent.Created(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                    }
-                }
-                void Destroy(const string& callsign, IShell* plugin) override {
-                    _adminLock.Lock();
-
-                    CompositPlugins::iterator index(_plugins.find(callsign));
-
-                    ASSERT(index != _plugins.end());
-
-                    bool report = (index != _plugins.end());
-
-                    if (report == true) {
-                        _plugins.erase(index);
-                        TRACE(Activity, (_T("LinkPlugin [%s], removed composit plugin [%s]"), _linkPlugin.c_str(), callsign.c_str()));
-                    }
-                    _adminLock.Unlock();
-
-                    if (report == true) {
-                        _parent.Destroy(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                    }
-                }
-                void Activated(const string& callsign, PluginHost::IShell* plugin) override {
-                    ASSERT(_plugins.find(callsign) != _plugins.end());
-                    ASSERT(plugin != nullptr);
-                    _parent.Activated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                }
-                void Deactivated(const string& callsign, PluginHost::IShell* plugin) override {
-                    ASSERT(_plugins.find(callsign) != _plugins.end());
-                    ASSERT(plugin != nullptr);
-                    _parent.Deactivated(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                }
-                void Unavailable(const string& callsign, PluginHost::IShell* plugin) override {
-                    ASSERT(_plugins.find(callsign) != _plugins.end());
-                    ASSERT(plugin != nullptr);
-                    _parent.Unavailable(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
-                }
-                void Copy(Iterator::Shells& list) {
-                    for (const std::pair<const string, PluginHost::IShell*>& entry : _plugins) {
-                        list.emplace(std::piecewise_construct,
-                            std::forward_as_tuple(_linkPlugin + PluginHost::ICompositPlugin::Delimiter + entry.first),
-                            std::forward_as_tuple(*static_cast<Core::IReferenceCounted*>(entry.second), *static_cast<PluginHost::IShell*>(entry.second)));
-                    }
-                }
-
-                BEGIN_INTERFACE_MAP(RemoteLink)
-                    INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
-                END_INTERFACE_MAP
-
-            private:
-                ServiceMap& _parent;
-                mutable Core::CriticalSection _adminLock;
-                const string _linkPlugin;
-                CompositPlugins _plugins;
-            };
-            class CommunicatorServer : public RPC::Communicator {
+           class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
@@ -1896,6 +1915,7 @@ namespace PluginHost {
                 public:
                     RemoteHost(RemoteHost&&) = delete;
                     RemoteHost(const RemoteHost&) = delete;
+                    RemoteHost& operator=(RemoteHost&&) = delete;
                     RemoteHost& operator=(const RemoteHost&) = delete;
 
                     RemoteHost(const RPC::Object& instance, const RPC::Config& config)
@@ -1904,11 +1924,9 @@ namespace PluginHost {
                         , _config(config)
                     {
                     }
-                    ~RemoteHost() override
-                    {
-                        TRACE_L1("Destructor for RemoteHost process for %d", Id());
-                    }
+                    ~RemoteHost() override = default;
 
+                public:
                     uint32_t Launch() override
                     {
                         uint32_t result = Core::ERROR_INVALID_DESIGNATOR;
@@ -1956,6 +1974,7 @@ namespace PluginHost {
                     ProxyStubObserver() = delete;
                     ProxyStubObserver(ProxyStubObserver&&) = delete;
                     ProxyStubObserver(const ProxyStubObserver&) = delete;
+                    ProxyStubObserver& operator= (ProxyStubObserver&&) = delete;
                     ProxyStubObserver& operator= (const ProxyStubObserver&) = delete;
 
                     ProxyStubObserver(CommunicatorServer& parent,const string& observableProxyStubPath)
@@ -1988,7 +2007,9 @@ namespace PluginHost {
 
             public:
                 CommunicatorServer() = delete;
+                CommunicatorServer(CommunicatorServer&&) = delete;
                 CommunicatorServer(const CommunicatorServer&) = delete;
+                CommunicatorServer& operator=(CommunicatorServer&&) = delete;
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
 
                 CommunicatorServer(
@@ -2255,9 +2276,12 @@ namespace PluginHost {
                 }
 
             public:
-                ~RemoteInstantiation() override
-                {
-                }
+                RemoteInstantiation(RemoteInstantiation&&) = delete;
+                RemoteInstantiation(const RemoteInstantiation&) = delete;
+                RemoteInstantiation& operator=(RemoteInstantiation&&) = delete;
+                RemoteInstantiation& operator=(const RemoteInstantiation&) = delete;
+
+                ~RemoteInstantiation() override = default;
 
             public:
                 static IRemoteInstantiation* Create(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
@@ -2334,7 +2358,9 @@ namespace PluginHost {
                 class Job {
                 public:
                     Job() = delete;
+                    Job(Job&&) = delete;
                     Job(const Job&) = delete;
+                    Job& operator=(Job&&) = delete;
                     Job& operator=(const Job&) = delete;
 
                     Job(SubSystems& parent)
@@ -2357,17 +2383,19 @@ namespace PluginHost {
 
             public:
                 SubSystems() = delete;
+                SubSystems(SubSystems&&) = delete;
                 SubSystems(const SubSystems&) = delete;
+                SubSystems& operator=(SubSystems&&) = delete;
                 SubSystems& operator=(const SubSystems&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+                PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 SubSystems(ServiceMap* parent)
                     : SystemInfo(parent->Configuration(), this)
                     , _parent(*parent)
                     , _job(*this)
                 {
                 }
-POP_WARNING()
+                POP_WARNING()
                 ~SubSystems() override
                 {
                     Core::ProxyType<Core::IDispatch> job(_job.Revoke());
@@ -2410,7 +2438,9 @@ POP_WARNING()
             class SubSystemsControlled : public ISubSystem {
             public:
                 SubSystemsControlled() = delete;
+                SubSystemsControlled(SubSystemsControlled&&) = delete;
                 SubSystemsControlled(const SubSystemsControlled&) = delete;
+                SubSystemsControlled& operator=(SubSystemsControlled&&) = delete;
                 SubSystemsControlled& operator=(const SubSystemsControlled&) = delete;
 
                 SubSystemsControlled(SystemInfo& systemInfo, Server& server, Service* service)
@@ -2493,6 +2523,7 @@ POP_WARNING()
                 ConfigObserver() = delete;
                 ConfigObserver(ConfigObserver&&) = delete;
                 ConfigObserver(const ConfigObserver&) = delete;
+                ConfigObserver& operator= (ConfigObserver&&) = delete;
                 ConfigObserver& operator= (const ConfigObserver&) = delete;
 
                 ConfigObserver(ServiceMap& parent, const string& observableConfigPath)
@@ -2523,11 +2554,11 @@ POP_WARNING()
                 string _observerPath;
             };
 
-            using CompositPlugins = std::list< Core::SinkType<CompositPlugin> >;
-
         public:
             ServiceMap() = delete;
+            ServiceMap(ServiceMap&&) = delete;
             ServiceMap(const ServiceMap&) = delete;
+            ServiceMap& operator=(ServiceMap&&) = delete;
             ServiceMap& operator=(const ServiceMap&) = delete;
 
             PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -2555,7 +2586,6 @@ POP_WARNING()
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, server._config.PluginConfigPath())
-                , _compositPlugins()
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
@@ -2722,7 +2752,7 @@ POP_WARNING()
                 _notifiers.push_back(sink);
 
                 // Tell this "new" sink all our actived plugins..
-                ServiceContainer::iterator index(_services.begin());
+                Plugins::iterator index(_services.begin());
 
                 // Notifty all plugins that we have sofar..
                 while (index != _services.end()) {
@@ -2734,14 +2764,16 @@ POP_WARNING()
 
                     if ( (service.IsValid() == true) && (service->State() == IShell::ACTIVATED) ) {
                         sink->Activated(service->Callsign(), &(service.operator*()));
+
+                        // Report any composit plugins that are active..
+                        service->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                            if (proxy->State() == PluginHost::IShell::state::ACTIVATED) {
+                                sink->Activated(callsign, proxy);
+                            }
+                        });
                     }
 
                     index++;
-                }
-                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
-                    entry.Visit([&](const string& callsign, IShell* proxy) {
-                        sink->Activated(callsign, proxy);
-                    });
                 }
 
                 _notificationLock.Unlock();
@@ -2809,13 +2841,12 @@ POP_WARNING()
                 _shellObservers.push_back(sink);
                 sink->AddRef();
 
-                for (auto entry : _services) {
+                for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
                     sink->Created(entry.first, entry.second.operator->());
-                }
-                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
-                    entry.Visit([&](const string& callsign, IShell* proxy) {
-                            sink->Created(callsign, proxy);
-                        });
+                    // Report any composit plugins that are active..
+                    entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                        sink->Created(callsign, proxy);
+                    });
                 }
 
                 _notificationLock.Unlock();
@@ -2844,7 +2875,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 // First stop all services running ...
-                ServiceContainer::iterator index(_services.begin());
+                Plugins::iterator index(_services.begin());
 
                 while (index != _services.end()) {
                     index->second->Closed(id);
@@ -2855,7 +2886,7 @@ POP_WARNING()
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
-                // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
+                // Whatever plugin is needse, we at least have our Metadata plugin available (as the first entry :-).
                 Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
 
                 if (newService.IsValid() == true) {
@@ -2910,7 +2941,7 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 // First stop all services running ...
-                ServiceContainer::iterator index(_services.find(callSign));
+                Plugins::iterator index(_services.find(callSign));
 
                 if (index != _services.end()) {
                     index->second->Destroy();
@@ -2921,65 +2952,90 @@ POP_WARNING()
             }
             inline Iterator Services()
             {
-                Iterator::Shells composits;
-                for (Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
-                    entry.Copy(composits);
+		Shells workingList;
+
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+
+                workingList.reserve(_services.size());
+                
+                for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
+                    workingList.emplace(std::piecewise_construct,
+                        std::make_tuple(entry.first),
+                        std::make_tuple(entry.second->QueryInterface<PluginHost::IShell>()));
+
+                    // Report any composit plugins that are active..
+                    entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                        proxy->AddRef();
+                        workingList.emplace(std::piecewise_construct,
+                            std::make_tuple(callsign),
+                            std::make_tuple(proxy));
+                    });
                 }
-                return (Iterator(_services, std::move(composits)));
+
+                return (Iterator(std::move(workingList)));
             }
             inline void Notification(const ForwardMessage& message)
             {
                 _server.Notification(message);
             }
-#if THUNDER_RESTFULL_API
+            #if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server.Controller()->Notification(message);
             }
-#endif
-            void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
+            #endif
+            void GetMetadata(Core::JSON::ArrayType<Metadata::Service>& metaData) const
             {
+                std::vector<Core::ProxyType<Service>> workingList;
+
                 _adminLock.Lock();
 
-                std::vector<Core::ProxyType<Service>> duplicates;
-                duplicates.reserve(_services.size());
-                ServiceContainer::const_iterator index(_services.begin());
+                workingList.reserve(_services.size());
 
-                while (index != _services.end()) {
-                    duplicates.emplace_back(index->second);
-                    index++;
+                for (auto entry : _services) {
+
+                    std::vector<Core::ProxyType<Service>>::iterator index = workingList.begin();
+
+                    while ((index != workingList.end()) && ((*index)->Callsign() < entry.first)) {
+                        index++;
+                    }
+                    workingList.insert(index, entry.second);
                 }
 
                 _adminLock.Unlock();
 
-                for (Core::ProxyType<Service> info : duplicates) {
-                    string data;
-                    info->Metadata(data);
-                    MetaData::Service&  entry = metaData.Add();
-                    entry.FromString(data);
-                }
+                for (const Core::ProxyType<Service>& service : workingList) {
 
-                for (const Core::SinkType<CompositPlugin>& entry : _compositPlugins) {
-                    entry.Visit([&](const string& callsign, const IShell* proxy)
-                        {
-                            string data;
-                            proxy->Metadata(data);
-                            MetaData::Service& entry = metaData.Add();
-                            entry.FromString(data);
-                            entry.Callsign = callsign;
+                    service->GetMetadata(metaData.Add());
+                    std::vector<std::pair<string, string>> locals;
+
+                    // Report any composit plugins that are active..
+                    service->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                        string metadata;
+                        std::vector<std::pair<string, string>>::iterator index = locals.begin();
+                        while ((index != locals.end()) && (index->first < callsign)) {
+                            index++;
+                        }
+
+                        proxy->Metadata(metadata);
+                        locals.insert(index, std::pair<string,string>(callsign, metadata));
                     });
+
+                    for (auto entry : locals) {
+                        metaData.Add().FromString(entry.second);
+                    }
                 }
             }
-            void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const
+            void GetMetadata(Core::JSON::ArrayType<Metadata::Channel>& metaData) const
             {
                 _adminLock.Lock();
                 _processAdministrator.Visit([&](const RPC::Communicator::Client& element)
                     {
-                        MetaData::Channel& entry = metaData.Add();
+                        Metadata::Channel& entry = metaData.Add();
                         entry.ID = element.Extension().Id();
 
                         entry.Activity = element.Source().IsOpen();
-                        entry.JSONState = MetaData::Channel::state::COMRPC;
+                        entry.JSONState = Metadata::Channel::state::COMRPC;
                         entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
 
                         string identifier = ChannelIdentifier(element.Source());
@@ -2992,45 +3048,34 @@ POP_WARNING()
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
-                uint32_t result = Core::ERROR_UNAVAILABLE;
                 size_t pos;
+                Core::ProxyType<Service> selected;
+                uint32_t result = Core::ERROR_UNAVAILABLE;
+                string baseName = callSign;
 
                 if ((pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter)) != string::npos) {
                     // This is a Composit plugin identifier..
-                    string linkingPin = callSign.substr(0, pos);
-                    _adminLock.Lock();
-                    CompositPlugins::iterator index(_compositPlugins.begin());
-                    while ((index != _compositPlugins.end()) && (index->Callsign() != linkingPin)) {
-                        index++;
-                    }
+                    baseName = callSign.substr(0, pos);
+               }
 
-                    if (index != _compositPlugins.end()) {
-                        service = index->Source(callSign.substr(pos + 1));
-                    }
+                _adminLock.Lock();
 
-                    _adminLock.Unlock();
+                for (auto index : _services) {
+                    const string& source(index.first);
+                    uint32_t length = static_cast<uint32_t>(source.length());
 
-                    result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
-                }
-                else {
-                    _adminLock.Lock();
-
-                    for (auto index : _services) {
-                        const string& source(index.first);
-                        uint32_t length = static_cast<uint32_t>(source.length());
-
-                        if (callSign.compare(0, source.length(), source) == 0) {
-                            if (callSign.length() == length) {
+                    if (baseName.compare(0, source.length(), source) == 0) {
+                        if (baseName.length() == length) {
                                 // Service found, did not requested specific version
-                                service = index.second;
+                                selected = index.second;
                                 result = Core::ERROR_NONE;
                                 break;
-                            }
-                            else if (callSign[length] == '.') {
+                        }
+                        else if (baseName[length] == '.') {
                                 // Requested specific version of a plugin
-                                if (index.second->HasVersionSupport(callSign.substr(length + 1)) == true) {
+                                if (index.second->HasVersionSupport(baseName.substr(length + 1)) == true) {
                                     // Requested version of service is supported!
-                                    service = index.second;
+                                    selected = index.second;
                                     result = Core::ERROR_NONE;
                                 }
                                 else {
@@ -3038,11 +3083,20 @@ POP_WARNING()
                                     result = Core::ERROR_INVALID_SIGNATURE;
                                 }
                                 break;
-                            }
                         }
                     }
+                }
 
-                    _adminLock.Unlock();
+                _adminLock.Unlock();
+
+                if (selected.IsValid() == true) {
+                    if (pos == string::npos) {
+                        service = Core::ProxyType<IShell>(selected);
+                    }
+                    else {
+                        service = selected->Composits().Source(callSign.substr(pos + 1));
+                        result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
+                    }
                 }
 
                 return (result);
@@ -3051,34 +3105,11 @@ POP_WARNING()
             {
                 return _server.Configuration();
             }
-            void AddComposit(const string& callsign, ICompositPlugin* composit) {
-                _adminLock.Lock();
-                // Seems this is a plugin that can be a composition of more plugins..
-                _compositPlugins.emplace_back(*this, callsign);
-                composit->Callback(&_compositPlugins.back());
-                _adminLock.Unlock();
-            }
-            void RemoveComposit(const string& callsign, ICompositPlugin* composit) {
-                // Seems this is a plugin that can be a composition of more plugins..
-                _adminLock.Lock();
-                CompositPlugins::iterator index(_compositPlugins.begin());
-                while ((index != _compositPlugins.end()) && (callsign != index->Callsign())) {
-                    index++;
-                }
-
-                if (index != _compositPlugins.end()) {
-                    composit->Callback(nullptr);
-                    ASSERT(index->IsEmpty() == true);
-                    _compositPlugins.erase(index);
-                }
-
-                _adminLock.Unlock();
-            }
             void Evaluate()
             {
                 _adminLock.Lock();
 
-                ServiceContainer::iterator index(_services.begin());
+                Plugins::iterator index(_services.begin());
 
                 RecursiveNotification(index);
             }
@@ -3196,7 +3227,7 @@ POP_WARNING()
 
                 return (result);
             }
-            void RecursiveNotification(ServiceContainer::iterator& index)
+            void RecursiveNotification(Plugins::iterator& index)
             {
                 if (index != _services.end()) {
                     Core::ProxyType<Service> element(index->second);
@@ -3216,7 +3247,7 @@ POP_WARNING()
             Server& _server;
             mutable Core::CriticalSection _adminLock;
             Core::CriticalSection _notificationLock;
-            ServiceContainer _services;
+            Plugins _services;
             mutable RemoteInstantiators _instantiators;
             Notifiers _notifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
@@ -3224,7 +3255,6 @@ POP_WARNING()
             Core::SinkType<SubSystems> _subSystems;
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
-            CompositPlugins _compositPlugins;
             ShellNotifiers _shellObservers;
         };
 
@@ -4247,7 +4277,7 @@ POP_WARNING()
                     _job.Submit();
                 }
             }
-            void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
+            void GetMetadata(Core::JSON::ArrayType<Metadata::Channel>& metaData) const;
 
         private:
             friend class Core::ThreadPool::JobType<ChannelMap&>;
@@ -4336,7 +4366,7 @@ POP_WARNING()
             PostMortemData data;
             _dispatcher.Snapshot(data.WorkerPool);
 
-            Core::JSON::ArrayType<MetaData::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
+            Core::JSON::ArrayType<Metadata::Server::Minion>::Iterator index(data.WorkerPool.ThreadPoolRuns.Elements());
 
             while (index.Next() == true) {
 
@@ -4364,20 +4394,20 @@ POP_WARNING()
         {
             return (_services);
         }
-        inline void Metadata(PluginHost::MetaData::Version& data) const
+        inline void Metadata(PluginHost::Metadata::Version& data) const
         {
             data.Major = PluginHost::Major;
             data.Minor = PluginHost::Minor;
             data.Patch = PluginHost::Patch;
             data.Hash = string(Core::System::ModuleBuildRef());
         }
-        inline void Metadata(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& data) const
+        inline void Metadata(Core::JSON::ArrayType<PluginHost::Metadata::Channel>& data) const
         {
-            _connections.GetMetaData(data);
-            _services.GetMetaData(data);
+            _connections.GetMetadata(data);
+            _services.GetMetadata(data);
         }
-        inline void Metadata(Core::JSON::ArrayType<PluginHost::MetaData::Service>& data) const {
-            _services.GetMetaData(data);
+        inline void Metadata(Core::JSON::ArrayType<PluginHost::Metadata::Service>& data) const {
+            _services.GetMetadata(data);
         }
         inline Server::WorkerPoolImplementation& WorkerPool()
         {

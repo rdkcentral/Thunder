@@ -31,7 +31,7 @@ namespace PluginHost {
 
     // Status information
     // this class holds interesting information that can be requested from the Server
-    class EXTERNAL MetaData : public Core::JSON::Container {
+    class EXTERNAL Metadata : public Core::JSON::Container {
     public:
         using Version = JsonData::Metadata::VersionInfo;
         using Bridge = JsonData::Discovery::DiscoveryResultData;
@@ -241,13 +241,13 @@ namespace PluginHost {
         };
 
     public:
-        MetaData(MetaData&&) = delete;
-        MetaData(const MetaData&) = delete;
-        MetaData& operator=(MetaData&&) = delete;
-        MetaData& operator=(const MetaData&) = delete;
+        Metadata(Metadata&&) = delete;
+        Metadata(const Metadata&) = delete;
+        Metadata& operator=(Metadata&&) = delete;
+        Metadata& operator=(const Metadata&) = delete;
 
-        MetaData();
-        ~MetaData();
+        Metadata();
+        ~Metadata();
 
         inline void Clear()
         {
