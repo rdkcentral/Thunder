@@ -331,7 +331,8 @@ uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
 ```
 
 `Reschedule` method is used also in `ThunderNanoServices` repository. Here is few examples:
-TimeSync/NTPClient.cpp
+
+`TimeSync/NTPClient.cpp`
 ```cpp
 // See if we need rescheduling
         if (result != Core::infinite) {
@@ -340,7 +341,7 @@ TimeSync/NTPClient.cpp
             _job.Reschedule(timestamp);
 ```
 
-ProcessMonitor/ProcessMonitor.h
+`ProcessMonitor/ProcessMonitor.h`
 ```cpp
 void ScheduleJob()
         {
