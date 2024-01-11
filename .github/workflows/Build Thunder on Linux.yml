@@ -16,7 +16,7 @@ on:
 
 jobs:
   Thunder:
-    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
+    uses: VeithMetro/Thunder/.github/workflows/Linux build template.yml@development/actions # CHANGE TO RDKCENTRAL AND MASTER BRANCH
 
 #  ThunderInterfaces:
 #    needs: Thunder
