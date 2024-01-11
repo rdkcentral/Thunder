@@ -25,7 +25,7 @@
     <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
     <ClCompile Include="json\JsonEnum_Metadata.cpp" />
     <ClCompile Include="json\JsonEnum_SystemManagement.cpp" />
-    <ClCompile Include="MetaData.cpp" />
+    <ClCompile Include="Metadata.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Shell.cpp" />
@@ -60,7 +60,7 @@
     <ClInclude Include="IStateControl.h" />
     <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="JSONRPC.h" />
-    <ClInclude Include="MetaData.h" />
+    <ClInclude Include="Metadata.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="Request.h" />
