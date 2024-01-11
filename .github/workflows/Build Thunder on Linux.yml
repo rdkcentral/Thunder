@@ -20,20 +20,20 @@ jobs:
 
   ThunderInterfaces:
     needs: Thunder
-    uses: VeithMetro/ThunderInterfaces/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@development/actions
 
   ThunderLibraries:
     needs: Thunder
-    uses: VeithMetro/ThunderLibraries/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/ThunderLibraries/.github/workflows/Linux build template.yml@development/actions
 
   ThunderClientLibraries:
     needs: ThunderInterfaces
-    uses: VeithMetro/ThunderClientLibraries/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@development/actions
 
   ThunderNanoServices:
     needs: ThunderInterfaces
-    uses: VeithMetro/ThunderNanoServices/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@development/actions
 
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
-    uses: VeithMetro/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@development/actions
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@development/actions
