@@ -52,6 +52,13 @@ namespace Thunder {
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
 #ifdef __APPLE__
+#include <pthread.h>
+uint64_t gettid()
+{
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
+}
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else
@@ -84,7 +91,11 @@ namespace Thunder {
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
+<<<<<<< HEAD
         ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%llu>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+=======
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%llu>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+>>>>>>> af03eaa2 ([Thunder] Support for OSX(MacOS).)
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else

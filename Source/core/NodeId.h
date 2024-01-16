@@ -211,6 +211,7 @@ namespace Core {
 #ifndef __APPLE__        
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
         NodeId(const struct sockaddr_ll& rInfo);
+#endif  
         NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgtype, const uint8_t haType, const uint8_t length, const uint8_t* address);
         NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address);
 #endif         

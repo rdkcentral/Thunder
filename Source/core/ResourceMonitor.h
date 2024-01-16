@@ -317,7 +317,39 @@ namespace Core {
         {
         }
 
-        #ifdef __LINUX__
+        bool SetNonBlocking(signed int socket)
+        {
+#ifdef __WINDOWS__
+            unsigned long l_Value = 1;
+            if (ioctlsocket(socket, FIONBIO, &l_Value) != 0) {
+                TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
+            }
+            else {
+                return (true);
+            }
+#endif
+
+#ifdef __POSIX__
+            if (fcntl(socket, F_SETOWN, getpid()) == -1) {
+                TRACE_L1("Setting Process ID failed. <%d>", errno);
+            }
+            else {
+                int flags = fcntl(socket, F_GETFL, 0) | O_NONBLOCK;
+
+                if (fcntl(socket, F_SETFL, flags) != 0) {
+                    TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
+                }
+                else {
+                    return (true);
+                }
+            }
+#endif
+
+            return (false);
+        }
+
+    public:
+#ifdef __LINUX__
         uint32_t Initialize()
         {
             #ifdef __APPLE__
