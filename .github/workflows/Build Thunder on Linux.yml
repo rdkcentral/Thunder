@@ -2,7 +2,7 @@ name: Build Thunder on Linux
 
 on:
   push:
-    # branches: ["master"]
+    branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -15,7 +15,6 @@ on:
       - 'ReleaseNotes/**'
 
 jobs:
-  # change the user and branch name in each one after the templates are merged
   Thunder:
     uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
 
