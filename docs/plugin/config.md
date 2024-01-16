@@ -49,7 +49,7 @@ These are the options applicable to all plugins
 {
    "locator":"libWPEFrameworkSamplePlugin.so",
    "classname":"SamplePlugin",
-   "startmode":"activated",
+   "startmode":"Activated",
    "configuration":{
       "root":{
          "mode":"Off"
@@ -72,7 +72,7 @@ For this example, we will create a config file for an example plugin that return
 {
    "locator":"libWPEFrameworkGreeterPlugin.so",
    "classname":"Greeter",
-   "startmode":"activated",
+   "startmode":"Activated",
    "configuration":{
       "greetings": ["Hello", "Good Morning", "Hi"]
       "root":{
@@ -127,7 +127,7 @@ To edit config options, simply create variables with the corresponding name. Nes
 For example, the below will create default values for our Greeter plugin
 
 ```python
-startmode = "activated"
+startmode = "Activated"
 
 configuration = JSON()
 greetings = ["Hello", "Good Morning", "Hi"]
@@ -152,7 +152,7 @@ The legacy config generator uses [CMakepp QuickMap](https://github.com/toeb/cmak
 Example for our Greeter plugin:
 
 ```cmake
-set (startmode "activated")
+set (startmode "Activated")
 
 map()
 	kv(mode "Off")
