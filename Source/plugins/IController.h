@@ -21,8 +21,6 @@
 #include "Module.h"
 #include "IShell.h"
 
-#include "IControllerDeprecated.h"
-
 // @stubgen:include <plugins/IShell.h>
 // @stubgen:include <plugins/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
@@ -37,7 +35,7 @@ namespace Controller {
     struct EXTERNAL ISystemManagement : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_SYSTEM_MANAGEMENT };
 
-        // @alt harakiri
+        // @alt:deprecated harakiri
         // @brief Reboots the device
         virtual Core::hresult Reboot() = 0;
 
@@ -78,8 +76,7 @@ namespace Controller {
         virtual Core::hresult DiscoveryResults(Data::IDiscoveryResultsIterator*& results /* @out */) const = 0;
     };
 
-    /* @json */
-    // @json @uncompliant:extended
+    /* @json @uncompliant:extended */
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
@@ -203,25 +200,25 @@ namespace Controller {
 
             struct Service {
                 enum state : uint32_t {
-                    UNAVAILABLE = PluginHost::IShell::UNAVAILABLE /* @text unavailable */,
-                    DEACTIVATED = PluginHost::IShell::DEACTIVATED /* @text deactivated */,
-                    DEACTIVATION = PluginHost::IShell::DEACTIVATION /* @text deactivation */,
-                    ACTIVATED = PluginHost::IShell::ACTIVATED /* @text activated */,
-                    ACTIVATION = PluginHost::IShell::ACTIVATION /* @text activation */,
-                    DESTROYED = PluginHost::IShell::DESTROYED /* @text destroyed */,
-                    PRECONDITION = PluginHost::IShell::PRECONDITION /* @text precondition */,
-                    HIBERNATED = PluginHost::IShell::HIBERNATED /* @text hibernated */,
-                    SUSPENDED /* @text suspended */,
-                    RESUMED /* @text resumed */
+                    UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
+                    DEACTIVATED = PluginHost::IShell::DEACTIVATED,
+                    DEACTIVATION = PluginHost::IShell::DEACTIVATION,
+                    ACTIVATED = PluginHost::IShell::ACTIVATED,
+                    ACTIVATION = PluginHost::IShell::ACTIVATION,
+                    DESTROYED = PluginHost::IShell::DESTROYED,
+                    PRECONDITION = PluginHost::IShell::PRECONDITION,
+                    HIBERNATED = PluginHost::IShell::HIBERNATED,
+                    SUSPENDED,
+                    RESUMED
                 };
 
-                bool AutoStart /* @brief Determines if the plugin is to be started automatically along with the framework */;
                 string Callsign /* @brief Plugin callsign */;
                 string Locator /* @brief Shared library path */;
                 string ClassName /* @brief Plugin class name */;
                 string Module /* @brief Module name */;
                 state State /* @brief Current state */;
-                PluginHost::IShell::startup StartMode /* @brief Startup mode */;
+                PluginHost::IShell::startmode StartMode /* @brief Startup mode */;
+                bool Resumed /* @brief Determines if the plugin is to be activated in resumed or suspended mode */;
                 Data::Version Version /* @brief Version */;
 
                 string Communicator /* @optional */;
@@ -230,12 +227,12 @@ namespace Controller {
                 string VolatilePathPostfix /* @optional */;
                 string SystemRootPath /* @optional */;
 
-                string Precondition /* @opaque @optional @brief Activate conditons */;
-                string Termination /* @opaque @optional @brief Deactivate conditions */;
+                string Precondition /* @opaque @optional @brief Activation conditons */;
+                string Termination /* @opaque @optional @brief Deactivation conditions */;
 
                 string Configuration /* @opaque @optional @brief Plugin configuration */;
 
-                uint16_t Observers /* @optional @brief Number or observers*/;
+                uint16_t Observers /* @optional @brief Number or observers */;
                 uint32_t ProcessedRequests /* @optional @brief Number of API requests that have been processed by the plugin */;
                 uint32_t ProcessedObjects /* @optional @brief Number of objects that have been processed by the plugin */;
             };
@@ -249,7 +246,7 @@ namespace Controller {
             using IServicesIterator = RPC::IIteratorType<Data::Service, RPC::ID_CONTROLLER_METADATA_SERVICES_ITERATOR>;
         };
 
-        // @property @alt status
+        // @property @alt:deprecated status
         // @brief Provides status of a service, including their configurations
         virtual Core::hresult Services(const string& callsign /* @index @optional */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 

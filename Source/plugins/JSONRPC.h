@@ -611,7 +611,7 @@ namespace PluginHost {
                         }
                         else {
                             Core::JSONRPC::Context context(channelId, id, token);
-                            result = handler->Invoke(context, realMethod, parameters, response);
+                            result = handler->Invoke(context, Core::JSONRPC::Message::FullMethod(method), parameters, response);
                         }
                     }
                 }

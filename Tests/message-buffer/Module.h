@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #pragma once
-#include "Module.h"
 
-#include "IPluginStarter.h"
+#ifndef MODULE_NAME
+#define MODULE_NAME MessageBufferTest
+#endif
 
-using namespace WPEFramework;
+#include <core/core.h>
+#include <com/com.h>
+#include <messaging/messaging.h>
 
-/**
- * @brief COM-RPC implementation of a plugin starter
- *
- * Connects to Thunder over COM-RPC and attempts to start a given plugin
- */
-class COMRPCStarter : public IPluginStarter {
-public:
-    explicit COMRPCStarter(const string& pluginName);
-    ~COMRPCStarter() override;
-
-    bool activatePlugin(const uint8_t maxRetries, const uint16_t retryDelayMs) override;
-    
-private:
-    using ControllerConnector = RPC::SmartControllerInterfaceType<Exchange::Controller::ILifeTime>;
-
-private:
-    ControllerConnector _connector;
-    const string _pluginName;
-};
+#undef EXTERNAL
+#define EXTERNAL

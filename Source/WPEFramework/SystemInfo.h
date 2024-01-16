@@ -360,7 +360,7 @@ namespace PluginHost {
                         _identifier->Release();
                     }
 
-                    _identifier = Core::Service<Id>::Create<Id>();
+                    _identifier = Core::ServiceType<Id>::Create<Id>();
                     const uint8_t* id(RawDeviceId(_config.EthernetCard()));
                     _identifier->Set(id[0], &id[1],
                             Core::SystemInfo::Instance().Architecture(),
@@ -370,7 +370,7 @@ namespace PluginHost {
 
                     _adminLock.Unlock();
                 } else {
-                    Id* id = Core::Service<Id>::Create<Id>();
+                    Id* id = Core::ServiceType<Id>::Create<Id>();
                     sendUpdate = id->Set(info) || sendUpdate;
 
                     info->Release();
@@ -402,12 +402,12 @@ namespace PluginHost {
                         _internet->Release();
                     }
 
-                    _internet = Core::Service<Internet>::Create<Internet>();
+                    _internet = Core::ServiceType<Internet>::Create<Internet>();
                     _internet->Set(_T("127.0.0.1"));
                     _adminLock.Unlock();
 
                 } else {
-                    Internet* internet = Core::Service<Internet>::Create<Internet>();
+                    Internet* internet = Core::ServiceType<Internet>::Create<Internet>();
                     sendUpdate = internet->Set(info) || sendUpdate;
 
                     info->Release();
@@ -428,7 +428,7 @@ namespace PluginHost {
             case LOCATION: {
                 PluginHost::ISubSystem::ILocation* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ILocation>() : nullptr);
 
-                Location* location = Core::Service<Location>::Create<Location>();
+                Location* location = Core::ServiceType<Location>::Create<Location>();
 
                 if (info != nullptr) {
                     sendUpdate = location->Set(info) || sendUpdate;
@@ -459,12 +459,12 @@ namespace PluginHost {
                         _time->Release();
                     }
 
-                    _time = Core::Service<Time>::Create<Time>();
+                    _time = Core::ServiceType<Time>::Create<Time>();
                     _time->Set(Core::Time::Now().Ticks());
 
                     _adminLock.Unlock();
                 } else {
-                    Time* time = Core::Service<Time>::Create<Time>();
+                    Time* time = Core::ServiceType<Time>::Create<Time>();
                     sendUpdate = time->Set(info) || sendUpdate;
 
                     info->Release();
@@ -493,7 +493,7 @@ namespace PluginHost {
                         _provisioning = nullptr;
                     }
 
-                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::move(std::list<std::string>()), "");
+                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::move(std::list<std::string>()), "");
 
                     _adminLock.Unlock();
                 } else {
@@ -503,7 +503,7 @@ namespace PluginHost {
                         _provisioning->Release();
                     }
 
-                    _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
+                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
 
                     _adminLock.Unlock();
 
@@ -555,12 +555,12 @@ namespace PluginHost {
                         _security->Release();
                     }
 
-                    _security = Core::Service<Security>::Create<Security>();
+                    _security = Core::ServiceType<Security>::Create<Security>();
                     _security->Set(_T(""));
 
                     _adminLock.Unlock();
                 } else {
-                    Security* security = Core::Service<Security>::Create<Security>();
+                    Security* security = Core::ServiceType<Security>::Create<Security>();
                     sendUpdate = security->Set(info) || sendUpdate;
 
                     info->Release();

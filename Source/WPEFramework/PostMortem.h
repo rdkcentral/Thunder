@@ -141,7 +141,7 @@ namespace PluginHost {
         ~PostMortemData() override = default;
 
     public:
-        MetaData::Server WorkerPool;
+        Metadata::Server WorkerPool;
         Core::JSON::ArrayType<Callstack> Callstacks;
     };
 

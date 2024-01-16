@@ -43,7 +43,7 @@
       "callsign": "Monitor",
       "locator": "libmonitor.so",
       "classname": "Monitor",
-      "autostart": true,
+      "startmode": "activated",
       "configuration": {
         "observables": [
           {

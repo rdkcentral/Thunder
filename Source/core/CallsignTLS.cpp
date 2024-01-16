@@ -25,17 +25,17 @@
 namespace WPEFramework {
 namespace Core {
 
-    const char* CallsignTLS::Callsign() {
+    const TCHAR* CallsignTLS::Callsign() {
 
         Core::ThreadLocalStorageType<CallsignTLS>& instance = Core::ThreadLocalStorageType<CallsignTLS>::Instance();
-        const char* name = nullptr;
+        const TCHAR* name = nullptr;
         if( ( instance.IsSet() == true ) && ( instance.Context().Name() != nullptr ) ) {
             name = instance.Context().Name(); // should be safe, nobody should for this thread be able to change this while we are using it 
         }
         return name;
     }
 
-    void CallsignTLS::Callsign(const char* callsign) {
+    void CallsignTLS::Callsign(const TCHAR* callsign) {
         Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Name(callsign);
     }
 }

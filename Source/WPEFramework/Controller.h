@@ -34,7 +34,6 @@ namespace Plugin {
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
-        , public PluginHost::IController
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystemManagement
@@ -112,11 +111,11 @@ namespace Plugin {
             Core::WorkerPool::JobType<Job> _job;
         };
 
-        // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Configure
-        // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Deactivate/<Callsign>
-        // DELETE -> URL /<MetaDataCallsign>/Plugin/<Callsign>
+        // GET -> URL /<MetadataCallsign>/Plugin/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Configure
+        // PUT -> URL /<MetadataCallsign>/Activate/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Deactivate/<Callsign>
+        // DELETE -> URL /<MetadataCallsign>/Plugin/<Callsign>
     public:
         class SubsystemsData : public Core::JSON::Container {
         public:
@@ -367,7 +366,6 @@ namespace Plugin {
             INTERFACE_ENTRY(PluginHost::IPlugin)
             INTERFACE_ENTRY(PluginHost::IWeb)
             INTERFACE_ENTRY(PluginHost::IDispatcher)
-            INTERFACE_ENTRY(PluginHost::IController)
             INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
             INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
             INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
@@ -389,15 +387,13 @@ namespace Plugin {
 
             return (service);
         }
-        void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const {
+        void WorkerPoolMetadata(PluginHost::Metadata::Server& data) const {
             _pluginServer->WorkerPool().Snapshot(data);
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
-        uint32_t Harakiri();
-        uint32_t Storeconfig();
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
-        void Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& info) const;
+        void Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
@@ -411,7 +407,7 @@ namespace Plugin {
         PluginHost::Server* _pluginServer;
         PluginHost::IShell* _service;
         Probe* _probe;
-        Core::Sink<Sink> _systemInfoReport;
+        Core::SinkType<Sink> _systemInfoReport;
         Resumes _resumes;
         uint32_t _lastReported;
         ExternalSubSystems _externalSubsystems;

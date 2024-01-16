@@ -210,13 +210,13 @@ namespace PluginHost {
     #endif
     }
 
-    void Server::ChannelMap::GetMetaData(Core::JSON::ArrayType<MetaData::Channel> & metaData) const
+    void Server::ChannelMap::GetMetadata(Core::JSON::ArrayType<Metadata::Channel> & metaData) const
     {
         Core::SocketServerType<Channel>::Iterator index(Core::SocketServerType<Channel>::Clients());
 
         while (index.Next() == true) {
 
-            MetaData::Channel newInfo;
+            Metadata::Channel newInfo;
             // Let the Channel,report it's metadata
 
             Core::ProxyType<Channel> client(index.Client());
@@ -225,7 +225,7 @@ namespace PluginHost {
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? MetaData::Channel::state::RAWSOCKET : MetaData::Channel::state::WEBSOCKET) : (client->IsWebServer() ? MetaData::Channel::state::WEBSERVER : MetaData::Channel::state::SUSPENDED));
+            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
             string name = client->Name();
 
             if (name.empty() == false) {
@@ -610,7 +610,7 @@ namespace PluginHost {
 
         uint32_t result = Core::ERROR_NONE;
 
-        if (Startup() == PluginHost::IShell::startup::DEACTIVATED) {
+        if (StartMode() == PluginHost::IShell::startmode::DEACTIVATED) {
             // We need to shutdown completely
             result = Deactivate(why);
         }
@@ -1007,14 +1007,15 @@ namespace PluginHost {
         for (auto service : configured_services)
         {
             if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->Startup() == PluginHost::IShell::startup::ACTIVATED) {
+                if (service->StartMode() == PluginHost::IShell::startmode::ACTIVATED) {
                     SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
                         service->ClassName().c_str(), service->Callsign().c_str()));
                     service->Activate(PluginHost::IShell::STARTUP);
                 }
                 else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, autostart is false"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
+                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, start mode is %s"),
+                        service->ClassName().c_str(), service->Callsign().c_str(),
+                        Core::EnumerateType<PluginHost::IShell::startmode>(service->StartMode()).Data()));
                 }
             }
         }
@@ -1078,7 +1079,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins();
 
         // First register all services, than if we got them, start "activating what is required.
-        // Whatever plugin is needed, we at least have our MetaData plugin available (as the first entry :-).
+        // Whatever plugin is needed, we at least have our Metadata plugin available (as the first entry :-).
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
@@ -1165,7 +1166,7 @@ namespace PluginHost {
     {
         // Before we do anything with the subsystems (notifications)
         // Lets see if security is already set..
-        DefaultSecurity* securityProvider = Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
+        DefaultSecurity* securityProvider = Core::ServiceType<DefaultSecurity>::Create<DefaultSecurity>(
             _config.WebPrefix(),
             _config.JSONRPCPrefix(),
             _controller->Callsign());

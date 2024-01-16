@@ -24,9 +24,8 @@ These are the options applicable to all plugins
 | callsign                         | The callsign of the plugin. This is arbitrary and does not need to reflect any class names in the code<br /><br />Some people like to use reverse domain names for their plugin callsigns, although it's not a requirement | string    | -           | com.example.SamplePlugin         |
 | locator                          | The name of the library (.so/.dll) that contains the plugin code. | string    | -           | libSamplePlugin.so               |
 | classname                        | The name of the class to be instantiated when loading the plugin | string    | -           | SamplePlugin                     |
-| startmode                        | Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will behave the same as the `autostart` option | enum      | Deactivated | Activated                        |
-| autostart                        | :warning: **Deprecated**: Use `startmode` instead<br /><br />Whether to automatically start the plugin when starting WPEFramework. If false, the plugin must be activated manually using the Controller plugin | bool      | true        | false                            |
-| resumed                          | :warning: **Deprecated**: Use `startmode` instead<br /><br />When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended | bool      | false       | true                             |
+| startmode                        | Default start state of the plugin when loading (Unavailable, Deactivated, Activated).<br /><br />Setting to Activated will automatically start the plugin | enum      | Deactivated | Activated                        |
+| resumed                          | When starting a plugin that supports suspend/resume (IStateControl), when activating the plugin start it in a resumed state instead of suspended | bool      | false       | true                             |
 | webui                            | A plugin can be configured to act as a web server hosting generic files, typically used for hosting a UI.<br /><br />This config option sets the URL the server should run under, relative to the plugin callsign. Files will be served from a corresponding directory in the plugin's data dir.<br /><br />If not set, web server functionality disabled | string    | -           | UI                               |
 | precondition                     | Array of subsystems that are preconditions for plugin activation[^1]. If any of the provided subsystems aren't marked as active, the plugin will not activate until those preconditions are met. | array     | -           | ["GRAPHICS"]                     |
 | termination                      | Array of subsystems that, when not present, will cause the plugin to deactivate if it's running[^1]. Typically paired with preconditions.<br /><br />E.G If a plugin requires the graphics subsystem, adding `NOT_GRAPHICS` in the termination options will cause the plugin to deactivate if the graphics subsystem is marked as down. | array     | -           | ["NOT_GRAPHICS"]                 |
@@ -50,7 +49,7 @@ These are the options applicable to all plugins
 {
    "locator":"libWPEFrameworkSamplePlugin.so",
    "classname":"SamplePlugin",
-   "autostart":true,
+   "startmode":"activated",
    "configuration":{
       "root":{
          "mode":"Off"
@@ -73,7 +72,7 @@ For this example, we will create a config file for an example plugin that return
 {
    "locator":"libWPEFrameworkGreeterPlugin.so",
    "classname":"Greeter",
-   "autostart":true,
+   "startmode":"activated",
    "configuration":{
       "greetings": ["Hello", "Good Morning", "Hi"]
       "root":{
@@ -128,7 +127,7 @@ To edit config options, simply create variables with the corresponding name. Nes
 For example, the below will create default values for our Greeter plugin
 
 ```python
-autostart = True
+startmode = "activated"
 
 configuration = JSON()
 greetings = ["Hello", "Good Morning", "Hi"]
@@ -153,7 +152,7 @@ The legacy config generator uses [CMakepp QuickMap](https://github.com/toeb/cmak
 Example for our Greeter plugin:
 
 ```cmake
-set (autostart true)
+set (startmode "activated")
 
 map()
 	kv(mode "Off")

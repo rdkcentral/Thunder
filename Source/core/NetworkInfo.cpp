@@ -462,6 +462,10 @@ namespace Core {
         }
     }
 
+    uint32_t AdapterIterator::MACAddress(const uint8_t[6]) {
+        return (Core::ERROR_NOT_SUPPORTED);
+    }
+
     static std::map<uint64_t, ULONG> _contextSaving;
 
     uint32_t AdapterIterator::Add(const IPNode& address)
@@ -1576,6 +1580,32 @@ namespace Core {
 		break;
             }
         }
+    }
+
+    uint32_t Network::MAC(const uint8_t buffer[6]) {
+        uint32_t result = (IsUp() == false ? Core::ERROR_NONE : Core::ERROR_ILLEGAL_STATE);
+
+        if (result == Core::ERROR_NONE) {
+            struct ifreq ifr;
+
+            ::bzero(ifr.ifr_name, IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+            ::memcpy(ifr.ifr_hwaddr.sa_data, buffer, 6);
+            ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+
+            int fd = socket(AF_INET, SOCK_DGRAM, 0);
+            if(fd < 0) {
+                result = Core::ERROR_OPENING_FAILED;
+            }
+            else {
+                if(ioctl(fd, SIOCSIFHWADDR, &ifr) < 0)
+                {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+                ::close(fd);
+            }
+        }
+        return(result);
     }
 
     AdapterIterator::AdapterIterator()
