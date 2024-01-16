@@ -4,7 +4,7 @@
     <ClCompile Include="Channel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaData.cpp">
+    <ClCompile Include="Metadata.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Service.cpp">
@@ -57,7 +57,7 @@
     <ClInclude Include="Configuration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MetaData.h">
+    <ClInclude Include="Metadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Module.h">
