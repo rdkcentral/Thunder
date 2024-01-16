@@ -21,7 +21,7 @@ jobs:
 
   ThunderInterfaces:
     needs: Thunder
-    uses: VeithMetro/ThunderInterfaces/.github/workflows/Linux build template.yml@development/actions
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
 
   ThunderLibraries:
     needs: Thunder
