@@ -28,7 +28,9 @@
 #include <grp.h>
 #include <limits.h>
 #include <pwd.h>
+#ifndef __APPLE__
 #include <sys/prctl.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -243,7 +245,7 @@ namespace Core {
         , _current()
         , _index(0)
     {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         FindChildren(_pids, [=](const uint32_t, const uint32_t) { return true; });
 #endif
         Reset();
@@ -255,7 +257,7 @@ namespace Core {
         , _current()
         , _index(0)
     {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
@@ -279,7 +281,7 @@ namespace Core {
         , _current()
         , _index(0)
     {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
 
@@ -310,9 +312,11 @@ namespace Core {
             }
         }
 #else
+#ifndef __APPLE__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t) {
             return parentPID == foundparentPID;
         });
+#endif
 #endif
 
         Reset();
@@ -509,9 +513,11 @@ namespace Core {
         if (GetCurrentProcessId() == _pid) {
         }
 #else
+#ifndef __APPLE__ //No straight forward way to set process name in OSX
         if (static_cast<uint32_t>(::getpid()) == _pid) {
             prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
         }
+#endif
 #endif
     }
     string ProcessInfo::Executable() const
@@ -577,7 +583,7 @@ namespace Core {
 
     /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
     {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         std::list<uint32_t> pidList;
         FindPid(name, exact, pidList);
 
@@ -619,7 +625,7 @@ namespace Core {
 
     void ProcessCurrent::SupplementryGroups(const string& userName)
     {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         struct passwd* pwd = getpwnam(userName.c_str());
         if (pwd != nullptr) {
             int numberOfGroups = 0;

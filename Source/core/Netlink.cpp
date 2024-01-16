@@ -17,6 +17,7 @@
  * limitations under the License.
  */
  
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
 #include <linux/rtnetlink.h>
 
 #include "Netlink.h"
@@ -239,3 +240,4 @@ namespace Core {
     }
 }
 } // namespace Thunder::Core
+#endif

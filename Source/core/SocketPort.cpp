@@ -41,6 +41,7 @@
 
 #ifdef __APPLE__
 #include <sys/event.h>
+#include <netinet/in.h>
 #elif defined(__LINUX__)
 #include <signal.h>
 #include <sys/ioctl.h>
@@ -234,11 +235,16 @@ namespace Thunder {
                     cmsg = CMSG_NXTHDR(&mh, cmsg))
                 {
                     if ((cmsg->cmsg_level == IPPROTO_IP) && (cmsg->cmsg_type == IP_PKTINFO) && (remote->sa_family == AF_INET)) {
+
                         const struct in_pktinfo* info = reinterpret_cast<const struct in_pktinfo*>CMSG_DATA(cmsg);
                         interfaceId = info->ipi_ifindex;
                         break;
                     }
+#ifdef __APPLE__
+                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_RECVPKTINFO) && (remote->sa_family == AF_INET6)) {
+#else
                     else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6)) {
+#endif
                         const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
                         interfaceId = info->ipi6_ifindex;
                         break;
@@ -1301,7 +1307,7 @@ namespace Thunder {
 #ifdef __WINDOWS__
             if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
 #else
-            if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+            if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
 #endif
                 // Align the buffer to what is requested
                 BufferAlignment(result);

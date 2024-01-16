@@ -53,6 +53,9 @@ namespace Core {
 #else
         , m_hThreadInstance()
         , m_ThreadId(0)
+#ifdef __APPLE__
+        , m_threadName("")
+#endif
 #endif
     {
         TRACE_L5("Constructor Thread <%p>", (this));
@@ -85,9 +88,17 @@ namespace Core {
             err = pthread_attr_setstacksize(&attr, new_size);
             ASSERT(err == 0);
         }
+        std::string convertedName;
+        if (threadName != nullptr) {
+            Core::ToString(threadName, convertedName);
+#ifdef __APPLE__
+            m_threadName = convertedName;
+#endif
+        }
 
         // If there is no thread, the "new" thread can also not free the destructor,
         // then it is up to us.
+
         if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) != 0))
 #endif
         {
@@ -99,16 +110,15 @@ namespace Core {
 #ifdef __POSIX__
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
-
         m_ThreadId = m_hThreadInstance;
 #endif
 
-        if (threadName != nullptr) {
-            std::string convertedName;
-            Core::ToString(threadName, convertedName);
-
-            ThreadName(convertedName.c_str());
-        }
+#ifndef __APPLE__
+            if (threadName != nullptr) {
+                ThreadName(convertedName.c_str());
+            }
+#endif
+ 
     }
     Thread::~Thread()
     {
@@ -141,9 +151,25 @@ POP_WARNING()
 #endif
 
 #ifdef __POSIX__
-        void* Thread::StartThread(Thread* cClassPointer)
+    void* Thread::StartThread(Thread* cClassPointer)
 #endif
     {
+
+#ifdef __APPLE__
+    if(cClassPointer->m_threadName.length() > 0)
+    {
+        //OSX - pthread name can only be set from its own context.
+        int rc = pthread_setname_np(cClassPointer->m_threadName.c_str());
+        if (rc == ERANGE) {
+            // name too long - truncate to 16 chars.
+            char truncName[16];
+            strncpy(truncName, cClassPointer->m_threadName.c_str(), sizeof(truncName));
+            truncName[15] = '\0';
+            pthread_setname_np(truncName);
+        }
+    }
+#endif
+
 #ifdef __POSIX__
         // It is the responsibility of the main app to make sure all threads created are stopped properly.
         // No jumping and bailing out without a proper closure !!!!
@@ -439,6 +465,7 @@ POP_WARNING()
         }
 #endif // __DEBUG__
 #else
+#ifndef __APPLE__
         int rc = pthread_setname_np(m_hThreadInstance, threadName);
         if (rc == ERANGE) {
             // name too long - max 16 chars allowed
@@ -447,6 +474,7 @@ POP_WARNING()
             truncName[15] = '\0';
             pthread_setname_np(m_hThreadInstance, truncName);
         }
+#endif //__APPLE__
 #endif // __WINDOWS__
     }
 

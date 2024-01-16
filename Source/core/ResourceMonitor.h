@@ -25,6 +25,22 @@
 #include "Thread.h"
 #include "Trace.h"
 #include "Timer.h"
+#include "NodeId.h"
+
+#ifdef __WINDOWS__
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
+#ifdef __UNIX__
+#define SOCKET signed int
+#define SOCKET_ERROR static_cast<signed int>(-1)
+#define INVALID_SOCKET static_cast<SOCKET>(-1)
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#endif
 
 namespace Thunder {
 
@@ -258,10 +274,10 @@ namespace Core {
 
             #ifdef __APPLE__
             int data = 0;
-            ::sendto(_signalDescriptor
+            ::sendto(_signalDescriptor,
                     & data,
                 sizeof(data), 0,
-                _signalNode,
+                static_cast<const NodeId&>(_signalNode),
                 _signalNode.Size());
             #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
@@ -316,7 +332,7 @@ namespace Core {
 
                 // Do we need to find something to bind to or is it pre-destined
                 _signalNode = Core::NodeId(file);
-                if (::bind(_signalDescriptor, _signalNode, _signalNode.Size()) != 0) {
+                if (::bind(_signalDescriptor, static_cast<const NodeId&>(_signalNode), _signalNode.Size()) != 0) {
                     _signalDescriptor = -1;
                 }
             }

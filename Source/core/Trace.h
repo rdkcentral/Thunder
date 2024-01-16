@@ -52,11 +52,26 @@ namespace Thunder {
 #include <sys/syscall.h>
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
+#ifdef __APPLE__
+#include <pthread.h>
+uint64_t gettid()
+{
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
+}
+#if INTPTR_MAX == INT64_MAX
+#define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
+#else
+#define TRACE_THREAD_ID static_cast<uint32_t>(::gettid())
+#endif
+#else
 #include <unistd.h>
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else
 #define TRACE_THREAD_ID static_cast<uint32_t>(::gettid())
+#endif
 #endif
 #endif
 #endif
@@ -77,7 +92,7 @@ namespace Thunder {
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%ld>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%llu>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else

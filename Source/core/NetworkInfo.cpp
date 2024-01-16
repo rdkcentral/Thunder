@@ -37,7 +37,9 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if_arp.h>
+#ifndef __APPLE__
 #include <linux/rtnetlink.h>
+#endif
 #include <list>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -536,7 +538,7 @@ namespace Core {
         return (Core::ERROR_BAD_REQUEST);
     }
 
-#elif defined(__POSIX__)
+#elif defined(__POSIX__) && !defined(__APPLE__)
 
     template <const bool ADD>
     class IPAddressModifyType : public Netlink {
@@ -1708,14 +1710,14 @@ namespace Core {
     }
 
     uint32_t AdapterObserver::Open() {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         IPNetworks::Instance().Register(_callback);
 #endif
         return (Core::ERROR_NONE);
     }
 
     uint32_t AdapterObserver::Close() {
-#ifndef __WINDOWS__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         IPNetworks::Instance().Unregister(_callback);
 #endif
         return (Core::ERROR_NONE);

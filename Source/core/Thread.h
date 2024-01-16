@@ -284,6 +284,9 @@ namespace Core {
 
         ::ThreadId m_ThreadId;
         static uint32_t _defaultStackSize;
+#ifdef __APPLE__
+        string m_threadName;
+#endif
 
 #ifdef __CORE_EXCEPTION_CATCHING__
         static IExceptionCallback* _exceptionHandler;
