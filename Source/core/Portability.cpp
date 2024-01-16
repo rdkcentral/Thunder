@@ -29,7 +29,9 @@
 #ifdef __LINUX__
 #include <atomic>
 #include <signal.h>
+#ifdef THUNDER_BACKTRACE
 #include <elf.h>
+#endif
 #endif
 
 using namespace WPEFramework;

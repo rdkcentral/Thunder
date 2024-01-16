@@ -237,10 +237,13 @@ if (NOT BUILD_SHARED_LIBS)
     )
 endif()
 
+if (APPLE)
+    add_definitions(-D__APPLE_USE_RFC_3542)
+endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+#          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
