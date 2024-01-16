@@ -20,7 +20,7 @@
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
-#ifndef __WINDOWS__
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
 
 #include "Module.h"
 #include "NodeId.h"

@@ -356,13 +356,13 @@ typedef std::string string;
 #endif
 
 #ifdef __LINUX__
-
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <string>
+#include <sys/time.h>
 #include <algorithm>
 #include <atomic>
 #include <array>
@@ -412,6 +412,12 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
+
+#define AF_NETLINK 16
+#define AF_PACKET  17
+
+#define __APPLE_USE_RFC_3542
+
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
 #else
@@ -419,6 +425,9 @@ int clock_gettime(int, struct timespec*);
 #include <linux/types.h>
 #include <linux/uinput.h>
 #include <sys/signalfd.h>
+
+uint64_t htonll(const uint64_t& value);
+uint64_t ntohll(const uint64_t& value);
 #endif
 
 #define ONESTOPBIT 0
@@ -593,10 +602,7 @@ DEPRECATED inline EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _M
     return (::memmove(_Dst, _Src, _MaxCount));
 }
 
-#if defined(__LINUX__)
-uint64_t htonll(const uint64_t& value);
-uint64_t ntohll(const uint64_t& value);
-#endif
+
 }
 
 #define SLEEPSLOT_POLLING_TIME 100
@@ -641,7 +647,6 @@ typedef enum {
 
 
 #endif // __LINUX__
-
 #ifdef _UNICODE
 typedef std::wstring string;
 #endif

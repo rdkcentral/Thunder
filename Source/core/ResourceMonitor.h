@@ -26,6 +26,22 @@
 #include "Thread.h"
 #include "Trace.h"
 #include "Timer.h"
+#include "NodeId.h"
+
+#ifdef __WINDOWS__
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
+#ifdef __UNIX__
+#define SOCKET signed int
+#define SOCKET_ERROR static_cast<signed int>(-1)
+#define INVALID_SOCKET static_cast<SOCKET>(-1)
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#endif
 
 namespace WPEFramework {
 
@@ -249,10 +265,10 @@ namespace Core {
 
 #ifdef __APPLE__
             int data = 0;
-            ::sendto(_signalDescriptor
+            ::sendto(_signalDescriptor,
                     & data,
                 sizeof(data), 0,
-                _signalNode,
+                static_cast<const NodeId&>(_signalNode),
                 _signalNode.Size());
 #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
@@ -292,6 +308,38 @@ namespace Core {
         {
         }
 
+
+        bool SetNonBlocking(signed int socket)
+        {
+#ifdef __WINDOWS__
+            unsigned long l_Value = 1;
+            if (ioctlsocket(socket, FIONBIO, &l_Value) != 0) {
+                TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
+            }
+            else {
+                return (true);
+            }
+#endif
+
+#ifdef __POSIX__
+            if (fcntl(socket, F_SETOWN, getpid()) == -1) {
+                TRACE_L1("Setting Process ID failed. <%d>", errno);
+            }
+            else {
+                int flags = fcntl(socket, F_GETFL, 0) | O_NONBLOCK;
+
+                if (fcntl(socket, F_SETFL, flags) != 0) {
+                    TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
+                }
+                else {
+                    return (true);
+                }
+            }
+#endif
+
+            return (false);
+        }
+
     public:
 #ifdef __LINUX__
         uint32_t Initialize()
@@ -308,7 +356,7 @@ namespace Core {
 
                 // Do we need to find something to bind to or is it pre-destined
                 _signalNode = Core::NodeId(file);
-                if (::bind(_signalDescriptor, _signalNode, _signalNode.Size()) != 0) {
+                if (::bind(_signalDescriptor, static_cast<const NodeId&>(_signalNode), _signalNode.Size()) != 0) {
                     _signalDescriptor = -1;
                 }
             }
