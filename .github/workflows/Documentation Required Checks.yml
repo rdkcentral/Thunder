@@ -18,4 +18,4 @@ on:
 
 jobs:
   Thunder:
-    uses: VeithMetro/Thunder/.github/workflows/Docs build template.yml@development/actions-docs
+    uses: rdkcentral/Thunder/.github/workflows/Docs build template.yml@master
