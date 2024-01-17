@@ -18,12 +18,4 @@ on:
 
 jobs:
   Thunder:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        build_type: [Debug, Release, MinSizeRel]
-
-    name: Build type - ${{matrix.build_type}}
-    steps:
-      - run: 'echo "Changes only to the documentation, so no build required" '
+    uses: VeithMetro/Thunder/.github/workflows/Docs build template.yml@development/actions-docs
