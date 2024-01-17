@@ -2,12 +2,12 @@ name: Documentation Required Checks
 
 on:
   push:
-    #branches: ["master"]
-    #paths:
-    #  - '!**'
-    #  - 'doc/**'
-    #  - 'docs/**'
-    #  - 'ReleaseNotes/**'
+    branches: ["master"]
+    paths:
+      - '!**'
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
   pull_request:
     branches: ["master"]
     paths:
