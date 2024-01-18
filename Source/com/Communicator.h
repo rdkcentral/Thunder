@@ -1104,8 +1104,6 @@ namespace RPC {
                         observer++;
                     }
 
-                    // Don't forget to close on our side as well, if it is not already closed....
-                    index->second->Terminate();
 
                     // Release this entry, do not wait till it get's overwritten.
                     index->second->Release();
