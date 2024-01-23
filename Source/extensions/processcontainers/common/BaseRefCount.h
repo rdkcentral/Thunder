@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include "core/Sync.h"
+
 namespace WPEFramework {
 namespace ProcessContainers {
 
