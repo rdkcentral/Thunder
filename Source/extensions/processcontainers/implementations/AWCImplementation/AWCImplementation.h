@@ -55,6 +55,7 @@ private:
     mutable std::mutex _mutex;
     std::condition_variable _cv;
     bool _waitForResponse{false};
+    bool WaitUntilAWCReady() const;
 };
 
 } /* ProcessContainers */

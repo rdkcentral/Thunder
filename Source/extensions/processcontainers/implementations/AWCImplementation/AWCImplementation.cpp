@@ -61,6 +61,38 @@ bool AWCContainer::IsRunning() const
     return isRunning;
 }
 
+bool AWCContainer::WaitUntilAWCReady() const
+{
+    TRACE_L1("AWC ready?");
+    const int maxAttempts = 60; // for a total of max 30 secs
+    int attemptCount = 0;
+    bool result = false, is_ready = false;
+    awc::AWCClient::awc_status_t awc_result;
+    do {
+        {
+          std::lock_guard<std::mutex> lock(_mutex);
+          is_ready = false;
+          awc_result = _client->isServiceReady(is_ready);
+          result = (awc_result == awc::AWCClient::AWC_STATUS_OK);
+        }
+        attemptCount++;
+
+        if ((!result || !is_ready) && attemptCount < maxAttempts) {
+            TRACE_L1("AWC is not ready yet (%d,%d,%d), give it some more time...", awc_result, result, is_ready);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        } else {
+            break;
+	}
+    } while (true);
+
+    if (!result || !is_ready) {
+      TRACE_L1("Giving up on waiting on awc to be ready. It is not. (%d,%d)");
+    } else {
+      TRACE_L1("Yes, AWC is ready!");
+    }
+    return is_ready;
+}
+
 bool AWCContainer::Start(const string& command, IStringIterator& parameters)
 {
     if(IsRunning())
@@ -68,6 +100,8 @@ bool AWCContainer::Start(const string& command, IStringIterator& parameters)
         TRACE_L1("id=%s(%p) already running", Id().c_str(), this);
         return false;
     }
+
+    WaitUntilAWCReady();
 
     awc::AWCClient::str_vect_sptr_t windowParams = std::make_shared<std::vector<std::string>>();
     awc::AWCClient::str_vect_sptr_t appParams = std::make_shared<std::vector<std::string>>();
