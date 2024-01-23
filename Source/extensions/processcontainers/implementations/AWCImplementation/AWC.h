@@ -31,6 +31,7 @@ public:
     ~AWCListener() {};
     void notifyWindowChange(int window_id, awc::AWCClient::awc_window_state_t window_state, unsigned int pid) override;
     void notifyStateChange(int req_id, awc::awc_app_state_t app_state, int status, unsigned int pid) override;
+    void notifyServiceReady();
 private:
     AWCStateChangeNotifier * _notifier;
 };

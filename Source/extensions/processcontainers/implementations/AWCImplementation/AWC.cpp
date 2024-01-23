@@ -53,3 +53,9 @@ void AWCListener::notifyStateChange(int req_id, awc::awc_app_state_t app_state, 
     TRACE_L3("%s req_id=%d app_state=%d status=%d pid=%u", _TRACE_FUNCTION_, req_id, app_state, status, pid);
     _notifier->notify(req_id, app_state, status, pid);
 }
+
+void AWCListener::notifyServiceReady()
+{
+    TRACE_L3("%s", _TRACE_FUNCTION_);
+    // no action
+}
