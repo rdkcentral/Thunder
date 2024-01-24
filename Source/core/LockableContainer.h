@@ -47,6 +47,11 @@ namespace Core {
             , m_RWLock()
         {
         }
+        LockableContainerType(LockableContainerType<CONTAINER>&& move)
+            : CONTAINER(move)
+            , m_RWLock()
+        {
+        }
         ~LockableContainerType()
         {
         }
@@ -61,6 +66,20 @@ namespace Core {
             // Make sure we can write in this container!!!
             m_RWLock.WriteUnlock();
 
+            return (*this);
+        }
+
+        LockableContainerType<CONTAINER> operator=(LockableContainerType<CONTAINER>&& move)
+        {
+            if (this != &move) {
+                // Make sure we can write in this container!!!
+                m_RWLock.WriteLock();
+
+                CONTAINER::operator=(move);
+
+                // Make sure we can write in this container!!!
+                m_RWLock.WriteUnlock();
+            }
             return (*this);
         }
 

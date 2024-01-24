@@ -140,7 +140,9 @@ namespace Core {
         // define them but do not implement them. Compile error and/or link error.
         // -------------------------------------------------------------------------
     private:
+        SerialPort(SerialPort&& move);
         SerialPort(const SerialPort& a_RHS);
+        SerialPort& operator=(SerialPort&& move);
         SerialPort& operator=(const SerialPort& a_RHS);
 
     public:

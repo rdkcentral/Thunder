@@ -133,10 +133,27 @@ namespace Plugin {
                 Init();
             }
 
+            SubsystemsData(SubsystemsData&& move)
+                : Core::JSON::Container()
+                , Subsystem(std::move(move.Subsystem))
+                , Active(std::move(move.Active))
+            {
+                Init();
+            }
+
             SubsystemsData& operator=(const SubsystemsData& rhs)
             {
                 Subsystem = rhs.Subsystem;
                 Active = rhs.Active;
+                return (*this);
+            }
+
+            SubsystemsData& operator=(SubsystemsData&& move)
+            {
+                if (this != &move) {
+                    Subsystem = std::move(move.Subsystem);
+                    Active = std::move(move.Active);
+                }
                 return (*this);
             }
 
@@ -202,7 +219,9 @@ namespace Plugin {
         };
 
     private:
+        Controller(Controller&&);
         Controller(const Controller&);
+        Controller& operator=(Controller&&);
         Controller& operator=(const Controller&);
 
     protected:

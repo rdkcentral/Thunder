@@ -286,7 +286,9 @@ POP_WARNING()
         class ParserType {
         private:
             ParserType();
+            ParserType(ParserType<TEXTTERMINATOR, HANDLER>&&);
             ParserType(const ParserType<TEXTTERMINATOR, HANDLER>&);
+            ParserType<TEXTTERMINATOR, HANDLER>& operator=(ParserType<TEXTTERMINATOR, HANDLER>&&);
             ParserType<TEXTTERMINATOR, HANDLER>& operator=(const ParserType<TEXTTERMINATOR, HANDLER>&);
 
         public:

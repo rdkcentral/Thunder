@@ -261,6 +261,15 @@ namespace Plugin {
                 , _secure(copy._secure)
             {
             }
+            Instance(Instance&& move)
+                : _URL(std::move(move._URL))
+                , _latency(move._latency)
+                , _model(std::move(move._model))
+                , _secure(move._secure)
+            {
+                move._latency = 0;
+                move._secure = false;
+            }
             ~Instance()
             {
             }
@@ -272,6 +281,17 @@ namespace Plugin {
                 _model = rhs._model;
                 _secure = rhs._secure;
 
+                return (*this);
+            }
+
+            Instance& operator=(Instance&& move)
+            {
+                if (this != &move) {
+                    _URL = std::move(move._URL);
+                    _latency = std::move(move._latency);
+                    _model = std::move(move._model);
+                   _secure = std::move(move._secure);
+                }
                 return (*this);
             }
 

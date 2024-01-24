@@ -45,6 +45,14 @@ namespace Core {
         {
         }
 
+        OptionalType(OptionalType<TYPE>&& value)
+            : m_Value(std::move(value.m_Value))
+            , m_Set(value.m_Set)
+        {
+            value.m_Set = false;
+        }
+
+
         ~OptionalType()
         {
         }
@@ -54,6 +62,17 @@ namespace Core {
             m_Value = value.m_Value;
             m_Set = value.m_Set;
 
+            return (*this);
+        }
+
+        inline OptionalType<TYPE>& operator=(OptionalType<TYPE>&& move)
+        {
+            if (this != &move) {
+                m_Value = std::move(move.m_Value);
+                m_Set = move.m_Set;
+
+                move.m_Set = false;
+            }
             return (*this);
         }
 

@@ -75,9 +75,9 @@ namespace Core {
             {
             }
 
-            inline TimedInfo(TimedInfo&& copy) noexcept
-                : m_ScheduleTime(copy.m_ScheduleTime)
-                , m_Info(std::move(copy.m_Info))
+            inline TimedInfo(TimedInfo&& move) noexcept
+                : m_ScheduleTime(move.m_ScheduleTime)
+                , m_Info(std::move(move.m_Info))
             {
             }
 
@@ -102,11 +102,12 @@ namespace Core {
                 return (*this);
             }
 
-            inline TimedInfo& operator=(TimedInfo&& RHS)
+            inline TimedInfo& operator=(TimedInfo&& move)
             {
-                m_ScheduleTime = RHS.m_ScheduleTime;
-                m_Info = std::move(RHS.m_Info);
-
+                if (this != &move) {
+                    m_ScheduleTime = move.m_ScheduleTime;
+                    m_Info = std::move(move.m_Info);
+                }
                 return (*this);
             }
 

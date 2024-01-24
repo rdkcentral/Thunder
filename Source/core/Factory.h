@@ -86,6 +86,15 @@ namespace Core {
                 , _start(true)
             {
             }
+            Iterator(Iterator&& move)
+                : _map(move._map.begin(), move._map.end())
+                , _index(move._index.begin(), move._index.end())
+                , _start(move._start)
+            {
+                move._map.clear();
+                move._index.clear();
+                move._start = true;
+            }
             ~Iterator() = default;
 
         public:

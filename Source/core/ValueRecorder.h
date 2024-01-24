@@ -62,7 +62,9 @@ namespace Core {
     private:
         class BaseRecorder {
         private:
+            BaseRecorder(BaseRecorder&&);
             BaseRecorder(const BaseRecorder&);
+            BaseRecorder& operator=(BaseRecorder&&);
             BaseRecorder& operator=(const BaseRecorder&);
 
         public:
@@ -484,14 +486,18 @@ namespace Core {
         };
 
     private:
+        RecorderType(RecorderType<STOREVALUE, BLOCKSIZE>&&);
         RecorderType(const RecorderType<STOREVALUE, BLOCKSIZE>&);
+        RecorderType<STOREVALUE, BLOCKSIZE> operator=(RecorderType<STOREVALUE, BLOCKSIZE>&&);
         RecorderType<STOREVALUE, BLOCKSIZE> operator=(const RecorderType<STOREVALUE, BLOCKSIZE>&);
 
     public:
         class Writer : public BaseRecorder {
         private:
             Writer();
+            Writer(Writer&& move);
             Writer(const Writer& copy);
+            Writer& operator=(Writer&& move);
             Writer& operator=(const Writer& copy);
 
         protected:
@@ -607,7 +613,9 @@ namespace Core {
 
         class Reader : public BaseRecorder {
         private:
+            Reader(Reader&& move);
             Reader(const Reader& copy);
+            Reader& operator=(Reader&& move);
             Reader& operator=(const Reader& copy);
 
         public:

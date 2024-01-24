@@ -54,6 +54,13 @@ namespace Core {
                 , m_Length(copy.m_Length)
             {
             }
+            inline Index(Index&& move)
+                : m_Begin(move.m_Begin)
+                , m_Length(move.m_Length)
+            {
+                move.m_Begin = 0;
+                move.m_Length = 0;
+            }
             inline ~Index()
             {
             }
@@ -63,6 +70,18 @@ namespace Core {
                 m_Begin = RHS.m_Begin;
                 m_Length = RHS.m_Length;
 
+                return (*this);
+            }
+
+            inline Index& operator=(Index&& move)
+            {
+                if (this != &move) {
+                    m_Begin = move.m_Begin;
+                    m_Length = move.m_Length;
+
+                    move.m_Begin = 0;
+                    move.m_Length = 0;
+                }
                 return (*this);
             }
 
@@ -164,11 +183,25 @@ namespace Core {
             , m_Buffer(base.m_Buffer)
         {
         }
+        TextFragment(TextFragment&& move, const uint32_t offset, const uint32_t length)
+            : m_Index(std::move(move.m_Index), offset, length)
+            , m_Start(move.m_Start)
+            , m_Buffer(std::move(move.m_Buffer))
+        {
+            move.m_Start = nullptr;
+        }
         TextFragment(const TextFragment& copy)
             : m_Index(copy.m_Index)
             , m_Start(copy.m_Start)
             , m_Buffer(copy.m_Buffer)
         {
+        }
+        TextFragment(TextFragment&& move)
+            : m_Index(std::move(move.m_Index))
+            , m_Start(move.m_Start)
+            , m_Buffer(std::move(move.m_Buffer))
+        {
+            move.m_Start = nullptr;
         }
         ~TextFragment()
         {
@@ -180,6 +213,17 @@ namespace Core {
             m_Start = RHS.m_Start;
             m_Buffer = RHS.m_Buffer;
 
+            return (*this);
+        }
+        TextFragment& operator=(TextFragment&& move)
+        {
+            if (this != &move) {
+                m_Index = std::move(move.m_Index);
+                m_Start = move.m_Start;
+                m_Buffer = std::move(move.m_Buffer);
+
+                move.m_Start = nullptr;
+            }
             return (*this);
         }
         inline void Clear()
@@ -571,6 +615,20 @@ namespace Core {
             , _suppressEmpty(copy._suppressEmpty)
         {
         }
+        TextSegmentIterator(TextSegmentIterator&& move, const bool fixatFromCurrentPosition = false)
+            : _delimiter(move._delimiter)
+            , _delimiters(std::move(move._delimiters))
+            , _index(fixatFromCurrentPosition ? (move._index < move._source.Length() ? 0 : 1) : move._index)
+            , _current(std::move(move._current))
+            , _suppressEmpty(move._suppressEmpty)
+        {
+            uint32_t moveLength = move._source.Length();
+            _source = fixatFromCurrentPosition ? (move._index < moveLength ? TextFragment(std::move(move._source), move._index, moveLength - move._index) : TextFragment()) : std::move(move._source);
+
+            move._delimiter = 0;
+            move._index = ~0;
+            move._suppressEmpty = false;
+        }
         ~TextSegmentIterator()
         {
         }
@@ -584,6 +642,23 @@ namespace Core {
             _source = RHS._source;
             _suppressEmpty = RHS._suppressEmpty;
 
+            return (*this);
+        }
+
+        TextSegmentIterator& operator=(TextSegmentIterator&& move)
+        {
+            if (this != &move) {
+                _delimiter = move._delimiter;
+                _delimiters = std::move(move._delimiters);
+                _index = move._index;
+                _current = std::move(move._current);
+                _source = std::move(move._source);
+                _suppressEmpty = move._suppressEmpty;
+
+                move._delimiter = 0;
+                move._index = ~0;
+                move._suppressEmpty = false;
+            }
             return (*this);
         }
 

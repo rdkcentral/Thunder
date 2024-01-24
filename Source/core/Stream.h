@@ -46,7 +46,9 @@ namespace Core {
     template <typename BASESTREAM>
     class StreamType : public BASESTREAM, public IStream {
     private:
+        StreamType(StreamType<BASESTREAM>&&);
         StreamType(const StreamType<BASESTREAM>&);
+        StreamType<BASESTREAM>& operator=(StreamType<BASESTREAM>&&);
         StreamType<BASESTREAM>& operator=(const StreamType<BASESTREAM>&);
 
     public:

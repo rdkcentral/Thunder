@@ -49,7 +49,9 @@ namespace Core {
         private:
             Handler();
             Handler(const Handler&);
+            Handler(Handler&&);
             Handler& operator=(const Handler&);
+            Handler& operator=(Handler&&);
 
         public:
             Handler(Media<SOURCE>& parent)

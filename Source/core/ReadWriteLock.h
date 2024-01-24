@@ -38,7 +38,9 @@ namespace Core {
 
     private:
         ReadWriteLock(const ReadWriteLock& copy);
+        ReadWriteLock(ReadWriteLock&& move);
         ReadWriteLock& operator=(const ReadWriteLock& rhs);
+        ReadWriteLock& operator=(ReadWriteLock&& move);
 
     public:
         ReadWriteLock()

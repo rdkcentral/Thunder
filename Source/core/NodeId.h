@@ -195,7 +195,9 @@ namespace Core {
         NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
         NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
         NodeId(const NodeId& rInfo);
+        NodeId(NodeId&& rInfo);
         NodeId(const NodeId& rInfo, const uint16_t portNumber);
+        NodeId(NodeId&& rInfo, const uint16_t portNumber);
 
         //------------------------------------------------------------------------
         // Public Methods
@@ -307,6 +309,7 @@ namespace Core {
         bool operator==(const NodeId& rInfo) const;
 
         NodeId& operator=(const NodeId& rInfo);
+        NodeId& operator=(NodeId&& rInfo);
         NodeId& operator=(const struct sockaddr_in& rInfo);
         NodeId& operator=(const struct sockaddr_in6& rInfo);
         NodeId& operator=(const union SocketInfo& rInfo); 
@@ -357,9 +360,18 @@ namespace Core {
             , _mask(copy._mask)
         {
         }
+        IPNode(IPNode&& move)
+            : Core::NodeId(move)
+            , _mask(move._mask)
+        {
+            move._mask = 0;
+        }
         ~IPNode()
         {
         }
+
+        IPNode& operator=(const IPNode& rInfo) = default;
+        IPNode& operator=(IPNode&& rInfo) = default;
 
     public:
         uint8_t Mask() const

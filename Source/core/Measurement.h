@@ -45,6 +45,15 @@ namespace Core {
             , _measurements(copy._measurements)
         {
         }
+        MeasurementType(MeasurementType<TYPE>&& move)
+            : _min(std::move(move._min))
+            , _max(std::move(move._max))
+            , _last(std::move(move._last))
+            , _average(std::move(move._average))
+            , _measurements(move._measurements)
+        {
+            move._measurements = 0;
+        }
         ~MeasurementType()
         {
         }
@@ -57,6 +66,20 @@ namespace Core {
             _average = RHS._average;
             _measurements = RHS._measurements;
 
+            return (*this);
+        }
+
+        MeasurementType<TYPE>& operator=(MeasurementType<TYPE>&& move)
+        {
+            if (this != &move) {
+                _min = std::move(move._min);
+                _max = std::move(move._max);
+                _last = std::move(move._last);
+                _average = std::move(move._average);
+                _measurements = move._measurements;
+
+                move._measurements = 0;
+            }
             return (*this);
         }
 

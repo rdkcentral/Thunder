@@ -151,7 +151,9 @@ namespace Core {
 
         class EXTERNAL MemorySnapshot {
         public:
+            MemorySnapshot(MemorySnapshot&& move) = default;
             MemorySnapshot(const MemorySnapshot& copy) = default;
+            MemorySnapshot& operator=(MemorySnapshot&& move) = default;
             MemorySnapshot& operator=(const MemorySnapshot& copy) = default;
             ~MemorySnapshot() = default;
 
