@@ -39,7 +39,9 @@ namespace Core {
     class StateTrigger {
     private:
         StateTrigger();
+        StateTrigger(StateTrigger&& move);
         StateTrigger(const StateTrigger& a_Copy);
+        StateTrigger& operator=(StateTrigger&& move);
         StateTrigger& operator=(const StateTrigger& a_RHS);
 
     public:

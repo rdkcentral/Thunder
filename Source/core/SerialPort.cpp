@@ -82,7 +82,9 @@ namespace Core {
         class MonitorWorker : public Core::Thread {
         private:
             MonitorWorker(const MonitorWorker&);
+            MonitorWorker(MonitorWorker&&);
             MonitorWorker& operator=(const MonitorWorker&);
+            MonitorWorker& operator=(MonitorWorker&&);
 
         public:
             MonitorWorker(SerialMonitor& parent)
@@ -109,7 +111,9 @@ namespace Core {
         static const uint8_t SLOT_ALLOCATION = 8;
 
         SerialMonitor(const SerialMonitor&);
+        SerialMonitor(SerialMonitor&&);
         SerialMonitor& operator=(const SerialMonitor&);
+        SerialMonitor& operator=(SerialMonitor&&);
 
     public:
         SerialMonitor()

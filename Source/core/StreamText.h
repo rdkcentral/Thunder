@@ -28,6 +28,8 @@ namespace Core {
     class TerminatorNull {
     private:
         TerminatorNull(TerminatorNull&);
+        TerminatorNull(TerminatorNull&&);
+        TerminatorNull& operator=(TerminatorNull&&);
         TerminatorNull& operator=(const TerminatorNull&);
 
     public:
@@ -59,6 +61,8 @@ namespace Core {
     class TerminatorCarriageReturn {
     private:
         TerminatorCarriageReturn(TerminatorCarriageReturn&);
+        TerminatorCarriageReturn(TerminatorCarriageReturn&&);
+        TerminatorCarriageReturn& operator=(TerminatorCarriageReturn&&);
         TerminatorCarriageReturn& operator=(const TerminatorCarriageReturn&);
 
     public:
@@ -90,6 +94,8 @@ namespace Core {
     class TerminatorCarriageReturnLineFeed {
     private:
         TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&);
+        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&&);
+        TerminatorCarriageReturnLineFeed& operator=(TerminatorCarriageReturnLineFeed&&);
         TerminatorCarriageReturnLineFeed& operator=(const TerminatorCarriageReturnLineFeed&);
 
     public:
@@ -149,7 +155,9 @@ namespace Core {
         class HandlerType : public ACTUALSOURCE {
         private:
             HandlerType();
+            HandlerType(HandlerType<PARENTCLASS, ACTUALSOURCE>&&);
             HandlerType(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
+            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(HandlerType<PARENTCLASS, ACTUALSOURCE>&&);
             HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
 
         public:
@@ -257,7 +265,9 @@ namespace Core {
 
         typedef StreamTextType<SOURCE, TEXTTERMINATOR> BaseClass;
 
+        StreamTextType(StreamTextType<SOURCE, TEXTTERMINATOR>&&);
         StreamTextType(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
+        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(StreamTextType<SOURCE, TEXTTERMINATOR>&&);
         StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
 
     public:

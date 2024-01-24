@@ -38,7 +38,9 @@ namespace Core {
     private:
         class EXTERNAL SingletonList {
         private:
+            SingletonList(SingletonList&&);
             SingletonList(const SingletonList&);
+            SingletonList& operator=(SingletonList&&);
             SingletonList& operator=(const SingletonList&);
 
         public:
@@ -54,7 +56,9 @@ namespace Core {
         };
 
     private:
+        Singleton(Singleton&&);
         Singleton(const Singleton&);
+        Singleton& operator=(Singleton&&);
         Singleton& operator=(const Singleton&);
 
     public:

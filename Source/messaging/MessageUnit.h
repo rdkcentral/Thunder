@@ -68,7 +68,7 @@ namespace WPEFramework {
              */
             class EXTERNAL Control : public Core::Messaging::Metadata {
             public:
-                Control& operator= (const Control& copy) = delete;
+                Control& operator=(const Control& copy) = delete;
 
                 Control()
                     : Core::Messaging::Metadata()
@@ -92,11 +92,13 @@ namespace WPEFramework {
                 }
                 ~Control() = default;
 
-                Control& operator= (Control&& rhs) noexcept
+                Control& operator=(Control&& move) noexcept
                 {
-                    Core::Messaging::Metadata::operator=(rhs);
-                    _enabled = rhs._enabled;
-
+                    if (this != &move) {
+                        Core::Messaging::Metadata::operator=(move);
+                        _enabled = move._enabled;
+                        move._enabled = false;
+                    }
                     return (*this);
                 }
 
@@ -143,7 +145,7 @@ namespace WPEFramework {
             class EXTERNAL Iterator {
             public:
                 Iterator(const Iterator&) = delete;
-                Iterator& operator= (const Iterator&) = delete;
+                Iterator& operator=(const Iterator&) = delete;
 
                 Iterator()
                     : _position(0)
@@ -159,13 +161,13 @@ namespace WPEFramework {
                 }
                 Iterator(Iterator&& move) noexcept
                     : _position(0)
-                    , _container(move._container)
+                    , _container(std::move(move._container))
                     , _index(_container.begin())
                 {
                 }
                 ~Iterator() = default;
 
-                Iterator& operator= (Iterator&& rhs) noexcept
+                Iterator& operator=(Iterator&& rhs) noexcept
                 {
                     _position = 0;
                     _container = std::move(rhs._container);
@@ -173,7 +175,7 @@ namespace WPEFramework {
 
                     return (*this);
                 }
-                Iterator& operator= (ControlList&& rhs) noexcept
+                Iterator& operator=(ControlList&& rhs) noexcept
                 {
                     _position = 0;
                     _container = std::move(rhs);
@@ -282,9 +284,9 @@ namespace WPEFramework {
                             }
                             Entry(Entry&& other)
                                 : Core::JSON::Container()
-                                , Module(other.Module)
-                                , Category(other.Category)
-                                , Enabled(other.Enabled)
+                                , Module(std::move(other.Module))
+                                , Category(std::move(other.Category))
+                                , Enabled(std::move(other.Enabled))
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
@@ -300,12 +302,13 @@ namespace WPEFramework {
                                 Add(_T("category"), &Category);
                                 Add(_T("enabled"), &Enabled);
                             }
+
                             Entry& operator=(Entry&& other)
                             {
                                 if (&other != this) {
-                                    Module = other.Module;
-                                    Category = other.Category;
-                                    Enabled = other.Enabled;
+                                    Module = std::move(other.Module);
+                                    Category = std::move(other.Category);
+                                    Enabled = std::move(other.Enabled);
                                 }
                                 
                                 return (*this);
@@ -695,7 +698,7 @@ namespace WPEFramework {
             public:
                 Client() = delete;
                 Client(const Client&) = delete;
-                Client& operator= (const Client&) = delete;
+                Client& operator=(const Client&) = delete;
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBufferType(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
@@ -861,7 +864,7 @@ namespace WPEFramework {
             public:
                 MessageDispatcher() = delete;
                 MessageDispatcher(const MessageDispatcher&) = delete;
-                MessageDispatcher& operator= (const MessageDispatcher&) = delete;
+                MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
                 /**
                  * @brief Construct a new Message Dispatcher object

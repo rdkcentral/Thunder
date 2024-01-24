@@ -68,7 +68,8 @@ namespace ProcessContainers {
             public:
                 ConfigItem& operator=(const ConfigItem&) = delete;
 
-                ConfigItem(const ConfigItem& rhs);
+                ConfigItem(ConfigItem&& move);
+                ConfigItem(const ConfigItem& copy);
                 ConfigItem();
 
                 ~ConfigItem() override = default;

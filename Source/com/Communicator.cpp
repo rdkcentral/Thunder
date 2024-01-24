@@ -39,7 +39,7 @@ namespace RPC {
 
     public:
         DynamicLoaderPaths(const DynamicLoaderPaths&) = delete;
-        DynamicLoaderPaths& operator= (const DynamicLoaderPaths&) = delete;
+        DynamicLoaderPaths& operator=(const DynamicLoaderPaths&) = delete;
 
         DynamicLoaderPaths() 
             : _downloadLists()

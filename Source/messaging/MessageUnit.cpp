@@ -30,7 +30,7 @@ namespace WPEFramework {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(uint8_t* buffer, const uint16_t length)
                     : _buffer(buffer)
@@ -76,7 +76,7 @@ namespace WPEFramework {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
@@ -107,7 +107,7 @@ namespace WPEFramework {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Settings& settings) : _settings(settings) {}
                 ~Handler() override = default;
@@ -235,7 +235,7 @@ namespace WPEFramework {
             public:
                 Handler() = default;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(const Handler&) = delete;
                 ~Handler() override = default;
 
             public:

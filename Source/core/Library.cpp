@@ -130,6 +130,7 @@ namespace Core {
     }
     Library::Library(Library&& move)
         : _refCountedHandle(move._refCountedHandle)
+        , _error(std::move(move._error))
     {
         move._refCountedHandle = nullptr;
     }
@@ -163,6 +164,22 @@ namespace Core {
             _error = RHS._error;
 
             AddRef();
+        }
+
+        return (*this);
+    }
+
+    Library& Library::operator=(Library&& move)
+    {
+        if (this != &move) {
+            // Only do this if we have different libraries..
+            if (move._refCountedHandle != _refCountedHandle) {
+                Release();
+
+                _refCountedHandle = move._refCountedHandle;
+                _error = std::move(move._error);
+            }
+            move._refCountedHandle = nullptr;
         }
 
         return (*this);

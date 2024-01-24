@@ -173,7 +173,9 @@ namespace Plugin {
         };
 
     private:
+        Controller(Controller&&);
         Controller(const Controller&);
+        Controller& operator=(Controller&&);
         Controller& operator=(const Controller&);
 
     protected:

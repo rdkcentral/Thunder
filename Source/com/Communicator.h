@@ -83,6 +83,22 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
+        Object(Object&& move)
+            : _locator(std::move(move._locator))
+            , _className(std::move(move._className))
+            , _callsign(std::move(move._callsign))
+            , _interface(std::move(move._interface))
+            , _version(std::move(move._version))
+            , _user(std::move(move._user))
+            , _group(std::move(move._group))
+            , _threads(std::move(move._threads))
+            , _priority(std::move(move._priority))
+            , _type(std::move(move._type))
+            , _systemRootPath(std::move(move._systemRootPath))
+            , _remoteAddress(std::move(move._remoteAddress))
+            , _configuration(std::move(move._configuration))
+        {
+        }
         Object(const string& locator,
             const string& className,
             const string& callsign,
@@ -133,6 +149,32 @@ namespace RPC {
 
             return (*this);
         }
+
+
+        Object& operator=(Object&& move)
+        {
+            if (this != &move) {
+                _locator = std::move(move._locator);
+                _className = std::move(move._className);
+                _callsign = std::move(move._callsign);
+                _interface = move._interface;
+                _version = move._version;
+                _user = std::move(move._user);
+                _group = std::move(move._group);
+                _threads= move._threads;
+                _priority = move._priority;
+                _type = std::move(move._type);
+                _systemRootPath = std::move(move._systemRootPath);
+                _remoteAddress = std::move(move._remoteAddress);
+                _configuration = std::move(move._configuration);
+
+                move._interface = ~0;
+                move._version = ~0;
+                move._threads = 0;
+                move._priority = 0;
+	    }
+	    return (*this);
+	}
 
     public:
         inline const string& Locator() const
@@ -206,6 +248,7 @@ namespace RPC {
 
     class EXTERNAL Config {
     private:
+        Config& operator=(Config&&);
         Config& operator=(const Config&);
 
     public:
@@ -252,6 +295,18 @@ namespace RPC {
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
             , _postMortem(copy._postMortem)
+        {
+        }
+	Config(Config&& move)
+            : _connector(std::move(move._connector))
+            , _hostApplication(std::move(move._hostApplication))
+            , _persistent(std::move(move._persistent))
+            , _system(std::move(move._system))
+            , _data(std::move(move._data))
+            , _volatile(std::move(move._volatile))
+            , _application(std::move(move._application))
+            , _proxyStub(std::move(move._proxyStub))
+            , _postMortem(std::move(move._postMortem))
         {
         }
         ~Config()
@@ -613,8 +668,8 @@ namespace RPC {
             MonitorableProcess() = delete;
             MonitorableProcess(MonitorableProcess&&) = delete;
             MonitorableProcess(const MonitorableProcess&) = delete;
-            MonitorableProcess& operator= (MonitorableProcess&&) = delete;
-            MonitorableProcess& operator= (const MonitorableProcess&) = delete;
+            MonitorableProcess& operator=(MonitorableProcess&&) = delete;
+            MonitorableProcess& operator=(const MonitorableProcess&) = delete;
 
             MonitorableProcess(const string& callsign, RemoteConnectionMap& parent)
                 : RemoteConnection()
@@ -911,8 +966,8 @@ namespace RPC {
                 Info() = delete;
                 Info(Info&&) = delete;
                 Info(const Info&) = delete;
-                Info& operator= (Info&&) = delete;
-                Info& operator= (const Info&) = delete;
+                Info& operator=(Info&&) = delete;
+                Info& operator=(const Info&) = delete;
 
                 Info(Core::Event& event, const uint32_t id)
                     : _event(event)

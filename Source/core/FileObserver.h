@@ -293,7 +293,7 @@ private:
     public:
         Context() = delete;
         Context(const Context&) = delete;
-        Context& operator= (const Context&) = delete;
+        Context& operator=(const Context&) = delete;
 
         Context(const string& pathName)
             : _adminLock()
@@ -399,7 +399,7 @@ private:
     public:
         Dispatcher() = delete;
         Dispatcher(const Dispatcher&) = delete;
-        Dispatcher& operator= (const Dispatcher&) = delete;
+        Dispatcher& operator=(const Dispatcher&) = delete;
         Dispatcher(FileSystemMonitor& parent)
             : _parent(parent) {
         }

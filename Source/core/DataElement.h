@@ -184,6 +184,19 @@ namespace Core {
             , m_MaxSize(RHS.m_MaxSize)
         {
         }
+        inline DataElement(DataElement&& move)
+            : m_Storage(std::move(move.m_Storage))
+            , m_Buffer(move.m_Buffer)
+            , m_Offset(move.m_Offset)
+            , m_Size(move.m_Size)
+            , m_MaxSize(move.m_MaxSize)
+        {
+            move.m_Buffer = nullptr;
+            move.m_Offset = 0;
+            move.m_Size = 0;
+            move.m_MaxSize = 0;
+        }
+
         inline DataElement(const DataElement& RHS, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(RHS.m_Storage)
             , m_Buffer(&(RHS.m_Buffer[offset]))
@@ -197,6 +210,23 @@ namespace Core {
 
             ASSERT(offset + size <= RHS.m_Size);
         }
+        inline DataElement(DataElement&& move, const uint64_t offset, const uint64_t size = 0)
+            : m_Storage(std::move(move.m_Storage))
+            , m_Buffer(&(move.m_Buffer[offset]))
+            , m_Offset(move.m_Offset + offset)
+            , m_Size(move.m_Size - offset)
+            , m_MaxSize(move.m_MaxSize)
+        {
+            if (size != 0) {
+                m_Size = size;
+            }
+            ASSERT(offset + size <= move.m_Size);
+
+            move.m_Buffer = nullptr;
+            move.m_Offset = 0;
+            move.m_Size = 0;
+            move.m_MaxSize = 0;
+        }
         virtual ~DataElement() = default;
 
         inline DataElement& operator=(const DataElement& RHS)
@@ -207,6 +237,22 @@ namespace Core {
             m_Storage = RHS.m_Storage;
             m_MaxSize = RHS.m_MaxSize;
 
+            return (*this);
+        }
+        inline DataElement& operator=(DataElement&& move)
+        {
+            if (this != &move) {
+                m_Size = move.m_Size;
+                m_Offset = move.m_Offset;
+                m_Buffer = move.m_Buffer;
+                m_MaxSize = move.m_MaxSize;
+                m_Storage = std::move(move.m_Storage);
+
+                move.m_Buffer = nullptr;
+                move.m_Offset = 0;
+                move.m_Size = 0;
+                move.m_MaxSize = 0;
+            }
             return (*this);
         }
 
@@ -717,6 +763,14 @@ namespace Core {
             // Don't set the size bigger than the cummulated one!!!
             ASSERT(offset + size < RHS.LinkedSize());
         }
+        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0)
+            : DataElement(move, offset, (offset + size > move.Size() ? 0 : size))
+            , m_Next(move.m_Next)
+        {
+            // Don't set the size bigger than the cummulated one!!!
+            ASSERT(offset + size < move.LinkedSize());
+            move.m_Next = nullptr;
+        }
         inline LinkedDataElement(const uint64_t Size, uint8_t* Buffer, LinkedDataElement* Enclosure)
             : DataElement(Size, Buffer)
             , m_Next(Enclosure)
@@ -731,6 +785,15 @@ namespace Core {
             DataElement::operator=(RHS);
             m_Next = RHS.m_Next;
 
+            return (*this);
+        }
+        inline LinkedDataElement& operator=(LinkedDataElement&& move)
+        {
+            if (this != &move) {
+                DataElement::operator=(move);
+                m_Next = move.m_Next;
+                move.m_Next = nullptr;
+            }
             return (*this);
         }
 
@@ -831,7 +894,9 @@ namespace Core {
     private:
         DataElementParser();
         DataElementParser(const DataElementParser&);
+        DataElementParser(DataElementParser&&);
         DataElementParser& operator=(const DataElementParser&);
+        DataElementParser& operator=(DataElementParser&&);
 
     public:
         inline DataElementParser(DataElement& element, const unsigned int offset = 0)
