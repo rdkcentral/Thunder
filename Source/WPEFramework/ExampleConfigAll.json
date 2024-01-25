@@ -154,7 +154,7 @@
       "callsign":"Browser",
       "locator":"libbrowser.so",
       "classname":"Browser",
-      "startmode": "deactivated",
+      "startmode": "Deactivated",
       "configuration":
       {
         "fullscreen":true,
