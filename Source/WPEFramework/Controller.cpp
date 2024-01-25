@@ -1026,7 +1026,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::StartDiscovery(const uint8_t& ttl)
+    Core::hresult Controller::StartDiscovery(const uint8_t ttl)
     {
         if (_probe != nullptr) {
             _probe->Ping(ttl);
@@ -1200,7 +1200,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Proxies(const uint32_t& linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
+    Core::hresult Controller::Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
