@@ -112,7 +112,7 @@ namespace ProcessContainers {
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
-        void AddRef() const override;
+        uint32_t AddRef() const override;
         uint32_t Release() const override;
 
     protected:
@@ -124,7 +124,6 @@ namespace ProcessContainers {
         string _lxcPath;
         string _containerLogDir;
         mutable Core::CriticalSection _adminLock;
-        mutable uint32_t _referenceCount;
         LxcContainerType* _lxcContainer;
 #ifdef __DEBUG__
         bool _attach;
