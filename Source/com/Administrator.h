@@ -93,7 +93,7 @@ namespace RPC {
             }
 #ifdef __DEBUG__
             bool Flushed() const {
-                return ((_referenceCount & 0x7FFFFFFF) == 0);
+                return (((_referenceCount & 0x7FFFFFFF) == 0) || (IsComposit()));
             }
 #endif
 
