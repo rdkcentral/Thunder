@@ -238,6 +238,8 @@ void Schedule(const Time& time, const ProxyType<IDispatch>& job) override {
 ```
 The Scheduler uses the `Timer` class of the `Workerpool` class as a privileged class. How the `Timer` class is built and how it works can be seen in the `Timer.h` file.
 
+#### Example of using scheduler class
+
 ### Job class scheduling methods
 Each `job` has two methods by which we can reschedule them for future execution and cancel them.
  These methods are:
@@ -246,7 +248,7 @@ Each `job` has two methods by which we can reschedule them for future execution 
 * `Revoke()`
 
 #### Rescheduling job
-`Reschedule()` allows the scheduled `job` execution time to be changed. The argument takes the time by which we should postpone the execution of the job. The method returns `true` if the operation is successful.
+`Reschedule()` allows the scheduled `job` execution time to be changed. The argument takes the time value. We postpone the execution of the job until this time. The method returns `true` if the operation is successful.
 ```cpp
 bool Reschedule(const Core::Time& time)
             {
@@ -292,6 +294,7 @@ uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
 `Reschedule` method is used also in `ThunderNanoServices` repository. Here are a few examples:
 
 `TimeSync/NTPClient.cpp`
+The first example shows the use of the `Reschedule()` method of the `Job` class in the NTP client. The time by which the job is postponed is obtained by adding the `result` value to the current date.
 ```cpp
 // See if we need rescheduling
         if (result != Core::infinite) {
@@ -301,6 +304,7 @@ uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
 ```
 
 `ProcessMonitor/ProcessMonitor.h`
+In the following example, we have a function that is used to schedule a `Job`. Both `Job` class methods `Revoke()` and `Reschedule()` are used here. The `Job` is first revoked and then postponed in time by the given value of `scheduleTime`.
 ```cpp
 void ScheduleJob()
         {
