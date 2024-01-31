@@ -1496,15 +1496,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1539,16 +1530,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#revoking-job_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Revoking job
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example_1" class="md-nav__link">
+  <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
     </span>
@@ -2418,15 +2400,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2461,16 +2434,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#revoking-job_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Revoking job
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example_1" class="md-nav__link">
+  <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
     </span>
@@ -2611,7 +2575,7 @@ functionality in Thunder, which will be further described in a different documen
 <h2 id="scheduling-jobs">Scheduling jobs</h2>
 <h3 id="overview">Overview</h3>
 <p><code>Workerpool</code> has the ability to schedule <code>jobs</code>. This can be very helpful when you do not want to start a <code>job</code> immediately but at a specific time. <code>Workerpool</code> has several ways of scheduling <code>jobs</code>. The first is to use the <code>Workerpool</code> class methods. Another way is to use the <code>Scheduler</code> class. The most common case of scheduling tasks is to refer directly to a specific <code>job</code> and use its methods.</p>
-<p>To schedule a <code>job</code> you should use the <code>Scheduler</code> class or a direct reference to a specific <code>job</code>. The methods of the <code>Workerpool</code> class are described below mainly for illustrative purposes and to see how jobs are scheduled inside <code>Workerpool</code>.</p>
+<p>The methods of the <code>Workerpool</code> class are described below mainly for illustrative purposes and to see how jobs are scheduled inside <code>Workerpool</code>.</p>
 <h3 id="workerpool-class-methods">Workerpool class methods</h3>
 <p>To schedule a <code>job</code> using <code>Workerpool</code> class we use several methods:</p>
 <ul>
@@ -2640,7 +2604,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="rescheduling-job">Rescheduling job</h4>
-<p><code>Reschedule()</code> method is used to change the execution date of an already scheduled <code>job</code>. Method takes as arguments the new execution time of the specified <code>job</code> and the <code>job</code> whose execution time we want to change. It works as follows, first the scheduled <code>job</code> is attempted to be canceled and then the Schedule with the newly specified time is used.</p>
+<p><code>Reschedule()</code> method is used to change the execution date of an already scheduled <code>job</code>. Method takes as arguments the new execution time of the specified <code>job</code> and the <code>job</code> which execution time we want to change. It works as follows, first the scheduled <code>job</code> is attempted to be canceled and then the Schedule with the newly specified time is used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code>Reschedule()</code> returns true when the <code>job</code> cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using <code>Schedule()</code></p>
@@ -2655,15 +2619,11 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
 <h4 id="revoking-job">Revoking job</h4>
-<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and and waiting time for <code>job</code> cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until <code>job</code> is cancelled or an error occurs. The <code>Revoke()</code> method returns a numeric value.</p>
-<p>Error codes that can be returned:</p>
-<ul>
-<li><code>ERROR_NONE</code> - 0 (no errors)</li>
-<li><code>ERROR_UNKNOWN_KEY</code> - 22</li>
-</ul>
+<p><code>Revoke()</code> is used to cancel the execution of a <code>job</code>. We use it by specifying the <code>job</code> we want to cancel and and waiting time for <code>job</code> cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until <code>job</code> is cancelled or an error occurs. The <code>Revoke()</code> method returns a numeric value that are error codes. If the execution was successful it will return <code>ERROR_NONE (0)</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p><code>ERROR_UNKNOWN_KEY</code> will be returned in case the job was not previously scheduled!</p>
+<p><code>ERROR_UNKNOWN_KEY (22)</code> will be returned in case the job was not previously scheduled!
+<code>ERROR_TIMEDOUT (11)</code> will be returned in case waiting time was exceeded!</p>
 </div>
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Revoke</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">waitTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="k">override</span>
 <span class="w">        </span><span class="p">{</span>
@@ -2682,28 +2642,6 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div>
-<h4 id="example">Example</h4>
-<p>Below is test example of using it.
-<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">test_scheduler</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// Schedule the job to run 5 seconds from now</span>
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">scheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
-<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Schedule</span><span class="p">(</span><span class="n">scheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
-
-<span class="w">    </span><span class="c1">// Wait for a while to see the scheduled job execution</span>
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
-
-<span class="w">    </span><span class="c1">// Reschedule the job to run 10 seconds from now</span>
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">rescheduledTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
-<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">rescheduledTime</span><span class="p">,</span><span class="w"> </span><span class="n">job</span><span class="p">);</span>
-
-<span class="w">    </span><span class="c1">// Wait for a while to see the rescheduled job execution</span>
-<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Thread</span><span class="o">::</span><span class="n">Sleep</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">TimeSpan</span><span class="o">::</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">15</span><span class="p">));</span>
-
-<span class="w">    </span><span class="c1">// Revoke the job (cancel its execution)</span>
-<span class="w">    </span><span class="n">_workerpool</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-For more examples you can check <code>Thunder/Tests/unit/core/test_workerpool.cpp</code> file.</p>
 <h3 id="scheduler-class">Scheduler class</h3>
 <p><code>Scheduler</code> is a small class designed to schedule jobs in the future. It has one public method <code>Schedule()</code>. It takes as arguments the <code>job</code> whose execution is to be scheduled in the future and the time after which the execution of the <code>job</code> should start.
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">Schedule</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Time</span><span class="o">&amp;</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">job</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
@@ -2719,7 +2657,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <li><code>Revoke()</code></li>
 </ul>
 <h4 id="rescheduling-job_1">Rescheduling job</h4>
-<p><code>Reschedule()</code> allows the scheduled <code>job</code> execution time to be changed. The id argument takes the time by which we should postpone the execution of the job. The method returns <code>true</code> if the operation is successful.
+<p><code>Reschedule()</code> allows the scheduled <code>job</code> execution time to be changed. The argument takes the time by which we should postpone the execution of the job. The method returns <code>true</code> if the operation is successful.
 <div class="highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">Reschedule</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">&amp;</span><span class="w"> </span><span class="n">time</span><span class="p">)</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">                </span><span class="kt">bool</span><span class="w"> </span><span class="n">rescheduled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
@@ -2749,19 +2687,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <p class="admonition-title">Warning</p>
 <p>The <code>Job</code> must first be submitted to be rescheduled!</p>
 </div>
-<h4 id="revoking-job_1">Revoking job</h4>
-<p><code>Revoke()</code> is used to revoke the execution of <code>job</code>.
-<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">Revoke</span><span class="p">()</span>
-<span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job</span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoke</span><span class="p">());</span>
-
-<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">IsValid</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                    </span><span class="n">Core</span><span class="o">::</span><span class="n">IWorkerPool</span><span class="o">::</span><span class="n">Instance</span><span class="p">().</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
-<span class="w">                    </span><span class="n">ThreadPool</span><span class="o">::</span><span class="n">JobType</span><span class="o">&lt;</span><span class="n">IMPLEMENTATION</span><span class="o">&gt;::</span><span class="n">Revoked</span><span class="p">();</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">}</span>
-</code></pre></div></p>
-<h4 id="example_1">Example</h4>
+<h4 id="example">Example</h4>
 <p>Below is an example of the use of the <code>Reschedule()</code> method in the <code>ChannelMap</code> class in the <code>PluginServer.h</code> file.
 <div class="highlight"><pre><span></span><code><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">Open</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">waitTime</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">connectionCheckTimer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">_connectionCheckTimer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">connectionCheckTimer</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span>
@@ -2771,7 +2697,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <span class="w">                </span><span class="k">return</span><span class="p">(</span><span class="n">BaseClass</span><span class="o">::</span><span class="n">Open</span><span class="p">(</span><span class="n">waitTime</span><span class="p">));</span>
 <span class="w">            </span><span class="p">}</span>
 </code></pre></div></p>
-<p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here is few examples:</p>
+<p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here are a few examples:</p>
 <p><code>TimeSync/NTPClient.cpp</code>
 <div class="highlight"><pre><span></span><code><span class="c1">// See if we need rescheduling</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
