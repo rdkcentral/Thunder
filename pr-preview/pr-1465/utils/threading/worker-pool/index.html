@@ -1508,6 +1508,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Scheduler class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-of-using-scheduler-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example of using scheduler class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2412,6 +2427,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Scheduler class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-of-using-scheduler-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example of using scheduler class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2649,6 +2679,7 @@ functionality in Thunder, which will be further described in a different documen
 <span class="w">            </span><span class="p">}</span>
 </code></pre></div>
 The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> class as a privileged class. How the <code>Timer</code> class is built and how it works can be seen in the <code>Timer.h</code> file.</p>
+<h4 id="example-of-using-scheduler-class">Example of using scheduler class</h4>
 <h3 id="job-class-scheduling-methods">Job class scheduling methods</h3>
 <p>Each <code>job</code> has two methods by which we can reschedule them for future execution and cancel them.
  These methods are:</p>
@@ -2657,7 +2688,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <li><code>Revoke()</code></li>
 </ul>
 <h4 id="rescheduling-job_1">Rescheduling job</h4>
-<p><code>Reschedule()</code> allows the scheduled <code>job</code> execution time to be changed. The argument takes the time by which we should postpone the execution of the job. The method returns <code>true</code> if the operation is successful.
+<p><code>Reschedule()</code> allows the scheduled <code>job</code> execution time to be changed. The argument takes the time value. We postpone the execution of the job until this time. The method returns <code>true</code> if the operation is successful.
 <div class="highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">Reschedule</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">&amp;</span><span class="w"> </span><span class="n">time</span><span class="p">)</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">                </span><span class="kt">bool</span><span class="w"> </span><span class="n">rescheduled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
@@ -2699,6 +2730,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 </code></pre></div></p>
 <p><code>Reschedule</code> method is used also in <code>ThunderNanoServices</code> repository. Here are a few examples:</p>
 <p><code>TimeSync/NTPClient.cpp</code>
+The first example shows the use of the <code>Reschedule()</code> method of the <code>Job</code> class in the NTP client. The time by which the job is postponed is obtained by adding the <code>result</code> value to the current date.
 <div class="highlight"><pre><span></span><code><span class="c1">// See if we need rescheduling</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">infinite</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="nf">timestamp</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">Time</span><span class="o">::</span><span class="n">Now</span><span class="p">());</span>
@@ -2706,6 +2738,7 @@ The Scheduler uses the <code>Timer</code> class of the <code>Workerpool</code> c
 <span class="w">            </span><span class="n">_job</span><span class="p">.</span><span class="n">Reschedule</span><span class="p">(</span><span class="n">timestamp</span><span class="p">);</span>
 </code></pre></div></p>
 <p><code>ProcessMonitor/ProcessMonitor.h</code>
+In the following example, we have a function that is used to schedule a <code>Job</code>. Both <code>Job</code> class methods <code>Revoke()</code> and <code>Reschedule()</code> are used here. The <code>Job</code> is first revoked and then postponed in time by the given value of <code>scheduleTime</code>.
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJob</span><span class="p">()</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">            </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">scheduleTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
