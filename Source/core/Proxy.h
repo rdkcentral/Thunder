@@ -119,12 +119,14 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
         public:
-            void AddRef() const override
+            uint32_t AddRef() const override
             {
                 if (_refCount == 1) {
                     const_cast<ProxyObject<CONTEXT>*>(this)->__Acquire();
                 }
                 _refCount++;
+
+                return (Core::ERROR_NONE);
             }
             uint32_t Release() const override
             {
@@ -512,12 +514,12 @@ POP_WARNING()
 
                 return (result);
             }
-            inline void AddRef() const
+            inline uint32_t AddRef() const
             {
                 // Only allowed on valid objects.
                 ASSERT(_refCount != nullptr);
 
-                _refCount->AddRef();
+                return (_refCount->AddRef());
             }
             inline bool operator==(const ProxyType<CONTEXT>& a_RHS) const
             {

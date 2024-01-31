@@ -762,7 +762,7 @@ namespace Core {
 
     struct EXTERNAL IReferenceCounted {
         virtual ~IReferenceCounted() = default;
-        virtual void AddRef() const = 0;
+        virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
     };
 
@@ -875,8 +875,9 @@ namespace Core {
         ERROR_CODE(ERROR_HIBERNATED, 46) \
         ERROR_CODE(ERROR_INPROC, 47) \
         ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
-        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) 
-
+        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) \
+        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
+        
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
     enum ErrorCodes {

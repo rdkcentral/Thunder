@@ -35,7 +35,7 @@ namespace ProcessContainers {
 
         ~BaseContainerIterator() override = default;
 
-        virtual bool Next() override
+        bool Next() override
         {
             if (_current == UINT32_MAX)
                 _current = 0;
