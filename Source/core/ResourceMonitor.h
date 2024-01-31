@@ -45,7 +45,16 @@ namespace Core {
     class ResourceMonitorType {
     private:
         using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
+
+        // Using the std::vector here caused an issue on Windows as the iterator in the Worker was corrupted after
+        // a new connection was added during the worker run (accept on listen) Although this should be added to 
+        // the end of the vector/list, it did cause an issue on Windows and probbaly *not* on linux. Requires further 
+        // investigation
+        #ifdef __WINDOWS__
+        using Resources = std::list<RESOURCE*>;
+        #else
         using Resources = std::vector<RESOURCE*>;
+        #endif
 
         class MonitorWorker : public Core::Thread {
         public:
@@ -102,7 +111,7 @@ namespace Core {
         ResourceMonitorType()
             : _monitor(nullptr)
             , _adminLock()
-            , _resourceList()
+            , _resources()
             , _monitorRuns(0)
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
             , _watchDog(1024 * 512, _name.c_str())
@@ -120,7 +129,7 @@ namespace Core {
         {
             #ifdef __DEBUG__
             // All resources should be gone !!!
-            for (const auto& resource : _resourceList) {
+            for (const auto& resource : _resources) {
                 TRACE_L1("Resource name: %s", typeid(resource).name());
                 ASSERT(resource == nullptr);
             }
@@ -134,7 +143,7 @@ namespace Core {
 
                 _adminLock.Lock();
 
-                _resourceList.clear();
+                _resources.clear();
 
                 _adminLock.Unlock();
 
@@ -167,7 +176,7 @@ namespace Core {
         }
         uint32_t Count() const 
         {
-            return (static_cast<uint32_t>(_resourceList.size()));
+            return (static_cast<uint32_t>(_resources.size()));
         }
         bool Info (const uint32_t position, Metadata& info) const
         {
@@ -175,10 +184,10 @@ namespace Core {
 
             _adminLock.Lock();
 
-            typename Resources::const_iterator index(_resourceList.cbegin());
-            while ( (count != 0) && (index != _resourceList.cend()) ) { count--; index++; }
+            typename Resources::const_iterator index(_resources.cbegin());
+            while ( (count != 0) && (index != _resources.cend()) ) { count--; index++; }
 
-            bool found = (index != _resourceList.cend());
+            bool found = (index != _resources.cend());
 
             if (found == true) {
                 info.descriptor = (*index)->Descriptor();
@@ -210,11 +219,11 @@ namespace Core {
             _adminLock.Lock();
 
             // Make sure this entry is only registered once !!!
-            if (std::find(_resourceList.begin(), _resourceList.end(), &resource) == _resourceList.end()) {
-                _resourceList.push_back(&resource);
+            if (std::find(_resources.begin(), _resources.end(), &resource) == _resources.end()) {
+                _resources.push_back(&resource);
             }
 
-            if (_resourceList.size() == 1) {
+            if (_resources.size() == 1) {
                 if (_monitor == nullptr) {
                     _monitor = new MonitorWorker(*this);
                     _monitorRuns = 0;
@@ -234,9 +243,9 @@ namespace Core {
             _adminLock.Lock();
 
             // Make sure this entry does not exist, only register resources once !!!
-            typename Resources::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
+            typename Resources::iterator index(std::find(_resources.begin(), _resources.end(), &resource));
 
-            if (index != _resourceList.end()) {
+            if (index != _resources.end()) {
                 *index = nullptr;
                 Break();
             }
@@ -350,8 +359,8 @@ namespace Core {
             _adminLock.Lock();
 
             // Do we have enough space to allocate all file descriptors ?
-            if ((_resourceList.size() + 1) > _descriptorArrayLength) {
-                _descriptorArrayLength = ((((_resourceList.size() + 1) / RESOURCE_SLOTS) + 1) * RESOURCE_SLOTS);
+            if ((_resources.size() + 1) > _descriptorArrayLength) {
+                _descriptorArrayLength = ((((_resources.size() + 1) / RESOURCE_SLOTS) + 1) * RESOURCE_SLOTS);
 
                 ::free(_descriptorArray);
 
@@ -364,16 +373,16 @@ namespace Core {
             }
 
             int filledFileDescriptors = 1;
-            typename Resources::iterator index = _resourceList.begin();
+            typename Resources::iterator index = _resources.begin();
 
             // Fill in all entries required/updated..
-            while (index != _resourceList.end()) {
+            while (index != _resources.end()) {
                 RESOURCE* entry = (*index);
 
                 uint16_t events;
 
                 if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
-                    index = _resourceList.erase(index);
+                    index = _resources.erase(index);
                 } else {
                     _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
                     _descriptorArray[filledFileDescriptors].events = events;
@@ -407,10 +416,10 @@ namespace Core {
                 // We are only interested in the filedescriptors that have a corresponding client.
                 // We also know that once a file descriptor is not found, we handled them all...
                 int fd_index = 1;
-                index = _resourceList.begin();
+                index = _resources.begin();
 
                 while (fd_index < filledFileDescriptors) {
-                    ASSERT(index != _resourceList.end());
+                    ASSERT(index != _resources.end());
 
                     RESOURCE* entry = (*index);
 
@@ -456,16 +465,16 @@ namespace Core {
             _adminLock.Lock();
 
             // Now iterate over the sockets and determine their states..
-            index = _resourceList.begin();
+            index = _resources.begin();
 
-            while (index != _resourceList.end()) {
+            while (index != _resources.end()) {
 
                 RESOURCE* entry = (*index);
 
                 uint16_t events;
 
                 if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
-                    index = _resourceList.erase(index);
+                    index = _resources.erase(index);
                 } else {
                     if ((events & 0x8000) != 0) {
                         ::WSAEventSelect((*index)->Descriptor(), _action, (events & 0x7FFF));
@@ -474,7 +483,7 @@ namespace Core {
                 }
             }
 
-            if (_resourceList.size() > 0) {
+            if (_resources.size() > 0) {
 
                 _adminLock.Unlock();
 
@@ -483,11 +492,11 @@ namespace Core {
                 _adminLock.Lock();
 
                 // Find all "pending" sockets and signal them..
-                index = _resourceList.begin();
+                index = _resources.begin();
 
                 ::WSAResetEvent(_action);
 
-                while (index != _resourceList.end()) {
+                while (index != _resources.end()) {
                     RESOURCE* entry = (*index);
 
                     if (entry != nullptr) {
@@ -522,7 +531,7 @@ namespace Core {
     private:
         MonitorWorker* _monitor;
         mutable Core::CriticalSection _adminLock;
-        Resources _resourceList;
+        Resources _resources;
         uint32_t _monitorRuns;
         string _name;
         WATCHDOG _watchDog;
