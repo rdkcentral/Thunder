@@ -239,6 +239,18 @@ void Schedule(const Time& time, const ProxyType<IDispatch>& job) override {
 The Scheduler uses the `Timer` class of the `Workerpool` class as a privileged class. How the `Timer` class is built and how it works can be seen in the `Timer.h` file.
 
 #### Example of using scheduler class
+Using the `Schedule()` method is very simple, in the example below we pass the `Job` object and the time after which we want to start executing it to the function. Now all we need to do is save the current time and then add our `time` argument to it. We now pass the `job` argument and the `scheduledTime` variable to the `Schedule()` method.
+```cpp
+void test_scheduler(Core::ProxyType<IDispatch)> job, Core::Time time)
+{
+    // Schedule the job to run after given time
+    Core::Time scheduledTime = Core::Time::Now();
+    scheduleTime.Add(time);
+
+    _scheduler.Schedule(scheduledTime, job);
+}
+```
+
 
 ### Job class scheduling methods
 Each `job` has two methods by which we can reschedule them for future execution and cancel them.
