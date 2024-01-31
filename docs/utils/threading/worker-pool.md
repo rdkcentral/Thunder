@@ -153,7 +153,7 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 ### Overview
 `Workerpool` has the ability to schedule `jobs`. This can be very helpful when you do not want to start a `job` immediately but at a specific time. `Workerpool` has several ways of scheduling `jobs`. The first is to use the `Workerpool` class methods. Another way is to use the `Scheduler` class. The most common case of scheduling tasks is to refer directly to a specific `job` and use its methods.
 
-To schedule a `job` you should use the `Scheduler` class or a direct reference to a specific `job`. The methods of the `Workerpool` class are described below mainly for illustrative purposes and to see how jobs are scheduled inside `Workerpool`.
+The methods of the `Workerpool` class are described below mainly for illustrative purposes and to see how jobs are scheduled inside `Workerpool`.
 
 ### Workerpool class methods
  To schedule a `job` using `Workerpool` class we use several methods:
@@ -186,7 +186,7 @@ void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) ove
 
 
 #### Rescheduling job
-`Reschedule()` method is used to change the execution date of an already scheduled `job`. Method takes as arguments the new execution time of the specified `job` and the `job` whose execution time we want to change. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
+`Reschedule()` method is used to change the execution date of an already scheduled `job`. Method takes as arguments the new execution time of the specified `job` and the `job` which execution time we want to change. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
 !!! note
     `Reschedule()` returns true when the `job` cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using `Schedule()`
 
@@ -203,15 +203,11 @@ bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) o
 
 
 #### Revoking job
-`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and and waiting time for `job` cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value.
-
- Error codes that can be returned:
-
-* `ERROR_NONE` - 0 (no errors)
-* `ERROR_UNKNOWN_KEY` - 22
+`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and and waiting time for `job` cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value that are error codes. If the execution was successful it will return `ERROR_NONE (0)`.
 
 !!!warning
-    `ERROR_UNKNOWN_KEY` will be returned in case the job was not previously scheduled!
+    `ERROR_UNKNOWN_KEY (22)` will be returned in case the job was not previously scheduled!
+    `ERROR_TIMEDOUT (11)` will be returned in case waiting time was exceeded!
 
 ```cpp
 uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) override
@@ -231,30 +227,6 @@ uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime =
             return (result);
         }
 ```
-#### Example
-
-Below is test example of using it.
-```cpp
-void test_scheduler(Core::ProxyType<IDispatch> job) {
-    // Schedule the job to run 5 seconds from now
-    Core::Time scheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(5);
-    _workerpool.Schedule(scheduledTime, job);
-
-    // Wait for a while to see the scheduled job execution
-    Core::Thread::Sleep(Core::TimeSpan::FromSeconds(10));
-
-    // Reschedule the job to run 10 seconds from now
-    Core::Time rescheduledTime = Core::Time::Now() + Core::TimeSpan::FromSeconds(10);
-    _workerpool.Reschedule(rescheduledTime, job);
-
-    // Wait for a while to see the rescheduled job execution
-    Core::Thread::Sleep(Core::TimeSpan::FromSeconds(15));
-
-    // Revoke the job (cancel its execution)
-    _workerpool.Revoke(job);
-}
-```
-For more examples you can check `Thunder/Tests/unit/core/test_workerpool.cpp` file.
 
 
 ### Scheduler class
@@ -274,7 +246,7 @@ Each `job` has two methods by which we can reschedule them for future execution 
 * `Revoke()`
 
 #### Rescheduling job
-`Reschedule()` allows the scheduled `job` execution time to be changed. The id argument takes the time by which we should postpone the execution of the job. The method returns `true` if the operation is successful.
+`Reschedule()` allows the scheduled `job` execution time to be changed. The argument takes the time by which we should postpone the execution of the job. The method returns `true` if the operation is successful.
 ```cpp
 bool Reschedule(const Core::Time& time)
             {
@@ -304,19 +276,6 @@ bool Reschedule(const Core::Time& time)
 !!!warning
     The `Job` must first be submitted to be rescheduled!
 
-#### Revoking job
-`Revoke()` is used to revoke the execution of `job`.
-```cpp
-void Revoke()
-            {
-                Core::ProxyType<IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Revoke());
-
-                if (job.IsValid() == true) {
-                    Core::IWorkerPool::Instance().Revoke(job);
-                    ThreadPool::JobType<IMPLEMENTATION>::Revoked();
-                }
-            }
-```
 
 #### Example
 Below is an example of the use of the `Reschedule()` method in the `ChannelMap` class in the `PluginServer.h` file.
@@ -330,7 +289,7 @@ uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
             }
 ```
 
-`Reschedule` method is used also in `ThunderNanoServices` repository. Here is few examples:
+`Reschedule` method is used also in `ThunderNanoServices` repository. Here are a few examples:
 
 `TimeSync/NTPClient.cpp`
 ```cpp
