@@ -90,7 +90,7 @@ namespace Core {
                     switch (frameworkError) {
                     case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
-                        Text = _T("Unknown method.");
+                        Text = _T("Unknown jsonrpc error.");
                         break;
                     case Core::ERROR_INVALID_ENVELOPPE:
                         Text = _T("Invalid Request.");
@@ -101,7 +101,7 @@ namespace Core {
                         Text = _T("Invalid Parameters.");
                         break;
                     case Core::ERROR_UNKNOWN_METHOD:
-                        Text = _T("Method not found.");
+                        Text = _T("Unknown method.");
                         Code = -32601; // Method not found
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
@@ -150,7 +150,7 @@ namespace Core {
                         break;
                     default:
                         Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-                        Text = _T("Non specific error!!!.");
+                        Text = Core::ErrorToString(frameworkError);
                         break;
                     }
                 }
@@ -638,7 +638,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_INTERNAL_JSONRPC);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -783,7 +783,7 @@ namespace Core {
             }
             uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
             {
-                uint32_t result = Core::ERROR_INTERNAL_JSONRPC;
+                uint32_t result = Core::ERROR_UNKNOWN_METHOD;
 
                 response.clear();
 
