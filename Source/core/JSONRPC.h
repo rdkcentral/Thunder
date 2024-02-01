@@ -35,6 +35,14 @@ namespace Core {
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
+            // Arbitrary code base selected in discussion with the team to use 
+            // this magical value as a base for Thunder error codes (0..999).
+            // These error codes are *not* related to the JSONRPC transport
+            // layer but relate to the application layer.
+            // Seems the spec is expecting a value > -32767, so with a value
+            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            static constexpr int32_t ApplicationErrorCodeBase = -31000;
+
             class Info : public Core::JSON::Container {
             public:
                 Info()
@@ -80,26 +88,69 @@ namespace Core {
                 void SetError(const uint32_t frameworkError)
                 {
                     switch (frameworkError) {
-                    case Core::ERROR_BAD_REQUEST:
-                        Code = -32603; // Internal Error
+                    case Core::ERROR_INTERNAL_JSONRPC:
+                        Code = 03; // Internal Error
+                        Text = _T("Unknown jsonrpc error.");
                         break;
-                    case Core::ERROR_INVALID_DESIGNATOR:
+                    case Core::ERROR_INVALID_ENVELOPPE:
+                        Text = _T("Invalid Request.");
                         Code = -32600; // Invalid request
                         break;
-                    case Core::ERROR_INVALID_SIGNATURE:
+                    case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
+                        Text = _T("Invalid Parameters.");
                         break;
-                    case Core::ERROR_UNKNOWN_KEY:
+                    case Core::ERROR_UNKNOWN_METHOD:
+                        Text = _T("Unknown method.");
                         Code = -32601; // Method not found
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
+                        Text = _T("method invocation not allowed.");
+                        break;
+                    case Core::ERROR_PRIVILIGED_DEFERRED:
+                        Code = -32604;
+                        Text = _T("method invokation is deferred, Currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
+                        Text = _T("Call timed out.");
+                        break;
+                    case Core::ERROR_PARSING_ENVELOPPE:
+                        Code = -32700; // Parse error
+                        Text = _T("Parsing of the parameters failed");
+                        break;
+                    case Core::ERROR_INVALID_RANGE:
+                        Code = Core::ERROR_INVALID_RANGE;
+                        Text = _T("Requested version is not supported.");
+                        break;
+                    case Core::ERROR_INCORRECT_URL:
+                        Code = Core::ERROR_INCORRECT_URL;
+                        Text = _T("Designator is invalid.");
+                        break;
+                    case Core::ERROR_ILLEGAL_STATE:
+                        Code = Core::ERROR_ILLEGAL_STATE;
+                        Text = _T("The service is in an illegal state!!!.");
+                        break;
+                    case Core::ERROR_FAILED_REGISTERED:
+                        Code = Core::ERROR_FAILED_REGISTERED;
+                        Text = _T("Registration already done!!!.");
+                        break;
+                    case Core::ERROR_FAILED_UNREGISTERED:
+                        Code = Core::ERROR_FAILED_UNREGISTERED;
+                        Text = _T("Unregister was already done!!!.");
+                        break;
+                    case Core::ERROR_HIBERNATED:
+                        Code = Core::ERROR_HIBERNATED;
+                        Text = _T("The service is in an Hibernated state!!!.");
+                        break;
+                    case Core::ERROR_UNAVAILABLE:
+                        Code = Core::ERROR_UNAVAILABLE;
+                        Text = _T("Requested service is not available.");
                         break;
                     default:
-                        Code = static_cast<int32_t>(frameworkError);
+                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        Text = Core::ErrorToString(frameworkError);
                         break;
                     }
                 }
@@ -578,7 +629,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -674,7 +725,7 @@ namespace Core {
                 auto retval = _handlers.emplace(std::piecewise_construct,
                                     std::make_tuple(methodName),
                                     std::make_tuple(lambda));
-                    
+
                 if ( retval.second == false ) {
                     retval.first->second = lambda;
                 }
@@ -704,7 +755,7 @@ namespace Core {
             }
             uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
             {
-                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+                uint32_t result = Core::ERROR_UNKNOWN_METHOD;
 
                 response.clear();
 
