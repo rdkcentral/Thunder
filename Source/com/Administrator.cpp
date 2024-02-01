@@ -346,21 +346,21 @@ namespace RPC {
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
-                uint32_t result = Core::ERROR_NONE;
 
-                // We will release on behalf of the other side :-)
-                do {
-                    Core::IUnknown* iface = loop->Unknown();
+                Core::IUnknown* iface = loop->Unknown();
+                ASSERT(iface != nullptr);
 
-                    ASSERT(iface != nullptr);
+                if ((iface != nullptr) && (loop->IsComposit() == false)) {
 
-                    if (iface != nullptr) {
+                    uint32_t result;
+
+                    // We will release on behalf of the other side :-)
+                    do {
                         result = iface->Release();
-                    }
-                } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
+                    } while ((loop->Decrement(1)) && (result == Core::ERROR_NONE));
+                }
 
                 ASSERT (loop->Flushed() == true);
-
                 loop++;
             }
             _channelReferenceMap.erase(remotes);

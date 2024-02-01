@@ -33,7 +33,7 @@ if(${PC_AWC_FOUND})
         )
 
     include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Slauncher DEFAULT_MSG AWC_LIBRARY AWC_INCLUD)
+    find_package_handle_standard_args(Slauncher DEFAULT_MSG AWC_LIBRARY AWC_INCLUDE)
 
     mark_as_advanced(AWC_LIBRARY AWC_INCLUDE)
 

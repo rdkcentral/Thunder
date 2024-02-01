@@ -21,8 +21,6 @@
 #include "Module.h"
 #include "IShell.h"
 
-#include "IControllerDeprecated.h"
-
 // @stubgen:include <plugins/IShell.h>
 // @stubgen:include <plugins/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
@@ -33,7 +31,7 @@ namespace Exchange {
 
 namespace Controller {
 
-    /* @json */
+    /* @json 1.0.0 */
     struct EXTERNAL ISystemManagement : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_SYSTEM_MANAGEMENT };
 
@@ -42,9 +40,12 @@ namespace Controller {
         virtual Core::hresult Reboot() = 0;
 
         // @brief Removes contents of a directory from the persistent storage.
+        // @param path : Path of the directory
         virtual Core::hresult Delete(const string& path) = 0;
 
         // @brief Creates a clone of given plugin to requested new callsign
+        // @param callsign: Callsign of the plugin
+        // @param newcallsign: New callsign for the plugin
         virtual Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) = 0;
 
         // @property
@@ -53,37 +54,37 @@ namespace Controller {
         virtual Core::hresult Environment(const string& variable /* @index */, string& value /* @out */ ) const = 0;
     };
 
-    /* @json */
+    /* @json 1.0.0 */
     struct EXTERNAL IDiscovery : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_DISCOVERY };
 
         struct Data {
             struct DiscoveryResult {
-                string Locator;
-                uint32_t Latency;
-                string Model /* @optional */;
-                bool Secure;
+                string Locator /* @brief Locator for the discovery */;
+                uint32_t Latency /* @brief Latency for the discovery */;
+                string Model /* @optional @brief Model */;
+                bool Secure /* @brief Secure or not*/;
             };
 
             using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_DISCOVERYRESULTS_ITERATOR>;
         };
 
         // @brief Starts the network discovery. Use this method to initiate SSDP network discovery process.
-        // @param TTL (time to live) parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const uint8_t& ttl) = 0;
+        // @param ttl: Time to live, parameter for SSDP discovery
+        virtual Core::hresult StartDiscovery(const uint8_t ttl) = 0;
 
         // @property
         // @brief Provides SSDP network discovery results.
-        // @return SSDP network discovery results
+        // @return SSDP: Network discovery results
         virtual Core::hresult DiscoveryResults(Data::IDiscoveryResultsIterator*& results /* @out */) const = 0;
     };
 
-    /* @json @uncompliant:extended */
+    /* @json 1.0.0 @uncompliant:extended */
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @alt storeconfig
-        // @brief Stores the configuration to persistent memory
+        // @brief Stores: The configuration to persistent memory
         virtual Core::hresult Persist() = 0;
 
         // @property
@@ -92,7 +93,7 @@ namespace Controller {
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
     };
 
-    /* @json */
+    /* @json 1.0.0 */
     struct EXTERNAL ILifeTime : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_LIFETIME };
 
@@ -101,9 +102,9 @@ namespace Controller {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
             // @brief Notifies a plugin state change
-            // @param callsign Plugin callsign
-            // @param state New state of the plugin
-            // @param reason Reason of state change
+            // @param callsign: Plugin callsign
+            // @param state: New state of the plugin
+            // @param reason: Reason of state change
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
         };
 
@@ -111,21 +112,28 @@ namespace Controller {
         virtual Core::hresult Unregister(INotification* sink) = 0;
 
         // @brief Activates a plugin, i.e. move from Deactivated, via Activating to Activated state
+        // @param callsign: Callsign of plugin to be activated
         virtual Core::hresult Activate(const string& callsign) = 0;
 
         // @brief Deactivates a plugin, i.e. move from Activated, via Deactivating to Deactivated state
+        // @param callsign: Callsign of plugin to be deactivated
         virtual Core::hresult Deactivate(const string& callsign) = 0;
 
         // @brief Sets a plugin unavailable for interaction.
+        // @param callsign: Callsign of plugin to be set as unavailable
         virtual Core::hresult Unavailable(const string& callsign) = 0;
 
         // @brief Sets a plugin in Hibernate state
+        // @param callsign: Callsign of plugin to be set as hibernate
+        // @param timeout: Timeout to hibernate
         virtual Core::hresult Hibernate(const string& callsign, const uint32_t timeout) = 0;
 
         // @brief Suspends a plugin
+        // @param callsign: Callsign of plugin to be suspended
         virtual Core::hresult Suspend(const string& callsign) = 0;
 
         // @brief Resumes a plugin
+        // @param callsign: Callsign of plugin to be resumed
         virtual Core::hresult Resume(const string& callsign) = 0;
     };
 
@@ -146,7 +154,7 @@ namespace Controller {
         virtual Core::hresult Unregister(INotification* sink) = 0;
     };
 
-    /* @json */
+    /* @json 1.0.0 */
     struct EXTERNAL IMetadata : virtual public Core::IUnknown {
 
         enum { ID = RPC::ID_CONTROLLER_METADATA };
@@ -172,9 +180,9 @@ namespace Controller {
             };
 
             struct Thread {
-                Core::instance_id Id;
-                string Job;
-                uint32_t Runs;
+                Core::instance_id Id /* @brief Thread Id */;
+                string Job /* @brief Job name */;
+                uint32_t Runs /* @brief Number of runs */;
             };
 
             struct Proxy {
@@ -223,11 +231,11 @@ namespace Controller {
                 bool Resumed /* @brief Determines if the plugin is to be activated in resumed or suspended mode */;
                 Data::Version Version /* @brief Version */;
 
-                string Communicator /* @optional */;
+                string Communicator /* @optional @brief Communicator */;
 
-                string PersistentPathPostfix /* @optional */;
-                string VolatilePathPostfix /* @optional */;
-                string SystemRootPath /* @optional */;
+                string PersistentPathPostfix /* @optional @brief Postfix of persistent path*/;
+                string VolatilePathPostfix /* @optional @brief Postfix of volatile path*/;
+                string SystemRootPath /* @optional @brief Path of system root */;
 
                 string Precondition /* @opaque @optional @brief Activation conditons */;
                 string Termination /* @opaque @optional @brief Deactivation conditions */;
@@ -258,7 +266,7 @@ namespace Controller {
 
         // @property
         // @brief Provides details of a proxy
-        virtual Core::hresult Proxies(const uint32_t& linkId /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
+        virtual Core::hresult Proxies(const uint32_t linkId /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
         // @brief Provides status of subsystems
