@@ -774,7 +774,7 @@ namespace Core {
 
     struct EXTERNAL IReferenceCounted {
         virtual ~IReferenceCounted() = default;
-        virtual void AddRef() const = 0;
+        virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
     };
 
@@ -894,7 +894,8 @@ namespace Core {
         ERROR_CODE(ERROR_UNKNOWN_METHOD, 53) \
         ERROR_CODE(ERROR_INVALID_PARAMETER, 54) \
         ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
-        ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56)
+        ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
+        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

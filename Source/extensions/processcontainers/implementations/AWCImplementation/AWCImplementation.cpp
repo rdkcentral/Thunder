@@ -74,7 +74,6 @@ namespace ProcessContainers {
         , _pid(0)
         , _runId(-1)
         , _appState(awc::AWC_STATE_UNKNOWN)
-        , _referenceCount(1)
         , _client(client)
         , _notifier(notifier)
         , _mutex()
@@ -204,20 +203,17 @@ namespace ProcessContainers {
         return result;
     }
 
-    void AWCContainer::AddRef() const
+    uint32_t AWCContainer::AddRef() const
     {
         TRACE_L3("%s _name=%s", _TRACE_FUNCTION_, _name.c_str());
-        WPEFramework::Core::InterlockedIncrement(_referenceCount);
+        return(BaseRefCount<IContainer>::AddRef());
     }
 
     uint32_t AWCContainer::Release() const
     {
-        TRACE_L3("%s _name=%s", _TRACE_FUNCTION_, _name.c_str());
-        uint32_t retval = WPEFramework::Core::ERROR_NONE;
-        if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
-            delete this;
-            retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
-        }
+        uint32_t retVal = BaseRefCount<IContainer>::Release();
+
+        TRACE_L3("%s _name=%s result=%d", _TRACE_FUNCTION_, _name.c_str(), retVal);
         return retval;
     }
 

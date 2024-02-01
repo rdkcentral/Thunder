@@ -2288,9 +2288,10 @@ namespace PluginHost {
                 {
                     return (new RemoteInstantiation(parent, comms, connector));
                 }
-                void AddRef() const override
+                uint32_t AddRef() const override
                 {
                     Core::InterlockedIncrement(_refCount);
+                    return (Core::ERROR_NONE);
                 }
                 uint32_t Release() const override
                 {
