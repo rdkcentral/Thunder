@@ -804,7 +804,8 @@ namespace Plugin {
                 PluginHost::IShell::state currrentState = service->State();
                 if (currrentState != PluginHost::IShell::state::ACTIVATED)
                 {
-                    result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_ILLEGAL_STATE);
+                    result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
+                    response = (currrentState == PluginHost::IShell::state::HIBERNATED ? _T("Service is hibernated") : _T("Service is not active"));
                 }
                 else {
                     ASSERT(service.IsValid());

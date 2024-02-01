@@ -41,7 +41,7 @@ namespace Core {
             // layer but relate to the application layer.
             // Seems the spec is expecting a value > -32767, so with a value
             // range of 0-999 Thunder codes, -31000 should be oke :-)
-            static constexpr int32_t AppliationErrorCodeBase = -31000;
+            static constexpr int32_t ApplicationErrorCodeBase = -31000;
 
             class Info : public Core::JSON::Container {
             public:
@@ -121,31 +121,35 @@ namespace Core {
                         Text = _T("Parsing of the parameters failed");
                         break;
                     case Core::ERROR_INVALID_RANGE:
-                        Code = AppliationErrorCodeBase - Core::ERROR_INVALID_RANGE;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_RANGE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
-                        Code = AppliationErrorCodeBase - Core::ERROR_INCORRECT_URL;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INCORRECT_URL;
                         Text = _T("Designator is invalid.");
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
-                        Code = AppliationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
                         Text = _T("The service is in an illegal state!!!.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
-                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
                         Text = _T("Registration already done!!!.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
-                        Code = AppliationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
                         Text = _T("Unregister was already done!!!.");
                         break;
                     case Core::ERROR_HIBERNATED:
-                        Code = AppliationErrorCodeBase - Core::ERROR_HIBERNATED;
+                        Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
+                    case Core::ERROR_UNAVAILABLE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
+                        Text = _T("Requested service is not available.");
+                        break;
                     default:
-                        Code = AppliationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
                         Text = _T("Non specific error!!!.");
                         break;
                     }
@@ -634,7 +638,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_INTERNAL_JSONRPC);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -779,7 +783,7 @@ namespace Core {
             }
             uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
             {
-                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+                uint32_t result = Core::ERROR_INTERNAL_JSONRPC;
 
                 response.clear();
 
