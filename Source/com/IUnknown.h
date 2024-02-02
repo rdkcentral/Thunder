@@ -205,10 +205,11 @@ namespace ProxyStub {
 
             return(result);
         }
-        void AddRef() const {
+        uint32_t AddRef() const {
             _adminLock.Lock();
             _refCount++;
             _adminLock.Unlock();
+            return (Core::ERROR_NONE);
         }
         uint32_t Release() const {
             uint32_t result = Core::ERROR_NONE;
@@ -486,9 +487,9 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Applications calls to the Proxy
         // -------------------------------------------------------------------------------------------------------------------------------
-        void AddRef() const override
+        uint32_t AddRef() const override
         {
-            _unknown.AddRef();
+            return (_unknown.AddRef());
         }
         uint32_t Release() const override
         {

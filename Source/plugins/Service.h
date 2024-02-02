@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "Channel.h"
 #include "Configuration.h"
-#include "MetaData.h"
+#include "Metadata.h"
 #include "System.h"
 #include "IPlugin.h"
 #include "IShell.h"
@@ -322,7 +322,7 @@ namespace PluginHost {
         {
             return (_errorMessage);
         }
-        inline void GetMetaData(MetaData::Service& metaData) const
+        inline void GetMetadata(Metadata::Service& metaData) const
         {
             metaData = _config.Configuration();
             #if THUNDER_RESTFULL_API

@@ -141,7 +141,7 @@ namespace PluginHost {
             enum { SUBSYSTEM = IDENTIFIER };
 
             // Device specific identification.
-            virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /*@maxlength:length @out*/) const = 0;
+            virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[] /* @out @length:return @maxlength:length */) const = 0;
             virtual string Architecture() const = 0;
             virtual string Chipset() const = 0;
             virtual string FirmwareVersion() const = 0;
