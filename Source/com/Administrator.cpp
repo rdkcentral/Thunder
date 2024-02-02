@@ -114,8 +114,9 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                (*entry)->Parent()->Release();
+                Core::IUnknown* unknown = (*entry)->Parent();
                 index->second.erase(entry);
+                unknown->Release();                
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
