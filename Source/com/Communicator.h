@@ -622,7 +622,8 @@ namespace RPC {
                 , _parent(parent)
                 , _callsign(callsign)
                 , _cycle(0)
-                , _time(0) {
+                , _time(0)
+                , _notified(false) {
             }
             ~MonitorableProcess() override = default;
 
@@ -643,12 +644,15 @@ namespace RPC {
                 return (_time);
             }
             inline void Destruct() {
+                // Make sure that the time-based Destruct() called from the Worker() in ProcessShutdown
+                // will be able to register that this process has already been killed
+                _time = 0;
+
                 // Unconditionally KILL !!!
                 while (EndProcess() != 0) {
                     ++_cycle;
                     ::SleepMs(1);
                 }
-                _parent.Terminated(this);
             }
             inline bool Destruct(uint64_t& timeSlot) {
                 bool destructed = false;
@@ -657,8 +661,12 @@ namespace RPC {
                     uint32_t delay = EndProcess();
 
                     if (delay == 0) {
-                        _parent.Terminated(this);
                         destructed = true;
+
+                        if (_notified == false) {
+                            _parent.Terminated(this);
+                            _notified = true;
+                        }
                     }
                     else {
                         timeSlot = Core::Time::Now().Ticks();
@@ -684,6 +692,7 @@ namespace RPC {
             const string _callsign;
             uint8_t _cycle;
             uint64_t _time; // in Seconds
+            bool _notified;
         };
         class LocalProcess : public MonitorableProcess {
         public:
