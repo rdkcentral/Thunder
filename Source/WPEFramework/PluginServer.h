@@ -1496,50 +1496,38 @@ namespace PluginHost {
                         result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
 
                         if (response.IsValid() == true) {
-                            switch (result) {
-                            case Core::ERROR_NONE:
+                            if (result == static_cast<uint32_t>(~0)) {
+                                response.Release();
+
+                            } else if (result == Core::ERROR_NONE) {
                                 if (output.empty() == true) {
                                     response->Result.Null(true);
                                 }
                                 else {
                                     response->Result = output;
                                 }
-                                break;
-                            case Core::ERROR_INVALID_RANGE:
-                                response->Error.SetError(Core::ERROR_INVALID_RANGE);
-                                response->Error.Text = _T("Requested version is not supported.");
-                                break;
-                            case Core::ERROR_INCORRECT_URL:
-                                response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
-                                response->Error.Text = _T("Dessignator is invalid.");
-                                break;
-                            case Core::ERROR_BAD_REQUEST:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Unknown method.");
-                                break;
-                            case Core::ERROR_FAILED_REGISTERED:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Registration already done!!!.");
-                                break;
-                            case Core::ERROR_FAILED_UNREGISTERED:
-                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                response->Error.Text = _T("Unregister was already done!!!.");
-                                break;
-                            case Core::ERROR_HIBERNATED:
-                                response->Error.SetError(Core::ERROR_HIBERNATED);
-                                response->Error.Text = _T("The service is in an Hibernated state!!!.");
-                                break;
-                            case Core::ERROR_ILLEGAL_STATE:
-                                response->Error.SetError(Core::ERROR_ILLEGAL_STATE);
-                                response->Error.Text = _T("The service is in an illegal state!!!.");
-                                break;
-                            case static_cast<uint32_t>(~0):
-                                response.Release();
-                                break;
-                            default:
-                                response->Error.Code = result;
-                                response->Error.Text = Core::ErrorToString(result);
-                                break;
+
+                            } else {
+                                switch (result) {
+                                case Core::ERROR_INVALID_RANGE:
+                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                                    break;
+                                case Core::ERROR_FAILED_REGISTERED:
+                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                    response->Error.Text = _T("Registration already done!!!.");
+                                    break;
+                                case Core::ERROR_FAILED_UNREGISTERED:
+                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                    response->Error.Text = _T("Unregister was already done!!!.");
+                                    break;
+                                default:
+                                    response->Error.SetError(result);
+                                    break;
+                                }
+
+                                if (output.empty() == false) {
+                                    response->Error.Text = output;
+                                }
                             }
                         }
                     }
@@ -3227,7 +3215,7 @@ POP_WARNING()
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
-                uint32_t result = Core::ERROR_UNAVAILABLE;
+                uint32_t result = Core::ERROR_BAD_REQUEST;
                 size_t pos;
 
                 if ((pos = callSign.find_first_of(CompositPlugin::RemotePluginDelimiter)) != string::npos) {

@@ -801,7 +801,6 @@ namespace Plugin {
         }
         else {
             Core::ProxyType<PluginHost::IShell> service;
-
             result = _pluginServer->Services().FromIdentifier(callsign, service);
 
             if (result == Core::ERROR_NONE) {
