@@ -56,7 +56,22 @@ namespace Core {
             if (bufferSize != 0) {
 
                 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
+                pthread_condattr_t cond_attr;
+#ifndef __DEBUG__
+                // default values
+                pthread_condattr_init(&cond_attr);
+
+                pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+
+                pthread_cond_init(&(_administration->_signal), &cond_attr);
+#else
+                // default values
+                ASSERT(!pthread_condattr_init(&cond_attr));
+
+                ASSERT(!pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
+
+                ASSERT(!pthread_cond_init(&(_administration->_signal), &cond_attr));
+#endif
 
                 pthread_mutexattr_t mutex_attr;
 #ifndef __DEBUG__
@@ -140,7 +155,22 @@ namespace Core {
             if (initiator == true) {
 
 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
+                pthread_condattr_t cond_attr;
+#ifndef __DEBUG__
+                // default values
+                pthread_condattr_init(&cond_attr);
+
+                pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+
+                pthread_cond_init(&(_administration->_signal), &cond_attr);
+#else
+                // default values
+                ASSERT(!pthread_condattr_init(&cond_attr));
+
+                ASSERT(!pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
+
+                ASSERT(!pthread_cond_init(&(_administration->_signal), &cond_attr));
+#endif
 
                 pthread_mutexattr_t mutex_attr;
 #ifndef __DEBUG__
