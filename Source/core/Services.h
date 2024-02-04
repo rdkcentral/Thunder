@@ -86,7 +86,7 @@ namespace Core {
                 _callback->Destructed();
             }
 
-            return (Core::ERROR_NONE);
+            return (Core::ERROR_COMPOSIT_OBJECT);
         }
         inline uint32_t Instances() const
         {
@@ -161,7 +161,7 @@ namespace Core {
         {
             ASSERT (_referenceCount > 0);
             Core::InterlockedDecrement(_referenceCount);
-            return (Core::ERROR_NONE);
+            return (Core::ERROR_COMPOSIT_OBJECT);
         }
 
     private:
