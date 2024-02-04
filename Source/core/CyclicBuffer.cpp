@@ -57,7 +57,27 @@ namespace Core {
 
                 #ifndef __WINDOWS__
                 _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+                pthread_mutexattr_t mutex_attr;
+#ifndef __DEBUG__
+                // default values
+                pthread_mutexattr_init(&mutex_attr);
+
+                // enable access for threads, also in different processes
+                pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+
+                pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+#else
+                // default values
+                ASSERT(!pthread_mutexattr_init(&mutex_attr));
+
+                ASSERT(!pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK));
+
+                // enable access for threads, also in different processes
+                ASSERT(!pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED));
+
+                ASSERT(!pthread_mutex_init(&(_administration->_mutex), &mutex_attr));
+#endif
                 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -121,7 +141,27 @@ namespace Core {
 
 #ifndef __WINDOWS__
                 _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+                pthread_mutexattr_t mutex_attr;
+#ifndef __DEBUG__
+                // default values
+                pthread_mutexattr_init(&mutex_attr);
+
+                // enable access for threads, also in different processes
+                pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+
+                pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+#else
+                // default values
+                ASSERT(!pthread_mutexattr_init(&mutex_attr));
+
+                ASSERT(!pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK));
+
+                // enable access for threads, also in different processes
+                ASSERT(!pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED));
+
+                ASSERT(!pthread_mutex_init(&(_administration->_mutex), &mutex_attr));
+#endif
 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -178,7 +218,11 @@ namespace Core {
     void CyclicBuffer::AdminLock()
     {
 #ifdef __POSIX__
+#ifndef __DEBUG__
         pthread_mutex_lock(&(_administration->_mutex));
+#else
+        ASSERT(!pthread_mutex_lock(&(_administration->_mutex)));
+#endif
 #else
 #ifdef __DEBUG__
         if (::WaitForSingleObjectEx(_mutex, 2000, FALSE) != WAIT_OBJECT_0) {
@@ -243,7 +287,11 @@ namespace Core {
     void CyclicBuffer::AdminUnlock()
     {
 #ifdef __POSIX__
+#ifndef __DEBUG__
         pthread_mutex_unlock(&(_administration->_mutex));
+#else
+        ASSERT(!pthread_mutex_unlock(&(_administration->_mutex)));
+#endif
 #else
         ReleaseSemaphore(_mutex, 1, nullptr);
 #endif
