@@ -57,42 +57,33 @@ namespace Core {
 
                 #ifndef __WINDOWS__
                 pthread_condattr_t cond_attr;
-#ifndef __DEBUG__
+
                 // default values
-                pthread_condattr_init(&cond_attr);
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                pthread_cond_init(&(_administration->_signal), &cond_attr);
-#else
-                // default values
-                ASSERT(!pthread_condattr_init(&cond_attr));
-
-                ASSERT(!pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
-
-                ASSERT(!pthread_cond_init(&(_administration->_signal), &cond_attr));
-#endif
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
                 pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
 #ifndef __DEBUG__
-                // default values
-                pthread_mutexattr_init(&mutex_attr);
-
-                // enable access for threads, also in different processes
-                pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
-
-                pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
-#else
-                // default values
-                ASSERT(!pthread_mutexattr_init(&mutex_attr));
-
                 ASSERT(!pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK));
-
-                // enable access for threads, also in different processes
-                ASSERT(!pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED));
-
-                ASSERT(!pthread_mutex_init(&(_administration->_mutex), &mutex_attr));
 #endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
                 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -156,42 +147,33 @@ namespace Core {
 
 #ifndef __WINDOWS__
                 pthread_condattr_t cond_attr;
-#ifndef __DEBUG__
+
                 // default values
-                pthread_condattr_init(&cond_attr);
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                pthread_cond_init(&(_administration->_signal), &cond_attr);
-#else
-                // default values
-                ASSERT(!pthread_condattr_init(&cond_attr));
-
-                ASSERT(!pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED));
-
-                ASSERT(!pthread_cond_init(&(_administration->_signal), &cond_attr));
-#endif
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
                 pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
 #ifndef __DEBUG__
-                // default values
-                pthread_mutexattr_init(&mutex_attr);
-
-                // enable access for threads, also in different processes
-                pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
-
-                pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
-#else
-                // default values
-                ASSERT(!pthread_mutexattr_init(&mutex_attr));
-
                 ASSERT(!pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK));
-
-                // enable access for threads, also in different processes
-                ASSERT(!pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED));
-
-                ASSERT(!pthread_mutex_init(&(_administration->_mutex), &mutex_attr));
 #endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
