@@ -22,6 +22,8 @@
 #include "Sync.h"
 #include "TextFragment.h"
 #include "Trace.h"
+#include <pthread.h>
+
 
 namespace Thunder {
 namespace Core {

@@ -28,7 +28,241 @@
 namespace Thunder {
 namespace Core {
 
-#ifdef __LINUX__
+#if defined(__APPLE__)
+#include <errno.h> // for errno
+#include <fcntl.h> // for O_RDONLY
+#include <string.h> // for strerror()
+#include <sys/event.h> // for kqueue() etc.
+#include <unistd.h> // for close()
+
+
+class FileSystemMonitor: public Core::IResource{
+public:
+    struct ICallback
+    {
+        virtual ~ICallback() = default;
+        virtual void Updated() = 0;
+    };
+
+private:
+    class Observer {
+    public:
+        Observer(ICallback *callback)
+            : _callbacks()
+        {
+            _callbacks.emplace_back(callback);
+        }
+        ~Observer()
+        {
+        }
+
+    public:
+        bool HasCallbacks() const
+        {
+            return (_callbacks.size() > 0);
+        }
+        void Register(ICallback *callback)
+        {
+            ASSERT(std::find(_callbacks.begin(),_callbacks.end(), callback) == _callbacks.end());
+            _callbacks.emplace_back(callback);
+        }
+        void Unregister(ICallback *callback)
+        {
+            std::list<ICallback *>::iterator index = std::find(_callbacks.begin(), _callbacks.end(), callback);
+            ASSERT(index != _callbacks.end());
+
+            if (index != _callbacks.end()) {
+                _callbacks.erase(index);
+            }
+        }
+        void Notify()
+        {
+            std::list<ICallback *>::iterator index(_callbacks.begin());
+            while (index != _callbacks.end()) {
+                (*index)->Updated();
+                index++;
+            }
+        }
+    private:
+        std::list<ICallback *> _callbacks;
+    };
+
+    typedef std::unordered_map<int, Observer> Observers;
+    typedef std::unordered_map<string, int> Files;
+
+    
+    FileSystemMonitor()
+        : _adminLock()
+        , _notifyFd(kqueue())
+        , _observers() {
+    }
+
+public:
+    FileSystemMonitor(const FileSystemMonitor &) = delete;
+    FileSystemMonitor &operator=(const FileSystemMonitor &) = delete;
+
+    static FileSystemMonitor &Instance()
+    {
+        static FileSystemMonitor _singleton;
+        return (_singleton);
+    }
+    ~FileSystemMonitor()
+    {
+        if (_notifyFd != -1) {
+            ::close(_notifyFd);
+        }
+    }
+
+
+public:
+
+    bool IsValid() const
+    {
+        return (_notifyFd != -1);
+    }
+
+    bool Register(ICallback *callback, const string &filename)
+    {
+        ASSERT(_notifyFd != -1);
+        ASSERT(callback != nullptr);
+
+        const string path = ((Core::File(filename).IsDirectory() == true)? Core::Directory::Normalize(filename) : filename);
+
+        _adminLock.Lock();
+
+        Files::iterator index = _files.find(path);
+        if (index != _files.end()) {
+            Observers::iterator loop = _observers.find(index->second);
+            ASSERT(loop != _observers.end());
+
+            loop->second.Register(callback);
+        }
+        else
+        {
+            // The vnode monitor requires a file descriptor, so
+            // open the directory to get one.
+            int fileFd = open(filename.c_str(), O_EVTONLY);
+            if (fileFd > 0)
+            {
+                // Fill out the event structure. Store the name of the
+                // directory in the user data
+                struct kevent direvent;
+                EV_SET(&direvent,
+                    fileFd,                         // identifier
+                    EVFILT_VNODE,                  // filter
+                    EV_ADD | EV_CLEAR | EV_ENABLE, // action flags
+                    NOTE_DELETE |  NOTE_WRITE | NOTE_EXTEND | NOTE_ATTRIB | NOTE_LINK | NOTE_RENAME | NOTE_REVOKE, // filter flags
+                    0,                             // filter data
+                    (void *)filename.c_str());              // user data
+
+                // register the event
+                if (kevent(_notifyFd, &direvent, 1, NULL, 0, NULL) != -1)
+                {
+                     _files.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(path),
+                    std::forward_as_tuple(fileFd));
+                     _observers.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(fileFd),
+                    std::forward_as_tuple(callback));
+
+                    if (_files.size() == 1) {
+                        // This is the first entry, lets start monitoring
+                        Core::ResourceMonitor::Instance().Register(*this);
+                    }
+                }
+            }
+        }
+
+        _adminLock.Unlock();
+
+        return (IsValid());
+    }
+
+    void Unregister(ICallback *callback, const string &filename)
+    {
+        ASSERT(_notifyFd != -1);
+        ASSERT(callback != nullptr);
+
+        const string path = ((Core::File(filename).IsDirectory() == true)? Core::Directory::Normalize(filename) : filename);
+
+        _adminLock.Lock();
+
+        Files::iterator index = _files.find(path);
+        ASSERT(index != _files.end());
+
+        if (index != _files.end()) {
+            Observers::iterator loop = _observers.find(index->second);
+            ASSERT(loop != _observers.end());
+
+            loop->second.Unregister(callback);
+            if (loop->second.HasCallbacks() == false) {
+
+                ::close(index->second); //Stop monitoring this filepath
+
+                 // Clear this index, we are no longer observing
+                _files.erase(index);
+                _observers.erase(loop);
+                if (_files.size() == 0) {
+                    // This is the first entry, lets start monitoring
+                    _adminLock.Unlock();
+                    Core::ResourceMonitor::Instance().Unregister(*this);
+                }
+
+                else {
+                    _adminLock.Unlock();
+                }
+            }
+            else {
+                _adminLock.Unlock();
+            }
+        }
+        else
+        {
+            _adminLock.Unlock();
+        }
+
+    }
+
+
+private:
+
+    Core::IResource::handle Descriptor() const override
+    {
+        return (_notifyFd);
+    }
+    uint16_t Events() override
+    {
+        return (POLLIN);
+    }
+    void Handle(const uint16_t events) override
+    {
+        if ((events & POLLIN) != 0) {
+            struct kevent event;
+            if(kevent(_notifyFd, NULL, 0, &event, 1, NULL) > 0) {
+                if (event.flags & EV_ERROR)
+                    TRACE_L1(_T("Event error:	%s"), strerror(event.data));
+                else {
+                    TRACE_L1(_T("Something was written in	'%s'\n"), static_cast<char *>(event.udata));
+                        // Check if we have this entry..
+                    _adminLock.Lock();
+                    Observers::iterator loop = _observers.find(static_cast<int>(event.ident));
+                    if (loop != _observers.end()) {
+                        loop->second.Notify();
+                    }
+                    _adminLock.Unlock();
+                }
+            }
+        }
+    }
+
+
+private:
+    Core::CriticalSection _adminLock;
+    int _notifyFd;
+    Files _files;
+    Observers _observers;
+};
+#elif defined(__LINUX__)
 #include <sys/inotify.h>
 
 class FileSystemMonitor : public Core::IResource {

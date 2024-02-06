@@ -776,7 +776,11 @@ namespace Thunder {
             }
 #endif
 
+#ifdef __APPLE__ 
+            if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
+#else
             if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET) {
+#endif
                 TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
             }
             else if (SetNonBlocking(l_Result) == false) {
@@ -817,15 +821,30 @@ namespace Thunder {
             }
 #endif
 
+#ifdef __APPLE__
+    {
+        int flags = fcntl(l_Result, F_GETFL, 0) | O_CLOEXEC;
+
+        if (fcntl(l_Result, F_SETFL, flags) != 0) {
+            TRACE_L1("ConstructSocket:Error on port socket F_SETFL call. Error %d", errno);
+        }
+
+    }
+#endif
+
 #ifndef __WINDOWS__
             // See if we need to bind to a specific interface.
             if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
                 struct ifreq interface;
+#ifdef __APPLE__
+                strncpy(interface.ifr_name, specificInterface.c_str(), IFNAMSIZ - 1);
+                int index = if_nametoindex(interface.ifr_name);
+                if (::setsockopt(l_Result, IPPROTO_IP, IP_BOUND_IF, (const char*)&index, sizeof(index)) < 0) {
+#else
                 strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
-
                 if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
-
+#endif            
                     TRACE_L1("Error binding socket to an interface. Error %d", __ERRORRESULT__);
 
                     ::close(l_Result);
@@ -844,7 +863,11 @@ namespace Thunder {
                         }
                     }
                     else if (localNode.Type() == NodeId::TYPE_IPV6) {
+#ifdef __APPLE__
+                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_RECVPKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
+#else
                         if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
+#endif
                             TRACE_L1("Error getting additional info on received packages. Error %d", __ERRORRESULT__);
                         }
                     }
@@ -1304,7 +1327,7 @@ namespace Thunder {
             socklen_t size = sizeof(address);
             SOCKET result;
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) || defined(__APPLE__)
             if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
 #else
             if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {

@@ -91,8 +91,13 @@ if(HIBERNATESUPPORT)
          HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
+set(CPP_STD 11)
+if(APPLE)
+    set(CPP_STD 17)
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CPP_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}

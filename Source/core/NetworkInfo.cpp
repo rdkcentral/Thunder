@@ -537,8 +537,117 @@ namespace Core {
 
         return (Core::ERROR_BAD_REQUEST);
     }
+#elif defined(__APPLE__)
 
-#elif defined(__POSIX__) && !defined(__APPLE__)
+    Network::Network(const uint32_t index, const struct rtattr* iface, const uint32_t length)
+        : _adminLock()
+        , _index(index)
+        , _name()
+        , _ipv4Nodes()
+        , _ipv6Nodes()
+    {
+            //Todo Implementation
+    }
+
+    bool Network::IsUp() const {
+
+        bool result = false;
+        // Todo implementation
+        return (result);
+    }
+
+    bool Network::IsRunning() const {
+
+        bool result = false;
+        //Todo needs implementation
+        return (result);
+    }
+
+    uint32_t Network::Up(const bool enabled)
+    {
+        // TODO: Implement
+        ASSERT(false);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t Network::Broadcast(const Core::NodeId& address)
+    {
+        // TODO: Implement
+        ASSERT(false);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t Network::Add(const IPNode& address)
+    {
+        // TODO: Implement
+        ASSERT(false);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t Network::Delete(const IPNode& address)
+    {
+        // TODO: Implement
+        ASSERT(false);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
+    {
+        // TODO: Implement
+        ASSERT(false);
+
+        return (Core::ERROR_NONE);
+    }
+
+    void Network::Update(const struct rtattr* rtatp, const uint16_t length)
+    {
+        //Todo Need implementation
+    }
+
+    AdapterIterator::AdapterIterator()
+        : _reset(true)
+        , _list()
+        , _index() {
+            //Todo Needs implementation
+    }
+
+    AdapterIterator::AdapterIterator(const uint16_t index)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Index() != index) ) { /* Intentionally left empty */ }
+    }
+
+    AdapterIterator::AdapterIterator(const string& name) 
+        : AdapterIterator() {
+        while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+    }
+
+    AdapterIterator::AdapterIterator(const AdapterIterator& copy)
+        : AdapterIterator() {
+        if (copy.IsValid() == true) {
+            const string name (copy.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+    }
+
+    AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
+    {
+        _reset = true;
+        _list = RHS._list;
+        _index = _list.begin();
+
+        if (RHS.IsValid()) {
+            string name (RHS.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+
+        return (*this);
+    }
+
+#elif defined(__LINUX__)
 
     template <const bool ADD>
     class IPAddressModifyType : public Netlink {
