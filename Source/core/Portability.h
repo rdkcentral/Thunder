@@ -109,7 +109,7 @@
 
     #if defined(__clang__)
         #define PUSH_WARNING_ _Pragma("clang diagnostic push")
-        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored #WARNING)
+        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored WARNING)
         #define POP_WARNING_ _Pragma("clang diagnostic pop")
 
     #elif (__GNUC__ >= 4)
@@ -416,10 +416,15 @@ typedef std::string string;
 #define AF_NETLINK 16
 #define AF_PACKET  17
 
+#ifndef POLLRDHUP
+#define POLLRDHUP 0x2000
+#endif
+
 #define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
+extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>

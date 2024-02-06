@@ -67,15 +67,18 @@ extern "C" {
 
 #ifdef __APPLE__
 extern "C" {
-//@TODO @Pierre implement mremap and clock_gettime
+//@TODO @Pierre implement mremap
 void* mremap(void* old_address, size_t old_size, size_t new_size, int flags)
 {
     return (nullptr);
 }
 };
-int clock_gettime(int, struct timespec*)
+#include <pthread.h>
+uint64_t gettid()
 {
-    return 0;
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
 }
 #endif
 
