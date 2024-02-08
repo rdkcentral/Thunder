@@ -120,6 +120,7 @@ namespace RPC {
     public:
         ProcessShutdown(ProcessShutdown&&) = delete;
         ProcessShutdown(const ProcessShutdown&) = delete;
+        ProcessShutdown& operator=(ProcessShutdown&&) = delete;
         ProcessShutdown& operator=(const ProcessShutdown&) = delete;
 
         ProcessShutdown()
