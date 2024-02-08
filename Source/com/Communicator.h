@@ -622,12 +622,14 @@ namespace RPC {
                 , _parent(parent)
                 , _callsign(callsign)
                 , _cycle(0)
-                , _time(0)
-                , _notified(false) {
+                , _time(0) {
             }
             ~MonitorableProcess() override = default;
 
         public:
+            inline bool IsTerminated() const {
+                return (_cycle == static_cast<uint8_t>(~0));
+            }
             inline bool operator== (const RemoteConnectionMap& parent) const {
                 return (&parent == &_parent);
             }
@@ -644,29 +646,22 @@ namespace RPC {
                 return (_time);
             }
             inline void Destruct() {
-                // Make sure that the time-based Destruct() called from the Worker() in ProcessShutdown
-                // will be able to register that this process has already been killed
-                _time = 0;
-
                 // Unconditionally KILL !!!
                 while (EndProcess() != 0) {
                     ++_cycle;
                     ::SleepMs(1);
                 }
+                _cycle = ~0;
+                _parent.Terminated(this);
             }
             inline bool Destruct(uint64_t& timeSlot) {
-                bool destructed = false;
 
                 if (_time <= timeSlot) {
                     uint32_t delay = EndProcess();
 
                     if (delay == 0) {
-                        destructed = true;
-
-                        if (_notified == false) {
-                            _parent.Terminated(this);
-                            _notified = true;
-                        }
+                        _cycle = ~0;
+                        _parent.Terminated(this);
                     }
                     else {
                         timeSlot = Core::Time::Now().Ticks();
@@ -675,7 +670,7 @@ namespace RPC {
                     }
                 }
 
-                return (destructed);
+                return (IsTerminated());
             }
 
             BEGIN_INTERFACE_MAP(MonitorableProcess)
@@ -692,7 +687,6 @@ namespace RPC {
             const string _callsign;
             uint8_t _cycle;
             uint64_t _time; // in Seconds
-            bool _notified;
         };
         class LocalProcess : public MonitorableProcess {
         public:
