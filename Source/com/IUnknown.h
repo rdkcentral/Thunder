@@ -155,24 +155,7 @@ namespace ProxyStub {
             return(_refCount);
         }
     	void Invalidate() {
-            if(_refCount == 0) {
-                printf("==> Oops something fishy, threadid [%ld] recount is 0 of type %s\n", Core::Thread::ThreadId(),  typeid(_parent).name());
-                uint8_t counter = 0;
-                std::list<Core::callstack_info> stackList;
-                ::DumpCallStack(Core::Thread::ThreadId(), stackList);
-                for (const Core::callstack_info& entry : stackList) {
-                    printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
-                    if (entry.line != static_cast<uint32_t>(~0)) {
-                            printf(" [%d]\n", entry.line);
-                    }
-                    else {
-                            printf("\n");
-                    }
-                    counter++;
-                }
-
-            }
-
+            ASSERT(_refCount > 0);
             _adminLock.Lock();
             _mode |= INVALID;
             _adminLock.Unlock();
@@ -491,7 +474,6 @@ namespace ProxyStub {
             uint32_t result = _unknown.Release();
 
             if (result != Core::ERROR_NONE) {
-                printf("==> %s deleted, threadid [%ld]\n", typeid(this).name(), Core::Thread::ThreadId());
                 delete (this);
             }
 
