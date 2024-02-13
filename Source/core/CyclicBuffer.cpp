@@ -53,7 +53,8 @@ namespace Core {
             _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
             _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
 
-            if (bufferSize != 0) {
+            if (   bufferSize != 0
+                && (mode & File::CREATE) == File::CREATE) {
 
                 #ifndef __WINDOWS__
                 pthread_condattr_t cond_attr;
