@@ -20,6 +20,10 @@
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
 
+#include <linux/futex.h> // FUTEX_* constants
+#include <sys/syscall.h> // Definition of SYS_* constants
+#include <limits>
+
 namespace WPEFramework {
 namespace Core {
 
@@ -31,6 +35,9 @@ namespace Core {
         }
 
     }
+
+    // Arbitrary value
+    constexpr time_t STARTUP_TIMEOUT = 10; // seconds
 
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
@@ -110,7 +117,39 @@ namespace Core {
                     _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
                     _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
                 }
+
+                // Signal mutex and condition variable are initialized and ready to be used
+#ifdef __POSIX__
+                // Assume first data member is a uint16_t
+                // Hint: C++20 has std::is_layout_compatible
+                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                ) {
+                    std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::INITIALIZED));
+
+                long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAKE, std::numeric_limits<int>::max() /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
+                    ASSERT(err != 1 /* number of waiters woken up */); DEBUG_VARIABLE(err);
+                }
+#endif
+            } else {
+#ifdef __POSIX__
+                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                ) {
+                    const struct timespec timeout = {.tv_sec = STARTUP_TIMEOUT, .tv_nsec = 0};
+
+                    const uint16_t value = _administration->_state.load();
+
+                    if ((value & INITIALIZED) != INITIALIZED) {
+                        // wait until value changes or timeout expires
+                        long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
+
+                        // ETIMEDOUT is allowed
+                        ASSERT(err != -1 /* see errno */ && errno != ETIMEDOUT); DEBUG_VARIABLE(err);
+                    }
+                }
             }
+#endif
         }
     }
 
@@ -200,6 +239,38 @@ namespace Core {
                     _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
                     _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
                 }
+
+                // Signal mutex and condition variable are initialized and ready to be used
+#ifdef __POSIX__
+                // Assume first data member is a uint16_t
+                // Hint: C++20 has std::is_layout_compatible
+                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                ) {
+                    std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::INITIALIZED));
+
+                    long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAKE, std::numeric_limits<int>::max() /* INT_MAX, number of waiters to wake up */, nullptr, 0, 0);
+                    ASSERT(err != 1 /* number of waiters woken up */); DEBUG_VARIABLE(err);
+                }
+#endif
+            } else {
+#ifdef __POSIX__
+                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                ) {
+                    const struct timespec timeout = {.tv_sec = STARTUP_TIMEOUT, .tv_nsec = 0};
+
+                    const uint16_t value = _administration->_state.load();
+
+                    if ((value & INITIALIZED) != INITIALIZED) {
+                        // wait until value changes or timeout expires
+                        long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
+
+                        // ETIMEDOUT is allowed
+                        ASSERT(err != -1 /* see errno */ && errno != ETIMEDOUT); DEBUG_VARIABLE(err);
+                    }
+                }
+#endif
             }
         }
     }

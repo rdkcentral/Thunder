@@ -284,7 +284,8 @@ namespace Core {
             UNLOCKED = 0x00,
             LOCKED = 0x01,
             OVERWRITE = 0x02,
-            OVERWRITTEN = 0x04
+            OVERWRITTEN = 0x04,
+            INITIALIZED = 0x08 //  simplified signal for non-creator mutex and condition variable are initialized
         };
 
         Core::DataElementFile _buffer;
