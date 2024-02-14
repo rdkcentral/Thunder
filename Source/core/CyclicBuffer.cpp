@@ -510,7 +510,7 @@ namespace Core {
             ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
 #else
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::getpid());
+            ASSERT(_administration->_reservedPID == ::gettid());
 #endif
 
             // Check if we are not writing more than reserved.
@@ -611,7 +611,7 @@ namespace Core {
         DWORD processId = GetCurrentProcessId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
 #else
-        pid_t processId = ::getpid();
+        pid_t processId = ::gettid();
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
@@ -656,7 +656,7 @@ namespace Core {
                 std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::LOCKED));
 
                 // Remember that we, as a process, took the lock
-                _administration->_lockPID = Core::ProcessInfo().Id();
+                _administration->_lockPID = gettid();
                 result = Core::ERROR_NONE;
             } else if (timeLeft > 0) {
 
@@ -692,11 +692,11 @@ namespace Core {
         AdminLock();
 
         // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(_administration->_lockPID == Core::ProcessInfo().Id());
+        ASSERT(_administration->_lockPID == gettid());
         ASSERT((_administration->_state.load() & state::LOCKED) == state::LOCKED);
 
         // Only unlock if it is "our" lock.
-        if (_administration->_lockPID == Core::ProcessInfo().Id()) {
+        if (_administration->_lockPID == gettid()) {
 
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
