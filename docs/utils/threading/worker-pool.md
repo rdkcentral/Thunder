@@ -151,7 +151,7 @@ To sum up, the main idea is not to reinvent the wheel. When creating plugins, de
 
 ## Scheduling jobs
 ### Overview
-`Workerpool` has the ability to schedule `jobs`. This can be very helpful when you do not want to start a `job` immediately but at a specific time. `Workerpool` has several ways of scheduling `jobs`. The first is to use the `Workerpool` class methods. Another way is to use the `Scheduler` class. The most common case of scheduling tasks is to refer directly to a specific `job` and use its methods.
+`Workerpool` has the ability to schedule `jobs`. This can be very helpful when you do not want to start a `job` immediately but at a specific time. `Workerpool` has two ways of scheduling `jobs`. The first is to use the `Workerpool` class methods. The most common case of scheduling tasks is to refer directly to a specific `job` and use its methods.
 
 The methods of the `Workerpool` class are described below mainly for illustrative purposes and to see how jobs are scheduled inside `Workerpool`.
 
@@ -229,29 +229,6 @@ uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime =
 ```
 
 
-### Scheduler class
-`Scheduler` is a small class designed to schedule jobs in the future. It has one public method `Schedule()`. It takes as arguments the `job` whose execution is to be scheduled in the future and the time after which the execution of the `job` should start.
-```cpp
-void Schedule(const Time& time, const ProxyType<IDispatch>& job) override {
-                _timer.Schedule(time, Timer(_pool, job));
-            }
-```
-The Scheduler uses the `Timer` class of the `Workerpool` class as a privileged class. How the `Timer` class is built and how it works can be seen in the `Timer.h` file.
-
-#### Example of using scheduler class
-Using the `Schedule()` method is very simple, in the example below we pass the `Job` object and the time after which we want to start executing it to the function. Now all we need to do is save the current time and then add our `time` argument to it. We now pass the `job` argument and the `scheduledTime` variable to the `Schedule()` method.
-```cpp
-void test_scheduler(Core::ProxyType<IDispatch)> job, Core::Time time)
-{
-    // Schedule the job to run after given time
-    Core::Time scheduledTime = Core::Time::Now();
-    scheduleTime.Add(time);
-
-    _scheduler.Schedule(scheduledTime, job);
-}
-```
-
-
 ### Job class scheduling methods
 Each `job` has two methods by which we can reschedule them for future execution and cancel them.
  These methods are:
@@ -316,7 +293,7 @@ The first example shows the use of the `Reschedule()` method of the `Job` class 
 ```
 
 `ProcessMonitor/ProcessMonitor.h`
-In the following example, we have a function that is used to schedule a `Job`. Both `Job` class methods `Revoke()` and `Reschedule()` are used here. The `Job` is first revoked and then postponed in time by the given value of `scheduleTime`.
+In the following example, we have a function that is used to schedule a `Job`. The `Job` is first revoked and then postponed in time by the given value of `scheduleTime`.
 ```cpp
 void ScheduleJob()
         {
@@ -332,7 +309,6 @@ void ScheduleJob()
             }
 
             if (scheduleTime != 0) {
-                _job.Revoke();
                 _job.Reschedule(scheduleTime);
             }
         }
