@@ -334,6 +334,8 @@ namespace Core {
             structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
+            AdminLock();
+
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
                 struct timespec nowTime;
 
@@ -346,7 +348,11 @@ namespace Core {
                     result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
                 TRACE_L1("End wait. %d\n", result);
+            } else {
+                ASSERT(false);
             }
+
+            AdminUnlock();
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
 
@@ -359,7 +365,12 @@ namespace Core {
             ASSERT(result <= waitTime);
         } else {
 #ifdef __POSIX__
-            pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            AdminLock();
+
+            int err = pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            ASSERT(err == 0); DEBUG_VARIABLE(err);
+
+            AdminUnlock();
 #else
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
