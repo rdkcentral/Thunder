@@ -247,9 +247,9 @@ namespace RPC {
     };
 
     class EXTERNAL Config {
-    private:
-        Config& operator=(Config&&);
-        Config& operator=(const Config&);
+    public:
+        Config& operator=(Config&&) = delete;
+        Config& operator=(const Config&) = delete;
 
     public:
         Config()

@@ -26,11 +26,11 @@
 namespace WPEFramework {
 namespace Core {
     class TerminatorNull {
-    private:
-        TerminatorNull(TerminatorNull&);
-        TerminatorNull(TerminatorNull&&);
-        TerminatorNull& operator=(TerminatorNull&&);
-        TerminatorNull& operator=(const TerminatorNull&);
+    public:
+        TerminatorNull(TerminatorNull&) = delete;
+        TerminatorNull(TerminatorNull&&) = delete;
+        TerminatorNull& operator=(TerminatorNull&&) = delete;
+        TerminatorNull& operator=(const TerminatorNull&) = delete;
 
     public:
         inline TerminatorNull()
@@ -59,11 +59,11 @@ namespace Core {
     };
 
     class TerminatorCarriageReturn {
-    private:
-        TerminatorCarriageReturn(TerminatorCarriageReturn&);
-        TerminatorCarriageReturn(TerminatorCarriageReturn&&);
-        TerminatorCarriageReturn& operator=(TerminatorCarriageReturn&&);
-        TerminatorCarriageReturn& operator=(const TerminatorCarriageReturn&);
+    public:
+        TerminatorCarriageReturn(TerminatorCarriageReturn&) = delete;
+        TerminatorCarriageReturn(TerminatorCarriageReturn&&) = delete;
+        TerminatorCarriageReturn& operator=(TerminatorCarriageReturn&&) = delete;
+        TerminatorCarriageReturn& operator=(const TerminatorCarriageReturn&) = delete;
 
     public:
         inline TerminatorCarriageReturn()
@@ -92,11 +92,11 @@ namespace Core {
     };
 
     class TerminatorCarriageReturnLineFeed {
-    private:
-        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&);
-        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&&);
-        TerminatorCarriageReturnLineFeed& operator=(TerminatorCarriageReturnLineFeed&&);
-        TerminatorCarriageReturnLineFeed& operator=(const TerminatorCarriageReturnLineFeed&);
+    public:
+        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&) = delete;
+        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&&) = delete;
+        TerminatorCarriageReturnLineFeed& operator=(TerminatorCarriageReturnLineFeed&&) = delete;
+        TerminatorCarriageReturnLineFeed& operator=(const TerminatorCarriageReturnLineFeed&) = delete;
 
     public:
         inline TerminatorCarriageReturnLineFeed()
@@ -153,12 +153,12 @@ namespace Core {
     private:
         template <typename PARENTCLASS, typename ACTUALSOURCE>
         class HandlerType : public ACTUALSOURCE {
-        private:
-            HandlerType();
-            HandlerType(HandlerType<PARENTCLASS, ACTUALSOURCE>&&);
-            HandlerType(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
-            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(HandlerType<PARENTCLASS, ACTUALSOURCE>&&);
-            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
+        public:
+            HandlerType() = delete;
+            HandlerType(HandlerType<PARENTCLASS, ACTUALSOURCE>&&) = delete;
+            HandlerType(const HandlerType<PARENTCLASS, ACTUALSOURCE>&) = delete;
+            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(HandlerType<PARENTCLASS, ACTUALSOURCE>&&) = delete;
+            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(const HandlerType<PARENTCLASS, ACTUALSOURCE>&) = delete;
 
         public:
             HandlerType(PARENTCLASS& parent)
@@ -265,10 +265,11 @@ namespace Core {
 
         typedef StreamTextType<SOURCE, TEXTTERMINATOR> BaseClass;
 
-        StreamTextType(StreamTextType<SOURCE, TEXTTERMINATOR>&&);
-        StreamTextType(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
-        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(StreamTextType<SOURCE, TEXTTERMINATOR>&&);
-        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
+    public:
+        StreamTextType(StreamTextType<SOURCE, TEXTTERMINATOR>&&) = delete;
+        StreamTextType(const StreamTextType<SOURCE, TEXTTERMINATOR>&) = delete;
+        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(StreamTextType<SOURCE, TEXTTERMINATOR>&&) = delete;
+        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(const StreamTextType<SOURCE, TEXTTERMINATOR>&) = delete;
 
     public:
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)

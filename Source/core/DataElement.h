@@ -891,12 +891,12 @@ namespace Core {
 
     // Use this class if you want to "read" and forward on access or write and forward on access..
     class DataElementParser {
-    private:
-        DataElementParser();
-        DataElementParser(const DataElementParser&);
-        DataElementParser(DataElementParser&&);
-        DataElementParser& operator=(const DataElementParser&);
-        DataElementParser& operator=(DataElementParser&&);
+    public:
+        DataElementParser() = delete;
+        DataElementParser(const DataElementParser&) = delete;
+        DataElementParser(DataElementParser&&) = delete;
+        DataElementParser& operator=(const DataElementParser&) = delete;
+        DataElementParser& operator=(DataElementParser&&) = delete;
 
     public:
         inline DataElementParser(DataElement& element, const unsigned int offset = 0)
