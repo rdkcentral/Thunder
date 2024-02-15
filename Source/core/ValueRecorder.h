@@ -61,11 +61,11 @@ namespace Core {
     class RecorderType {
     private:
         class BaseRecorder {
-        private:
-            BaseRecorder(BaseRecorder&&);
-            BaseRecorder(const BaseRecorder&);
-            BaseRecorder& operator=(BaseRecorder&&);
-            BaseRecorder& operator=(const BaseRecorder&);
+        public:
+            BaseRecorder(BaseRecorder&&) = delete;
+            BaseRecorder(const BaseRecorder&) = delete;
+            BaseRecorder& operator=(BaseRecorder&&) = delete;
+            BaseRecorder& operator=(const BaseRecorder&) = delete;
 
         public:
             struct Absolute {
@@ -485,20 +485,20 @@ namespace Core {
             uint8_t* _storage;
         };
 
-    private:
-        RecorderType(RecorderType<STOREVALUE, BLOCKSIZE>&&);
-        RecorderType(const RecorderType<STOREVALUE, BLOCKSIZE>&);
-        RecorderType<STOREVALUE, BLOCKSIZE> operator=(RecorderType<STOREVALUE, BLOCKSIZE>&&);
-        RecorderType<STOREVALUE, BLOCKSIZE> operator=(const RecorderType<STOREVALUE, BLOCKSIZE>&);
+    public:
+        RecorderType(RecorderType<STOREVALUE, BLOCKSIZE>&&) = delete;
+        RecorderType(const RecorderType<STOREVALUE, BLOCKSIZE>&) = delete;
+        RecorderType<STOREVALUE, BLOCKSIZE> operator=(RecorderType<STOREVALUE, BLOCKSIZE>&&) = delete;
+        RecorderType<STOREVALUE, BLOCKSIZE> operator=(const RecorderType<STOREVALUE, BLOCKSIZE>&) = delete;
 
     public:
         class Writer : public BaseRecorder {
-        private:
-            Writer();
-            Writer(Writer&& move);
-            Writer(const Writer& copy);
-            Writer& operator=(Writer&& move);
-            Writer& operator=(const Writer& copy);
+        public:
+            Writer() = delete;
+            Writer(Writer&& move) = delete;
+            Writer(const Writer& copy) = delete;
+            Writer& operator=(Writer&& move) = delete;
+            Writer& operator=(const Writer& copy) = delete;
 
         protected:
             Writer(const string fileName)
@@ -612,11 +612,11 @@ namespace Core {
         };
 
         class Reader : public BaseRecorder {
-        private:
-            Reader(Reader&& move);
-            Reader(const Reader& copy);
-            Reader& operator=(Reader&& move);
-            Reader& operator=(const Reader& copy);
+        public:
+            Reader(Reader&& move) = delete;
+            Reader(const Reader& copy) = delete;
+            Reader& operator=(Reader&& move) = delete;
+            Reader& operator=(const Reader& copy) = delete;
 
         public:
             Reader(const ProxyType<Writer>& recorder, const uint32_t id = static_cast<uint32_t>(~0))

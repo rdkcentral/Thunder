@@ -56,11 +56,11 @@ uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t time
 }
 
 class RunCStatus : public Core::JSON::Container {
-private:
-    RunCStatus(RunCStatus&&);
-    RunCStatus(const RunCStatus&);
-    RunCStatus& operator=(RunCStatus&&);
-    RunCStatus& operator=(const RunCStatus&);
+public:
+    RunCStatus(RunCStatus&&) = delete;
+    RunCStatus(const RunCStatus&) = delete;
+    RunCStatus& operator=(RunCStatus&&) = delete;
+    RunCStatus& operator=(const RunCStatus&) = delete;
 
 public:
     RunCStatus()
@@ -79,11 +79,11 @@ public:
 };
 
 class RunCListEntry : public Core::JSON::Container {
-private:
-    RunCListEntry(RunCListEntry&&);
-    RunCListEntry(const RunCListEntry&);
-    RunCListEntry& operator=(RunCListEntry&&);
-    RunCListEntry& operator=(const RunCListEntry&);
+public:
+    RunCListEntry(RunCListEntry&&) = delete;
+    RunCListEntry(const RunCListEntry&) = delete;
+    RunCListEntry& operator=(RunCListEntry&&) = delete;
+    RunCListEntry& operator=(const RunCListEntry&) = delete;
 
 public:
     RunCListEntry()
