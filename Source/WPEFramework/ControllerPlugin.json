@@ -1,0 +1,17 @@
+{
+  "$schema": "plugin.schema.json",
+  "info": {
+    "title": "Controller Plugin",
+    "callsign": "Controller",
+    "locator": "(built-in)",
+    "status": "production",
+    "version": "1.0",
+    "acronyms": {
+      "FQDN": "Fully-Qualified Domain Name",
+      "SSDP": "Simple Service Discovery Protocol"
+    }
+  },
+  "interface": [
+      { "$cppref": "{cppinterfacedir}/IController.h" }
+  ]
+}

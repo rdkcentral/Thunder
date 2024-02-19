@@ -139,7 +139,7 @@ namespace ProxyStub {
 
         UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
             : _adminLock()
-            , _refCount(0)
+            , _refCount(1)
             , _mode(outbound ? 0 : CACHING_ADDREF)
             , _interfaceId(interfaceId)
             , _implementation(implementation)
@@ -154,17 +154,11 @@ namespace ProxyStub {
         uint32_t ReferenceCount() const {
             return(_refCount);
         }
-    	bool Invalidate() {
-            bool invalidated = false;
+    	void Invalidate() {
+            ASSERT(_refCount > 0);
             _adminLock.Lock();
-            if (_refCount > 0) {
-                _refCount++;
-                _mode |= INVALID;
-                invalidated = true;
-            }
+            _mode |= INVALID;
             _adminLock.Unlock();
-
-            return (invalidated);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
@@ -194,15 +188,17 @@ namespace ProxyStub {
 
             return(result);
         }
-        void AddRef() const {
+        uint32_t AddRef() const {
             _adminLock.Lock();
             _refCount++;
             _adminLock.Unlock();
+            return (Core::ERROR_NONE);
         }
         uint32_t Release() const {
             uint32_t result = Core::ERROR_NONE;
 
             _adminLock.Lock();
+            ASSERT(_refCount > 0);
             _refCount--;
 
             if (_refCount != 0) {
@@ -469,9 +465,9 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Applications calls to the Proxy
         // -------------------------------------------------------------------------------------------------------------------------------
-        void AddRef() const override
+        uint32_t AddRef() const override
         {
-            _unknown.AddRef();
+            return (_unknown.AddRef());
         }
         uint32_t Release() const override
         {

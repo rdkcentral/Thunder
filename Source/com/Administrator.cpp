@@ -114,7 +114,9 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
+                Core::IUnknown* unknown = (*entry)->Parent();
                 index->second.erase(entry);
+                unknown->Release();                
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
@@ -259,8 +261,9 @@ namespace RPC {
                     // Register it as it is remotely registered :-)
                     _channelProxyMap[channel.operator->()].push_back(result);
 
-                    // This will increment the reference count to 1.
+                    // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
                     interface = result->QueryInterface(id);
+                    ASSERT(interface != nullptr);
 
                 } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
@@ -344,21 +347,21 @@ namespace RPC {
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
             while (loop != remotes->second.end()) {
-                uint32_t result = Core::ERROR_NONE;
 
-                // We will release on behalf of the other side :-)
-                do {
-                    Core::IUnknown* iface = loop->Unknown();
+                Core::IUnknown* iface = loop->Unknown();
+                ASSERT(iface != nullptr);
 
-                    ASSERT(iface != nullptr);
+                if ((iface != nullptr) && (loop->IsComposit() == false)) {
 
-                    if (iface != nullptr) {
+                    uint32_t result;
+
+                    // We will release on behalf of the other side :-)
+                    do {
                         result = iface->Release();
-                    }
-                } while ((loop->Decrement()) && (result == Core::ERROR_NONE));
+                    } while ((loop->Decrement(1)) && (result == Core::ERROR_NONE));
+                }
 
                 ASSERT (loop->Flushed() == true);
-
                 loop++;
             }
             _channelReferenceMap.erase(remotes);
@@ -373,12 +376,11 @@ namespace RPC {
                 // interface is released in the same time before we report this interface
                 // to be dead. So lets keep a refernce so we can work on a real object
                 // still. This race condition, was observed by customer testing.
-                if ((*loop)->Invalidate() == true) {
-                    pendingProxies.push_back(*loop);
-                }
+                (*loop)->Invalidate();
 
                 loop++;
             }
+            pendingProxies = std::move(index->second);
             _channelProxyMap.erase(index);
         }
 

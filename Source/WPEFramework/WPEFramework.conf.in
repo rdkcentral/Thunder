@@ -33,7 +33,6 @@ exitreasons = __exitreasons.split(';')
 
 __plugins = []
 
-__subsystems = '@EXTERN_EVENTS@'
 __resumes = []
 
 if boolean('@PLUGIN_WEBKITBROWSER@'):
@@ -46,7 +45,6 @@ if boolean('@PLUGIN_WEBSERVER@'):
   __resumes.append("WebServer")
 
 __controller_plugin_configuration = JSON()
-__controller_plugin_configuration.add("subsystems", __subsystems.split(' '))
 __controller_plugin_configuration.add("resumes", __resumes)
 
 __controller_plugin = JSON()
@@ -74,6 +72,8 @@ if boolean('@MESSAGING@'):
   messaging = JSON()
   messaging.add("path", '@MESSAGECONTROL_PATH@')
   messaging.add("port", '@MESSAGING_PORT@')
+  messaging.add("stdout", '@MESSAGING_STDOUT@')
+  messaging.add("stderr", '@MESSAGING_STDERR@')
 
   __notification = {
        "category" : "AnyCategory",

@@ -143,13 +143,13 @@ namespace Core {
 			TCHAR _buffer[1024];
 		};
 
-#ifdef __WINDOWS__
+		#ifdef __WINDOWS__
 		class ReaderImplementation : public Reader {
 		private:
 			class ResourceMonitor : public Core::Thread {
 			private:
 				using Implementations = std::vector<ReaderImplementation*>;
-				friend class Core::SingletonType<ResourceMonitor>;
+				friend Core::SingletonType<ResourceMonitor>;
 
 				ResourceMonitor()
 					: Core::Thread(Core::Thread::DefaultStackSize(), _T("FileResourceMonitor"))
@@ -165,8 +165,7 @@ namespace Core {
 				ResourceMonitor& operator= (const ResourceMonitor&) = delete;
 
 				static ResourceMonitor& Instance() {
-					static ResourceMonitor instance;
-					return (instance);
+					return (Core::SingletonType<ResourceMonitor>::Instance());
 				}
 				~ResourceMonitor() override {
 					Core::Thread::Stop();
@@ -354,11 +353,28 @@ namespace Core {
 			Core::IResource::handle _copy;
 			HANDLE _handle;
 		};
-
-		// friend class Core::SingletonType<ReaderImplementation::ResourceMonitor>;
-
-#else
+		#else
 		class ReaderImplementation : public Core::IResource, public Reader {
+		private:
+			class ResourceMonitor : public Core::ResourceMonitorType<Core::IResource, Void, 1 * 1024 * 1024, 4> {
+			private:
+				friend Core::SingletonType<ResourceMonitor>;
+
+				ResourceMonitor() = default;
+
+			public:
+				ResourceMonitor(ResourceMonitor&&) = delete;
+				ResourceMonitor(const ResourceMonitor&) = delete;
+				ResourceMonitor& operator=(ResourceMonitor&&) = delete;
+				ResourceMonitor& operator=(const ResourceMonitor&) = delete;
+
+				static ResourceMonitor& Instance() {
+					static ResourceMonitor& _instance = Core::SingletonType<ResourceMonitor>::Instance();
+					return (_instance);				}
+
+				~ResourceMonitor() = default;
+			};
+
 		public:
 			ReaderImplementation() = delete;
 			ReaderImplementation(ReaderImplementation&&) = delete;
@@ -392,7 +408,7 @@ namespace Core {
 					::dup2(_handle[1], _index);
 					::close(_handle[1]);
 					_handle[1] = Core::IResource::INVALID;
-					Core::ResourceMonitor::Instance().Register(*this);
+					ResourceMonitor::Instance().Register(*this);
 				}
 				return (_handle[0] != Core::IResource::INVALID);
 			}
@@ -404,7 +420,7 @@ namespace Core {
 					if (::dup2(_copy, _index) != -1) {
 						::close(_handle[0]);
 						::close(_copy);
-						Core::ResourceMonitor::Instance().Unregister(*this);
+						ResourceMonitor::Instance().Unregister(*this);
 						_handle[0] = Core::IResource::INVALID;
 						_copy = Core::IResource::INVALID;
 						Reader::Flush();
@@ -445,7 +461,7 @@ namespace Core {
 			Core::IResource::handle _copy;
 			Core::IResource::handle _handle[2];
 		};
-#endif
+		#endif
 
 	public:
 		TextStreamRedirectType(TextStreamRedirectType<STREAMTYPE>&&) = delete;

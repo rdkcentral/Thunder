@@ -36,23 +36,23 @@ namespace Core {
     {
     }
 
-    void ServiceAdministrator::Register(IServiceMetadata* metadata, IServiceFactory* factory)
+    void ServiceAdministrator::Announce(IService* service)
     {
         _adminLock.Lock();
 
         // Only register a service once !!!
-        ASSERT(std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory)) == _services.end());
+        ASSERT(std::find(_services.begin(), _services.end(), service) == _services.end());
 
-        _services.emplace_back(metadata, factory);
+        _services.push_back(service);
 
         _adminLock.Unlock();
     }
 
-    void ServiceAdministrator::Unregister(IServiceMetadata* metadata, IServiceFactory* factory)
+    void ServiceAdministrator::Revoke(IService* service)
     {
         _adminLock.Lock();
 
-        ServiceList::iterator index = std::find(_services.begin(), _services.end(), ServiceBlock(metadata, factory));
+        Services::iterator index = std::find(_services.begin(), _services.end(), service);
 
         // Only unregister a service once !!!
         ASSERT(index != _services.end());
@@ -73,13 +73,13 @@ namespace Core {
 
         _adminLock.Lock();
 
-        ServiceList::iterator index = _services.begin();
+        Services::iterator index = _services.begin();
 
         while ((index != _services.end()) && (result == nullptr)) {
-            const char* thisName = index->first->ServiceName().c_str();
+            const IService::IMetadata* info((*index)->Metadata());
 
-            if ((strcmp(thisName, name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((index->first->Major() << 8) | index->first->Minor())))) {
-                result = index->second->Create(index->first, library, interfaceNumber);
+            if ((strcmp(info->ServiceName(), name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((info->Major() << 8) | info->Minor())))) {
+                result = (*index)->Create(library, interfaceNumber);
             }
             index++;
         }

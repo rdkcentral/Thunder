@@ -23,39 +23,6 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
-
-    { PluginHost::IShell::UNAVAILABLE, _TXT("Unavailable") },
-    { PluginHost::IShell::DEACTIVATED, _TXT("Deactivated") },
-    { PluginHost::IShell::DEACTIVATION, _TXT("Deactivation") },
-    { PluginHost::IShell::ACTIVATED, _TXT("Activated") },
-    { PluginHost::IShell::ACTIVATION, _TXT("Activation") },
-    { PluginHost::IShell::PRECONDITION, _TXT("Precondition") },
-    { PluginHost::IShell::DESTROYED, _TXT("Destroyed") },
-
-ENUM_CONVERSION_END(PluginHost::IShell::state)
-
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
-
-    { PluginHost::IShell::REQUESTED, _TXT("Requested") },
-    { PluginHost::IShell::AUTOMATIC, _TXT("Automatic") },
-    { PluginHost::IShell::FAILURE, _TXT("Failure") },
-    { PluginHost::IShell::MEMORY_EXCEEDED, _TXT("MemoryExceeded") },
-    { PluginHost::IShell::STARTUP, _TXT("Startup") },
-    { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
-    { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },
-    { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
-
-ENUM_CONVERSION_END(PluginHost::IShell::reason)
-
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::startup)
-
-    { PluginHost::IShell::startup::UNAVAILABLE, _TXT("Unavailable") },
-    { PluginHost::IShell::startup::DEACTIVATED, _TXT("Deactivated") },
-    { PluginHost::IShell::startup::ACTIVATED,   _TXT("Activated")   },
-
-ENUM_CONVERSION_END(PluginHost::IShell::startup)
-
 namespace PluginHost
 {
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)

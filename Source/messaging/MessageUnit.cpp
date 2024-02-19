@@ -18,6 +18,7 @@
  */
 
 #include "MessageUnit.h"
+#include "ConsoleStreamRedirect.h"
 
 namespace WPEFramework {
 
@@ -140,7 +141,7 @@ namespace WPEFramework {
         *
         * @param pathName volatile path (/tmp/ by default)
         */
-        uint32_t MessageUnit::Open(const string& pathName, const string& configuration, const bool background, const flush flushMode)
+        uint32_t MessageUnit::Open(const string& pathName, const Settings::Config& configuration, const bool background, const flush flushMode)
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
@@ -178,6 +179,17 @@ namespace WPEFramework {
                 // let all announced controls know, whether they should push messages
                 Update();
 
+                // Redirect the standard out and standard error if requested
+                if (_settings.HasRedirectedError() == true) {
+                    Messaging::ConsoleStandardError::Instance().Open();
+                }
+                if (_settings.HasRedirectedOut() == true) {
+                    // Line-buffering on text streams can still lead to messages not being displayed even if they end with a new line (only \n)
+                    // So we disable buffering for stdout (line-buffered by default), as we do it in ProcessBuffer() before outputting the message anyway
+                    ::setvbuf(stdout, NULL, _IONBF, 0);
+                    Messaging::ConsoleStandardOut::Instance().Open();
+                }
+ 
                 result = Core::ERROR_NONE;
             }
 
@@ -234,6 +246,12 @@ namespace WPEFramework {
             } handler;
 
             if (_dispatcher != nullptr) {
+                if (_settings.HasRedirectedError() == true) {
+                    Messaging::ConsoleStandardError::Instance().Close();
+                }
+                if (_settings.HasRedirectedOut() == true) {
+                    Messaging::ConsoleStandardOut::Instance().Close();
+                }
                 Core::Messaging::IStore::Set(nullptr);
                 Core::Messaging::IControl::Iterate(handler);
 

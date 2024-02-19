@@ -34,49 +34,17 @@ namespace Plugin {
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
         , public PluginHost::JSONRPC
-        , public PluginHost::IController
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystemManagement
         , public Exchange::Controller::IMetadata
-        , public Exchange::Controller::ILifeTime {
-    public:
-	class SubsystemsData : public Core::JSON::Container {
-        public:
-            SubsystemsData()
-                : Core::JSON::Container()
-            {
-                Init();
-            }
-
-            SubsystemsData(const SubsystemsData& other)
-                : Core::JSON::Container()
-                , Subsystem(other.Subsystem)
-                , Active(other.Active)
-            {
-                Init();
-            }
-
-            SubsystemsData& operator=(const SubsystemsData& rhs)
-            {
-                Subsystem = rhs.Subsystem;
-                Active = rhs.Active;
-                return (*this);
-            }
-
-        private:
-            void Init()
-            {
-                Add(_T("subsystem"), &Subsystem);
-                Add(_T("active"), &Active);
-            }
-
-        public:
-            Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> Subsystem;
-            Core::JSON::Boolean Active;
-        };
-
+        , public Exchange::Controller::ILifeTime
+        , public Exchange::Controller::IShells {
     private:
+        using Resumes = std::vector<string>;
+        using ExternalSubSystems = std::vector<PluginHost::ISubSystem::subsystem>;
+        using LifeTimeNotifiers = std::vector<Exchange::Controller::ILifeTime::INotification*>;
+
         class Sink 
             : public PluginHost::IPlugin::INotification
             , public PluginHost::ISubSystem::INotification {
@@ -143,12 +111,46 @@ namespace Plugin {
             Core::WorkerPool::JobType<Job> _job;
         };
 
-        // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Configure
-        // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Deactivate/<Callsign>
-        // DELETE -> URL /<MetaDataCallsign>/Plugin/<Callsign>
+        // GET -> URL /<MetadataCallsign>/Plugin/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Configure
+        // PUT -> URL /<MetadataCallsign>/Activate/<Callsign>
+        // PUT -> URL /<MetadataCallsign>/Deactivate/<Callsign>
+        // DELETE -> URL /<MetadataCallsign>/Plugin/<Callsign>
     public:
+        class SubsystemsData : public Core::JSON::Container {
+        public:
+            SubsystemsData()
+                : Core::JSON::Container()
+            {
+                Init();
+            }
+
+            SubsystemsData(const SubsystemsData& other)
+                : Core::JSON::Container()
+                , Subsystem(other.Subsystem)
+                , Active(other.Active)
+            {
+                Init();
+            }
+
+            SubsystemsData& operator=(const SubsystemsData& rhs)
+            {
+                Subsystem = rhs.Subsystem;
+                Active = rhs.Active;
+                return (*this);
+            }
+
+        private:
+            void Init()
+            {
+                Add(_T("subsystem"), &Subsystem);
+                Add(_T("active"), &Active);
+            }
+
+        public:
+            Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> Subsystem;
+            Core::JSON::Boolean Active;
+        };
         class Config : public Core::JSON::Container {
         private:
             Config(const Config&) = delete;
@@ -216,7 +218,7 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
             , _externalSubsystems()
-            , _observers()
+            , _lifeTimeObservers()
         {
         }
         POP_WARNING()
@@ -324,11 +326,11 @@ namespace Plugin {
         // -------------------------------------------------------------------------------------------------------
         Core::hresult Delete(const string& path) override;
         Core::hresult Reboot() override;
-        Core::hresult Environment(const string& index, string& environment) const override;
-        Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) override;
+        Core::hresult Environment(const string& variable, string& value) const override;
+        Core::hresult Clone(const string& callsign, const string& newcallsign, string& response) override;
 
-        Core::hresult StartDiscovery(const uint8_t& ttl) override;
-        Core::hresult DiscoveryResults(string& response) const override;
+        Core::hresult StartDiscovery(const uint8_t ttl) override;
+        Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         Core::hresult Persist() override;
         Core::hresult Configuration(const string& callsign, string& configuration) const override;
@@ -342,15 +344,21 @@ namespace Plugin {
         Core::hresult Unavailable(const string& callsign) override;
         Core::hresult Suspend(const string& callsign) override;
         Core::hresult Resume(const string& callsign) override;
-        Core::hresult Hibernate(const string& callsign, const Core::hresult timeout);
+        Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
 
-        Core::hresult Proxies(string& response) const override;
-        Core::hresult Status(const string& index, string& response) const override;
-        Core::hresult CallStack(const string& index, string& callstack) const override;
-        Core::hresult Links(string& response) const override;
-        Core::hresult ProcessInfo(string& response) const override;
-        Core::hresult Subsystems(string& response) const override;
-        Core::hresult Version(string& response) const override;
+        // IMetadata overrides
+        Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
+        Core::hresult Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
+        Core::hresult Services(const string& callsign, IMetadata::Data::IServicesIterator*& services) const override;
+        Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
+        Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
+        Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
+        Core::hresult Subsystems(IMetadata::Data::ISubsystemsIterator*& subsystems) const override;
+        Core::hresult Version(IMetadata::Data::Version& version) const override;
+
+        // Pushing notifications to interested sinks
+        Core::hresult Register(Exchange::Controller::IShells::INotification* sink) override;
+        Core::hresult Unregister(Exchange::Controller::IShells::INotification* sink) override;
 
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
@@ -358,18 +366,17 @@ namespace Plugin {
             INTERFACE_ENTRY(PluginHost::IPlugin)
             INTERFACE_ENTRY(PluginHost::IWeb)
             INTERFACE_ENTRY(PluginHost::IDispatcher)
-            INTERFACE_ENTRY(PluginHost::IController)
             INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
             INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
             INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
             INTERFACE_ENTRY(Exchange::Controller::IMetadata)
             INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
+            INTERFACE_ENTRY(Exchange::Controller::IShells)
         END_INTERFACE_MAP
 
     private:
         //  ILocalDispatcher methods
         // -------------------------------------------------------------------------------------------------------
-        uint32_t Validate(const string& token, const string& method, const string& paramaters) const override;
         uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) override;
 
         inline Core::ProxyType<PluginHost::IShell> FromIdentifier(const string& callsign) const
@@ -380,15 +387,13 @@ namespace Plugin {
 
             return (service);
         }
-        void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const {
+        void WorkerPoolMetadata(PluginHost::Metadata::Server& data) const {
             _pluginServer->WorkerPool().Snapshot(data);
         }
         void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
-        uint32_t Harakiri();
-        uint32_t Storeconfig();
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
-        void Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& info) const;
+        void Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& info) const;
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
@@ -402,12 +407,13 @@ namespace Plugin {
         PluginHost::Server* _pluginServer;
         PluginHost::IShell* _service;
         Probe* _probe;
-        Core::Sink<Sink> _systemInfoReport;
-        std::list<string> _resumes;
+        Core::SinkType<Sink> _systemInfoReport;
+        Resumes _resumes;
         uint32_t _lastReported;
-        std::vector<PluginHost::ISubSystem::subsystem> _externalSubsystems;
-        std::list<Exchange::Controller::ILifeTime::INotification*> _observers;
+        ExternalSubSystems _externalSubsystems;
+        LifeTimeNotifiers _lifeTimeObservers;
     };
+
     POP_WARNING()
 }
 }

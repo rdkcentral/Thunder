@@ -70,11 +70,6 @@ if(ENABLE_STRICT_COMPILER_SETTINGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_STRICT_COMPILER_SETTINGS}")
 endif()
 
-set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
-        "List of events assumed to be provided by other plugins.")
-string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
-message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
-
 if(CORE)
     add_subdirectory(core)
 endif()

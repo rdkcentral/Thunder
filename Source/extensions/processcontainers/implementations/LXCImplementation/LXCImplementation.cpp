@@ -173,7 +173,6 @@ namespace ProcessContainers {
         , _lxcPath(lxcPath)
         , _containerLogDir(containerLogDir)
         , _adminLock()
-        , _referenceCount(1)
         , _lxcContainer(lxcContainer)
     {
         Config config;
@@ -402,23 +401,18 @@ namespace ProcessContainers {
         return result;
     }
 
-    void LXCContainer::AddRef() const
+    uint32_t LXCContainer::AddRef() const
     {
-        WPEFramework::Core::InterlockedIncrement(_referenceCount);
         lxc_container_get(_lxcContainer);
+        return(BaseRefCount<IContainer>::AddRef());
     }
 
     uint32_t LXCContainer::Release() const
     {
-        uint32_t retval = WPEFramework::Core::ERROR_NONE;
-
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
-        if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
-            ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
+        uint32_t retVal = BaseRefCount<IContainer>::Release();
 
-            delete this;
-            retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
-        }
+        ASSERT((retval != WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
         return retval;
     }
 
