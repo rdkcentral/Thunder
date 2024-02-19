@@ -122,7 +122,7 @@ namespace Core {
                 _callback->Destructed();
             }
 
-            return (Core::ERROR_COMPOSIT_OBJECT);
+            return (Core::ERROR_NONE);
         }
         inline uint32_t Instances() const
         {
@@ -239,104 +239,13 @@ namespace Core {
         {
             ASSERT (_referenceCount > 0);
             Core::InterlockedDecrement(_referenceCount);
-            return (Core::ERROR_COMPOSIT_OBJECT);
-        }
-
-    private:
-        mutable uint32_t _referenceCount;
-    };
-
-    // Baseclass to turn objects into services
-    template <typename ACTUALSERVICE>
-    class Service : public ACTUALSERVICE {
-    protected:
-        template<typename... Args>
-        Service(Args&&... args)
-            : ACTUALSERVICE(std::forward<Args>(args)...)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-
-    public:
-        Service(const Service<ACTUALSERVICE>&) = delete;
-        Service<ACTUALSERVICE>& operator=(const Service<ACTUALSERVICE>&) = delete;
-
-        template <typename INTERFACE, typename... Args>
-        static INTERFACE* Create(Args&&... args)
-        {
-            Core::ProxyType< Service<ACTUALSERVICE> > object = Core::ProxyType< Service<ACTUALSERVICE> >::Create(std::forward<Args>(args)...);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        ~Service() override
-        {
-            ServiceAdministrator::Instance().Release();
-        }
-
-    private:
-        template <typename INTERFACE> 
-        inline static INTERFACE* Extract(const Core::ProxyType< Service<ACTUALSERVICE > >& object, const TemplateIntToType<false>&)
-        {
-            INTERFACE* result = reinterpret_cast<INTERFACE*>(object->QueryInterface(INTERFACE::ID));
-
-            return (result);
-        }
-        template <typename INTERFACE>
-        inline static INTERFACE* Extract(const Core::ProxyType< Service<ACTUALSERVICE> >& object, const TemplateIntToType<true>&)
-        {
-            object->AddRef();
-            return (object.operator->());
-        }
-    };
-
-    template <typename ACTUALSINK>
-    class Sink : public ACTUALSINK {
-    private:
-        Sink(Sink<ACTUALSINK>&&) = delete;
-        Sink(const Sink<ACTUALSINK>&) = delete;
-        Sink<ACTUALSINK> operator=(const Sink<ACTUALSINK>&) = delete;
-
-    public:
-        template <typename... Args>
-        Sink(Args&&... args)
-            : ACTUALSINK(std::forward<Args>(args)...)
-            , _referenceCount(0)
-        {
-        }
-        ~Sink()
-        {
-            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
-
-            if (_referenceCount != 0) {
-                // Since this is a Composit of a larger object, it could be that the reference count has
-                // not reached 0. This can happen if a process that has a reference to this SinkType (e.g. 
-                // a registered notification) crashed before it could unregister this notification. Due to
-                // the failure of this unregistering and the composit not being recovered through the COMRPC
-                // framework, the _referenceCount might be larger than 0.
-                // No need to worry if it is caused by a crashing process as this sink gets destroyed by the 
-                // owning object anyway (hence why you see this printf :-) ) but under normal conditions, 
-                // this TRACE should *not* be visible!!! If you also see it in happy-day scenarios there 
-                // is an unbalanced AddRef/Release in your code and you should take action !!!
-                TRACE_L1("Oops this might be scary, destructing a (%s) sink that still is being refered by something", typeid(ACTUALSINK).name());
-            }
-        }
-
-    public:
-        virtual uint32_t AddRef() const
-        {
-            Core::InterlockedIncrement(_referenceCount);
-            return (Core::ERROR_COMPOSIT_OBJECT);
-        }
-        virtual uint32_t Release() const
-        {
-            ASSERT (_referenceCount > 0);
-            Core::InterlockedDecrement(_referenceCount);
             return (Core::ERROR_NONE);
         }
 
     private:
         mutable uint32_t _referenceCount;
     };
+
 
     // Baseclass to turn objects into services
     template <typename ACTUALSERVICE>

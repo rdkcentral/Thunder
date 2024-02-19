@@ -1518,20 +1518,17 @@ POP_WARNING()
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
-            std::list<ProxyStub::UnknownProxy*> deadProxies;
+            Administrator::Proxies deadProxies;
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
-
-            std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+                
+            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Dangling((*loop)->Parent(), (*loop)->InterfaceId());
 
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
-                if ((*loop)->Parent()->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                    // This is a leak, someone is still referencing a Proxy that is as dead as a pier !
-                    TRACE_L1("The Proxy for [%d] is still being referenced although the link is gone !!!", (*loop)->InterfaceId());
-                }
+                (*loop)->Parent()->Release();
                 loop++;
             }
         }

@@ -338,7 +338,7 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
-    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies)
     {
         _adminLock.Lock();
 
