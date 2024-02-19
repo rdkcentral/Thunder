@@ -185,6 +185,7 @@
 #define DISABLE_WARNING_TYPE_LIMITS
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD
 #define DISABLE_WARNING_PEDANTIC
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -211,6 +212,7 @@
 #define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
 #define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wpedantic")
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS PUSH_WARNING_ARG("-Woverloaded-virtual")
 #endif
 #endif
 
@@ -423,7 +425,8 @@ typedef std::string string;
 #define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
-int clock_gettime(int, struct timespec*);
+//clock_gettime is available in OSX Darwin >= 10.12
+//int clock_gettime(int, struct timespec*);
 extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
