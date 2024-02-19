@@ -328,8 +328,10 @@ namespace Core {
                 _signalDescriptor = -1;
                 TRACE_L1("Error on etting socket to non blocking. Error %d", errno);
             } else {
-                char* file = mktemp("/tmp/ResourceMonitor.XXXXXX");
-
+                char fileNameTemplate[] = "/tmp/ResourceMonitor.XXXXXX";
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+                char* file = mktemp(fileNameTemplate);
+POP_WARNING()
                 // Do we need to find something to bind to or is it pre-destined
                 _signalNode = Core::NodeId(file);
                 if (::bind(_signalDescriptor, static_cast<const NodeId&>(_signalNode), _signalNode.Size()) != 0) {

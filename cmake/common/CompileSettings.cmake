@@ -62,14 +62,7 @@ endif()
 # target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
 # message(STATUS "Selected platform ${THUNDER_PLATFORM}")
 
-
-if(APPLE)
-    message("APPLE c++17")
-    target_compile_options(CompileSettings INTERFACE -std=c++17 -std=gnu++17 -Wno-psabi)
-else()
-    message("C++11")
-    target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
-endif()
+target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(CompileSettings INTERFACE BUILD_SHARED_LIBS)

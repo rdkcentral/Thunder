@@ -59,13 +59,8 @@ if(BREAKPAD_FOUND)
     target_include_directories(${TARGET} PUBLIC ${BREAKPAD_INCLUDE_DIRS})
 endif(BREAKPAD_FOUND)
 
-set(CPP_STD 11)
-if(APPLE)
-    set(CPP_STD 17)
-endif()
-
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD ${CPP_STD}
+        CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         SOVERSION ${VERSION_MAJOR}

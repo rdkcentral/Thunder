@@ -47,6 +47,13 @@
 #include <time.h>
 #include <unistd.h>
 #endif
+#ifdef __APPLE__
+#include <mach/host_info.h>
+#include <mach/mach_host.h>
+#include <mach/mach_time.h>
+#include <mach/mach.h>
+#include <mach/clock.h>
+#endif
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 // GLOBAL INTERLOCKED METHODS

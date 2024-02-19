@@ -81,13 +81,8 @@ if(PROCESSCONTAINERS)
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
 
-set(CPP_STD 11)
-if(APPLE)
-    set(CPP_STD 17)
-endif()
-
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD ${CPP_STD}
+        CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers

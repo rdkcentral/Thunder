@@ -34,9 +34,8 @@ namespace Thunder {
         {
             return (str[i] == '/' || str[i] == '\\') ? i + 1 : (i > 0 ? FileNameOffset(str, i - 1) : 0);
         }
-
         template <typename T>
-        inline constexpr size_t FileNameOffset(T(&str)[1])
+        inline constexpr size_t FileNameOffset(T(&str)[1] VARIABLE_IS_NOT_USED)
         {
             return 0;
         }
@@ -53,7 +52,6 @@ namespace Thunder {
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
 #ifdef __APPLE__
-uint64_t gettid();
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else
