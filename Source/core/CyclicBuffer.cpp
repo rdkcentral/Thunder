@@ -512,7 +512,7 @@ namespace Core {
         if (_administration->_reservedPID != 0) {
 #ifdef __WINDOWS__
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
+            ASSERT(_administration->_reservedPID == ::GetCurrentThreadId());
 #else
             // We are writing because of reservation.
             ASSERT(_administration->_reservedPID == ::gettid());
@@ -611,7 +611,7 @@ namespace Core {
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
 #ifdef __WINDOWS__
-        DWORD processId = GetCurrentProcessId();
+        DWORD processId = ::GetCurrentThreadId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
 #else
         pid_t processId = ::gettid();
@@ -654,7 +654,11 @@ namespace Core {
                 std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::LOCKED));
 
                 // Remember that we, as a process, took the lock
+#ifdef __WINDOWS__
+                _administration->_lockPID = ::GetCurrentThreadId();
+#else
                 _administration->_lockPID = gettid();
+#endif
 
                 result = Core::ERROR_NONE;
             } else if (timeLeft > 0) {
@@ -690,7 +694,11 @@ namespace Core {
         AdminLock();
 
         // Only unlock if it is "our" lock.
+#ifdef __WINDOWS__
+        if (_administration->_lockPID == ::GetCurrentThreadId()) {
+#else
         if (_administration->_lockPID == gettid()) {
+#endif
             _administration->_lockPID = 0;
 
             AdminUnlock();
