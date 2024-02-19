@@ -655,9 +655,6 @@ namespace Core {
         uint32_t result = Core::ERROR_TIMEDOUT;
         uint32_t timeLeft = waitTime;
 
-        // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(_administration->_lockPID == 0);
-
         // Lock the administrator..
         AdminLock();
 
@@ -702,8 +699,6 @@ namespace Core {
         // Lock the administrator..
         AdminLock();
 
-        // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(_administration->_lockPID == gettid());
         ASSERT((_administration->_state.load() & state::LOCKED) == state::LOCKED);
 
         // Only unlock if it is "our" lock.
