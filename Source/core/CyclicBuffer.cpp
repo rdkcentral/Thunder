@@ -321,7 +321,6 @@ namespace Core {
     // This is in MS...
     uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
     {
-
         uint32_t result = waitTime;
 
         if (waitTime != Core::infinite) {
@@ -337,6 +336,8 @@ namespace Core {
             AdminLock();
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
+                AdminUnlock();
+
                 struct timespec nowTime;
 
                 clock_gettime(CLOCK_MONOTONIC_RAW, &nowTime);
@@ -349,10 +350,10 @@ namespace Core {
                 }
                 TRACE_L1("End wait. %d\n", result);
             } else {
+                AdminUnlock();
                 ASSERT(false);
             }
 
-            AdminUnlock();
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
 
@@ -393,36 +394,29 @@ namespace Core {
 
     void CyclicBuffer::Reevaluate()
     {
-
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
 #ifdef __POSIX__
-            for (int index = _administration->_agents.load(); index != 0; index--) {
-                pthread_cond_signal(&(_administration->_signal));
-            }
+            pthread_cond_signal(&(_administration->_signal));
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
 
-            // Wait till all waiters have seen the trigger..
-            while (_administration->_agents.load() > 0) {
-                std::this_thread::yield();
-            }
+            std::this_thread::yield();
         }
     }
 
     void CyclicBuffer::Alert()
     {
-
         // Lock the administrator..
         AdminLock();
 
         _alert = true;
 
-        Reevaluate();
-
         AdminUnlock();
+
+        Reevaluate();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -572,12 +566,10 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
-                AdminLock();
 
                 Reevaluate();
-                DataAvailable();
 
-                AdminUnlock();
+                DataAvailable();
             } else {
                 //The tail moved during write which could mean the reader read everything from the buffer
                 //and won't be notified about new data coming in, because the writer thinks it is not empty.
@@ -655,22 +647,20 @@ namespace Core {
         uint32_t result = Core::ERROR_TIMEDOUT;
         uint32_t timeLeft = waitTime;
 
-        // Lock the administrator..
-        AdminLock();
-
         do {
+            AdminLock();
 
             if ((((_administration->_state.load()) & state::LOCKED) != state::LOCKED) && ((dataPresent == false) || (Used() > 0))) {
                 std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::LOCKED));
 
                 // Remember that we, as a process, took the lock
                 _administration->_lockPID = gettid();
+
                 result = Core::ERROR_NONE;
             } else if (timeLeft > 0) {
+                AdminUnlock();
 
                 _administration->_agents++;
-
-                AdminUnlock();
 
                 timeLeft = SignalLock(timeLeft);
 
@@ -684,35 +674,35 @@ namespace Core {
                 }
             }
 
+            AdminUnlock();
         } while ((timeLeft > 0) && (result == Core::ERROR_TIMEDOUT));
 
-        AdminUnlock();
 
         return (result);
     }
 
     uint32_t CyclicBuffer::Unlock()
     {
-
         uint32_t result(Core::ERROR_ILLEGAL_STATE);
-
-        // Lock the administrator..
-        AdminLock();
 
         ASSERT((_administration->_state.load() & state::LOCKED) == state::LOCKED);
 
+        AdminLock();
+
         // Only unlock if it is "our" lock.
         if (_administration->_lockPID == gettid()) {
-
             _administration->_lockPID = 0;
+
+            AdminUnlock();
+
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
 
             Reevaluate();
 
             result = Core::ERROR_NONE;
+        } else {
+            AdminUnlock();
         }
-
-        AdminUnlock();
 
         return (result);
     }
