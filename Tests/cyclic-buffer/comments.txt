@@ -1,0 +1,24 @@
+// dataPresent == false || Used > 0 if is no lock already
+// then datapresentfalse && Used set the lock
+// otherwise agents is increased
+//o
+//
+//dataPresent probably is used for a reader to set true as an expectationi, and, hence it is waiting to be signal;ed
+//
+//        Core::ERRON_NONE == Unlock()
+
+
+//amount of data is random, maybe its content too, and the time to wait
+//        anything between 0 and  Core::infinite but practically something more suitable 
+//if the 
+//        X dst;
+//    std::copy(src.begin(), src.begin() + size, dst.begin());
+
+/*
+pthread_condf_timewait
+abs time
+only clock advaving is discussed but not going backwards
+which suggest an implementation dependency
+*/
+
+

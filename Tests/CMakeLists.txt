@@ -32,3 +32,7 @@ endif()
 if(MESSAGEBUFFER_TEST)
     add_subdirectory(message-buffer)
 endif()
+
+if(CYCLICBUFFER_TEST)
+    add_subdirectory(cyclic-buffer)
+endif()
