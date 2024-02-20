@@ -24,23 +24,22 @@
 namespace WPEFramework {
 namespace Tests {
 
-constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
-constexpr uint32_t requiredSize = 10; 
 constexpr uint8_t threadWorkerInterval = 10; // milliseconds
 constexpr uint8_t lockTimeout = 100; // milliseconds
-constexpr uint16_t totalRuntime = 100000; // milliseconds
+constexpr uint32_t totalRuntime = Core::infinite; // milliseconds
 
-// A deliberate sync, no errors occur in full sync
-pthread_mutex_t mutex;
 
+template <size_t N>
 class Reader : public Core::Thread {
 public :
 
+    Reader() = delete;
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
-    Reader()
+    Reader(const std::string& fileName)
         : Core::Thread{}
+        , _index{0}
         , _buffer{
               fileName
             ,   Core::File::USER_READ  // not relevant for readers
@@ -51,7 +50,9 @@ public :
             , 0 // readers do not specify sizes
             , false // overwrite unread data
           }
-    {}
+    {
+        _output.fill('\0');
+    }
 
     ~Reader() {
 //        ASSERT(_buffer.LockPid() != gettid()); // thunder schedules Worker on a different Thread
@@ -72,8 +73,6 @@ public :
     }
 
     uint32_t Worker() override {
-//        ASSERT(pthread_mutex_lock(&mutex) == 0);
-
         ASSERT(lockTimeout < Core::infinite);
 
         uint32_t waitTimeForNextRun = Core::infinite;
@@ -81,7 +80,11 @@ public :
         uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
-            TRACE_L1(_T("Reading data"));
+            constexpr uint8_t count = 5;
+
+            if (Read( count) == count) {
+                TRACE_L1(_T("Data read"));
+            }
 
             status = _buffer.Unlock();
 
@@ -90,7 +93,7 @@ public :
 //                Stop();
                 ASSERT(false);
             } else {
-                waitTimeForNextRun = threadWorkerInterval; // Some random value, but currently fixed
+                waitTimeForNextRun = threadWorkerInterval; // some random value, but currently fixed
             }
         } else {
             if (status == Core::ERROR_TIMEDOUT) {
@@ -101,34 +104,73 @@ public :
             }
         }
 
-//        ASSERT(pthread_mutex_unlock(&mutex) == 0);
-
         return waitTimeForNextRun; // schedule ms from now to be called (again) eg interval time;
     }
 
 private :
 
+    uint32_t Read(uint32_t count) {
+        uint32_t read = 0;
+
+        if (   (_index + count) > N
+            // two passes
+            && _buffer.Read(&_output[_index], N - _index, false) != 0
+            && _buffer.Read(&_output[0], _index + count - N, false) != 0
+        ) {
+            read = count;
+            _index = _index + count - N;
+        } else {
+            // one pass
+            if (_buffer.Read(&_output[_index], count, false) != 0) {
+                if ((_index + count) == N) {
+                    _index = 0;
+                } else {
+                    ASSERT(_index + count < N);
+                    _index += count;
+                }
+                read = count;
+            } else {
+                // Unable to read data, possibly no data available
+            }
+        }
+
+        return read;
+    }
+
+    uint32_t _index;
+
+    std::array<uint8_t, N> _output;
+
     Core::CyclicBuffer _buffer;
 };
 
+
+template <size_t N>
 class Writer : public Core::Thread {
 public :
 
+    Writer() = delete;
     Writer(const Writer&) = delete;
     Writer& operator=(const Writer&) = delete;
 
-    Writer() 
+    Writer(const std::string& fileName, uint32_t requiredSharedBufferSize)
         : Core::Thread{}
-        , _buffer{ 
+        , _index{0}
+        , _buffer{
               fileName
             ,   Core::File::USER_READ  // enable read permissions on the underlying file for other users
               | Core::File::USER_WRITE // enable write permission on the underlying file
               | Core::File::CREATE     // create a new underlying memory mapped file
               | Core::File::SHAREABLE  // allow other processes to access the content of the file
-            , requiredSize // requested size 
+            , requiredSharedBufferSize // requested size
             , false // overwrite unread data
           }
-    {}
+    {
+        static_assert(N > 0, "Specify a data set with at least one character (N > 0).");
+
+        // https://en.wikipedia.org/wiki/Lorem_ipsum
+        memcpy(_input.data(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", N);
+    }
 
     ~Writer() {
 //        ASSERT(_buffer.LockPid() != gettid()); // thunder schedules Worker on a different Thread
@@ -149,8 +191,6 @@ public :
     }
 
     uint32_t Worker() override {
-//        ASSERT(pthread_mutex_lock(&mutex) == 0);
-
         ASSERT(lockTimeout < Core::infinite);
 
         uint32_t waitTimeForNextRun = Core::infinite;
@@ -158,7 +198,11 @@ public :
         uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
-            TRACE_L1(_T("Writing data"));
+            constexpr uint8_t count = 5;
+
+            if (Write(count) == count) {
+                TRACE_L1(_T("Data written"));
+            }
 
             status = _buffer.Unlock();
 
@@ -167,7 +211,7 @@ public :
 //                Stop();
                 ASSERT(false);
             } else {
-                waitTimeForNextRun =threadWorkerInterval; // Some random value, but currently fixed
+                waitTimeForNextRun =threadWorkerInterval; // some random value, but currently fixed
             } 
         } else {
             if (status == Core::ERROR_TIMEDOUT) {
@@ -178,14 +222,42 @@ public :
             }
         }
 
-//        ASSERT(pthread_mutex_unlock(&mutex) == 0);
-
         return waitTimeForNextRun; // schedule ms from now to be called (again) eg interval time;
     }
 
 private :
 
-    std::atomic<uint8_t> _locking;
+    uint32_t Write(uint32_t count) {
+        uint32_t written = 0;
+
+        if (   (_index + count) > N
+            // two passes
+            && _buffer.Write(&_input[_index], N - _index) != 0
+            && _buffer.Write(&_input[0], _index + count - N) != 0
+        ) {
+            written = count;
+            _index = _index + count - N;
+        } else {
+            // one pass
+            if (_buffer.Write(&_input[_index], count) != 0) {
+                if ((_index + count) == N) {
+                    _index = 0;
+                } else {
+                    ASSERT(_index + count < N);
+                    _index += count;
+                }
+                written = count;
+            } else {
+                // Unable to write data, possibly buffer full
+            }
+        }
+
+        return written;
+    }
+
+    uint32_t _index;
+
+    std::array<uint8_t, N> _input;
 
     Core::CyclicBuffer _buffer;
 };
@@ -196,20 +268,14 @@ private :
 
 int main(int argc, char* argv[])
 {
-    pthread_mutexattr_t mutex_attr;
-
-    int ret = pthread_mutexattr_init(&mutex_attr);
-    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
-    ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
     using namespace WPEFramework::Core;
     using namespace WPEFramework::Tests;
 
+    constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
+
     // The order is important
-    Writer writer;
-    Reader reader;
+    Writer<446> writer(fileName, 446);
+    Reader<446> reader(fileName);
 
     // The underlying memory mapped file is created and opened via DataElementFile construction
     if (   File(fileName).Exists()
@@ -223,7 +289,7 @@ int main(int argc, char* argv[])
 
         SleepMs(totalRuntime);
 
-        // The destructors may 'win' the race to the end
+        // the destructors may 'win' the race to the end
         writer.Stop();
         reader.Stop();
     } else {
