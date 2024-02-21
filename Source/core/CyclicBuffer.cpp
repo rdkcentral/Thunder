@@ -430,7 +430,7 @@ namespace Core {
         uint32_t head = 0;
         uint32_t offset = 0;
 
-        while (!foundData) {
+        while (length && !foundData) {
             oldTail = _administration->_tail;
             head = _administration->_head;
             offset = oldTail & _administration->_tailIndexMask;
