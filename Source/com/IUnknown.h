@@ -201,9 +201,14 @@ namespace ProxyStub {
             ASSERT(_refCount > 0);
             _refCount--;
  
-            if (_refCount > 1 || _refCount == 0 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
+            if (_refCount > 1 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
                 _adminLock.Unlock();
             } 
+            else if( _refCount == 0 ) {
+                _adminLock.Unlock();
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                ASSERT(_mode == INVALID);
+            }
             else {
                 if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
 
