@@ -200,10 +200,10 @@ namespace ProxyStub {
             _adminLock.Lock();
             ASSERT(_refCount > 0);
             _refCount--;
-
-            if (_refCount != 0) {
+ 
+            if (_refCount > 1 || _refCount == 0 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
                 _adminLock.Unlock();
-            }
+            } 
             else {
                 if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
 
@@ -212,7 +212,7 @@ namespace ProxyStub {
 
                     message->Parameters().Set(_implementation, _interfaceId, 1);
 
-                    // Pass on the number of reference we need to lower, since it is indictaed by the amount of times this proxy had to be created
+                    // Pass on the number of reference we need to lower, since it is indicated by the amount of times this proxy had to be created
                     message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
 
                     // Just try the destruction for few Seconds...
@@ -226,12 +226,10 @@ namespace ProxyStub {
                     }
                 }
 
+                // Remove our selves from the Administration, we are done..
+                result =  (RPC::Administrator::Instance().UnregisterProxy(*this) == true ? Core::ERROR_DESTRUCTION_SUCCEEDED : Core::ERROR_NONE);
                 _adminLock.Unlock();
 
-                // Remove our selves from the Administration, we are done..
-                RPC::Administrator::Instance().UnregisterProxy(*this);
-
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
 
             return (result);
@@ -473,7 +471,7 @@ namespace ProxyStub {
         {
             uint32_t result = _unknown.Release();
 
-            if (result != Core::ERROR_NONE) {
+            if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
                 delete (this);
             }
 
