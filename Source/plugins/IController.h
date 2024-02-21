@@ -209,7 +209,7 @@ namespace Controller {
             };
 
             struct Service {
-                enum state : uint32_t {
+                enum state : uint16_t {
                     UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
                     DEACTIVATED = PluginHost::IShell::DEACTIVATED,
                     DEACTIVATION = PluginHost::IShell::DEACTIVATION,
@@ -218,7 +218,7 @@ namespace Controller {
                     DESTROYED = PluginHost::IShell::DESTROYED,
                     PRECONDITION = PluginHost::IShell::PRECONDITION,
                     HIBERNATED = PluginHost::IShell::HIBERNATED,
-                    SUSPENDED,
+                    SUSPENDED = 0x100,
                     RESUMED
                 };
 
