@@ -74,7 +74,7 @@ namespace PluginHost {
             ACTIVATION,
             PRECONDITION,
             HIBERNATED,
-            DESTROYED,
+            DESTROYED
         };
 
         enum reason : uint8_t {
