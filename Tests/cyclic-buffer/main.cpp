@@ -18,8 +18,8 @@
  */
 
 #include <CyclicBuffer.h>
-#include <iostream>
 #include <Thread.h>
+#include <cstdlib>
 
 namespace WPEFramework {
 namespace Tests {
@@ -27,7 +27,7 @@ namespace Tests {
 constexpr uint8_t threadWorkerInterval = 10; // milliseconds
 constexpr uint8_t lockTimeout = 100; // milliseconds
 constexpr uint32_t totalRuntime = Core::infinite; // milliseconds
-
+constexpr uint8_t sampleSizeInterval = 5;
 
 template <size_t N>
 class Reader : public Core::Thread {
@@ -80,9 +80,11 @@ public :
         uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
-            constexpr uint8_t count = 5;
+            const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (Read( count) == count) {
+            if (   Read(count) == count
+                && count
+               ) {
                 TRACE_L1(_T("Data read"));
             }
 
@@ -198,9 +200,11 @@ public :
         uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
-            constexpr uint8_t count = 5;
+            const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (Write(count) == count) {
+            if (   Write(count) == count
+                && count
+               ) {
                 TRACE_L1(_T("Data written"));
             }
 
@@ -272,6 +276,9 @@ int main(int argc, char* argv[])
     using namespace WPEFramework::Tests;
 
     constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
+
+    // add some randomness
+    std::srand(std::time(nullptr));
 
     // The order is important
     Writer<446> writer(fileName, 446);
