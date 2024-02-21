@@ -95,7 +95,7 @@ public :
 //                Stop();
                 ASSERT(false);
             } else {
-                waitTimeForNextRun = threadWorkerInterval; // some random value, but currently fixed
+                waitTimeForNextRun = std::rand() % threadWorkerInterval;
             }
         } else {
             if (status == Core::ERROR_TIMEDOUT) {
@@ -215,7 +215,7 @@ public :
 //                Stop();
                 ASSERT(false);
             } else {
-                waitTimeForNextRun =threadWorkerInterval; // some random value, but currently fixed
+                waitTimeForNextRun = std::rand() % threadWorkerInterval;
             } 
         } else {
             if (status == Core::ERROR_TIMEDOUT) {
