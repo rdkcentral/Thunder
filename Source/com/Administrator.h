@@ -287,7 +287,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
-        bool UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
+        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy);
 
    private:
         // ----------------------------------------------------------------------------------------------------

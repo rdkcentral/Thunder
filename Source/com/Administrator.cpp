@@ -102,7 +102,7 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    bool Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
     {
         bool removed = false;
 
@@ -116,10 +116,8 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                Core::IUnknown* unknown = (*entry)->Parent();
                 index->second.erase(entry);
                 removed = true;
-                unknown->Release();                
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
