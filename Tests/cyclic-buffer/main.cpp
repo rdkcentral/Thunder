@@ -20,13 +20,16 @@
 #include <CyclicBuffer.h>
 #include <Thread.h>
 #include <cstdlib>
+#include <array>
+#include <memory>
+#include <algorithm>
 
 namespace WPEFramework {
 namespace Tests {
 
-constexpr uint8_t threadWorkerInterval = 10; // milliseconds
-constexpr uint8_t lockTimeout = 100; // milliseconds
-constexpr uint32_t totalRuntime = Core::infinite; // milliseconds
+constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
+constexpr uint8_t lockTimeout = 100; // Milliseconds
+constexpr uint32_t totalRuntime = Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
 
 template <size_t N>
@@ -39,45 +42,48 @@ public :
 
     Reader(const std::string& fileName)
         : Core::Thread{}
-        , _index{0}
+        , _index{ 0 }
         , _buffer{
               fileName
-            ,   Core::File::USER_READ  // not relevant for readers
-              | Core::File::USER_WRITE // open the existing file with write permission
-                                       // readers normally require readonly but the cyclic buffer administration is updated after read
-//              | Core::File::CREATE     // readers access exisitng underlying memory mapped files
-              | Core::File::SHAREABLE  // updates are visible to other processes, but a reader should not update any content except when read data is (automatically) removed
-            , 0 // readers do not specify sizes
-            , false // overwrite unread data
+            ,   Core::File::USER_READ  // Not relevant for readers
+              | Core::File::USER_WRITE // Open the existing file with write permission
+                                       // Readers normally require readonly but the cyclic buffer administration is updated after read
+//              | Core::File::CREATE     // Readers access exisitng underlying memory mapped files
+              | Core::File::SHAREABLE  // Updates are visible to other processes, but a reader should not update any content except when read data is (automatically) removed
+            , 0 // Readers do not specify sizes
+            , false // Overwrite unread data
           }
     {
         _output.fill('\0');
     }
 
-    ~Reader() {
-//        ASSERT(_buffer.LockPid() != gettid()); // thunder schedules Worker on a different Thread
+    ~Reader()
+    {
+//        ASSERT(_buffer.LockPid() != gettid()); // Thunder schedules Worker on a different Thread
 
         Stop();
 
-        // no way to recover if the lock is taken indefinitly, eg, Core::infinite
+        // No way to recover if the lock is taken indefinitly, eg, Core::infinite
         do {
-        } while (!Wait(Thread::STOPPED, threadWorkerInterval));
+        } while (!Wait(Thread::STOPPED, threadWorkerInterval));constexpr size_t internalBufferSize = 446;
 
         _buffer.Close();
     }
 
-    bool Enable() {
+    bool Enable()
+    {
         return    _buffer.IsValid()
-               && _buffer.Open() // it already should
+               && _buffer.Open() // It already should
                ;
     }
 
-    uint32_t Worker() override {
+    uint32_t Worker() override
+    {
         ASSERT(lockTimeout < Core::infinite);
 
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
+        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /* lockTimeout */ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
@@ -106,23 +112,24 @@ public :
             }
         }
 
-        return waitTimeForNextRun; // schedule ms from now to be called (again) eg interval time;
+        return waitTimeForNextRun; // Schedule milliseconds from now to be called (again) eg interval time
     }
 
 private :
 
-    uint32_t Read(uint32_t count) {
+    uint32_t Read(uint32_t count)
+    {
         uint32_t read = 0;
 
         if (   (_index + count) > N
-            // two passes
+            // Two passes when passing the boundary
             && _buffer.Read(&_output[_index], N - _index, false) != 0
             && _buffer.Read(&_output[0], _index + count - N, false) != 0
         ) {
             read = count;
             _index = _index + count - N;
         } else {
-            // one pass
+            // One pass
             if (_buffer.Read(&_output[_index], count, false) != 0) {
                 if ((_index + count) == N) {
                     _index = 0;
@@ -139,7 +146,7 @@ private :
         return read;
     }
 
-    uint32_t _index;
+    uint64_t _index;
 
     std::array<uint8_t, N> _output;
 
@@ -157,15 +164,15 @@ public :
 
     Writer(const std::string& fileName, uint32_t requiredSharedBufferSize)
         : Core::Thread{}
-        , _index{0}
+        , _index{ 0 }
         , _buffer{
               fileName
-            ,   Core::File::USER_READ  // enable read permissions on the underlying file for other users
-              | Core::File::USER_WRITE // enable write permission on the underlying file
-              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // create a new underlying memory mapped file
-              | Core::File::SHAREABLE  // allow other processes to access the content of the file
-            , requiredSharedBufferSize // requested size
-            , false // overwrite unread data
+            ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
+              | Core::File::USER_WRITE // Enable write permission on the underlying file
+              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // Ceate a new underlying memory mapped file
+              | Core::File::SHAREABLE  // Allow other processes to access the content of the file
+            , requiredSharedBufferSize // Requested size
+            , false // Overwrite unread data
           }
     {
         static_assert(N > 0, "Specify a data set with at least one character (N > 0).");
@@ -174,12 +181,13 @@ public :
         memcpy(_input.data(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", N);
     }
 
-    ~Writer() {
-//        ASSERT(_buffer.LockPid() != gettid()); // thunder schedules Worker on a different Thread
+    ~Writer()
+    {
+//        ASSERT(_buffer.LockPid() != gettid()); // Thunder schedules Worker on a different Thread
 
         Stop();
 
-        // no way to recover if the lock is taken indefinitly, eg, Core::infinite
+        // No way to recover if the lock is taken indefinitly, eg, Core::infinite
         do {
         } while (!Wait(Thread::STOPPED, threadWorkerInterval));
 
@@ -188,16 +196,17 @@ public :
 
     bool Enable() {
         return    _buffer.IsValid()
-               && _buffer.Open() // it already should
+               && _buffer.Open() // It already should
                ;
     }
 
-    uint32_t Worker() override {
+    uint32_t Worker() override
+    {
         ASSERT(lockTimeout < Core::infinite);
 
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /*lockTimeout*/ /* waiting time to give up lock */);
+        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /* lockTimeout */ /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
@@ -226,23 +235,24 @@ public :
             }
         }
 
-        return waitTimeForNextRun; // schedule ms from now to be called (again) eg interval time;
+        return waitTimeForNextRun; // Schedule milliseconds from now to be called (again) eg interval time
     }
 
 private :
 
-    uint32_t Write(uint32_t count) {
+    uint32_t Write(uint32_t count)
+    {
         uint32_t written = 0;
 
         if (   (_index + count) > N
-            // two passes
+            // Two passes when passing the boundary
             && _buffer.Write(&_input[_index], N - _index) != 0
             && _buffer.Write(&_input[0], _index + count - N) != 0
         ) {
             written = count;
             _index = _index + count - N;
         } else {
-            // one pass
+            // One pass
             if (_buffer.Write(&_input[_index], count) != 0) {
                 if ((_index + count) == N) {
                     _index = 0;
@@ -259,7 +269,7 @@ private :
         return written;
     }
 
-    uint32_t _index;
+    uint64_t _index;
 
     std::array<uint8_t, N> _input;
 
@@ -280,28 +290,35 @@ int main(int argc, char* argv[])
     // Add some randomness
     std::srand(std::time(nullptr));
 
+    constexpr uint32_t mmemoryMappedFileRequestedSize = 446;
+    constexpr uint32_t internalBufferSize = 446;
+
     // The order is important
-    std::array<std::unique_ptr<Writer<446>>, 1> writers = {std::unique_ptr<Writer<446>>(new Writer<446>(fileName, 446))};
-    std::array<std::unique_ptr<Reader<446>>, 1> readers = {std::unique_ptr<Reader<446>>(new Reader<446>(fileName))};
+    std::array<std::unique_ptr<Writer<internalBufferSize>>, 1> writers = {
+        std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, mmemoryMappedFileRequestedSize)) // The first one 'creates' the buffer
+    };
+    std::array<std::unique_ptr<Reader<internalBufferSize>>, 1> readers = {
+        std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))
+    };
 
     std::all_of(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); });
 
     // The underlying memory mapped file is created and opened via DataElementFile construction
     if (   File(fileName).Exists()
-        && std::all_of(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); })
-        && std::all_of(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ return reader->Enable(); })
+        && std::all_of(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); })
+        && std::all_of(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ return reader->Enable(); })
     ) {
         std::cout << "Shared cyclic buffer created and ready" << std::endl;
 
         // The order is important
-        for_each(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
-        for_each(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
+        for_each(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
+        for_each(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
 
         SleepMs(totalRuntime);
 
         // The destructors may 'win' the race to the end
-        for_each(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
-        for_each(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
+        for_each(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
+        for_each(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
     } else {
         std::cout << "Error: Unable to create shared cyclic buffer" << std::endl;
     }
