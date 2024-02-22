@@ -421,13 +421,13 @@ namespace PluginHost {
                     return (Core::ERROR_PRIVILIGED_REQUEST);
                 }
                 else if (result == classification::DEFERRED) {
-                    return (Core::ERROR_UNAVAILABLE);
+                    return (Core::ERROR_PRIVILIGED_DEFERRED);
                 }
             }
             return (Core::ERROR_NONE);
         }
         Core::hresult Invoke(IDispatcher::ICallback*, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
-            uint32_t result(Core::ERROR_BAD_REQUEST);
+            uint32_t result(Core::ERROR_UNKNOWN_METHOD);
             Core::JSONRPC::Handler* handler(Handler(method));
             string realMethod(Core::JSONRPC::Message::Method(method));
 
@@ -437,10 +437,10 @@ namespace PluginHost {
             else if (realMethod == _T("exists")) {
                 result = Core::ERROR_NONE;
                 if (handler->Exists(parameters) == Core::ERROR_NONE) {
-                    response = _T("1");
+                    response = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
                 }
                 else {
-                    response = _T("0");
+                    response = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
                 }
             }
             else if (handler->Exists(realMethod) == Core::ERROR_NONE) {

@@ -80,26 +80,53 @@ namespace Core {
                 void SetError(const uint32_t frameworkError)
                 {
                     switch (frameworkError) {
-                    case Core::ERROR_BAD_REQUEST:
-                        Code = -32603; // Internal Error
-                        break;
                     case Core::ERROR_INVALID_DESIGNATOR:
                         Code = -32600; // Invalid request
+                        Text = _T("Destined invoke failed.");
+                        break;
+                    case Core::ERROR_UNKNOWN_METHOD:
+                        Code = -32601; // Method not found
+                        Text = _T("Unknown method.");
                         break;
                     case Core::ERROR_INVALID_SIGNATURE:
                         Code = -32602; // Invalid parameters
+                        Text = _T("Requested version is not supported.");
                         break;
-                    case Core::ERROR_UNKNOWN_KEY:
-                        Code = -32601; // Method not found
+                    case Core::ERROR_BAD_REQUEST:
+                        Code = -32603; // Internal Error
+                        Text = _T("Could not access requested service");
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
+                        Text = _T("method invocation not allowed.");
+                        break;
+                    case Core::ERROR_PRIVILIGED_DEFERRED:
+                        Code = -32604; // Priviliged deferred
+                        Text = _T("method invokation is deferred, Currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
+                        Text = _T("Call timed out.");
+                        break;
+                    case Core::ERROR_INVALID_RANGE:
+                        Code = Core::ERROR_INVALID_RANGE;
+                        Text = _T("Requested version is not supported.");
+                        break;
+                    case Core::ERROR_INCORRECT_URL:
+                        Code = Core::ERROR_INCORRECT_URL;
+                        Text = _T("Designator is invalid.");
+                        break;
+                    case Core::ERROR_ILLEGAL_STATE:
+                        Code = Core::ERROR_ILLEGAL_STATE;
+                        Text = _T("The service is in an illegal state!!!.");
+                        break;
+                    case Core::ERROR_HIBERNATED:
+                        Code = Core::ERROR_HIBERNATED;
+                        Text = _T("The service is in an Hibernated state!!!.");
                         break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
+                        Text = Core::ErrorToString(frameworkError);
                         break;
                     }
                 }
@@ -578,7 +605,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -674,7 +701,7 @@ namespace Core {
                 auto retval = _handlers.emplace(std::piecewise_construct,
                                     std::make_tuple(methodName),
                                     std::make_tuple(lambda));
-                    
+
                 if ( retval.second == false ) {
                     retval.first->second = lambda;
                 }
@@ -704,7 +731,7 @@ namespace Core {
             }
             uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
             {
-                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+                uint32_t result = Core::ERROR_UNKNOWN_METHOD;
 
                 response.clear();
 
