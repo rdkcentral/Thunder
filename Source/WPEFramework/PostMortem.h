@@ -152,6 +152,7 @@ namespace PluginHost {
     public:
         PostMortemData(PostMortemData&&) = delete;
         PostMortemData(const PostMortemData&) = delete;
+        PostMortemData& operator=(PostMortemData&&) = delete;
         PostMortemData& operator=(const PostMortemData&) = delete;
 
         PostMortemData()

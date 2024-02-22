@@ -168,7 +168,9 @@ namespace Core {
         };
     public:
         RoutingTable() = delete;
+        RoutingTable(RoutingTable&&) = delete;
         RoutingTable(const RoutingTable&) = delete;
+        RoutingTable& operator=(RoutingTable&&) = delete;
         RoutingTable& operator=(const RoutingTable&) = delete;
 
         RoutingTable(const bool ipv4);

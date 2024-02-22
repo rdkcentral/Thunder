@@ -43,6 +43,7 @@ namespace Core {
     class EXTERNAL DataElementFile : public DataElement {
     public:
         DataElementFile() = delete;
+        DataElementFile& operator=(DataElementFile&&) = delete;
         DataElementFile& operator=(const DataElementFile&) = delete;
 
         DataElementFile(File& fileName, const uint32_t type);

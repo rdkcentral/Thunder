@@ -592,7 +592,9 @@ namespace PluginHost {
             } 
 
         public:
+            InputInfo(InputInfo&&) = delete;
             InputInfo(const InputInfo&) = delete;
+            InputInfo& operator=(InputInfo&&) = delete;
             InputInfo& operator=(const InputInfo&) = delete;
 
             ~InputInfo() = default;
@@ -640,7 +642,9 @@ namespace PluginHost {
             } 
 
         public:
+            ProcessInfo(ProcessInfo&&) = delete;
             ProcessInfo(const ProcessInfo&) = delete;
+            ProcessInfo& operator=(ProcessInfo&&) = delete;
             ProcessInfo& operator=(const ProcessInfo&) = delete;
 
             ~ProcessInfo() = default;

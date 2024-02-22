@@ -28,7 +28,9 @@ namespace Web {
     class EXTERNAL JSONWebToken {
     private:
         JSONWebToken() = delete;
+        JSONWebToken(JSONWebToken&&) = delete;
         JSONWebToken(const JSONWebToken&) = delete;
+        JSONWebToken& operator=(JSONWebToken&&) = delete;
         JSONWebToken& operator=(const JSONWebToken&) = delete;
 
     public:

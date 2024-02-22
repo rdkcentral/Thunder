@@ -66,6 +66,7 @@ namespace ProcessContainers {
         public:
             class ConfigItem : public Core::JSON::Container {
             public:
+                ConfigItem& operator=(ConfigItem&&) = delete;
                 ConfigItem& operator=(const ConfigItem&) = delete;
 
                 ConfigItem(ConfigItem&& move);
