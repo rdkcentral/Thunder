@@ -121,27 +121,16 @@ private :
     {
         uint32_t read = 0;
 
-        if (   (_index + count) > N
+        if ((_index + count) > N) {
             // Two passes when passing the boundary
-            && _buffer.Read(&_output[_index], N - _index, false) != 0
-            && _buffer.Read(&_output[0], _index + count - N, false) != 0
-        ) {
-            read = count;
-            _index = _index + count - N;
+            read = _buffer.Read(&_output[_index], N - _index, false);
+            read += _buffer.Read(&_output[0], count - read, false);
         } else {
             // One pass
-            if (_buffer.Read(&_output[_index], count, false) != 0) {
-                if ((_index + count) == N) {
-                    _index = 0;
-                } else {
-                    ASSERT(_index + count < N);
-                    _index += count;
-                }
-                read = count;
-            } else {
-                // Unable to read data, possibly no data available
-            }
+            read = _buffer.Read(&_output[_index], count, false);
         }
+
+        _index = (_index + read) % N;
 
         return read;
     }
@@ -244,27 +233,16 @@ private :
     {
         uint32_t written = 0;
 
-        if (   (_index + count) > N
+        if ((_index + count) > N) {
             // Two passes when passing the boundary
-            && _buffer.Write(&_input[_index], N - _index) != 0
-            && _buffer.Write(&_input[0], _index + count - N) != 0
-        ) {
-            written = count;
-            _index = _index + count - N;
+            written = _buffer.Write(&_input[_index], N - _index);
+            written += _buffer.Write(&_input[0], count - written);
         } else {
             // One pass
-            if (_buffer.Write(&_input[_index], count) != 0) {
-                if ((_index + count) == N) {
-                    _index = 0;
-                } else {
-                    ASSERT(_index + count < N);
-                    _index += count;
-                }
-                written = count;
-            } else {
-                // Unable to write data, possibly buffer full
-            }
+            written = _buffer.Write(&_input[_index], count);
         }
+
+        _index = (_index + written) % N;
 
         return written;
     }
