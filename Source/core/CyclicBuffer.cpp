@@ -353,68 +353,68 @@ namespace Core {
         uint32_t head = 0;
         uint32_t offset = 0;
 
-        if (length) {
-            while (!foundData) {
-                oldTail = _administration->_tail;
-                head = _administration->_head;
-                offset = oldTail & _administration->_tailIndexMask;
+        ASSERT(length > 0);
 
-                result = Used(head, offset);
-                if (result == 0) {
-                    //no data, no need in trying reading
-                    break;
-                }
+        while (!foundData) {
+            oldTail = _administration->_tail;
+            head = _administration->_head;
+            offset = oldTail & _administration->_tailIndexMask;
 
-                Cursor cursor(*this, oldTail, length);
-                result = GetReadSize(cursor);
+            result = Used(head, offset);
+            if (result == 0) {
+                //no data, no need in trying reading
+                break;
+            }
 
-                //data was found if result is greater than 0 and the tail was not moved by the writer.
-                //If it was moved, the package size could have been overwritten
-                //by random data and can be invalid - we cannot trust it
-                if ((result == 0) || (oldTail != _administration->_tail)) {
-                    foundData = false;
-                } else {
-                    foundData = true;
+            Cursor cursor(*this, oldTail, length);
+            result = GetReadSize(cursor);
 
-                    ASSERT(result != 0);
-                    ASSERT((result <= length) || ((result > length) && (partialRead == true)));
+            //data was found if result is greater than 0 and the tail was not moved by the writer.
+            //If it was moved, the package size could have been overwritten
+            //by random data and can be invalid - we cannot trust it
+            if ((result == 0) || (oldTail != _administration->_tail)) {
+                foundData = false;
+            } else {
+                foundData = true;
 
-                    //if does not allow partial read, we found a data, but it is too small to fit
-                    if ((result <= length) || ((result > length) && (partialRead == true))) {
-                        uint32_t bufferLength = std::min(length, result);
+                ASSERT(result != 0);
+                ASSERT((result <= length) || ((result > length) && (partialRead == true)));
 
-                        offset += cursor.Offset();
-                        uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
-                        if ((offset + result) < _administration->_size) {
-                            memcpy(buffer, _realBuffer + offset, bufferLength);
+                //if does not allow partial read, we found a data, but it is too small to fit
+                if ((result <= length) || ((result > length) && (partialRead == true))) {
+                    uint32_t bufferLength = std::min(length, result);
 
-                            uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
-                            if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
-                                foundData = false;
-                            }
+                    offset += cursor.Offset();
+                    uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
+                    if ((offset + result) < _administration->_size) {
+                        memcpy(buffer, _realBuffer + offset, bufferLength);
+
+                        uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
+                        if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
+                            foundData = false;
+                        }
+                    } else {
+                        uint32_t part1 = 0;
+                        uint32_t part2 = 0;
+
+                        if (_administration->_size < offset) {
+                            part2 = result - (offset - _administration->_size);
                         } else {
-                            uint32_t part1 = 0;
-                            uint32_t part2 = 0;
+                            part1 = _administration->_size - offset;
+                            part2 = result - part1;
+                        }
 
-                            if (_administration->_size < offset) {
-                                part2 = result - (offset - _administration->_size);
-                            } else {
-                                part1 = _administration->_size - offset;
-                                part2 = result - part1;
-                            }
+                        memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
 
-                            memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
+                        if (part1 < bufferLength) {
+                            memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                        }
 
-                            if (part1 < bufferLength) {
-                                memcpy(buffer + part1, _realBuffer, bufferLength - part1);
-                            }
-
-                            // Add one round, but prevent overflow.
-                            roundCount = (roundCount + 1) % _administration->_roundCountModulo;
-                            uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
-                            if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
-                                foundData = false;
-                            }
+                        // Add one round, but prevent overflow.
+                        roundCount = (roundCount + 1) % _administration->_roundCountModulo;
+                        uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
+                        if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
+                            foundData = false;
                         }
                     }
                 }
