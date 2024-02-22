@@ -145,7 +145,7 @@ namespace Core {
                         long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
 
                         // ETIMEDOUT is allowed
-                        ASSERT(err != -1 /* see errno */ && errno != ETIMEDOUT); DEBUG_VARIABLE(err);
+                        ASSERT(err == 0 || (err != 0 /* see errno */ && errno == ETIMEDOUT)); DEBUG_VARIABLE(err);
                     }
                 }
             }
@@ -267,7 +267,7 @@ namespace Core {
                         long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
 
                         // ETIMEDOUT is allowed
-                        ASSERT(err != -1 /* see errno */ && errno != ETIMEDOUT); DEBUG_VARIABLE(err);
+                        ASSERT(err == 0 || (err != 0 /* see errno */ && errno == ETIMEDOUT)); DEBUG_VARIABLE(err);
                     }
                 }
 #endif
