@@ -162,7 +162,7 @@ public :
               fileName
             ,   Core::File::USER_READ  // enable read permissions on the underlying file for other users
               | Core::File::USER_WRITE // enable write permission on the underlying file
-              | Core::File::CREATE     // create a new underlying memory mapped file
+              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // create a new underlying memory mapped file
               | Core::File::SHAREABLE  // allow other processes to access the content of the file
             , requiredSharedBufferSize // requested size
             , false // overwrite unread data
@@ -277,28 +277,31 @@ int main(int argc, char* argv[])
 
     constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
-    // add some randomness
+    // Add some randomness
     std::srand(std::time(nullptr));
 
     // The order is important
-    Writer<446> writer(fileName, 446);
-    Reader<446> reader(fileName);
+    std::array<std::unique_ptr<Writer<446>>, 1> writers = {std::unique_ptr<Writer<446>>(new Writer<446>(fileName, 446))};
+    std::array<std::unique_ptr<Reader<446>>, 1> readers = {std::unique_ptr<Reader<446>>(new Reader<446>(fileName))};
+
+    std::all_of(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); });
 
     // The underlying memory mapped file is created and opened via DataElementFile construction
     if (   File(fileName).Exists()
-        && writer.Enable()
-        && reader.Enable()
+        && std::all_of(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); })
+        && std::all_of(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ return reader->Enable(); })
     ) {
         std::cout << "Shared cyclic buffer created and ready" << std::endl;
 
-        writer.Run();
-        reader.Run();
+        // The order is important
+        for_each(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
+        for_each(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
 
         SleepMs(totalRuntime);
 
-        // the destructors may 'win' the race to the end
-        writer.Stop();
-        reader.Stop();
+        // The destructors may 'win' the race to the end
+        for_each(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
+        for_each(readers.begin(), readers.end(), [](std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
     } else {
         std::cout << "Error: Unable to create shared cyclic buffer" << std::endl;
     }
