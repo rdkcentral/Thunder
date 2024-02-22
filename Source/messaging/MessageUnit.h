@@ -697,7 +697,9 @@ namespace WPEFramework {
 
             public:
                 Client() = delete;
+                Client(Client&&) = delete;
                 Client(const Client&) = delete;
+                Client& operator=(Client&&) = delete;
                 Client& operator=(const Client&) = delete;
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
@@ -863,7 +865,9 @@ namespace WPEFramework {
 
             public:
                 MessageDispatcher() = delete;
+                MessageDispatcher(MessageDispatcher&&) = delete;
                 MessageDispatcher(const MessageDispatcher&) = delete;
+                MessageDispatcher& operator=(MessageDispatcher&&) = delete;
                 MessageDispatcher& operator=(const MessageDispatcher&) = delete;
 
                 /**

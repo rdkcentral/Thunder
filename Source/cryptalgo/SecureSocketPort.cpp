@@ -27,7 +27,9 @@ namespace {
 
     class OpenSSL {
     public:
+        OpenSSL(OpenSSL&&) = delete;
         OpenSSL(const OpenSSL&) = delete;
+        OpenSSL& operator=(OpenSSL&&) = delete;
         OpenSSL& operator=(const OpenSSL&) = delete;
 
         OpenSSL()

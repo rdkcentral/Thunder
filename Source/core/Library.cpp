@@ -140,19 +140,6 @@ namespace Core {
         Release();
     }
 
-    Library& Library::operator=(Library&& RHS)
-    {
-        // Only do this if we have different libraries..
-        Release();
-
-        // Assigne the new handler
-        _refCountedHandle = RHS._refCountedHandle;
-        _error = RHS._error;
-        RHS._refCountedHandle = nullptr;
-
-        return (*this);
-    }
-
     Library& Library::operator=(const Library& RHS)
     {
         // Only do this if we have different libraries..

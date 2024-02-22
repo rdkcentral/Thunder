@@ -169,7 +169,9 @@ namespace PluginHost {
 
         public:
             Statistics() = delete;
+            Statistics(Statistics&& move) = delete;
             Statistics(const Statistics& copy) = delete;
+            Statistics& operator=(Statistics&& rhs) = delete;
             Statistics& operator=(const Statistics& rhs) = delete;
 
             Statistics(const uint32_t uptill)
@@ -258,7 +260,9 @@ namespace PluginHost {
         }
 
     public:
+        PerformanceAdministrator(PerformanceAdministrator&&) = delete;
         PerformanceAdministrator(const PerformanceAdministrator&) = delete;
+        PerformanceAdministrator& operator=(PerformanceAdministrator&&) = delete;
         PerformanceAdministrator& operator=(const PerformanceAdministrator&) = delete;
 
         static PerformanceAdministrator& Instance() {
@@ -298,7 +302,9 @@ namespace PluginHost {
 
     class TrackingJSONRPC : public  Web::JSONRPC::Body {
     public:
+        TrackingJSONRPC(TrackingJSONRPC&&) = delete;
         TrackingJSONRPC(const TrackingJSONRPC&) = delete;
+        TrackingJSONRPC& operator=(TrackingJSONRPC&&) = delete;
         TrackingJSONRPC& operator=(const TrackingJSONRPC&) = delete;
 
         TrackingJSONRPC() = default;

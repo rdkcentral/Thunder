@@ -38,7 +38,9 @@ namespace RPC {
         static constexpr TCHAR LoaderConfig[] = _T("/etc/ld.so.conf");
 
     public:
+        DynamicLoaderPaths(DynamicLoaderPaths&&) = delete;
         DynamicLoaderPaths(const DynamicLoaderPaths&) = delete;
+        DynamicLoaderPaths& operator=(DynamicLoaderPaths&&) = delete;
         DynamicLoaderPaths& operator=(const DynamicLoaderPaths&) = delete;
 
         DynamicLoaderPaths() 

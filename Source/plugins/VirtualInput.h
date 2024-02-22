@@ -843,6 +843,7 @@ POP_WARNING()
             VirtualInputChannelServer() = delete;
             VirtualInputChannelServer(VirtualInputChannelServer&&) = delete;
             VirtualInputChannelServer(const VirtualInputChannelServer&) = delete;
+            VirtualInputChannelServer& operator=(VirtualInputChannelServer&&) = delete;
             VirtualInputChannelServer& operator=(const VirtualInputChannelServer&) = delete;
 
             VirtualInputChannelServer(IPCUserInput& parent, const Core::NodeId& sourceName)
