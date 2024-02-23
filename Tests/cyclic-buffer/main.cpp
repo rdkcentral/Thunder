@@ -158,7 +158,7 @@ public :
               fileName
             ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
               | Core::File::USER_WRITE // Enable write permission on the underlying file
-              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // Ceate a new underlying memory mapped file
+              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // Create a new underlying memory mapped file
               | Core::File::SHAREABLE  // Allow other processes to access the content of the file
             , requiredSharedBufferSize // Requested size
             , false // Overwrite unread data
@@ -254,8 +254,104 @@ private :
     Core::CyclicBuffer _buffer;
 };
 
+template<size_t mmemoryMappedFileRequestedSize, size_t internalBufferSize>
+class BufferCreator
+{
+public :
+
+    BufferCreator() = delete;
+    BufferCreator(const BufferCreator&) = delete;
+    BufferCreator& operator=(const BufferCreator&) = delete;
+
+    BufferCreator(const std::string& fileName)
+        : _writer(fileName, mmemoryMappedFileRequestedSize)
+    {
+        static_assert(mmemoryMappedFileRequestedSize, "Specify mmemoryMappedFileRequestedSize > 0");
+    }
+
+    bool Enable()
+    {
+        return _writer.Enable();
+    }
+
+    bool Start() const
+    {
+        constexpr bool result = true;
+
+        _writer.Run();
+
+        return result;
+    }
+
+    bool Stop() const
+    {
+        constexpr bool result = true;
+
+        _writer.Stop();
+
+        return result;
+    }
+
+private :
+
+    Writer<internalBufferSize> _writer;
+};
+
+template<size_t internalBufferSize>
+class BufferUsers
+{
+public :
+    BufferUsers() = delete;
+    BufferUsers(const BufferUsers&) = delete;
+    BufferUsers& operator=(const BufferUsers&) = delete;
+
+    BufferUsers(const std::string& fileName)
+        : _writers{ std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))}
+        , _readers{ std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName)) }
+    {}
+
+    ~BufferUsers()
+    {
+        /* bool */  Stop();
+    }
+
+    bool Enable()
+    {
+        return    std::all_of(_writers.begin(), _writers.end(), [] (std::unique_ptr<Writer<internalBufferSize>>& writer){ return writer->Enable(); })
+               && std::all_of(_readers.begin(), _readers.end(), [] (std::unique_ptr<Reader<internalBufferSize>>& reader){ return reader->Enable(); })
+        ;
+    }
+
+    bool Start() const
+    {
+        constexpr bool result = true;
+
+        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
+        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
+
+        return result;
+    }
+
+    bool Stop() const
+    {
+        constexpr bool result = true;
+
+        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
+        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
+
+        return result;
+    }
+
+private :
+
+    std::array<std::unique_ptr<Writer<internalBufferSize>>, 1> _writers;
+    std::array<std::unique_ptr<Reader<internalBufferSize>>, 1> _readers;
+};
+
+
 } // Tests
 } // WPEFramework
+
 
 
 int main(int argc, char* argv[])
@@ -272,31 +368,24 @@ int main(int argc, char* argv[])
     constexpr uint32_t internalBufferSize = 446;
 
     // The order is important
-    std::array<std::unique_ptr<Writer<internalBufferSize>>, 1> writers = {
-        std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, mmemoryMappedFileRequestedSize)) // The first one 'creates' the buffer
-    };
-    std::array<std::unique_ptr<Reader<internalBufferSize>>, 1> readers = {
-        std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))
-    };
-
-    std::all_of(writers.begin(), writers.end(), [](std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); });
+    BufferCreator<mmemoryMappedFileRequestedSize, internalBufferSize> creator(fileName);
+    BufferUsers<internalBufferSize> users(fileName);
 
     // The underlying memory mapped file is created and opened via DataElementFile construction
-    if (   File(fileName).Exists()
-        && std::all_of(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ return writer->Enable(); })
-        && std::all_of(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ return reader->Enable(); })
+    if (   creator.Enable()
+        && File(fileName).Exists()
+        && users.Enable()
     ) {
         std::cout << "Shared cyclic buffer created and ready" << std::endl;
 
-        // The order is important
-        for_each(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
-        for_each(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
+//        creator.Run(); // We can but we do not like writing
+        /* bool */ users.Start();
 
         SleepMs(totalRuntime);
 
         // The destructors may 'win' the race to the end
-        for_each(writers.begin(), writers.end(), [] (std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
-        for_each(readers.begin(), readers.end(), [] (std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
+//        creator.Stop();
+        /* bool */ users.Stop();
     } else {
         std::cout << "Error: Unable to create shared cyclic buffer" << std::endl;
     }
