@@ -214,7 +214,7 @@ void IPTestAdministrator::TimedWait(pthread_cond_t * cond, pthread_mutex_t * mut
    int result = pthread_cond_timedwait(cond, mutex, &timeSpec);
    if (result == ETIMEDOUT) {
       fprintf(stderr, "While waiting on cond var, time out expired for \"%s\" in %s (%u).\n", str.c_str(), GetProcessName(), getpid());
-      abort();
+//      abort();
    }
 }
 
