@@ -262,7 +262,11 @@ namespace Core {
             structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
+            AdminLock();
+
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
+                AdminUnlock();
+
                 struct timespec nowTime;
 
                 clock_gettime(CLOCK_REALTIME, &nowTime);
@@ -274,6 +278,9 @@ namespace Core {
                     result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
                 TRACE_L1("End wait. %d\n", result);
+            } else {
+                AdminUnlock();
+                ASSERT(false);
             }
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
@@ -287,7 +294,12 @@ namespace Core {
             ASSERT(result <= waitTime);
         } else {
 #ifdef __POSIX__
-            pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            AdminLock();
+
+            int ret = pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+            AdminUnlock();
 #else
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
@@ -315,17 +327,13 @@ namespace Core {
         if (_administration->_agents.load() > 0) {
 
 #ifdef __POSIX__
-            for (int index = _administration->_agents.load(); index != 0; index--) {
-                pthread_cond_signal(&(_administration->_signal));
-            }
+            int ret = pthread_cond_signal(&(_administration->_signal));
+            ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
 
-            // Wait till all waiters have seen the trigger..
-            while (_administration->_agents.load() > 0) {
-                std::this_thread::yield();
-            }
+            std::this_thread::yield();
         }
     }
 
@@ -337,9 +345,9 @@ namespace Core {
 
         _alert = true;
 
-        Reevaluate();
-
         AdminUnlock();
+
+        Reevaluate();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -491,12 +499,10 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
-                AdminLock();
 
                 Reevaluate();
-                DataAvailable();
 
-                AdminUnlock();
+                DataAvailable();
             } else {
                 //The tail moved during write which could mean the reader read everything from the buffer
                 //and won't be notified about new data coming in, because the writer thinks it is not empty.
@@ -577,10 +583,8 @@ namespace Core {
         // Lock can not be called recursive, unlock if you would like to lock it..
         ASSERT(_administration->_lockPID == 0);
 
-        // Lock the administrator..
-        AdminLock();
-
         do {
+            AdminLock();
 
             if ((((_administration->_state.load()) & state::LOCKED) != state::LOCKED) && ((dataPresent == false) || (Used() > 0))) {
                 std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::LOCKED));
@@ -589,10 +593,9 @@ namespace Core {
                 _administration->_lockPID = Core::ProcessInfo().Id();
                 result = Core::ERROR_NONE;
             } else if (timeLeft > 0) {
+                AdminUnlock();
 
                 _administration->_agents++;
-
-                AdminUnlock();
 
                 timeLeft = SignalLock(timeLeft);
 
@@ -606,9 +609,9 @@ namespace Core {
                 }
             }
 
+            AdminUnlock();
         } while ((timeLeft > 0) && (result == Core::ERROR_TIMEDOUT));
 
-        AdminUnlock();
 
         return (result);
     }
@@ -629,14 +632,17 @@ namespace Core {
         if (_administration->_lockPID == Core::ProcessInfo().Id()) {
 
             _administration->_lockPID = 0;
+
+            AdminUnlock();
+
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
 
             Reevaluate();
 
             result = Core::ERROR_NONE;
+        } else {
+            AdminUnlock();
         }
-
-        AdminUnlock();
 
         return (result);
     }
