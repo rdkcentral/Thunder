@@ -88,8 +88,8 @@ public :
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (   Read(count) == count
-                && count
+            if (   count
+                && Read(count) == count
                ) {
                 TRACE_L1(_T("Data read"));
             }
@@ -200,8 +200,8 @@ public :
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (   Write(count) == count
-                && count
+            if (   count
+                && Write(count) == count
                ) {
                 TRACE_L1(_T("Data written"));
             }
