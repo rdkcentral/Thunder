@@ -23,13 +23,22 @@
 #include <array>
 #include <memory>
 #include <algorithm>
+#include <sys/mman.h>
+#include <linux/futex.h>      /* Definition of FUTEX_* constants */
+#include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define CREATOR_WRITE
+//#define CREATOR_EXTRA_USERS
 
 namespace WPEFramework {
 namespace Tests {
 
 constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
 constexpr uint8_t lockTimeout = 100; // Milliseconds
-constexpr uint32_t totalRuntime = Core::infinite; // Milliseconds
+constexpr uint32_t setupTime = 1000; // Milliseconds
+constexpr uint32_t totalRuntime = /*10000;*/Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
 
 template <size_t N>
@@ -274,7 +283,7 @@ public :
         return _writer.Enable();
     }
 
-    bool Start() const
+    bool Start()
     {
         constexpr bool result = true;
 
@@ -283,7 +292,7 @@ public :
         return result;
     }
 
-    bool Stop() const
+    bool Stop()
     {
         constexpr bool result = true;
 
@@ -297,7 +306,7 @@ private :
     Writer<internalBufferSize> _writer;
 };
 
-template<size_t internalBufferSize>
+template<size_t internalBufferSize, size_t W, size_t R>
 class BufferUsers
 {
 public :
@@ -306,9 +315,10 @@ public :
     BufferUsers& operator=(const BufferUsers&) = delete;
 
     BufferUsers(const std::string& fileName)
-        : _writers{ std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))}
-        , _readers{ std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName)) }
-    {}
+    {
+        for_each(_writers.begin(), _writers.end(), [&fileName] (std::unique_ptr<Writer<446>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))); });
+        for_each(_readers.begin(), _readers.end(), [&fileName] (std::unique_ptr<Reader<446>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))); });
+    }
 
     ~BufferUsers()
     {
@@ -344,15 +354,13 @@ public :
 
 private :
 
-    std::array<std::unique_ptr<Writer<internalBufferSize>>, 1> _writers;
-    std::array<std::unique_ptr<Reader<internalBufferSize>>, 1> _readers;
+    std::array<std::unique_ptr<Writer<internalBufferSize>>, W> _writers;
+    std::array<std::unique_ptr<Reader<internalBufferSize>>, R> _readers;
 };
 
 
 } // Tests
 } // WPEFramework
-
-
 
 int main(int argc, char* argv[])
 {
@@ -367,28 +375,133 @@ int main(int argc, char* argv[])
     constexpr uint32_t mmemoryMappedFileRequestedSize = 446;
     constexpr uint32_t internalBufferSize = 446;
 
-    // The order is important
-    BufferCreator<mmemoryMappedFileRequestedSize, internalBufferSize> creator(fileName);
-    BufferUsers<internalBufferSize> users(fileName);
+    // The order is important, sync variable
+    enum class status : uint8_t {
+          uninitialized
+        , initialized
+        , ready
+    };
 
-    // The underlying memory mapped file is created and opened via DataElementFile construction
-    if (   creator.Enable()
-        && File(fileName).Exists()
-        && users.Enable()
-    ) {
-        std::cout << "Shared cyclic buffer created and ready" << std::endl;
+    status sync { status::uninitialized };
 
-//        creator.Run(); // We can but we do not like writing
-        /* bool */ users.Start();
+    void* sync_addr = mmap(nullptr, sizeof(sync), PROT_READ | PROT_WRITE, MAP_SHARED/*_VALIDATE*/ | MAP_ANONYMOUS, -1, 0);
 
-        SleepMs(totalRuntime);
+    ASSERT(sync_addr != MAP_FAILED);
 
-        // The destructors may 'win' the race to the end
-//        creator.Stop();
-        /* bool */ users.Stop();
-    } else {
-        std::cout << "Error: Unable to create shared cyclic buffer" << std::endl;
+    switch (fork()) {
+    case -1 :   // Error
+                TRACE_L1(_T("Error: failed to create the remote process."));
+                ;
+    case 0  :   // Child
+                {
+                    const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+                    long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
+
+                    ASSERT(retval >= 0 || (retval == -1 && errno != ETIMEDOUT));
+
+                    TRACE_L1(_T("Child knows its parent is ready [true/false]: %s."), (retval ? _T("false") : _T("true")));
+
+                    sync =  status::ready;
+                    /*long*/ retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
+
+                    ASSERT(retval > 0);
+
+                    TRACE_L1(_T("Child has woken up %ld parent(s)."), retval);
+
+                    retval = munmap(sync_addr, sizeof(sync));
+
+                    ASSERT(retval == 0);
+
+                    BufferUsers<internalBufferSize, 0, 1> users(fileName); // 0 writer(s), 1 reader(s)
+
+                    bool result =    File(fileName).Exists()
+                                  && users.Enable()
+                                  && users.Start()
+                                  ;
+
+                    if (result) {
+                        SleepMs(totalRuntime);
+
+                        result = users.Stop() ;
+                    } else {
+                        TRACE_L1(_T("Error: Unable to access the CyclicBuffer."));
+                    }
+
+                    return result ? EXIT_SUCCESS : EXIT_FAILURE;
+                }
+    default :   // Parent
+                {
+                    // The underlying memory mapped file is created and opened via DataElementFile construction
+                    BufferCreator<mmemoryMappedFileRequestedSize, internalBufferSize> creator(fileName);
+
+                    bool result =    creator.Enable()
+                                  && File(fileName).Exists()
+#ifdef CREATOR_WRITE
+                                  && creator.Start()
+#endif
+                                  ;
+
+                    if (result) {
+#ifdef CREATOR_EXTRA_USERS
+                        BufferUsers<internalBufferSize, 1, 0> users(fileName); // 1 writer(s) 0, reader(s)
+
+                        if(   users.Enable()
+                           && users.Start()
+                        ) {
+#endif
+                            long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
+
+                            ASSERT(retval >= 0); // The child might nog be ready, thus include 0
+
+                            const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+                            retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
+
+                            ASSERT(retval >= 0 || (retval == -1 && errno != ETIMEDOUT));
+
+                            TRACE_L1(_T("Parent has been woken up by child [true/false]: %s."), (retval ? _T("false") : _T("true")));
+
+                            retval = munmap(sync_addr, sizeof(sync));
+
+                            ASSERT(retval == 0);
+
+                            TRACE_L1(_T("Shared cyclic buffer created and ready."));
+
+                            int status = 0;
+                            result = waitpid(-1 /* wait for any child */, &status, 0) == - 1;
+
+                            if (   result
+                                && errno == ECHILD
+                            ) {
+                                // No more children
+                                TRACE_L1(_T("No children left."));
+                                result = true;
+                            } else {
+                                // Possiblye loop over all children
+                                result = WIFEXITED(status);
+                            }
+
+#ifdef CREATOR_EXTRA_USERS
+                            result =    users.Stop()
+                                     && result
+                                     ;
+#endif
+
+#ifdef CREATOR_WRITE
+                            result =    creator.Stop()
+                                     && result
+#endif
+                                     ;
+                        } else {
+                            TRACE_L1(_T("Error: Unable to create shared cyclic buffer."));
+                        }
+
+                        return result ? EXIT_SUCCESS : EXIT_FAILURE;
+#ifdef CREATOR_EXTRA_USERS
+                    }
+#endif
+                }
     }
 
+    // The destructors may 'win' the race to the end
     return 0;
 }
