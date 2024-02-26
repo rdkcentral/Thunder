@@ -87,12 +87,17 @@ namespace Core {
             _refCountedHandle = new RefCountedHandle;
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
-            _refCountedHandle->_name = fileName;
-            TRACE_L1("Loaded library: %s", fileName);
+            if(fileName != nullptr) {
+                _refCountedHandle->_name = fileName;
+                TRACE_L1("Loaded library: %s", fileName);
+            }
+            else {
+                TRACE_L1("Loaded library with global symbols of the program");
+            }
         } else {
 #ifdef __LINUX__
             _error = dlerror();
-            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
+            TRACE_L1("Failed to load library: %s, error %s", (fileName != nullptr ? fileName : "Global Symbols"), _error.c_str());
 #endif
         }
     }
