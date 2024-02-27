@@ -174,8 +174,10 @@ namespace Core {
         template<typename... Args>
         ServiceType(Args&&... args)
             : ACTUALSERVICE(std::forward<Args>(args)...)
+            , _referenceLib()
         {
-            ServiceAdministrator::Instance().AddRef();
+        }
+        void LockLibrary() {
         }
 
     public:
@@ -189,13 +191,34 @@ namespace Core {
         {
             Core::ProxyType< ServiceType<ACTUALSERVICE> > object = Core::ProxyType< ServiceType<ACTUALSERVICE> >::Create(std::forward<Args>(args)...);
 
+            ASSERT (object.IsValid() == true);
+
+            TRACE_L1("Loading the reference library for: [%s] using [%s]", typeid(ACTUALSERVICE).name(), System::MODULE_NAME);
+            object->_referenceLib = Library(&System::MODULE_NAME);
+
             return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
         }
         ~ServiceType() override
         {
-            ServiceAdministrator::Instance().Release();
+            // We can not use the default destructor here a that 
+            // requires a destructor on the union member, but we 
+            // do not want a union destructor, so lets create our
+            // own!!!!
         }
 
+        void LockLibrary(const Library& library) {
+            ASSERT(_referenceLib.IsLoaded() == false);
+            _referenceLib = library;
+        }
+
+    protected:
+        // Destructed is a method called through SFINAE just before the memory 
+        // associated with the object is freed from a Core::ProxyObject. If this
+        // method is called, be aware that the destructor of the object has run
+        // to completion!!!
+        void Destructed() {
+            ServiceAdministrator::Instance().ReleaseLibrary(std::move(_referenceLib));
+        }
     private:
         template <typename INTERFACE>
         inline static INTERFACE* Extract(const Core::ProxyType< ServiceType<ACTUALSERVICE > >& object, const TemplateIntToType<false>&)
@@ -210,6 +233,14 @@ namespace Core {
             object->AddRef();
             return (object.operator->());
         }
+
+        // The union here is used to avoid the destruction of the _referenceLib during
+        // the destructor call. That is required to make sure that the whole object,
+        // the actual service, is first fully destructed before we offer it to the
+        // service destructor (done in the Destructed call). This avoids the unloading
+        // of the referenced library before the object (part of this library) is fully 
+        // destructed...
+        union { Library _referenceLib; };
     };
 
     template <typename TYPE>
@@ -223,45 +254,8 @@ namespace Core {
     template <typename ACTUALSERVICE>
     class PublishedServiceType : public IService {
     private:
-        template <typename SERVICE>
-        class Implementation : public ServiceType<SERVICE> {
-        public:
-            Implementation() = delete;
-            Implementation(Implementation<SERVICE>&&) = delete;
-            Implementation(const Implementation<SERVICE>&) = delete;
-            Implementation<SERVICE>& operator=(Implementation<SERVICE>&&) = delete;
-            Implementation<SERVICE>& operator=(const Implementation<SERVICE>&) = delete;
-
-            explicit Implementation(const Library& library)
-                : ServiceType<SERVICE>()
-                , _referenceLib(library) {
-            }
-            ~Implementation() override {
-                // We can not use the default destructor here a that 
-                // requires a destructor on the union member, but we 
-                // do not want a union destructor, so lets create our
-                // own!!!!
-            }
-
-        protected:
-            // Destructed is a method called through SFINAE just before the memory 
-            // associated with the object is freed from a Core::ProxyObject. If this
-            // method is called, be aware that the destructor of the object has run
-            // to completion!!!
-            void Destructed() {
-                ServiceAdministrator::Instance().ReleaseLibrary(std::move(_referenceLib));
-            }
-
-        private:
-            // The union here is used to avoid the destruction of the _referenceLib during
-            // the destructor call. That is required to make sure that the whole object,
-            // the actual service, is first fully destructed before we offer it to the
-            // service destructor (done in the Destructed call). This avoids the unloading
-            // of the referenced library before the object (part of this library) is fully 
-            // destructed...
-            union { Library _referenceLib; };
-        };
-
+        using Implementation = ServiceType<ACTUALSERVICE>;
+ 
         template <typename SERVICE>
         class Info : public IService::IMetadata {
         public:
@@ -321,9 +315,10 @@ namespace Core {
     public:
         void* Create(const Library& library, const uint32_t interfaceNumber) override {
             void* result = nullptr;
-            Core::ProxyType< Implementation<ACTUALSERVICE> > object = Core::ProxyType< Implementation<ACTUALSERVICE> >::Create(library);
+            Core::ProxyType< Implementation > object = Core::ProxyType< Implementation >::Create();
 
             if (object.IsValid() == true) {
+                object->LockLibrary(library);
                 // This query interface will increment the refcount of the Service at least to 1.
                 result = object->QueryInterface(interfaceNumber);
             }
