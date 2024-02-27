@@ -177,8 +177,6 @@ namespace Core {
             , _referenceLib()
         {
         }
-        void LockLibrary() {
-        }
 
     public:
         ServiceType(ServiceType<ACTUALSERVICE>&&) = delete;
