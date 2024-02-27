@@ -51,33 +51,43 @@ namespace Core {
 
             // Looks like we need to add a ref count by opening it..
             handle = ::LoadLibrary(filename);
+            if (handle != nullptr) {
+                // Seems we have an dynamic library opened..
+                _refCountedHandle = new RefCountedHandle;
+                _refCountedHandle->_referenceCount = 1;
+                _refCountedHandle->_handle = handle;
+                _refCountedHandle->_name = filename;
+    
+                TRACE_L1("Took a reference on library: %s", filename);
+            }
         }
-#endif
-#ifdef __LINUX__
+        if (_refCountedHandle == nullptr) {
+            _error = "Loading library by address failed!";
+            TRACE_L1("Failed to load library: %p, error %s", functionInLibrary, _error.c_str());
+        }
+#else
         void* handle = nullptr;
         Dl_info info;
         if (dladdr(functionInLibrary, &info) != 0) {
             handle = ::dlopen(info.dli_fname, RTLD_NOLOAD|RTLD_LAZY);
+            if (handle != nullptr) {
+                // Seems we have an dynamic library opened..
+                _refCountedHandle = new RefCountedHandle;
+                _refCountedHandle->_referenceCount = 1;
+                _refCountedHandle->_handle = handle;
+                _refCountedHandle->_name = info.dli_fname;
+    
+                TRACE_L1("Took a reference on library: %s", info.dli_fname);
+            }
         }
-#endif
-        if (handle != nullptr) {
-            // Seems we have an dynamic library opened..
-            _refCountedHandle = new RefCountedHandle;
-            _refCountedHandle->_referenceCount = 1;
-            _refCountedHandle->_handle = handle;
-            _refCountedHandle->_name = info.dli_fname;
-
-            TRACE_L1("Took a reference on library: %s", info.dli_fname);
-        }
-        else {
-#ifdef __LINUX__
+        if (_refCountedHandle == nullptr) {
             const char* result = dlerror();
             if (result != nullptr) {
                 _error = result;
                 TRACE_L1("Failed to load library: %p, error %s", functionInLibrary, _error.c_str());
             }
-#endif
         }
+#endif
     }
     Library::Library(const TCHAR fileName[])
         : _refCountedHandle(nullptr)
