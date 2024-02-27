@@ -87,8 +87,9 @@ namespace Core {
             _refCountedHandle = new RefCountedHandle;
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
-            _refCountedHandle->_name = fileName;
-            TRACE_L1("Loaded library: %s", fileName);
+            if(fileName != nullptr) {
+                _refCountedHandle->_name = fileName;
+            }
         } else {
 #ifdef __LINUX__
             _error = dlerror();

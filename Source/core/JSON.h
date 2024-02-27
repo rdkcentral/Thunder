@@ -1679,7 +1679,7 @@ namespace Core {
                 return (_default);
             }
 
-            inline operator const string() const
+            inline operator string() const
             {
                 return (Value());
             }
