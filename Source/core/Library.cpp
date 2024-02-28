@@ -28,15 +28,19 @@
 namespace WPEFramework {
 namespace Core {
 
+    static const TCHAR* GlobalSymbols = "Global Symbols";
+
     Library::Library()
         : _refCountedHandle(nullptr)
         , _error()
     {
     }
-    Library::Library(const void* functionInLibrary) {
-        TCHAR filename[512];
-
+    Library::Library(const void* functionInLibrary)
+        : _refCountedHandle(nullptr)
+        , _error() 
+    {
 #ifdef __WINDOWS__
+        TCHAR filename[256];
         HMODULE handle = nullptr;
         GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -47,29 +51,43 @@ namespace Core {
 
             // Looks like we need to add a ref count by opening it..
             handle = ::LoadLibrary(filename);
+            if (handle != nullptr) {
+                // Seems we have an dynamic library opened..
+                _refCountedHandle = new RefCountedHandle;
+                _refCountedHandle->_referenceCount = 1;
+                _refCountedHandle->_handle = handle;
+                _refCountedHandle->_name = filename;
+    
+                TRACE_L1("Took a reference on library: %s", filename);
+            }
         }
-#endif
-#ifdef __LINUX__
+        if (_refCountedHandle == nullptr) {
+            _error = "Loading library by address failed!";
+            TRACE_L1("Failed to load library: %p, error %s", functionInLibrary, _error.c_str());
+        }
+#else
         void* handle = nullptr;
         Dl_info info;
         if (dladdr(functionInLibrary, &info) != 0) {
-            _tcsncpy (filename, info.dli_fname, sizeof(filename) - 1);
-            handle = ::dlopen(filename, RTLD_NOLOAD);
+            handle = ::dlopen(info.dli_fname, RTLD_NOLOAD|RTLD_LAZY);
+            if (handle != nullptr) {
+                // Seems we have an dynamic library opened..
+                _refCountedHandle = new RefCountedHandle;
+                _refCountedHandle->_referenceCount = 1;
+                _refCountedHandle->_handle = handle;
+                _refCountedHandle->_name = info.dli_fname;
+    
+                TRACE_L1("Took a reference on library: %s", info.dli_fname);
+            }
+        }
+        if (_refCountedHandle == nullptr) {
+            const char* result = dlerror();
+            if (result != nullptr) {
+                _error = result;
+                TRACE_L1("Failed to load library: %p, error %s", functionInLibrary, _error.c_str());
+            }
         }
 #endif
-        if (handle != nullptr) {
-            // Seems we have an dynamic library opened..
-            _refCountedHandle = new RefCountedHandle;
-            _refCountedHandle->_referenceCount = 1;
-            _refCountedHandle->_handle = handle;
-            _refCountedHandle->_name = filename;
-        }
-        else {
-#ifdef __LINUX__
-            _error = dlerror();
-            TRACE_L1("Failed to load library: %s, error %s", filename, _error.c_str());
-#endif
-        }
     }
     Library::Library(const TCHAR fileName[])
         : _refCountedHandle(nullptr)
@@ -87,17 +105,21 @@ namespace Core {
             _refCountedHandle = new RefCountedHandle;
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
+
             if(fileName != nullptr) {
                 _refCountedHandle->_name = fileName;
                 TRACE_L1("Loaded library: %s", fileName);
             }
             else {
+                _refCountedHandle->_name = GlobalSymbols;
                 TRACE_L1("Loaded library with global symbols of the program");
             }
+
+            TRACE_L1("Loaded library: %s", fileName);
         } else {
 #ifdef __LINUX__
             _error = dlerror();
-            TRACE_L1("Failed to load library: %s, error %s", (fileName != nullptr ? fileName : "Global Symbols"), _error.c_str());
+            TRACE_L1("Failed to load library: %s, error %s", (fileName != nullptr ? fileName : GlobalSymbols), _error.c_str());
 #endif
         }
     }
@@ -115,6 +137,19 @@ namespace Core {
     Library::~Library()
     {
         Release();
+    }
+
+    Library& Library::operator=(Library&& RHS)
+    {
+        // Only do this if we have different libraries..
+        Release();
+
+        // Assigne the new handler
+        _refCountedHandle = RHS._refCountedHandle;
+        _error = RHS._error;
+        RHS._refCountedHandle = nullptr;
+
+        return (*this);
     }
 
     Library& Library::operator=(const Library& RHS)
@@ -176,21 +211,13 @@ namespace Core {
         if (_refCountedHandle != nullptr) {
             ASSERT(_refCountedHandle->_referenceCount > 0);
             if (Core::InterlockedDecrement(_refCountedHandle->_referenceCount) == 0) {
-
-                ModuleUnload function = reinterpret_cast<ModuleUnload>(LoadFunction(_T("ModuleUnload")));
-
-                if (function != nullptr) {
-                    // Cleanup class
-                    function();
-                }
-
 #ifdef __LINUX__
                 dlclose(_refCountedHandle->_handle);
 #endif
 #ifdef __WINDOWS__
                 ::FreeLibrary(_refCountedHandle->_handle);
 #endif
-                TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
+                TRACE_L1("Dropping reference on library: %s", _refCountedHandle->_name.c_str());
                 delete _refCountedHandle;
             }
             _refCountedHandle = nullptr;
