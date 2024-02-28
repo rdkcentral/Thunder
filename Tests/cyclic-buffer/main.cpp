@@ -37,7 +37,7 @@ namespace Tests {
 
 constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
 constexpr uint8_t lockTimeout = 100; // Milliseconds
-constexpr uint32_t setupTime = 1000; // Milliseconds
+constexpr uint32_t setupTime = 10; // Seconds
 constexpr uint32_t totalRuntime = 10000;//Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
 
@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
                     const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
                     long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
 
-                    ASSERT(retval >= 0 || (retval == -1 && errno != ETIMEDOUT));
+                    ASSERT(retval >= 0 || (retval == -1 && errno == ETIMEDOUT)); // Wake up or timeout
 
                     TRACE_L1(_T("Child knows its parent is ready [true/false]: %s."), (retval ? _T("false") : _T("true")));
 
@@ -459,7 +459,7 @@ int main(int argc, char* argv[])
                             const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
                             retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
 
-                            ASSERT(retval >= 0 || (retval == -1 && errno != ETIMEDOUT));
+                            ASSERT(retval >= 0 || (retval == -1 && errno == ETIMEDOUT)); // Wake up or timeout
 
                             TRACE_L1(_T("Parent has been woken up by child [true/false]: %s."), (retval ? _T("false") : _T("true")));
 
