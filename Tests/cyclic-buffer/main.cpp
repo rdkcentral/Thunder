@@ -38,7 +38,7 @@ namespace Tests {
 constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
 constexpr uint8_t lockTimeout = 100; // Milliseconds
 constexpr uint32_t setupTime = 1000; // Milliseconds
-constexpr uint32_t totalRuntime = /*10000;*/Core::infinite; // Milliseconds
+constexpr uint32_t totalRuntime = 10000;//Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
 
 template <size_t N>
@@ -391,8 +391,10 @@ int main(int argc, char* argv[])
 
     switch (fork()) {
     case -1 :   // Error
-                TRACE_L1(_T("Error: failed to create the remote process."));
-                ;
+                {
+                    TRACE_L1(_T("Error: failed to create the remote process."));
+                    break;
+                }
     case 0  :   // Child
                 {
                     const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
@@ -503,6 +505,5 @@ int main(int argc, char* argv[])
                 }
     }
 
-    // The destructors may 'win' the race to the end
-    return 0;
+    return EXIT_FAILURE;
 }
