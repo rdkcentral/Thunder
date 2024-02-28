@@ -314,12 +314,16 @@ void ScheduleJob()
         }
 ```
 
-Here is example how to use workerpool methods to schedule jobs, code can be copied and compiled to see how it works in practice.
+Here is example how to use workerpool methods to schedule jobs, code can be copied and compiled to see how it works in practice. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be `COMPLETED`, job three should be `CANCELED`.
+
+!!!Note
+    `Source/core/core.h` header is needed to compile and run code!
 ```cpp
 #include <chrono>
 #include <thread>
 #include "core.h"
 
+// Test job class
 class TestJob : public Core::IDispatch
 {
     public:
@@ -367,15 +371,16 @@ void CreateAndSubmitJob()
     Core::Workerpool workerpool;
     workerpool.Join();
 
-    // Now we are creating 2 jobs
+    // Now we are creating and submiting job
     Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 0));
     workerpool.Submit(job);
 
     // Print job status to check if it is initiated
     std::cout << "Job status: " << job.GetStatus() << std::endl;
 
-    // Now run the job
+    // Now run the job and wait for it to complete
     workerpool.Run();
+    std::this_thread::sleep_for::(std::chrono::seconds(2));
 
     // Print job status to check if it is completed
     std::cout << "Job status: " << job.GetStatus() << std::endl;
@@ -384,7 +389,7 @@ void CreateAndSubmitJob()
 }
 
 // Creates three jobs and submits it in WorkerPool
-void ScheduleJob()
+void ScheduleJobs()
 {
     std::cout << "Starting second test" << std::endl;
 
@@ -416,7 +421,7 @@ void ScheduleJob()
 
     // Run jobs and revoke third one
     workerpool.Run();
-    uint32_t errorCode = workerpool.Revoke(job_three);
+    if(uint32_t errorCode = workerpool.Revoke(job_three) == 0) job_three.Cancelled();
 
     // Print error code to make sure job three was revoked 
     std::cout << "Job three error code: " << errorCode << std::endl;
@@ -430,11 +435,23 @@ void ScheduleJob()
     workerpool.Stop();
 }
 
-// Run both test in main
+// Run test of your choice
 int main() {
-
-    CreateAndSubmitJob();
-    ScheduleJob();
+    for(1)
+    {
+        std::cout << "Choose test to run: " << std::endl;
+        std::cout << "1 - Creating and submiting job" << std::endl;
+        std::cout << "2 - Scheduling jobs" << std::endl;
+        std::cout << "Press anything else to quit" << std::endl;
+        int input;
+        std::cin >> input;
+        switch(input)
+        {
+            case 1: CreateAndSubmitJob();
+            case 2: ScheduleJobs();
+            default: break;
+        }
+    }
 
     return 0;
 }
