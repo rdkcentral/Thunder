@@ -353,6 +353,8 @@ namespace Core {
         uint32_t head = 0;
         uint32_t offset = 0;
 
+        ASSERT(length > 0);
+
         while (!foundData) {
             oldTail = _administration->_tail;
             head = _administration->_head;
