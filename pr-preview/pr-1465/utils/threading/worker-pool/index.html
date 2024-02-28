@@ -2701,10 +2701,16 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 </code></pre></div></p>
+<p>Here is example how to use workerpool methods to schedule jobs, code can be copied and compiled to see how it works in practice. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be <code>COMPLETED</code>, job three should be <code>CANCELED</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>Source/core/core.h</code> header is needed to compile and run code!</p>
+</div>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;chrono&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;thread&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;core.h&quot;</span>
 
+<span class="c1">// Test job class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">TestJob</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IDispatch</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="k">public</span><span class="o">:</span>
@@ -2752,15 +2758,16 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Workerpool</span><span class="w"> </span><span class="n">workerpool</span><span class="p">;</span>
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Join</span><span class="p">();</span>
 
-<span class="w">    </span><span class="c1">// Now we are creating 2 jobs</span>
+<span class="w">    </span><span class="c1">// Now we are creating and submiting job</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">job_one</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">Core</span><span class="o">::</span><span class="n">IDispatch</span><span class="o">&gt;</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">TestJob</span><span class="o">&gt;</span><span class="p">(</span><span class="n">TestJob</span><span class="o">::</span><span class="n">Status</span><span class="w"> </span><span class="n">INITIATED</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Submit</span><span class="p">(</span><span class="n">job</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Print job status to check if it is initiated</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Job status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">GetStatus</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
-<span class="w">    </span><span class="c1">// Now run the job</span>
+<span class="w">    </span><span class="c1">// Now run the job and wait for it to complete</span>
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Run</span><span class="p">();</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="o">::</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">// Print job status to check if it is completed</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Job status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">GetStatus</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
@@ -2769,7 +2776,7 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="p">}</span>
 
 <span class="c1">// Creates three jobs and submits it in WorkerPool</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJob</span><span class="p">()</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJobs</span><span class="p">()</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Starting second test&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
@@ -2801,7 +2808,7 @@ In the following example, we have a function that is used to schedule a <code>Jo
 
 <span class="w">    </span><span class="c1">// Run jobs and revoke third one</span>
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Run</span><span class="p">();</span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job_three</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job_three</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">job_three</span><span class="p">.</span><span class="n">Cancelled</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// Print error code to make sure job three was revoked </span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Job three error code: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
@@ -2815,11 +2822,23 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Stop</span><span class="p">();</span>
 <span class="p">}</span>
 
-<span class="c1">// Run both test in main</span>
+<span class="c1">// Run test of your choice</span>
 <span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">    </span><span class="n">CreateAndSubmitJob</span><span class="p">();</span>
-<span class="w">    </span><span class="n">ScheduleJob</span><span class="p">();</span>
+<span class="w">    </span><span class="k">for</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Choose test to run: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;1 - Creating and submiting job&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;2 - Scheduling jobs&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Press anything else to quit&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">input</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cin</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">input</span><span class="p">;</span>
+<span class="w">        </span><span class="k">switch</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="n">CreateAndSubmitJob</span><span class="p">();</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="n">ScheduleJobs</span><span class="p">();</span>
+<span class="w">            </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
