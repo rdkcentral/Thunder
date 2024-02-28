@@ -377,17 +377,23 @@ int main(int argc, char* argv[])
     constexpr uint32_t internalBufferSize = 446;
 
     // The order is important, sync variable
-    enum class status : uint8_t {
+    enum status : uint8_t {
           uninitialized
         , initialized
         , ready
     };
 
-    status sync { status::uninitialized };
+    struct sync_wrapper {
+        status level;
+    }* sync;
 
-    void* sync_addr = mmap(nullptr, sizeof(sync), PROT_READ | PROT_WRITE, MAP_SHARED/*_VALIDATE*/ | MAP_ANONYMOUS, -1, 0);
+    void* sync_addr = mmap(nullptr, sizeof(sync_wrapper), PROT_READ | PROT_WRITE, MAP_SHARED/*_VALIDATE*/ | MAP_ANONYMOUS, -1, 0);
 
     ASSERT(sync_addr != MAP_FAILED);
+
+    sync = reinterpret_cast<struct sync_wrapper*>(sync_addr);
+
+    sync->level = status::uninitialized;
 
     switch (fork()) {
     case -1 :   // Error
@@ -398,24 +404,40 @@ int main(int argc, char* argv[])
     case 0  :   // Child
                 {
                     const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
-                    long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
 
-                    ASSERT(retval >= 0 || (retval == -1 && errno == ETIMEDOUT)); // Wake up or timeout
+                    long retval = 0;
+                    int state = 0;
 
-                    TRACE_L1(_T("Child knows its parent is ready [true/false]: %s."), (retval ? _T("false") : _T("true")));
+                    do {
+                        retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
+                        state = errno;
+                    } while ((    retval == -1
+                               && (   (state & ETIMEDOUT) ==  ETIMEDOUT
+                                     || (state & EAGAIN)  ==  EAGAIN
+                                  )
+                             )
+                             && sync->level != status::initialized
+                            );
 
-                    sync =  status::ready;
+                    ASSERT(retval >= 0 || (retval == -1 && (state & (ETIMEDOUT | EAGAIN)) == 0)); // 0 == woken up, timeout or try again later
+
+                    // ETIMEDOUT : The parent is not yet ready
+                    // EAGAIN    : The handshake between parent and (another) child has been completed as the value has already been altered
+
+                    TRACE_L1(_T("Child knows its parent is ready [true/false]: %s."), retval == 0 ? _T("true") : _T("false"));
+
+                    BufferUsers<internalBufferSize, 0, 1> users(fileName); // 0 writer(s), 1 reader(s)
+
+                    sync->level = status::ready;
                     /*long*/ retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
 
-                    ASSERT(retval > 0);
+                    ASSERT(retval >= 0); // The parent might already be ready
 
                     TRACE_L1(_T("Child has woken up %ld parent(s)."), retval);
 
                     retval = munmap(sync_addr, sizeof(sync));
 
                     ASSERT(retval == 0);
-
-                    BufferUsers<internalBufferSize, 0, 1> users(fileName); // 0 writer(s), 1 reader(s)
 
                     bool result =    File(fileName).Exists()
                                   && users.Enable()
@@ -452,16 +474,33 @@ int main(int argc, char* argv[])
                            && users.Start()
                         ) {
 #endif
+                            sync->level = status::initialized;
                             long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
 
-                            ASSERT(retval >= 0); // The child might nog be ready, thus include 0
+                            ASSERT(retval >= 0); // The child might not be waiting at all
+
+                            TRACE_L1(_T("Parent has woken up %ld child(ren)."), retval);
 
                             const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
-                            retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
 
-                            ASSERT(retval >= 0 || (retval == -1 && errno == ETIMEDOUT)); // Wake up or timeout
+                            int state = 0;
 
-                            TRACE_L1(_T("Parent has been woken up by child [true/false]: %s."), (retval ? _T("false") : _T("true")));
+                            do {
+                                retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::initialized), &timeout, nullptr, 0);
+                                state = errno;
+                            } while ( retval == -1
+                                     && (   (state & ETIMEDOUT) ==  ETIMEDOUT
+                                         || (state & EAGAIN)  ==  EAGAIN
+                                        )
+                                     && sync->level != status::ready
+                                    );
+
+                            ASSERT(retval >= 0 || (retval == -1 && (state & (ETIMEDOUT | EAGAIN)) == 0)); // 0 == woken up, timeout or try again later
+
+                            // ETIMEDOUT : The child has not been ready
+                            // EAGAIN    : The handshake between parent and (another) child had been completed as the value already has been altered
+
+                            TRACE_L1(_T("Parent has been woken up by child [true/false]: %s."), retval == 0 ? _T("true") : _T("false"));
 
                             retval = munmap(sync_addr, sizeof(sync));
 
