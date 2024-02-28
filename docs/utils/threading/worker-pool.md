@@ -314,10 +314,8 @@ void ScheduleJob()
         }
 ```
 
-Here is example how to use workerpool methods to schedule jobs, code can be copied and compiled to see how it works in practice. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be `COMPLETED`, job three should be `CANCELED`.
+Here is example how to use workerpool methods to schedule jobs, code can be compiled and is part of Thunder tests in `Tests` directory. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be `COMPLETED`, job three should be `CANCELED`.
 
-!!!Note
-    `Source/core/core.h` header is needed to compile and run code!
 ```cpp
 #include <chrono>
 #include <thread>
