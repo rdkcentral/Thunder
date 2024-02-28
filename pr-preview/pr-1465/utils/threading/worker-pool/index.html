@@ -2768,6 +2768,7 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Stop</span><span class="p">();</span>
 <span class="p">}</span>
 
+<span class="c1">// Creates three jobs and submits it in WorkerPool</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">ScheduleJob</span><span class="p">()</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Starting second test&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
@@ -2802,7 +2803,7 @@ In the following example, we have a function that is used to schedule a <code>Jo
 <span class="w">    </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Run</span><span class="p">();</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">workerpool</span><span class="p">.</span><span class="n">Revoke</span><span class="p">(</span><span class="n">job_three</span><span class="p">);</span>
 
-<span class="w">    </span><span class="c1">// Print error code to make job was revoked </span>
+<span class="w">    </span><span class="c1">// Print error code to make sure job three was revoked </span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Job three error code: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">errorCode</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// Wait for jobs to complete and print their status</span>
