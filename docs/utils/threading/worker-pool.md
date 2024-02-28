@@ -314,6 +314,7 @@ void ScheduleJob()
         }
 ```
 
+Here is example how to use workerpool methods to schedule jobs, code can be copied and compiled to see how it works in practice.
 ```cpp
 #include <chrono>
 #include <thread>
