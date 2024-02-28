@@ -382,6 +382,7 @@ void CreateAndSubmitJob()
     workerpool.Stop();
 }
 
+// Creates three jobs and submits it in WorkerPool
 void ScheduleJob()
 {
     std::cout << "Starting second test" << std::endl;
@@ -416,7 +417,7 @@ void ScheduleJob()
     workerpool.Run();
     uint32_t errorCode = workerpool.Revoke(job_three);
 
-    // Print error code to make job was revoked 
+    // Print error code to make sure job three was revoked 
     std::cout << "Job three error code: " << errorCode << std::endl;
 
     // Wait for jobs to complete and print their status
