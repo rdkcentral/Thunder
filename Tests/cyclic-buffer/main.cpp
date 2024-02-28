@@ -74,7 +74,7 @@ public :
 
         // No way to recover if the lock is taken indefinitly, eg, Core::infinite
         do {
-        } while (!Wait(Thread::STOPPED, threadWorkerInterval));constexpr size_t internalBufferSize = 446;
+        } while (!Wait(Thread::STOPPED, threadWorkerInterval));
 
         _buffer.Close();
     }
@@ -223,7 +223,7 @@ public :
                 ASSERT(false);
             } else {
                 waitTimeForNextRun = std::rand() % threadWorkerInterval;
-            } 
+            }
         } else {
             if (status == Core::ERROR_TIMEDOUT) {
                 TRACE_L1(_T("Warning: writer lock timed out"));
@@ -310,14 +310,15 @@ template<size_t internalBufferSize, size_t W, size_t R>
 class BufferUsers
 {
 public :
+
     BufferUsers() = delete;
     BufferUsers(const BufferUsers&) = delete;
     BufferUsers& operator=(const BufferUsers&) = delete;
 
     BufferUsers(const std::string& fileName)
     {
-        for_each(_writers.begin(), _writers.end(), [&fileName] (std::unique_ptr<Writer<446>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))); });
-        for_each(_readers.begin(), _readers.end(), [&fileName] (std::unique_ptr<Reader<446>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))); });
+        for_each(_writers.begin(), _writers.end(), [&fileName] (std::unique_ptr<Writer<internalBufferSize>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))); });
+        for_each(_readers.begin(), _readers.end(), [&fileName] (std::unique_ptr<Reader<internalBufferSize>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))); });
     }
 
     ~BufferUsers()
@@ -336,8 +337,8 @@ public :
     {
         constexpr bool result = true;
 
-        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<446>>& writer){ writer->Run(); });
-        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<446>>& reader){ reader->Run(); });
+        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<internalBufferSize>>& writer){ writer->Run(); });
+        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<internalBufferSize>>& reader){ reader->Run(); });
 
         return result;
     }
@@ -346,8 +347,8 @@ public :
     {
         constexpr bool result = true;
 
-        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<446>>& writer){ writer->Stop(); });
-        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<446>>& reader){ reader->Stop(); });
+        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<internalBufferSize>>& writer){ writer->Stop(); });
+        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<internalBufferSize>>& reader){ reader->Stop(); });
 
         return result;
     }
@@ -476,7 +477,7 @@ int main(int argc, char* argv[])
                                 TRACE_L1(_T("No children left."));
                                 result = true;
                             } else {
-                                // Possiblye loop over all children
+                                // Loop over all children if more than one
                                 result = WIFEXITED(status);
                             }
 
