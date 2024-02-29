@@ -36,7 +36,7 @@ namespace WPEFramework {
 namespace Tests {
 
 constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
-constexpr uint8_t lockTimeout = 100; // Milliseconds
+constexpr uint32_t lockTimeout =  Core::infinite; // Milliseconds
 constexpr uint32_t setupTime = 10; // Seconds
 constexpr uint32_t totalRuntime = 10000;//Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
@@ -88,11 +88,9 @@ public :
 
     uint32_t Worker() override
     {
-        ASSERT(lockTimeout < Core::infinite);
-
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /* lockTimeout */ /* waiting time to give up lock */);
+        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, lockTimeout /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
@@ -200,11 +198,9 @@ public :
 
     uint32_t Worker() override
     {
-        ASSERT(lockTimeout < Core::infinite);
-
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, /* Core::infinite */ Core::infinite /* lockTimeout */ /* waiting time to give up lock */);
+        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, lockTimeout /* waiting time to give up lock */);
 
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
