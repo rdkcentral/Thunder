@@ -74,6 +74,7 @@ public :
 
         // No way to recover if the lock is taken indefinitly, eg, Core::infinite
         do {
+            _buffer.Alert();
         } while (!Wait(Thread::STOPPED, threadWorkerInterval));
 
         _buffer.Close();
@@ -105,8 +106,7 @@ public :
 
             if (status != Core::ERROR_NONE) {
                 TRACE_L1(_T("Error: reader unlock failed"));
-//                Stop();
-                ASSERT(false);
+                Stop();
             } else {
                 waitTimeForNextRun = std::rand() % threadWorkerInterval;
             }
@@ -115,7 +115,7 @@ public :
                 TRACE_L1(_T("Warning: reader lock timed out"));
             } else {
                 TRACE_L1(_T("Error: reader lock failed"));
-                ASSERT(false);
+                Stop();
             }
         }
 
@@ -185,6 +185,7 @@ public :
 
         // No way to recover if the lock is taken indefinitly, eg, Core::infinite
         do {
+            _buffer.Alert();
         } while (!Wait(Thread::STOPPED, threadWorkerInterval));
 
         _buffer.Close();
@@ -215,8 +216,7 @@ public :
 
             if (status != Core::ERROR_NONE) {
                 TRACE_L1(_T("Error: writer unlock failed"));
-//                Stop();
-                ASSERT(false);
+                Stop();
             } else {
                 waitTimeForNextRun = std::rand() % threadWorkerInterval;
             }
@@ -225,7 +225,7 @@ public :
                 TRACE_L1(_T("Warning: writer lock timed out"));
             } else {
                 TRACE_L1(_T("Error: writer lock failed"));
-                ASSERT(false);
+                Stop();
             }
         }
 
