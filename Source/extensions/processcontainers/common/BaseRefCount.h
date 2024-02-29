@@ -26,7 +26,7 @@
 
 
 
-#include "core/Sync.h"
+#include "../Module.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
