@@ -69,7 +69,7 @@ namespace ProxyStub {
                 do {
                    result = implementation->Release();
                    dropReleases--;
-                } while ((dropReleases != 0) && (result == Core::ERROR_NONE));
+                } while ((dropReleases != 0) && ((result == Core::ERROR_NONE) || (result == Core::ERROR_COMPOSIT_OBJECT)));
 
                 ASSERT(dropReleases == 0);
 

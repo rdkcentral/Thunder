@@ -102,8 +102,10 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    void Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
     {
+        bool removed = false;
+
         _adminLock.Lock();
 
         ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
@@ -114,9 +116,8 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                Core::IUnknown* unknown = (*entry)->Parent();
                 index->second.erase(entry);
-                unknown->Release();                
+                removed = true;
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
@@ -128,6 +129,8 @@ namespace RPC {
         }
 
         _adminLock.Unlock();
+
+        return removed;
     }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)

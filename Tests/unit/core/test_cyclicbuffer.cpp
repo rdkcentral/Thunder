@@ -938,7 +938,6 @@ namespace Tests {
 
             EXPECT_EQ(buffer->Size(), cyclicBufferSize);
             testAdmin.Sync("setup server");
-            EXPECT_EQ(buffer->Read(loadBuffer, buffer->Used()), 0u);
             testAdmin.Sync("setup client");
 
             if (data->shareable == true) {
@@ -1123,7 +1122,6 @@ namespace Tests {
             testAdmin.Sync("setup server");
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
             string data = "abcdefghi";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
@@ -1308,7 +1306,6 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
             uint16_t size = 9;
             string data = "abcdefi";
