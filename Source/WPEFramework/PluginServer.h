@@ -2025,6 +2025,7 @@ namespace PluginHost {
                     const string& postMortemPath,
                     const uint8_t softKillCheckWaitTime,
                     const uint8_t hardKillCheckWaitTime,
+                    const bool delegatedReleases,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
                     : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler))
                     , _parent(parent)
@@ -2045,6 +2046,11 @@ namespace PluginHost {
                     , _deadProxies()
                     , _job(*this)
                 {
+                    // Shall we enable the non-happy day functionality tp cleanup Release on behalf of unexpected
+                    // channel closes. Only for testing Buggy plugins, turn it off (false)!
+                    // STRONG RECOMMENDATION TO HAVE THIS ACTIVE (TRUE)!!!
+                    RPC::Administrator::Instance().DelegatedReleases(delegatedReleases);
+
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
                         TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
                     } else {
@@ -2583,6 +2589,7 @@ namespace PluginHost {
                     server._config.PostMortemPath(),
                     server._config.SoftKillCheckWaitTime(),
                     server._config.HardKillCheckWaitTime(),
+                    server._config.DelegatedReleases(),
                     _engine)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)

@@ -700,26 +700,20 @@ POP_WARNING()
                     switch (keyPress) {
                     case 'A': {
                         Core::JSON::ArrayType<Metadata::COMRPC> proxyChannels;
-                        RPC::Administrator::Instance().Visit([&](const Core::IPCChannel& channel, const RPC::Administrator::Proxies& proxies) {
-                                Metadata::COMRPC& entry(proxyChannels.Add());
-                                const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(&channel);
+                        RPC::Administrator::Instance().Visit([&](const Core::SocketPort* socketPort, const RPC::Administrator::Proxies& proxies) {
+                            Metadata::COMRPC& entry(proxyChannels.Add());
 
-                                if (comchannel != nullptr) {
-                                    string identifier = PluginHost::ChannelIdentifier(comchannel->Source());
-
-                                    if (identifier.empty() == false) {
-                                        entry.Remote = identifier;
-                                    }
-                                }
-
-                                for (const auto& proxy : proxies) {
-                                    Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-                                    info.Instance = proxy->Implementation();
-                                    info.Interface = proxy->InterfaceId();
-                                    info.Count = proxy->ReferenceCount();
-                                }
+                            if (socketPort != nullptr) {
+                                entry.Remote = PluginHost::ChannelIdentifier(*socketPort);
                             }
-                        );
+
+                            for (const auto& proxy : proxies) {
+                                Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
+                                info.Instance = proxy->Implementation();
+                                info.Interface = proxy->InterfaceId();
+                                info.Count = proxy->ReferenceCount();
+                            }
+                        });
                         Core::JSON::ArrayType<Metadata::COMRPC>::Iterator index(proxyChannels.Elements());
 
                         printf("COMRPC Links:\n");
