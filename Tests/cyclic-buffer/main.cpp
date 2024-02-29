@@ -263,7 +263,7 @@ private :
     Core::CyclicBuffer _buffer;
 };
 
-template<size_t mmemoryMappedFileRequestedSize, size_t internalBufferSize>
+template<size_t memoryMappedFileRequestedSize, size_t internalBufferSize>
 class BufferCreator
 {
 public :
@@ -273,9 +273,9 @@ public :
     BufferCreator& operator=(const BufferCreator&) = delete;
 
     BufferCreator(const std::string& fileName)
-        : _writer(fileName, mmemoryMappedFileRequestedSize)
+        : _writer(fileName, memoryMappedFileRequestedSize)
     {
-        static_assert(mmemoryMappedFileRequestedSize, "Specify mmemoryMappedFileRequestedSize > 0");
+        static_assert(memoryMappedFileRequestedSize, "Specify memoryMappedFileRequestedSize > 0");
     }
 
     bool Enable()
@@ -373,7 +373,7 @@ int main(int argc, char* argv[])
     // Add some randomness
     std::srand(std::time(nullptr));
 
-    constexpr uint32_t mmemoryMappedFileRequestedSize = 446;
+    constexpr uint32_t memoryMappedFileRequestedSize = 446;
     constexpr uint32_t internalBufferSize = 446;
 
     // The order is important, sync variable
@@ -457,12 +457,17 @@ int main(int argc, char* argv[])
     default :   // Parent
                 {
                     // The underlying memory mapped file is created and opened via DataElementFile construction
-                    BufferCreator<mmemoryMappedFileRequestedSize, internalBufferSize> creator(fileName);
+                    std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator;
 
-                    bool result =    creator.Enable()
+                    // Initially the pointers owns nothing
+                    if (creator.get() == nullptr) {
+                        creator = std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(fileName)));
+                    }
+
+                    bool result =    creator->Enable()
                                   && File(fileName).Exists()
 #ifdef CREATOR_WRITE
-                                  && creator.Start()
+                                  && creator->Start()
 #endif
                                   ;
 
@@ -529,7 +534,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef CREATOR_WRITE
-                            result =    creator.Stop()
+                            result =    creator->Stop()
                                      && result
 #endif
                                      ;
