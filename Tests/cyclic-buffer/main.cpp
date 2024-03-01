@@ -40,6 +40,7 @@ constexpr uint32_t lockTimeout =  Core::infinite; // Milliseconds
 constexpr uint32_t setupTime = 10; // Seconds
 constexpr uint32_t totalRuntime = 10000;//Core::infinite; // Milliseconds
 constexpr uint8_t sampleSizeInterval = 5;
+constexpr uint8_t forceUnlockRetryCount = 5;
 
 template <size_t N>
 class Reader : public Core::Thread {
@@ -51,6 +52,8 @@ public :
 
     Reader(const std::string& fileName)
         : Core::Thread{}
+        , _enabled{ false }
+        , _fileName { fileName }
         , _index{ 0 }
         , _buffer{
               fileName
@@ -73,18 +76,35 @@ public :
         Stop();
 
         // No way to recover if the lock is taken indefinitly, eg, Core::infinite
+        uint8_t count { forceUnlockRetryCount };
         do {
-            _buffer.Alert();
-        } while (!Wait(Thread::STOPPED, threadWorkerInterval));
+            if (count == 0) {
+                _buffer.Alert();
+            } else {
+                --count;
+            }
+        } while (!Wait(Thread::STOPPED | Thread::BLOCKED, threadWorkerInterval));
 
         _buffer.Close();
     }
 
     bool Enable()
     {
-        return    _buffer.IsValid()
-               && _buffer.Open() // It already should
-               ;
+        _enabled =     _enabled
+                    || (   _buffer.IsValid()
+                        && _buffer.Open() // It already should
+                        && Core::File(_fileName).Exists()
+                       )
+                    ;
+
+        ASSERT(_enabled);
+
+        return _enabled;
+    }
+
+    bool IsEnabled() const
+    {
+        return _enabled;
     }
 
     uint32_t Worker() override
@@ -99,7 +119,7 @@ public :
             if (   count
                 && Read(count) == count
                ) {
-                TRACE_L1(_T("Data read"));
+//                TRACE_L1(_T("Data read"));
             }
 
             status = _buffer.Unlock();
@@ -142,6 +162,10 @@ private :
         return read;
     }
 
+    bool _enabled;
+
+    const std::string _fileName;
+
     uint64_t _index;
 
     std::array<uint8_t, N> _output;
@@ -160,6 +184,8 @@ public :
 
     Writer(const std::string& fileName, uint32_t requiredSharedBufferSize)
         : Core::Thread{}
+        , _enabled{ false }
+        , _fileName { fileName }
         , _index{ 0 }
         , _buffer{
               fileName
@@ -184,17 +210,35 @@ public :
         Stop();
 
         // No way to recover if the lock is taken indefinitly, eg, Core::infinite
+        uint8_t count { forceUnlockRetryCount };
         do {
-            _buffer.Alert();
-        } while (!Wait(Thread::STOPPED, threadWorkerInterval));
+            if (count == 0) {
+                _buffer.Alert();
+            } else {
+                --count;
+            }
+        } while (!Wait(Thread::STOPPED | Thread::BLOCKED, threadWorkerInterval));
 
         _buffer.Close();
     }
 
-    bool Enable() {
-        return    _buffer.IsValid()
-               && _buffer.Open() // It already should
-               ;
+    bool Enable()
+    {
+        _enabled =     _enabled
+                    || (   _buffer.IsValid()
+                        && _buffer.Open() // It already should
+                        && Core::File(_fileName).Exists()
+                       )
+                    ;
+
+        ASSERT(_enabled);
+
+        return _enabled;
+    }
+
+    bool IsEnabled() const
+    {
+        return _enabled;
     }
 
     uint32_t Worker() override
@@ -209,14 +253,14 @@ public :
             if (   count
                 && Write(count) == count
                ) {
-                TRACE_L1(_T("Data written"));
+//                TRACE_L1(_T("Data written"));
             }
 
             status = _buffer.Unlock();
 
             if (status != Core::ERROR_NONE) {
                 TRACE_L1(_T("Error: writer unlock failed"));
-                Stop();
+                Block();
             } else {
                 waitTimeForNextRun = std::rand() % threadWorkerInterval;
             }
@@ -225,7 +269,7 @@ public :
                 TRACE_L1(_T("Warning: writer lock timed out"));
             } else {
                 TRACE_L1(_T("Error: writer lock failed"));
-                Stop();
+                Block();
             }
         }
 
@@ -251,6 +295,10 @@ private :
 
         return written;
     }
+
+    bool _enabled;
+
+    const std::string _fileName;
 
     uint64_t _index;
 
@@ -295,6 +343,11 @@ public :
         _writer.Stop();
 
         return result;
+    }
+
+    bool IsEnabled() const
+    {
+        return _writer.IsEnabled();
     }
 
 private :
@@ -374,9 +427,9 @@ int main(int argc, char* argv[])
 
     // The order is important, sync variable
     enum status : uint8_t {
-          uninitialized
-        , initialized
-        , ready
+          uninitialized = 1
+        , initialized = 2
+        , ready = 4
     };
 
     struct sync_wrapper {
@@ -391,159 +444,206 @@ int main(int argc, char* argv[])
 
     sync->level = status::uninitialized;
 
-    switch (fork()) {
-    case -1 :   // Error
-                {
-                    TRACE_L1(_T("Error: failed to create the remote process."));
-                    break;
-                }
-    case 0  :   // Child
-                {
-                    const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+    constexpr uint8_t maxChildren = 3;
 
-                    long retval = 0;
-                    int state = 0;
+    std::array<pid_t, maxChildren> children;
 
-                    do {
-                        retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
-                        state = errno;
-                    } while ((    retval == -1
-                               && (   (state & ETIMEDOUT) ==  ETIMEDOUT
-                                     || (state & EAGAIN)  ==  EAGAIN
-                                  )
-                             )
-                             && sync->level != status::initialized
-                            );
+    for (auto it = children.begin(), end = children.end(); it != end; it++) {
+        pid_t pid = fork();
 
-                    ASSERT(retval >= 0 || (retval == -1 && (state & (ETIMEDOUT | EAGAIN)) == 0)); // 0 == woken up, timeout or try again later
+        // Format specifier %ld, pid_t, gettid() and getpid()
+        static_assert(sizeof(pid_t) <= sizeof(long), "Specify a more suitable formmat specifier for pid_t.");
 
-                    // ETIMEDOUT : The parent is not yet ready
-                    // EAGAIN    : The handshake between parent and (another) child has been completed as the value has already been altered
-
-                    TRACE_L1(_T("Child knows its parent is ready [true/false]: %s."), retval == 0 ? _T("true") : _T("false"));
-
-                    BufferUsers<internalBufferSize, 0, 1> users(fileName); // 0 writer(s), 1 reader(s)
-
-                    sync->level = status::ready;
-                    /*long*/ retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
-
-                    ASSERT(retval >= 0); // The parent might already be ready
-
-                    TRACE_L1(_T("Child has woken up %ld parent(s)."), retval);
-
-                    retval = munmap(sync_addr, sizeof(sync));
-
-                    ASSERT(retval == 0);
-
-                    bool result =    File(fileName).Exists()
-                                  && users.Enable()
-                                  && users.Start()
-                                  ;
-
-                    if (result) {
-                        SleepMs(totalRuntime);
-
-                        result = users.Stop() ;
-                    } else {
-                        TRACE_L1(_T("Error: Unable to access the CyclicBuffer."));
+        switch (pid) {
+        case -1 :   // Error
+                    {
+                        TRACE_L1(_T("Error: failed to create the remote process."));
+                        break;
                     }
+        case 0  :   // Child
+                    {
+                        const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
 
-                    return result ? EXIT_SUCCESS : EXIT_FAILURE;
-                }
-    default :   // Parent
-                {
-                    // The underlying memory mapped file is created and opened via DataElementFile construction
-                    std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator;
+                        long retval = 0;
+                        int state = 0;
 
-                    // Initially the pointers owns nothing
-                    if (creator.get() == nullptr) {
-                        creator = std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(fileName)));
-                    }
-
-                    bool result =    creator->Enable()
-                                  && File(fileName).Exists()
-#ifdef CREATOR_WRITE
-                                  && creator->Start()
-#endif
-                                  ;
-
-                    if (result) {
-#ifdef CREATOR_EXTRA_USERS
-                        BufferUsers<internalBufferSize, 1, 0> users(fileName); // 1 writer(s) 0, reader(s)
-
-                        if(   users.Enable()
-                           && users.Start()
-                        ) {
-#endif
-                            sync->level = status::initialized;
-                            long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
-
-                            ASSERT(retval >= 0); // The child might not be waiting at all
-
-                            TRACE_L1(_T("Parent has woken up %ld child(ren)."), retval);
-
-                            const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
-
-                            int state = 0;
-
-                            do {
-                                retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::initialized), &timeout, nullptr, 0);
+                        do {
+                            if (sync->level == status::uninitialized) {
+                                retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::uninitialized), &timeout, nullptr, 0);
                                 state = errno;
-                            } while ( retval == -1
-                                     && (   (state & ETIMEDOUT) ==  ETIMEDOUT
-                                         || (state & EAGAIN)  ==  EAGAIN
-                                        )
-                                     && sync->level != status::ready
-                                    );
-
-                            ASSERT(retval >= 0 || (retval == -1 && (state & (ETIMEDOUT | EAGAIN)) == 0)); // 0 == woken up, timeout or try again later
-
-                            // ETIMEDOUT : The child has not been ready
-                            // EAGAIN    : The handshake between parent and (another) child had been completed as the value already has been altered
-
-                            TRACE_L1(_T("Parent has been woken up by child [true/false]: %s."), retval == 0 ? _T("true") : _T("false"));
-
-                            retval = munmap(sync_addr, sizeof(sync));
-
-                            ASSERT(retval == 0);
-
-                            TRACE_L1(_T("Shared cyclic buffer created and ready."));
-
-                            int status = 0;
-                            result = waitpid(-1 /* wait for any child */, &status, 0) == - 1;
-
-                            if (   result
-                                && errno == ECHILD
-                            ) {
-                                // No more children
-                                TRACE_L1(_T("No children left."));
-                                result = true;
-                            } else {
-                                // Loop over all children if more than one
-                                result = WIFEXITED(status);
                             }
+                        } while ((    retval == -1
+                                   && (   (state & ETIMEDOUT) ==  ETIMEDOUT
+                                         || (state & EAGAIN)  ==  EAGAIN
+                                      )
+                                 )
+                                 && sync->level != status::initialized
+                                );
 
-#ifdef CREATOR_EXTRA_USERS
-                            result =    users.Stop()
-                                     && result
-                                     ;
-#endif
+                        ASSERT(retval >= 0 || sync->level != status::uninitialized); // 0 == woken up or parent already ready
 
-#ifdef CREATOR_WRITE
-                            result =    creator->Stop()
-                                     && result
-#endif
-                                     ;
+                        // ETIMEDOUT : The parent is not yet ready
+                        // EAGAIN    : The handshake between parent and (another) child has been completed as the value has already been altered
+
+                        TRACE_L1(_T("Child %ld knows its parent is ready [true/false]: %s."), getpid(), sync->level != status::uninitialized ? _T("true") : _T("false"));
+
+                        BufferUsers<internalBufferSize, 0, 1> users(fileName); // 0 writer(s), 1 reader(s)
+
+                        retval = 0;
+
+                        if (   sync->level == status::initialized
+                            && sync->level != status::ready
+                           ) {
+                            sync->level = status::ready;
+                            /*long*/ retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
+                        }
+
+                        ASSERT(retval >= 0); // The parent might already be ready
+
+                        TRACE_L1(_T("Child %ld has woken up %ld parent(s)."), getpid(), retval);
+
+                        retval = munmap(sync_addr, sizeof(sync));
+
+                        ASSERT(retval == 0);
+
+                        bool result =    File(fileName).Exists()
+                                      && users.Enable()
+                                      && users.Start()
+                                      ;
+
+                        if (result) {
+                            SleepMs(totalRuntime);
+
+                            result = users.Stop();
                         } else {
-                            TRACE_L1(_T("Error: Unable to create shared cyclic buffer."));
+                            TRACE_L1(_T("Error: Unable to access the CyclicBuffer."));
                         }
 
                         return result ? EXIT_SUCCESS : EXIT_FAILURE;
-#ifdef CREATOR_EXTRA_USERS
                     }
-#endif
-                }
+        default :   // Parent
+                    {
+                        // Keep track of conceived children
+                        *it = pid;
+                    }
+        }
     }
 
-    return EXIT_FAILURE;
+    // More parenting
+
+    // The underlying memory mapped file will be created and opened via DataElementFile construction
+    std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator { std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(fileName))) };
+
+    bool result =    creator.get() != nullptr
+                  && creator->Enable()
+                  && creator->IsEnabled()
+#ifdef CREATOR_WRITE
+                  && creator->Start()
+#endif
+                  ;
+
+    if (result) {
+        TRACE_L1(_T("'creator' and shared cyclic buffer ready."));
+
+#ifdef CREATOR_EXTRA_USERS
+        BufferUsers<internalBufferSize, 1, 0> users(fileName); // 1 writer(s) 0, reader(s)
+
+        result =    users.Enable()
+                 && users.Start()
+                 ;
+
+        if (result) {
+#endif
+            sync->level = status::initialized;
+            long retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAKE, static_cast<uint32_t>(std::numeric_limits<int>::max()) /* INT_MAX,  number of waiters to wake up */, nullptr, 0, 0);
+
+            ASSERT(retval >= 0); // The child might not be waiting at all
+
+            TRACE_L1(_T("Parent %ld has woken up %ld child(ren)."), gettid(), retval);
+
+            const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+
+            retval = 0;
+            int state = 0;
+
+            do {
+                if (sync->level == status::initialized) {
+                    retval = syscall(SYS_futex, reinterpret_cast<uint32_t*>(sync_addr), FUTEX_WAIT, static_cast<uint32_t>(status::initialized), &timeout, nullptr, 0);
+                    state = errno;
+                }
+            } while ( retval == -1
+                     && (   (state & ETIMEDOUT) ==  ETIMEDOUT
+                         || (state & EAGAIN)  ==  EAGAIN
+                        )
+                     && sync->level != status::ready
+                    );
+
+            ASSERT(retval >= 0 || sync->level != status::initialized); // 0 == woken up or child ready
+
+            // ETIMEDOUT : The child has not been ready
+            // EAGAIN    : The handshake between parent and (another) child had been completed as the value already has been altered
+
+            TRACE_L1(_T("Parent %ld has been woken up by child [true/false]: %s."), gettid(), retval == 0 ? _T("true") : _T("false"));
+
+            retval = munmap(sync_addr, sizeof(sync));
+
+            ASSERT(retval == 0);
+
+            result = true;
+
+            // Reap in order
+            for (auto it = children.begin(), end = children.end(); it != end; it++) {
+                int status = 0;
+
+//                pid_t pid = waitpid(-1 /* wait for child */, &status, 0); // Wait out of order
+                pid_t pid = waitpid(*it /* wait for child */, &status, 0); // Wait in order
+
+                switch (pid) {
+                case -1 :   // No more children / child has died
+                            if (errno == ECHILD) {
+                                TRACE_L1(_T("Child %ld is not our offspring."), pid);
+                            }
+                            result = false;
+                            break;
+                case 0  :   // Child has not changed state, see WNOHANG
+                            break;
+                default :   // Child's pid
+                            result = false;
+
+                            if (WIFEXITED(status)) {
+                                TRACE_L1(_T("Child %ld died NORMALLY with status %ld."), pid, WEXITSTATUS(status));
+                                result =    result
+                                         && true;
+                            } else if (WIFSIGNALED(status)) {
+                                TRACE_L1(_T("Child %ld died ABNORMALLY due to signal %ld."), pid, WTERMSIG(status));
+                            } else if (WIFSTOPPED(status)) {
+                                TRACE_L1(_T("Child %ld died ABNORMALLY due to stop signal %ld."), pid, WSTOPSIG(status));
+                            } else if (errno != EAGAIN) {// pid non-blocking
+                                TRACE_L1(_T("Child %ld died ABNORMALLY."), pid);
+                            } else {
+                                result = true;
+                            }
+                }
+            }
+
+#ifdef CREATOR_EXTRA_USERS
+        result =    users.Stop()
+                 && result
+                 ;
+        } else {
+            TRACE_L1(_T("Error: Unable to start 'extra users'."))
+        }
+#endif
+
+#ifdef CREATOR_WRITE
+        result =    creator->Stop()
+                 && result
+                 ;
+#endif
+
+    } else {
+        TRACE_L1(_T("Error: 'creator' and shared cyclic buffer unavailable."));
+    }
+
+    return result ? EXIT_SUCCESS : EXIT_FAILURE;
 }
