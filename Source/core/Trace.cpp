@@ -22,8 +22,6 @@
 #include "Sync.h"
 #include "TextFragment.h"
 #include "Trace.h"
-#include <pthread.h>
-
 
 namespace WPEFramework {
 namespace Core {
