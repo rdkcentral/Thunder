@@ -96,14 +96,20 @@ namespace Core {
         };
 
 
+#ifdef __WINDOWS__
+    using address_family_t = ADDRESS_FAMILY;
+#else
+    using address_family_t = sa_family_t;
+#endif
+
 
         union SocketInfo {
 #ifdef __WINDOWS__
-            ADDRESS_FAMILY FamilyType;
+            address_family_t FamilyType;
 #elif defined(__APPLE__)
             struct __sockaddr_header saddr_hdr;
 #else
-            sa_family_t FamilyType;
+            address_family_t FamilyType;
 #endif
             struct ipv4_extended IPV4Socket;
             struct ipv6_extended IPV6Socket;
@@ -120,7 +126,7 @@ namespace Core {
 #endif
 
         public:
-            sa_family_t familyType() const
+            address_family_t familyType() const
             {
 #ifdef __APPLE__
                 return saddr_hdr.sa_family;
