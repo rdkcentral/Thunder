@@ -2046,7 +2046,7 @@ namespace PluginHost {
                     , _deadProxies()
                     , _job(*this)
                 {
-                    // Shall we enable the non-happy day functionality tp cleanup Release on behalf of unexpected
+                    // Shall we enable the non-happy day functionality to cleanup Release on behalf of unexpected
                     // channel closes. Only for testing Buggy plugins, turn it off (false)!
                     // STRONG RECOMMENDATION TO HAVE THIS ACTIVE (TRUE)!!!
                     RPC::Administrator::Instance().DelegatedReleases(delegatedReleases);
