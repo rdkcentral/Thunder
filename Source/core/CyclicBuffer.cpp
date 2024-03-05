@@ -58,6 +58,9 @@ namespace Core {
 
         if (_buffer.IsValid() == true) {
             _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
+
+            ASSERT(_administration != nullptr);
+
             _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
 
             if (bufferSize != 0) {
@@ -180,95 +183,96 @@ namespace Core {
             if (_buffer.IsValid() == true) {
                 _realBuffer = &(_buffer.Buffer()[sizeof(struct control) + actual_offset]);
                 _administration = reinterpret_cast<struct control*>(&(_buffer.Buffer()[actual_offset]));
-            }
 
-            if (initiator == true) {
+                ASSERT(_administration != nullptr);
 
+                if (initiator == true) {
 #ifndef __WINDOWS__
-                pthread_condattr_t cond_attr;
+                    pthread_condattr_t cond_attr;
 
-                // default values
-                int ret = pthread_condattr_init(&cond_attr);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    // default values
+                    int ret = pthread_condattr_init(&cond_attr);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                pthread_mutexattr_t mutex_attr;
+                    pthread_mutexattr_t mutex_attr;
 
-                // default values
-                ret = pthread_mutexattr_init(&mutex_attr);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    // default values
+                    ret = pthread_mutexattr_init(&mutex_attr);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                // enable access for threads, also in different processes
-                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    // enable access for threads, also in different processes
+                    ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
 #ifdef __DEBUG__
-                ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                    ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+                    ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #endif
 
-                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
-                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
+                    ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                    ASSERT(ret ==0); DEBUG_VARIABLE(ret);
 #endif
 
-                std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
-                std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
-                std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
-                std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
-                _administration->_lockPID = 0;
-                _administration->_size = static_cast<uint32_t>(actual_bufferSize - sizeof(struct control));
+                    std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
+                    std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
+                    std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
+                    std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
+                    _administration->_lockPID = 0;
+                    _administration->_size = static_cast<uint32_t>(actual_bufferSize - sizeof(struct control));
 
-                _administration->_reserved = 0;
-                _administration->_reservedWritten = 0;
+                    _administration->_reserved = 0;
+                    _administration->_reservedWritten = 0;
 #ifndef __WINDOWS__
-                std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
+                    std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
 #else
-                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
+                    std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
 #endif
 
-                _administration->_tailIndexMask = 1;
-                _administration->_roundCountModulo = 1L << 31;
-                while (_administration->_tailIndexMask < _administration->_size) {
-                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
-                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
-                }
-
-                // Signal mutex and condition variable are initialized and ready to be used
-#ifdef __POSIX__
-                // Assume first data member is a uint16_t
-                // Hint: C++20 has std::is_layout_compatible
-                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
-                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
-                ) {
-                    std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::INITIALIZED));
-
-                    long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAKE, std::numeric_limits<int>::max() /* INT_MAX, number of waiters to wake up */, nullptr, 0, 0);
-                    ASSERT(err != 1 /* number of waiters woken up */); DEBUG_VARIABLE(err);
-                }
-#endif
-            } else {
-#ifdef __POSIX__
-                if (   std::is_standard_layout<std::atomic<uint16_t>>::value
-                    && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
-                ) {
-                    const struct timespec timeout = {.tv_sec = STARTUP_TIMEOUT, .tv_nsec = 0};
-
-                    const uint16_t value = _administration->_state.load();
-
-                    if ((value & INITIALIZED) != INITIALIZED) {
-                        // wait until value changes or timeout expires
-                        long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
-
-                        // ETIMEDOUT is allowed
-                        ASSERT(err == 0 || (err != 0 /* see errno */ && errno == ETIMEDOUT)); DEBUG_VARIABLE(err);
+                    _administration->_tailIndexMask = 1;
+                    _administration->_roundCountModulo = 1L << 31;
+                    while (_administration->_tailIndexMask < _administration->_size) {
+                        _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
+                        _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
                     }
-                }
+
+                    // Signal mutex and condition variable are initialized and ready to be used
+#ifdef __POSIX__
+                    // Assume first data member is a uint16_t
+                    // Hint: C++20 has std::is_layout_compatible
+                    if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                        && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                    ) {
+                        std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::INITIALIZED));
+
+                        long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAKE, std::numeric_limits<int>::max() /* INT_MAX, number of waiters to wake up */, nullptr, 0, 0);
+                        ASSERT(err != 1 /* number of waiters woken up */); DEBUG_VARIABLE(err);
+                    }
 #endif
+                } else {
+#ifdef __POSIX__
+                    if (   std::is_standard_layout<std::atomic<uint16_t>>::value
+                        && sizeof(uint16_t) == sizeof(std::atomic<uint16_t>)
+                    ) {
+                        const struct timespec timeout = {.tv_sec = STARTUP_TIMEOUT, .tv_nsec = 0};
+
+                        const uint16_t value = _administration->_state.load();
+
+                        if ((value & INITIALIZED) != INITIALIZED) {
+                            // wait until value changes or timeout expires
+                            long err = syscall(SYS_futex, reinterpret_cast<uint16_t*>(&_administration->_state), FUTEX_WAIT, value, &timeout, nullptr, 0);
+
+                            // ETIMEDOUT is allowed
+                            ASSERT(err == 0 || (err != 0 /* see errno */ && errno == ETIMEDOUT)); DEBUG_VARIABLE(err);
+                        }
+                    }
+#endif
+                }
             }
         }
     }
@@ -302,6 +306,8 @@ namespace Core {
     void CyclicBuffer::AdminLock()
     {
 #ifdef __POSIX__
+        ASSERT(_administration != nullptr);
+
         int ret = pthread_mutex_lock(&(_administration->_mutex));
         ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
@@ -332,6 +338,8 @@ namespace Core {
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
             AdminLock();
+
+//            ASSERT(_administration != nullptr);
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
                 AdminUnlock();
@@ -366,6 +374,8 @@ namespace Core {
 #ifdef __POSIX__
             AdminLock();
 
+//            ASSERT(_administration != nullptr);
+
             int err = pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
             ASSERT(err == 0); DEBUG_VARIABLE(err);
 
@@ -380,6 +390,8 @@ namespace Core {
     void CyclicBuffer::AdminUnlock()
     {
 #ifdef __POSIX__
+        ASSERT(_administration != nullptr);
+
         int ret = pthread_mutex_unlock(&(_administration->_mutex));
         ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
@@ -391,7 +403,9 @@ namespace Core {
     }
 
     void CyclicBuffer::Reevaluate()
-    {
+    { 
+        ASSERT(_administration != nullptr);
+
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
@@ -419,6 +433,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
     {
+        ASSERT(_administration != nullptr);
+
         ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
 
@@ -501,6 +517,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
+        ASSERT(_administration != nullptr);
+
         ASSERT(length < _administration->_size);
         ASSERT(IsValid() == true);
 
@@ -585,6 +603,8 @@ namespace Core {
 
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
+        ASSERT(_administration != nullptr);
+
         uint32_t oldTail = _administration->_tail;
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
@@ -618,6 +638,8 @@ namespace Core {
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
 
+        ASSERT(_administration != nullptr);
+
         if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
@@ -650,6 +672,8 @@ namespace Core {
         do {
             AdminLock();
 
+//            ASSERT(_administration != nullptr);
+
             if ((((_administration->_state.load()) & state::LOCKED) != state::LOCKED) && ((dataPresent == false) || (Used() > 0))) {
                 std::atomic_fetch_or(&(_administration->_state), static_cast<uint16_t>(state::LOCKED));
 
@@ -663,6 +687,8 @@ namespace Core {
                 result = Core::ERROR_NONE;
             } else if (timeLeft > 0) {
                 AdminUnlock();
+
+                ASSERT(_administration != nullptr);
 
                 _administration->_agents++;
 
@@ -689,6 +715,8 @@ namespace Core {
     {
         uint32_t result(Core::ERROR_ILLEGAL_STATE);
 
+        ASSERT(_administration != nullptr);
+
         ASSERT((_administration->_state.load() & state::LOCKED) == state::LOCKED);
 
         AdminLock();
@@ -702,6 +730,8 @@ namespace Core {
             _administration->_lockPID = 0;
 
             AdminUnlock();
+
+            ASSERT(_administration != nullptr);
 
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
 
@@ -717,6 +747,7 @@ namespace Core {
 
     uint32_t CyclicBuffer::Peek(uint8_t buffer[], const uint32_t length) const
     {
+        ASSERT(_administration != nullptr);
         ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
 
