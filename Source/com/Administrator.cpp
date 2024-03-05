@@ -128,7 +128,6 @@ namespace RPC {
                 TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
             }
         } else {
-            // If it is no
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
         }
 
