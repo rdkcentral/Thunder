@@ -2088,10 +2088,10 @@ Here is an example of making sure a socket connection is opened in the OpenCDMAc
 <p>A client library dispose method should not call <code>Core::Singleton::Dispose()</code> but only clean up its own internal singletons. </p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-</div>
 <p><code>Core::Singleton::Dispose()</code> dispose of all singletons in the singletons list.</p>
-<p>Calling this method on a particular singleton will dispose of them all. Instead, we should use <code>Core::SingletonType&lt;&gt;::Dispose()</code> with the appropriate type of singleton we want to dispose of specified, or write our own <code>Dispose()</code> which will not dispose of all remaining singletons.
-Below is an example of how you SHOULD NOT dispose of a singleton!
+</div>
+<p>Calling this method on a particular singleton will dispose of them all. Instead, we should use <code>Core::SingletonType&lt;&gt;::Dispose()</code> with the appropriate type of singleton we want to dispose of specified, or write our own <code>Dispose()</code> which will not dispose of all remaining singletons.</p>
+<p>Below is an example of how you SHOULD NOT dispose of a singleton!
 <div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">opencdm_dispose</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
 <span class="p">}</span>
