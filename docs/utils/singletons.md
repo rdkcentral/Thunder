@@ -25,9 +25,10 @@ When a singleton uses itself (via the instance method) or any other singleton du
     
 A client library dispose method should not call `Core::Singleton::Dispose()` but only clean up its own internal singletons. 
 !!!warning
- `Core::Singleton::Dispose()` dispose of all singletons in the singletons list.
+    `Core::Singleton::Dispose()` dispose of all singletons in the singletons list.
 
 Calling this method on a particular singleton will dispose of them all. Instead, we should use `Core::SingletonType<>::Dispose()` with the appropriate type of singleton we want to dispose of specified, or write our own `Dispose()` which will not dispose of all remaining singletons.
+
 Below is an example of how you SHOULD NOT dispose of a singleton!
 ```cpp
 void opencdm_dispose() {
