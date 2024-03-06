@@ -26,7 +26,7 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-static int g_shared = 1;
+static int g_shared = 2; // Change it back to 1 after fixing and enabling simple_criticalsection test
 
 class ThreadClass : public Core::Thread {
 public:
