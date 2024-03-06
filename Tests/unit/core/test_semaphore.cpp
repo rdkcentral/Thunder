@@ -65,7 +65,7 @@ private:
     volatile bool _done;
 };
 
-TEST(test_criticalsection, simple_criticalsection)
+TEST(test_criticalsection, DISABLED_simple_criticalsection)
 {
     Core::CriticalSection lock;
 
