@@ -28,12 +28,15 @@ ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_S
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::IController INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/jsonrpc" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+JsonGenerator(CODE NAMESPACE WPEFramework::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
+file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
 
 add_library(${TARGET} SHARED
         Channel.cpp
         JSONRPC.cpp
-        MetaData.cpp
+        Metadata.cpp
         Module.cpp
         Service.cpp
         Shell.cpp
@@ -41,6 +44,7 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        ${JSON_ENUM_SOURCES}
         )
 
 file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
@@ -63,7 +67,7 @@ set(PUBLIC_HEADERS
         IDispatcher.h
         SubSystem.h
         JSONRPC.h
-        MetaData.h
+        Metadata.h
         plugins.h
         Request.h
         Service.h
@@ -92,6 +96,10 @@ if (WARNING_REPORTING)
             )
 endif()
 
+# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
+# as usage of those deprecated methods is valid here
+target_compile_options(${TARGET_PROXYSTUBS} PRIVATE -Wno-deprecated-declarations)
+
 target_link_libraries(${TARGET_PROXYSTUBS}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
@@ -102,7 +110,7 @@ target_link_libraries(${TARGET_PROXYSTUBS}
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
@@ -140,6 +148,10 @@ install(
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+)
+
+install(
+        FILES ${JSON_DATA_HEADERS} DESTINATION include/${NAMESPACE}/plugins/json COMPONENT devel # for mac
 )
 
 install(

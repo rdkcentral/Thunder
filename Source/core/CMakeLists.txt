@@ -128,6 +128,7 @@ set(PUBLIC_HEADERS
         SystemInfo.h
         TextFragment.h
         TextReader.h
+        TextStreamRedirectType.h
         Thread.h
         ThreadPool.h
         Time.h

@@ -1,0 +1,66 @@
+{
+    "version": "1.0.",
+    "port": 55555,
+    "binding": "127.0.0.1",
+    "ipv6": false,
+    "idletime": 180,
+    "softkillcheckwaittime": 10,
+    "hardkillcheckwaittime": 4,
+    "persistentpath": "/home/bram/Projects/metrological/Thunder/install/var/wpeframework/WPEFramework",
+    "volatilepath": "/tmp",
+    "datapath": "/home/bram/Projects/metrological/Thunder/install/usr/share/WPEFramework",
+    "systempath": "/home/bram/Projects/metrological/Thunder/install/usr/lib/wpeframework/plugins",
+    "proxystubpath": "/home/bram/Projects/metrological/Thunder/install/usr/lib/wpeframework/proxystubs",
+    "postmortempath": "/opt/minidumps",
+    "redirect": "/Service/Controller/UI",
+    "communicator": "127.0.0.1:62000",
+    "process": {
+        "priority": 0,
+        "policy": "OTHER",
+        "oomadjust": 0,
+        "stacksize": 0
+    },
+    "exitreasons": [
+        "Failure",
+        "MemoryExceeded",
+        "WatchdogExpired"
+    ],
+    "plugins": [
+        {
+            "callsign": "Controller",
+            "configuration": {
+                "subsystems": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "messaging": {
+        "logging": {
+            "abbreviated": true,
+            "settings": [
+                {
+                    "category": "Notification",
+                    "enabled": false
+                }
+            ]
+        },
+        "tracing": {
+            "settings": [
+                {
+                    "category": "Fatal",
+                    "enabled": true
+                }
+            ]
+        },
+        "reporting": {
+            "abbreviated": true,
+            "settings": [
+                {
+                    "category": "TooLongWaitingForLock",
+                    "enabled": true
+                }
+            ]
+        }
+    }
+}

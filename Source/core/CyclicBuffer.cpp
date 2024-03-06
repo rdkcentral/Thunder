@@ -56,8 +56,35 @@ namespace Core {
             if (bufferSize != 0) {
 
                 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                pthread_condattr_t cond_attr;
+
+                // default values
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifdef __DEBUG__
+                ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
                 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -120,8 +147,35 @@ namespace Core {
             if (initiator == true) {
 
 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                pthread_condattr_t cond_attr;
+
+                // default values
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifdef __DEBUG__
+                ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -153,10 +207,11 @@ namespace Core {
     {
     }
 
-    bool CyclicBuffer::Validate() {
+    bool CyclicBuffer::Open()
+    {
         bool loaded = (_administration != nullptr);
 
-        if (loaded == false)  {
+        if (loaded == false) {
             loaded = _buffer.Load();
             if (loaded == true) {
                 _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
@@ -167,10 +222,18 @@ namespace Core {
         return (loaded);
     }
 
+    void CyclicBuffer::Close()
+    {
+        _buffer.Destroy();
+        _realBuffer = nullptr;
+        _administration = nullptr;
+    }
+
     void CyclicBuffer::AdminLock()
     {
 #ifdef __POSIX__
-        pthread_mutex_lock(&(_administration->_mutex));
+        int ret = pthread_mutex_lock(&(_administration->_mutex));
+        ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
 #ifdef __DEBUG__
         if (::WaitForSingleObjectEx(_mutex, 2000, FALSE) != WAIT_OBJECT_0) {
@@ -235,7 +298,8 @@ namespace Core {
     void CyclicBuffer::AdminUnlock()
     {
 #ifdef __POSIX__
-        pthread_mutex_unlock(&(_administration->_mutex));
+        int ret = pthread_mutex_unlock(&(_administration->_mutex));
+        ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
         ReleaseSemaphore(_mutex, 1, nullptr);
 #endif
@@ -288,6 +352,8 @@ namespace Core {
         uint32_t oldTail = 0;
         uint32_t head = 0;
         uint32_t offset = 0;
+
+        ASSERT(length > 0);
 
         while (!foundData) {
             oldTail = _administration->_tail;

@@ -4,7 +4,7 @@
     <ClCompile Include="Channel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaData.cpp">
+    <ClCompile Include="Metadata.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Service.cpp">
@@ -31,6 +31,21 @@
     <ClCompile Include="System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="json\JsonEnum_Configuration.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Discovery.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_LifeTime.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Metadata.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_SystemManagement.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -42,7 +57,7 @@
     <ClInclude Include="Configuration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MetaData.h">
+    <ClInclude Include="Metadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Module.h">
@@ -87,9 +102,6 @@
     <ClInclude Include="IDispatcher.h">
       <Filter>Interface Files</Filter>
     </ClInclude>
-    <ClInclude Include="IController.h">
-      <Filter>Interface Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -101,8 +113,16 @@
     <Filter Include="Interface Files">
       <UniqueIdentifier>{4ca8a196-74dd-4e20-98ef-051e5a446b67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{2ef8c592-a7e4-4c2e-9d00-d54599022486}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="IController.h">
+      <Filter>Interface Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

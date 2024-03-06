@@ -59,7 +59,7 @@ namespace PluginHost {
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
-        enum class startup : uint8_t {
+        enum class startmode : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
             ACTIVATED
@@ -208,11 +208,11 @@ namespace PluginHost {
         //! SystemRootPath: Set <config:systemrootpath>/
         virtual Core::hresult SystemRootPath(const string& systemRootPath) = 0;
 
-        //! Startup: <config:startup>/
-        virtual PluginHost::IShell::startup Startup() const = 0;
+        //! StartMode: <config:startmode>/
+        virtual PluginHost::IShell::startmode StartMode() const = 0;
 
-        //! Startup: Set<startup,autostart,resumed states>/
-        virtual Core::hresult Startup(const startup value) = 0;
+        //! StartMode: Set<startmode states>/
+        virtual Core::hresult StartMode(const startmode value) = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
@@ -315,11 +315,11 @@ namespace PluginHost {
 
             return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
-        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnablePersistentStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(PersistentPath(), permission, user, group));
         }
-        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnableVolatileStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
@@ -349,7 +349,7 @@ namespace PluginHost {
         }
 
     private:
-        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        inline uint32_t EnableStoragePath(const string& storagePath, uint16_t permission, const string& user, const string& group)
         {
             uint32_t result = Core::ERROR_NONE;
 

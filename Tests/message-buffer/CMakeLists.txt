@@ -1,4 +1,3 @@
-
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
@@ -16,27 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.10.3)
+add_executable(MessageBufferTest
+        Module.cpp        
+        main.cpp)
 
-project( PluginActivator )
+target_link_libraries(MessageBufferTest
+        PRIVATE
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+        )
 
-set( CMAKE_CXX_STANDARD 11 )
+set_target_properties(MessageBufferTest PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        )
 
-add_executable(${PROJECT_NAME}
-    source/Module.cpp
-    source/main.cpp
-    source/COMRPCStarter.cpp
-)
-
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    CompileSettingsDebug::CompileSettingsDebug
-    ${NAMESPACE}Core::${NAMESPACE}Core
-    ${NAMESPACE}COM::${NAMESPACE}COM
-    ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-)
-
-install(
-    TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
-)
+install(TARGETS MessageBufferTest DESTINATION bin)

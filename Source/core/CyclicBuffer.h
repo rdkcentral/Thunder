@@ -169,7 +169,7 @@ namespace Core {
         {
             return (_buffer.Group(groupName));
         }
-        inline uint32_t Permission(uint32_t mode) const
+        inline uint32_t Permission(uint16_t mode) const
         {
             return (_buffer.Permission(mode));
         }
@@ -211,7 +211,8 @@ namespace Core {
         {
             return (_administration->_size);
         }        
-        bool Validate();
+        bool Open();
+        void Close();
       
         // THREAD SAFE
         // If there are threads blocked in the Lock, they can be relinquised by

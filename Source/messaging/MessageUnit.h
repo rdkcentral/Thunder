@@ -230,22 +230,28 @@ namespace WPEFramework {
                 static constexpr const TCHAR  DELIMITER = '|';
 
                 enum mode : uint8_t {
-                    BACKGROUND   = 0x01,
-                    DIRECT       = 0x02,
-                    ABBREVIATED  = 0x04
+                    BACKGROUND     = 0x01,
+                    DIRECT         = 0x02,
+                    ABBREVIATED    = 0x04,
+                    REDIRECT_OUT   = 0x08,
+                    REDIRECT_ERROR = 0x10
                 };
 
+            public:
                 /**
                  * @brief JSON Settings for all messages
                  */
-                class Config : public Core::JSON::Container {
-                private:
-                    class TracingSection : public Core::JSON::Container {
-                    private:
+                class EXTERNAL Config : public Core::JSON::Container {
+                public:
+                    class Section : public Core::JSON::Container {
+                    public:
                         class Entry : public Core::JSON::Container {
                         public:
                             Entry()
                                 : Core::JSON::Container()
+                                , Module()
+                                , Category()
+                                , Enabled(false)
                             {
                                 Add(_T("module"), &Module);
                                 Add(_T("category"), &Category);
@@ -258,13 +264,37 @@ namespace WPEFramework {
                                 Category = category;
                                 Enabled = enabled;
                             }
-                            Entry(const Entry& other)
-                                : Entry()
+                            Entry(Entry&& other)
+                                : Core::JSON::Container()
+                                , Module(other.Module)
+                                , Category(other.Category)
+                                , Enabled(other.Enabled)
                             {
-                                Module = other.Module;
-                                Category = other.Category;
-                                Enabled = other.Enabled;
+                                Add(_T("module"), &Module);
+                                Add(_T("category"), &Category);
+                                Add(_T("enabled"), &Enabled);
                             }
+                            Entry(const Entry& other)
+                                : Core::JSON::Container()
+                                , Module(other.Module)
+                                , Category(other.Category)
+                                , Enabled(other.Enabled)
+                            {
+                                Add(_T("module"), &Module);
+                                Add(_T("category"), &Category);
+                                Add(_T("enabled"), &Enabled);
+                            }
+                            Entry& operator=(Entry&& other)
+                            {
+                                if (&other != this) {
+                                    Module = other.Module;
+                                    Category = other.Category;
+                                    Enabled = other.Enabled;
+                                }
+                                
+                                return (*this);
+                            }
+ 
                             Entry& operator=(const Entry& other)
                             {
                                 if (&other != this) {
@@ -284,46 +314,22 @@ namespace WPEFramework {
                         };
 
                     public:
-                        TracingSection()
+                        Section(Section&& other) = delete;
+                        Section(const Section& other) = delete;
+                        Section& operator=(Section&& other) = delete;
+                        Section& operator=(const Section& other) = delete;
+
+                        Section()
                             : Core::JSON::Container()
-                            , Settings() {
+                            , Settings()
+                            , Abbreviated(true) {
                             Add(_T("settings"), &Settings);
+                            Add(_T("abbreviated"), &Abbreviated);
                         }
-                        ~TracingSection() = default;
-                        TracingSection(const TracingSection& other) = delete;
-                        TracingSection& operator=(const TracingSection& other) = delete;
+                        ~Section() = default;
 
                     public:
                         Core::JSON::ArrayType<Entry> Settings;
-                    };
-
-                    class LoggingSection : public TracingSection {
-                    public:
-                        LoggingSection()
-                            : TracingSection()
-                            , Abbreviated(true) {
-                            Add(_T("abbreviated"), &Abbreviated);
-                        }
-                        ~LoggingSection() = default;
-                        LoggingSection(const LoggingSection& other) = delete;
-                        LoggingSection& operator=(const LoggingSection& other) = delete;
-
-                    public:
-                        Core::JSON::Boolean Abbreviated;
-                    };
-
-                    class ReportingSection : public TracingSection {
-                    public:
-                        ReportingSection()
-                            : TracingSection()
-                            , Abbreviated(true) {
-                            Add(_T("abbreviated"), &Abbreviated);
-                        }
-                        ~ReportingSection() = default;
-                        ReportingSection(const ReportingSection& other) = delete;
-                        ReportingSection& operator=(const ReportingSection& other) = delete;
-
-                    public:
                         Core::JSON::Boolean Abbreviated;
                     };
 
@@ -333,19 +339,34 @@ namespace WPEFramework {
                         , Tracing()
                         , Logging()
                         , Reporting()
+                        , Port(0)
+                        , Path(_T("MessageDispatcher"))
+                        , Flush(false)
+                        , Out(true)
+                        , Error(true)
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
                         Add(_T("reporting"), &Reporting);
+                        Add(_T("path"), &Path);
+                        Add(_T("port"), &Port);
+                        Add(_T("flush"), &Flush);
+                        Add(_T("stdout"), &Out);
+                        Add(_T("stderr"), &Error);
                     }
                     ~Config() = default;
                     Config(const Config& other) = delete;
                     Config& operator=(const Config& other) = delete;
 
                 public:
-                    TracingSection Tracing;
-                    LoggingSection Logging;
-                    ReportingSection Reporting;
+                    Section Tracing;
+                    Section Logging;
+                    Section Reporting;
+                    Core::JSON::DecUInt16 Port;
+                    Core::JSON::String Path;
+                    Core::JSON::Boolean Flush;
+                    Core::JSON::Boolean Out;
+                    Core::JSON::Boolean Error;
                 };
 
             public:
@@ -358,7 +379,8 @@ namespace WPEFramework {
                     , _path()
                     , _identifier()
                     , _socketPort()
-                    , _mode()
+                    , _permission(0)
+                    , _mode(static_cast<mode>(0))
                 {
                 }
                 ~Settings() = default;
@@ -376,12 +398,24 @@ namespace WPEFramework {
                     return (_socketPort);
                 }
 
+                uint16_t Permission() const {
+                    return (_permission);
+                }
+
                 bool IsBackground() const {
                     return ((_mode & mode::BACKGROUND) != 0);
                 }
 
                 bool IsDirect() const {
                     return ((_mode & mode::DIRECT) != 0);
+                }
+
+                bool HasRedirectedOut() const {
+                    return ((_mode & mode::REDIRECT_OUT) != 0);
+                }
+
+                bool HasRedirectedError() const {
+                    return ((_mode & mode::REDIRECT_ERROR) != 0);
                 }
 
                 Core::Messaging::MessageInfo::abbreviate IsAbbreviated() const {
@@ -397,16 +431,21 @@ namespace WPEFramework {
                     return (abbreviate);
                 }
 
-                void Configure (const string& path, const string& identifier, const uint16_t socketPort, const string& config, const bool background, const flush flushMode)
+                void Configure (const string& basePath, const string& identifier, const Config& jsonParsed, const bool background, const flush flushMode)
                 {
                     _settings.clear();
-                    _path = path;
-                    _identifier = identifier;
-                    _socketPort = socketPort;
-                    _mode = (background ? mode::BACKGROUND : 0) | (flushMode != flush::OFF ? mode::DIRECT : 0) | (flushMode == FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0);
+                    string messagingFolder;
+                    Core::ParsePathInfo(jsonParsed.Path.Value(), messagingFolder, _permission);
 
-                    Config jsonParsed;
-                    jsonParsed.FromString(config);
+                    _path = Core::Directory::Normalize(basePath) + messagingFolder;
+                    _identifier = identifier;
+                    _socketPort = jsonParsed.Port.Value();
+                    _mode = (background ? mode::BACKGROUND : 0) | 
+                            (((flushMode != flush::OFF) || (jsonParsed.Flush.Value())) ? mode::DIRECT : 0) | 
+                            (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
+                            (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
+                            (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
+
                     FromConfig(jsonParsed);
                 }
 
@@ -485,7 +524,7 @@ namespace WPEFramework {
                     string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
-                               Core::NumberType<uint8_t>(_mode).Text();
+                               Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text();
 
                     for (auto& entry : _settings) {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
@@ -587,13 +626,13 @@ namespace WPEFramework {
 
                     for (auto it = _settings.crbegin(); it != _settings.crend(); ++it) {
                         if (it->Type() == Core::Messaging::Metadata::type::TRACING) {
-                            config.Tracing.Settings.Add({ it->Category(), it->Module(), it->Enabled() });
+                            config.Tracing.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::LOGGING) {
-                            config.Logging.Settings.Add({ it->Category(), it->Module(), it->Enabled() });
+                            config.Logging.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::REPORTING) {
-                            config.Reporting.Settings.Add({ it->Category(), it->Module(), it->Enabled() });
+                            config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
                         }
                     }
 
@@ -606,6 +645,7 @@ namespace WPEFramework {
                 string _path;
                 string _identifier;
                 uint16_t _socketPort;
+                uint16_t _permission;
                 uint8_t _mode;
             };
 
@@ -634,7 +674,7 @@ namespace WPEFramework {
 
                 /**
                  * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
-                 *        Passed buffer will be filled with data from thr other side
+                 *        Passed buffer will be filled with data from the other side
                  *
                  * @param length length of the message
                  * @param value buffer
@@ -842,7 +882,7 @@ namespace WPEFramework {
                 return (_settings.SocketPort());
             }
 
-            uint32_t Open(const string& pathName, const uint16_t doorbell, const string& configuration, const bool background, const flush flushMode);
+            uint32_t Open(const string& pathName, const Settings::Config& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();
 

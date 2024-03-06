@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+#pragma once
 
-#include "Module.h"
+#ifndef MODULE_NAME
+#define MODULE_NAME MessageBufferTest
+#endif
 
-// If not set in CMake flags, BUILD_REFERENCE defaults to "engineering_build_for_debug_purpose_only"
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#include <core/core.h>
+#include <com/com.h>
+#include <messaging/messaging.h>
+
+#undef EXTERNAL
+#define EXTERNAL

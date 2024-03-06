@@ -79,9 +79,6 @@ namespace Messaging {
                 while (cursor.Offset() < cursor.Size()) {
                     uint16_t chunkSize = 0;
                     cursor.Peek(chunkSize);
-
-                    TRACE_L1("Flushing buffer data!");
-
                     cursor.Forward(chunkSize);
                 }
 
@@ -136,10 +133,6 @@ namespace Messaging {
                                                                  (initialize == true ? DATA_BUFFER_SIZE : 0), true)
             // clang-format on
         {
-            if (_dataBuffer.IsValid() == false) {
-                _dataBuffer.Validate();
-            }
-
             if (_dataBuffer.IsValid() == true) {
                 if ( (initialize == false) && (_dataBuffer.Used() > 0) ) {
                     TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer.Used(), instanceId);
@@ -147,7 +140,12 @@ namespace Messaging {
                 }
             }
             else {
-                TRACE_L1("MessageDispatcher instance %d is not valid!", instanceId);
+                if (initialize == false) {
+                    TRACE_L1("MessageDispatcher instance %d (client) is not valid, probably because the server has not created a file yet", instanceId);
+                }
+                else {
+                    TRACE_L1("MessageDispatcher instance %d (server) is not valid, possible issues when creating a file", instanceId);
+                }
             }
         }
         ~MessageDataBufferType()
@@ -268,7 +266,11 @@ namespace Messaging {
         bool IsValid() const {
             return (_dataBuffer.IsValid());
         }
-        
+
+        void Validate() {
+            _dataBuffer.Open();
+        }
+
         const string& MetadataName() const {
             return (_filenames.metaData);
         }

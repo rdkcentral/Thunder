@@ -35,6 +35,14 @@ namespace Core {
 
         class EXTERNAL Message : public Core::JSON::Container {
         public:
+            // Arbitrary code base selected in discussion with the team to use 
+            // this magical value as a base for Thunder error codes (0..999).
+            // These error codes are *not* related to the JSONRPC transport
+            // layer but relate to the application layer.
+            // Seems the spec is expecting a value > -32767, so with a value
+            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            static constexpr int32_t ApplicationErrorCodeBase = -31000;
+
             class Info : public Core::JSON::Container {
             public:
                 Info()
@@ -80,29 +88,69 @@ namespace Core {
                 void SetError(const uint32_t frameworkError)
                 {
                     switch (frameworkError) {
-                    case Core::ERROR_BAD_REQUEST:
+                    case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
+                        Text = _T("Unknown jsonrpc error.");
                         break;
-                    case Core::ERROR_INVALID_DESIGNATOR:
+                    case Core::ERROR_INVALID_ENVELOPPE:
+                        Text = _T("Invalid Request.");
                         Code = -32600; // Invalid request
                         break;
-                    case Core::ERROR_INVALID_SIGNATURE:
+                    case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
+                        Text = _T("Invalid Parameters.");
                         break;
-                    case Core::ERROR_UNKNOWN_KEY:
+                    case Core::ERROR_UNKNOWN_METHOD:
+                        Text = _T("Unknown method.");
                         Code = -32601; // Method not found
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
+                        Text = _T("method invocation not allowed.");
+                        break;
+                    case Core::ERROR_PRIVILIGED_DEFERRED:
+                        Code = -32604;
+                        Text = _T("method invokation is deferred, Currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
+                        Text = _T("Call timed out.");
                         break;
-                    case Core::ERROR_PARSE_FAILURE:
+                    case Core::ERROR_PARSING_ENVELOPPE:
                         Code = -32700; // Parse error
+                        Text = _T("Parsing of the parameters failed");
+                        break;
+                    case Core::ERROR_INVALID_RANGE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_RANGE;
+                        Text = _T("Requested version is not supported.");
+                        break;
+                    case Core::ERROR_INCORRECT_URL:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INCORRECT_URL;
+                        Text = _T("Designator is invalid.");
+                        break;
+                    case Core::ERROR_ILLEGAL_STATE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
+                        Text = _T("The service is in an illegal state!!!.");
+                        break;
+                    case Core::ERROR_FAILED_REGISTERED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
+                        Text = _T("Registration already done!!!.");
+                        break;
+                    case Core::ERROR_FAILED_UNREGISTERED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
+                        Text = _T("Unregister was already done!!!.");
+                        break;
+                    case Core::ERROR_HIBERNATED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
+                        Text = _T("The service is in an Hibernated state!!!.");
+                        break;
+                    case Core::ERROR_UNAVAILABLE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
+                        Text = _T("Requested service is not available.");
                         break;
                     default:
-                        Code = static_cast<int32_t>(frameworkError);
+                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        Text = Core::ErrorToString(frameworkError);
                         break;
                     }
                 }
@@ -461,7 +509,7 @@ namespace Core {
                             result = ~0;
                         }
                         else {
-                            result = Core::ERROR_PARSE_FAILURE;
+                            result = Core::ERROR_PARSING_ENVELOPPE;
                             response = report.Value().Message();
                         }
                     } else {
@@ -590,7 +638,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -686,7 +734,7 @@ namespace Core {
                 auto retval = _handlers.emplace(std::piecewise_construct,
                                     std::make_tuple(methodName),
                                     std::make_tuple(lambda));
-                    
+
                 if ( retval.second == false ) {
                     retval.first->second = lambda;
                 }
@@ -704,6 +752,25 @@ namespace Core {
                     retval.first->second = lambda;
                 }
             }
+            void Register(const string& methodName, const string& primaryName)
+            {
+                ASSERT(methodName.empty() == false);
+                ASSERT(primaryName.empty() == false);
+
+                auto retval = _handlers.find(primaryName);
+                ASSERT(retval != _handlers.end());
+
+                auto retvalAlias = _handlers.find(methodName);
+                ASSERT(retvalAlias == _handlers.end());
+
+                // Register the handler under an alternative name.
+
+                if ((retval != _handlers.end()) && (retvalAlias == _handlers.end()))  {
+                    _handlers.emplace(std::piecewise_construct,
+                        std::make_tuple(methodName),
+                        std::make_tuple(retval->second));
+                }
+            }
             void Unregister(const string& methodName)
             {
                 HandlerMap::iterator index = _handlers.find(methodName);
@@ -716,7 +783,7 @@ namespace Core {
             }
             uint32_t Invoke(const Context& context, const string& method, const string& parameters, string& response)
             {
-                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+                uint32_t result = Core::ERROR_UNKNOWN_METHOD;
 
                 response.clear();
 
@@ -1078,8 +1145,8 @@ namespace Core {
                     else {
                         code = Core::ERROR_PARSE_FAILURE;
                         result = report.Value().Message();
-                    }                    
-                    
+                    }
+
                     return (code);
                 };
                 Register(methodName, implementation);

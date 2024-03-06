@@ -61,25 +61,29 @@ namespace WPEFramework {
 #endif
 #endif
 
-#pragma GCC system_header
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
 
 #ifdef __WINDOWS__
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                 \
     } while (0)
 #else
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%ld>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%ld>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #endif

@@ -105,12 +105,13 @@ namespace Messaging {
             if (singleton == nullptr) {
 
                 char dir[] = "/tmp/localTracer.XXXXXX";
+                Messaging::MessageUnit::Settings::Config configuration;
 
                 string Path(::mkdtemp(dir));
 
                 Core::Directory(Path.c_str()).CreatePath();
 
-                Messaging::MessageUnit::Instance().Open(Path, 0, "", false, Messaging::MessageUnit::OFF);
+                Messaging::MessageUnit::Instance().Open(Path, configuration, false, Messaging::MessageUnit::OFF);
 
                 singleton = new LocalTracer(Path);
             }

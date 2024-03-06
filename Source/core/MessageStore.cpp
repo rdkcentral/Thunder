@@ -1,4 +1,4 @@
-/*
+/* 
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -30,8 +30,7 @@ ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
     { Core::Messaging::Metadata::type::LOGGING, _TXT("Logging") },
     { Core::Messaging::Metadata::type::REPORTING, _TXT("Reporting") },
-    { Core::Messaging::Metadata::type::STANDARD_OUT, _TXT("StandardOut") },
-    { Core::Messaging::Metadata::type::STANDARD_ERROR, _TXT("StandardError") },
+    { Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _TXT("OperationalStream") },
 ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
     namespace {
@@ -53,6 +52,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Lock();
 
                 while (_controlList.size() > 0) {
+                    TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(*_controlList.front()).name(), static_cast<uint32_t>(_controlList.size()));
                     _controlList.front()->Destroy();
                 }
 
@@ -107,7 +107,11 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
         Controls& ControlsInstance()
         {
-            return (Core::SingletonType<Controls>::Instance());
+            // do not use the SingleTonType as ControlsInstance will be referenced 
+            // the SingleTonType dispose and the Controls would be newly created instead
+            // of the current one used
+            static Controls instance;
+            return instance;
         }
 
         static Core::Messaging::IStore* _storage;
@@ -119,11 +123,12 @@ namespace Core {
 
         const char* MODULE_LOGGING = _T("SysLog");
         const char* MODULE_REPORTING = _T("Reporting");
+        const char* MODULE_OPERATIONAL_STREAM = _T("Operational Stream");
 
         uint16_t Metadata::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             uint16_t length = static_cast<uint16_t>(sizeof(_type) + (_category.size() + 1));
-            
+
             if (_type == TRACING) {
                 length += static_cast<uint16_t>(_module.size() + 1);
             }
@@ -159,8 +164,11 @@ namespace Core {
                 _type = frameReader.Number<type>();
                 _category = frameReader.NullTerminatedText();
 
+                length = (static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
+
                 if (_type == TRACING) {
                     _module = frameReader.NullTerminatedText();
+                    length += (static_cast<uint16_t>(_module.size()) + 1);
                 }
                 else if (_type == LOGGING) {
                     _module = MODULE_LOGGING;
@@ -168,16 +176,14 @@ namespace Core {
                 else if (_type == REPORTING) {
                     _module = MODULE_REPORTING;
                 }
+                else if (_type == OPERATIONAL_STREAM) {
+                    _module = MODULE_OPERATIONAL_STREAM;
+                }
                 else {
                     ASSERT(_type != Metadata::type::INVALID);
                 }
-                
-                if (_type == TRACING) {
-                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1) + (static_cast<uint16_t>(_module.size()) + 1)));
-                }
-                else {
-                    length = std::min<uint16_t>(bufferSize, static_cast<uint16_t>(sizeof(_type) + (static_cast<uint16_t>(_category.size()) + 1)));
-                }
+
+                length = std::min<uint16_t>(bufferSize, length);
             }
 
             return (length);

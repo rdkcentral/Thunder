@@ -120,11 +120,13 @@ POP_WARNING()
         return MACAddress;
     }
 
-    void SystemInfo::Update()
+    void SystemInfo::Update(const bool doCallback)
     {
         _adminLock.Lock();
 
-        _callback->Dispatch();
+        if (doCallback == true) {
+            _callback->Dispatch();
+        }
 
         ClientIterator index(_notificationClients);
 
@@ -259,7 +261,7 @@ POP_WARNING()
     }
 
     // Software information
-    string SystemInfo::BuildTreeHash() const /* override */ 
+    string SystemInfo::BuildTreeHash() const /* override */
     {
         return (_T(EXPAND_AND_QUOTE(TREE_REFERENCE)));
     }

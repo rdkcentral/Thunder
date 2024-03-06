@@ -289,8 +289,8 @@ namespace Core {
             ~RawSerializedType() override = default;
 
         public:
-            void AddRef() const override {
-                _parent.AddRef();
+            uint32_t AddRef() const override {
+                return (_parent.AddRef());
             }
             uint32_t Release() const override {
                 return(_parent.Release());

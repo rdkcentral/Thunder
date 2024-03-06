@@ -1,0 +1,21 @@
+name: Documentation Required Checks
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - '!**'
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+  pull_request:
+    branches: ["master"]
+    paths:
+      - '!**'
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+
+jobs:
+  Thunder:
+    uses: rdkcentral/Thunder/.github/workflows/Docs build template.yml@master

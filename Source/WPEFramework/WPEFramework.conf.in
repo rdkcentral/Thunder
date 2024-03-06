@@ -33,7 +33,6 @@ exitreasons = __exitreasons.split(';')
 
 __plugins = []
 
-__subsystems = '@EXTERN_EVENTS@'
 __resumes = []
 
 if boolean('@PLUGIN_WEBKITBROWSER@'):
@@ -46,7 +45,6 @@ if boolean('@PLUGIN_WEBSERVER@'):
   __resumes.append("WebServer")
 
 __controller_plugin_configuration = JSON()
-__controller_plugin_configuration.add("subsystems", __subsystems.split(' '))
 __controller_plugin_configuration.add("resumes", __resumes)
 
 __controller_plugin = JSON()
@@ -72,20 +70,29 @@ else:
 
 if boolean('@MESSAGING@'):
   messaging = JSON()
+  messaging.add("path", '@MESSAGECONTROL_PATH@')
+  messaging.add("port", '@MESSAGING_PORT@')
+  messaging.add("stdout", '@MESSAGING_STDOUT@')
+  messaging.add("stderr", '@MESSAGING_STDERR@')
 
   __notification = {
-       "category" : "Notification",
+       "category" : "AnyCategory",
        "enabled" : False
       }
   
   __fatal = {
-       "category" : "Fatal",
+       "category" : "AnyCategory",
+       "enabled" : True
+      }
+
+  __tracing = {
+       "module" : "Plugin_AnyModule",
        "enabled" : True
       }
   
   __warningReporting = {
-       "category" : "TooLongWaitingForLock",
-       "enabled" : True
+       "category" : "AnyCategory",
+       "enabled" : False
       }
 
   __logging_settings = []
@@ -99,6 +106,7 @@ if boolean('@MESSAGING@'):
   
   __tracing_settings = []
   __tracing_settings.append(__fatal)
+  __tracing_settings.append(__tracing)
   
   __tracing = JSON()
   __tracing.add("settings", __tracing_settings)
