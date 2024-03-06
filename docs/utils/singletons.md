@@ -15,10 +15,10 @@ OpenCDMAccessor(const TCHAR domainName[])
         , _signal(false, true)
         , _interested(0)
         , _sessionKeys()
-    {
-        TRACE_L1("Trying to open an OCDM connection @ %s\n", domainName);
-        Reconnect(); // make sure ResourceMonitor singleton is created before OpenCDMAccessor so the destruction order is correct
-    }
+{
+    TRACE_L1("Trying to open an OCDM connection @ %s\n", domainName);
+    Reconnect(); // make sure ResourceMonitor singleton is created before OpenCDMAccessor so the destruction order is correct
+}
 ```
 
 When a singleton uses itself (via the instance method) or any other singleton during destruction be very careful to make sure it does not create a new singleton by accident.
