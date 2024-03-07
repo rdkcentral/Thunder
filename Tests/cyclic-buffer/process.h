@@ -102,7 +102,9 @@ public :
         _enabled =     _enabled
                     || (   _buffer.IsValid()
                         && _buffer.Open() // It already should
+                        && _buffer.Storage().Name() == _fileName
                         && Core::File(_fileName).Exists()
+                        && _buffer.Storage().Exists()
                        )
                     ;
 
@@ -239,7 +241,9 @@ public :
         _enabled =     _enabled
                     || (   _buffer.IsValid()
                         && _buffer.Open() // It already should
+                        && _buffer.Storage().Name() == _fileName
                         && Core::File(_fileName).Exists()
+                        && _buffer.Storage().Exists()
                        )
                     ;
 
