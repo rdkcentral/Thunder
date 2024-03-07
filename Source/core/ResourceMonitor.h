@@ -17,8 +17,7 @@
  * limitations under the License.
  */
  
-#ifndef RESOURCE_MONITOR_TYPE_H
-#define RESOURCE_MONITOR_TYPE_H
+#pragma once
 
 #include "Module.h"
 #include "Portability.h"
@@ -42,24 +41,31 @@ namespace Core {
         virtual void Handle(const uint16_t events) = 0;
     };
 
-    template <typename RESOURCE, typename WATCHDOG>
+    template <typename RESOURCE, typename WATCHDOG, const uint32_t STACK_SIZE, const uint8_t RESOURCE_SLOTS>
     class ResourceMonitorType {
     private:
-        static constexpr uint8_t FileDescriptorAllocation = 32;
+        using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
 
-        typedef ResourceMonitorType<RESOURCE, WATCHDOG> Parent;
-
-        ResourceMonitorType(const ResourceMonitorType&) = delete;
-        ResourceMonitorType& operator=(const ResourceMonitorType&) = delete;
+        // Using the std::vector here caused an issue on Windows as the iterator in the Worker was corrupted after
+        // a new connection was added during the worker run (accept on listen) Although this should be added to 
+        // the end of the vector/list, it did cause an issue on Windows and probbaly *not* on linux. Requires further 
+        // investigation
+        #ifdef __WINDOWS__
+        using Resources = std::list<RESOURCE*>;
+        #else
+        using Resources = std::vector<RESOURCE*>;
+        #endif
 
         class MonitorWorker : public Core::Thread {
-        private:
+        public:
+            MonitorWorker() = delete;
+            MonitorWorker(MonitorWorker&&) = delete;
             MonitorWorker(const MonitorWorker&) = delete;
+            MonitorWorker& operator=(MonitorWorker&&) = delete;
             MonitorWorker& operator=(const MonitorWorker&) = delete;
 
-        public:
             MonitorWorker(Parent& parent)
-                : Core::Thread(Thread::DefaultStackSize(), parent.Name())
+                : Core::Thread(STACK_SIZE == 0 ? Thread::DefaultStackSize() : STACK_SIZE, parent.Name())
                 , _parent(parent)
             {
                 Thread::Init();
@@ -72,13 +78,13 @@ namespace Core {
             }
 
         public:
-#ifdef __LINUX__
-            virtual uint32_t Initialize()
+            #ifdef __LINUX__
+            uint32_t Initialize() override
             {
                 return ((Thread::Initialize() == Core::ERROR_NONE) && (_parent.Initialize() == Core::ERROR_NONE) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
             }
-#endif
-            virtual uint32_t Worker()
+            #endif
+            uint32_t Worker() override
             {
                 return (_parent.Worker());
             }
@@ -97,33 +103,37 @@ namespace Core {
         };
 
     public:
+        ResourceMonitorType(ResourceMonitorType&&) = delete;
+        ResourceMonitorType(const ResourceMonitorType&) = delete;
+        ResourceMonitorType& operator=(ResourceMonitorType&&) = delete;
+        ResourceMonitorType& operator=(const ResourceMonitorType&) = delete;
+
         ResourceMonitorType()
             : _monitor(nullptr)
             , _adminLock()
-            , _resourceList()
+            , _resources()
             , _monitorRuns(0)
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
             , _watchDog(1024 * 512, _name.c_str())
-#ifdef __WINDOWS__
+            #ifdef __WINDOWS__
             , _action(WSACreateEvent())
-#else
-            , _descriptorArrayLength(FileDescriptorAllocation)
-            , _descriptorArray(static_cast<struct pollfd*>(::malloc(sizeof(::pollfd) * (_descriptorArrayLength + 1))))
+            #else
+            , _descriptorArrayLength(RESOURCE_SLOTS)
+            , _descriptorArray(static_cast<struct pollfd*>(::malloc(sizeof(::pollfd) * (RESOURCE_SLOTS + 1))))
             , _signalDescriptor(-1)
-#endif
+            #endif
         {
         }
 
         ~ResourceMonitorType()
         {
-
-#ifdef __DEBUG__
+            #ifdef __DEBUG__
             // All resources should be gone !!!
-            for (const auto& resource : _resourceList) {
+            for (const auto& resource : _resources) {
                 TRACE_L1("Resource name: %s", typeid(resource).name());
                 ASSERT(resource == nullptr);
             }
-#endif
+            #endif
 
             if (_monitor != nullptr) {
 
@@ -133,22 +143,22 @@ namespace Core {
 
                 _adminLock.Lock();
 
-                _resourceList.clear();
+                _resources.clear();
 
                 _adminLock.Unlock();
 
                 delete _monitor;
             }
 
-#ifdef __LINUX__
+            #ifdef __LINUX__
             ::free(_descriptorArray);
             if (_signalDescriptor != -1) {
                 ::close(_signalDescriptor);
             }
-#endif
-#ifdef __WINDOWS__
+            #endif
+            #ifdef __WINDOWS__
             WSACloseEvent(_action);
-#endif
+            #endif
         }
 
     public:
@@ -166,7 +176,7 @@ namespace Core {
         }
         uint32_t Count() const 
         {
-            return (static_cast<uint32_t>(_resourceList.size()));
+            return (static_cast<uint32_t>(_resources.size()));
         }
         bool Info (const uint32_t position, Metadata& info) const
         {
@@ -174,16 +184,16 @@ namespace Core {
 
             _adminLock.Lock();
 
-            typename std::list<RESOURCE*>::const_iterator index(_resourceList.cbegin());
-            while ( (count != 0) && (index != _resourceList.cend()) ) { count--; index++; }
+            typename Resources::const_iterator index(_resources.cbegin());
+            while ( (count != 0) && (index != _resources.cend()) ) { count--; index++; }
 
-            bool found = (index != _resourceList.cend());
+            bool found = (index != _resources.cend());
 
             if (found == true) {
                 info.descriptor = (*index)->Descriptor();
                 info.classname  = typeid(*(*index)).name();
 
-#ifdef __LINUX__
+                #ifdef __LINUX__
                 info.monitor = _descriptorArray[position + 1].events;
                 info.events  = _descriptorArray[position + 1].revents;
 
@@ -192,12 +202,12 @@ namespace Core {
 
                 size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
                 info.filename[len] = '\0';
-#endif
-#ifdef __WINDOWS__
+                #endif
+                #ifdef __WINDOWS__
                 info.monitor = 0;
                 info.events  = 0;
                 info.filename[0] = '\0';
-#endif
+                #endif
             }
 
             _adminLock.Unlock();
@@ -209,14 +219,14 @@ namespace Core {
             _adminLock.Lock();
 
             // Make sure this entry is only registered once !!!
-            if (std::find(_resourceList.begin(), _resourceList.end(), &resource) == _resourceList.end()) {
-                _resourceList.push_back(&resource);
+            if (std::find(_resources.begin(), _resources.end(), &resource) == _resources.end()) {
+                _resources.push_back(&resource);
             }
 
-            if (_resourceList.size() == 1) {
+            if (_resources.size() == 1) {
                 if (_monitor == nullptr) {
                     _monitor = new MonitorWorker(*this);
-
+                    _monitorRuns = 0;
                     // Wait till we are at least initialized
                     _monitor->Wait(Thread::BLOCKED | Thread::STOPPED);
                 }
@@ -233,9 +243,9 @@ namespace Core {
             _adminLock.Lock();
 
             // Make sure this entry does not exist, only register resources once !!!
-            typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
+            typename Resources::iterator index(std::find(_resources.begin(), _resources.end(), &resource));
 
-            if (index != _resourceList.end()) {
+            if (index != _resources.end()) {
                 *index = nullptr;
                 Break();
             }
@@ -244,21 +254,20 @@ namespace Core {
         }
         inline void Break()
         {
-
             ASSERT(_monitor != nullptr);
 
-#ifdef __APPLE__
+            #ifdef __APPLE__
             int data = 0;
             ::sendto(_signalDescriptor
                     & data,
                 sizeof(data), 0,
                 _signalNode,
                 _signalNode.Size());
-#elif defined(__LINUX__)
+            #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
-#elif defined(__WINDOWS__)
+            #elif defined(__WINDOWS__)
             ::WSASetEvent(_action);
-#endif
+            #endif
         };
 
     private:
@@ -292,11 +301,10 @@ namespace Core {
         {
         }
 
-    public:
-#ifdef __LINUX__
+        #ifdef __LINUX__
         uint32_t Initialize()
         {
-#ifdef __APPLE__
+            #ifdef __APPLE__
 
             if ((_signalDescriptor = ::socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
                 TRACE_L1("Error on creating socket SOCKET. Error %d", errno);
@@ -313,7 +321,7 @@ namespace Core {
                 }
             }
 
-#else
+            #else
 
             sigset_t sigset;
 
@@ -330,7 +338,7 @@ namespace Core {
             /* Create the signalfd */
             _signalDescriptor = signalfd(-1, &sigset, SFD_CLOEXEC);
 
-#endif
+            #endif
 
             ASSERT(_signalDescriptor != -1);
 
@@ -340,9 +348,7 @@ namespace Core {
 
             return (_signalDescriptor != -1 ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
-#endif
 
-#ifdef __LINUX__
         uint32_t Worker()
         {
             uint32_t delay = 0;
@@ -353,8 +359,8 @@ namespace Core {
             _adminLock.Lock();
 
             // Do we have enough space to allocate all file descriptors ?
-            if ((_resourceList.size() + 1) > _descriptorArrayLength) {
-                _descriptorArrayLength = ((((_resourceList.size() + 1) / FileDescriptorAllocation) + 1) * FileDescriptorAllocation);
+            if ((_resources.size() + 1) > _descriptorArrayLength) {
+                _descriptorArrayLength = ((((_resources.size() + 1) / RESOURCE_SLOTS) + 1) * RESOURCE_SLOTS);
 
                 ::free(_descriptorArray);
 
@@ -367,16 +373,16 @@ namespace Core {
             }
 
             int filledFileDescriptors = 1;
-            typename std::list<RESOURCE*>::iterator index = _resourceList.begin();
+            typename Resources::iterator index = _resources.begin();
 
             // Fill in all entries required/updated..
-            while (index != _resourceList.end()) {
+            while (index != _resources.end()) {
                 RESOURCE* entry = (*index);
 
                 uint16_t events;
 
                 if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
-                    index = _resourceList.erase(index);
+                    index = _resources.erase(index);
                 } else {
                     _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
                     _descriptorArray[filledFileDescriptors].events = events;
@@ -397,12 +403,12 @@ namespace Core {
                     TRACE_L1("poll failed with error <%d>", errno);
 
                 } else if (_descriptorArray[0].revents & POLLIN) {
-#ifdef __APPLE__
+                    #ifdef __APPLE__
                     int info;
-#else
+                    #else
                     /* We have a valid signal, read the info from the fd */
                     struct signalfd_siginfo info;
-#endif
+                    #endif
                     uint32_t VARIABLE_IS_NOT_USED bytes = read(_signalDescriptor, &info, sizeof(info));
                     ASSERT(bytes == sizeof(info) || bytes == 0);
                 }
@@ -410,10 +416,10 @@ namespace Core {
                 // We are only interested in the filedescriptors that have a corresponding client.
                 // We also know that once a file descriptor is not found, we handled them all...
                 int fd_index = 1;
-                index = _resourceList.begin();
+                index = _resources.begin();
 
                 while (fd_index < filledFileDescriptors) {
-                    ASSERT(index != _resourceList.end());
+                    ASSERT(index != _resources.end());
 
                     RESOURCE* entry = (*index);
 
@@ -446,29 +452,29 @@ namespace Core {
 
             return (delay);
         }
-#endif
+        #endif
 
-#ifdef __WINDOWS__
+        #ifdef __WINDOWS__
         uint32_t Worker()
         {
             uint32_t delay = 0;
-            typename std::list<RESOURCE*>::iterator index;
+            typename Resources::iterator index;
 
             _monitorRuns++;
 
             _adminLock.Lock();
 
             // Now iterate over the sockets and determine their states..
-            index = _resourceList.begin();
+            index = _resources.begin();
 
-            while (index != _resourceList.end()) {
+            while (index != _resources.end()) {
 
                 RESOURCE* entry = (*index);
 
                 uint16_t events;
 
                 if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
-                    index = _resourceList.erase(index);
+                    index = _resources.erase(index);
                 } else {
                     if ((events & 0x8000) != 0) {
                         ::WSAEventSelect((*index)->Descriptor(), _action, (events & 0x7FFF));
@@ -477,7 +483,7 @@ namespace Core {
                 }
             }
 
-            if (_resourceList.size() > 0) {
+            if (_resources.size() > 0) {
 
                 _adminLock.Unlock();
 
@@ -486,11 +492,11 @@ namespace Core {
                 _adminLock.Lock();
 
                 // Find all "pending" sockets and signal them..
-                index = _resourceList.begin();
+                index = _resources.begin();
 
                 ::WSAResetEvent(_action);
 
-                while (index != _resourceList.end()) {
+                while (index != _resources.end()) {
                     RESOURCE* entry = (*index);
 
                     if (entry != nullptr) {
@@ -520,43 +526,41 @@ namespace Core {
 
             return (delay);
         }
-#endif
+        #endif
 
     private:
         MonitorWorker* _monitor;
         mutable Core::CriticalSection _adminLock;
-        std::list<RESOURCE*> _resourceList;
+        Resources _resources;
         uint32_t _monitorRuns;
         string _name;
         WATCHDOG _watchDog;
 
-#ifdef __LINUX__
+        #ifdef __LINUX__
         uint32_t _descriptorArrayLength;
         struct ::pollfd* _descriptorArray;
         int _signalDescriptor;
-#endif
+        #endif
 
-#ifdef __WINDOWS__
+        #ifdef __WINDOWS__
         HANDLE _action;
-#endif
-#ifdef __APPLE__
+        #endif
+
+        #ifdef __APPLE__
         Core::NodeId _signalNode;
-#endif
+        #endif
     };
 
-#ifdef WATCHDOG_ENABLED
+    #ifdef WATCHDOG_ENABLED
     class ResourceMonitorHandler {
-    private:
+    public:
+        ResourceMonitorHandler(ResourceMonitorHandler&& rhs) = delete;
         ResourceMonitorHandler(const ResourceMonitorHandler& rhs) = delete;
+        ResourceMonitorHandler& operator=(ResourceMonitorHandler&& rhs) = delete;
         ResourceMonitorHandler& operator=(const ResourceMonitorHandler& rhs) = delete;
 
-    public:
-        ResourceMonitorHandler()
-        {
-        }
-        ~ResourceMonitorHandler()
-        {
-        }
+        ResourceMonitorHandler() = default;
+        ~ResourceMonitorHandler() = default;
 
     public:
         uint32_t Expired()
@@ -566,27 +570,26 @@ namespace Core {
         }
     };
 
-    typedef ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler>> ResourceMonitorBase;
-#else
-    typedef ResourceMonitorType<IResource, Void> ResourceMonitorBase;
-#endif
+    using ResourceMonitorBase = ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler>, 0, 32> ;
+    #else
+    using ResourceMonitorBase = ResourceMonitorType<IResource, Void, 0, 32>;
+    #endif
 
     class EXTERNAL ResourceMonitor : public ResourceMonitorBase {
     private:
-        ResourceMonitor()
-            : ResourceMonitorBase()
-        {
-        }
-        ResourceMonitor(const ResourceMonitor&) = delete;
-        ResourceMonitor& operator=(const ResourceMonitor&) = delete;
+        friend SingletonType<ResourceMonitor>;
 
-        friend class SingletonType<ResourceMonitor>;
+        ResourceMonitor() = default;
 
     public:
+        ResourceMonitor(ResourceMonitor&&) = delete;
+        ResourceMonitor(const ResourceMonitor&) = delete;
+        ResourceMonitor& operator=(ResourceMonitor&&) = delete;
+        ResourceMonitor& operator=(const ResourceMonitor&) = delete;
+
         static ResourceMonitor& Instance();
-        ~ResourceMonitor() {}
+
+        ~ResourceMonitor() = default;
     };
 }
 } // namespace WPEFramework::Core
-
-#endif // RESOURCE_MONITOR_TYPE_H

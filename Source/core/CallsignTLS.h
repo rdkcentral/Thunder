@@ -74,7 +74,7 @@ namespace Core {
         struct CallsignAccess {
             static const TCHAR* Callsign() {
                 if (_moduleName.empty()) {
-                    _moduleName = (string(_T("???  (Module:")) + ((MODULENAME != nullptr) ? *MODULENAME : "UNKNOWN") + _T(')'));
+                    _moduleName = (string(_T("???  (Module:")) + *MODULENAME + _T(')'));
                 }
                 const TCHAR* callsign = CallsignTLS::Callsign();
                 if (callsign == nullptr) {

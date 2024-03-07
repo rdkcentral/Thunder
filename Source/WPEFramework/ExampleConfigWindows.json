@@ -67,7 +67,7 @@
       "callsign": "Cobalt",
       "locator": "liboutofprocessplugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "url": "http://netflix.com/tv",
         "sleep": "1",
@@ -82,7 +82,7 @@
       "callsign": "TestPlugin",
       "locator": "libTestPlugin.so",
       "classname": "TestPlugin",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "root": {
           "mode": "Local"
@@ -93,7 +93,7 @@
       "callsign": "Doofah",
       "locator": "libDoofah.so",
       "classname": "Doofah",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "connector": {
           "port": "\\\\.\\COM14"
@@ -105,7 +105,7 @@
       "callsign": "calculator",
       "locator": "librustbridge.so",
       "classname": "RustBridge",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "module": "calculator.dll",
         "root": {
@@ -117,7 +117,7 @@
       "callsign": "Provisioning",
       "locator": "libProvisioning.so",
       "classname": "Provisioning",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "provisionpath": "127.0.0.1:7777"
       }
@@ -126,7 +126,7 @@
       "callsign": "BridgeLink",
       "locator": "libBridgeLink.so",
       "classname": "BridgeLink",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "source": "192.168.11.24:62000",
         "retries": 255,
@@ -137,13 +137,13 @@
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
-      "autostart": true
+      "startmode": "Activated"
     },
     {
       "callsign": "ZigbeeControl",
       "locator": "libZigbeeControl.so",
       "classname": "ZigbeeControl",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "port": "\\\\.\\COM4",
         "watchdog": 1442,
@@ -154,7 +154,7 @@
       "callsign": "ZWaveControl",
       "locator": "libZWaveControl.so",
       "classname": "ZWaveControl",
-      "autostart": true,
+      "startmode": "Activated",
       "configuration": {
         "port": "\\\\.\\COM4",
         "key":  "ba:09:87:65:43:21:de:ad:be:ef:12:34:56:78:90:ab"
@@ -164,7 +164,7 @@
       "callsign": "MQTTBroker",
       "locator": "libMQTTBroker.so",
       "classname": "MQTTBroker",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "port": "1883",
         "binding": "0.0.0.0",
@@ -175,7 +175,7 @@
       "callsign": "WebBridge",
       "locator": "libWebBridge.so",
       "classname": "WebBridge",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "context": "added"
       }
@@ -184,22 +184,22 @@
       "callsign": "QuizzMaster",
       "locator": "libQuizzMaster.so",
       "classname": "QuizzMaster",
-      "autostart": false
+      "startmode": "Deactivated"
     },
     {
       "callsign": "StateController",
       "locator": "libStateController.so",
       "classname": "StateController",
-      "autostart": false
+      "startmode": "Deactivated"
     },
     {
       "callsign": "SimpleCOMRPCPluginServer",
       "locator": "libSimpleCOMRPCPluginServer.so",
       "classname": "SimpleCOMRPCPluginServer",
-      "autostart": false
+      "startmode": "Deactivated"
     },
     {
-      "autostart": false,
+      "startmode": "Deactivated",
       "callsign": "VirtualControl",
       "classname": "VirtualControl",
       "locator": "libVirtualControl.so",
@@ -281,13 +281,13 @@
       }
     },
     {
-      "autostart": false,
+      "startmode": "Deactivated",
       "callsign": "RuleEngine",
       "classname": "RuleEngine",
       "locator": "libRuleEngine.so"
     },
     {
-      "autostart": false,
+      "startmode": "Deactivated",
       "callsign": "CloudRelay",
       "classname": "CloudRelay",
       "locator": "libCloudRelay.so",
@@ -315,7 +315,7 @@
       "callsign": "IOControl",
       "locator": "libIOControl.so",
       "classname": "IOControl",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "port": "\\\\.\\COM24",
         "pins": [
@@ -362,7 +362,7 @@
       "callsign": "OneWireControl",
       "locator": "libOneWireControl.so",
       "classname": "OneWireControl",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "port": "\\\\.\\COM24",
         "devices": [
@@ -378,7 +378,7 @@
       "callsign": "I2CControl",
       "locator": "libI2CControl.so",
       "classname": "I2CControl",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "port": "\\\\.\\COM24",
         "devices": [
@@ -395,7 +395,7 @@
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "url": "http://netflix.com/tv",
         "sleep": "5",
@@ -410,13 +410,13 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": false
+      "startmode": "Deactivated"
     },
     {
       "callsign": "OpenCDMi",
       "locator": "libOpenCDMi.so",
       "classname": "OCDM",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "connector": "127.0.0.1:7912",
         "root": {
@@ -428,7 +428,7 @@
       "callsign": "Monitor",
       "locator": "libMonitor.so",
       "classname": "Monitor",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "observables": [
           {
@@ -454,7 +454,7 @@
       "callsign": "WebServer",
       "locator": "libWebServer.so",
       "classname": "WebServer",
-      "autostart": false,
+      "startmode": "Deactivated",
       "communicator": "127.0.0.1:2349",
       "configuration": {
         "port": 8080,
@@ -468,7 +468,7 @@
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": true,
+      "startmode": "Activated",
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -482,7 +482,7 @@
       "callsign": "TimeSync",
       "locator": "libtimesync.so",
       "classname": "TimeSync",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "interval": 30,
         "retries": 20,
@@ -499,7 +499,7 @@
       "callsign": "LocationSync",
       "locator": "liblocationsync.so",
       "classname": "LocationSync",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "interval": 30,
         "retries": 20,
@@ -510,7 +510,7 @@
       "callsign": "BackOffice",
       "locator": "libbackoffice.so",
       "classname": "BackOffice",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "server": "ws.metrological.com",
         "port": 80,
@@ -525,14 +525,14 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": false,
+      "startmode": "Deactivated",
       "communicator": "127.0.0.1:5522"
     },
     {
       "callsign": "DIALServer",
       "locator": "libdialserver.so",
       "classname": "DIALServer",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "name": "ExploraUltra",
         "model": "Generic Platform",
@@ -565,19 +565,19 @@
       "callsign": "MessageControl",
       "locator": "libmessagecontrol.so",
       "classname": "MessageControl",
-      "autostart": true
+      "startmode": "Activated"
     },
     {
       "callsign": "TraceControl",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": false
+      "startmode": "Deactivated"
     },
     {
       "callsign": "RemoteControl",
       "locator": "libremotecontrol.so",
       "classname": "RemoteControl",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "mapfile": "ir-remote.json"
       }
@@ -586,7 +586,7 @@
       "callsign": "DNSServer",
       "locator": "libDNSServer.so",
       "classname": "DNSServer",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "bind": "0.0.0.0:53",
         "multicast": "224.0.0.251:5353",
@@ -594,7 +594,7 @@
       }
     },
     {
-      "autostart": false,
+      "startmode": "Deactivated",
       "callsign": "WebKitBrowser",
       "classname": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
@@ -611,7 +611,7 @@
       }
     },
     {
-      "autostart": false,
+      "startmode": "Deactivated",
       "callsign": "Netflix",
       "classname": "OutOfProcessTest",
       "locator": "liboutofprocesstest.so",
@@ -625,7 +625,7 @@
       "callsign": "YouTube",
       "locator": "liboutofprocesstest.so",
       "classname": "OutOfProcessTest",
-      "autostart": false,
+      "startmode": "Deactivated",
       "configuration": {
         "outofprocess": false,
         "url": "http://youtube.com/tv",

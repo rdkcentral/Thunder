@@ -67,6 +67,7 @@ nav:
         - COM-RPC: walkthrough/hello-world/client-comrpc.md
   - Misc:
     - Documentation: docs.md
+    - References: references/references.md
 
 
 markdown_extensions:

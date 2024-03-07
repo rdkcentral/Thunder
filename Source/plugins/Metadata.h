@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __WEBBRIDGESUPPORT_METADATA_H
-#define __WEBBRIDGESUPPORT_METADATA_H
+#pragma once
 
 #include "Module.h"
 #include "Configuration.h"
@@ -32,9 +31,10 @@ namespace PluginHost {
 
     // Status information
     // this class holds interesting information that can be requested from the Server
-    class EXTERNAL MetaData : public Core::JSON::Container {
+    class EXTERNAL Metadata : public Core::JSON::Container {
     public:
         using Version = JsonData::Metadata::VersionInfo;
+        using Bridge = JsonData::Discovery::DiscoveryResultData;
 
         class EXTERNAL Service : public Plugin::Config {
         public:
@@ -46,27 +46,32 @@ namespace PluginHost {
                     : Core::JSON::EnumType<state>()
                 {
                 }
+                State(State&& move)
+                    : Core::JSON::EnumType<state>(move)
+                {
+                }
                 State(const State& copy)
                     : Core::JSON::EnumType<state>(copy)
                 {
                 }
-                inline ~State()
-                {
-                }
+                ~State() override = default;
 
             public:
-                State& operator=(const PluginHost::IShell* RHS);
+                State& operator=(State&& RHS);
                 State& operator=(const State& RHS);
+                State& operator=(const PluginHost::IShell* RHS);
 
                 string Data() const;
             };
 
         public:
-            Service& operator=(const Service& RHS) = delete;
+            Service& operator=(Service&&) = delete;
+            Service& operator=(const Service&) = delete;
 
             Service();
+            Service(Service&& copy);
             Service(const Service& copy);
-            ~Service();
+            ~Service() override = default;
 
         public:
             Service& operator=(const Plugin::Config& RHS);
@@ -83,27 +88,26 @@ namespace PluginHost {
             Core::JSON::String Module;
             Core::JSON::ArrayType<Core::JSON::String> InterfaceVersion;
         };
-
         class EXTERNAL Channel : public Core::JSON::Container {
         public:
             using state = Exchange::Controller::IMetadata::Data::Link::state;
 
             class EXTERNAL State : public Core::JSON::EnumType<state> {
             public:
-                inline State()
-                    : Core::JSON::EnumType<state>()
+                inline State() = default;
+                inline State(State&& move)
+                    : Core::JSON::EnumType<state>(move)
                 {
                 }
                 inline State(const State& copy)
                     : Core::JSON::EnumType<state>(copy)
                 {
                 }
-                inline ~State()
-                {
-                }
+                inline ~State() override = default;
 
             public:
                 State& operator=(const state RHS);
+                State& operator=(State&& RHS);
                 State& operator=(const State& RHS);
 
                 string Data() const;
@@ -111,9 +115,11 @@ namespace PluginHost {
 
         public:
             Channel();
+            Channel(Channel&& move);
             Channel(const Channel& copy);
-            ~Channel();
+            ~Channel() override = default;
 
+            Channel& operator=(Channel&& RHS);
             Channel& operator=(const Channel& RHS);
 
         public:
@@ -123,18 +129,17 @@ namespace PluginHost {
             Core::JSON::DecUInt32 ID;
             Core::JSON::String Name;
         };
-
-        using Bridge = JsonData::Discovery::DiscoveryResultData;
-
         class EXTERNAL Server : public Core::JSON::Container {
         public:
             class EXTERNAL Minion : public Core::JSON::Container {
             public:
+                Minion& operator=(Minion&&) = delete;
                 Minion& operator=(const Minion&) = delete;
 
                 Minion();
+                Minion(Minion&& move);
                 Minion(const Minion& copy);
-                ~Minion();
+                ~Minion() override = default;
 
                 Minion& operator= (const Core::ThreadPool::Metadata&);
 
@@ -145,11 +150,13 @@ namespace PluginHost {
             };
 
         public:
-            Server(const Server& copy) = delete;
+            Server(Server&&) = delete;
+            Server(const Server&) = delete;
+            Server& operator=(Server&&) = delete;
             Server& operator=(const Server&) = delete;
 
             Server();
-            ~Server();
+            ~Server() override = default;
 
             inline void Clear()
             {
@@ -161,25 +168,25 @@ namespace PluginHost {
             Core::JSON::ArrayType<Minion> ThreadPoolRuns;
             Core::JSON::ArrayType<Core::JSON::String> PendingRequests;
         };
-
         class EXTERNAL SubSystem : public Core::JSON::Container {
         private:
-            SubSystem& operator=(const SubSystem&) = delete;
-
-            typedef std::map<const string, Core::JSON::Boolean> SubSystemContainer;
-            typedef SubSystemContainer::iterator Iterator;
+            using SubSystems = std::unordered_map<string, Core::JSON::Boolean> ;
 
         public:
+            SubSystem& operator=(SubSystem&&) = delete;
+            SubSystem& operator=(const SubSystem&) = delete;
+
             SubSystem();
+            SubSystem(SubSystem&& move);
             SubSystem(const SubSystem& copy);
-            ~SubSystem();
+            ~SubSystem() override = default;
 
         public:
             void Add(const PluginHost::ISubSystem::subsystem name, const bool available);
 
             void Clear()
             {
-                SubSystemContainer::iterator index(_subSystems.begin());
+                SubSystems::iterator index(_subSystems.begin());
                 while (index != _subSystems.end()) {
 
                     Core::JSON::Container::Remove(index->first.c_str());
@@ -190,19 +197,27 @@ namespace PluginHost {
             }
 
         private:
-            SubSystemContainer _subSystems;
+            SubSystems _subSystems;
         };
         class EXTERNAL COMRPC : public Core::JSON::Container {
         public:
             using Proxy = JsonData::Metadata::ProxyData;
 
         public:
+            COMRPC& operator= (COMRPC&&) = delete;
             COMRPC& operator= (const COMRPC&) = delete;
 
             COMRPC()
                 : Core::JSON::Container()
                 , Remote()
                 , Proxies() {
+                Add(_T("link"), &Remote);
+                Add(_T("proxies"), &Proxies);
+            }
+            COMRPC(COMRPC&& move)
+                : Core::JSON::Container()
+                , Remote(move.Remote)
+                , Proxies(move.Proxies) {
                 Add(_T("link"), &Remote);
                 Add(_T("proxies"), &Proxies);
             }
@@ -224,13 +239,15 @@ namespace PluginHost {
             Core::JSON::String Remote;
             Core::JSON::ArrayType<Proxy> Proxies;
         };
-    public:
-        MetaData(MetaData&&) = delete;
-        MetaData(const MetaData&) = delete;
-        MetaData& operator=(const MetaData&) = delete;
 
-        MetaData();
-        ~MetaData();
+    public:
+        Metadata(Metadata&&) = delete;
+        Metadata(const Metadata&) = delete;
+        Metadata& operator=(Metadata&&) = delete;
+        Metadata& operator=(const Metadata&) = delete;
+
+        Metadata();
+        ~Metadata();
 
         inline void Clear()
         {
@@ -257,9 +274,10 @@ namespace Plugin {
 
     using subsystem = PluginHost::ISubSystem::subsystem;
 
-    struct EXTERNAL IMetadata : public Core::IServiceMetadata {
-        virtual ~IMetadata() = default;
+    struct EXTERNAL IMetadata : public Core::IService::IMetadata {
+        ~IMetadata() override = default;
 
+        virtual const TCHAR* InstanceId() const = 0;
         virtual const std::vector<subsystem>& Precondition() const = 0;
         virtual const std::vector<subsystem>& Termination() const = 0;
         virtual const std::vector<subsystem>& Control() const = 0;
@@ -268,73 +286,11 @@ namespace Plugin {
     // Baseclass to turn objects into services
     template <typename ACTUALSERVICE>
     class Metadata : public IMetadata {
-    private:
-        template <typename SERVICE>
-        class PluginImplementation : public Core::Service<SERVICE>, public IMetadata {
-        public:
-            PluginImplementation() = delete;
-            PluginImplementation(const PluginImplementation<SERVICE>&) = delete;
-            PluginImplementation<SERVICE>& operator=(const PluginImplementation<SERVICE>&) = delete;
-
-            explicit PluginImplementation(const Core::Library& library, const IServiceMetadata* metadata)
-                : Core::Service<SERVICE>()
-                , _referenceLib(library)
-                , _info(static_cast<const IMetadata*>(metadata)) {
-
-                ASSERT(dynamic_cast<const IMetadata*>(metadata) != nullptr);
-            }
-            ~PluginImplementation() override {
-            }
-
-        public:
-            uint8_t Major() const override {
-                return (_info->Major());
-            }
-            uint8_t Minor() const override {
-                return (_info->Minor());
-            }
-            uint8_t Patch() const override {
-                return (_info->Patch());
-            }
-            const std::string& ServiceName() const override {
-                return (_info->ServiceName());
-            }
-            const TCHAR* Module() const override {
-                return (_info->Module());
-            }
-            const std::vector<subsystem>& Precondition() const override {
-                return (_info->Precondition());
-            }
-            const std::vector<subsystem>& Termination() const override {
-                return (_info->Termination());
-            }
-            const std::vector<subsystem>& Control() const override {
-                return (_info->Control());
-            }
-
-        protected:
-            // Destructed is a method called through SFINAE just before the memory 
-            // associated with the object is freed from a Core::ProxyObject. If this
-            // method is called, be aware that the destructor of the object has run
-            // to completion!!!
-            void Destructed() {
-                Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_referenceLib));
-            }
-
-        private:
-            // The union here is used to avoid the destruction of the _referenceLib during
-            // the destructor call. That is required to make sure that the whole object,
-            // the actual service, is first fully destructed before we offer it to the
-            // service destructor (done in the Destructed call). This avoids the unloading
-            // of the refernced library before the object (part of this lirary) is fully 
-            // destructed...
-            union { Core::Library _referenceLib; };
-            const IMetadata* _info;
-        };
-
     public:
         Metadata() = delete;
+        Metadata(Metadata&&) = delete;
         Metadata(const Metadata&) = delete;
+        Metadata& operator=(Metadata&&) = delete;
         Metadata& operator=(const Metadata&) = delete;
 
         Metadata(
@@ -344,35 +300,39 @@ namespace Plugin {
             const std::initializer_list<subsystem>& precondition,
             const std::initializer_list<subsystem>& termination,
             const std::initializer_list<subsystem>& control)
-            : _version((major << 16) | (minor << 8) | patch)
-            , _Id(Core::ClassNameOnly(typeid(ACTUALSERVICE).name()).Text())
+            : _plugin()
             , _precondition(precondition)
             , _termination(termination)
-            , _control(control) {
+            , _control(control)
+            , _service(Core::System::MODULE_NAME, major, minor, patch) {
             ASSERT(Core::System::ROOT_META_DATA == nullptr);
             Core::System::ROOT_META_DATA = this;
-            Core::ServiceAdministrator::Instance().Register(this, &_factory);
         }
         ~Metadata() {
-            Core::ServiceAdministrator::Instance().Unregister(this, &_factory);
             Core::System::ROOT_META_DATA = nullptr;
         }
 
     public:
         uint8_t Major() const override {
-            return (static_cast<uint8_t> ((_version >> 16) & 0xFF));
+            return (_service.Metadata()->Major());
         }
         uint8_t Minor() const override {
-            return (static_cast<uint8_t>((_version >> 8) & 0xFF));
+            return (_service.Metadata()->Minor());
         }
         uint8_t Patch() const override {
-            return (static_cast<uint8_t>(_version & 0xFF));
+            return (_service.Metadata()->Patch());
         }
-        const std::string& ServiceName() const override {
-            return (_Id);
+        const TCHAR* InstanceId() const override {
+            if (_plugin.empty()) {
+                _plugin = string(_service.Metadata()->Module()) + "::" + string(_service.Metadata()->ServiceName());
+            }
+            return (_plugin.c_str());
+        }
+        const TCHAR* ServiceName() const override {
+            return (_service.Metadata()->ServiceName());
         }
         const TCHAR* Module() const override {
-            return (Core::System::MODULE_NAME);
+            return (_service.Metadata()->Module());
         }
         const std::vector<subsystem>& Precondition() const override {
             return (_precondition);
@@ -385,15 +345,12 @@ namespace Plugin {
         }
 
     private:
-        uint32_t _version;
-        string _Id;
+        mutable string _plugin;
         std::vector<subsystem> _precondition;
         std::vector<subsystem> _termination;
         std::vector<subsystem> _control;
-        Core::ServiceAdministrator::ServiceFactoryType< PluginImplementation <ACTUALSERVICE> > _factory;
+        Core::PublishedServiceType<ACTUALSERVICE> _service;
     };
 }
 
 }
-
-#endif // __WEBBRIDGESUPPORT_METADATA_H

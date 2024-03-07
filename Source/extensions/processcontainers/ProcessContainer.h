@@ -25,11 +25,11 @@ namespace WPEFramework {
 namespace ProcessContainers {
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
 
-    class INetworkInterfaceIterator : public Core::IIterator, public Core::IReferenceCounted {
+    class INetworkInterfaceIterator : public Core::IIterator,  public Core::IReferenceCounted  {
     public:
         ~INetworkInterfaceIterator() override = default;
 
-        // Return interface name (eg. veth0)
+        // Return interface name (eg. eth0)
         virtual string Name() const = 0;
 
         // Return numver of ip addresses assigned to the interface

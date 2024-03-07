@@ -84,7 +84,8 @@ namespace RPC {
         ID_COMREQUEST_NOTIFICATION          = (ID_OFFSET_INTERNAL + 0x003D),
         ID_SYSTEM_METADATA                  = (ID_OFFSET_INTERNAL + 0x003E),
                                             
-        ID_EXTERNAL_INTERFACE_OFFSET        = (ID_OFFSET_INTERNAL + 0x0040)
+        ID_EXTERNAL_INTERFACE_OFFSET        = (ID_OFFSET_INTERNAL + 0x0040),
+        ID_EXTERNAL_QA_INTERFACE_OFFSET     = (ID_OFFSET_INTERNAL + 0xA000)
     };
 }
 }

@@ -379,6 +379,7 @@ namespace Core {
 
         string MACAddress(const char delimiter) const;
         void MACAddress(uint8_t buffer[], const uint8_t length) const;
+        uint32_t MACAddress(const uint8_t buffer[6]);
 
         uint32_t Add(const IPNode& address);
         uint32_t Delete(const IPNode& address);
@@ -573,6 +574,7 @@ namespace Core {
         uint32_t Gateway(const IPNode& network, const NodeId& gateway);
         void Update(const struct rtattr* rtatp, const uint16_t length);
         void Addresses();
+        uint32_t MAC(const uint8_t buffer[6]);
 
     private:
         mutable Core::CriticalSection _adminLock;
@@ -647,6 +649,12 @@ namespace Core {
             ASSERT(IsValid());
 
             (*_index)->MAC(buffer, length);
+        }
+        uint32_t MACAddress(const uint8_t buffer[6]) 
+        {
+            ASSERT(IsValid());
+
+            return((*_index)->MAC(buffer));
         }
         inline IPV4AddressIterator IPV4Addresses() const {
             ASSERT(IsValid());

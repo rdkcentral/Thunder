@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "../IPTestAdministrator.h"
 #include <functional>
 #include <sstream>
 
 #include <gtest/gtest.h>
-#include "Serialization.h"
+#include "core/core.h"
 
 namespace WPEFramework {
 namespace Tests {

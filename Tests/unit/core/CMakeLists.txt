@@ -105,8 +105,7 @@ target_compile_definitions(${TEST_RUNNER_NAME}
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
-    ${GTEST_LIBRARY}
-    ${GTEST_MAIN_LIBRARY}
+    ${GTEST_BOTH_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM
