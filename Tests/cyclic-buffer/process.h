@@ -35,15 +35,24 @@
 namespace WPEFramework {
 namespace Tests {
 
-constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
-constexpr uint32_t lockTimeout =  Core::infinite; // Milliseconds
-constexpr uint32_t setupTime = 10; // Seconds
-constexpr uint32_t totalRuntime = 10000;//Core::infinite; // Milliseconds
-constexpr uint8_t sampleSizeInterval = 5;
-constexpr uint8_t forceUnlockRetryCount = 5;
+class Thread : public Core::Thread
+{
+public :
+
+    Thread() = default;
+    virtual ~Thread() = default;
+
+protected :
+
+    static constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
+    static constexpr uint32_t lockTimeout =  Core::infinite; // Milliseconds
+    static constexpr uint8_t sampleSizeInterval = 5; // Number of uint8_t elements
+    static constexpr uint8_t forceUnlockRetryCount = 5; // Attemps until Alert() at destruction
+};
 
 template <size_t N>
-class Reader : public Core::Thread {
+class Reader : public Thread
+{
 public :
 
     Reader() = delete;
@@ -51,9 +60,9 @@ public :
     Reader& operator=(const Reader&) = delete;
 
     Reader(const std::string& fileName)
-        : Core::Thread{}
+        : Thread{}
         , _enabled{ false }
-        , _fileName { fileName }
+        , _fileName{ fileName }
         , _index{ 0 }
         , _buffer{
               fileName
@@ -116,10 +125,10 @@ public :
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (   count
-                && Read(count) == count
-               ) {
+            if (Read(count) == count) {
 //                TRACE_L1(_T("Data read"));
+            } else {
+                // 'Less' bytes read
             }
 
             status = _buffer.Unlock();
@@ -148,16 +157,18 @@ private :
     {
         uint32_t read = 0;
 
-        if ((_index + count) > N) {
-            // Two passes when passing the boundary
-            read = _buffer.Read(&_output[_index], N - _index, false);
-            read += _buffer.Read(&_output[0], count - read, false);
-        } else {
-            // One pass
-            read = _buffer.Read(&_output[_index], count, false);
-        }
+        if (count > 0) {
+            if ((_index + count) > N) {
+                // Two passes when passing the boundary
+                read = _buffer.Read(&_output[_index], N - _index, false);
+                read += _buffer.Read(&_output[0], count - read, false);
+            } else {
+                // One pass
+                read = _buffer.Read(&_output[_index], count, false);
+            }
 
-        _index = (_index + read) % N;
+            _index = (_index + read) % N;
+        }
 
         return read;
     }
@@ -175,7 +186,7 @@ private :
 
 
 template <size_t N>
-class Writer : public Core::Thread
+class Writer : public Thread
 {
 public :
 
@@ -184,7 +195,7 @@ public :
     Writer& operator=(const Writer&) = delete;
 
     Writer(const std::string& fileName, uint32_t requiredSharedBufferSize)
-        : Core::Thread{}
+        : Thread{}
         , _enabled{ false }
         , _fileName { fileName }
         , _index{ 0 }
@@ -251,10 +262,10 @@ public :
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (   count
-                && Write(count) == count
-               ) {
+            if (Write(count) == count) {
 //                TRACE_L1(_T("Data written"));
+            } else {
+                // 'Less' bytes written
             }
 
             status = _buffer.Unlock();
@@ -283,16 +294,18 @@ private :
     {
         uint32_t written = 0;
 
-        if ((_index + count) > N) {
-            // Two passes when passing the boundary
-            written = _buffer.Write(&_input[_index], N - _index);
-            written += _buffer.Write(&_input[0], count - written);
-        } else {
-            // One pass
-            written = _buffer.Write(&_input[_index], count);
-        }
+        if (count > 0) {
+            if ((_index + count) > N) {
+                // Two passes when passing the boundary
+                written = _buffer.Write(&_input[_index], N - _index);
+                written += _buffer.Write(&_input[0], count - written);
+            } else {
+                // One pass
+                written = _buffer.Write(&_input[_index], count);
+            }
 
-        _index = (_index + written) % N;
+            _index = (_index + written) % N;
+        }
 
         return written;
     }
@@ -366,6 +379,13 @@ public :
     BufferUsers& operator=(const BufferUsers&) = delete;
 
     BufferUsers(const std::string& fileName)
+    : BufferUsers(fileName, W, R)
+    {
+    }
+
+    BufferUsers(const std::string& fileName, size_t maxWriters, size_t maxReaders)
+    : _writers(maxWriters > W ? W : maxWriters)
+    , _readers(maxReaders > R ? R : maxReaders)
     {
         for_each(_writers.begin(), _writers.end(), [&fileName] (std::unique_ptr<Writer<internalBufferSize>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))); });
         for_each(_readers.begin(), _readers.end(), [&fileName] (std::unique_ptr<Reader<internalBufferSize>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))); });
@@ -405,8 +425,8 @@ public :
 
 private :
 
-    std::array<std::unique_ptr<Writer<internalBufferSize>>, W> _writers;
-    std::array<std::unique_ptr<Reader<internalBufferSize>>, R> _readers;
+    std::vector<std::unique_ptr<Writer<internalBufferSize>>> _writers;
+    std::vector<std::unique_ptr<Reader<internalBufferSize>>> _readers;
 };
 
 template<uint32_t memoryMappedFileRequestedSize, uint32_t internalBufferSize, uint8_t maxChildren>
@@ -421,6 +441,9 @@ public :
     Process(const std::string& fileName)
     : _fileName{ fileName }
     , _sync{ nullptr }
+    , _childUsersSet{ maxReadersPerProcess, maxReadersPerProcess }
+    , _parentUsersSet{ maxWritersPerProcess, maxReadersPerProcess }
+    , _runTime{ Core::infinite }
     {
         std::for_each(_children.begin(), _children.end(), [] (pid_t& child){ child = 0; } );
 
@@ -444,7 +467,61 @@ public :
         return ForkAndExecute();
     }
 
+    bool SetChildUsers(uint8_t numWriters, uint8_t numReaders)
+    {
+        if (numWriters < maxWritersPerProcess) {
+            _childUsersSet[0] = numWriters;
+        }
+
+        if (numReaders < maxReadersPerProcess) {
+            _childUsersSet[1] = numReaders;
+        }
+
+        return    _childUsersSet[0] == numWriters
+               && _childUsersSet[1] == numReaders
+               ;
+    }
+
+    bool SetParentUsers(uint8_t numWriters, uint8_t numReaders)
+    {
+        if (numWriters < maxWritersPerProcess) {
+            _parentUsersSet[0] = numWriters;
+        }
+
+        if (numReaders < maxReadersPerProcess) {
+            _parentUsersSet[1] = numReaders;
+        }
+
+        return    _parentUsersSet[0] == numWriters
+               && _parentUsersSet[1] == numReaders
+               ;
+    }
+
+    bool SetTotalRuntime(uint32_t runTime /* milliseconds */)
+    {
+        if (runTime < maxTotalRuntime) {
+            _runTime = runTime;
+        }
+
+        return _runTime == runTime;
+    }
+
+    bool SetAllowedSetupTime(uint32_t setupTime /* seconds */)
+    {
+        if (setupTime < maxSetupTime) {
+            _setupTime = setupTime;
+        }
+
+        return _setupTime == setupTime;
+    }
+
 private :
+
+    static constexpr uint32_t maxSetupTime = 10; // Seconds
+    static constexpr uint32_t maxTotalRuntime = Core::infinite; // Milliseconds
+
+    static constexpr uint8_t maxWritersPerProcess = 1;
+    static constexpr uint8_t maxReadersPerProcess = 1;
 
     // The order is important, sync variable
     enum status : uint8_t {
@@ -513,7 +590,8 @@ private :
         return retval >= 0; // The parent / child might already be ready
     }
 
-    bool ForkAndExecute() {
+    bool ForkAndExecute()
+    {
         bool result = true;
 
         for (auto it = _children.begin(), end = _children.end(); it != end; it++) {
@@ -532,7 +610,7 @@ private :
                         }
             case 0  :   // Child
                         {
-                            const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+                            const struct timespec timeout = {.tv_sec = _setupTime, .tv_nsec = 0};
 
                             std::array<status, 2> flags = {status::uninitialized, status::initialized};
 
@@ -545,7 +623,7 @@ private :
 
                             TRACE_L1(_T("Child %ld knows its parent is ready [true/false]: %s."), getpid(), _sync->level != status::uninitialized ? _T("true") : _T("false"));
 
-                            BufferUsers<internalBufferSize, 0, 1> users(_fileName); // 0 writer(s), 1 reader(s)
+                            BufferUsers<internalBufferSize, maxWritersPerProcess, maxReadersPerProcess> users(_fileName, _childUsersSet[0], _childUsersSet[1]); // # writer(s), # reader(s)
 
                             flags = {status::initialized, status::ready};
 
@@ -564,7 +642,7 @@ private :
                                      ;
 
                             if (result) {
-                                SleepMs(totalRuntime);
+                                SleepMs(_runTime);
 
                                 result = users.Stop();
                             } else {
@@ -607,7 +685,7 @@ private :
             TRACE_L1(_T("'creator' and shared cyclic buffer ready."));
 
 #ifdef CREATOR_EXTRA_USERS
-            BufferUsers<internalBufferSize, 1, 0> users(_fileName); // 1 writer(s) 0, reader(s)
+            BufferUsers<internalBufferSize, maxWritersPerProcess, maxReadersPerProcess> users(_fileName, _parentUsersSet[0], _parentUsersSet[1]); // # writer(s), # reader(s)
 
             result =    users.Enable()
                      && users.Start()
@@ -627,7 +705,7 @@ private :
 
                 TRACE_L1(_T("Parent %ld has woken up %ld child(ren)."), gettid(), retval);
 
-                const struct timespec timeout = {.tv_sec = setupTime, .tv_nsec = 0};
+                const struct timespec timeout = {.tv_sec = _setupTime, .tv_nsec = 0};
 
                 flags = {status::initialized, status::ready};
 
@@ -712,6 +790,12 @@ private :
     }* _sync;
 
     std::array<pid_t, maxChildren> _children;
+
+    std::array<uint8_t, 2> _childUsersSet;
+    std::array<uint8_t, 2> _parentUsersSet;
+
+    uint32_t _runTime; // Milliseconds
+    uint32_t _setupTime; // Seconds
 };
 
 } // Tests

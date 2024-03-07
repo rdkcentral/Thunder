@@ -31,9 +31,13 @@ int main(int argc, char* argv[])
 
     constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
+    constexpr uint32_t totalRuntime = 10000; // Milliseconds
+
     Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
-    bool result = process.Execute();
+    bool result =    process.SetTotalRuntime(totalRuntime)
+                  && process.Execute()
+                  ;
 
     return result ? EXIT_SUCCESS : EXIT_FAILURE;
 }
