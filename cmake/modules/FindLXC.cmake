@@ -34,7 +34,7 @@ if(${PC_LXC_FOUND})
     set(LXC_INCLUDES ${PC_LXC_INCLUDE_DIRS})
 
     include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(LXC DEFAULT_MSG PC_LXC_FOUND LXC_LIBRARY LXC_LIBRARIES LXC_INCLUDES)
+    find_package_handle_standard_args(LXC DEFAULT_MSG PC_LXC_FOUND LXC_LIBRARY LXC_LIBRARIES)
     mark_as_advanced(LXC_LIBRARY LXC_LIBRARIES LXC_INCLUDES)
 
     if(LXC_FOUND AND NOT TARGET LXC::LXC)
