@@ -124,8 +124,17 @@ namespace RPC {
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-            } else {
-                TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
+                else {
+                    // If it is not found, check the dangling map
+                    Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
+
+                    if (index != _danglingProxies.end()) {
+                        _danglingProxies.erase(index);
+                    }
+                    else {
+                        TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+		    }
+		}
             }
         } else {
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
