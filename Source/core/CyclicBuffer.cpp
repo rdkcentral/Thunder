@@ -530,11 +530,14 @@ namespace Core {
         if (_administration->_reservedPID != 0) {
 #ifdef __WINDOWS__
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::GetCurrentThreadId());
+            if (_administration->_reservedPID != ::GetCurrentThreadId()) {
 #else
             // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::gettid());
+            if (_administration->_reservedPID != ::gettid()) {
 #endif
+                // We are not the one that made the reservation so skip any writing for now
+                return 0;
+            }
 
             // Check if we are not writing more than reserved.
             uint32_t newReservedWritten = _administration->_reservedWritten + length;
