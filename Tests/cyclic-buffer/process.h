@@ -129,8 +129,8 @@ public :
 
             if (Read(count) == count) {
 //                TRACE_L1(_T("Data read"));
-            } else {
-                // 'Less' bytes read
+            } else if (count > 0 ){
+//                TRACE_L1(_T("Less data read than requested")); // Possibly too few writes
             }
 
             status = _buffer.Unlock();
@@ -261,16 +261,36 @@ public :
     {
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, lockTimeout /* waiting time to give up lock */);
+        static uint32_t reserved = 0;
 
-        if (status == Core::ERROR_NONE) {
-            const uint32_t count = std::rand() % sampleSizeInterval;
+        if (reserved == 0) {
+            reserved = _buffer.Size() / numReservedBlocks;
 
-            if (Write(count) == count) {
-//                TRACE_L1(_T("Data written"));
-            } else {
-                // 'Less' bytes written
+            ASSERT(_buffer.Size() % numReservedBlocks == 0);
+
+            if (_buffer.Reserve(reserved) != Core::ERROR_NONE) {
+                // Another has already made a reservation
+                reserved = 0;
             }
+        }
+
+        uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, lockTimeout /* waiting time to give up lock */);
+        if (status == Core::ERROR_NONE) {
+            uint32_t count = std::rand() % sampleSizeInterval;
+
+            if (reserved <= count) {
+                count = reserved;
+            }
+
+            uint32_t written = Write(count);
+
+            if (written == count) {
+//                TRACE_L1(_T("Data written"));
+            } else if (count > 0) {
+//                TRACE_L1(_T("Less data written than requested")); // Possibly too few reads
+            }
+
+            reserved -= written;
 
             status = _buffer.Unlock();
 
@@ -293,6 +313,8 @@ public :
     }
 
 private :
+
+    static constexpr uint32_t numReservedBlocks = 2;
 
     uint32_t Write(uint32_t count)
     {
