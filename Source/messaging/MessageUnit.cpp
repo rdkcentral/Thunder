@@ -274,9 +274,7 @@ namespace WPEFramework {
             //those should be just printed
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
-            }
-
-            if (_dispatcher != nullptr) {
+            } else if (_dispatcher != nullptr) {
                 uint8_t serializationBuffer[DataSize];
                 uint16_t length = 0;
 
