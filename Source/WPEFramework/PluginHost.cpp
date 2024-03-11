@@ -700,8 +700,9 @@ POP_WARNING()
                     switch (keyPress) {
                     case 'A': {
                         Core::JSON::ArrayType<Metadata::COMRPC> proxyChannels;
-                        RPC::Administrator::Instance().Visit([&](const Core::SocketPort* socketPort, const RPC::Administrator::Proxies& proxies) {
+                        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies) {
                             Metadata::COMRPC& entry(proxyChannels.Add());
+                            const Core::SocketPort* socketPort = proxies.front()->Socket();
 
                             if (socketPort != nullptr) {
                                 entry.Remote = PluginHost::ChannelIdentifier(*socketPort);
