@@ -707,18 +707,14 @@ namespace Plugin {
         }
     }
 
-    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::MetaData::COMRPC>& response) const {
-        RPC::Administrator::Instance().Visit([&](const Core::IPCChannel& channel, const RPC::Administrator::Proxies& proxies)
+    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
+        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
             {
-                PluginHost::MetaData::COMRPC& entry(response.Add());
-                const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(&channel);
+                PluginHost::Metadata::COMRPC& entry(response.Add());
+                const Core::SocketPort* connection = proxies.front()->Socket();
 
-                if (comchannel != nullptr) {
-                    string identifier = PluginHost::ChannelIdentifier(comchannel->Source());
-
-                    if (identifier.empty() == false) {
-                        entry.Remote = identifier;
-                    }
+                if (connection != nullptr) {
+                    entry.Remote = PluginHost::ChannelIdentifier(*connection);
                 }
 
                 for (const auto& proxy : proxies) {
