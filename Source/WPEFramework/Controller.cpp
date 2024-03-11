@@ -707,9 +707,10 @@ namespace Plugin {
     }
 
     void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
-        RPC::Administrator::Instance().Visit([&](const Core::SocketPort* connection, const RPC::Administrator::Proxies& proxies)
+        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
             {
                 PluginHost::Metadata::COMRPC& entry(response.Add());
+                const Core::SocketPort* connection = proxies.front()->Socket();
 
                 if (connection != nullptr) {
                     entry.Remote = PluginHost::ChannelIdentifier(*connection);
