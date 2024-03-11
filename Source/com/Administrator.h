@@ -153,12 +153,12 @@ namespace RPC {
 
             for (const auto& entry : _channelProxyMap) {
                 if (entry.second.empty() == false) {
-                    action(entry.second.front()->Socket(), entry.second);
+                    action(entry.second);
                 }
             }
 
             if (_danglingProxies.empty() == false) {
-                action(nullptr, _danglingProxies);
+                action(_danglingProxies);
             }
             _adminLock.Unlock();
         }
