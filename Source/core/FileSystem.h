@@ -760,6 +760,18 @@ POP_WARNING()
         Directory& operator=(const Directory& RHS)
         {
             _name = RHS._name;
+            _filter = "";
+
+#ifdef __LINUX__
+            _dirFD = nullptr;
+            _entry = nullptr;
+#endif
+
+#ifdef __WINDOWS__
+            _dirFD = INVALID_HANDLE_VALUE;
+            noMoreFiles = false;
+#endif
+
             return (*this);
         }
 
