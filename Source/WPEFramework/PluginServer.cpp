@@ -725,10 +725,8 @@ namespace PluginHost {
                 Unlock();
 
                 if (result == HIBERNATE_ERROR_NONE) {
-                {
                     result = HibernateChildren(parentPID, timeout);
-                    if(result != Core::ERROR_NONE && result != Core::ERROR_ABORTED)
-                    {
+                    if(result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
                         //wakeup Parent process to revert Hibernation
                         TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
                         WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
