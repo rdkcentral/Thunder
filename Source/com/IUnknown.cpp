@@ -19,20 +19,13 @@
 
 #include "IUnknown.h"
 #include "Administrator.h"
+#include "Communicator.h"
 
 namespace WPEFramework {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB
     // -------------------------------------------------------------------------------------------
-    UnknownStub::UnknownStub()
-    {
-    }
-
-    /* virtual */ UnknownStub::~UnknownStub()
-    {
-    }
-
     /* virtual */ void UnknownStub::Handle(const uint16_t index,
         Core::ProxyType<Core::IPCChannel>& channel,
         Core::ProxyType<RPC::InvokeMessage>& message)
@@ -102,6 +95,22 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
+    const Core::SocketPort* UnknownProxy::Socket() const
+    {
+        const Core::SocketPort* result = nullptr;
+
+        _adminLock.Lock();
+        if (_channel.IsValid() == true) {
+            const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(_channel.operator->());
+            if (comchannel != nullptr) {
+                result = &(comchannel->Source());
+            }
+        }
+        _adminLock.Unlock();
+
+        return (result);
+    }
+
     static class UnknownInstantiation {
     public:
         UnknownInstantiation()
