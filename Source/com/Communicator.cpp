@@ -143,7 +143,6 @@ namespace RPC {
 
             if (index != _destructors.end()) {
                 handler = index->second;
-                _destructors.erase(index);
             }
 
             _adminLock.Unlock();
@@ -154,6 +153,16 @@ namespace RPC {
                 handler->Destruct();
                 handler->Release();
             }
+
+            _adminLock.Lock();
+
+            index = _destructors.find(id);
+
+            if (index != _destructors.end()) {
+                _destructors.erase(index);
+            }
+
+            _adminLock.Unlock();
         }
         void Destruct(const uint32_t id, Communicator::MonitorableProcess& entry)
         {
