@@ -105,8 +105,19 @@ if boolean('@MESSAGING@'):
   messaging.add("logging", __logging)
   
   __tracing_settings = []
-  __tracing_settings.append(__fatal)
-  __tracing_settings.append(__tracing)
+
+  __modules = "@ENABLE_TRACING_MODULES@".split(' ')
+  
+  if len(__modules) > 0:
+    for module in __modules:
+      __module = {
+        "module" : module,
+        "enabled" : True
+        }
+      __tracing_settings.append(__module)
+  else:
+    __tracing_settings.append(__tracing)
+    __tracing_settings.append(__fatal)
   
   __tracing = JSON()
   __tracing.add("settings", __tracing_settings)
