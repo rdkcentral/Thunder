@@ -169,8 +169,7 @@ namespace Messaging {
         for (auto& client : _clients) {
             client.second.Validate();
             uint32_t size = _dataSize;
-std::cout << "@@@@@ MessageClient::PopMessagesAndCall _dataSize: " << _dataSize << std::endl;
-std::cout << "@@@@@ MessageClient::PopMessagesAndCall size: " << size << std::endl;
+
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
 
