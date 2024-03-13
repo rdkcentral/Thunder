@@ -168,7 +168,7 @@ namespace Messaging {
 
         for (auto& client : _clients) {
             client.second.Validate();
-            uint32_t size = _dataSize;
+            uint16_t size = _dataSize;
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
@@ -180,7 +180,7 @@ namespace Messaging {
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
                 ASSERT(type != Core::Messaging::Metadata::type::INVALID);
 
-                uint32_t length = 0;
+                uint16_t length = 0;
 
                 ASSERT(handler != nullptr);
 
