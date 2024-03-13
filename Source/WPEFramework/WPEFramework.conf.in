@@ -106,7 +106,8 @@ if boolean('@MESSAGING@'):
   
   __tracing_settings = []
 
-  __modules = "@ENABLE_TRACING_MODULES@".split(' ')
+  __enable_tracing_modules = "@ENABLE_TRACING_MODULES@".strip()
+  __modules =__enable_tracing_modules.split(' ') if __enable_tracing_modules else []
   
   if len(__modules) > 0:
     for module in __modules:
