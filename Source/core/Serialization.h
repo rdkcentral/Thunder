@@ -300,6 +300,7 @@ POP_WARNING()
 
             ParserType(HANDLER& parent)
                 : _state(0)
+                , _locator(0)
                 , _buffer()
                 , _parent(parent)
                 , _terminator()
