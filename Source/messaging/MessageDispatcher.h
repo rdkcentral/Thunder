@@ -211,7 +211,7 @@ namespace Messaging {
          *                  ERROR_NONE - OK
          *                  ERROR_GENERAL - buffer too small to fit whole message at once
          */
-        uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
+        uint32_t PopData(uint32_t& outLength, uint8_t* outValue)
         {
             uint32_t result = Core::ERROR_READ_ERROR;
 
