@@ -166,7 +166,7 @@ namespace WPEFramework {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
+            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.MetadataSize(), _settings.DataSize(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
             if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -209,7 +209,7 @@ namespace WPEFramework {
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
+                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.MetadataSize(),_settings.DataSize(), _settings.SocketPort()));
                 ASSERT(_dispatcher != nullptr);
 
                 if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -277,16 +277,17 @@ namespace WPEFramework {
             }
 
             if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
+                uint32_t dataSize = _settings.DataSize();
+                uint8_t* serializationBuffer = static_cast<uint8_t*>(::malloc(dataSize));
                 uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
+                length = messageInfo.Serialize(serializationBuffer, dataSize);
 
                 //only serialize message if the information could fit
                 if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+                    length += message->Serialize(serializationBuffer + length, dataSize - length);
 
                     if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
                         TRACE_L1("Unable to push message data!");
@@ -295,6 +296,7 @@ namespace WPEFramework {
                 else {
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
+                free(serializationBuffer);
             }
         }
     } // namespace Messaging

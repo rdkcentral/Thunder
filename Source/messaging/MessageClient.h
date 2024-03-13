@@ -35,10 +35,12 @@ namespace Messaging {
     class EXTERNAL MessageClient {
     public:
         MessageClient() = delete;
-        ~MessageClient() = default;
+        ~MessageClient() {
+            free(_readBuffer);
+        }
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
-        MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort = 0);
+        MessageClient(const string& identifer, const string& basePath, const uint32_t dataSize, const uint16_t socketPort = 0);
 
     public:
         void AddInstance(const uint32_t id);
@@ -64,10 +66,10 @@ namespace Messaging {
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
         const string _basePath;
+        const uint32_t _dataSize;
         const uint16_t _socketPort;
 
-        mutable uint8_t _readBuffer[Messaging::MessageUnit::DataSize];
-        mutable uint8_t _writeBuffer[Messaging::MessageUnit::MetadataSize];
+        mutable uint8_t* _readBuffer;
 
         Clients _clients;
         Factories _factories;

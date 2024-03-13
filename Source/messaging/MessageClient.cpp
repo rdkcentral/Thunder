@@ -30,11 +30,13 @@ namespace Messaging {
      * @param basePath where are those buffers located
      * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
      */
-    MessageClient::MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort)
+    MessageClient::MessageClient(const string& identifer, const string& basePath, const uint32_t dataSize, const uint16_t socketPort)
         : _adminLock()
         , _identifier(identifer)
         , _basePath(basePath)
+        , _dataSize(dataSize)
         , _socketPort(socketPort)
+        , _readBuffer(static_cast<uint8_t*>(::malloc(_dataSize)))
         , _clients()
         , _factories()
     {
@@ -166,19 +168,20 @@ namespace Messaging {
 
         for (auto& client : _clients) {
             client.second.Validate();
-            uint16_t size = sizeof(_readBuffer);
-
+            uint32_t size = _dataSize;
+std::cout << "@@@@@ MessageClient::PopMessagesAndCall _dataSize: " << _dataSize << std::endl;
+std::cout << "@@@@@ MessageClient::PopMessagesAndCall size: " << size << std::endl;
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
 
-                if (size > sizeof(_readBuffer)) {
-                    size = sizeof(_readBuffer);
+                if (size > _dataSize) {
+                    size = _dataSize;
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
                 ASSERT(type != Core::Messaging::Metadata::type::INVALID);
 
-                uint16_t length = 0;
+                uint32_t length = 0;
 
                 ASSERT(handler != nullptr);
 
@@ -201,7 +204,7 @@ namespace Messaging {
                     client.second.FlushDataBuffer();
                 }
 
-                size = sizeof(_readBuffer);
+                size = _dataSize;
             }
         }
  
