@@ -30,11 +30,11 @@ namespace Messaging {
      * @param basePath where are those buffers located
      * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
      */
-    MessageClient::MessageClient(const string& identifer, const string& basePath, const uint32_t dataSize, const uint16_t socketPort)
+    MessageClient::MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort)
         : _adminLock()
         , _identifier(identifer)
         , _basePath(basePath)
-        , _dataSize(dataSize)
+        , _dataSize(MessageUnit::Instance().DataSize())
         , _socketPort(socketPort)
         , _readBuffer(static_cast<uint8_t*>(::malloc(_dataSize)))
         , _clients()

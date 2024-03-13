@@ -275,13 +275,9 @@ namespace WPEFramework {
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
-            }
-
-            if (_dispatcher != nullptr) {
                 uint32_t dataSize = _settings.DataSize();
                 uint8_t* serializationBuffer = static_cast<uint8_t*>(::malloc(dataSize));
-                uint16_t length = 0;
+                uint32_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 

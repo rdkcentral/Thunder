@@ -40,7 +40,7 @@ namespace Messaging {
         }
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
-        MessageClient(const string& identifer, const string& basePath, const uint32_t dataSize, const uint16_t socketPort = 0);
+        MessageClient(const string& identifer, const string& basePath, const uint16_t socketPort = 0);
 
     public:
         void AddInstance(const uint32_t id);
