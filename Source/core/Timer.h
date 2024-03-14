@@ -355,6 +355,7 @@ namespace Core {
 
                 _adminLock.Unlock();
 
+                ASSERT(_executing != nullptr);
                 uint64_t reschedule = _executing->Timed(info.ScheduleTime());
 
                 _adminLock.Lock();
