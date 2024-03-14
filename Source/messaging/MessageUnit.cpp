@@ -277,6 +277,9 @@ namespace WPEFramework {
             } else if (_dispatcher != nullptr) {
                 uint32_t dataSize = _settings.DataSize();
                 uint8_t* serializationBuffer = static_cast<uint8_t*>(::malloc(dataSize));
+
+                ASSERT(serializationBuffer != nullptr);
+
                 uint32_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
@@ -294,7 +297,7 @@ namespace WPEFramework {
                 else {
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
-                free(serializationBuffer);
+                ::free(serializationBuffer);
             }
         }
     } // namespace Messaging

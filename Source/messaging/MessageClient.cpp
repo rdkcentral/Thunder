@@ -40,6 +40,7 @@ namespace Messaging {
         , _clients()
         , _factories()
     {
+        ASSERT(_readBuffer != nullptr)
     }
 
     /**

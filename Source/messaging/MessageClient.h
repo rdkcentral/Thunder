@@ -36,7 +36,7 @@ namespace Messaging {
     public:
         MessageClient() = delete;
         ~MessageClient() {
-            free(_readBuffer);
+            ::free(_readBuffer);
         }
         MessageClient(const MessageClient&) = delete;
         MessageClient& operator=(const MessageClient&) = delete;
@@ -69,7 +69,7 @@ namespace Messaging {
         const uint32_t _dataSize;
         const uint16_t _socketPort;
 
-        mutable uint8_t* _readBuffer;
+        uint8_t* _readBuffer;
 
         Clients _clients;
         Factories _factories;
