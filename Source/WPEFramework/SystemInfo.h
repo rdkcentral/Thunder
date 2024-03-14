@@ -544,6 +544,11 @@ namespace PluginHost {
                 SYSLOG(Logging::Startup, (_T("EVENT: Cryptography")));
                 break;
             }
+            case INSTALLATION: {
+                /* No information to set yet */
+                SYSLOG(Logging::Startup, (_T("EVENT: Installation")));
+                break;
+            }
             case SECURITY: {
                 PluginHost::ISubSystem::ISecurity* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ISecurity>() : nullptr);
 
@@ -651,6 +656,10 @@ namespace PluginHost {
                 SYSLOG(Logging::Shutdown, (_T("EVENT: Cryptography")));
                 break;
             }
+            case INSTALLATION: {
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Installation")));
+                break;
+            }
             case BLUETOOTH: {
                 SYSLOG(Logging::Shutdown, (_T("EVENT: Bluetooth")));
                 break;
@@ -724,6 +733,7 @@ namespace PluginHost {
                 case WEBSOURCE:
                 case STREAMING:
                 case CRYPTOGRAPHY:
+                case INSTALLATION:
                 case SECURITY:
                 case BLUETOOTH: {
                     /* No information to get yet */
