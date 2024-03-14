@@ -583,7 +583,6 @@ namespace Core {
         string _name;
         std::list<IPNode> _ipv4Nodes;
         std::list<IPNode> _ipv6Nodes;
-        bool _loaded;
     };
 
     class EXTERNAL AdapterIterator {

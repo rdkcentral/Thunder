@@ -24,6 +24,8 @@ namespace Crypto {
 
     AESEncryption::AESEncryption(const aesType type)
         : _type(type)
+        , _context()
+        , _offset(0)
     {
         ::memset(_iv, 0, sizeof(_iv));
     }
@@ -181,6 +183,7 @@ namespace Crypto {
 
     AESDecryption::AESDecryption(const aesType type)
         : _type(type)
+        , _context()
         , _offset(0)
     {
         ::memset(_iv, 0, sizeof(_iv));
