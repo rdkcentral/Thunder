@@ -836,6 +836,10 @@ POP_WARNING()
                             printf("Bluetooth:    %s\n",
                                 (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
                                                                                               : "Unavailable");
+                            printf("Installation: %s\n",
+                                (status->IsActive(PluginHost::ISubSystem::INSTALLATION) == true) ? "Available"
+                                                                                                 : "Unavailable");
+
                             printf("------------------------------------------------------------\n");
                             if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                                 printf("Network Type: %s\n",
