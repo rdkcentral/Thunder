@@ -855,6 +855,10 @@ POP_WARNING()
                             printf("Cryptography: %s\n",
                                 (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
                                                                                               : "Unavailable");
+                            printf("Installation: %s\n",
+                                (status->IsActive(PluginHost::ISubSystem::INSTALLATION) == true) ? "Available"
+                                                                                              : "Unavailable");
+
                             printf("------------------------------------------------------------\n");
                             if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                                 printf("Network Type: %s\n",
