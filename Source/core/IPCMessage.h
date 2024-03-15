@@ -248,9 +248,11 @@ namespace Core {
             uint16_t _length;
         };
 
-        template <uint32_t LENGTH, typename SIZETYPE = uint16_t>
+        template <uint16_t LENGTH>
         class BufferType {
         public:
+            static constexpr uint32_t _LENGTH = (LENGTH == static_cast<uint16_t>(~0) ? static_cast<uint32_t>(~0) : LENGTH);
+
             BufferType(const BufferType<LENGTH>& copy) = delete;
             BufferType<LENGTH>& operator=(const BufferType<LENGTH>& RHS) = delete;
 
@@ -258,11 +260,11 @@ namespace Core {
                 : _buffer()
             {
             }
-            inline BufferType(const SIZETYPE length)
+            inline BufferType(const uint16_t length)
                 : _buffer(length)
             {
             }
-            inline BufferType(const SIZETYPE length, uint8_t buffer[])
+            inline BufferType(const uint16_t length, uint8_t buffer[])
                 : _buffer(buffer, length)
             {
             }
@@ -274,7 +276,7 @@ namespace Core {
             inline void Clear() {
                 _buffer.Size(0);
             }
-            inline SIZETYPE Length() const
+            inline uint16_t Length() const
             {
                 return (_buffer.Size());
             }
@@ -282,17 +284,17 @@ namespace Core {
             {
                 return (&(_buffer[0]));
             }
-            inline void Set (const SIZETYPE length, const uint8_t buffer[]) {
+            inline void Set (const uint16_t length, const uint8_t buffer[]) {
                 _buffer.Copy(0, length, buffer);
             }
-            inline uint16_t Serialize(uint8_t buffer[], const SIZETYPE length, const uint32_t offset) const
+            inline uint16_t Serialize(uint8_t buffer[], const uint16_t length, const uint32_t offset) const
             {
                 uint16_t size = ((_buffer.Size() - offset) > length ? length : (_buffer.Size() - offset));
                 ::memcpy(buffer, &(_buffer[offset]), size);
 
                 return (size);
             }
-            uint16_t Deserialize(const uint8_t buffer[], const SIZETYPE length, const uint32_t offset)
+            uint16_t Deserialize(const uint8_t buffer[], const uint16_t length, const uint32_t offset)
             {
                 ASSERT (offset == _buffer.Size());
 
@@ -304,7 +306,7 @@ namespace Core {
             }
 
         private:
-            Core::FrameType<LENGTH> _buffer;
+            Core::FrameType<_LENGTH> _buffer;
         };
  
     }
