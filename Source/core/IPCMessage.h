@@ -262,7 +262,7 @@ namespace Core {
                 : _buffer(length)
             {
             }
-            inline BufferType(const SIZETYPE length, const uint8_t buffer[])
+            inline BufferType(const SIZETYPE length, uint8_t buffer[])
                 : _buffer(buffer, length)
             {
             }
