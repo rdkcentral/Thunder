@@ -250,9 +250,10 @@ namespace Core {
 
         template <uint16_t LENGTH>
         class BufferType {
-        public:
+        private:
             static constexpr uint32_t _LENGTH = (LENGTH == static_cast<uint16_t>(~0) ? static_cast<uint32_t>(~0) : LENGTH);
 
+        public:
             BufferType(const BufferType<LENGTH>& copy) = delete;
             BufferType<LENGTH>& operator=(const BufferType<LENGTH>& RHS) = delete;
 

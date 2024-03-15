@@ -37,8 +37,10 @@ namespace WPEFramework {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint16_t MaxMetadataSize = 10 * 1024;
-            static constexpr uint16_t MaxDataSize = 20 * 1024;
+            static constexpr uint16_t MaxMetadataSize = 10 * 1024; // TO-DO: figure out what's the max size possible
+            static constexpr uint16_t TempMetadataSize = 8 * 1024; // TO-DO: make sure this is enough if all control are flying at the same time
+            static constexpr uint16_t MaxDataSize = 63 * 1024;
+            static constexpr uint16_t TempDataSize = 1024;
 
             enum flush : uint8_t {
                 OFF                = 0,
@@ -46,10 +48,10 @@ namespace WPEFramework {
                 FLUSH_ABBREVIATED  = 2
             };
 
-            class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint32_t>(~0)> {
+            class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
-                    : Core::IPC::BufferType<static_cast<uint32_t>(~0)>(MessageUnit::Instance().MetadataSize())
+                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MessageUnit::Instance().MetadataSize())
                 {
                 }
                 ~Buffer() = default;
