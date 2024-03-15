@@ -447,7 +447,7 @@ namespace PluginHost {
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
-                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+                    _administrator.Notification(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
@@ -588,7 +588,7 @@ namespace PluginHost {
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
     #endif
 
-                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+                    _administrator.Notification(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 
                 }
             }
@@ -679,7 +679,7 @@ namespace PluginHost {
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
-            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+            _administrator.Notification(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -883,14 +883,12 @@ namespace PluginHost {
 
     void Server::Service::Notify(const string& message) /* override */
     {
-        const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
-
 #if THUNDER_RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
 #endif
 
-        _administrator.Notification(forwarder);
+        _administrator.Notification(PluginHost::Service::Callsign(), message);
     }
 
     //
@@ -1172,17 +1170,15 @@ namespace PluginHost {
         IFactories::Assign(nullptr);
     }
 
-    void Server::Notification(const ForwardMessage& data)
+    void Server::Notification(const string& callsign, const string& data)
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
 
-            controller->Notification(data);
+            controller->Notification(callsign, data);
 
 #if THUNDER_RESTFULL_API
-            string result;
-            data.ToString(result);
-            _controller->Notification(result);
+            _controller->Notification(_T("{\"callsign\":\"") + callsign + _T("\",\"data\":") + data + _T("}"));
 #endif
         }
     }

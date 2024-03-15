@@ -70,25 +70,27 @@ The table below lists configuration options of the plugin.
 | callsign | string | Plugin instance name (default: *Controller*) |
 | classname | string | Class name: *Controller* |
 | locator | string | Library name: *(built-in)* |
-| startmode | string | Determines if the plugin shall be started automatically along with the framework |
+| startmode | string | Determines in which state the plugin should be moved to at startup of the framework |
 
 <a name="head.Interfaces"></a>
 # Interfaces
 
 This plugin implements the following interfaces:
 
-- ISystemManagement ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- IDiscovery ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- IConfiguration ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-extended format)
-- ILifeTime ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- IMetadata ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- Controller::ISystem ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- Controller::IDiscovery ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- Controller::IConfiguration ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-extended format)
+- Controller::ILifeTime ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- Controller::ISubsystems ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-collapsed format)
+- Controller::IEvents ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- Controller::IMetadata ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
 
 <a name="head.Methods"></a>
 # Methods
 
 The following methods are provided by the Controller plugin:
 
-SystemManagement interface methods:
+Controller System interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
@@ -96,26 +98,26 @@ SystemManagement interface methods:
 | [delete](#method.delete) | Removes contents of a directory from the persistent storage |
 | [clone](#method.clone) | Creates a clone of given plugin to requested new callsign |
 
-Discovery interface methods:
+Controller Discovery interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
 | [startdiscovery](#method.startdiscovery) | Starts the network discovery |
 
-Configuration interface methods:
+Controller Configuration interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
 | [persist](#method.persist) / [storeconfig](#method.persist) | Stores the configuration to persistent memory |
 
-LifeTime interface methods:
+Controller LifeTime interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
-| [activate](#method.activate) | Activates a plugin, |
-| [deactivate](#method.deactivate) | Deactivates a plugin, |
-| [unavailable](#method.unavailable) | Sets a plugin unavailable for interaction |
-| [hibernate](#method.hibernate) | Sets a plugin in Hibernate state |
+| [activate](#method.activate) | Activates a plugin |
+| [deactivate](#method.deactivate) | Deactivates a plugin |
+| [unavailable](#method.unavailable) | Makes a plugin unavailable for interaction |
+| [hibernate](#method.hibernate) | Hibernates a plugin |
 | [suspend](#method.suspend) | Suspends a plugin |
 | [resume](#method.resume) | Resumes a plugin |
 
@@ -125,6 +127,10 @@ LifeTime interface methods:
 Reboots the device.
 
 > ``harakiri`` is an alternative name for this method.
+
+### Description
+
+Use this method to reboot the device. Depending on the device this call may not generate a response.
 
 ### Parameters
 
@@ -163,12 +169,16 @@ This method takes no parameters.
 
 Removes contents of a directory from the persistent storage.
 
+### Description
+
+Use this method to recursively delete contents of a directory.
+
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.path | string |  |
+| params.path | string | Path to the directory |
 
 ### Result
 
@@ -211,8 +221,8 @@ Creates a clone of given plugin to requested new callsign.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
-| params.newcallsign | string |  |
+| params.callsign | string | Callsign of the plugin |
+| params.newcallsign | string | New callsign for the plugin |
 
 ### Result
 
@@ -249,14 +259,18 @@ Creates a clone of given plugin to requested new callsign.
 <a name="method.startdiscovery"></a>
 ## *startdiscovery [<sup>method</sup>](#head.Methods)*
 
-Starts the network discovery. Use this method to initiate SSDP network discovery process.
+Starts the network discovery.
+
+### Description
+
+Use this method to initiate SSDP network discovery process.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.ttl | integer |  |
+| params.ttl | integer | Time to live, parameter for SSDP discovery |
 
 ### Result
 
@@ -296,6 +310,10 @@ Stores the configuration to persistent memory.
 
 > ``storeconfig`` is an alternative name for this method.
 
+### Description
+
+Use this method to save the current configuration to persistent memory.
+
 ### Parameters
 
 This method takes no parameters.
@@ -331,14 +349,18 @@ This method takes no parameters.
 <a name="method.activate"></a>
 ## *activate [<sup>method</sup>](#head.Methods)*
 
-Activates a plugin, i.e. move from Deactivated, via Activating to Activated state.
+Activates a plugin.
+
+### Description
+
+Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state. If a plugin is in Activated state, it can handle JSON-RPC requests that are coming in. The plugin is loaded into memory only if it gets activated.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
+| params.callsign | string | Callsign of plugin to be activated |
 
 ### Result
 
@@ -374,14 +396,18 @@ Activates a plugin, i.e. move from Deactivated, via Activating to Activated stat
 <a name="method.deactivate"></a>
 ## *deactivate [<sup>method</sup>](#head.Methods)*
 
-Deactivates a plugin, i.e. move from Activated, via Deactivating to Deactivated state.
+Deactivates a plugin.
+
+### Description
+
+Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state. If a plugin is Deactivated, the actual plugin (.so) is no longer loaded into the memory of the process. In a deactivated state the plugin will not respond to any JSON-RPC requests.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
+| params.callsign | string | Callsign of plugin to be deactivated |
 
 ### Result
 
@@ -417,14 +443,18 @@ Deactivates a plugin, i.e. move from Activated, via Deactivating to Deactivated 
 <a name="method.unavailable"></a>
 ## *unavailable [<sup>method</sup>](#head.Methods)*
 
-Sets a plugin unavailable for interaction.
+Makes a plugin unavailable for interaction.
+
+### Description
+
+Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state. If a plugin is Unavailable, the actual plugin (.so) is no longer loaded into the memory of the process. It can not be started unless it is first deactivated (what triggers a state transition).
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
+| params.callsign | string | Callsign of plugin to be set as unavailable |
 
 ### Result
 
@@ -460,15 +490,15 @@ Sets a plugin unavailable for interaction.
 <a name="method.hibernate"></a>
 ## *hibernate [<sup>method</sup>](#head.Methods)*
 
-Sets a plugin in Hibernate state.
+Hibernates a plugin.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
-| params.timeout | integer |  |
+| params.callsign | string | Callsign of plugin to be hibernated |
+| params.timeout | integer | Timeout to hibernate |
 
 ### Result
 
@@ -507,12 +537,16 @@ Sets a plugin in Hibernate state.
 
 Suspends a plugin.
 
+### Description
+
+This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state depending on its current state. If required it will activate and move to the resumed state, regardless of the flags in the config (i.e. *startmode*, *resumed*)
+
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
+| params.callsign | string | Callsign of plugin to be suspended |
 
 ### Result
 
@@ -550,12 +584,16 @@ Suspends a plugin.
 
 Resumes a plugin.
 
+### Description
+
+This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin or only suspend the plugin.
+
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object |  |
-| params.callsign | string |  |
+| params.callsign | string | Callsign of plugin to be resumed |
 
 ### Result
 
@@ -593,41 +631,46 @@ Resumes a plugin.
 
 The following properties are provided by the Controller plugin:
 
-SystemManagement interface properties:
+Controller System interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
-| [environment](#property.environment) (read-only) | Provides the value of request environment variable |
+| [environment](#property.environment) (read-only) | Environment variable value |
 
-Discovery interface properties:
-
-| Property | Description |
-| :-------- | :-------- |
-| [discoveryresults](#property.discoveryresults) (read-only) | Provides SSDP network discovery results |
-
-Configuration interface properties:
+Controller Discovery interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
-| [configuration](#property.configuration) | Provides configuration value of a request service |
+| [discoveryresults](#property.discoveryresults) (read-only) | SSDP network discovery results |
 
-Metadata interface properties:
+Controller Configuration interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
-| [services](#property.services) / [status](#property.services) (read-only) | Provides status of a service, including their configurations |
-| [links](#property.links) (read-only) | Provides active connections details |
-| [proxies](#property.proxies) (read-only) | Provides details of a proxy |
-| [subsystems](#property.subsystems) (read-only) | Provides status of subsystems |
-| [version](#property.version) (read-only) | Provides version and hash of WPEFramework |
-| [threads](#property.threads) (read-only) | Provides information on workerpool threads |
-| [pendingrequests](#property.pendingrequests) (read-only) | Provides information on pending requests |
-| [callstack](#property.callstack) (read-only) | Provides callstack associated with the given thread |
+| [configuration](#property.configuration) | Service configuration |
+
+Controller Subsystems interface properties:
+
+| Property | Description |
+| :-------- | :-------- |
+| [subsystems](#property.subsystems) (read-only) | Subsystems status |
+
+Controller Metadata interface properties:
+
+| Property | Description |
+| :-------- | :-------- |
+| [services](#property.services) / [status](#property.services) (read-only) | Services metadata |
+| [links](#property.links) (read-only) | Connections list |
+| [proxies](#property.proxies) (read-only) | Proxies list |
+| [version](#property.version) (read-only) | Framework version |
+| [threads](#property.threads) (read-only) | Workerpool threads |
+| [pendingrequests](#property.pendingrequests) (read-only) | Pending requests |
+| [callstack](#property.callstack) (read-only) | Thread callstack |
 
 <a name="property.environment"></a>
 ## *environment [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides the value of request environment variable.
+Provides access to the environment variable value.
 
 > This property is **read-only**.
 
@@ -639,7 +682,7 @@ Provides access to the provides the value of request environment variable.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | string | Provides the value of request environment variable |
+| result | string | Environment variable value |
 
 ### Example
 
@@ -666,7 +709,7 @@ Provides access to the provides the value of request environment variable.
 <a name="property.discoveryresults"></a>
 ## *discoveryresults [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides SSDP network discovery results.
+Provides access to the SSDP network discovery results.
 
 > This property is **read-only**.
 
@@ -676,12 +719,12 @@ Provides access to the provides SSDP network discovery results.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides SSDP network discovery results |
+| result | array | SSDP network discovery results |
 | result[#] | object |  |
-| result[#].locator | string |  |
-| result[#].latency | integer |  |
-| result[#]?.model | string | <sup>*(optional)*</sup>  |
-| result[#].secure | boolean |  |
+| result[#].locator | string | Locator for the discovery |
+| result[#].latency | integer | Latency for the discovery |
+| result[#]?.model | string | <sup>*(optional)*</sup> Model |
+| result[#].secure | boolean | Secure or not |
 
 ### Example
 
@@ -715,13 +758,13 @@ Provides access to the provides SSDP network discovery results.
 <a name="property.configuration"></a>
 ## *configuration [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides configuration value of a request service.
+Provides access to the service configuration.
 
 ### Value
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| (property) | opaque object | Provides configuration value of a request service |
+| (property) | opaque object | Service configuration |
 
 > The *callsign* argument shall be passed as the index to the property, e.g. ``Controller.1.configuration@xyz``.
 
@@ -729,7 +772,7 @@ Provides access to the provides configuration value of a request service.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | opaque object | Provides configuration value of a request service |
+| result | opaque object | Service configuration |
 
 ### Example
 
@@ -774,14 +817,61 @@ Provides access to the provides configuration value of a request service.
 }
 ```
 
+<a name="property.subsystems"></a>
+## *subsystems [<sup>property</sup>](#head.Properties)*
+
+Provides access to the subsystems status.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | array | Subsystems status |
+| (property)[#] | object |  |
+| (property)[#].subsystem | string | Name of the subsystem (must be one of the following: Platform, Security, Network, Identifier, Graphics, Internet, Location, Time, Provisioning, Decryption, WebSource, Streaming, Bluetooth, Cryptography) |
+| (property)[#].active | boolean | Denotes if the subsystem is currently active |
+
+### Example
+
+#### Get Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.subsystems"
+}
+```
+
+#### Get Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": [
+    {
+      "subsystem": "Platform",
+      "active": false
+    }
+  ]
+}
+```
+
 <a name="property.services"></a>
 ## *services [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides status of a service, including their configurations.
+Provides access to the services metadata.
 
 > This property is **read-only**.
 
 > ``status`` is an alternative name for this property.
+
+### Description
+
+If callsign is omitted, metadata of all services is returned.
 
 ### Value
 
@@ -791,25 +881,26 @@ Provides access to the provides status of a service, including their configurati
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides status of a service, including their configurations<br>*If only one element is present the array will be omitted.* |
+| result | array | Services metadata<br>*If only one element is present the array will be omitted.* |
 | result[#] | object |  |
 | result[#].callsign | string | Plugin callsign |
 | result[#].locator | string | Shared library path |
 | result[#].classname | string | Plugin class name |
 | result[#].module | string | Module name |
-| result[#].state | string | Current state (must be one of the following: unavailable, deactivated, deactivation, activated, activation, destroyed, precondition, hibernated, suspended, resumed) |
+| result[#].state | string | Current state (must be one of the following: Unavailable, Deactivated, Deactivation, Activated, Activation, Destroyed, Precondition, Hibernated, Suspended, Resumed) |
 | result[#].startmode | string | Startup mode (must be one of the following: Unavailable, Deactivated, Activated) |
-| result[#].version | object |  |
+| result[#].resumed | boolean | Determines if the plugin is to be activated in resumed or suspended mode |
+| result[#].version | object | Version |
 | result[#].version.hash | string | SHA256 hash identifying the source code |
 | result[#].version.major | integer | Major number |
 | result[#].version.minor | integer | Minor number |
 | result[#].version.patch | integer | Patch number |
-| result[#]?.communicator | string | <sup>*(optional)*</sup>  |
-| result[#]?.persistentpathpostfix | string | <sup>*(optional)*</sup>  |
-| result[#]?.volatilepathpostfix | string | <sup>*(optional)*</sup>  |
-| result[#]?.systemrootpath | string | <sup>*(optional)*</sup>  |
-| result[#]?.precondition | opaque object | <sup>*(optional)*</sup> Activate conditons |
-| result[#]?.termination | opaque object | <sup>*(optional)*</sup> Deactivate conditions |
+| result[#]?.communicator | string | <sup>*(optional)*</sup> Communicator |
+| result[#]?.persistentpathpostfix | string | <sup>*(optional)*</sup> Postfix of persistent path |
+| result[#]?.volatilepathpostfix | string | <sup>*(optional)*</sup> Postfix of volatile path |
+| result[#]?.systemrootpath | string | <sup>*(optional)*</sup> Path of system root |
+| result[#]?.precondition | opaque object | <sup>*(optional)*</sup> Activation conditons |
+| result[#]?.termination | opaque object | <sup>*(optional)*</sup> Deactivation conditions |
 | result[#]?.configuration | opaque object | <sup>*(optional)*</sup> Plugin configuration |
 | result[#]?.observers | integer | <sup>*(optional)*</sup> Number or observers |
 | result[#]?.processedrequests | integer | <sup>*(optional)*</sup> Number of API requests that have been processed by the plugin |
@@ -839,8 +930,9 @@ Provides access to the provides status of a service, including their configurati
       "locator": "...",
       "classname": "...",
       "module": "...",
-      "state": "unavailable",
+      "state": "Unavailable",
       "startmode": "Unavailable",
+      "resumed": false,
       "version": {
         "hash": "...",
         "major": 0,
@@ -865,7 +957,7 @@ Provides access to the provides status of a service, including their configurati
 <a name="property.links"></a>
 ## *links [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides active connections details.
+Provides access to the connections list.
 
 > This property is **read-only**.
 
@@ -875,7 +967,7 @@ Provides access to the provides active connections details.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides active connections details |
+| result | array | Connections list |
 | result[#] | object |  |
 | result[#].remote | string | IP address (or FQDN) of the other side of the connection |
 | result[#].state | string | State of the link (must be one of the following: Closed, WebServer, WebSocket, RawSocket, COMRPC, Suspended) |
@@ -916,7 +1008,7 @@ Provides access to the provides active connections details.
 <a name="property.proxies"></a>
 ## *proxies [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides details of a proxy.
+Provides access to the proxies list.
 
 > This property is **read-only**.
 
@@ -928,7 +1020,7 @@ Provides access to the provides details of a proxy.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides details of a proxy |
+| result | array | Proxies list |
 | result[#] | object |  |
 | result[#].interface | integer | Interface ID |
 | result[#].instance | instanceid | Instance ID |
@@ -962,55 +1054,10 @@ Provides access to the provides details of a proxy.
 }
 ```
 
-<a name="property.subsystems"></a>
-## *subsystems [<sup>property</sup>](#head.Properties)*
-
-Provides access to the provides status of subsystems.
-
-> This property is **read-only**.
-
-### Value
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | array | Provides status of subsystems |
-| result[#] | object |  |
-| result[#].subsystem | string | Subsystem name (must be one of the following: Platform, Security, Network, Identifier, Graphics, Internet, Location, Time, Provisioning, Decryption, WebSource, Streaming, Bluetooth, Cryptography) |
-| result[#].active | boolean | Denotes if currently active |
-
-### Example
-
-#### Get Request
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 42,
-  "method": "Controller.1.subsystems"
-}
-```
-
-#### Get Response
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 42,
-  "result": [
-    {
-      "subsystem": "Platform",
-      "active": false
-    }
-  ]
-}
-```
-
 <a name="property.version"></a>
 ## *version [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides version and hash of WPEFramework.
+Provides access to the framework version.
 
 > This property is **read-only**.
 
@@ -1020,7 +1067,7 @@ Provides access to the provides version and hash of WPEFramework.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | object | Provides version and hash of WPEFramework |
+| result | object | Framework version |
 | result.hash | string | SHA256 hash identifying the source code |
 | result.major | integer | Major number |
 | result.minor | integer | Minor number |
@@ -1056,7 +1103,7 @@ Provides access to the provides version and hash of WPEFramework.
 <a name="property.threads"></a>
 ## *threads [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides information on workerpool threads.
+Provides access to the workerpool threads.
 
 > This property is **read-only**.
 
@@ -1066,11 +1113,11 @@ Provides access to the provides information on workerpool threads.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides information on workerpool threads |
+| result | array | Workerpool threads |
 | result[#] | object |  |
-| result[#].id | instanceid |  |
-| result[#].job | string |  |
-| result[#].runs | integer |  |
+| result[#].id | instanceid | Thread Id |
+| result[#].job | string | Job name |
+| result[#].runs | integer | Number of runs |
 
 ### Example
 
@@ -1103,7 +1150,7 @@ Provides access to the provides information on workerpool threads.
 <a name="property.pendingrequests"></a>
 ## *pendingrequests [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides information on pending requests.
+Provides access to the pending requests.
 
 > This property is **read-only**.
 
@@ -1113,7 +1160,7 @@ Provides access to the provides information on pending requests.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides information on pending requests |
+| result | array | Pending requests |
 | result[#] | string |  |
 
 ### Example
@@ -1143,7 +1190,7 @@ Provides access to the provides information on pending requests.
 <a name="property.callstack"></a>
 ## *callstack [<sup>property</sup>](#head.Properties)*
 
-Provides access to the provides callstack associated with the given thread.
+Provides access to the thread callstack.
 
 > This property is **read-only**.
 
@@ -1155,7 +1202,7 @@ Provides access to the provides callstack associated with the given thread.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Provides callstack associated with the given thread |
+| result | array | Thread callstack |
 | result[#] | object |  |
 | result[#].address | instanceid | Address |
 | result[#].module | string | Module name |
@@ -1198,11 +1245,23 @@ Notifications are autonomous events triggered by the internals of the implementa
 
 The following events are provided by the Controller plugin:
 
-LifeTime interface events:
+Controller LifeTime interface events:
 
 | Event | Description |
 | :-------- | :-------- |
 | [statechange](#event.statechange) | Notifies a plugin state change |
+
+Controller Subsystems interface events:
+
+| Event | Description |
+| :-------- | :-------- |
+| [subsystemchange](#event.subsystemchange) | Notifies a subsystem change |
+
+Controller Events interface events:
+
+| Event | Description |
+| :-------- | :-------- |
+| [all](#event.all) | Notifies all events forwarded by the framework |
 
 <a name="event.statechange"></a>
 ## *statechange [<sup>event</sup>](#head.Notifications)*
@@ -1228,6 +1287,65 @@ Notifies a plugin state change.
     "callsign": "...",
     "state": "Unavailable",
     "reason": "Requested"
+  }
+}
+```
+
+<a name="event.subsystemchange"></a>
+## *subsystemchange [<sup>event</sup>](#head.Notifications)*
+
+Notifies a subsystem change.
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| subsystems | array | Subsystems that have changed |
+| subsystems[#] | object |  |
+| subsystems[#].subsystem | string | Name of the subsystem (must be one of the following: Platform, Security, Network, Identifier, Graphics, Internet, Location, Time, Provisioning, Decryption, WebSource, Streaming, Bluetooth, Cryptography) |
+| subsystems[#].active | boolean | Denotes if the subsystem is currently active |
+
+### Example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "client.events.1.subsystemchange",
+  "params": [
+    {
+      "subsystem": "Platform",
+      "active": false
+    }
+  ]
+}
+```
+
+<a name="event.all"></a>
+## *all [<sup>event</sup>](#head.Notifications)*
+
+Notifies all events forwarded by the framework.
+
+### Description
+
+The Controller plugin is an aggregator of all the events triggered by a specific plugin. All notifications send by any plugin are forwarded over the Controller socket as an event.
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| params | object |  |
+| params.callsign | string | Origin of the message |
+| params.data | opaque object | Contents of the message |
+
+### Example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "client.events.1.all",
+  "params": {
+    "callsign": "...",
+    "data": {}
   }
 }
 ```

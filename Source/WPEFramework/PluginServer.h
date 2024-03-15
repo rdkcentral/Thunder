@@ -66,40 +66,6 @@ namespace PluginHost {
 
         using Shells = std::unordered_map<string, PluginHost::IShell*>;
 
-        class ForwardMessage : public Core::JSON::Container {
-        private:
-            ForwardMessage(ForwardMessage&&) = delete;
-            ForwardMessage(const ForwardMessage&) = delete;
-            ForwardMessage& operator=(ForwardMessage&&) = delete;
-            ForwardMessage& operator=(const ForwardMessage&) = delete;
-
-        public:
-            ForwardMessage()
-                : Core::JSON::Container()
-                , Callsign(true)
-                , Data(false)
-            {
-                Add(_T("callsign"), &Callsign);
-                Add(_T("data"), &Data);
-            }
-            ForwardMessage(const string& callsign, const string& message)
-                : Core::JSON::Container()
-                , Callsign(true)
-                , Data(false)
-            {
-                Add(_T("callsign"), &Callsign);
-                Add(_T("data"), &Data);
-
-                Callsign = callsign;
-                Data = message;
-            }
-            ~ForwardMessage() = default;
-
-        public:
-            Core::JSON::String Callsign;
-            Core::JSON::String Data;
-        };
-
     private:
         class ServiceMap;
         friend class Plugin::Controller;
@@ -2982,9 +2948,9 @@ namespace PluginHost {
 
                 return (Iterator(std::move(workingList)));
             }
-            inline void Notification(const ForwardMessage& message)
+            inline void Notification(const string& callsign, const string& message)
             {
-                _server.Notification(message);
+                _server.Notification(callsign, message);
             }
             #if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
@@ -4442,7 +4408,7 @@ namespace PluginHost {
             return (_config);
         }
 
-        void Notification(const ForwardMessage& message);
+        void Notification(const string& callsign, const string& message);
         void Open();
         void Close();
 
