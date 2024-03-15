@@ -248,7 +248,7 @@ namespace Core {
             uint16_t _length;
         };
 
-        template <const uint32_t LENGTH>
+        template <uint32_t LENGTH, typename SIZETYPE = uint16_t>
         class BufferType {
         public:
             BufferType(const BufferType<LENGTH>& copy) = delete;
@@ -258,11 +258,11 @@ namespace Core {
                 : _buffer()
             {
             }
-            inline BufferType(const uint32_t length)
+            inline BufferType(const SIZETYPE length)
                 : _buffer(length)
             {
             }
-            inline BufferType(const uint32_t length, const uint8_t buffer[])
+            inline BufferType(const SIZETYPE length, const uint8_t buffer[])
                 : _buffer(buffer, length)
             {
             }
@@ -274,7 +274,7 @@ namespace Core {
             inline void Clear() {
                 _buffer.Size(0);
             }
-            inline uint32_t Length() const
+            inline SIZETYPE Length() const
             {
                 return (_buffer.Size());
             }
@@ -282,17 +282,17 @@ namespace Core {
             {
                 return (&(_buffer[0]));
             }
-            inline void Set (const uint32_t length, const uint8_t buffer[]) {
+            inline void Set (const SIZETYPE length, const uint8_t buffer[]) {
                 _buffer.Copy(0, length, buffer);
             }
-            inline uint16_t Serialize(uint8_t buffer[], const uint32_t length, const uint32_t offset) const
+            inline uint16_t Serialize(uint8_t buffer[], const SIZETYPE length, const uint32_t offset) const
             {
                 uint16_t size = ((_buffer.Size() - offset) > length ? length : (_buffer.Size() - offset));
                 ::memcpy(buffer, &(_buffer[offset]), size);
 
                 return (size);
             }
-            uint16_t Deserialize(const uint8_t buffer[], const uint32_t length, const uint32_t offset)
+            uint16_t Deserialize(const uint8_t buffer[], const SIZETYPE length, const uint32_t offset)
             {
                 ASSERT (offset == _buffer.Size());
 
