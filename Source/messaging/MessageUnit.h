@@ -37,10 +37,10 @@ namespace WPEFramework {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint16_t MaxMetadataSize = 10 * 1024; // TO-DO: figure out what's the max size possible
-            static constexpr uint16_t TempMetadataSize = 8 * 1024; // TO-DO: make sure this is enough if all control are flying at the same time
-            static constexpr uint16_t MaxDataSize = 63 * 1024;
-            static constexpr uint16_t TempDataSize = 1024;
+            static constexpr uint16_t MaxMetadataBufferSize = 10 * 1024; // TO-DO: figure out what's the max size possible
+            static constexpr uint16_t TempMetadataBufferSize = 8 * 1024; // TO-DO: make sure this is enough if all control are flying at the same time
+            static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
+            static constexpr uint16_t TempDataBufferSize = 1024;
 
             enum flush : uint8_t {
                 OFF                = 0,
@@ -477,8 +477,25 @@ namespace WPEFramework {
                             (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
                             (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
-                    _metadataSize = jsonParsed.MetadataSize.Value();
-                    _dataSize = jsonParsed.DataSize.Value();
+
+                    if (jsonParsed.MetadataSize.Value() > MaxMetadataBufferSize) {
+                        TRACE_L1("Metadata buffer size set in the config is too large! The maximum has been used instead");
+                        _metadataSize = MaxMetadataBufferSize;
+
+                        ASSERT(false);
+                    }
+                    else {
+                        _metadataSize = jsonParsed.MetadataSize.Value();
+                    }
+                    if (jsonParsed.DataSize.Value() > MaxDataBufferSize) {
+                        TRACE_L1("Data buffer size set in the config is too large! The maximum has been used instead");
+                        _dataSize = MaxDataBufferSize;
+
+                        ASSERT(false);
+                    }
+                    else {
+                        _dataSize = jsonParsed.DataSize.Value();
+                    }
 
                     FromConfig(jsonParsed);
                 }
@@ -733,7 +750,7 @@ namespace WPEFramework {
 
                     if (_channel.IsOpen() == true) {
 
-                        uint8_t dataBuffer[MaxMetadataSize];
+                        uint8_t dataBuffer[TempMetadataBufferSize];
 
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
@@ -817,7 +834,7 @@ namespace WPEFramework {
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
-                            uint8_t outBuffer[MaxMetadataSize];
+                            uint8_t outBuffer[TempMetadataBufferSize];
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
 
