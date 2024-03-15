@@ -34,13 +34,11 @@ namespace Messaging {
         : _adminLock()
         , _identifier(identifer)
         , _basePath(basePath)
-        , _dataSize(MessageUnit::Instance().DataSize())
         , _socketPort(socketPort)
-        , _readBuffer(static_cast<uint8_t*>(::malloc(_dataSize)))
         , _clients()
         , _factories()
     {
-        ASSERT(_readBuffer != nullptr);
+        ::memset(_readBuffer, 0, sizeof(_readBuffer));
     }
 
     /**
@@ -169,19 +167,19 @@ namespace Messaging {
 
         for (auto& client : _clients) {
             client.second.Validate();
-            uint32_t size = _dataSize;
+            uint16_t size = sizeof(_readBuffer);
 
             while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
 
-                if (size > _dataSize) {
-                    size = _dataSize;
+                if (size > sizeof(_readBuffer)) {
+                    size = sizeof(_readBuffer);
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
                 ASSERT(type != Core::Messaging::Metadata::type::INVALID);
 
-                uint32_t length = 0;
+                uint16_t length = 0;
 
                 ASSERT(handler != nullptr);
 
@@ -204,7 +202,7 @@ namespace Messaging {
                     client.second.FlushDataBuffer();
                 }
 
-                size = _dataSize;
+                size = sizeof(_readBuffer);
             }
         }
  

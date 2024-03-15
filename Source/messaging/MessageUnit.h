@@ -37,7 +37,8 @@ namespace WPEFramework {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint32_t MaxMetadataSize = 10 * 1024;
+            static constexpr uint16_t MaxMetadataSize = 10 * 1024;
+            static constexpr uint16_t MaxDataSize = 20 * 1024;
 
             enum flush : uint8_t {
                 OFF                = 0,

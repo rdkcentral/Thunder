@@ -275,20 +275,16 @@ namespace WPEFramework {
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
-                uint32_t dataSize = _settings.DataSize();
-                uint8_t* serializationBuffer = static_cast<uint8_t*>(::malloc(dataSize));
-
-                ASSERT(serializationBuffer != nullptr);
-
-                uint32_t length = 0;
+                uint8_t serializationBuffer[MaxDataSize];
+                uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                length = messageInfo.Serialize(serializationBuffer, dataSize);
+                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
 
                 //only serialize message if the information could fit
                 if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, dataSize - length);
+                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
 
                     if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
                         TRACE_L1("Unable to push message data!");
@@ -297,7 +293,6 @@ namespace WPEFramework {
                 else {
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
-                ::free(serializationBuffer);
             }
         }
     } // namespace Messaging
