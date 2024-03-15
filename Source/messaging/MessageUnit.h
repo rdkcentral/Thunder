@@ -385,8 +385,8 @@ namespace WPEFramework {
                     Core::JSON::Boolean Flush;
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
-                    Core::JSON::DecUInt32 MetadataSize;
-                    Core::JSON::DecUInt32 DataSize;
+                    Core::JSON::DecUInt16 MetadataSize;
+                    Core::JSON::DecUInt16 DataSize;
                 };
 
             public:
@@ -420,11 +420,11 @@ namespace WPEFramework {
                     return (_socketPort);
                 }
 
-                uint32_t MetadataSize() const {
+                uint16_t MetadataSize() const {
                     return (_metadataSize);
                 }
 
-                uint32_t DataSize() const {
+                uint16_t DataSize() const {
                     return (_dataSize);
                 }
 
@@ -557,8 +557,8 @@ namespace WPEFramework {
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
-                               Core::NumberType<uint32_t>(_metadataSize).Text() + DELIMITER +
-                               Core::NumberType<uint32_t>(_dataSize).Text();
+                               Core::NumberType<uint16_t>(_metadataSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_dataSize).Text();
 
                     for (auto& entry : _settings) {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
@@ -593,9 +593,9 @@ namespace WPEFramework {
                                 if (iterator.Next() == true) {
                                     _mode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                     if (iterator.Next() == true) {
-                                        _metadataSize = Core::NumberType<uint32_t>(iterator.Current()).Value();
+                                        _metadataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
                                         if (iterator.Next() == true) {
-                                            _dataSize = Core::NumberType<uint32_t>(iterator.Current()).Value();
+                                            _dataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
                                         }
                                     }
                                 }
@@ -689,8 +689,8 @@ namespace WPEFramework {
                 uint16_t _socketPort;
                 uint16_t _permission;
                 uint8_t _mode;
-                uint32_t _metadataSize;
-                uint32_t _dataSize;
+                uint16_t _metadataSize;
+                uint16_t _dataSize;
             };
 
             class EXTERNAL Client : public MessageDataBufferType {
@@ -842,7 +842,7 @@ namespace WPEFramework {
                     MetaDataBuffer(const MetaDataBuffer&) = delete;
                     MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
-                    MetaDataBuffer(MessageUnit& parent, const string& binding, const uint32_t metadataSize)
+                    MetaDataBuffer(MessageUnit& parent, const string& binding, const uint16_t metadataSize)
                         : BaseClass(Core::NodeId(binding.c_str()), metadataSize)
                         , _handler(parent)
                     {
@@ -879,7 +879,7 @@ namespace WPEFramework {
                  * @param dataSize size of the data buffer in bytes
                  * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
                  */
-                MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint32_t metadataSize, const uint32_t dataSize, const uint16_t socketPort)
+                MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint16_t metadataSize, const uint16_t dataSize, const uint16_t socketPort)
                     : BaseClass(identifier, instanceId, basePath, dataSize, socketPort, true)
                     , _metaDataBuffer(parent, BaseClass::MetadataName(), metadataSize)
                 {
@@ -928,11 +928,11 @@ namespace WPEFramework {
                 return (_settings.SocketPort());
             }
 
-            uint32_t MetadataSize() const {
+            uint16_t MetadataSize() const {
                 return (_settings.MetadataSize());
             }
 
-            uint32_t DataSize() const {
+            uint16_t DataSize() const {
                 return (_settings.DataSize());
             }
 
