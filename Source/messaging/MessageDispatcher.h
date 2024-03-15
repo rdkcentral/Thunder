@@ -114,7 +114,7 @@ namespace Messaging {
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint32_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
+        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
             , _initialize(initialize)
