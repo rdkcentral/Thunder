@@ -115,7 +115,7 @@ namespace Core {
                 // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
                 // if if the template being instantiated is not really utilizing it!
                 #ifndef __WINDOWS__
-                static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                static_assert((STARTSIZE != 0) && (STARTSIZE != static_cast<uint32_t>(~0)), "This method can only be called if you specify an initial blocksize different than 0 or ~0");
                 #endif
             }
             AllocatorType(const SIZETYPE bufferSize)
@@ -125,7 +125,7 @@ namespace Core {
                 // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
                 // if if the template being instantiated is not really utilizing it!
                 #ifndef __WINDOWS__
-                static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                static_assert(STARTSIZE == static_cast<uint32_t>(~0), "This method can only be called if you specify an initial blocksize of ~0");
                 #endif
             }
             AllocatorType(const AllocatorType<STARTSIZE, SIZETYPE>& copy)
@@ -135,7 +135,7 @@ namespace Core {
                 // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
                 // if if the template being instantiated is not really utilizing it!
                 #ifndef __WINDOWS__
-                static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                static_assert((STARTSIZE != 0) && (STARTSIZE != static_cast<uint32_t>(~0)), "This method can only be called if you specify an initial blocksize different than 0 or ~0");
                 #endif
                 ::memcpy(_data, copy._data, _bufferSize);
             }
