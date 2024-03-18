@@ -122,8 +122,8 @@ namespace Controller {
 
         // @brief Deactivates a plugin
         // @details Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state.
-        //          If a plugin is Deactivated, the actual plugin (.so) is no longer loaded into the memory of the process.
-        //          In a deactivated state the plugin will not respond to any JSON-RPC requests.
+        //          If a plugin is deactivated, the actual plugin (.so) is no longer loaded into the memory of the process.
+        //          In a Deactivated state the plugin will not respond to any JSON-RPC requests.
         // @param callsign: Callsign of plugin to be deactivated
         virtual Core::hresult Deactivate(const string& callsign) = 0;
 
