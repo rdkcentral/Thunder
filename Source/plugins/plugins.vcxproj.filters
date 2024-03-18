@@ -43,7 +43,13 @@
     <ClCompile Include="json\JsonEnum_Metadata.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="json\JsonEnum_SystemManagement.cpp">
+    <ClCompile Include="json\JsonEnum_System.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Events.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Subsystems.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
