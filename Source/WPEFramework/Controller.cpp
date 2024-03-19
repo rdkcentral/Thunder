@@ -728,7 +728,7 @@ namespace Plugin {
 #if THUNDER_RESTFULL_API
         PluginHost::Metadata response;
 #endif
-        Core::JSON::ArrayType<JsonData::Subsystems::SubsystemInfo> responseJsonRpc;
+        Core::JSON::ArrayType<JsonData::Subsystems::SubsystemData> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         // Now prepare a message for the Javascript world.
@@ -746,7 +746,7 @@ namespace Plugin {
                 reportMask |= (subSystem->IsActive(current) ? bit : 0);
 
                 if (((reportMask & bit) != 0) ^ ((_lastReported & bit) != 0)) {
-                    JsonData::Subsystems::SubsystemInfo status;
+                    JsonData::Subsystems::SubsystemData status;
                     status.Subsystem = current;
                     status.Active = ((reportMask & bit) != 0);
                     responseJsonRpc.Add(status);
@@ -818,11 +818,6 @@ namespace Plugin {
         }
 
         return (result);
-    }
-
-    void Controller::Notification(const string& callsign, const string& message)
-    {
-        Exchange::Controller::JEvents::Event::ForwardMessage(*this, callsign, message);
     }
 
     Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)

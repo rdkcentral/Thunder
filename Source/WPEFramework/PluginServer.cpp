@@ -891,6 +891,11 @@ namespace PluginHost {
         _administrator.Notification(PluginHost::Service::Callsign(), message);
     }
 
+    void Server::Service::Notify(const string& event, const string& parameters) /* override */
+    {
+        _administrator.Notification(PluginHost::Service::Callsign(), event, parameters);
+    }
+
     //
     // class Server::ServiceMap
     // -----------------------------------------------------------------------------------------------------------------------------------
@@ -1178,8 +1183,39 @@ namespace PluginHost {
             controller->Notification(callsign, data);
 
 #if THUNDER_RESTFULL_API
-            _controller->Notification(_T("{\"callsign\":\"") + callsign + _T("\",\"data\":") + data + _T("}"));
+            JsonData::Events::ForwardMessageParamsData message;
+            message.Callsign = callsign;
+            message.Data = data;
+            string messageString;
+            message.ToString(messageString);
+            _controller->Notification(messageString);
 #endif
+        }
+    }
+
+    void Server::Notification(const string& callsign, const string& event, const string& parameters)
+    {
+        if (_controller.IsValid() == true) {
+            Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+
+            if (controller != nullptr) {
+                static const TCHAR allEvent[] = _T("all");
+
+                if ((callsign != controller->Callsign()) || (event != allEvent)) {
+
+                    controller->Notification(callsign, event, parameters);
+
+#if THUNDER_RESTFULL_API
+                    JsonData::Events::ForwardEventParamsData message;
+                    message.Callsign = callsign;
+                    message.Data.Event = event;
+                    message.Data.Params = parameters;
+                    string messageString;
+                    message.ToString(messageString);
+                    _controller->Notification(messageString);
+#endif
+                }
+            }
         }
     }
 

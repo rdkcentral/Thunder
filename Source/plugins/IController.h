@@ -201,6 +201,11 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_EVENTS_NOTIFICATION };
 
+            struct Event {
+                string event;
+                string params /* @opaque @optional*/;
+            };
+
             // @text all
             // @brief Notifies all events forwarded by the framework
             // @details The Controller plugin is an aggregator of all the events triggered by a specific plugin.
@@ -208,6 +213,9 @@ namespace Controller {
             // @param callsign: Origin of the message
             // @param data: Contents of the message
             virtual void ForwardMessage(const string& callsign, const string& data /* @opaque */) = 0;
+
+            // @text all
+            virtual void ForwardEvent(const string& callsign, const Event& data) = 0;
         };
     };
 

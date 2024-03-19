@@ -1157,6 +1157,7 @@ namespace PluginHost {
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
+            void Notify(const string& event, const string& parameters) override;
             void* QueryInterface(const uint32_t id) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
@@ -2926,12 +2927,12 @@ namespace PluginHost {
             }
             inline Iterator Services()
             {
-		Shells workingList;
+		        Shells workingList;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
                 workingList.reserve(_services.size());
-                
+
                 for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
                     workingList.emplace(std::piecewise_construct,
                         std::make_tuple(entry.first),
@@ -2951,6 +2952,10 @@ namespace PluginHost {
             inline void Notification(const string& callsign, const string& message)
             {
                 _server.Notification(callsign, message);
+            }
+            inline void Notification(const string& callsign, const string& event, const string& message)
+            {
+                _server.Notification(callsign, event, message);
             }
             #if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
@@ -4409,6 +4414,7 @@ namespace PluginHost {
         }
 
         void Notification(const string& callsign, const string& message);
+        void Notification(const string& callsign, const string& event, const string& message);
         void Open();
         void Close();
 

@@ -669,20 +669,26 @@ namespace PluginHost {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
 
+            _adminLock.Lock();
+
             _service = service;
             _service->AddRef();
             _callsign = _service->Callsign();
+
+            _adminLock.Unlock();
         }
         void Deactivate() override
         {
             _adminLock.Lock();
+
             _observers.clear();
-            _adminLock.Unlock();
 
             if (_service != nullptr) {
                 _service->Release();
                 _service = nullptr;
             }
+
+            _adminLock.Unlock();
         }
         void Dropped(const uint32_t channelId) override
         {
@@ -701,6 +707,7 @@ namespace PluginHost {
                     index++;
                 }
             }
+
             _adminLock.Unlock();
         }
         Core::hresult Event(const string& eventId, const string& parameters) {
@@ -709,7 +716,7 @@ namespace PluginHost {
 
         // Inherited via IDispatcher::ICallback
         // ---------------------------------------------------------------------------------
-        void Dropped(const IDispatcher::ICallback* callback) {
+        void Dropped(const IDispatcher::ICallback* callback) override {
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.begin();
@@ -727,7 +734,7 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
         }
-          
+
     protected:
         uint32_t RegisterMethod(const uint8_t version, const string& methodName) {
             _adminLock.Lock();
@@ -800,6 +807,7 @@ namespace PluginHost {
                     _observers.erase(index);
                 }
             }
+
             _adminLock.Unlock();
 
             return (result);
@@ -831,6 +839,10 @@ namespace PluginHost {
                         const_cast<Observer&>(index->second).Event(const_cast<JSONRPC&>(*this), alias, parameters, sendifmethod);
                     }
                 }
+            }
+
+            if (_service != nullptr) {
+                _service->Notify(event, parameters);
             }
 
             _adminLock.Unlock();
