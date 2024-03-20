@@ -37,17 +37,16 @@ namespace Controller {
 
         // @alt:deprecated harakiri
         // @brief Reboots the device
-        // @details Use this method to reboot the device. Depending on the device this call may not generate a response.
+        // @details Depending on the device this call may not generate a response.
         virtual Core::hresult Reboot() = 0;
 
         // @brief Removes contents of a directory from the persistent storage
-        // @details Use this method to recursively delete contents of a directory.
-        // @param path: Path to the directory
+        // @param path: Path to the directory within the persisent storage
         virtual Core::hresult Delete(const string& path) = 0;
 
-        // @brief Creates a clone of given plugin to requested new callsign
+        // @brief Creates a clone of given plugin with a new callsign
         // @param callsign: Callsign of the plugin
-        // @param newcallsign: New callsign for the plugin
+        // @param newcallsign: Callsign for the cloned plugin
         virtual Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) = 0;
 
         // @property
@@ -70,8 +69,7 @@ namespace Controller {
             using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_DISCOVERYRESULTS_ITERATOR>;
         };
 
-        // @brief Starts the network discovery
-        // @details Use this method to initiate SSDP network discovery process.
+        // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
         virtual Core::hresult StartDiscovery(const uint8_t ttl) = 0;
 
@@ -85,8 +83,7 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @alt storeconfig
-        // @brief Stores the configuration to persistent memory
-        // @details Use this method to save the current configuration to persistent memory.
+        // @brief Stores all configuration to the persistent memory
         virtual Core::hresult Persist() = 0;
 
         // @property
@@ -103,10 +100,10 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
-            // @brief Notifies a plugin state change
+            // @brief Notifies of a plugin state change
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
-            // @param reason: Reason of state change
+            // @param reason: Reason for state change
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
         };
 
@@ -129,27 +126,29 @@ namespace Controller {
 
         // @brief Makes a plugin unavailable for interaction
         // @details Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state.
-        //          If a plugin is Unavailable, the actual plugin (.so) is no longer loaded into the memory of the process.
         //          It can not be started unless it is first deactivated (what triggers a state transition).
         // @param callsign: Callsign of plugin to be set as unavailable
         virtual Core::hresult Unavailable(const string& callsign) = 0;
 
         // @brief Hibernates a plugin
         // @param callsign: Callsign of plugin to be hibernated
-        // @param timeout: Timeout to hibernate
+        // @details Use *activate* to wake up a hibernated plugin.
+        //          In a Hibernated state the plugin will not respond to any JSON-RPC requests.
+        // @param timeout: Allowed time
+        // @retval ERROR_INPROC The plugin is running in-process and thus cannot be hibernated
         virtual Core::hresult Hibernate(const string& callsign, const uint32_t timeout) = 0;
 
         // @brief Suspends a plugin
-        // @details This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state
-        //          depending on its current state. If required it will activate and move to the resumed state,
-        //          regardless of the flags in the config (i.e. *startmode*, *resumed*)
+        // @details This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state
+        //          depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin
+        //          or only suspend the plugin.
         // @param callsign: Callsign of plugin to be suspended
         virtual Core::hresult Suspend(const string& callsign) = 0;
 
         // @brief Resumes a plugin
-        // @details This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state
-        //          depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin
-        //          or only suspend the plugin.
+        // @details This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state
+        //          depending on its current state. If required it will activate and move to the resumed state,
+        //          regardless of the flags in the config (i.e. *startmode*, *resumed*)
         // @param callsign: Callsign of plugin to be resumed
         virtual Core::hresult Resume(const string& callsign) = 0;
     };
@@ -203,7 +202,7 @@ namespace Controller {
 
             struct Event {
                 string event;
-                string params /* @opaque @optional*/;
+                string params /* @opaque @optional */;
             };
 
             // @text all
@@ -232,14 +231,14 @@ namespace Controller {
             };
 
             struct CallStack {
-                Core::instance_id Address /* @brief Address */;
+                Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
                 string Function /* @optional @brief Function name */;
                 uint32_t Line /* @optional @brief Line number */;
             };
 
             struct Thread {
-                Core::instance_id Id /* @brief Thread Id */;
+                Core::instance_id Id /* @brief Thread ID */;
                 string Job /* @brief Job name */;
                 uint32_t Runs /* @brief Number of runs */;
             };
@@ -325,7 +324,7 @@ namespace Controller {
 
         // @property
         // @brief Proxies list
-        virtual Core::hresult Proxies(const uint32_t linkId /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
+        virtual Core::hresult Proxies(const uint32_t linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
         // @brief Framework version
@@ -343,7 +342,8 @@ namespace Controller {
         // @brief Thread callstack
         virtual Core::hresult CallStack(const uint8_t thread /* @index */, Data::ICallStackIterator*& callstack /* @out */) const = 0;
     };
-}
+
+} // namespace Controller
 
 } // namespace Exchange
 

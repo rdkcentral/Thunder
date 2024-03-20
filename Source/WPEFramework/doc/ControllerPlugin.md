@@ -96,19 +96,19 @@ Controller System interface methods:
 | :-------- | :-------- |
 | [reboot](#method.reboot) / [harakiri](#method.reboot) | Reboots the device |
 | [delete](#method.delete) | Removes contents of a directory from the persistent storage |
-| [clone](#method.clone) | Creates a clone of given plugin to requested new callsign |
+| [clone](#method.clone) | Creates a clone of given plugin with a new callsign |
 
 Controller Discovery interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
-| [startdiscovery](#method.startdiscovery) | Starts the network discovery |
+| [startdiscovery](#method.startdiscovery) | Starts SSDP network discovery |
 
 Controller Configuration interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
-| [persist](#method.persist) / [storeconfig](#method.persist) | Stores the configuration to persistent memory |
+| [persist](#method.persist) / [storeconfig](#method.persist) | Stores all configuration to the persistent memory |
 
 Controller LifeTime interface methods:
 
@@ -126,11 +126,11 @@ Controller LifeTime interface methods:
 
 Reboots the device.
 
-> ``harakiri`` is an alternative name for this method.
+> ``harakiri`` is an alternative name for this method. This name is **deprecated** and may be removed in the future. It is not recommended for use in new implementations.
 
 ### Description
 
-Use this method to reboot the device. Depending on the device this call may not generate a response.
+Depending on the device this call may not generate a response.
 
 ### Parameters
 
@@ -169,16 +169,12 @@ This method takes no parameters.
 
 Removes contents of a directory from the persistent storage.
 
-### Description
-
-Use this method to recursively delete contents of a directory.
-
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
-| params.path | string | Path to the directory |
+| params | object | *...* |
+| params.path | string | Path to the directory within the persisent storage |
 
 ### Result
 
@@ -214,21 +210,21 @@ Use this method to recursively delete contents of a directory.
 <a name="method.clone"></a>
 ## *clone [<sup>method</sup>](#head.Methods)*
 
-Creates a clone of given plugin to requested new callsign.
+Creates a clone of given plugin with a new callsign.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of the plugin |
-| params.newcallsign | string | New callsign for the plugin |
+| params.newcallsign | string | Callsign for the cloned plugin |
 
 ### Result
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| response | string |  |
+| response | string | *...* |
 
 ### Example
 
@@ -259,17 +255,13 @@ Creates a clone of given plugin to requested new callsign.
 <a name="method.startdiscovery"></a>
 ## *startdiscovery [<sup>method</sup>](#head.Methods)*
 
-Starts the network discovery.
-
-### Description
-
-Use this method to initiate SSDP network discovery process.
+Starts SSDP network discovery.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.ttl | integer | Time to live, parameter for SSDP discovery |
 
 ### Result
@@ -306,13 +298,9 @@ Use this method to initiate SSDP network discovery process.
 <a name="method.persist"></a>
 ## *persist [<sup>method</sup>](#head.Methods)*
 
-Stores the configuration to persistent memory.
+Stores all configuration to the persistent memory.
 
 > ``storeconfig`` is an alternative name for this method.
-
-### Description
-
-Use this method to save the current configuration to persistent memory.
 
 ### Parameters
 
@@ -359,7 +347,7 @@ Use this method to activate a plugin, i.e. move from Deactivated, via Activating
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be activated |
 
 ### Result
@@ -400,13 +388,13 @@ Deactivates a plugin.
 
 ### Description
 
-Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state. If a plugin is Deactivated, the actual plugin (.so) is no longer loaded into the memory of the process. In a deactivated state the plugin will not respond to any JSON-RPC requests.
+Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state. If a plugin is deactivated, the actual plugin (.so) is no longer loaded into the memory of the process. In a Deactivated state the plugin will not respond to any JSON-RPC requests.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be deactivated |
 
 ### Result
@@ -447,13 +435,13 @@ Makes a plugin unavailable for interaction.
 
 ### Description
 
-Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state. If a plugin is Unavailable, the actual plugin (.so) is no longer loaded into the memory of the process. It can not be started unless it is first deactivated (what triggers a state transition).
+Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state. It can not be started unless it is first deactivated (what triggers a state transition).
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be set as unavailable |
 
 ### Result
@@ -492,19 +480,29 @@ Use this method to mark a plugin as unavailable, i.e. move from Deactivated to U
 
 Hibernates a plugin.
 
+### Description
+
+Use *activate* to wake up a hibernated plugin. In a Hibernated state the plugin will not respond to any JSON-RPC requests.
+
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be hibernated |
-| params.timeout | integer | Timeout to hibernate |
+| params.timeout | integer | Allowed time |
 
 ### Result
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | null | Always null |
+
+### Errors
+
+| Message | Description |
+| :-------- | :-------- |
+| ```ERROR_INPROC``` | The plugin is running in-process and thus cannot be hibernated |
 
 ### Example
 
@@ -539,13 +537,13 @@ Suspends a plugin.
 
 ### Description
 
-This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state depending on its current state. If required it will activate and move to the resumed state, regardless of the flags in the config (i.e. *startmode*, *resumed*)
+This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin or only suspend the plugin.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be suspended |
 
 ### Result
@@ -586,13 +584,13 @@ Resumes a plugin.
 
 ### Description
 
-This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin or only suspend the plugin.
+This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state depending on its current state. If required it will activate and move to the resumed state, regardless of the flags in the config (i.e. *startmode*, *resumed*)
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Callsign of plugin to be resumed |
 
 ### Result
@@ -720,7 +718,7 @@ Provides access to the SSDP network discovery results.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | SSDP network discovery results |
-| result[#] | object |  |
+| result[#] | object | *...* |
 | result[#].locator | string | Locator for the discovery |
 | result[#].latency | integer | Latency for the discovery |
 | result[#]?.model | string | <sup>*(optional)*</sup> Model |
@@ -829,8 +827,8 @@ Provides access to the subsystems status.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | (property) | array | Subsystems status |
-| (property)[#] | object |  |
-| (property)[#].subsystem | string | Name of the subsystem (must be one of the following: Platform, Security, Network, Identifier, Graphics, Internet, Location, Time, Provisioning, Decryption, WebSource, Streaming, Bluetooth, Cryptography) |
+| (property)[#] | object | *...* |
+| (property)[#].subsystem | string | Name of the subsystem (must be one of the following: *Bluetooth, Cryptography, Decryption, Graphics, Identifier, Installation, Internet, Location, Network, Platform, Provisioning, Security, Streaming, Time, WebSource*) |
 | (property)[#].active | boolean | Denotes if the subsystem is currently active |
 
 ### Example
@@ -867,7 +865,7 @@ Provides access to the services metadata.
 
 > This property is **read-only**.
 
-> ``status`` is an alternative name for this property.
+> ``status`` is an alternative name for this property. This name is **deprecated** and may be removed in the future. It is not recommended for use in new implementations.
 
 ### Description
 
@@ -881,14 +879,14 @@ If callsign is omitted, metadata of all services is returned.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| result | array | Services metadata<br>*If only one element is present the array will be omitted.* |
-| result[#] | object |  |
+| result | array | Services metadata *(if only one element is present then the array will be omitted)* |
+| result[#] | object | *...* |
 | result[#].callsign | string | Plugin callsign |
 | result[#].locator | string | Shared library path |
 | result[#].classname | string | Plugin class name |
 | result[#].module | string | Module name |
-| result[#].state | string | Current state (must be one of the following: Unavailable, Deactivated, Deactivation, Activated, Activation, Destroyed, Precondition, Hibernated, Suspended, Resumed) |
-| result[#].startmode | string | Startup mode (must be one of the following: Unavailable, Deactivated, Activated) |
+| result[#].state | string | Current state (must be one of the following: *Activated, Activation, Deactivated, Deactivation, Destroyed, Hibernated, Precondition, Resumed, Suspended, Unavailable*) |
+| result[#].startmode | string | Startup mode (must be one of the following: *Activated, Deactivated, Unavailable*) |
 | result[#].resumed | boolean | Determines if the plugin is to be activated in resumed or suspended mode |
 | result[#].version | object | Version |
 | result[#].version.hash | string | SHA256 hash identifying the source code |
@@ -968,9 +966,9 @@ Provides access to the connections list.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | Connections list |
-| result[#] | object |  |
+| result[#] | object | *...* |
 | result[#].remote | string | IP address (or FQDN) of the other side of the connection |
-| result[#].state | string | State of the link (must be one of the following: Closed, WebServer, WebSocket, RawSocket, COMRPC, Suspended) |
+| result[#].state | string | State of the link (must be one of the following: *COMRPC, Closed, RawSocket, Suspended, WebServer, WebSocket*) |
 | result[#]?.name | string | <sup>*(optional)*</sup> Name of the connection |
 | result[#].id | integer | A unique number identifying the connection |
 | result[#].activity | boolean | Denotes if there was any activity on this connection |
@@ -1021,7 +1019,7 @@ Provides access to the proxies list.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | Proxies list |
-| result[#] | object |  |
+| result[#] | object | *...* |
 | result[#].interface | integer | Interface ID |
 | result[#].instance | instanceid | Instance ID |
 | result[#].count | integer | Reference count |
@@ -1114,8 +1112,8 @@ Provides access to the workerpool threads.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | Workerpool threads |
-| result[#] | object |  |
-| result[#].id | instanceid | Thread Id |
+| result[#] | object | *...* |
+| result[#].id | instanceid | Thread ID |
 | result[#].job | string | Job name |
 | result[#].runs | integer | Number of runs |
 
@@ -1161,7 +1159,7 @@ Provides access to the pending requests.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | Pending requests |
-| result[#] | string |  |
+| result[#] | string | *...* |
 
 ### Example
 
@@ -1203,8 +1201,8 @@ Provides access to the thread callstack.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | array | Thread callstack |
-| result[#] | object |  |
-| result[#].address | instanceid | Address |
+| result[#] | object | *...* |
+| result[#].address | instanceid | Memory address |
 | result[#].module | string | Module name |
 | result[#]?.function | string | <sup>*(optional)*</sup> Function name |
 | result[#]?.line | integer | <sup>*(optional)*</sup> Line number |
@@ -1249,7 +1247,7 @@ Controller LifeTime interface events:
 
 | Event | Description |
 | :-------- | :-------- |
-| [statechange](#event.statechange) | Notifies a plugin state change |
+| [statechange](#event.statechange) | Notifies of a plugin state change |
 
 Controller Subsystems interface events:
 
@@ -1266,16 +1264,16 @@ Controller Events interface events:
 <a name="event.statechange"></a>
 ## *statechange [<sup>event</sup>](#head.Notifications)*
 
-Notifies a plugin state change.
+Notifies of a plugin state change.
 
 ### Parameters
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Plugin callsign |
-| params.state | string | New state of the plugin (must be one of the following: Unavailable, Deactivated, Deactivation, Activated, Activation, Precondition, Hibernated, Destroyed) |
-| params.reason | string | Reason of state change (must be one of the following: Requested, Automatic, Failure, MemoryExceeded, Startup, Shutdown, Conditions, WatchdogExpired, InitializationFailed) |
+| params.state | string | New state of the plugin (must be one of the following: *Activated, Activation, Deactivated, Deactivation, Destroyed, Hibernated, Precondition, Unavailable*) |
+| params.reason | string | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
 
 ### Example
 
@@ -1301,8 +1299,8 @@ Notifies a subsystem change.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | subsystems | array | Subsystems that have changed |
-| subsystems[#] | object |  |
-| subsystems[#].subsystem | string | Name of the subsystem (must be one of the following: Platform, Security, Network, Identifier, Graphics, Internet, Location, Time, Provisioning, Decryption, WebSource, Streaming, Bluetooth, Cryptography) |
+| subsystems[#] | object | *...* |
+| subsystems[#].subsystem | string | Name of the subsystem (must be one of the following: *Bluetooth, Cryptography, Decryption, Graphics, Identifier, Installation, Internet, Location, Network, Platform, Provisioning, Security, Streaming, Time, WebSource*) |
 | subsystems[#].active | boolean | Denotes if the subsystem is currently active |
 
 ### Example
@@ -1333,7 +1331,7 @@ The Controller plugin is an aggregator of all the events triggered by a specific
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| params | object |  |
+| params | object | *...* |
 | params.callsign | string | Origin of the message |
 | params.data | opaque object | Contents of the message |
 
