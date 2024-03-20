@@ -75,7 +75,7 @@ bool Submit()
     if (job.IsValid()) {
         IWorkerPool::Instance().Submit(job);
     }
- 
+
     return (ThreadPool::JobType<IMPLEMENTATION>::IsIdle() == false);
 }
 ```
@@ -148,3 +148,309 @@ functionality in Thunder, which will be further described in a different documen
 ## Conclusions
 
 To sum up, the main idea is not to reinvent the wheel. When creating plugins, developers should keep in mind they are working on a large system in an embedded environment. Because of that from an architectural point of view, a different set of rules applies than when working on developing PC or even mobile applications. We all have to be aware of limitations like the low amount of memory available, the difficulty of keeping a system with dozens of plugins scalable, or even the necessity to use abstractions to achieve portability. These are the main reasons why it is essential to use functionalities that are already given, instead of making things suboptimally on your own.
+
+## Scheduling jobs
+### Overview
+`Workerpool` has the ability to schedule `jobs`. This can be very helpful when you do not want to start a `job` immediately but at a specific time. `Workerpool` has two ways of scheduling `jobs`. The first is to use the `Workerpool` class methods. The most common case of scheduling tasks is to refer directly to a specific `job` and use its methods.
+
+The methods of the `Workerpool` class are described below mainly for illustrative purposes and to see how jobs are scheduled inside `Workerpool`.
+
+### Workerpool class methods
+ To schedule a `job` using `Workerpool` class we use several methods:
+
+* `Schedule()`
+* `Reschedule()`
+* `Revoke()`
+
+Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether.
+
+#### Scheduling job
+`Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We just need to specify the `job` with a point in time when it should be performed.
+!!! note
+    In case the given time would point to the past, the task will start executing immediately.
+
+```cpp
+void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
+        {
+            if (time > Core::Time::Now()) {
+                ASSERT(job.IsValid() == true);
+                ASSERT(_timer.HasEntry(Timer(this, job)) == false);
+
+                _timer.Schedule(time, Timer(this, job));
+            }
+            else {
+                _threadPool.Submit(job, Core::infinite);
+            }
+        }
+```
+
+
+#### Rescheduling job
+`Reschedule()` method is used to change the execution date of an already scheduled `job`. Method takes as arguments the new execution time of the specified `job` and the `job` which execution time we want to change. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
+!!! note
+    `Reschedule()` returns true when the `job` cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using `Schedule()`
+
+```cpp
+bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
+        {
+            ASSERT(job.IsValid() == true);
+
+            bool revoked = (Revoke(job) != Core::ERROR_UNKNOWN_KEY);
+            Schedule(time, job);
+            return (revoked);
+        }
+```
+
+
+#### Revoking job
+`Revoke()` is used to cancel the execution of a `job`. We use it by specifying the `job` we want to cancel and and waiting time for `job` cancellation. We do not need to specify the time, if we leave the default value, the method will wait indefinitely until `job` is cancelled or an error occurs. The `Revoke()` method returns a numeric value that are error codes. If the execution was successful it will return `ERROR_NONE (0)`.
+
+!!!warning
+    `ERROR_UNKNOWN_KEY (22)` will be returned in case the job was not previously scheduled!
+    `ERROR_TIMEDOUT (11)` will be returned in case waiting time was exceeded!
+
+```cpp
+uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) override
+        {
+            uint32_t result(_timer.Revoke(Timer(this, job)) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+
+            uint32_t report = _threadPool.Revoke(job, waitTime);
+
+            if (report == Core::ERROR_UNKNOWN_KEY) {
+                report = _external.Completed(job, waitTime);
+
+                if ( (report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY) ) {
+                    result = report;
+                }
+            }
+
+            return (result);
+        }
+```
+
+
+### Job class scheduling methods
+Each `job` has two methods by which we can reschedule them for future execution and cancel them.
+ These methods are:
+
+* `Reschedule()`
+* `Revoke()`
+
+#### Rescheduling job
+`Reschedule()` allows the scheduled `job` execution time to be changed. The argument takes the time value. We postpone the execution of the job until this time. The method returns `true` if the operation is successful.
+```cpp
+bool Reschedule(const Core::Time& time)
+            {
+                bool rescheduled = false;
+
+                Core::ProxyType<IDispatch> job(ThreadPool::JobType<IMPLEMENTATION>::Reschedule(time));
+
+                if (job.IsValid() == true) {
+
+                    job = ThreadPool::JobType<IMPLEMENTATION>::Revoke();
+
+                    if (job.IsValid() == true) {
+                        rescheduled = (IWorkerPool::Instance().Revoke(job) == Core::ERROR_NONE);
+                        ThreadPool::JobType<IMPLEMENTATION>::Revoked();
+                    }
+
+                    job = (ThreadPool::JobType<IMPLEMENTATION>::Idle());
+
+                    if (job.IsValid() == true) {
+                        IWorkerPool::Instance().Schedule(time, job);
+                    }
+                }
+
+                return (rescheduled && (ThreadPool::JobType<IMPLEMENTATION>::IsIdle() == false));
+            }
+```
+!!!warning
+    The `Job` must first be submitted to be rescheduled!
+
+
+#### Example
+Below is an example of the use of the `Reschedule()` method in the `ChannelMap` class in the `PluginServer.h` file.
+```cpp
+uint32_t Open(const uint32_t waitTime, const uint16_t connectionCheckTimer) {
+                _connectionCheckTimer = connectionCheckTimer * 1000;
+                if (connectionCheckTimer != 0) {
+                    _job.Reschedule(Core::Time::Now().Add(_connectionCheckTimer).Ticks());
+                }
+                return(BaseClass::Open(waitTime));
+            }
+```
+
+`Reschedule` method is used also in `ThunderNanoServices` repository. Here are a few examples:
+
+`TimeSync/NTPClient.cpp`
+The first example shows the use of the `Reschedule()` method of the `Job` class in the NTP client. The time by which the job is postponed is obtained by adding the `result` value to the current date.
+```cpp
+// See if we need rescheduling
+        if (result != Core::infinite) {
+            Core::Time timestamp(Core::Time::Now());
+            timestamp.Add(result);
+            _job.Reschedule(timestamp);
+```
+
+`ProcessMonitor/ProcessMonitor.h`
+In the following example, we have a function that is used to schedule a `Job`. The `Job` is first revoked and then postponed in time by the given value of `scheduleTime`.
+```cpp
+void ScheduleJob()
+        {
+            uint64_t scheduleTime = 0;
+
+            for (auto itr : _processMap) {
+                uint64_t exitTime = itr.second.ExitTime();
+                if (exitTime != 0) {
+                    if ((scheduleTime == 0) || (scheduleTime > exitTime)) {
+                        scheduleTime = exitTime;
+                    }
+                }
+            }
+
+            if (scheduleTime != 0) {
+                _job.Reschedule(scheduleTime);
+            }
+        }
+```
+
+Here is example how to use workerpool methods to schedule jobs, code can be compiled and is part of Thunder tests in `Tests` directory. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be `COMPLETED`, job three should be `CANCELED`.
+
+```cpp
+#include <chrono>
+#include <thread>
+#include "core.h"
+
+// Test job class
+class TestJob : public Core::IDispatch
+{
+    public:
+    enum Status {
+         INITIATED,
+         CANCELED,
+         COMPLETED,
+    };
+
+    TestJob() = delete;
+    TestJob(const TestJob& copy) = delete;
+    TestJob& operator=(const TestJob& RHS) = delete;
+    ~TestJob() override = default;
+    TestJob(const Status status, const uint32_t waitTime = 0,)
+        : _status(status)
+        , _waitTime(waitTime)
+    {
+    }
+
+public:
+    Status GetStatus()
+    {
+        return _status;
+    }
+    void Cancelled()
+    {
+        _status = (_status != COMPLETED) ? CANCELED : _status;
+    }
+    void Dispatch() override
+    {
+        _status = COMPLETED;
+        usleep(_waitTime);
+    }
+
+private:
+    Status _status;
+    uint32_t _waitTime;
+};
+
+// Creates job and submits it in WorkerPool
+void CreateAndSubmitJob()
+{
+    std::cout << "Starting first test" << std::endl;
+    // Creating WorkerPool instance
+    Core::Workerpool workerpool;
+    workerpool.Join();
+
+    // Now we are creating and submiting job
+    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 0));
+    workerpool.Submit(job);
+
+    // Print job status to check if it is initiated
+    std::cout << "Job status: " << job.GetStatus() << std::endl;
+
+    // Now run the job and wait for it to complete
+    workerpool.Run();
+    std::this_thread::sleep_for::(std::chrono::seconds(2));
+
+    // Print job status to check if it is completed
+    std::cout << "Job status: " << job.GetStatus() << std::endl;
+
+    workerpool.Stop();
+}
+
+// Creates three jobs and submits it in WorkerPool
+void ScheduleJobs()
+{
+    std::cout << "Starting second test" << std::endl;
+
+    // Creating WorkerPool instance
+    Core::Workerpool workerpool;
+    workerpool.Join();
+
+    // Now we are creating 3 jobs
+    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 50));
+    Core::ProxyType<Core::IDispatch> job_two = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 100));
+    Core::ProxyType<Core::IDispatch> job_three = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 150));
+
+    // Print jobs status to check if they are initiated
+    std::cout << "Job one status: " << job_one.GetStatus() << std::endl;
+    std::cout << "Job two status: " << job_two.GetStatus() << std::endl;
+    std::cout << "Job three status: " << job_three.GetStatus() << std::endl;
+
+    // Now we submit one job and schedule another two
+    workerpool.Submit(job_one);
+    workerpool.Schedule(Core::Time::Now() + 10, job_two);
+    workerpool.Schedule(Core::Time::Now() + 20, job_three);
+    
+    // Before we run them lets reschedule first one to run after job_two
+    if(workerpool.Reschedule(Core::Time::Now() + 15, job_one))
+    {
+        std::cout << "Job one rescheduled" << std::endl;
+    }
+    else std::cout << "Error while rescheduling occured" << std::endl;
+
+    // Run jobs and revoke third one
+    workerpool.Run();
+    if(uint32_t errorCode = workerpool.Revoke(job_three) == 0) job_three.Cancelled();
+
+    // Print error code to make sure job three was revoked 
+    std::cout << "Job three error code: " << errorCode << std::endl;
+
+    // Wait for jobs to complete and print their status
+    std::this_thread::sleep_for::(std::chrono::seconds(20));
+    std::cout << "Job one status: " << job_one.GetStatus() << std::endl;
+    std::cout << "Job two status: " << job_two.GetStatus() << std::endl;
+    std::cout << "Job three status: " << job_three.GetStatus() << std::endl;
+
+    workerpool.Stop();
+}
+
+// Run test of your choice
+int main() {
+    for(1)
+    {
+        std::cout << "Choose test to run: " << std::endl;
+        std::cout << "1 - Creating and submiting job" << std::endl;
+        std::cout << "2 - Scheduling jobs" << std::endl;
+        std::cout << "Press anything else to quit" << std::endl;
+        int input;
+        std::cin >> input;
+        switch(input)
+        {
+            case 1: CreateAndSubmitJob();
+            case 2: ScheduleJobs();
+            default: break;
+        }
+    }
+
+    return 0;
+}
+```
