@@ -33,7 +33,7 @@ namespace PluginHost {
     // this class holds interesting information that can be requested from the Server
     class EXTERNAL Metadata : public Core::JSON::Container {
     public:
-        using Version = JsonData::Metadata::VersionData;
+        using Version = JsonData::Metadata::VersionInfo;
         using Bridge = JsonData::Discovery::DiscoveryResultData;
 
         class EXTERNAL Service : public Plugin::Config {
