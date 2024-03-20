@@ -24,6 +24,7 @@ Thunder supports the following subsystems (enumerated in `Source/plugins/ISubSys
 | WEBSOURCE     | Content exposed via a local web server is available.         |
 | STREAMING     | Content can be streamed.                                     |
 | BLUETOOTH     | The Bluetooth subsystem is up and running.                   |
+| INSTALLATION  | The Installation (e.g. Pakager) subsystem is up and running. |
 
 All subsystems have a negated equivalent - e.g. `NOT_PLATFORM` and `NOT_SECURITY` that indicates the absence of those subsystems.
 
