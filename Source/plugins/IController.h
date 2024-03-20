@@ -63,7 +63,7 @@ namespace Controller {
                 string Locator /* @brief Locator for the discovery */;
                 uint32_t Latency /* @brief Latency for the discovery */;
                 string Model /* @optional @brief Model */;
-                bool Secure /* @brief Secure or not*/;
+                bool Secure /* @brief Secure or not */;
             };
 
             using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_DISCOVERYRESULTS_ITERATOR>;
