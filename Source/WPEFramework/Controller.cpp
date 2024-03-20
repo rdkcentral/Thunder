@@ -775,7 +775,6 @@ namespace Plugin {
 #endif
 
 #if THUNDER_RESTFULL_API
-dasds
             _pluginServer->_controller->Notification(message);
 #endif
 
