@@ -162,44 +162,18 @@ The methods of the `Workerpool` class are described below mainly for illustrativ
 * `Reschedule()`
 * `Revoke()`
 
-Using these methods, we can schedule the performance of a task, change the date on which it will be performed or cancel it altogether.
+Using these methods, we can schedule the performance of a task, change the time on which it will be performed or cancel it altogether.
 
 #### Scheduling job
 `Schedule()` is used to plan when to perform the `job` we specified. Using this method is very simple. We just need to specify the `job` with a point in time when it should be performed.
 !!! note
     In case the given time would point to the past, the task will start executing immediately.
 
-```cpp
-void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
-        {
-            if (time > Core::Time::Now()) {
-                ASSERT(job.IsValid() == true);
-                ASSERT(_timer.HasEntry(Timer(this, job)) == false);
-
-                _timer.Schedule(time, Timer(this, job));
-            }
-            else {
-                _threadPool.Submit(job, Core::infinite);
-            }
-        }
-```
-
 
 #### Rescheduling job
 `Reschedule()` method is used to change the execution date of an already scheduled `job`. Method takes as arguments the new execution time of the specified `job` and the `job` which execution time we want to change. It works as follows, first the scheduled `job` is attempted to be canceled and then the Schedule with the newly specified time is used.
 !!! note
     `Reschedule()` returns true when the `job` cancellation succeeds and false when it fails, this can happen when the given task was not previously scheduled using `Schedule()`
-
-```cpp
-bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
-        {
-            ASSERT(job.IsValid() == true);
-
-            bool revoked = (Revoke(job) != Core::ERROR_UNKNOWN_KEY);
-            Schedule(time, job);
-            return (revoked);
-        }
-```
 
 
 #### Revoking job
@@ -335,8 +309,8 @@ class TestJob : public Core::IDispatch
     TestJob(const TestJob& copy) = delete;
     TestJob& operator=(const TestJob& RHS) = delete;
     ~TestJob() override = default;
-    TestJob(const Status status, const uint32_t waitTime = 0,)
-        : _status(status)
+    TestJob(const uint32_t waitTime = 0,)
+        : _status(Status::INITIATED)
         , _waitTime(waitTime)
     {
     }
@@ -346,7 +320,7 @@ public:
     {
         return _status;
     }
-    void Cancelled()
+    void Cancel()
     {
         _status = (_status != COMPLETED) ? CANCELED : _status;
     }
@@ -419,7 +393,7 @@ void ScheduleJobs()
 
     // Run jobs and revoke third one
     workerpool.Run();
-    if(uint32_t errorCode = workerpool.Revoke(job_three) == 0) job_three.Cancelled();
+    if(uint32_t errorCode = workerpool.Revoke(job_three) == 0) job_three.Cancel();
 
     // Print error code to make sure job three was revoked 
     std::cout << "Job three error code: " << errorCode << std::endl;
