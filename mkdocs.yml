@@ -50,6 +50,7 @@ nav:
     - Timers: utils/timers.md
     - Web Requests: utils/web.md
     - Sockets: utils/sockets.md
+    - Singletons: utils/singletons.md
     - Processes: utils/processes.md
   - Client Development:
     - Introduction: client/intro.md
