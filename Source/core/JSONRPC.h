@@ -57,16 +57,23 @@ namespace Core {
                 }
                 Info(const Info& copy)
                     : Core::JSON::Container()
-                    , Code(0)
-                    , Text()
-                    , Data(false)
+                    , Code(copy.Code)
+                    , Text(copy.Text)
+                    , Data(copy.Data)
                 {
                     Add(_T("code"), &Code);
                     Add(_T("message"), &Text);
                     Add(_T("data"), &Data);
-                    Code = copy.Code;
-                    Text = copy.Text;
-                    Data = copy.Data;
+                }
+                Info(Info&& move)
+                    : Core::JSON::Container()
+                    , Code(std::move(move.Code))
+                    , Text(std::move(move.Text))
+                    , Data(std::move(move.Data))
+                {
+                    Add(_T("code"), &Code);
+                    Add(_T("message"), &Text);
+                    Add(_T("data"), &Data);
                 }
                 ~Info() override = default;
 
@@ -75,6 +82,16 @@ namespace Core {
                     Code = RHS.Code;
                     Text = RHS.Text;
                     Data = RHS.Data;
+                    return (*this);
+                }
+
+                Info& operator=(Info&& move)
+                {
+                    if (this != &move) {
+                        Code = std::move(move.Code);
+                        Text = std::move(move.Text);
+                        Data = std::move(move.Data);
+                    }
                     return (*this);
                 }
 
@@ -200,6 +217,25 @@ namespace Core {
                 Add(_T("result"), &Result);
                 Add(_T("error"), &Error);
             }
+
+            Message(Message&& move)
+                : Core::JSON::Container()
+                , JSONRPC(std::move(move.JSONRPC))
+                , Id(std::move(move.Id))
+                , Designator(std::move(move.Designator))
+                , Parameters(std::move(move.Parameters))
+                , Result(std::move(move.Result))
+                , Error(std::move(move.Error))
+                , _implicitCallsign(std::move(move._implicitCallsign))
+            {
+                Add(_T("jsonrpc"), &JSONRPC);
+                Add(_T("id"), &Id);
+                Add(_T("method"), &Designator);
+                Add(_T("params"), &Parameters);
+                Add(_T("result"), &Result);
+                Add(_T("error"), &Error);
+            }
+
             ~Message() override = default;
 
         public:
@@ -384,6 +420,11 @@ namespace Core {
                 , _sequence(copy._sequence)
                 , _token(copy._token) {
             }
+            Context(Context&& move)
+                : _channelId(move._channelId)
+                , _sequence(move._sequence)
+                , _token(std::move(move._token)) {
+            }
             Context(const uint32_t channelId, const uint32_t sequence, const string& token)
                 : _channelId(channelId)
                 , _sequence(sequence)
@@ -427,6 +468,14 @@ namespace Core {
                             new (&_callback) auto(function._callback);
                         } else {
                             new (&_invoke) auto(function._invoke);
+                        }
+                    }
+                    Functions(Functions&& function, const bool async)
+                    {
+                        if (async == true) {
+                            new (&_callback) auto(std::move(function._callback));
+                        } else {
+                            new (&_invoke) auto(std::move(function._invoke));
                         }
                     }
                     Functions(const CallbackFunction& function)
@@ -477,6 +526,12 @@ namespace Core {
                     : _asynchronous(copy._asynchronous)
                     , _info(copy._info, copy._asynchronous)
                 {
+                }
+                Entry(Entry&& move)
+                    : _asynchronous(move._asynchronous)
+                    , _info(std::move(move._info), move._asynchronous)
+                {
+                    move._asynchronous = false;
                 }
                 Entry& operator=(const CallbackFunction& callback) {
                     _info.Assign(callback, _asynchronous);
@@ -548,6 +603,14 @@ namespace Core {
                     , _position(copy._position)
                 {
                 }
+                EventIterator(EventIterator&& move)
+                    : _container(move._container)
+                    , _index(std::move(move._index))
+                    , _position(move._position)
+                {
+                    move._container = nullptr;
+                    move._position = ~0;
+                }
                 ~EventIterator() = default;
 
                 EventIterator& operator=(const EventIterator& rhs)
@@ -558,7 +621,18 @@ namespace Core {
 
                     return (*this);
                 }
+                EventIterator& operator=(EventIterator&& move)
+                {
+                    if (this != &move) {
+                        _container = move._container;
+                        _index = std::move(move._index);
+                        _position = move._position;
 
+                        move._container = nullptr;
+                        move._position = ~0;
+                    }
+                    return (*this);
+                }
             public:
                 bool IsValid() const
                 {

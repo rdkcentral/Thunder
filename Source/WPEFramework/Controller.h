@@ -133,10 +133,27 @@ namespace Plugin {
                 Init();
             }
 
+            SubsystemsData(SubsystemsData&& move)
+                : Core::JSON::Container()
+                , Subsystem(std::move(move.Subsystem))
+                , Active(std::move(move.Active))
+            {
+                Init();
+            }
+
             SubsystemsData& operator=(const SubsystemsData& rhs)
             {
                 Subsystem = rhs.Subsystem;
                 Active = rhs.Active;
+                return (*this);
+            }
+
+            SubsystemsData& operator=(SubsystemsData&& move)
+            {
+                if (this != &move) {
+                    Subsystem = std::move(move.Subsystem);
+                    Active = std::move(move.Active);
+                }
                 return (*this);
             }
 
@@ -201,9 +218,11 @@ namespace Plugin {
             Core::JSON::Boolean Ui;
         };
 
-    private:
-        Controller(const Controller&);
-        Controller& operator=(const Controller&);
+    public:
+        Controller(Controller&&) = delete;
+        Controller(const Controller&) = delete;
+        Controller& operator=(Controller&&) = delete;
+        Controller& operator=(const Controller&) = delete;
 
     protected:
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)

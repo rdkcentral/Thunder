@@ -28,7 +28,9 @@ namespace Core {
     public:
         TokenizedStringList() = default;
         ~TokenizedStringList() = default;
+        TokenizedStringList(TokenizedStringList&&) = default;
         TokenizedStringList(const TokenizedStringList&) = default;
+        TokenizedStringList& operator=(TokenizedStringList&&) = default;
         TokenizedStringList& operator=(const TokenizedStringList&) = default;
 
         explicit TokenizedStringList(const string& buffer)

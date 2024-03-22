@@ -132,19 +132,19 @@ namespace ProcessContainers {
         return _interfaces.at(_current).addresses[id];
     }
 
-    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& rhs)
+    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& copy)
         : Core::JSON::Container()
-        , Key(rhs.Key)
-        , Value(rhs.Value)
+        , Key(copy.Key)
+        , Value(copy.Value)
     {
         Add(_T("key"), &Key);
         Add(_T("value"), &Value);
     }
 
-    LXCContainer::Config::ConfigItem::ConfigItem()
+    LXCContainer::Config::ConfigItem::ConfigItem(ConfigItem&& move)
         : Core::JSON::Container()
-        , Key()
-        , Value()
+        , Key(std::move(move.Key))
+        , Value(std::move(move.Value))
     {
         Add(_T("key"), &Key);
         Add(_T("value"), &Value);

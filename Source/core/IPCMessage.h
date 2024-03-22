@@ -46,11 +46,22 @@ namespace Core {
                 : _data(copy._data)
             {
             }
+            inline ScalarType(ScalarType<SCALAR>&& move)
+                : _data(std::move(move._data))
+            {
+            }
             inline ~ScalarType() {}
 
             inline ScalarType<SCALAR>& operator=(const ScalarType<SCALAR>& rhs)
             {
                 _data = rhs._data;
+                return (*this);
+            }
+            inline ScalarType<SCALAR>& operator=(ScalarType<SCALAR>&& move)
+            {
+                if (this != &move) {
+                    _data = std::move(move._data);
+                }
                 return (*this);
             }
             inline ScalarType<SCALAR>& operator=(const SCALAR rhs)
@@ -93,6 +104,10 @@ namespace Core {
                 : _data(copy._data)
             {
             }
+            ScalarType(ScalarType<string>&& move)
+                : _data(std::move(move._data))
+            {
+            }
             ~ScalarType()
             {
             }
@@ -101,6 +116,13 @@ namespace Core {
             {
                 _data = rhs._data;
 
+                return (*this);
+            }
+            ScalarType<string>& operator=(ScalarType<string>&& move)
+            {
+                if (this != &move) {
+                    _data = std::move(move._data);
+                }
                 return (*this);
             }
             ScalarType<string>& operator=(const string& rhs)
@@ -187,6 +209,17 @@ namespace Core {
                 }
                 _text[_length] = '\0';
             }
+            inline Text(Text<LENGTH>&& move)
+                : _length(move._length)
+            {
+                if (_length > 0) {
+                    ::memcpy(_text, move._text, (_length * sizeof(TCHAR)));
+                }
+                _text[_length] = '\0';
+
+                move._length = 0;
+                move._text[0] = '\0';
+            }
             inline ~Text()
             {
             }
@@ -200,6 +233,21 @@ namespace Core {
                 }
                 _text[_length] = '\0';
 
+                return (*this);
+            }
+            inline Text<LENGTH>& operator=(Text<LENGTH>&& move)
+            {
+                if (this != &move) {
+                    _length = move._length;
+
+                    if (_length > 0) {
+                        ::memcpy(_text, move._text, _length);
+                    }
+                    _text[_length] = '\0';
+
+                    move._length = 0;
+                    move._text[0] = '\0';
+                }
                 return (*this);
             }
             inline Text<LENGTH>& operator=(const string& RHS)

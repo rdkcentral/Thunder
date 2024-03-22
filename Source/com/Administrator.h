@@ -57,8 +57,8 @@ namespace RPC {
             RecoverySet() = delete;
             RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
-            RecoverySet& operator= (RecoverySet&&) = delete;
-            RecoverySet& operator= (const RecoverySet&) = delete;
+            RecoverySet& operator=(RecoverySet&&) = delete;
+            RecoverySet& operator=(const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
                 : _interfaceId(id)

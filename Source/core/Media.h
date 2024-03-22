@@ -46,10 +46,12 @@ namespace Core {
     class Media : public IMedia {
     private:
         class Handler : public SOURCE {
-        private:
-            Handler();
-            Handler(const Handler&);
-            Handler& operator=(const Handler&);
+        public:
+            Handler() = delete;
+            Handler(const Handler&) = delete;
+            Handler(Handler&&) = delete;
+            Handler& operator=(const Handler&) = delete;
+            Handler& operator=(Handler&&) = delete;
 
         public:
             Handler(Media<SOURCE>& parent)

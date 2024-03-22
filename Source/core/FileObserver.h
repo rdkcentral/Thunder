@@ -284,8 +284,10 @@ private:
         using ClientList = std::list<ICallback*>;
     public:
         Context() = delete;
+        Context(Context&&) = delete;
         Context(const Context&) = delete;
-        Context& operator= (const Context&) = delete;
+        Context& operator=(Context&&) = delete;
+        Context& operator=(const Context&) = delete;
 
         Context(const string& pathName)
             : _adminLock()
@@ -383,8 +385,10 @@ private:
     class Dispatcher : public Core::Thread {
     public:
         Dispatcher() = delete;
+        Dispatcher(Dispatcher&&) = delete;
         Dispatcher(const Dispatcher&) = delete;
-        Dispatcher& operator= (const Dispatcher&) = delete;
+        Dispatcher& operator=(Dispatcher&&) = delete;
+        Dispatcher& operator=(const Dispatcher&) = delete;
         Dispatcher(FileSystemMonitor& parent)
             : _parent(parent) {
         }

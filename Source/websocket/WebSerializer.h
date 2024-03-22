@@ -437,8 +437,8 @@ namespace Web {
         public:
             Body(Body&&) = delete;
             Body(const Body&) = delete;
-            Body& operator= (Body&&) = delete;
-            Body& operator= (const Body&) = delete;
+            Body& operator=(Body&&) = delete;
+            Body& operator=(const Body&) = delete;
 
             Body() = default;
             ~Body() override = default;

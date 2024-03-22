@@ -339,6 +339,16 @@ namespace Core {
 #endif
     {
     }
+
+    // Move Info
+    ProcessInfo::ProcessInfo(ProcessInfo&& move)
+        : _pid(std::move(move._pid))
+        , _memory(std::move(move._memory))
+#ifdef __WINDOWS__
+        , _handle(std::move(move._handle))
+#endif
+    {
+    }
     // Specifice Process Info
     ProcessInfo::ProcessInfo(const process_t id)
         : _pid(id)
@@ -374,6 +384,21 @@ namespace Core {
         _handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid);
 #endif
 
+        return (*this);
+    }
+    ProcessInfo& ProcessInfo::operator=(ProcessInfo&& move)
+    {
+        if (this != &move) {
+            _pid = std::move(move._pid);
+            _memory = std::move(move._memory);
+
+#ifdef __WINDOWS__
+            if (_handle) {
+                CloseHandle(_handle);
+            }
+            _handle = std::move(move._handle);
+#endif
+        }
         return (*this);
     }
     uint64_t ProcessInfo::Allocated() const
@@ -702,6 +727,20 @@ POP_WARNING()
     {
     }
 
+    ProcessInfo::Memory::Memory(ProcessInfo::Memory&& move)
+        : _pid(std::move(move._pid))
+        , _uss(move._uss)
+        , _pss(move._pss)
+        , _rss(move._rss)
+        , _vss(move._vss)
+        , _shared(move._shared)
+    {
+        move._uss = 0;
+        move._rss = 0;
+        move._vss = 0;
+        move._shared = 0;
+    }
+
     ProcessInfo::Memory& ProcessInfo::Memory::operator=(const ProcessInfo::Memory& other)
     {
         if (&other == this) {
@@ -713,6 +752,24 @@ POP_WARNING()
         _rss = 0;
         _vss = 0;
         _shared = 0;
+        return *this;
+    }
+
+    ProcessInfo::Memory& ProcessInfo::Memory::operator=(ProcessInfo::Memory&& move)
+    {
+        if (this != &move) {
+            _pid = std::move(move._pid);
+            _uss = move._uss;
+            _pss = move._pss;
+            _rss = move._rss;
+            _vss = move._vss;
+            _shared = move._shared;
+
+            move._uss = 0;
+            move._rss = 0;
+            move._vss = 0;
+            move._shared = 0;
+        }
         return *this;
     }
 
