@@ -169,7 +169,7 @@ namespace Core {
 // T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
 // R:    expected return type for func
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
-// use this one instead of IS_MEMBER_AVAILABLE when the return type of the function can be only convertible and does not have to be exactly the same
+// use this macro instead of IS_MEMBER_AVAILABLE when the return type of the function does not have to be exactly the same but instead it can be convertible to the expected one
 #define IS_MEMBER_AVAILABLE_CONVERTIBLE(func, name)                                             \
     template <typename T, typename R, typename... Args>                                         \
     struct name {                                                                               \
