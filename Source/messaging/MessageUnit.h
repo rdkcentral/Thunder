@@ -699,7 +699,7 @@ namespace WPEFramework {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBufferType(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::MetadataBufferSize) {
+                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataBufferSize) {
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
@@ -837,8 +837,8 @@ namespace WPEFramework {
                     MetaDataBuffer(const MetaDataBuffer&) = delete;
                     MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
-                    MetaDataBuffer(MessageUnit& parent, const string& binding, const uint16_t metadataSize)
-                        : BaseClass(Core::NodeId(binding.c_str()), metadataSize)
+                    MetaDataBuffer(MessageUnit& parent, const string& binding)
+                        : BaseClass(Core::NodeId(binding.c_str()), MetadataBufferSize)
                         , _handler(parent)
                     {
                         _handler.AddRef();
@@ -870,13 +870,12 @@ namespace WPEFramework {
                  * @param instanceId number of the instance
                  * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
                  * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
-                 * @param metadataSize size of the metadata buffer in bytes
                  * @param dataSize size of the data buffer in bytes
                  * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
                  */
-                MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint16_t metadataSize, const uint16_t dataSize, const uint16_t socketPort)
+                MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint16_t dataSize, const uint16_t socketPort)
                     : BaseClass(identifier, instanceId, basePath, dataSize, socketPort, true)
-                    , _metaDataBuffer(parent, BaseClass::MetadataName(), metadataSize)
+                    , _metaDataBuffer(parent, BaseClass::MetadataName())
                 {
                 }
                 ~MessageDispatcher() = default;
