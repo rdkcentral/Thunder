@@ -105,11 +105,11 @@ namespace Core {
 
         union SocketInfo {
 #ifdef __WINDOWS__
-            address_family_t FamilyType;
+            address_family_t Family;
 #elif defined(__APPLE__)
             struct __sockaddr_header saddr_hdr;
 #else
-            address_family_t FamilyType;
+            address_family_t Family;
 #endif
             struct ipv4_extended IPV4Socket;
             struct ipv6_extended IPV6Socket;
@@ -126,18 +126,18 @@ namespace Core {
 #endif
 
         public:
-            address_family_t familyType() const
+            address_family_t FamilyType() const
             {
 #ifdef __APPLE__
                 return saddr_hdr.sa_family;
 #else
-                return FamilyType;
+                return Family;
 #endif
             }
 
             uint32_t Extension() const
             {
-                switch (familyType()) {
+                switch (FamilyType()) {
                 case AF_INET:
                     return (IPV4Socket.in_protocol);
                     break;
@@ -163,7 +163,7 @@ namespace Core {
             }
             void Extension(const uint32_t extension)
             {
-                switch (familyType()) {
+                switch (FamilyType()) {
                 case TYPE_IPV4:
                     IPV4Socket.in_protocol = extension;
                     break;
@@ -245,7 +245,7 @@ namespace Core {
 
         NodeId::enumType Type() const
         {
-            return (static_cast<NodeId::enumType>(m_structInfo.familyType()));
+            return (static_cast<NodeId::enumType>(m_structInfo.FamilyType()));
         }
         inline uint16_t PortNumber() const
         {
@@ -282,20 +282,20 @@ namespace Core {
 
 #ifndef __WINDOWS__
         unsigned short size;
-        if (m_structInfo.familyType() == AF_INET)
+        if (m_structInfo.FamilyType() == AF_INET)
         {
             size = sizeof(struct sockaddr_in);
         }
-        else if (m_structInfo.familyType() == AF_INET6)
+        else if (m_structInfo.FamilyType() == AF_INET6)
         {
             size = sizeof(struct sockaddr_in6);
         }
 #ifndef __APPLE__
-        else if (m_structInfo.familyType() == AF_NETLINK)
+        else if (m_structInfo.FamilyType() == AF_NETLINK)
         {
             size = sizeof(struct sockaddr_nl);
         }
-        else if (m_structInfo.familyType() == AF_PACKET)
+        else if (m_structInfo.FamilyType() == AF_PACKET)
         {
             size = sizeof(struct sockaddr_ll);
         }
