@@ -51,7 +51,7 @@ namespace WPEFramework {
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
-                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MetadataBufferSizes)
+                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MetadataBufferSize)
                 {
                 }
                 ~Buffer() = default;
