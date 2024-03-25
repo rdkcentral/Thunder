@@ -37,8 +37,8 @@ namespace WPEFramework {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint16_t MaxMetadataBufferSize = 10 * 1024; // TO-DO: figure out what's the max size possible
-            static constexpr uint16_t TempMetadataBufferSize = 8 * 1024; // TO-DO: make sure this is enough if all control are flying at the same time
+            static constexpr uint16_t MetadataBufferSize = 8 * 1024;
+            static constexpr uint16_t TempMetadataBufferSize = 1024;
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
             static constexpr uint16_t TempDataBufferSize = 1024;
 
@@ -51,7 +51,7 @@ namespace WPEFramework {
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
-                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MessageUnit::Instance().MetadataSize())
+                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MetadataBufferSizes)
                 {
                 }
                 ~Buffer() = default;
@@ -360,7 +360,6 @@ namespace WPEFramework {
                         , Flush(false)
                         , Out(true)
                         , Error(true)
-                        , MetadataSize(10 * 1024)
                         , DataSize(20 * 1024)
                     {
                         Add(_T("tracing"), &Tracing);
@@ -371,7 +370,6 @@ namespace WPEFramework {
                         Add(_T("flush"), &Flush);
                         Add(_T("stdout"), &Out);
                         Add(_T("stderr"), &Error);
-                        Add(_T("metadatasize"), &MetadataSize);
                         Add(_T("datasize"), &DataSize);
                     }
                     ~Config() = default;
@@ -387,7 +385,6 @@ namespace WPEFramework {
                     Core::JSON::Boolean Flush;
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
-                    Core::JSON::DecUInt16 MetadataSize;
                     Core::JSON::DecUInt16 DataSize;
                 };
 
@@ -403,7 +400,6 @@ namespace WPEFramework {
                     , _socketPort()
                     , _permission(0)
                     , _mode(static_cast<mode>(0))
-                    , _metadataSize()
                     , _dataSize()
                 {
                 }
@@ -420,10 +416,6 @@ namespace WPEFramework {
 
                 uint16_t SocketPort() const {
                     return (_socketPort);
-                }
-
-                uint16_t MetadataSize() const {
-                    return (_metadataSize);
                 }
 
                 uint16_t DataSize() const {
@@ -477,16 +469,6 @@ namespace WPEFramework {
                             (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
                             (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
-
-                    if (jsonParsed.MetadataSize.Value() > MaxMetadataBufferSize) {
-                        TRACE_L1("Metadata buffer size set in the config is too large! The maximum has been used instead");
-                        _metadataSize = MaxMetadataBufferSize;
-
-                        ASSERT(false);
-                    }
-                    else {
-                        _metadataSize = jsonParsed.MetadataSize.Value();
-                    }
                     if (jsonParsed.DataSize.Value() > MaxDataBufferSize) {
                         TRACE_L1("Data buffer size set in the config is too large! The maximum has been used instead");
                         _dataSize = MaxDataBufferSize;
@@ -576,7 +558,6 @@ namespace WPEFramework {
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
-                               Core::NumberType<uint16_t>(_metadataSize).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_dataSize).Text();
 
                     for (auto& entry : _settings) {
@@ -599,7 +580,6 @@ namespace WPEFramework {
                     _identifier.clear();
                     _socketPort = 0;
                     _mode = 0;
-                    _metadataSize = 0;
                     _dataSize = 0;
                     _settings.clear();
 
@@ -612,10 +592,7 @@ namespace WPEFramework {
                                 if (iterator.Next() == true) {
                                     _mode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                     if (iterator.Next() == true) {
-                                        _metadataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
-                                        if (iterator.Next() == true) {
-                                            _dataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
-                                        }
+                                        _dataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
                                     }
                                 }
                             }
@@ -708,7 +685,6 @@ namespace WPEFramework {
                 uint16_t _socketPort;
                 uint16_t _permission;
                 uint8_t _mode;
-                uint16_t _metadataSize;
                 uint16_t _dataSize;
             };
 
