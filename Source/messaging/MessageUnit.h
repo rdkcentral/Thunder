@@ -38,7 +38,7 @@ namespace WPEFramework {
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
             static constexpr uint16_t MetadataBufferSize = 8 * 1024;
-            static constexpr uint16_t TempMetadataBufferSize = 1024;
+            static constexpr uint16_t TempMetadataBufferSize = 128;
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
             static constexpr uint16_t TempDataBufferSize = 1024;
 
@@ -810,7 +810,7 @@ namespace WPEFramework {
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
-                            uint8_t outBuffer[TempMetadataBufferSize];
+                            uint8_t outBuffer[MetadataBufferSize];
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
 
