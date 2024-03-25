@@ -699,7 +699,7 @@ namespace WPEFramework {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBufferType(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::Instance().MetadataSize()) {
+                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::MetadataBufferSize) {
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
@@ -921,10 +921,6 @@ namespace WPEFramework {
 
             uint16_t SocketPort() const {
                 return (_settings.SocketPort());
-            }
-
-            uint16_t MetadataSize() const {
-                return (_settings.MetadataSize());
             }
 
             uint16_t DataSize() const {
