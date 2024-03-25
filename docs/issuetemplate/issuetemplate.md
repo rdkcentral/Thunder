@@ -1,4 +1,4 @@
-When you suspect there is an issue in Thunder for which you would like assistance please use the below template to report the issue.
+When you suspect there is an issue in Thunder for which you would like assistance please use the below template to report the issue. The issue can be reported here: https://github.com/rdkcentral/Thunder/issues 
 
 * Symptom (e.g. segmentation fault, hang-up/unresponsive, assert)
 * Thunder hash the issue is observed on (and if relevant RDKServices hash and/or hash of any other plugin that plays a role in the reproduction scenario)
