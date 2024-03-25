@@ -1,7 +1,7 @@
 When you suspect there is an issue in Thunder for which you would like assistance please use the below template to report the issue. The issue can be reported here: https://github.com/rdkcentral/Thunder/issues 
 
 * Symptom (e.g. segmentation fault, hang-up/unresponsive, assert)
-* Thunder hash the issue is observed on (and if relevant RDKServices hash and/or hash of any other plugin that plays a role in the reproduction scenario)
+* Thunder hash the issue is observed on (and if relevant hash of, or link to, any other plugin that plays a role in the reproduction scenario)
 * Urgency (low, medium, high) and if medium/high reason for this urgency
 * Jira issue(s) already created that are relevant for the issue 
 * Which component is suspected to cause this (if known provide the process including its startup parameters)
