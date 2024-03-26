@@ -4380,7 +4380,7 @@ namespace PluginHost {
 
                 std::list<Core::callstack_info> stackList;
 
-                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+                ::DumpCallStack((ThreadId)index.Current().Id.Value(), stackList);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
