@@ -25,7 +25,6 @@ namespace WPEFramework {
 
 namespace Messaging {
 
-    template <const uint16_t DATA_BUFFER_SIZE, const uint16_t METADATA_SIZE>
     class MessageDataBufferType {
     private:
         /**
@@ -104,8 +103,6 @@ namespace Messaging {
         };
 
     public:
-        using MetadataFrame = Core::IPCMessageType<1, Core::IPC::BufferType<METADATA_SIZE>, Core::IPC::BufferType<METADATA_SIZE>>;
-
         MessageDataBufferType(const MessageDataBufferType&) = delete;
         MessageDataBufferType& operator=(const MessageDataBufferType&) = delete;
 
@@ -117,7 +114,7 @@ namespace Messaging {
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0, const bool initialize = false)
+        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
             , _initialize(initialize)
@@ -130,7 +127,7 @@ namespace Messaging {
                                                                  Core::File::OTHERS_READ  |
                                                                  Core::File::OTHERS_WRITE |
                                                                  Core::File::SHAREABLE,
-                                                                 (initialize == true ? DATA_BUFFER_SIZE : 0), true)
+                                                                 (initialize == true ? dataSize : 0), true)
             // clang-format on
         {
             if (_dataBuffer.IsValid() == true) {
