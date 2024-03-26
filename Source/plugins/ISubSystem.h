@@ -58,6 +58,7 @@ namespace PluginHost {
             STREAMING, // Content can be streamed.
             BLUETOOTH, // The bluetooth subsystem is up and running.
             CRYPTOGRAPHY, // Cryptographic functionality is available.
+            INSTALLATION, // (Package) Installation functionality is available.
             END_LIST /* @end */,
 
             // Also define a "negative" value.
@@ -75,7 +76,8 @@ namespace PluginHost {
             NOT_WEBSOURCE /* @text !WebSource */, // Content exposed via a local web server is NOT available.
             NOT_STREAMING /* @text !Streaming */, // Content can NOT be streamed.
             NOT_BLUETOOTH /* @text !Bluetooth */, // The Bluetooth communication system is NOT available.
-            NOT_CRYPTOGRAPHY /* @text !Cryptography */ // Cryptographic functionality is NOT available.
+            NOT_CRYPTOGRAPHY /* @text !Cryptography */, // Cryptographic functionality is NOT available.
+            NOT_INSTALLATION /* @text !Installation */ // (Package) Installation is NOT available.
         };
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {

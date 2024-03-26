@@ -711,6 +711,7 @@ POP_WARNING()
         _uss = 0;
         _pss = 0;
         _rss = 0;
+        _vss = 0;
         _shared = 0;
         return *this;
     }
