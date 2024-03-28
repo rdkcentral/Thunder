@@ -677,9 +677,9 @@ POP_WARNING()
 
                     switch (keyPress) {
                     case 'A': {
-                        Core::JSON::ArrayType<Metadata::COMRPC> proxyChannels;
+                        Core::JSON::ArrayType<MetaData::COMRPC> proxyChannels;
                         RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies) {
-                            Metadata::COMRPC& entry(proxyChannels.Add());
+                            MetaData::COMRPC& entry(proxyChannels.Add());
                             const Core::SocketPort* socketPort = proxies.front()->Socket();
 
                             if (socketPort != nullptr) {
@@ -687,13 +687,13 @@ POP_WARNING()
                             }
 
                             for (const auto& proxy : proxies) {
-                                Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-                                info.Instance = proxy->Implementation();
-                                info.Interface = proxy->InterfaceId();
-                                info.Count = proxy->ReferenceCount();
+                                MetaData::COMRPC::Proxy& info(entry.Proxies.Add());
+                                info.InstanceId = proxy->Implementation();
+                                info.InterfaceId = proxy->InterfaceId();
+                                info.RefCount = proxy->ReferenceCount();
                             }
                         });
-                        Core::JSON::ArrayType<Metadata::COMRPC>::Iterator index(proxyChannels.Elements());
+                        Core::JSON::ArrayType<MetaData::COMRPC>::Iterator index(proxyChannels.Elements());
 
                         printf("COMRPC Links:\n");
                         printf("============================================================\n");
