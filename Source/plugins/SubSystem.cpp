@@ -63,6 +63,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::subsystem)
     { PluginHost::ISubSystem::subsystem::BLUETOOTH, _TXT("Bluetooth") },
     { PluginHost::ISubSystem::subsystem::NOT_BLUETOOTH, _TXT("!Bluetooth") },
 
+    { PluginHost::ISubSystem::subsystem::INSTALLATION, _TXT("Installation") },
+    { PluginHost::ISubSystem::subsystem::NOT_INSTALLATION, _TXT("!Installation") },
+
     ENUM_CONVERSION_END(PluginHost::ISubSystem::subsystem)
 
 } // namespace WPEFramework
