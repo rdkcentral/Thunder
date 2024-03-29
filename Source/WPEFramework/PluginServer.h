@@ -1746,23 +1746,8 @@ namespace PluginHost {
                 return (_administrator.RemoteConnection(connectionId));
             }
 
-            void Closed(const uint32_t id)
+            void Closed(const uint32_t /*id */)
             {
-                IDispatcher* dispatcher = nullptr;
-
-                _pluginHandling.Lock();
-                if (_handler != nullptr) {
-                    dispatcher = _handler->QueryInterface<IDispatcher>();
-                    if (dispatcher != nullptr) {
-                        ILocalDispatcher* localDispatcher = dispatcher->Local();
-
-                        if (localDispatcher) {
-                            localDispatcher->Dropped(id);
-                        }
-                        dispatcher->Release();
-                    }
-                }
-                _pluginHandling.Unlock();
 
             }
 
