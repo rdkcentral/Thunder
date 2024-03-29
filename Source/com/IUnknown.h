@@ -234,14 +234,14 @@ namespace ProxyStub {
                     }
                 }
 
+                _adminLock.Unlock();
+
                 // Remove our selves from the Administration, we are done..
                 if (RPC::Administrator::Instance().UnregisterUnknownProxy(*this) == true ) {
                     ASSERT(_refCount == 1);
                     _refCount = 0;
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                 }
-
-                _adminLock.Unlock();
             }
 
             return (result);
