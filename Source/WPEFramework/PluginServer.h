@@ -1284,15 +1284,8 @@ namespace PluginHost {
                 return (_administrator.RemoteConnection(connectionId));
             }
 
-            void Closed(const uint32_t id)
+            void Closed(const uint32_t /*id */)
             {
-                _pluginHandling.Lock();
-
-                if (_jsonrpc != nullptr)  {
-                    _jsonrpc->Dropped(id);
-                }
-                _pluginHandling.Unlock();
-
             }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
