@@ -1095,14 +1095,19 @@ namespace Core {
             _adminLock.Unlock();
         }
         void Register(AdapterObserver::INotification* client) {
+            ASSERT(client != nullptr);
+
             _adminLock.Lock();
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
+            ASSERT(index == _observers.end());
             if (index == _observers.end()) {
                 _observers.push_back(client);
             }
             _adminLock.Unlock();
         }
         void Unregister(AdapterObserver::INotification* client) {
+            ASSERT(client != nullptr);
+
             _adminLock.Lock();
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index != _observers.end()) {

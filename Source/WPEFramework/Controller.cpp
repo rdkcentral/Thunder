@@ -822,13 +822,18 @@ namespace Plugin {
 
     Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
     {
+        ASSERT(notification != nullptr);
+
         _adminLock.Lock();
 
         // Make sure a sink is not registered multiple times.
-        ASSERT(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification) == _lifeTimeObservers.end());
+        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
+        ASSERT(index == _lifeTimeObservers.end());
 
-        _lifeTimeObservers.push_back(notification);
-        notification->AddRef();
+        if (index == _lifeTimeObservers.end()) {
+            _lifeTimeObservers.push_back(notification);
+            notification->AddRef();
+        }
 
         _adminLock.Unlock();
 
@@ -837,6 +842,8 @@ namespace Plugin {
 
     Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
     {
+        ASSERT(notification != nullptr);
+
         _adminLock.Lock();
 
         LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));

@@ -59,44 +59,50 @@ namespace PluginHost {
             }
             void Register(IShell* controller, const string& callsign)
             {
-                _adminLock.Lock();
-                _callsign = callsign;
-                _state = state::REGISTRING;
-                _adminLock.Unlock();
+                ASSERT(controller != nullptr);
+                if (controller != nullptr) {
+                    _adminLock.Lock();
+                    _callsign = callsign;
+                    _state = state::REGISTRING;
+                    _adminLock.Unlock();
 
-                controller->Register(this);
+                    controller->Register(this);
 
-                _adminLock.Lock();
-                if (_state == state::LOADED) {
+                    _adminLock.Lock();
+                    if (_state == state::LOADED) {
 
-                    INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
-                    _designated->Release();
-                    _designated = entry;
-                    _state = state::RUNNING;
-                    if (entry != nullptr) {
-                        _parent.Activated(entry);
+                        INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
+                        _designated->Release();
+                        _designated = entry;
+                        _state = state::RUNNING;
+                        if (entry != nullptr) {
+                            _parent.Activated(entry);
+                        }
+                    } else {
+                        _state = state::RUNNING;
                     }
-                } else {
-                    _state = state::RUNNING;
+                    _adminLock.Unlock();
                 }
-                _adminLock.Unlock();
             }
             void Unregister(IShell* controller)
             {
-                _adminLock.Lock();
+                ASSERT(controller != nullptr);
+                if (controller != nullptr) {
 
-                controller->Unregister(this);
-                _callsign.clear();
+                    _adminLock.Lock();
+                    controller->Unregister(this);
+                    _callsign.clear();
 
-                if (_designated != nullptr) {
+                    if (_designated != nullptr) {
 
-                    _designated->Release();
-                    _designated = nullptr;
+                        _designated->Release();
+                        _designated = nullptr;
 
-                    _parent.Deactivated();
+                        _parent.Deactivated();
+                    }
+
+                    _adminLock.Unlock();
                 }
-
-                _adminLock.Unlock();
             }
             INTERFACE* Interface()
             {
