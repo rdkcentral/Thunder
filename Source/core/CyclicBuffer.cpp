@@ -457,7 +457,7 @@ namespace Core {
                 break;
             }
 
-            Cursor cursor(*this, oldTail, length);
+            Cursor cursor(*this, oldTail, std::min(length, result));
             result = GetReadSize(cursor);
 
             //data was found if result is greater than 0 and the tail was not moved by the writer.
