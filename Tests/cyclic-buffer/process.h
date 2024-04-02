@@ -29,7 +29,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define CREATOR_WRITE
+// Define in unit that includes this file
+//#define CREATOR_WRITE
 //#define CREATOR_EXTRA_USERS
 
 namespace WPEFramework {
@@ -37,17 +38,71 @@ namespace Tests {
 
 class Thread : public Core::Thread
 {
+private :
+
+    static constexpr uint32_t n = 20;//sizeof(("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
+
 public :
 
-    Thread() = default;
+    Thread()
+        : _status{ true }
+    {
+        memcpy(_data.data(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", n);
+    }
+
     virtual ~Thread() = default;
 
 protected :
+
+    bool Validate(const uint8_t data[], uint32_t count)
+    {
+        _status = false;
+
+        std::queue<uint8_t> reference;
+
+        std::for_each(_data.begin(), _data.end(), [&reference] (uint8_t value){reference.push(value);} );
+
+        size_t stop = 2 * reference.size();
+
+        uint32_t offset = 0;
+
+        while (stop > 0 && offset < count) {
+            auto element = reference.front();
+
+            if (element == data[offset]) {
+                ++offset;
+            } else {
+                offset = 0;
+            }
+                // Shift by one and match pattern again
+
+                reference.push(element);
+                reference.pop();
+
+            --stop;
+        }
+
+        _status = offset == count;
+
+        return _status;
+    }
+
+    bool Status() const
+    {
+        return _status;
+    }
 
     static constexpr uint8_t threadWorkerInterval = 10; // Milliseconds
     static constexpr uint32_t lockTimeout =  Core::infinite; // Milliseconds
     static constexpr uint8_t sampleSizeInterval = 5; // Number of uint8_t elements
     static constexpr uint8_t forceUnlockRetryCount = 5; // Attemps until Alert() at destruction
+
+    static constexpr uint32_t N = n;
+
+    mutable std::array<uint8_t, N> _data;
+
+
+    std::atomic<bool> _status;
 };
 
 template <size_t N>
@@ -60,10 +115,15 @@ public :
     Reader& operator=(const Reader&) = delete;
 
     Reader(const std::string& fileName)
+        : Reader(fileName, 0)
+    {}
+
+    Reader(const std::string& fileName, size_t numReservedBlocks)
         : Thread{}
         , _enabled{ false }
         , _fileName{ fileName }
         , _index{ 0 }
+        , _numReservedBlocks{ numReservedBlocks }
         , _buffer{
               fileName
             ,   Core::File::USER_READ  // Not relevant for readers
@@ -118,6 +178,11 @@ public :
         return _enabled;
     }
 
+    bool HasError() const
+    {
+        return !Status();
+    }
+
     uint32_t Worker() override
     {
         uint32_t waitTimeForNextRun = Core::infinite;
@@ -127,7 +192,8 @@ public :
         if (status == Core::ERROR_NONE) {
             const uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (Read(count) == count) {
+            uint32_t read = Read(count);
+            if (read == count) {
 //                TRACE_L1(_T("Data read"));
             } else if (count > 0 ){
 //                TRACE_L1(_T("Less data read than requested")); // Possibly too few writes
@@ -160,13 +226,33 @@ private :
         uint32_t read = 0;
 
         if (count > 0) {
+            std::vector<uint8_t> data(count, '\0');
+
             if ((_index + count) > N) {
                 // Two passes when passing the boundary
-                read = _buffer.Read(&_output[_index], N - _index, false);
-                read += _buffer.Read(&_output[0], count - read, false);
+                read = _buffer.Read(&(data.data()[0]), N - _index, false);
+                memcpy(&_output[_index], &(data.data()[0]), read);
+
+                if (   read == (N - _index)
+                    && count > read
+                   ) {
+                    const uint32_t position = read;
+
+                    read = _buffer.Read(&(data.data()[position]), count - read, false);
+                    memcpy(&_output[0], &(data.data()[position]), read);
+
+                    read = read + position;
+                }
             } else {
-                // One pass
-                read = _buffer.Read(&_output[_index], count, false);
+                read = _buffer.Read(&(data.data()[0]), count, false);
+                memcpy(&_output[_index], &(data.data()[0]), read);
+            }
+
+            if (   read > 0
+                && !Validate(data.data(), read)
+               ) {
+                // Does peeked data match output?
+                TRACE_L1("Error: detected read data corruption.");
             }
 
             _index = (_index + read) % N;
@@ -175,11 +261,27 @@ private :
         return read;
     }
 
+    // Only relevant with reserve being actively used
+    bool Validate(const uint8_t data[], uint32_t count)
+    {
+        bool result = true;
+
+        if (   _numReservedBlocks > 0
+            && count > 0
+           ) {
+               result = Thread::Validate(data, count);
+        }
+
+        return result;
+    }
+
     bool _enabled;
 
     const std::string _fileName;
 
     uint64_t _index;
+
+    const size_t _numReservedBlocks;
 
     std::array<uint8_t, N> _output;
 
@@ -197,10 +299,16 @@ public :
     Writer& operator=(const Writer&) = delete;
 
     Writer(const std::string& fileName, uint32_t requiredSharedBufferSize)
+        : Writer(fileName, requiredSharedBufferSize, 0)
+    {}
+
+    Writer(const std::string& fileName, uint32_t requiredSharedBufferSize, size_t numReservedBlocks)
         : Thread{}
         , _enabled{ false }
         , _fileName { fileName }
         , _index{ 0 }
+        , _numReservedBlocks{ numReservedBlocks }
+        , _reserved{ 0 }
         , _buffer{
               fileName
             ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
@@ -211,10 +319,10 @@ public :
             , false // Overwrite unread data
           }
     {
-        static_assert(N > 0, "Specify a data set with at least one character (N > 0).");
+        static_assert(N > 0 || Thread::N > N, "Specify a data set with at least one character (N > 0) with N <= Thread::N.");
 
         // https://en.wikipedia.org/wiki/Lorem_ipsum
-        memcpy(_input.data(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", N);
+        memcpy(_input.data(), Thread::_data.data(), N);
     }
 
     ~Writer()
@@ -257,40 +365,59 @@ public :
         return _enabled;
     }
 
+    bool HasError() const
+    {
+        return !Status();
+    }
+
     uint32_t Worker() override
     {
         uint32_t waitTimeForNextRun = Core::infinite;
 
-        static uint32_t reserved = 0;
-
-        if (reserved == 0) {
-            reserved = _buffer.Size() / numReservedBlocks;
-
-            ASSERT(_buffer.Size() % numReservedBlocks == 0);
-
-            if (_buffer.Reserve(reserved) != Core::ERROR_NONE) {
-                // Another has already made a reservation
-                reserved = 0;
-            }
-        }
-
+        // Write(), Free() and Reserve() may all experience race conditions due to thread scheduling
         uint32_t status = _buffer.Lock(false /* data present, false == signalling path, true == PID path */, lockTimeout /* waiting time to give up lock */);
         if (status == Core::ERROR_NONE) {
             uint32_t count = std::rand() % sampleSizeInterval;
 
-            if (reserved <= count) {
-                count = reserved;
+            if (   _numReservedBlocks > 0
+                && _reserved == 0
+               ) {
+                _reserved = _buffer.Size() / _numReservedBlocks;
+
+    //            TRACE_L1(_T("reserved : %ld"), reserved);
+                ASSERT(_buffer.Size() % _numReservedBlocks == 0);
+
+                // Both Free() and Reserve() may experience a race condition with other writers
+                if (   _reserved > _buffer.Free()
+                    || _buffer.Reserve(_reserved) != Core::ERROR_NONE) {
+                    // Another has already made a reservation or the block is unavailable
+                    _reserved = 0;
+                }
             }
 
-            uint32_t written = Write(count);
+            if (   _reserved > 0
+                && _reserved <= count
+               ) {
+                count = _reserved;
+            }
+
+            uint32_t written = 0;
+
+            if (   _numReservedBlocks > 0
+                && _reserved == 0
+               ) {
+                // Reservation mode but failed to 'allocate' a block
+            } else {
+                written = Write(count);
+                ASSERT(_reserved >= written);
+                _reserved -= written;
+            }
 
             if (written == count) {
 //                TRACE_L1(_T("Data written"));
             } else if (count > 0) {
 //                TRACE_L1(_T("Less data written than requested")); // Possibly too few reads
             }
-
-            reserved -= written;
 
             status = _buffer.Unlock();
 
@@ -314,20 +441,38 @@ public :
 
 private :
 
-    static constexpr uint32_t numReservedBlocks = 2;
-
     uint32_t Write(uint32_t count)
     {
         uint32_t written = 0;
 
         if (count > 0) {
+            std::vector<uint8_t> data(count, '\0');
+
+            // _index 0..N-1 for N
             if ((_index + count) > N) {
                 // Two passes when passing the boundary
-                written = _buffer.Write(&_input[_index], N - _index);
-                written += _buffer.Write(&_input[0], count - written);
+                // Note: full data writes with insufficient (total free) space typically are refused but here might be bypassed
+
+                data.assign(&_input[_index], &_input[_index + N -_index]);
+                written = _buffer.Write(&(data.data()[0]), N - _index);
+
+                if (   written == N - _index
+                    && count > written
+                   ) {
+                    data.insert(data.begin() + written, &_input[0], &_input[count - written]);
+                    written += _buffer.Write(&(data.data()[written]), count - written);
+                }
             } else {
                 // One pass
-                written = _buffer.Write(&_input[_index], count);
+                data.assign(&_input[_index], &_input[_index + count]);
+                written = _buffer.Write(&(data.data()[0]), count);
+            }
+
+            if (   written > 0
+                && !Validate(data.data(), written)
+               ) {
+                // Does peeked data match output?
+                TRACE_L1("Error: detected written data corruption.");
             }
 
             _index = (_index + written) % N;
@@ -336,13 +481,31 @@ private :
         return written;
     }
 
+    // Only relevant with reserve being actively used
+    bool Validate(const uint8_t data[], uint32_t count)
+    {
+        bool result = true;
+
+        if (   _numReservedBlocks > 0
+            && count > 0
+           ) {
+               result = Thread::Validate(data, count);
+        }
+
+        return result;
+    }
+
     bool _enabled;
 
     const std::string _fileName;
 
     uint64_t _index;
 
-    std::array<uint8_t, N> _input;
+    const size_t _numReservedBlocks;
+
+    uint32_t _reserved;
+
+    mutable std::array<uint8_t, N> _input;
 
     Core::CyclicBuffer _buffer;
 };
@@ -357,7 +520,11 @@ public :
     BufferCreator& operator=(const BufferCreator&) = delete;
 
     BufferCreator(const std::string& fileName)
-        : _writer(fileName, memoryMappedFileRequestedSize)
+        : BufferCreator(fileName, 0)
+    {}
+
+    BufferCreator(const std::string& fileName, size_t numReservedBlocks)
+        : _writer(fileName, memoryMappedFileRequestedSize, numReservedBlocks)
     {
         static_assert(memoryMappedFileRequestedSize, "Specify memoryMappedFileRequestedSize > 0");
     }
@@ -378,11 +545,9 @@ public :
 
     bool Stop()
     {
-        constexpr bool result = true;
-
         _writer.Stop();
 
-        return result;
+        return !_writer.HasError();
     }
 
     bool IsEnabled() const
@@ -405,16 +570,20 @@ public :
     BufferUsers& operator=(const BufferUsers&) = delete;
 
     BufferUsers(const std::string& fileName)
-    : BufferUsers(fileName, W, R)
+    : BufferUsers(fileName, W, R, 0)
     {
     }
 
     BufferUsers(const std::string& fileName, size_t maxWriters, size_t maxReaders)
+    : BufferUsers(fileName, maxWriters, maxReaders, 0)
+    {}
+
+    BufferUsers(const std::string& fileName, size_t maxWriters, size_t maxReaders, size_t numReservedBlocks)
     : _writers(maxWriters > W ? W : maxWriters)
     , _readers(maxReaders > R ? R : maxReaders)
     {
-        for_each(_writers.begin(), _writers.end(), [&fileName] (std::unique_ptr<Writer<internalBufferSize>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0))); });
-        for_each(_readers.begin(), _readers.end(), [&fileName] (std::unique_ptr<Reader<internalBufferSize>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName))); });
+        for_each(_writers.begin(), _writers.end(), [&fileName, &numReservedBlocks] (std::unique_ptr<Writer<internalBufferSize>>& writer){ writer = std::move(std::unique_ptr<Writer<internalBufferSize>>(new Writer<internalBufferSize>(fileName, 0, numReservedBlocks))); });
+        for_each(_readers.begin(), _readers.end(), [&fileName, &numReservedBlocks] (std::unique_ptr<Reader<internalBufferSize>>& reader){ reader = std::move(std::unique_ptr<Reader<internalBufferSize>>(new Reader<internalBufferSize>(fileName, numReservedBlocks))); });
     }
 
     ~BufferUsers()
@@ -441,10 +610,11 @@ public :
 
     bool Stop() const
     {
-        constexpr bool result = true;
+        bool result = true;
 
-        for_each(_writers.begin(), _writers.end(), [] (const std::unique_ptr<Writer<internalBufferSize>>& writer){ writer->Stop(); });
-        for_each(_readers.begin(), _readers.end(), [] (const std::unique_ptr<Reader<internalBufferSize>>& reader){ reader->Stop(); });
+        for_each(_writers.begin(), _writers.end(), [&result] (const std::unique_ptr<Writer<internalBufferSize>>& writer){ writer->Stop(); result = result && !writer->HasError(); });
+        for_each(_readers.begin(), _readers.end(), [&result] (const std::unique_ptr<Reader<internalBufferSize>>& reader){ reader->Stop(); result = result && !reader->HasError(); });
+
 
         return result;
     }
@@ -469,7 +639,9 @@ public :
     , _sync{ nullptr }
     , _childUsersSet{ maxReadersPerProcess, maxReadersPerProcess }
     , _parentUsersSet{ maxWritersPerProcess, maxReadersPerProcess }
+    , _setupTime{ Core::infinite }
     , _runTime{ Core::infinite }
+    , _numReservedBlocks{ 0 }
     {
         std::for_each(_children.begin(), _children.end(), [] (pid_t& child){ child = 0; } );
 
@@ -495,11 +667,11 @@ public :
 
     bool SetChildUsers(uint8_t numWriters, uint8_t numReaders)
     {
-        if (numWriters < maxWritersPerProcess) {
+        if (numWriters <= maxWritersPerProcess) {
             _childUsersSet[0] = numWriters;
         }
 
-        if (numReaders < maxReadersPerProcess) {
+        if (numReaders <= maxReadersPerProcess) {
             _childUsersSet[1] = numReaders;
         }
 
@@ -510,11 +682,11 @@ public :
 
     bool SetParentUsers(uint8_t numWriters, uint8_t numReaders)
     {
-        if (numWriters < maxWritersPerProcess) {
+        if (numWriters <= maxWritersPerProcess) {
             _parentUsersSet[0] = numWriters;
         }
 
-        if (numReaders < maxReadersPerProcess) {
+        if (numReaders <= maxReadersPerProcess) {
             _parentUsersSet[1] = numReaders;
         }
 
@@ -525,7 +697,7 @@ public :
 
     bool SetTotalRuntime(uint32_t runTime /* milliseconds */)
     {
-        if (runTime < maxTotalRuntime) {
+        if (runTime <= maxTotalRuntime) {
             _runTime = runTime;
         }
 
@@ -534,11 +706,20 @@ public :
 
     bool SetAllowedSetupTime(uint32_t setupTime /* seconds */)
     {
-        if (setupTime < maxSetupTime) {
+        if (setupTime <= maxSetupTime) {
             _setupTime = setupTime;
         }
 
         return _setupTime == setupTime;
+    }
+
+    bool SetNumReservedBlocks(uint8_t numReservedBlocks)
+    {
+        if (numReservedBlocks <= maxNumReservedBlocks) {
+            _numReservedBlocks = numReservedBlocks;
+        }
+
+        return _numReservedBlocks == numReservedBlocks;
     }
 
 private :
@@ -546,8 +727,10 @@ private :
     static constexpr uint32_t maxSetupTime = 10; // Seconds
     static constexpr uint32_t maxTotalRuntime = Core::infinite; // Milliseconds
 
-    static constexpr uint8_t maxWritersPerProcess = 1;
-    static constexpr uint8_t maxReadersPerProcess = 1;
+    static constexpr uint8_t maxWritersPerProcess = 2;
+    static constexpr uint8_t maxReadersPerProcess = 2;
+
+    static constexpr uint8_t maxNumReservedBlocks = 2;
 
     // The order is important, sync variable
     enum status : uint8_t {
@@ -649,7 +832,8 @@ private :
 
                             TRACE_L1(_T("Child %ld knows its parent is ready [true/false]: %s."), getpid(), _sync->level != status::uninitialized ? _T("true") : _T("false"));
 
-                            BufferUsers<internalBufferSize, maxWritersPerProcess, maxReadersPerProcess> users(_fileName, _childUsersSet[0], _childUsersSet[1]); // # writer(s), # reader(s)
+                            //BufferUsers<internalBufferSize, maxWritersPerProcess, maxReadersPerProcess> users(_fileName, _childUsersSet[0], _childUsersSet[1]); // # writer(s), # reader(s)
+                            BufferUsers<internalBufferSize, maxWritersPerProcess, maxReadersPerProcess> users(_fileName, _childUsersSet[0], _childUsersSet[1], _numReservedBlocks); // # writer(s), # reader(s)
 
                             flags = {status::initialized, status::ready};
 
@@ -660,7 +844,7 @@ private :
                             ASSERT(result);
 
                             TRACE_L1(_T("Child %ld has woken up %ld parent(s)."), getpid(), retval);
-
+SleepMs(1000*30);
                             result =    CleanupIPSync()
                                      && Core::File(_fileName).Exists()
                                      && users.Enable()
@@ -697,7 +881,7 @@ private :
     bool ExecuteParent()
     {
         // The underlying memory mapped file will be created and opened via DataElementFile construction
-        std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator { std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(_fileName))) };
+        std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator { std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(_fileName, _numReservedBlocks))) };
 
         bool result =    creator.get() != nullptr
                       && creator->Enable()
@@ -741,16 +925,15 @@ private :
 
                 TRACE_L1(_T("Parent %ld has been woken up by child [true/false]: %s."), gettid(), retval == 0 ? _T("true") : _T("false"));
 
-                result = CleanupIPSync();
-
-                WaitForCompletion(/*timeout for waitpid*/);
+                result =    CleanupIPSync()
+                         && WaitForCompletion(/*timeout for waitpid*/);
 
 #ifdef CREATOR_EXTRA_USERS
             result =    users.Stop()
                      && result
                      ;
             } else {
-                TRACE_L1(_T("Error: Unable to start 'extra users'."))
+                TRACE_L1(_T("Error: Unable to start 'extra users'."));
             }
 #endif
 
@@ -771,7 +954,7 @@ private :
     {
         bool result = true;
 
-        // Reap in order
+        // Reap
         for (auto it = _children.begin(), end = _children.end(); it != end; it++) {
             int status = 0;
 
@@ -782,26 +965,29 @@ private :
             case -1 :   // No more children / child has died
                         if (errno == ECHILD) {
                             TRACE_L1(_T("Child %ld is not our offspring."), pid);
+                            result = false;
                         }
-                        result = false;
                         break;
             case 0  :   // Child has not changed state, see WNOHANG
+                        result = false;
                         break;
             default :   // Child's pid
-                        result = false;
-
                         if (WIFEXITED(status)) {
                             TRACE_L1(_T("Child %ld died NORMALLY with status %ld."), pid, WEXITSTATUS(status));
                             result =    result
                                      && true;
-                        } else if (WIFSIGNALED(status)) {
-                            TRACE_L1(_T("Child %ld died ABNORMALLY due to signal %ld."), pid, WTERMSIG(status));
-                        } else if (WIFSTOPPED(status)) {
-                            TRACE_L1(_T("Child %ld died ABNORMALLY due to stop signal %ld."), pid, WSTOPSIG(status));
-                        } else if (errno != EAGAIN) {// pid non-blocking
-                            TRACE_L1(_T("Child %ld died ABNORMALLY."), pid);
                         } else {
-                            result = true;
+                            result = false;
+
+                            if (WIFSIGNALED(status)) {
+                                TRACE_L1(_T("Child %ld died ABNORMALLY due to signal %ld."), pid, WTERMSIG(status));
+                            } else if (WIFSTOPPED(status)) {
+                                TRACE_L1(_T("Child %ld died ABNORMALLY due to stop signal %ld."), pid, WSTOPSIG(status));
+                            } else if (errno != EAGAIN) {// pid non-blocking
+                                TRACE_L1(_T("Child %ld died ABNORMALLY."), pid);
+                            } else {
+                                TRACE_L1(_T("Error: unprocessed child %ld status."), pid);
+                            }
                         }
             }
         }
@@ -822,6 +1008,8 @@ private :
 
     uint32_t _runTime; // Milliseconds
     uint32_t _setupTime; // Seconds
+
+    uint8_t _numReservedBlocks;
 };
 
 } // Tests
