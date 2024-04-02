@@ -205,8 +205,6 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            ASSERT(_administration != nullptr);
-
             return (_administration != nullptr);
         }
         inline const File& Storage() const
