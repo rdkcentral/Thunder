@@ -416,14 +416,14 @@ namespace Tests {
         uint8_t data1[10];
         memset(&data1, 'A', sizeof(data1));
         uint16_t size = sizeof(data1) + 2;
-        uint8_t reserved = buffer.Reserve(size);
-        if (reserved == size) {
-            buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1));
-        }
+
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1)), sizeof(data1));
+
         EXPECT_EQ(buffer.Overwritten(), false);
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         uint8_t data2[20];
         memset(&data2, 'B', sizeof(data2));
@@ -431,10 +431,10 @@ namespace Tests {
         uint8_t previousFreeSpace = buffer.Free();
         buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
         // Try to write to only with free space available
- //       buffer.Write(reinterpret_cast<uint8_t*>(&data2), buffer.Free());
+        buffer.Write(reinterpret_cast<uint8_t*>(&data2), buffer.Free());
 
- //       EXPECT_EQ(buffer.Used(), previousFreeSpace);
- //       EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - previousFreeSpace));
+        EXPECT_EQ(buffer.Used(), previousFreeSpace);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - previousFreeSpace));
 
         // Remove after usage before destruction
         const_cast<File&>(buffer.Storage()).Destroy();
@@ -581,7 +581,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
 
-//        EXPECT_EQ(buffer.Reserve(sizeof(SampleData)), sizeof(SampleData));
+        EXPECT_EQ(buffer.Reserve(sizeof(SampleData)), Core::ERROR_NONE);
         buffer.Write(reinterpret_cast<const uint8_t*>(SampleData), sizeof(SampleData));
         EXPECT_EQ(buffer.Used(), sizeof(SampleData));
         EXPECT_EQ(buffer.Free(), cyclicBufferSize - (sizeof(SampleData)));
@@ -669,7 +669,7 @@ namespace Tests {
             CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
-//            EXPECT_EQ(buffer.IsValid(), false);
+            EXPECT_EQ(buffer.IsValid(), false);
 
             // Check File Size
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
@@ -742,86 +742,89 @@ namespace Tests {
         uint8_t data1[90];
         memset(&data1, 'A', sizeof(data1));
         uint16_t size = sizeof(data1) + 2;
-        uint8_t reserved = buffer.Reserve(size);
-        if (reserved == size) {
-            buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1));
-        }
+
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1)), sizeof(data1));
+
         EXPECT_EQ(buffer.Overwritten(), false);
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         uint8_t data2[80];
         memset(&data2, 'B', sizeof(data2));
         size = sizeof(data2) + 2;
-        reserved = buffer.Reserve(size);
-        if (reserved == size) {
-            buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data2), sizeof(data2));
-        }
 
- //       EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&data2), sizeof(data2)), sizeof(data2));
+
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         char testData[] = "123456789012345678901234567890";
         size = sizeof(testData) + 2;
-//        EXPECT_EQ(buffer.Reserve(size), size);
-        buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
+
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
         EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&testData), sizeof(testData)), sizeof(testData));
 
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Try overwrite with size of Free()
         uint8_t data3[buffer.Free()];
         memset(&data3, 'C', sizeof(data3));
         size = sizeof(data3) + 2;
-        reserved = buffer.Reserve(size);
-        if (reserved == size) {
-            buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data3), sizeof(data3));
-        }
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&data3), sizeof(data3)), sizeof(data3));
+
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Flush to start from beginning
         buffer.Flush();
         size = sizeof(testData) + 2;
-//        EXPECT_EQ(buffer.Reserve(size), size);
+
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+
         EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2u);
         EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&testData), sizeof(testData)), sizeof(testData));
         EXPECT_EQ(buffer.Overwritten(), false);
 
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         uint16_t read = 0;
         // Verify data is overwritten
-//        EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&read), 2), 2u);
-//        EXPECT_EQ(read, size);
+        EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&read), 2), 2u);
+        EXPECT_EQ(read, size);
         for (uint8_t i = 0; i < sizeof(testData); ++i) {
-//             EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&read), 1), 1u);
-//             EXPECT_EQ(read, testData[i]);
+             EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&read), 1), 1u);
+             EXPECT_EQ(read, testData[i]);
         }
 
         EXPECT_EQ(buffer.Free(), cyclicBufferSize);
         size = sizeof(data1) + 2;
-        reserved = buffer.Reserve(size);
-        if (reserved == size) {
-            buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1));
-        }
+
+        EXPECT_TRUE(buffer.Reserve(size) == WPEFramework::Core::ERROR_NONE);
+
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2), 2);
+        EXPECT_EQ(buffer.Write(reinterpret_cast<uint8_t*>(&data1), sizeof(data1)), sizeof(data1));
+
         EXPECT_EQ(buffer.Overwritten(), false);
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Verify Overwrite without reservation
         size = sizeof(data2) + 2;
         buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-//        buffer.Write(reinterpret_cast<uint8_t*>(&data2), sizeof(data2));
+        buffer.Write(reinterpret_cast<uint8_t*>(&data2), sizeof(data2));
 
-//        EXPECT_EQ(buffer.Used(), size);
-//        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        EXPECT_EQ(buffer.Used(), size);
+        EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Remove after usage before destruction
         const_cast<File&>(buffer.Storage()).Destroy();
@@ -1020,7 +1023,7 @@ namespace Tests {
 
                 string data = "kl";
                 result = buffer->Reserve(data.size());
-//                EXPECT_EQ(result, 2u);
+                EXPECT_EQ(result, WPEFramework::Core::ERROR_NONE);
                 result = buffer->Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
                 EXPECT_EQ(result, 2u);
                 testAdmin.Sync("client wrote");
@@ -1215,7 +1218,7 @@ namespace Tests {
             string data = "j";
             uint16_t size = 9;
             uint32_t result = buffer.Reserve(9);
-//            EXPECT_EQ(result, 9u);
+            EXPECT_EQ(result, Core::ERROR_NONE);
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2u);
             EXPECT_EQ(result, 2u);
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1u);
