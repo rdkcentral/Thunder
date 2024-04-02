@@ -765,7 +765,7 @@ namespace PluginHost {
             return (index == _handlers.end() ? nullptr : &(*index));
         }
 
-        uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        virtual uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator)
         {
             uint32_t result;
 
@@ -785,7 +785,7 @@ namespace PluginHost {
 
             return (result);
         }
-        uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        virtual uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -905,7 +905,7 @@ namespace PluginHost {
         }
 
     public:
-        uint32_t Subscribe(const uint32_t channel, const string& eventId, const string& designator)
+        uint32_t Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
         {
             const Core::hresult result = JSONRPC::Subscribe(channel, eventId, designator);
 
@@ -915,7 +915,7 @@ namespace PluginHost {
 
             return (result);
         }
-        uint32_t Unsubscribe(const uint32_t channel, const string& eventId, const string& designator)
+        uint32_t Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
         {
             const Core::hresult result = JSONRPC::Unsubscribe(channel, eventId, designator);
 
