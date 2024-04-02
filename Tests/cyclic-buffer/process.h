@@ -844,7 +844,7 @@ private :
                             ASSERT(result);
 
                             TRACE_L1(_T("Child %ld has woken up %ld parent(s)."), getpid(), retval);
-SleepMs(1000*30);
+
                             result =    CleanupIPSync()
                                      && Core::File(_fileName).Exists()
                                      && users.Enable()
@@ -884,6 +884,8 @@ SleepMs(1000*30);
         std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>> creator { std::move(std::unique_ptr<BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>>(new BufferCreator<memoryMappedFileRequestedSize, internalBufferSize>(_fileName, _numReservedBlocks))) };
 
         bool result =    creator.get() != nullptr
+                         // Immunize, signal to use for unresponsive child processes, default action is terminate
+                      && signal(SIGUSR1, SIG_IGN) != SIG_ERR
                       && creator->Enable()
                       && creator->IsEnabled()
 #ifdef CREATOR_WRITE
