@@ -519,7 +519,7 @@ namespace Core {
     {
         ASSERT(_administration != nullptr);
 
-        ASSERT(length < _administration->_size);
+        ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
