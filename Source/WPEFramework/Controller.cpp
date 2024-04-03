@@ -22,12 +22,6 @@
 
 #include <plugins/json/json_IController.h>
 
-#include <plugins/json/JDiscovery.h>
-#include <plugins/json/JConfiguration.h>
-#include <plugins/json/JSystemManagement.h>
-#include <plugins/json/JLifeTime.h>
-#include <plugins/json/JMetadata.h>
-
 namespace WPEFramework {
 
     namespace {
@@ -129,9 +123,11 @@ namespace Plugin {
 
         Exchange::Controller::JConfiguration::Register(*this, this);
         Exchange::Controller::JDiscovery::Register(*this, this);
-        Exchange::Controller::JSystemManagement::Register(*this, this);
+        Exchange::Controller::JSystem::Register(*this, this);
         Exchange::Controller::JLifeTime::Register(*this, this);
         Exchange::Controller::JMetadata::Register(*this, this);
+        Exchange::Controller::JSubsystems::Register(*this, this);
+        Exchange::Controller::JEvents::Register(*this, this);
 
         // On succes return a name as a Callsign to be used in the URL, after the "service"prefix
         return (_T(""));
@@ -143,9 +139,11 @@ namespace Plugin {
 
         Exchange::Controller::JConfiguration::Unregister(*this);
         Exchange::Controller::JDiscovery::Unregister(*this);
-        Exchange::Controller::JSystemManagement::Unregister(*this);
+        Exchange::Controller::JSystem::Unregister(*this);
         Exchange::Controller::JLifeTime::Unregister(*this);
         Exchange::Controller::JMetadata::Unregister(*this);
+        Exchange::Controller::JSubsystems::Unregister(*this);
+        Exchange::Controller::JEvents::Unregister(*this);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
@@ -168,7 +166,6 @@ namespace Plugin {
         service->DisableWebServer();
 
         RPC::ConnectorController::Instance().Revoke(service);
-
     }
 
     /* virtual */ string Controller::Information() const
@@ -728,11 +725,10 @@ namespace Plugin {
 
     void Controller::SubSystems()
     {
-        string message;
-#if THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API || defined(__DEBUG__)
         PluginHost::Metadata response;
 #endif
-        Core::JSON::ArrayType<SubsystemsData> responseJsonRpc;
+        Core::JSON::ArrayType<JsonData::Subsystems::SubsystemInfo> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         // Now prepare a message for the Javascript world.
@@ -750,14 +746,15 @@ namespace Plugin {
                 reportMask |= (subSystem->IsActive(current) ? bit : 0);
 
                 if (((reportMask & bit) != 0) ^ ((_lastReported & bit) != 0)) {
-                    SubsystemsData status;
+                    JsonData::Subsystems::SubsystemInfo status;
                     status.Subsystem = current;
                     status.Active = ((reportMask & bit) != 0);
                     responseJsonRpc.Add(status);
 
-#if THUNDER_RESTFULL_API
+#if THUNDER_RESTFULL_API || defined(__DEBUG__)
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
 #endif
+
                     sendReport = true;
                 }
                 ++index;
@@ -771,14 +768,17 @@ namespace Plugin {
 
         if (sendReport == true) {
 
+#if THUNDER_RESTFULL_API || defined(__DEBUG__)
+            string message;
             response.ToString(message);
-
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
+#endif
 
 #if THUNDER_RESTFULL_API
             _pluginServer->_controller->Notification(message);
 #endif
-            Notify("subsystemchange", responseJsonRpc);
+
+            Exchange::Controller::JSubsystems::Event::SubsystemChange(*this, responseJsonRpc);
         }
     }
 
@@ -1311,32 +1311,27 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-
-    Core::hresult Controller::Subsystems(IMetadata::Data::ISubsystemsIterator*& outSubsystems) const
+    Core::hresult Controller::Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const
     {
         ASSERT(_service != nullptr);
 
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<IMetadata::Data::Subsystem> subsystems;
+            std::list<ISubsystems::Subsystem> subsystems;
 
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
 
                 const PluginHost::ISubSystem::subsystem subsystem = static_cast<PluginHost::ISubSystem::subsystem>(i);
-
                 subsystems.push_back({ subsystem, subSystem->IsActive(subsystem)});
-
                 i++;
             }
 
             subSystem->Release();
 
-            using Iterator = IMetadata::Data::ISubsystemsIterator;
-
-            outSubsystems = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(subsystems);
+            outSubsystems = Core::ServiceType<RPC::IteratorType<ISubsystems::ISubsystemsIterator>>::Create<ISubsystems::ISubsystemsIterator>(subsystems);
             ASSERT(outSubsystems != nullptr);
         }
         else {
