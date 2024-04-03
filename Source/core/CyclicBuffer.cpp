@@ -426,7 +426,7 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length < _administration->_size);
+        ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
