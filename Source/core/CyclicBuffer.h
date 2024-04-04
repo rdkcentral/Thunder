@@ -30,6 +30,8 @@
 #include <semaphore.h>
 #endif
 
+#include <limits>
+
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
@@ -97,6 +99,7 @@ namespace Core {
             uint32_t GetCompleteTail(uint32_t offset) const
             {
                 ASSERT(_Parent._administration != nullptr);
+                ASSERT(_Parent._administration->_tailIndexMask < std::numeric_limits<uint32_t>::max());
 
                 uint32_t oldTail = _Tail;
                 uint32_t roundCount = oldTail / (1 + _Parent._administration->_tailIndexMask);
