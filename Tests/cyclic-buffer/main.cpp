@@ -19,6 +19,26 @@
 
 #include "process.h"
 
+#include <future>
+
+#define ASYNC_TIMEOUT_BEGIN                                               \
+    std::promise<bool> promise;                                           \
+    std::future<bool> future = promise.get_future();                      \
+    std::thread([&](std::promise<bool> completed)                         \
+        {   /* Before code that should complete before timeout expires */
+
+#define ASYNC_TIMEOUT_END(MILLISECONDS /* timeout in milliseconds */)                                                                           \
+            /* After code that should complete timely */                                                                                        \
+            /* completed.set_value(true); */                                                                                                    \
+            completed.set_value_at_thread_exit(true);                                                                                           \
+        }                                                                                                                                       \
+        , std::move(promise)).detach()                                                                                                          \
+    ;                                                                                                                                           \
+    if (future.wait_for(std::chrono::milliseconds(MILLISECONDS)) == std::future_status::timeout) {  /* Task completed before timeout */         \
+        TRACE_L1(_T("Error : Stopping unresposive process."));                                                                                  \
+        killpg(getpgrp(), SIGUSR1); /* Possible 'unresponsive' system, 'unlock' all related 'child' processes, default action is terminate */   \
+    }
+
 int main(int argc, char* argv[])
 {
     using namespace WPEFramework::Core;
@@ -36,6 +56,8 @@ int main(int argc, char* argv[])
     Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
     bool result =    process.SetTotalRuntime(totalRuntime)
+                  && process.SetParentUsers(0, 0) /* 0 extra writer(s), 0 reader(s) */
+                  && process.SetChildUsers(1, 1) /* 1 writer(s), 1 reader(s) */
                   && process.Execute()
                   ;
 
