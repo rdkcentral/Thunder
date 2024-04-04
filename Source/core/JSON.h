@@ -510,6 +510,7 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
+                _default = std::move(move._default);
 
                 return (*this);
             }
@@ -518,6 +519,7 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+                _default = RHS._default;
 
                 return (*this);
             }
@@ -1028,6 +1030,8 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
+                _default = std::move(move._default);
+                _strValue = std::move(move._strValue);
 
                 return (*this);
             }
@@ -1036,6 +1040,8 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+                _default = RHS._default;
+                _strValue = RHS._strValue;
 
                 return (*this);
             }
@@ -1599,6 +1605,7 @@ namespace Core {
                 _default = std::move(move._default);
                 _value = std::move(move._value);
                 _flagsAndCounters = std::move(move._flagsAndCounters);
+                _storage = std::move(move._storage);
 
                 return (*this);
             }
@@ -1608,6 +1615,7 @@ namespace Core {
                 _default = RHS._default;
                 _value = RHS._value;
                 _flagsAndCounters = RHS._flagsAndCounters;
+                _storage = RHS._storage;
 
                 return (*this);
             }
@@ -1947,7 +1955,7 @@ namespace Core {
                         } else if (current == '\"') {
                             // We are done! leave this element.
                             finished = true;
-                        } else if (current <= 0x1F) {
+                        } else if (static_cast<std::make_unsigned<TCHAR>::type>(current) <= 0x1F) {
                             error = Error{ "Unescaped control character detected" };
                         } else {
                             // Just copy and onto the next;
@@ -2597,6 +2605,10 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
+                _default = std::move(move._default);
+                _parser = std::move(move._parser);
+                _package = std::move(move._package);
+
                 return (*this);
             }
 
@@ -2604,6 +2616,9 @@ namespace Core {
             {
                 _value = RHS._value;
                 _state = RHS._state;
+                _default = RHS._default;
+                _parser = RHS._parser;
+                _package = RHS._package;
                 return (*this);
             }
 
@@ -3067,6 +3082,7 @@ namespace Core {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
                 _iterator = IteratorType<ELEMENT>(_data);
+                _count = std::move(move._count);
 
                 return (*this);
             }
@@ -3076,6 +3092,7 @@ namespace Core {
                 _state = RHS._state;
                 _data = RHS._data;
                 _iterator = IteratorType<ELEMENT>(_data);
+                _count = RHS._count;
 
                 return (*this);
             }

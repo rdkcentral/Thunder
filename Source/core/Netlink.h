@@ -215,10 +215,12 @@ namespace Core {
 
         ConnectorType()
             : Netlink()
+            , _ack(0)
         {
         }
         ConnectorType(const ConnectorType<IDX, VAL>& copy)
             : Netlink(copy)
+            , _ack(copy._ack)
         {
         }
         ~ConnectorType() = default;
@@ -401,9 +403,7 @@ namespace Core {
         virtual void StateChange() override;
 
     private:
-        uint32_t _bufferBefore;
         CriticalSection _adminLock;
-        uint32_t _bufferAfter;
         PendingList _pending;
     };
 } // namespace Core

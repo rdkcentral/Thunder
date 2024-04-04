@@ -255,6 +255,9 @@
     <ClInclude Include="TextStreamRedirectType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IPCMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">

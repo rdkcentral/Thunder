@@ -29,6 +29,9 @@ namespace RPC {
         , _proxy()
         , _factory(8)
         , _channelProxyMap()
+        , _channelReferenceMap()
+        , _danglingProxies()
+        , _delegatedReleases(true)
     {
     }
 
@@ -102,11 +105,13 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    void Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
     {
+        bool removed = false;
+
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(proxy.LinkId()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -114,20 +119,30 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                Core::IUnknown* unknown = (*entry)->Parent();
                 index->second.erase(entry);
-                unknown->Release();                
+                removed = true;
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-            } else {
-                TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
+                else {
+                    // If it is not found, check the dangling map
+                    Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
+
+                    if (index != _danglingProxies.end()) {
+                        _danglingProxies.erase(index);
+                    }
+                    else {
+                        TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+		    }
+		}
             }
         } else {
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
         }
 
         _adminLock.Unlock();
+
+        return removed;
     }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
@@ -173,7 +188,7 @@ namespace RPC {
             if (result == false) {
                 _adminLock.Lock();
 
-                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel.operator->()));
+                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel->LinkId()));
                 const Core::IUnknown* unknown = Convert(reinterpret_cast<void*>(impl), id);
 
                 result = ((index != _channelReferenceMap.end()) &&
@@ -200,7 +215,7 @@ namespace RPC {
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -230,7 +245,7 @@ namespace RPC {
 
             _adminLock.Lock();
 
-            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+            ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
             if (index != _channelProxyMap.end()) {
                 Proxies::iterator entry(index->second.begin());
@@ -259,7 +274,7 @@ namespace RPC {
                     ASSERT(result != nullptr);
 
                     // Register it as it is remotely registered :-)
-                    _channelProxyMap[channel.operator->()].push_back(result);
+                    _channelProxyMap[channel->LinkId()].push_back(result);
 
                     // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
                     interface = result->QueryInterface(id);
@@ -281,11 +296,11 @@ namespace RPC {
         if (reference != nullptr) {
             _adminLock.Lock();
 
-            ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
+            ReferenceMap::iterator index = _channelReferenceMap.find(channel->LinkId());
 
             if (index == _channelReferenceMap.end()) {
                 auto result = _channelReferenceMap.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(channel.operator->()),
+                    std::forward_as_tuple(channel->LinkId()),
                     std::forward_as_tuple());
                 result.first->second.emplace_back(id, reference);
                 TRACE_L3("Registered interface %p(0x%08x).", reference, id);
@@ -342,7 +357,7 @@ namespace RPC {
     {
         _adminLock.Lock();
 
-        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel->LinkId()));
 
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
@@ -351,7 +366,7 @@ namespace RPC {
                 Core::IUnknown* iface = loop->Unknown();
                 ASSERT(iface != nullptr);
 
-                if ((iface != nullptr) && (loop->IsComposit() == false)) {
+                if ((_delegatedReleases == true) && (iface != nullptr) && (loop->IsComposit() == false)) {
 
                     uint32_t result;
 
@@ -367,19 +382,18 @@ namespace RPC {
             _channelReferenceMap.erase(remotes);
         }
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
         if (index != _channelProxyMap.end()) {
-            Proxies::iterator loop(index->second.begin());
-            while (loop != index->second.end()) {
-                // There is a small possibility that the last reference to this proxy
-                // interface is released in the same time before we report this interface
-                // to be dead. So lets keep a refernce so we can work on a real object
-                // still. This race condition, was observed by customer testing.
-                (*loop)->Invalidate();
-
-                loop++;
+            for (auto entry : index->second) {
+                entry->Invalidate();
+                _danglingProxies.emplace_back(entry);
             }
+            // The _channelProxyMap does have a reference for each Proxy it 
+            // holds, so it is safe to just move the vector from the map to
+            // the pendingProxies. The receiver of pendingProxies has to take
+            // care of releasing the last reference we, as administration layer
+            // hold upon this..
             pendingProxies = std::move(index->second);
             _channelProxyMap.erase(index);
         }
@@ -389,6 +403,5 @@ namespace RPC {
 
     /* static */ Administrator& Job::_administrator= Administrator::Instance();
 	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
-
 }
 } // namespace Core

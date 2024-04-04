@@ -31,30 +31,30 @@ namespace Exchange {
 
 namespace Controller {
 
-    /* @json 1.0.0 */
-    struct EXTERNAL ISystemManagement : virtual public Core::IUnknown {
-        enum { ID = RPC::ID_CONTROLLER_SYSTEM_MANAGEMENT };
+    // @json 1.0.0
+    struct EXTERNAL ISystem : virtual public Core::IUnknown {
+        enum { ID = RPC::ID_CONTROLLER_SYSTEM };
 
         // @alt:deprecated harakiri
         // @brief Reboots the device
+        // @details Depending on the device this call may not generate a response.
         virtual Core::hresult Reboot() = 0;
 
-        // @brief Removes contents of a directory from the persistent storage.
-        // @param path : Path of the directory
+        // @brief Removes contents of a directory from the persistent storage
+        // @param path: Path to the directory within the persisent storage
         virtual Core::hresult Delete(const string& path) = 0;
 
-        // @brief Creates a clone of given plugin to requested new callsign
+        // @brief Creates a clone of given plugin with a new callsign
         // @param callsign: Callsign of the plugin
-        // @param newcallsign: New callsign for the plugin
+        // @param newcallsign: Callsign for the cloned plugin
         virtual Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) = 0;
 
         // @property
-        // @brief Provides the value of request environment variable.
-        // @return Environment value
+        // @brief Environment variable value
         virtual Core::hresult Environment(const string& variable /* @index */, string& value /* @out */ ) const = 0;
     };
 
-    /* @json 1.0.0 */
+    // @json 1.0.0
     struct EXTERNAL IDiscovery : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_DISCOVERY };
 
@@ -63,37 +63,36 @@ namespace Controller {
                 string Locator /* @brief Locator for the discovery */;
                 uint32_t Latency /* @brief Latency for the discovery */;
                 string Model /* @optional @brief Model */;
-                bool Secure /* @brief Secure or not*/;
+                bool Secure /* @brief Secure or not */;
             };
 
             using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_DISCOVERYRESULTS_ITERATOR>;
         };
 
-        // @brief Starts the network discovery. Use this method to initiate SSDP network discovery process.
+        // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
         virtual Core::hresult StartDiscovery(const uint8_t ttl) = 0;
 
         // @property
-        // @brief Provides SSDP network discovery results.
-        // @return SSDP: Network discovery results
+        // @brief SSDP network discovery results
         virtual Core::hresult DiscoveryResults(Data::IDiscoveryResultsIterator*& results /* @out */) const = 0;
     };
 
-    /* @json 1.0.0 @uncompliant:extended */
+    // @json 1.0.0 @uncompliant:extended
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @alt storeconfig
-        // @brief Stores: The configuration to persistent memory
+        // @brief Stores all configuration to the persistent memory
         virtual Core::hresult Persist() = 0;
 
         // @property
-        // @brief Provides configuration value of a request service.
+        // @brief Service configuration
         virtual Core::hresult Configuration(const string& callsign /* @index @optional */, string& configuration /* @out @opaque */) const = 0;
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
     };
 
-    /* @json 1.0.0 */
+    // @json 1.0.0
     struct EXTERNAL ILifeTime : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_LIFETIME };
 
@@ -101,38 +100,55 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
-            // @brief Notifies a plugin state change
+            // @brief Notifies of a plugin state change
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
-            // @param reason: Reason of state change
+            // @param reason: Reason for state change
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink) = 0;
         virtual Core::hresult Unregister(INotification* sink) = 0;
 
-        // @brief Activates a plugin, i.e. move from Deactivated, via Activating to Activated state
+        // @brief Activates a plugin
+        // @details Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state.
+        //          If a plugin is in Activated state, it can handle JSON-RPC requests that are coming in.
+        //          The plugin is loaded into memory only if it gets activated.
         // @param callsign: Callsign of plugin to be activated
         virtual Core::hresult Activate(const string& callsign) = 0;
 
-        // @brief Deactivates a plugin, i.e. move from Activated, via Deactivating to Deactivated state
+        // @brief Deactivates a plugin
+        // @details Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state.
+        //          If a plugin is deactivated, the actual plugin (.so) is no longer loaded into the memory of the process.
+        //          In a Deactivated state the plugin will not respond to any JSON-RPC requests.
         // @param callsign: Callsign of plugin to be deactivated
         virtual Core::hresult Deactivate(const string& callsign) = 0;
 
-        // @brief Sets a plugin unavailable for interaction.
+        // @brief Makes a plugin unavailable for interaction
+        // @details Use this method to mark a plugin as unavailable, i.e. move from Deactivated to Unavailable state.
+        //          It can not be started unless it is first deactivated (what triggers a state transition).
         // @param callsign: Callsign of plugin to be set as unavailable
         virtual Core::hresult Unavailable(const string& callsign) = 0;
 
-        // @brief Sets a plugin in Hibernate state
-        // @param callsign: Callsign of plugin to be set as hibernate
-        // @param timeout: Timeout to hibernate
+        // @brief Hibernates a plugin
+        // @param callsign: Callsign of plugin to be hibernated
+        // @details Use *activate* to wake up a hibernated plugin.
+        //          In a Hibernated state the plugin will not respond to any JSON-RPC requests.
+        // @param timeout: Allowed time
+        // @retval ERROR_INPROC The plugin is running in-process and thus cannot be hibernated
         virtual Core::hresult Hibernate(const string& callsign, const uint32_t timeout) = 0;
 
         // @brief Suspends a plugin
+        // @details This is a more intelligent method, compared to *deactivate*, to move a plugin to a suspended state
+        //          depending on its current state. Depending on the *startmode* flag this method will deactivate the plugin
+        //          or only suspend the plugin.
         // @param callsign: Callsign of plugin to be suspended
         virtual Core::hresult Suspend(const string& callsign) = 0;
 
         // @brief Resumes a plugin
+        // @details This is a more intelligent method, compared to *activate*, to move a plugin to a resumed state
+        //          depending on its current state. If required it will activate and move to the resumed state,
+        //          regardless of the flags in the config (i.e. *startmode*, *resumed*)
         // @param callsign: Callsign of plugin to be resumed
         virtual Core::hresult Resume(const string& callsign) = 0;
     };
@@ -143,20 +159,67 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_SHELLS_NOTIFICATION };
 
-            // @brief Notifies the creation of a Shell (Startup or Clone)
             virtual void Created(const string& callsign, PluginHost::IShell* plugin /* @in */) = 0;
-            // @brief Notifies the destruction of a shell (Destroy)
             virtual void Destroy(const string& callsign, PluginHost::IShell* plugin /* @in */) = 0;
         };
 
-        // Pushing notifications to interested sinks
         virtual Core::hresult Register(INotification* sink) = 0;
         virtual Core::hresult Unregister(INotification* sink) = 0;
     };
 
-    /* @json 1.0.0 */
-    struct EXTERNAL IMetadata : virtual public Core::IUnknown {
+    // @json 1.0.0 @uncompliant:collapsed
+    struct EXTERNAL ISubsystems : virtual public Core::IUnknown {
+        enum { ID = RPC::ID_CONTROLLER_SUBSYSTEMS };
 
+        struct Subsystem {
+            PluginHost::ISubSystem::subsystem Subsystem /* @brief Name of the subsystem*/;
+            bool Active /* @brief Denotes if the subsystem is currently active */;
+        };
+
+        using ISubsystemsIterator = RPC::IIteratorType<Subsystem, RPC::ID_CONTROLLER_SUBSYSTEMS_ITERATOR>;
+
+        // @event @uncompliant:collapsed
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_CONTROLLER_SUBSYSTEMS_NOTIFICATION };
+
+            // @brief Notifies a subsystem change
+            // @param subsystems: Subsystems that have changed
+            virtual void SubsystemChange(ISubsystemsIterator* const subsystems /* @in */) = 0;
+        };
+
+        // @property
+        // @brief Subsystems status
+        virtual Core::hresult Subsystems(ISubsystemsIterator*& subsystems /* @out */) const = 0;
+    };
+
+    // @json 1.0.0
+    struct EXTERNAL IEvents : virtual public Core::IUnknown {
+        enum { ID = RPC::ID_CONTROLLER_EVENTS };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+            enum { ID = RPC::ID_CONTROLLER_EVENTS_NOTIFICATION };
+
+            struct Event {
+                string event;
+                string params /* @opaque @optional */;
+            };
+
+            // @text all
+            // @brief Notifies all events forwarded by the framework
+            // @details The Controller plugin is an aggregator of all the events triggered by a specific plugin.
+            //          All notifications send by any plugin are forwarded over the Controller socket as an event.
+            // @param callsign: Origin of the message
+            // @param data: Contents of the message
+            virtual void ForwardMessage(const string& callsign, const string& data /* @opaque */) = 0;
+
+            // @text all
+            virtual void ForwardEvent(const string& callsign, const Event& data) = 0;
+        };
+    };
+
+    // @json 1.0.0
+    struct EXTERNAL IMetadata : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_METADATA };
 
         struct Data {
@@ -167,20 +230,15 @@ namespace Controller {
                 uint8_t Patch /* @brief Patch number */;
             };
 
-            struct Subsystem {
-                PluginHost::ISubSystem::subsystem Subsystem /* @brief Subsystem name */;
-                bool Active /* @brief Denotes if currently active */;
-            };
-
             struct CallStack {
-                Core::instance_id Address /* @brief Address */;
+                Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
                 string Function /* @optional @brief Function name */;
                 uint32_t Line /* @optional @brief Line number */;
             };
 
             struct Thread {
-                Core::instance_id Id /* @brief Thread Id */;
+                Core::instance_id Id /* @brief Thread ID */;
                 string Job /* @brief Job name */;
                 uint32_t Runs /* @brief Number of runs */;
             };
@@ -209,7 +267,7 @@ namespace Controller {
             };
 
             struct Service {
-                enum state : uint32_t {
+                enum state : uint16_t {
                     UNAVAILABLE = PluginHost::IShell::UNAVAILABLE,
                     DEACTIVATED = PluginHost::IShell::DEACTIVATED,
                     DEACTIVATION = PluginHost::IShell::DEACTIVATION,
@@ -218,7 +276,7 @@ namespace Controller {
                     DESTROYED = PluginHost::IShell::DESTROYED,
                     PRECONDITION = PluginHost::IShell::PRECONDITION,
                     HIBERNATED = PluginHost::IShell::HIBERNATED,
-                    SUSPENDED,
+                    SUSPENDED = 0x100,
                     RESUMED
                 };
 
@@ -233,8 +291,8 @@ namespace Controller {
 
                 string Communicator /* @optional @brief Communicator */;
 
-                string PersistentPathPostfix /* @optional @brief Postfix of persistent path*/;
-                string VolatilePathPostfix /* @optional @brief Postfix of volatile path*/;
+                string PersistentPathPostfix /* @optional @brief Postfix of persistent path */;
+                string VolatilePathPostfix /* @optional @brief Postfix of volatile path */;
                 string SystemRootPath /* @optional @brief Path of system root */;
 
                 string Precondition /* @opaque @optional @brief Activation conditons */;
@@ -247,7 +305,6 @@ namespace Controller {
                 uint32_t ProcessedObjects /* @optional @brief Number of objects that have been processed by the plugin */;
             };
 
-            using ISubsystemsIterator = RPC::IIteratorType<Data::Subsystem, RPC::ID_CONTROLLER_METADATA_SUBSYSTEMS_ITERATOR>;
             using ICallStackIterator = RPC::IIteratorType<Data::CallStack, RPC::ID_CONTROLLER_METADATA_CALLSTACK_ITERATOR>;
             using IThreadsIterator = RPC::IIteratorType<Data::Thread, RPC::ID_CONTROLLER_METADATA_THREADS_ITERATOR>;
             using IPendingRequestsIterator = RPC::IIteratorType<string, RPC::ID_STRINGITERATOR>;
@@ -257,38 +314,36 @@ namespace Controller {
         };
 
         // @property @alt:deprecated status
-        // @brief Provides status of a service, including their configurations
+        // @brief Services metadata
+        // @details If callsign is omitted, metadata of all services is returned.
         virtual Core::hresult Services(const string& callsign /* @index @optional */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 
         // @property
-        // @brief Provides active connections details
+        // @brief Connections list
         virtual Core::hresult Links(Data::ILinksIterator*& links /* @out */) const = 0;
 
         // @property
-        // @brief Provides details of a proxy
-        virtual Core::hresult Proxies(const uint32_t linkId /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
+        // @brief Proxies list
+        virtual Core::hresult Proxies(const uint32_t linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
-        // @brief Provides status of subsystems
-        virtual Core::hresult Subsystems(Data::ISubsystemsIterator*& subsystems /* @out */) const = 0;
-
-        // @property
-        // @brief Provides version and hash of WPEFramework
+        // @brief Framework version
         virtual Core::hresult Version(Data::Version& version /* @out */) const = 0;
 
         // @property
-        // @brief Provides information on workerpool threads
+        // @brief Workerpool threads
         virtual Core::hresult Threads(Data::IThreadsIterator*& threads /* @out */) const = 0;
 
         // @property
-        // @brief Provides information on pending requests
+        // @brief Pending requests
         virtual Core::hresult PendingRequests(Data::IPendingRequestsIterator*& requests /* @out */) const = 0;
 
         // @property
-        // @brief Provides callstack associated with the given thread
+        // @brief Thread callstack
         virtual Core::hresult CallStack(const uint8_t thread /* @index */, Data::ICallStackIterator*& callstack /* @out */) const = 0;
     };
-}
+
+} // namespace Controller
 
 } // namespace Exchange
 

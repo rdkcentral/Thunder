@@ -1,0 +1,21 @@
+<node>
+    <interface name="com.lgi.rdk.utils.container.ctrl">
+
+    <method name="Start">
+        <arg name="id" direction="in" type="s"/>
+        <arg name="cmd" direction="in" type="s"/>
+        <arg name="param" direction="in" type="s"/>
+    </method>
+
+    <method name="Stop">
+        <arg name="id" direction="in" type="s"/>
+    </method>
+
+    <signal name="StateChange">
+        <arg name="id" direction="out" type="s"/>
+        <arg name="pid" direction="out" type="i"/>
+        <arg name="state" direction="out" type="i"/>
+    </signal>
+
+</interface>
+</node>

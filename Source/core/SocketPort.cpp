@@ -341,6 +341,9 @@ namespace WPEFramework {
             , m_ReceivedNode()
             , m_SendBuffer(nullptr)
             , m_ReceiveBuffer(nullptr)
+            , m_ReadBytes(0)
+            , m_SendBytes(0)
+            , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
         {
@@ -378,6 +381,9 @@ namespace WPEFramework {
             , m_ReceivedNode()
             , m_SendBuffer(nullptr)
             , m_ReceiveBuffer(nullptr)
+            , m_ReadBytes(0)
+            , m_SendBytes(0)
+            , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
         {
