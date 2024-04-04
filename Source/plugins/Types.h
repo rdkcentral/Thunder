@@ -60,29 +60,27 @@ namespace PluginHost {
             void Register(IShell* controller, const string& callsign)
             {
                 ASSERT(controller != nullptr);
-                if (controller != nullptr) {
-                    _adminLock.Lock();
-                    _callsign = callsign;
-                    _state = state::REGISTRING;
-                    _adminLock.Unlock();
+                _adminLock.Lock();
+                _callsign = callsign;
+                _state = state::REGISTRING;
+                _adminLock.Unlock();
 
-                    controller->Register(this);
+                controller->Register(this);
 
-                    _adminLock.Lock();
-                    if (_state == state::LOADED) {
+                _adminLock.Lock();
+                if (_state == state::LOADED) {
 
-                        INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
-                        _designated->Release();
-                        _designated = entry;
-                        _state = state::RUNNING;
-                        if (entry != nullptr) {
-                            _parent.Activated(entry);
-                        }
-                    } else {
-                        _state = state::RUNNING;
+                    INTERFACE* entry = _designated->QueryInterface<INTERFACE>();
+                    _designated->Release();
+                    _designated = entry;
+                    _state = state::RUNNING;
+                    if (entry != nullptr) {
+                        _parent.Activated(entry);
                     }
-                    _adminLock.Unlock();
+                } else {
+                    _state = state::RUNNING;
                 }
+                _adminLock.Unlock();
             }
             void Unregister(IShell* controller)
             {
