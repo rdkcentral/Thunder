@@ -249,6 +249,7 @@ private :
             }
 
             if (   read > 0
+                && _buffer.IsOverwrite() // The data may have been overwritten, eg, the tail is not respected
                 && !Validate(data.data(), read)
                ) {
                 // Does peeked data match output?
