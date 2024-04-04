@@ -548,11 +548,13 @@ namespace Core {
         if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
-        bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
-        ASSERT(noOtherReservation);
+        // Multiple can do a request but only one should be allowed to continue. The others should wait until a new opportunity arises.
 
-        if (!noOtherReservation)
+        bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
+
+        if (!noOtherReservation) { // Request not honored
             return Core::ERROR_ILLEGAL_STATE;
+        }
 
         uint32_t actualLength = length;
         if (length >= _administration->_size) {
@@ -566,8 +568,8 @@ namespace Core {
         _administration->_reserved = actualLength;
         _administration->_reservedWritten = 0;
 
-        return actualLength;
-    }
+        return Core::ERROR_NONE;
+   }
 
     uint32_t CyclicBuffer::Lock(const bool dataPresent, const uint32_t waitTime)
     {
