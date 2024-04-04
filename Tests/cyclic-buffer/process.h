@@ -395,7 +395,7 @@ public :
                 }
             }
 
-            if (   _reserved > 0
+            if (   _numReservedBlocks > 0
                 && _reserved <= count
                ) {
                 count = _reserved;
@@ -409,11 +409,12 @@ public :
                 // Reservation mode but failed to 'allocate' a block
             } else {
                 written = Write(count);
-                ASSERT(_reserved >= written);
-                _reserved -= written;
+                _reserved -= (_numReservedBlocks > 0 ? written : 0);
             }
 
-            if (written == count) {
+            if (   written > 0
+                && written == count
+               ) {
 //                TRACE_L1(_T("Data written"));
             } else if (count > 0) {
 //                TRACE_L1(_T("Less data written than requested")); // Possibly too few reads
