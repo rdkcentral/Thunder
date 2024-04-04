@@ -192,6 +192,7 @@ namespace ProcessContainers {
         , _name(name)
         , _path(path)
         , _logPath(logPath)
+        , _descriptor(0)
         , _pid()
         , _useSpecFile(useSpecFile)
     {

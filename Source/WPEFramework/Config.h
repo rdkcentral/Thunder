@@ -378,6 +378,7 @@ namespace PluginHost {
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
+                , DelegatedReleases(true)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -417,6 +418,7 @@ namespace PluginHost {
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
+                Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -460,6 +462,7 @@ namespace PluginHost {
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
+            Core::JSON::Boolean DelegatedReleases;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -578,8 +581,8 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _prefix()
             , _webPrefix()
@@ -620,6 +623,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _reasons()
             , _substituter(*this)
             , _configLock()
+            , _delegatedReleases(true)
             #ifdef PROCESSCONTAINERS_ENABLED
             , _ProcessContainersLogging()
             #endif
@@ -669,6 +673,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
+                _delegatedReleases = config.DelegatedReleases.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -870,6 +875,9 @@ POP_WARNING()
         inline string EthernetCard() const {
             return _ethernetCard;
         }
+        inline bool DelegatedReleases() const {
+            return(_delegatedReleases);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1046,6 +1054,8 @@ POP_WARNING()
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
         mutable Core::CriticalSection _configLock;
+        bool _delegatedReleases;
+
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif

@@ -342,7 +342,7 @@ namespace Core {
             // -----------------------------------------------------
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Length, hasLength);
+            IS_MEMBER_AVAILABLE_CONVERTIBLE(Length, hasLength);
 
             template <typename SUBJECT=PACKAGE>
             typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
@@ -714,6 +714,9 @@ POP_WARNING()
         virtual ~IPCChannel() = default;
 
     public:
+        uintptr_t LinkId() const {
+            return (reinterpret_cast<uintptr_t>(this));
+        }
         void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _administration.Register(id, handler);

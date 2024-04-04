@@ -166,7 +166,7 @@ namespace WPEFramework {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
+            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
             if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -209,7 +209,7 @@ namespace WPEFramework {
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
+                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort()));
                 ASSERT(_dispatcher != nullptr);
 
                 if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -274,10 +274,8 @@ namespace WPEFramework {
             //those should be just printed
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
-            }
-
-            if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
+            } else if (_dispatcher != nullptr) {
+                uint8_t serializationBuffer[TempDataBufferSize];
                 uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
