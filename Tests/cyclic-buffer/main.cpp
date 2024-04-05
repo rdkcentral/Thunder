@@ -27,17 +27,18 @@
     std::thread([&](std::promise<bool> completed)                         \
         {   /* Before code that should complete before timeout expires */
 
-#define ASYNC_TIMEOUT_END(MILLISECONDS /* timeout in milliseconds */)                                                                           \
+#define ASYNC_TIMEOUT_END(MILLISECONDS /* timeout in milliseconds */, RESULT /* variable that has boolean result of executed code */)           \
             /* After code that should complete timely */                                                                                        \
             /* completed.set_value(true); */                                                                                                    \
-            completed.set_value_at_thread_exit(true);                                                                                           \
+            completed.set_value_at_thread_exit(RESULT);                                                                                         \
         }                                                                                                                                       \
         , std::move(promise)).detach()                                                                                                          \
     ;                                                                                                                                           \
     if (future.wait_for(std::chrono::milliseconds(MILLISECONDS)) == std::future_status::timeout) {  /* Task completed before timeout */         \
         TRACE_L1(_T("Error : Stopping unresposive process."));                                                                                  \
         killpg(getpgrp(), SIGUSR1); /* Possible 'unresponsive' system, 'unlock' all related 'child' processes, default action is terminate */   \
-    }
+    }                                                                                                                                           \
+    RESULT = future.get();
 
 int main(int argc, char* argv[])
 {
@@ -51,15 +52,22 @@ int main(int argc, char* argv[])
 
     constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
-    constexpr uint32_t totalRuntime = 10000; // Milliseconds
+    constexpr uint32_t totalRuntime = infinite /*20000*/; // Milliseconds
+    constexpr uint32_t totalTimeout = /*totalRuntime +*/ 20000; // Milliseconds
 
     Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
-    bool result =    process.SetTotalRuntime(totalRuntime)
-                  && process.SetParentUsers(0, 0) /* 0 extra writer(s), 0 reader(s) */
-                  && process.SetChildUsers(1, 1) /* 1 writer(s), 1 reader(s) */
-                  && process.Execute()
-                  ;
+    bool result = false;
+
+    ASYNC_TIMEOUT_BEGIN // result will never be updated in its original scope
+
+    result =    process.SetTotalRuntime(totalRuntime)
+             && process.SetParentUsers(0, 0) /* 0 extra writer(s), 0 reader(s) */
+             && process.SetChildUsers(1, 1) /* 1 writer(s), 1 reader(s) */
+             && process.Execute()
+             ;
+
+    ASYNC_TIMEOUT_END(totalTimeout, result)
 
     return result ? EXIT_SUCCESS : EXIT_FAILURE;
 }
