@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+// https://en.wikipedia.org/wiki/Lorem_ipsum
+#define LOREM_IPSUM_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+
 // Define in unit that includes this file
 //#define CREATOR_WRITE
 //#define CREATOR_EXTRA_USERS
@@ -40,14 +43,14 @@ class Thread : public Core::Thread
 {
 private :
 
-    static constexpr uint32_t n = 20;//sizeof(("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
+    static constexpr uint32_t n = sizeof(LOREM_IPSUM_TEXT);
 
 public :
 
     Thread()
         : _status{ true }
     {
-        memcpy(_data.data(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", n);
+        memcpy(_data.data(), LOREM_IPSUM_TEXT, n);
     }
 
     virtual ~Thread() = default;
@@ -62,11 +65,14 @@ protected :
 
         std::for_each(_data.begin(), _data.end(), [&reference] (uint8_t value){reference.push(value);} );
 
+        // Just a little further than the buffer size since the matching pattern might be shifted
         size_t stop = 2 * reference.size();
 
         uint32_t offset = 0;
 
-        while (stop > 0 && offset < count) {
+        while (   stop > 0
+               && offset < count
+              ) {
             auto element = reference.front();
 
             if (element == data[offset]) {
@@ -100,7 +106,6 @@ protected :
     static constexpr uint32_t N = n;
 
     mutable std::array<uint8_t, N> _data;
-
 
     std::atomic<bool> _status;
 };
@@ -249,10 +254,9 @@ private :
             }
 
             if (   read > 0
-                && _buffer.IsOverwrite() // The data may have been overwritten, eg, the tail is not respected
+                && _buffer.IsOverwrite() // The data may have been overwritten
                 && !Validate(data.data(), read)
                ) {
-                // Does peeked data match output?
                 TRACE_L1("Error: detected read data corruption.");
             }
 
@@ -262,7 +266,7 @@ private :
         return read;
     }
 
-    // Only relevant with reserve being actively used
+    // Only relevant with reserve being actively used, and, in single writer context
     bool Validate(const uint8_t data[], uint32_t count)
     {
         bool result = true;
@@ -322,7 +326,6 @@ public :
     {
         static_assert(N > 0 || Thread::N > N, "Specify a data set with at least one character (N > 0) with N <= Thread::N.");
 
-        // https://en.wikipedia.org/wiki/Lorem_ipsum
         memcpy(_input.data(), Thread::_data.data(), N);
     }
 
@@ -385,7 +388,7 @@ public :
                ) {
                 _reserved = _buffer.Size() / _numReservedBlocks;
 
-    //            TRACE_L1(_T("reserved : %ld"), reserved);
+//                TRACE_L1(_T("reserved : %ld"), reserved);
                 ASSERT(_buffer.Size() % _numReservedBlocks == 0);
 
                 // Both Free() and Reserve() may experience a race condition with other writers
@@ -473,7 +476,6 @@ private :
             if (   written > 0
                 && !Validate(data.data(), written)
                ) {
-                // Does peeked data match output?
                 TRACE_L1("Error: detected written data corruption.");
             }
 
@@ -483,7 +485,7 @@ private :
         return written;
     }
 
-    // Only relevant with reserve being actively used
+    // Only 'relevant' with reserve being actively used
     bool Validate(const uint8_t data[], uint32_t count)
     {
         bool result = true;
@@ -725,6 +727,8 @@ public :
     }
 
 private :
+
+    // Hard limits
 
     static constexpr uint32_t maxSetupTime = 10; // Seconds
     static constexpr uint32_t maxTotalRuntime = Core::infinite; // Milliseconds
