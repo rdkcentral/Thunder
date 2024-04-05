@@ -1780,6 +1780,119 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
+
+    TEST(Core_CyclicBuffer, ReservedRemainingNoOverwrite)
+    {
+        constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
+
+        constexpr uint8_t requiredBufferSize = 50;
+
+        constexpr uint8_t maximumReservedSize = requiredBufferSize;
+
+        CyclicBuffer buffer(
+              fileName
+            ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
+              | Core::File::USER_WRITE // Enable write permission on the underlying file
+              | Core::File::CREATE     // Create a new underlying memory mapped file
+              | Core::File::SHAREABLE  // Allow other processes to access the content of the file
+            , requiredBufferSize // Requested size
+            , false // Overwrite unread data
+        );
+
+        // Mandatory checks
+
+        EXPECT_EQ(buffer.IsValid(), true);
+        EXPECT_EQ(buffer.Size(), requiredBufferSize);
+        EXPECT_EQ(buffer.Used(), 0u);
+        EXPECT_EQ(buffer.Free(), requiredBufferSize);
+
+        // Default
+        EXPECT_FALSE(buffer.IsOverwrite());
+
+        // No overwrite, thus 'length' < 'free' or 'length' < 'size'
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize), Core::ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(buffer.ReservedRemaining(), 0u);
+
+        constexpr uint32_t amount = 4;
+        constexpr uint8_t data[] = "ABCD";
+
+        EXPECT_GE(buffer.Free(), amount);
+
+        // Reduce 'free' spaces such that 'length' > free but 'length' < 'size'
+        EXPECT_EQ(buffer.Write(data, amount), amount);
+        EXPECT_EQ(buffer.Used(), amount);
+
+        EXPECT_GT(buffer.Size(), buffer.Free());
+        EXPECT_GT(buffer.Size(), buffer.Used());
+
+        EXPECT_GT(maximumReservedSize - amount + 1, buffer.Free());
+        EXPECT_LT(maximumReservedSize - amount + 1, buffer.Size());
+
+        // No overwrite, but still 'length' >= 'free'
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount + 1), Core::ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(buffer.ReservedRemaining(), 0u);
+
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount), Core::ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(buffer.ReservedRemaining(), 0u);
+
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount - 1), Core::ERROR_NONE);
+        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount - 1);
+    }
+
+    TEST(Core_CyclicBuffer, ReservedRemainingOverwrite)
+    {
+        constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
+
+        constexpr uint8_t requiredBufferSize = 50;
+
+        constexpr uint8_t maximumReservedSize = requiredBufferSize;
+
+        CyclicBuffer buffer(
+              fileName
+            ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
+              | Core::File::USER_WRITE // Enable write permission on the underlying file
+              | Core::File::CREATE     // Create a new underlying memory mapped file
+              | Core::File::SHAREABLE  // Allow other processes to access the content of the file
+            , requiredBufferSize // Requested size
+            , true // Overwrite unread data
+        );
+
+        // Mandatory checks
+
+        EXPECT_EQ(buffer.IsValid(), true);
+        EXPECT_EQ(buffer.Size(), requiredBufferSize);
+        EXPECT_EQ(buffer.Used(), 0u);
+        EXPECT_EQ(buffer.Free(), requiredBufferSize);
+
+        // Default
+        EXPECT_TRUE(buffer.IsOverwrite());
+
+        // Overwrite, 'length' >= 'free' length' < 'size'
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize), Core::ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(buffer.ReservedRemaining(), 0u);
+
+        constexpr uint32_t amount = 4;
+        constexpr uint8_t data[] = "ABCD";
+
+        EXPECT_GE(buffer.Free(), amount);
+
+        EXPECT_EQ(buffer.Write(data, amount), amount);
+        EXPECT_EQ(buffer.Used(), amount);
+
+        EXPECT_GT(buffer.Size(), buffer.Free());
+        EXPECT_GT(buffer.Size(), buffer.Used());
+
+        EXPECT_GT(buffer.Size(), buffer.Free());
+        EXPECT_GT(buffer.Size(), buffer.Used());
+
+        EXPECT_GT(maximumReservedSize - amount + 1, buffer.Free());
+        EXPECT_LT(maximumReservedSize - amount + 1, buffer.Size());
+
+        // 'length' >= 'free' and 'length' < 'size'
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize - 1), Core::ERROR_NONE);
+        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - 1);
+    }
+
 } // Tests
 } // Core
 } // WPEFramework

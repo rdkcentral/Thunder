@@ -270,6 +270,7 @@ namespace Core {
         // This allows for writes of partial buffers without worrying about
         //    readers seeing incomplete data.
         uint32_t Reserve(const uint32_t length);
+        uint32_t ReservedRemaining() const;
 
         virtual void DataAvailable();
 

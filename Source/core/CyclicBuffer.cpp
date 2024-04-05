@@ -619,7 +619,6 @@ namespace Core {
             ASSERT((offset + free) >= required);
 
             uint32_t newTail = cursor.GetCompleteTail(offset);
-
             if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
                 oldTail = _administration->_tail;
                 tail = oldTail & _administration->_tailIndexMask;
@@ -667,6 +666,12 @@ namespace Core {
         _administration->_reservedWritten = 0;
 
         return Core::ERROR_NONE;
+    }
+
+    uint32_t CyclicBuffer::ReservedRemaining() const
+    {
+        ASSERT(_administration != nullptr);
+        return _administration->_reserved - _administration->_reservedWritten;
     }
 
     uint32_t CyclicBuffer::Lock(const bool dataPresent, const uint32_t waitTime)
