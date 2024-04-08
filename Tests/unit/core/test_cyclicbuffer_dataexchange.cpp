@@ -87,7 +87,7 @@ TEST(Core_CyclicBuffer, DataExchange)
 
     constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
-    constexpr uint32_t totalRuntime = 1000; // Milliseconds
+    constexpr uint32_t totalRuntime = 10000; // Milliseconds
     constexpr uint32_t timeout = totalRuntime + 10000; // Milliseconds
 
     Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);

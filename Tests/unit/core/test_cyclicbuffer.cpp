@@ -1785,7 +1785,7 @@ namespace Tests {
     {
         constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
-        constexpr uint8_t requiredBufferSize = 50;
+        constexpr uint8_t requiredBufferSize = 6;
 
         constexpr uint8_t maximumReservedSize = requiredBufferSize;
 
@@ -1825,6 +1825,8 @@ namespace Tests {
         EXPECT_GT(buffer.Size(), buffer.Free());
         EXPECT_GT(buffer.Size(), buffer.Used());
 
+        EXPECT_EQ(maximumReservedSize - amount , buffer.Free());
+
         EXPECT_GT(maximumReservedSize - amount + 1, buffer.Free());
         EXPECT_LT(maximumReservedSize - amount + 1, buffer.Size());
 
@@ -1837,13 +1839,17 @@ namespace Tests {
 
         EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount - 1), Core::ERROR_NONE);
         EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount - 1);
+
+        // Always 'reserved written' + 'length' <= 'reserved'
+        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount - 1);
+        EXPECT_EQ(buffer.Write(data, std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
     }
 
     TEST(Core_CyclicBuffer, ReservedRemainingOverwrite)
     {
         constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
 
-        constexpr uint8_t requiredBufferSize = 50;
+        constexpr uint8_t requiredBufferSize = 6;
 
         constexpr uint8_t maximumReservedSize = requiredBufferSize;
 
@@ -1882,15 +1888,18 @@ namespace Tests {
         EXPECT_GT(buffer.Size(), buffer.Free());
         EXPECT_GT(buffer.Size(), buffer.Used());
 
-        EXPECT_GT(buffer.Size(), buffer.Free());
-        EXPECT_GT(buffer.Size(), buffer.Used());
+        EXPECT_EQ(maximumReservedSize - amount , buffer.Free());
 
         EXPECT_GT(maximumReservedSize - amount + 1, buffer.Free());
         EXPECT_LT(maximumReservedSize - amount + 1, buffer.Size());
 
         // 'length' >= 'free' and 'length' < 'size'
-        EXPECT_EQ(buffer.Reserve(maximumReservedSize - 1), Core::ERROR_NONE);
-        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - 1);
+        EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount + 1), Core::ERROR_NONE);
+        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount + 1);
+
+        // Always 'reserved written' + 'length' <= 'reserved'
+        EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount + 1);
+        EXPECT_EQ(buffer.Write(data, std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
     }
 
 } // Tests
