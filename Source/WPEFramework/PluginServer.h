@@ -311,7 +311,7 @@ namespace PluginHost {
             std::string _text;
         };
 
-        class Service : public IShell::ICOMLink, public PluginHost::Service {
+        class Service : public IShell::ICOMLink, public IShell::IJSONRPCLink, public PluginHost::Service {
         public:
             enum mode {
                 CONFIGURED,
@@ -1220,6 +1220,9 @@ namespace PluginHost {
             IShell::ICOMLink* COMLink() override {
                 return (this);
             }
+            IShell::IJSONRPCLink* JSONRPCLink() override {
+                return (this);
+            }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
@@ -1238,6 +1241,14 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
+            void Register(IShell::IJSONRPCLink::INotification* sink)
+            {
+                _administrator.Register(sink);
+            }
+            void Unregister(IShell::IJSONRPCLink::INotification* sink)
+            {
+                _administrator.Unregister(sink);
+            }
             void Register(IShell::ICOMLink::INotification* sink)
             {
                 _administrator.Register(sink);
@@ -1249,10 +1260,6 @@ namespace PluginHost {
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
                 return (_administrator.RemoteConnection(connectionId));
-            }
-
-            void Closed(const uint32_t /*id */)
-            {
             }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
@@ -1766,6 +1773,7 @@ namespace PluginHost {
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
+            using ChannelObservers = std::vector<IShell::IJSONRPCLink::INotification*>;
 
             class Iterator {
             public:
@@ -2554,6 +2562,8 @@ namespace PluginHost {
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, server._config.PluginConfigPath())
+                , _shellObservers()
+                , _channelObservers()
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
@@ -2800,6 +2810,32 @@ namespace PluginHost {
             {
                 _processAdministrator.Unregister(sink);
             }
+            void Register(IShell::IJSONRPCLink::INotification* sink)
+            {
+                _notificationLock.Lock();
+
+                ASSERT(std::find(_channelObservers.begin(), _channelObservers.end(), sink) == _channelObservers.end());
+
+                _channelObservers.push_back(sink);
+                sink->AddRef();
+
+                _notificationLock.Unlock();
+            }
+            void Unregister(IShell::IJSONRPCLink::INotification* sink)
+            {
+                _notificationLock.Lock();
+
+                ChannelObservers::iterator index(std::find(_channelObservers.begin(), _channelObservers.end(), sink));
+
+                ASSERT(index != _channelObservers.end());
+
+                if (index != _channelObservers.end()) {
+                    (*index)->Release();
+                    _channelObservers.erase(index);
+                }
+
+                _notificationLock.Unlock();
+            }
             void Register(Exchange::Controller::IShells::INotification* sink) {
                 _notificationLock.Lock();
 
@@ -2834,23 +2870,9 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
-            }
-            void Closed(const uint32_t id) {
-                _adminLock.Lock();
-
-                // First stop all services running ...
-                Plugins::iterator index(_services.begin());
-
-                while (index != _services.end()) {
-                    index->second->Closed(id);
-                    ++index;
-                }
-
-                _adminLock.Unlock();
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
@@ -2868,7 +2890,6 @@ namespace PluginHost {
 
                 return (newService);
             }
-
             inline uint32_t Clone(const Core::ProxyType<IShell>& originalShell, const string& newCallsign, Core::ProxyType<IShell>& newService)
             {
                 uint32_t result = Core::ERROR_GENERAL;
@@ -2903,7 +2924,6 @@ namespace PluginHost {
 
                 return (result);
             }
-
             inline void Destroy(const string& callSign)
             {
                 _adminLock.Lock();
@@ -3093,6 +3113,27 @@ namespace PluginHost {
             void Close();
             void Destroy();
 
+            void Opened(const uint32_t id)
+            {
+                _notificationLock.Lock();
+
+                for (auto& sink : _channelObservers) {
+                    sink->Opened(id);
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Closed(const uint32_t id)
+            {
+                _notificationLock.Lock();
+
+                for (auto& sink : _channelObservers) {
+                    sink->Closed(id);
+                }
+
+                _notificationLock.Unlock();
+            }
+
         private:
             void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
                 if (interfaceId == RPC::IRemoteConnection::INotification::ID)
@@ -3228,6 +3269,7 @@ namespace PluginHost {
             IAuthenticate* _authenticationHandler;
             ConfigObserver _configObserver;
             ShellNotifiers _shellObservers;
+            ChannelObservers _channelObservers;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4077,6 +4119,8 @@ namespace PluginHost {
 
                     State(CLOSED, false);
 
+                    _parent.Operational(Id(), false);
+
                 } else if (IsUpgrading() == true) {
 
                     ASSERT(_service.IsValid() == false);
@@ -4113,6 +4157,9 @@ namespace PluginHost {
                             AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                         }
                     }
+                }
+                else if ((IsOpen() == true) && (IsWebSocket() == false)) {
+                    _parent.Operational(Id(), true);
                 }
             }
 
@@ -4204,19 +4251,9 @@ namespace PluginHost {
                 _job.Revoke();
 
                 // Start by closing the server thread..
-                BaseClass::Close(waitTime);
-
                 // Kill all open connections, we are shutting down !!!
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    // Oops nothing hapened for a long time, kill the connection
-                    // give it 100ms to actually close, if not do it forcefully !!
-                    index.Client()->Close(waitTime);
-                }
-
-                // Cleanup the closed sockets we created..
-                ValidateConnections();
+                BaseClass::Close(waitTime);
+                BaseClass::Cleanup();
 
                 return (Core::ERROR_NONE);
             }
@@ -4264,7 +4301,7 @@ namespace PluginHost {
                 // Next Clean all Id's from JSONRPC nolonger available
                 // 
                 // First check and clear, closed connections
-                ValidateConnections();
+                BaseClass::Cleanup();
 
                 if (_connectionCheckTimer != 0) {
                     // Now suspend those that have no activity.
@@ -4288,17 +4325,6 @@ namespace PluginHost {
 
                     _job.Reschedule(NextTick);
                 }
-            }
-            void ValidateConnections() {
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    if (index.Client()->IsOpen() == false) {
-                        TRACE(Activity, (_T("Client closed, that is reported closed"), index.Client()->Id()));
-                        _parent.Services().Closed(index.Client()->Id());
-                    }
-                }
-                BaseClass::Cleanup();
             }
 
         private:
@@ -4422,6 +4448,16 @@ namespace PluginHost {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
 
             return (infoBlob.Load());
+        }
+
+        void Operational(const uint32_t id, const bool upAndRunning)
+        {
+            if (upAndRunning == true) {
+                Services().Opened(id);
+            }
+            else {
+                Services().Closed(id);
+            }
         }
 
     private:

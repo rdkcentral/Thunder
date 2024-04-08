@@ -59,6 +59,21 @@ namespace PluginHost {
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
+        struct EXTERNAL IJSONRPCLink {
+
+            struct INotification : virtual public Core::IUnknown {
+                virtual ~INotification() = default;
+
+                virtual void Opened(const uint32_t channelId) = 0;
+                virtual void Closed(const uint32_t channelId) = 0;
+            };
+
+            virtual ~IJSONRPCLink() = default;
+
+            virtual void Register(INotification* sink) = 0;
+            virtual void Unregister(INotification* sink) = 0;
+        };
+
         enum class startmode : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
@@ -265,6 +280,9 @@ namespace PluginHost {
         /* @stubgen:stub */
         virtual ICOMLink* COMLink() = 0;
 
+        /* @stubgen:stub */
+        virtual IJSONRPCLink* JSONRPCLink() = 0;
+
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             ICOMLink* handler(COMLink());
@@ -300,6 +318,26 @@ namespace PluginHost {
         inline void Unregister(ICOMLink::INotification* sink)
         {
             ICOMLink* handler(COMLink());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+            }
+        }
+        inline void Register(IJSONRPCLink::INotification* sink)
+        {
+            IJSONRPCLink* handler(JSONRPCLink());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
+            }
+        }
+        inline void Unregister(IJSONRPCLink::INotification* sink)
+        {
+            IJSONRPCLink* handler(JSONRPCLink());
 
             ASSERT(handler != nullptr);
 
