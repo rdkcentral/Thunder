@@ -59,6 +59,7 @@ namespace PluginHost {
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
+        /* @stubgen:omit */
         struct EXTERNAL IJSONRPCLink {
 
             struct INotification : virtual public Core::IUnknown {
