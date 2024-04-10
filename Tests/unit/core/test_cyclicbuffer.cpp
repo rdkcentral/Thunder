@@ -1822,6 +1822,12 @@ namespace Tests {
         EXPECT_EQ(buffer.Write(data, amount), amount);
         EXPECT_EQ(buffer.Used(), amount);
 
+        std::array<uint8_t, requiredBufferSize> peekData;
+        peekData.fill('\0');
+
+        buffer.Peek(peekData.data(), amount);
+        EXPECT_STREQ("ABCD", reinterpret_cast<const char*>(peekData.data()));
+
         EXPECT_GT(buffer.Size(), buffer.Free());
         EXPECT_GT(buffer.Size(), buffer.Used());
 
@@ -1839,10 +1845,24 @@ namespace Tests {
 
         EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount - 1), Core::ERROR_NONE);
         EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount - 1);
+        EXPECT_EQ(maximumReservedSize - amount - 1 , 1);
+
+        EXPECT_EQ(buffer.Used(), 4);
 
         // Always 'reserved written' + 'length' <= 'reserved'
         EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount - 1);
-        EXPECT_EQ(buffer.Write(data, std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>("1234"), std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
+
+        // Always max Size() - 1
+        EXPECT_EQ(buffer.Used(), 5);
+
+        // ABCD1 written
+
+        peekData.fill('\0');
+
+        // Less than 'size' written
+        buffer.Peek(peekData.data(), buffer.Used());
+        EXPECT_STREQ("ABCD1", reinterpret_cast<const char*>(peekData.data()));
     }
 
     TEST(Core_CyclicBuffer, ReservedRemainingOverwrite)
@@ -1885,6 +1905,12 @@ namespace Tests {
         EXPECT_EQ(buffer.Write(data, amount), amount);
         EXPECT_EQ(buffer.Used(), amount);
 
+        std::array<uint8_t, requiredBufferSize> peekData;
+        peekData.fill('\0');
+
+        buffer.Peek(peekData.data(), amount);
+        EXPECT_STREQ("ABCD", reinterpret_cast<const char*>(peekData.data()));
+
         EXPECT_GT(buffer.Size(), buffer.Free());
         EXPECT_GT(buffer.Size(), buffer.Used());
 
@@ -1896,10 +1922,26 @@ namespace Tests {
         // 'length' >= 'free' and 'length' < 'size'
         EXPECT_EQ(buffer.Reserve(maximumReservedSize - amount + 1), Core::ERROR_NONE);
         EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount + 1);
+        EXPECT_EQ(maximumReservedSize - amount + 1, 3);
+
+        // 'used' reflects what will not be overwritten, eg, remains from the previous write
+        EXPECT_EQ(buffer.Used(), 2);
 
         // Always 'reserved written' + 'length' <= 'reserved'
         EXPECT_EQ(buffer.ReservedRemaining(), maximumReservedSize - amount + 1);
-        EXPECT_EQ(buffer.Write(data, std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
+        EXPECT_EQ(buffer.Write(reinterpret_cast<const uint8_t*>("1234"), std::min(amount, buffer.ReservedRemaining())), std::min(amount, buffer.ReservedRemaining()));
+
+        // Always max Size() - 1, again reflects not overwritten part, eg, 2 + 3 ('remaining')
+        EXPECT_EQ(buffer.Used(), 5);
+
+        // ABCD123 written ABCD123
+
+        peekData.fill('\0');
+
+        // More than 'size' written
+        buffer.Peek(peekData.data(), buffer.Used());
+        // Starts at 'head', eg, not overwritten data segment and then continue with the data from the second write
+        EXPECT_STREQ("CD123", reinterpret_cast<const char*>(peekData.data()));
     }
 
 } // Tests
