@@ -736,6 +736,11 @@ namespace PluginHost {
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
+
+                    if (_observers.empty() == true) {
+                        ASSERT(_service != nullptr);
+                        _service->Unregister(&_notification);
+                    }
                 }
                 else {
                     index++;

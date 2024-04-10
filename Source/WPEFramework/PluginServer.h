@@ -2817,6 +2817,8 @@ namespace PluginHost {
                 ASSERT(std::find(_channelObservers.begin(), _channelObservers.end(), sink) == _channelObservers.end());
 
                 _channelObservers.push_back(sink);
+
+                ASSERT(sink != nullptr);
                 sink->AddRef();
 
                 _notificationLock.Unlock();
