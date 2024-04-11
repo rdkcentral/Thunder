@@ -311,7 +311,7 @@ namespace PluginHost {
             std::string _text;
         };
 
-        class Service : public IShell::ICOMLink, public IShell::IJSONRPCLink, public PluginHost::Service {
+        class Service : public IShell::ICOMLink, public IShell::IConnectionServer, public PluginHost::Service {
         public:
             enum mode {
                 CONFIGURED,
@@ -1216,13 +1216,6 @@ namespace PluginHost {
                 result.ToString(info);
                 return (Core::ERROR_NONE);
             }
-            // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            IShell::ICOMLink* COMLink() override {
-                return (this);
-            }
-            IShell::IJSONRPCLink* JSONRPCLink() override {
-                return (this);
-            }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
@@ -1241,11 +1234,11 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
-            void Register(IShell::IJSONRPCLink::INotification* sink)
+            void Register(IShell::IConnectionServer::INotification* sink) override
             {
                 _administrator.Register(sink);
             }
-            void Unregister(IShell::IJSONRPCLink::INotification* sink)
+            void Unregister(const IShell::IConnectionServer::INotification* sink) override
             {
                 _administrator.Unregister(sink);
             }
@@ -1773,7 +1766,7 @@ namespace PluginHost {
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
-            using ChannelObservers = std::vector<IShell::IJSONRPCLink::INotification*>;
+            using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
             class Iterator {
             public:
@@ -2810,7 +2803,7 @@ namespace PluginHost {
             {
                 _processAdministrator.Unregister(sink);
             }
-            void Register(IShell::IJSONRPCLink::INotification* sink)
+            void Register(IShell::IConnectionServer::INotification* sink)
             {
                 _notificationLock.Lock();
 
@@ -2821,7 +2814,7 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void Unregister(IShell::IJSONRPCLink::INotification* sink)
+            void Unregister(const IShell::IConnectionServer::INotification* sink)
             {
                 _notificationLock.Lock();
 

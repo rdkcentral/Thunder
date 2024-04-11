@@ -39,7 +39,7 @@ namespace PluginHost {
 
     class EXTERNAL JSONRPC : public ILocalDispatcher {
     private:
-        class Notification : public IShell::IJSONRPCLink::INotification {
+        class Notification : public IShell::IConnectionServer::INotification {
         public:
             Notification(JSONRPC& parent)
                 : _parent(parent)
@@ -48,7 +48,9 @@ namespace PluginHost {
             ~Notification() = default;
 
             Notification(const Notification&) = delete;
+            Notification(Notification&&) = delete;
             Notification& operator=(const Notification&) = delete;
+            Notification& operator=(Notification&&) = delete;
 
         public:
             void Opened(const uint32_t channelId VARIABLE_IS_NOT_USED) override
@@ -61,7 +63,7 @@ namespace PluginHost {
 
         public:
             BEGIN_INTERFACE_MAP(Notification)
-                INTERFACE_ENTRY(IShell::IJSONRPCLink::INotification)
+                INTERFACE_ENTRY(IShell::IConnectionServer::INotification)
             END_INTERFACE_MAP
 
         private:
