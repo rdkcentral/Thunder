@@ -315,16 +315,22 @@ namespace ProxyStub {
         }
         inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
-            ASSERT(_channel.IsValid() == true);
-
-            uint32_t result = _channel->Invoke(message, waitTime);
-
-            if (result != Core::ERROR_NONE) {
-                result |= COM_ERROR;
-
-                // Oops something failed on the communication. Report it.
-                TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
-            }
+	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+		
+            _adminLock.Lock();
+	    Core::ProxyType<Core::IPCChannel channel (_channel);
+            _adminLock.Unlock();
+		
+            if (channel.IsValid() == true) {
+	            result = channel->Invoke(message, waitTime);
+	
+	            if (result != Core::ERROR_NONE) {
+	                result |= COM_ERROR;
+	
+	                // Oops something failed on the communication. Report it.
+	                TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
+	            }
+	    }
 
             return (result);
         }
