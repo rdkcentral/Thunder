@@ -66,40 +66,6 @@ namespace PluginHost {
 
         using Shells = std::unordered_map<string, PluginHost::IShell*>;
 
-        class ForwardMessage : public Core::JSON::Container {
-        private:
-            ForwardMessage(ForwardMessage&&) = delete;
-            ForwardMessage(const ForwardMessage&) = delete;
-            ForwardMessage& operator=(ForwardMessage&&) = delete;
-            ForwardMessage& operator=(const ForwardMessage&) = delete;
-
-        public:
-            ForwardMessage()
-                : Core::JSON::Container()
-                , Callsign(true)
-                , Data(false)
-            {
-                Add(_T("callsign"), &Callsign);
-                Add(_T("data"), &Data);
-            }
-            ForwardMessage(const string& callsign, const string& message)
-                : Core::JSON::Container()
-                , Callsign(true)
-                , Data(false)
-            {
-                Add(_T("callsign"), &Callsign);
-                Add(_T("data"), &Data);
-
-                Callsign = callsign;
-                Data = message;
-            }
-            ~ForwardMessage() = default;
-
-        public:
-            Core::JSON::String Callsign;
-            Core::JSON::String Data;
-        };
-
     private:
         class ServiceMap;
         friend class Plugin::Controller;
@@ -1191,6 +1157,7 @@ namespace PluginHost {
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& message) override;
+            void Notify(const string& event, const string& parameters) override;
             void* QueryInterface(const uint32_t id) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
@@ -1284,15 +1251,8 @@ namespace PluginHost {
                 return (_administrator.RemoteConnection(connectionId));
             }
 
-            void Closed(const uint32_t id)
+            void Closed(const uint32_t /*id */)
             {
-                _pluginHandling.Lock();
-
-                if (_jsonrpc != nullptr)  {
-                    _jsonrpc->Dropped(id);
-                }
-                _pluginHandling.Unlock();
-
             }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
@@ -2960,12 +2920,12 @@ namespace PluginHost {
             }
             inline Iterator Services()
             {
-		Shells workingList;
+		        Shells workingList;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
                 workingList.reserve(_services.size());
-                
+
                 for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
                     workingList.emplace(std::piecewise_construct,
                         std::make_tuple(entry.first),
@@ -2982,9 +2942,13 @@ namespace PluginHost {
 
                 return (Iterator(std::move(workingList)));
             }
-            inline void Notification(const ForwardMessage& message)
+            inline void Notification(const string& callsign, const string& message)
             {
-                _server.Notification(message);
+                _server.Notification(callsign, message);
+            }
+            inline void Notification(const string& callsign, const string& event, const string& message)
+            {
+                _server.Notification(callsign, event, message);
             }
             #if THUNDER_RESTFULL_API
             inline void Notification(const string& message)
@@ -4442,7 +4406,8 @@ namespace PluginHost {
             return (_config);
         }
 
-        void Notification(const ForwardMessage& message);
+        void Notification(const string& callsign, const string& message);
+        void Notification(const string& callsign, const string& event, const string& message);
         void Open();
         void Close();
 

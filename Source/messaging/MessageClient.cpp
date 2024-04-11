@@ -39,7 +39,6 @@ namespace Messaging {
         , _factories()
     {
         ::memset(_readBuffer, 0, sizeof(_readBuffer));
-        ::memset(_writeBuffer, 0, sizeof(_writeBuffer));
     }
 
     /**

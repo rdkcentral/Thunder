@@ -74,6 +74,7 @@ if boolean('@MESSAGING@'):
   messaging.add("port", '@MESSAGING_PORT@')
   messaging.add("stdout", '@MESSAGING_STDOUT@')
   messaging.add("stderr", '@MESSAGING_STDERR@')
+  messaging.add("datasize", '@MESSAGING_DATASIZE@')
 
   __notification = {
        "category" : "AnyCategory",
