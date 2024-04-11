@@ -141,6 +141,8 @@ namespace Core {
                     result = Core::ERROR_UNAVAILABLE;
 
 #ifndef __WINDOWS__
+                    const Core::NodeId server(connector.c_str());
+
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
 
                     if (_domainSocket >= 0) {
@@ -154,12 +156,11 @@ namespace Core {
                             _id = id;
 
                             // Prepare Client
-                            const string clientPath = connector + "-client";
-
-                            ::unlink(clientPath.c_str());
+                            const string clientPath = server.HostName() + "-client";
 
                             const Core::NodeId client(clientPath.c_str());
-                            const Core::NodeId server(connector.c_str());
+
+                            ::unlink(client.HostName().c_str());
 
                             if (::bind(_domainSocket, client, client.Size()) == 0) {
                                 result = Core::ERROR_NONE;
@@ -180,7 +181,7 @@ namespace Core {
 
                                 ResourceMonitor::Instance().Unregister(*this);
                             } else {
-                                TRACE_L1("Bind to \"%s\" failed. Error: %s", clientPath.c_str(), strerror(errno));
+                                TRACE_L1("Bind to \"%s\" failed. Error: %s", client.HostName().c_str(), strerror(errno));
                                 result = Core::ERROR_BAD_REQUEST;
                             }
                         }
@@ -188,7 +189,7 @@ namespace Core {
                         ::close(_domainSocket);
                         _domainSocket = -1;
                     } else {
-                        TRACE_L1("failed to open domain socket: %s\n", connector.c_str());
+                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
                     }
 
 #endif
@@ -205,6 +206,7 @@ namespace Core {
                     ASSERT(_domainSocket == -1);
 
                     result = Core::ERROR_UNAVAILABLE;
+                    const Core::NodeId server(connector.c_str());
 
 #ifndef __WINDOWS__
                     _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
@@ -216,9 +218,8 @@ namespace Core {
                             TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
                             result = Core::ERROR_BAD_REQUEST;
                         } else {
-                            ::unlink(connector.c_str());
 
-                            const Core::NodeId server(connector.c_str());
+                            ::unlink(server.HostName().c_str());
 
                             if (::bind(_domainSocket, server, server.Size()) == 0) {
                                 result = Core::ERROR_NONE;
@@ -229,7 +230,7 @@ namespace Core {
                             }
                         }
                     } else {
-                        TRACE_L1("failed to open domain socket: %s\n", connector.c_str());
+                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
                     }
 
                     if (result != Core::ERROR_NONE) {
@@ -240,7 +241,7 @@ namespace Core {
                         }
                         _state = state::IDLE;
                     } else {
-                        TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, connector.c_str());
+                        TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, server.HostName().c_str());
                     }
 #endif
                 }
