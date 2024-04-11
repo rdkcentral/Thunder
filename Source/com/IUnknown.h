@@ -318,7 +318,7 @@ namespace ProxyStub {
 	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 		
             _adminLock.Lock();
-	    Core::ProxyType<Core::IPCChannel channel (_channel);
+	    Core::ProxyType<Core::IPCChannel> channel (_channel);
             _adminLock.Unlock();
 		
             if (channel.IsValid() == true) {
