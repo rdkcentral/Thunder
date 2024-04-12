@@ -569,6 +569,9 @@ namespace PluginHost {
             parameters.ToString(subject);
             return InternalNotify(event, subject, std::move(method));
         }
+        Core::hresult Event(const string& eventId, const string& parameters) {
+            return (InternalNotify(eventId, parameters));
+        }
         void Response(const uint32_t channelId, const Core::ProxyType<Core::JSON::IElement>& message) {
             _service->Submit(channelId, message);
         }
@@ -726,34 +729,6 @@ namespace PluginHost {
 
             _adminLock.Unlock();
         }
-        void ChannelClosed(const uint32_t channelId)
-        {
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.begin();
-
-            while (index != _observers.end()) {
-
-                index->second.Dropped(channelId);
-
-                if (index->second.IsEmpty() == true) {
-                    index = _observers.erase(index);
-
-                    if (_observers.empty() == true) {
-                        ASSERT(_service != nullptr);
-                        _service->Unregister(&_notification);
-                    }
-                }
-                else {
-                    index++;
-                }
-            }
-
-            _adminLock.Unlock();
-        }
-        Core::hresult Event(const string& eventId, const string& parameters) {
-            return (InternalNotify(eventId, parameters));
-        }
 
         // Inherited via IDispatcher::ICallback
         // ---------------------------------------------------------------------------------
@@ -863,6 +838,33 @@ namespace PluginHost {
             _adminLock.Unlock();
 
             return (result);
+        }
+
+    private:
+        void ChannelClosed(const uint32_t channelId)
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.begin();
+
+            while (index != _observers.end()) {
+
+                index->second.Dropped(channelId);
+
+                if (index->second.IsEmpty() == true) {
+                    index = _observers.erase(index);
+
+                    if (_observers.empty() == true) {
+                        ASSERT(_service != nullptr);
+                        _service->Unregister(&_notification);
+                    }
+                }
+                else {
+                    index++;
+                }
+            }
+
+            _adminLock.Unlock();
         }
 
     private:
