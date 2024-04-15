@@ -69,7 +69,7 @@ namespace PluginHost {
             Service& operator=(const Service&) = delete;
 
             Service();
-            Service(Service&& copy);
+            Service(Service&& move);
             Service(const Service& copy);
             ~Service() override = default;
 
@@ -107,7 +107,7 @@ namespace PluginHost {
 
             public:
                 State& operator=(const state RHS);
-                State& operator=(State&& RHS);
+                State& operator=(State&& move);
                 State& operator=(const State& RHS);
 
                 string Data() const;
@@ -119,7 +119,7 @@ namespace PluginHost {
             Channel(const Channel& copy);
             ~Channel() override = default;
 
-            Channel& operator=(Channel&& RHS);
+            Channel& operator=(Channel&& move);
             Channel& operator=(const Channel& RHS);
 
         public:
@@ -141,7 +141,7 @@ namespace PluginHost {
                 Minion(const Minion& copy);
                 ~Minion() override = default;
 
-                Minion& operator= (const Core::ThreadPool::Metadata&);
+                Minion& operator=(const Core::ThreadPool::Metadata&);
 
             public:
                 Core::JSON::InstanceId Id;
@@ -204,8 +204,8 @@ namespace PluginHost {
             using Proxy = JsonData::Metadata::ProxyData;
 
         public:
-            COMRPC& operator= (COMRPC&&) = delete;
-            COMRPC& operator= (const COMRPC&) = delete;
+            COMRPC& operator=(COMRPC&&) = delete;
+            COMRPC& operator=(const COMRPC&) = delete;
 
             COMRPC()
                 : Core::JSON::Container()
@@ -216,8 +216,8 @@ namespace PluginHost {
             }
             COMRPC(COMRPC&& move)
                 : Core::JSON::Container()
-                , Remote(move.Remote)
-                , Proxies(move.Proxies) {
+                , Remote(std::move(move.Remote))
+                , Proxies(std::move(move.Proxies)) {
                 Add(_T("link"), &Remote);
                 Add(_T("proxies"), &Proxies);
             }

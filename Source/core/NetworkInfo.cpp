@@ -1582,7 +1582,7 @@ namespace Core {
                 }
             default:
                 // TRACE_L1("Unknown option encountered: %d", rtatp->rta_type);
-		break;
+                break;
             }
         }
     }
@@ -1639,6 +1639,14 @@ namespace Core {
             while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
         }
     }
+    AdapterIterator::AdapterIterator(AdapterIterator&& move)
+        : AdapterIterator() {
+        _reset = move._reset;
+        _list = std::move(move._list);
+        _index = std::move(move._index);
+
+         move._reset = 0;
+    }
 
     AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
     {
@@ -1649,6 +1657,19 @@ namespace Core {
         if (RHS.IsValid()) {
             string name (RHS.Name());
             while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+
+        return (*this);
+    }
+
+    AdapterIterator& AdapterIterator::operator=(AdapterIterator&& move)
+    {
+        if (this != &move) {
+            _reset = move._reset;
+            _list = std::move(move._list);
+            _index = std::move(move._index);
+
+            move._reset = 0;
         }
 
         return (*this);
@@ -1665,16 +1686,16 @@ namespace Core {
 
         //void Callback(PWNODE_HEADER wnode, . . .)
         //{
-        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
-        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
-        //		instance->DataBlockOffset + sizeof(ULONG));
-        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
+        //    auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
+        //    auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
+        //                  instance->DataBlockOffset + sizeof(ULONG));
+        //    auto linkState = (PNDIS_LINK_STATE)(header + 1);
 
-        //	switch (linkState->MediaConnectState)
-        //	{
-        //	case MediaConnectStateConnected:
-        //		. . .
-        //	}
+        //    switch (linkState->MediaConnectState)
+        //    {
+        //        case MediaConnectStateConnected:
+        //                . . .
+        //    }
         //}
 
 #endif

@@ -55,6 +55,11 @@ namespace Core {
                 , _options(copy._options)
             {
             }
+            Options(Options&& move)
+                : _command(std::move(move._command))
+                , _options(std::move(move._options))
+            {
+            }
             ~Options()
             {
             }

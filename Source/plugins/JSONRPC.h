@@ -109,7 +109,7 @@ namespace PluginHost {
                     }
                 }
 
-                Destination& operator= (Destination&& move) noexcept
+                Destination& operator=(Destination&& move) noexcept
                 {
                     if (_callback != nullptr) {
                         _callback->Release();
@@ -120,7 +120,7 @@ namespace PluginHost {
                     move._callback = nullptr;
                     return (*this);
                 }
-                Destination& operator= (const Destination& copy)
+                Destination& operator=(const Destination& copy)
                 {
                     if (_callback != nullptr) {
                         _callback->Release();
@@ -153,8 +153,8 @@ namespace PluginHost {
             using Destinations = std::vector<Destination>;
 
         public:
-            Observer& operator= (Observer&&) = delete;
-            Observer& operator= (const Observer&) = delete;
+            Observer& operator=(Observer&&) = delete;
+            Observer& operator=(const Observer&) = delete;
 
             Observer()
                 : _designators() {
@@ -327,7 +327,16 @@ namespace PluginHost {
                 Patch = rhs.Patch;
                 return (*this);
             }
-
+            VersionInfo& operator=(VersionInfo&& move)
+            {
+                if (this != &move) {
+                    Name = std::move(move.Name);
+                    Major = std::move(move.Major);
+                    Minor = std::move(move.Minor);
+                    Patch = std::move(move.Patch);
+		}
+                return (*this);
+            }
             ~VersionInfo() = default;
 
         private:
