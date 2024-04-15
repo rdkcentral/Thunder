@@ -2717,10 +2717,14 @@ namespace PluginHost {
             {
                 _notificationLock.Lock();
 
-                ASSERT(std::find(_notifiers.begin(), _notifiers.end(), sink) == _notifiers.end());
+                Notifiers::iterator it(std::find(_notifiers.begin(), _notifiers.end(), sink));
 
-                sink->AddRef();
-                _notifiers.push_back(sink);
+                ASSERT(it == _notifiers.end());
+
+                if (it == _notifiers.end()) {
+                    sink->AddRef();
+                    _notifiers.push_back(sink);
+                }
 
                 // Tell this "new" sink all our actived plugins..
                 Plugins::iterator index(_services.begin());
@@ -2754,6 +2758,7 @@ namespace PluginHost {
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
+                ASSERT(index != _notifiers.end());
 
                 if (index != _notifiers.end()) {
                     (*index)->Release();
@@ -2841,17 +2846,20 @@ namespace PluginHost {
                 _notificationLock.Lock();
 
                 // Make sure a sink is not registered multiple times.
-                ASSERT(std::find(_shellObservers.begin(), _shellObservers.end(), sink) == _shellObservers.end());
+                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
+                ASSERT(index == _shellObservers.end());
 
-                _shellObservers.push_back(sink);
-                sink->AddRef();
+                if (index == _shellObservers.end()) {
+                    _shellObservers.push_back(sink);
+                    sink->AddRef();
 
-                for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
-                    sink->Created(entry.first, entry.second.operator->());
-                    // Report any composit plugins that are active..
-                    entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
-                        sink->Created(callsign, proxy);
-                    });
+                    for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
+                        sink->Created(entry.first, entry.second.operator->());
+                        // Report any composit plugins that are active..
+                        entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                            sink->Created(callsign, proxy);
+                        });
+                    }
                 }
 
                 _notificationLock.Unlock();

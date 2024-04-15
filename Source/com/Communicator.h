@@ -984,21 +984,24 @@ namespace RPC {
 
                     _adminLock.Lock();
 
-                    ASSERT(std::find(_observers.begin(), _observers.end(), sink) == _observers.end());
+                    Observers::iterator entry(std::find(_observers.begin(), _observers.end(), sink));
+                    ASSERT(entry == _observers.end());
 
-                    sink->AddRef();
-                    _observers.push_back(sink);
+                    if (entry == _observers.end()) {
+                        sink->AddRef();
+                        _observers.push_back(sink);
 
-                    RemoteConnections::iterator index(_connections.begin());
+                        RemoteConnections::iterator index(_connections.begin());
 
-                    // Report all Active Processes..
-                    while (index != _connections.end()) {
-                        if (index->second->IsOperational() == true) {
-                            sink->Activated(&(*(index->second)));
+                        // Report all Active Processes..
+                        while (index != _connections.end()) {
+                            if (index->second->IsOperational() == true) {
+                                sink->Activated(&(*(index->second)));
+                            }
+                            index++;
                         }
-                        index++;
-                    }
 
+                    }
                     _adminLock.Unlock();
                 }
             }

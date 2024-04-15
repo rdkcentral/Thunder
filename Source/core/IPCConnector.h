@@ -525,11 +525,14 @@ POP_WARNING()
             {
                 _lock.Lock();
 
-				ASSERT(handler.IsValid() == true);
-                ASSERT(_handlers.find(id) == _handlers.end());
+                ASSERT(handler.IsValid() == true);
+                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
 
-                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));
+                ASSERT(index == _handlers.end());
 
+                if (index == _handlers.end()) {
+                    _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));
+                }
                 _lock.Unlock();
             }
 
