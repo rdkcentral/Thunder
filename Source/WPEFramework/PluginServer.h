@@ -2814,6 +2814,12 @@ namespace PluginHost {
                 ASSERT(sink != nullptr);
                 sink->AddRef();
 
+                _server.Visit([sink](const Channel& channel) {
+                        if (channel.IsOpen() == true) {
+                            sink->Opened(channel.Id());
+                        }
+                    });
+
                 _notificationLock.Unlock();
             }
             void Unregister(const IShell::IConnectionServer::INotification* sink)
@@ -4445,6 +4451,16 @@ namespace PluginHost {
             return (infoBlob.Load());
         }
 
+        void Visit(const std::function<void(const Channel&)>& handler)
+        {
+            ChannelMap::Iterator it = _connections.Clients();
+
+            while (it.Next() == true) {
+                handler(*it.Client());
+            }
+        }
+
+    private:
         void Operational(const uint32_t id, const bool upAndRunning)
         {
             if (upAndRunning == true) {
