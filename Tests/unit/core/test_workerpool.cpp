@@ -926,13 +926,16 @@ TEST(Core_WorkerPool, Check_RescheduleJobs_MultiplePool_MultipleJobs_AdditionalJ
 void CheckMetaData(const uint8_t pending, const uint8_t occupation, const uint8_t expectedRuns)
 {
     const IWorkerPool::Metadata& metaData = IWorkerPool::Instance().Snapshot();
-    EXPECT_EQ(metaData.Pending, pending);
-    EXPECT_EQ(metaData.Occupation, occupation);
-    uint16_t totalRuns = 0;
+
+    EXPECT_EQ(metaData.Pending.size(), pending); // Whatever is in the ThreadPool::_queue is considered pending
+
+    uint16_t totalRuns = 0, totalOccupation = 0;
     for (uint8_t index = 0; index < metaData.Slots; index++) {
-        totalRuns += metaData.Slot[index];
+        totalRuns += metaData.Slot[index].Runs;
+        totalOccupation += !(metaData.Slot[index].Job.IsSet());
     }
     EXPECT_EQ(totalRuns, expectedRuns);
+    EXPECT_EQ(totalOccupation, occupation);
 }
 void CheckWorkerPool_MetaData(uint8_t threadCount, uint8_t queueSize, uint8_t additionalJobs)
 {
@@ -967,7 +970,7 @@ void CheckWorkerPool_MetaData(uint8_t threadCount, uint8_t queueSize, uint8_t ad
     }
 
     workerPool.Stop();
-    CheckMetaData(0, 0, queueSize + additionalJobs);
+    CheckMetaData(queueSize, 0, queueSize + additionalJobs);
     for (auto& job: jobs) {
         job.Release();
     }
