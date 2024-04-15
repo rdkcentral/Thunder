@@ -175,7 +175,7 @@ namespace Core {
 			public:
 				void Register(ReaderImplementation& source) {
 					_adminLock.Lock();
-					typename Implementations::iterator entry(std::find(_resources.begin(), _resources.end(), &source);
+					typename Implementations::iterator entry(std::find(_resources.begin(), _resources.end(), &source));
 					ASSERT(entry == _resources.end());
 					if (entry == _resources.end()) {
 						_resources.push_back(&source);
