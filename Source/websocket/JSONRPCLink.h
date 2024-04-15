@@ -224,17 +224,22 @@ namespace WPEFramework {
 				void Register(LinkType<INTERFACE>& client)
 				{
 					_adminLock.Lock();
-					ASSERT(std::find(_observers.begin(), _observers.end(), &client) == _observers.end());
-					_observers.push_back(&client);
+					typename std::list<LinkType<INTERFACE>* >::iterator index = std::find(_observers.begin(), _observers.end(), &client);
+					ASSERT(index == _observers.end());
+					if (index == _observers.end()) {
+						_observers.push_back(&client);
+					}
 					if (_channel.IsOpen() == true) {
 						client.Opened();
 					}
+
 					_adminLock.Unlock();
 				}
 				void Unregister(LinkType<INTERFACE>& client)
 				{
 					_adminLock.Lock();
 					typename std::list<LinkType<INTERFACE>* >::iterator index(std::find(_observers.begin(), _observers.end(), &client));
+					ASSERT(index != _observers.end());
 					if (index != _observers.end()) {
 						_observers.erase(index);
 					}

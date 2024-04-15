@@ -265,9 +265,12 @@ POP_WARNING()
             _lock.Lock();
 
             // Only register a callback once !!
-            ASSERT(std::find(_notifierList.begin(), _notifierList.end(), callback) == _notifierList.end());
+            NotifierList::iterator index = std::find(_notifierList.begin(), _notifierList.end(), callback);
 
-            _notifierList.push_back(callback);
+            ASSERT(index == _notifierList.end());
+            if (index == _notifierList.end()) {
+                _notifierList.push_back(callback);
+            }
 
             _lock.Unlock();
 
@@ -277,9 +280,12 @@ POP_WARNING()
             NotifierList& notifierList(_notifierMap[keyCode]);
 
             // Only register a callback once !!
-            ASSERT(std::find(notifierList.begin(), notifierList.end(), callback) == notifierList.end());
+            NotifierList::iterator index = std::find(notifierList.begin(), notifierList.end(), callback);
 
-            notifierList.push_back(callback);
+            ASSERT(index == notifierList.end());
+            if (index == notifierList.end()) {
+                notifierList.push_back(callback);
+            }
 
             _lock.Unlock();
         }
