@@ -448,9 +448,24 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         *this = rInfo;
     }
 
+    NodeId::NodeId(NodeId&& rInfo)
+    {
+        m_group = std::move(rInfo.m_group);
+        m_hostName = std::move(rInfo.m_hostName);
+        m_structInfo = std::move(rInfo.m_structInfo);
+    }    
+
     NodeId::NodeId(const NodeId& rInfo, const uint16_t portNumber)
     {
         *this = rInfo;
+        PortNumber(portNumber);
+    }
+
+    NodeId::NodeId(NodeId&& rInfo, const uint16_t portNumber)
+    {
+        m_group = std::move(rInfo.m_group);
+        m_hostName = std::move(rInfo.m_hostName);
+        m_structInfo = std::move(rInfo.m_structInfo);
         PortNumber(portNumber);
     }
 
@@ -508,6 +523,17 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         m_hostName = rInfo.m_hostName;
         m_group = rInfo.m_group;
         // Give back our-selves.
+        return (*this);
+    }
+
+    NodeId&
+    NodeId::operator=(NodeId&& rInfo)
+    {
+        if (this != &rInfo) {
+            m_group = std::move(rInfo.m_group);
+            m_hostName = std::move(rInfo.m_hostName);
+            m_structInfo = std::move(rInfo.m_structInfo);
+        }
         return (*this);
     }
 
