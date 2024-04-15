@@ -36,7 +36,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
     namespace {
         /**
         * @brief Class responsible for storing information about announced controls and updating them based on incoming
-        *        metadata or  SettingsList from config. This class can be serialized, and then recreated on the other
+        *        metadata or SettingsList from config. This class can be serialized, and then recreated on the other
         *        side to get information about all announced controls on this side.
         */
         class Controls {
@@ -89,12 +89,46 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Unlock();
             }
 
+            // here we are iterating through the whole controls list
             void Iterate(Core::Messaging::IControl::IHandler& handler)
             {
                 _adminLock.Lock();
 
                 for (auto& control : _controlList) {
                     handler.Handle(control);
+                }
+
+                _adminLock.Unlock();
+            }
+
+            // here what we want to achieve instead is to call handle only on the controls which match a single module
+            void Iterate(Core::Messaging::IControl::IHandler& handler, const string& module)
+            {
+                _adminLock.Lock();
+
+                for (auto& control : _controlList) {
+                    if (control->Metadata().Module() == module) {
+                        handler.Handle(control);
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+
+            // this method iterates through _controlList and fill a list strings with module names
+            void Modules(std::list<string>& modules)
+            {
+                _adminLock.Lock();
+
+                // Question: is it be better to pass std::list<std::string>& as a paramter to avoid the cast? 
+                // std::list<std::string>& modulesList = *reinterpret_cast<std::list<std::string>*>(modules);
+
+                for (auto& control : _controlList) {
+                    // Question: is it better to make a local variable for the module or call it twice if it is not yet on the list?
+                    // std::string& module = control->Metadata().Module();
+                    if (std::find(modules.begin(), modules.end(), control->Metadata().Module()) == modules.end()) {
+                        modules.push_back(control->Metadata().Module());
+                    }
                 }
 
                 _adminLock.Unlock();
@@ -404,6 +438,14 @@ namespace Core {
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
             ControlsInstance().Iterate(handler);
+        }
+
+        /* static */ void IControl::Iterate(IControl::IHandler& handler, const string& module) {
+            ControlsInstance().Iterate(handler, module);
+        }
+
+        /* static */ void IControl::Modules(std::list<string>& modules) {
+            return ControlsInstance().Modules(modules);
         }
 
         /* static */ IStore* IStore::Instance() {

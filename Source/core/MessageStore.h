@@ -135,6 +135,9 @@ namespace Core {
             static void Announce(IControl* control);
             static void Revoke(IControl* control);
             static void Iterate(IHandler& handler);
+            // TO-DO: change it so that the filtration happens in messaging and not in core, so there are no changes to core necessary
+            static void Iterate(IHandler& handler, const string& module);
+            static void Modules(std::list<string>& modules);
         };
 
         /**

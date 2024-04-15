@@ -137,17 +137,28 @@ namespace Messaging {
         _adminLock.Unlock();
     }
 
+    // TO-DO: If the controls from exclusively OOP module are missed, then this has to be changed to ask each client with a similar method to Load
+    // Question: do we what these methods to return hresult as well?
     /**
-     * @brief Get list of currently announced message controls
+     * @brief Get list of currently announced message modules
      */
-    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls) const
+    void MessageClient::Modules(std::list<string>& modules) const
+    {
+        // call a method from Controls in MessageStore and return a list of modules based on currently announced categories via parameter reference
+        Core::Messaging::IControl::Modules(modules);
+    }
+
+    /**
+     * @brief Get list of currently announced message controls for a given module
+     */
+    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const
     {
         Messaging::MessageUnit::ControlList list;
 
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            client.second.Load(list);
+            client.second.Load(list, module);
         }
 
         _adminLock.Unlock();

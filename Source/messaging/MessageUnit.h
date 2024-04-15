@@ -455,7 +455,7 @@ namespace WPEFramework {
                     return (abbreviate);
                 }
 
-                void Configure (const string& basePath, const string& identifier, const Config& jsonParsed, const bool background, const flush flushMode)
+                void Configure(const string& basePath, const string& identifier, const Config& jsonParsed, const bool background, const flush flushMode)
                 {
                     _settings.clear();
                     string messagingFolder;
@@ -487,6 +487,8 @@ namespace WPEFramework {
                  */
                 void Update(const Core::Messaging::Metadata& metaData, const bool isEnabled)
                 {
+                    // looks like this one is never used?
+                    std::cout << getpid() << " @@@@@ MessageUnit.h Update() category: " << metaData.Category() << ", module: " << metaData.Module().c_str() << ", enabled: " << isEnabled << std::endl;
                     bool enabled = metaData.Default();
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
@@ -554,20 +556,33 @@ namespace WPEFramework {
                 void Save() const
                 {
                     // Store all config info..
+                    // here we wanted to optimize it so that the local variable does not contain info about each control
+                    // but it looks like this is only called once at the start of Thunder and it actually saves only the info from the config file
+                    // Question: do we still want to keep a layer to filter only the information that's different from default within the config?
                     string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_dataSize).Text();
 
+                    // here we want to save to this local variable settings only the categories that are different from the default
                     for (auto& entry : _settings) {
-                        settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
-                                    DELIMITER + entry.Module() +
-                                    DELIMITER + entry.Category() +
-                                    DELIMITER + (entry.Enabled() ? '1' : '0');
+                        // here we will pass tracing categories which are enabled, so different from default being disabled
+                        // and we will also pass logging or reporting categories which are disabled, so different from default being enabled
+                        // Question: shouldn't we be passing opperational streams categories here as well? and if so, then the same goes for other method in MessageUnit?
+                        if ((entry.Type() == Core::Messaging::Metadata::type::TRACING && entry.Enabled() == 1) ||
+                            ((entry.Type() == Core::Messaging::Metadata::type::LOGGING || entry.Type() == Core::Messaging::Metadata::type::REPORTING) && entry.Enabled() == 0)){
+                            settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
+                                        DELIMITER + entry.Module() +
+                                        DELIMITER + entry.Category() +
+                                        DELIMITER + (entry.Enabled() ? '1' : '0');
+                        }
+
+
                     }
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
+                    std::cout << getpid() << " @@@@@ MessageUnit.h Save() settings: " << settings << std::endl;
                 }
 
                 void Load()
@@ -575,6 +590,8 @@ namespace WPEFramework {
                     string settings;
                     Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings);
                     Core::TextSegmentIterator iterator(Core::TextFragment(settings, 0, static_cast<uint16_t>(settings.length())), false, DELIMITER);
+                    // it looks like this method is not very crucial, since Update is called right after it and all Controls go through it
+                    std::cout << getpid() << " @@@@@ MessageUnit.h Load() settings: " << settings << std::endl;
 
                     _path.clear();
                     _identifier.clear();
@@ -610,6 +627,7 @@ namespace WPEFramework {
                                     if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::REPORTING) &&
                                         (enabled.length() == 1) &&
                                         ((enabled[0] == '0') || (enabled[0] == '1'))) {
+                                        // Question: why do we always set enabled to true here instead of actually transfering the value it holds?
                                         _settings.emplace_back(Core::Messaging::Metadata(static_cast<Core::Messaging::Metadata::type>(type), category, module), (enabled[0] == '1'));
                                     }
                                 }
@@ -688,9 +706,9 @@ namespace WPEFramework {
                 uint16_t _dataSize;
             };
 
-            class EXTERNAL Client : public MessageDataBufferType {
+            class EXTERNAL Client : public MessageDataBuffer {
             private:
-                using BaseClass = MessageDataBufferType;
+                using BaseClass = MessageDataBuffer;
 
             public:
                 Client() = delete;
@@ -698,7 +716,7 @@ namespace WPEFramework {
                 Client& operator= (const Client&) = delete;
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
-                    : MessageDataBufferType(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
+                    : MessageDataBuffer(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
                     , _channel(Core::NodeId(MetadataName().c_str()), MetadataBufferSize) {
                     _channel.Open(Core::infinite);
                 }
@@ -741,21 +759,35 @@ namespace WPEFramework {
                     return (result);
                 }
 
-                void Load(ControlList& info) const
+                // Load() has an additional parameter called module, which specifies the module from which we want to get controls
+                void Load(ControlList& info, const string& module) const
                 {
+                    // this method is called when reloading the Messaging page in the UI (it loads all controls)
+                    std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info)" << std::endl;
                     if (_channel.IsOpen() == true) {
 
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
-                        metaDataFrame->Parameters().Set(0, nullptr);
+                        // here we need to first write 1 in the bueer to let the other side know that we want to get the controls
+                        // and then we write a module name to the buffer, and pass this instead of the nullptr as parameter
+                        uint8_t buffer[64];
+                        Core::FrameType<0> frame(buffer, 64, 64);
+                        Core::FrameType<0>::Writer writer(frame, 0);
+                        // passing 1 indicates that we want to get a list of controls for a given module
+                        writer.Boolean(true);
+                        writer.NullTerminatedText(module);
+
+                        // Question: should we pass a buffer here or the writer since the Size is of writer?
+                        metaDataFrame->Parameters().Set(writer.Offset(), buffer);
 
                         uint32_t result = _channel.Invoke(metaDataFrame, Core::infinite);
 
                         if (result == Core::ERROR_NONE) {
                             uint16_t index = 0;
                             uint16_t bufferSize = metaDataFrame->Response().Length();
+                            std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) bufferSize: " << bufferSize << std::endl;
                             const uint8_t* buffer = metaDataFrame->Response().Value();
 
                             while (index < bufferSize) {
@@ -770,6 +802,7 @@ namespace WPEFramework {
                                     index += length;
                                     if (std::find(info.begin(), info.end(), entry) == info.end()) {
                                         info.emplace_back(entry);
+                                        std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) category: " << entry.Category() << ", module: " << entry.Module() << ", enabled: " << entry.Enabled() << std::endl;
                                     }
                                 }
                             }
@@ -789,9 +822,9 @@ namespace WPEFramework {
             using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
 
             // This is the listening end-point, and it is created as the master in which we push messages
-            class MessageDispatcher : public MessageDataBufferType {
+            class MessageDispatcher : public MessageDataBuffer {
             private:
-                using BaseClass = MessageDataBufferType;
+                using BaseClass = MessageDataBuffer;
                 class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
                 private:
                     using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
@@ -810,20 +843,48 @@ namespace WPEFramework {
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
+                            std::cout << getpid() << " @@@@@ MessageUnit.h Procedure()" << std::endl;
                             uint8_t outBuffer[MetadataBufferSize];
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
 
                             // What is coming in, is an update?
-                            if (message->Parameters().Length() > 0) {
-                                Control newSettings;
-                                newSettings.Deserialize(message->Parameters().Value(), message->Parameters().Length());
-                                _parent.Update(newSettings, newSettings.Enabled());
-                                message->Response().Set(0, nullptr);
+
+                            // now we won't be able to differenciate by length, but instead we will use framereader to check the first byte
+                            // if it is 0, then we want to Deserialize and Update given control
+                            // if it is 1, then we want to read the module and then do the Serialize of all controls from a given module
+
+                            // TO-DO: Update the Deserialize part to also use a framewriter and put 0 into the buffer so that it follows the same protocol
+                            // TO-DO: check if the const_cast necessary here
+                            Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
+                            Core::FrameType<0>::Reader reader(frame, 0);
+
+                            if (reader.HasData()) {
+                                bool protocol = reader.Boolean();
+
+                                if (protocol == false) {
+                                    Control newSettings;
+                                    // Question: here should we be passing frame instead and make sure it start after the first byte, or does the reader already do that?
+                                    newSettings.Deserialize(message->Parameters().Value(), message->Parameters().Length());
+                                    _parent.Update(newSettings, newSettings.Enabled());
+                                    message->Response().Set(0, nullptr);
+                                }
+                                else if (protocol == true && reader.HasData()) {
+                                    // here instead of sending all of the controls, only sent control for a given module
+                                    // TO-DO: here we probably need to read the module name prior to serialize and then send a buffer without it
+                                    string module = reader.NullTerminatedText();
+                                    uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
+                                    std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() length: " << length << std::endl;
+                                    message->Response().Set(length, outBuffer);
+                                }
+                                else {
+                                    // it should always start with either 0 or 1 to indicate the intention of the frame
+                                    ASSERT(false);
+                                }
                             }
                             else {
-                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
-                                message->Response().Set(length, outBuffer);
+                                // now it should no longer ever be empty
+                                ASSERT(false);
                             }
                             source.ReportResponse(data);
                         }
@@ -934,7 +995,7 @@ namespace WPEFramework {
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) override;
 
         private:
-            uint16_t Serialize(uint8_t* buffer, const uint16_t length);
+            uint16_t Serialize(uint8_t* buffer, const uint16_t length, string& module);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();
 

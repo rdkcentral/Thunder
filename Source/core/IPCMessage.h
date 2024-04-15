@@ -285,7 +285,7 @@ namespace Core {
             {
                 return (&(_buffer[0]));
             }
-            inline void Set (const uint16_t length, const uint8_t buffer[]) {
+            inline void Set(const uint16_t length, const uint8_t buffer[]) {
                 _buffer.Copy(0, length, buffer);
             }
             inline uint16_t Serialize(uint8_t buffer[], const uint16_t length, const uint32_t offset) const

@@ -49,7 +49,16 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
-        void Controls(Messaging::MessageUnit::Iterator& controls) const;
+
+        // -----new methods -----
+        // Modules() method calls a method from Controls in MessageStore and return a list of modules based on currently announced categories via the parameter reference
+        // Question: can we pass std::list reference here or would it be better to stick with string*& and use casts?
+        void Modules(std::list<string>& modules) const;
+
+        // the changed Controls() method works similarly to the previous Controls() method, but it takes a module name as an additioal parameter
+        // then we can pass this parameter all the way to Iterate() from Controls in MessageStore
+        // by doing that, the buffer needed in Load() needs to fit at a given time only the controls from a single module
+        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
 
         using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);

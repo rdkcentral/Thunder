@@ -24,7 +24,9 @@ namespace WPEFramework {
 
     namespace Messaging {
 
-        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        // this Serialize is changed so that it has one more parameter - the name of the module
+        // which is passed to Iterate so that it only calls handle on the controls for a given module
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, string& module)
         {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
@@ -41,14 +43,14 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     Control info(control->Metadata(), control->Enable());
 
                     uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
 
                     if (moved == 0) {
-                        TRACE_L1("Controls is cut, not enough memory to fit all controls (MetadataSize too small)");
+                        TRACE_L1("Controls are cut, not enough memory to fit all controls (MetadataBufferSize too small)");
                     }
                     else {
                         _offset += moved;
@@ -65,7 +67,7 @@ namespace WPEFramework {
                 uint16_t _offset;
             } handler (buffer, length);
 
-            Core::Messaging::IControl::Iterate(handler);
+            Core::Messaging::IControl::Iterate(handler, module);
 
             return (handler.Offset());
         }
@@ -86,7 +88,7 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     if ( (_info.Applicable(control->Metadata()) == true) && (control->Enable() ^ _enable) ) {
                         control->Enable(_enable);
@@ -103,6 +105,8 @@ namespace WPEFramework {
 
         void MessageUnit::Update()
         {
+            // this method is used at the start of Thunder and updates each category of logging, reportingm, operational streams and traces from application
+            // it is also used at the start of each OOP plugin and there is also updates each category of logging, reporting. operational streams, but not traces from application
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
@@ -113,10 +117,11 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     bool enabled = _settings.IsEnabled(control->Metadata());
-                    
+                    std::cout << getpid() << " @@@@@ MessageUnit.cpp Update() category: " << control->Metadata().Category() << ", module: " << control->Metadata().Module() << ", enabled: " << enabled << std::endl;
+
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
