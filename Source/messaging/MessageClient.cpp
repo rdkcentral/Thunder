@@ -144,8 +144,20 @@ namespace Messaging {
      */
     void MessageClient::Modules(std::list<string>& modules) const
     {
-        // call a method from Controls in MessageStore and return a list of modules based on currently announced categories via parameter reference
-        Core::Messaging::IControl::Modules(modules);
+        // call a method in MessageStore and return a list of modules based on currently announced categories via parameter reference
+        // but instead of simply calling Modules from core, we need call each client, which then calls Modules from core, to make sure the oop only controls won't be missed
+        // Question: is this proxy local list even necessary here? since we are making sure not to add to the list twice in Modules in core, this is probably skippable?
+        // std::list<string> list;
+
+        _adminLock.Lock();
+
+        for (auto& client : _clients) {
+            client.second.Modules(modules);
+        }
+
+        _adminLock.Unlock();
+
+        // modules = std::move(list);
     }
 
     /**

@@ -740,6 +740,8 @@ namespace WPEFramework {
                  */
                 uint32_t Update(const uint32_t waitTime, const Core::Messaging::Metadata& control, const bool enabled)
                 {
+                    // this method is called when a control is enabled or disabled via jsonrpc call
+                    std::cout << getpid() << " @@@@@ MessageUnit.h Update() category: " << control.Category() << ", module: " << control.Module() << ", enabled: " << enabled << std::endl;
                     uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                     if (_channel.IsOpen() == true) {
@@ -749,9 +751,18 @@ namespace WPEFramework {
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
+
+                        Core::FrameType<0> frame(dataBuffer, TempMetadataBufferSize, TempMetadataBufferSize);
+                        Core::FrameType<0>::Writer writer(frame, 0);
+                        // passing 0 indicates that we want to update a control which came from Enable() call
+                        writer.Boolean(false);
+                        std::cout << getpid() << " @@@@@ MessageUnit.h Update() writer.Offset(): " << writer.Offset() << std::endl;
+
                         Control message(control, enabled);
-                        uint16_t length = message.Serialize(dataBuffer, sizeof(dataBuffer));
-                        metaDataFrame->Parameters().Set(length, dataBuffer);
+                        uint16_t length = message.Serialize(dataBuffer + writer.Offset(), sizeof(dataBuffer));
+                        std::cout << getpid() << " @@@@@ MessageUnit.h Update() length: " << length << std::endl;
+                        
+                        metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
 
                         result = _channel.Invoke(metaDataFrame, waitTime);
                     }
@@ -814,6 +825,12 @@ namespace WPEFramework {
                     }
                 }
 
+                // this proxy is necessary because we do not want to miss any oop only controls, so we have to make sure to call Modules from core on each process
+                void Modules(std::list<string>& modules) const
+                {
+                    Core::Messaging::IControl::Modules(modules);
+                }
+
             private:
                 mutable Core::IPCChannelClientType<Core::Void, false, true> _channel;
             };
@@ -854,25 +871,26 @@ namespace WPEFramework {
                             // if it is 0, then we want to Deserialize and Update given control
                             // if it is 1, then we want to read the module and then do the Serialize of all controls from a given module
 
-                            // TO-DO: Update the Deserialize part to also use a framewriter and put 0 into the buffer so that it follows the same protocol
                             // TO-DO: check if the const_cast necessary here
                             Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
                             Core::FrameType<0>::Reader reader(frame, 0);
 
                             if (reader.HasData()) {
                                 bool protocol = reader.Boolean();
+                                std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() protocol: " << protocol << std::endl;
 
                                 if (protocol == false) {
                                     Control newSettings;
-                                    // Question: here should we be passing frame instead and make sure it start after the first byte, or does the reader already do that?
-                                    newSettings.Deserialize(message->Parameters().Value(), message->Parameters().Length());
+                                    std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() Length: " << message->Parameters().Length() << std::endl;
+                                    // Question: should we substract 1 from Length passed to Deserialize?
+                                    newSettings.Deserialize(message->Parameters().Value() + 1, message->Parameters().Length());
                                     _parent.Update(newSettings, newSettings.Enabled());
                                     message->Response().Set(0, nullptr);
                                 }
                                 else if (protocol == true && reader.HasData()) {
-                                    // here instead of sending all of the controls, only sent control for a given module
-                                    // TO-DO: here we probably need to read the module name prior to serialize and then send a buffer without it
+                                    // instead of sending all of the controls, only sent control for a given module
                                     string module = reader.NullTerminatedText();
+                                    // we are writing over the module since it is no longer needed in the buffer
                                     uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
                                     std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() length: " << length << std::endl;
                                     message->Response().Set(length, outBuffer);
