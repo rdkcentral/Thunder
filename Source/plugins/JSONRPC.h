@@ -827,9 +827,7 @@ namespace PluginHost {
 
                 if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
                     _observers.erase(index);
-                }
 
-                if (_observers.empty() == true) {
                     ASSERT(_service != nullptr);
                     _service->Unregister(&_notification);
                 }
@@ -856,6 +854,7 @@ namespace PluginHost {
 
                     if (_observers.empty() == true) {
                         ASSERT(_service != nullptr);
+
                         _service->Unregister(&_notification);
                     }
                 }
