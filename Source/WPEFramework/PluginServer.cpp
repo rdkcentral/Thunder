@@ -295,14 +295,8 @@ namespace PluginHost {
             result = static_cast<PluginHost::IShell::ICOMLink*>(this);
         }
         else if (id == PluginHost::IShell::IConnectionServer::ID) {
-            _pluginHandling.Lock();
-
-            if (_jsonrpc != nullptr) {
-                AddRef();
-                result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
-            }
-
-            _pluginHandling.Unlock();
+            AddRef();
+            result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
         }
         else {
             _pluginHandling.Lock();
