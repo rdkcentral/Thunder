@@ -130,6 +130,7 @@ namespace Core {
     }
     Library::Library(Library&& move)
         : _refCountedHandle(move._refCountedHandle)
+        , _error(std::move(move._error))
     {
         move._refCountedHandle = nullptr;
     }
@@ -137,19 +138,6 @@ namespace Core {
     Library::~Library()
     {
         Release();
-    }
-
-    Library& Library::operator=(Library&& RHS)
-    {
-        // Only do this if we have different libraries..
-        Release();
-
-        // Assigne the new handler
-        _refCountedHandle = RHS._refCountedHandle;
-        _error = RHS._error;
-        RHS._refCountedHandle = nullptr;
-
-        return (*this);
     }
 
     Library& Library::operator=(const Library& RHS)
@@ -165,6 +153,24 @@ namespace Core {
             AddRef();
         }
 
+        return (*this);
+    }
+
+    Library& Library::operator=(Library&& move)
+    {
+        if (this != &move) {
+            if (move._refCountedHandle != _refCountedHandle) {
+                // Drop my reference
+                Release();
+                // Move the refence from the move object to me..
+                _refCountedHandle = move._refCountedHandle;
+                _error = std::move(move._error);
+                move._refCountedHandle = nullptr;
+   	    } else {
+                // I have a reference to the same object, just drove the one from the move..
+                move.Release();
+            }
+        }
         return (*this);
     }
 

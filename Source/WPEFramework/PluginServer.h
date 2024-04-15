@@ -325,8 +325,8 @@ namespace PluginHost {
                 Composit() = delete;
                 Composit(Composit&&) = delete;
                 Composit(const Composit&&) = delete;
-                Composit& operator= (Composit&&) = delete;
-                Composit& operator= (const Composit&&) = delete;
+                Composit& operator=(Composit&&) = delete;
+                Composit& operator=(const Composit&&) = delete;
 
                 Composit(Service& parent)
                     : _parent(parent)
@@ -619,7 +619,7 @@ namespace PluginHost {
                 }
                 ~ControlData() = default;
 
-                ControlData& operator= (const Core::IService::IMetadata* info) {
+                ControlData& operator=(const Core::IService::IMetadata* info) {
                     if (info != nullptr) {
                         const Plugin::IMetadata* extended = dynamic_cast<const Plugin::IMetadata*>(info);
 
@@ -1599,6 +1599,18 @@ namespace PluginHost {
                     Add(_T("startmode"), &StartMode);
                     Add(_T("resumed"), &Resumed);
                 }
+                Plugin(Plugin&& move)
+                    : Core::JSON::Container()
+                    , Configuration(std::move(move.Configuration))
+                    , SystemRootPath(std::move(move.SystemRootPath))
+                    , StartMode(std::move(move.StartMode))
+                    , Resumed(std::move(move.Resumed))
+                {
+                    Add(_T("configuration"), &Configuration);
+                    Add(_T("systemrootpath"), &SystemRootPath);
+                    Add(_T("startmode"), &StartMode);
+                    Add(_T("resumed"), &Resumed);
+                }
 
                 ~Plugin() override = default;
 
@@ -1795,14 +1807,15 @@ namespace PluginHost {
                     }
                 }
 
-                Iterator& operator= (Iterator&& move) {
-                    _container = std::move(move._container);
-                    _index = std::move(move._index);
-                    _position = move._position;
-
+                Iterator& operator=(Iterator&& move) {
+                    if (this != &move) {
+                        _container = std::move(move._container);
+                        _index = std::move(move._index);
+                        _position = move._position;
+                    }
                     return (*this);
                 }
-                Iterator& operator= (const Iterator& copy) {
+                Iterator& operator=(const Iterator& copy) {
                     _container = copy._container;
                     _position = copy._position;
                     if (_position > 0) {
@@ -1934,8 +1947,8 @@ namespace PluginHost {
                     ProxyStubObserver() = delete;
                     ProxyStubObserver(ProxyStubObserver&&) = delete;
                     ProxyStubObserver(const ProxyStubObserver&) = delete;
-                    ProxyStubObserver& operator= (ProxyStubObserver&&) = delete;
-                    ProxyStubObserver& operator= (const ProxyStubObserver&) = delete;
+                    ProxyStubObserver& operator=(ProxyStubObserver&&) = delete;
+                    ProxyStubObserver& operator=(const ProxyStubObserver&) = delete;
 
                     ProxyStubObserver(CommunicatorServer& parent,const string& observableProxyStubPath)
                         : _parent(parent)
@@ -2490,8 +2503,8 @@ namespace PluginHost {
                 ConfigObserver() = delete;
                 ConfigObserver(ConfigObserver&&) = delete;
                 ConfigObserver(const ConfigObserver&) = delete;
-                ConfigObserver& operator= (ConfigObserver&&) = delete;
-                ConfigObserver& operator= (const ConfigObserver&) = delete;
+                ConfigObserver& operator=(ConfigObserver&&) = delete;
+                ConfigObserver& operator=(const ConfigObserver&) = delete;
 
                 ConfigObserver(ServiceMap& parent, const string& observableConfigPath)
                     : _parent(parent)
@@ -2928,7 +2941,7 @@ namespace PluginHost {
             }
             inline Iterator Services()
             {
-		        Shells workingList;
+                Shells workingList;
 
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 

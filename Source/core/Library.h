@@ -49,8 +49,8 @@ namespace Core {
         Library(const Library& copy);
         ~Library();
 
-        Library& operator=(Library&& RHS);
         Library& operator=(const Library& RHS);
+        Library& operator=(Library&& move);
 
     public:
         inline bool IsLoaded() const
