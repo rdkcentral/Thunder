@@ -24,7 +24,7 @@
 #include "Portability.h"
 #include "Trace.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class Fractional;
 

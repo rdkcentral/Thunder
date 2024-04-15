@@ -25,7 +25,7 @@
 #include "Proxy.h"
 #include "SocketPort.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename CLIENT>
     class SocketServerType {

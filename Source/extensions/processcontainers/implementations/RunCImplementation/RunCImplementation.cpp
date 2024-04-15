@@ -21,7 +21,7 @@
 #include "JSON.h"
 #include <thread>
 
-namespace WPEFramework {
+namespace Thunder {
 
 uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t timeout = Core::infinite)
 {
@@ -328,4 +328,4 @@ namespace ProcessContainers {
 
 } // namespace ProcessContainers
 
-} // namespace WPEFramework
+} // namespace Thunder

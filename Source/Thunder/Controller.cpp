@@ -22,7 +22,7 @@
 
 #include <plugins/json/json_IController.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace {
 

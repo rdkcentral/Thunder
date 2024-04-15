@@ -65,7 +65,7 @@ long get_avphys_pages (void);
 
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     /* static */ SystemInfo SystemInfo::_systemInfo;
@@ -530,4 +530,4 @@ namespace Core {
     } // Extern "C":: System
 
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder

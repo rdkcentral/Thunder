@@ -24,8 +24,8 @@
 #include <tracing/TraceUnit.h>
 #include <core/Time.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 #pragma pack(push)
 #pragma pack(1)

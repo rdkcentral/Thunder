@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     class PrivilegedRequest {
@@ -459,4 +459,4 @@ namespace Core {
         Connection _link;
     };
 }
-} // Namespace WPEFramework::Core
+} // Namespace Thunder::Core

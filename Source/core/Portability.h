@@ -684,7 +684,7 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -963,7 +963,7 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }

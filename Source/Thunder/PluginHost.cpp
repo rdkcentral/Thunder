@@ -27,7 +27,7 @@
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-namespace WPEFramework {
+namespace Thunder {
     static PluginHost::Config* _config = nullptr;
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
@@ -79,7 +79,7 @@ namespace PluginHost {
         }
     };
 
-    class AdapterObserver : public WPEFramework::Core::AdapterObserver::INotification {
+    class AdapterObserver : public Thunder::Core::AdapterObserver::INotification {
     public:
         static int32_t constexpr WaitTime = 3000; //Just wait for 3 seconds
 
@@ -165,7 +165,7 @@ POP_WARNING()
         static void StartShutdown() {
             _adminLock.Lock();
             if ((_dispatcher != nullptr) && (_instance == nullptr)) {
-                _instance = new WPEFramework::PluginHost::ExitHandler(_dispatcher);
+                _instance = new Thunder::PluginHost::ExitHandler(_dispatcher);
                 _dispatcher = nullptr;
                 _instance->Run();
             }

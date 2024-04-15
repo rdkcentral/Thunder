@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class ThreadClass : public Core::Thread {
 public:

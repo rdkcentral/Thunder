@@ -76,7 +76,7 @@ void IPTestAdministrator::ForkChildProcess(OtherSideMain otherSideMain)
       otherSideMain(*this);
 
       // TODO: should we clean up stuff here or not?
-      //WPEFramework::Core::Singleton::Dispose();
+      //Thunder::Core::Singleton::Dispose();
 
       // Make sure no gtest cleanup code is called (summary etc).
       #ifdef WITH_CODE_COVERAGE

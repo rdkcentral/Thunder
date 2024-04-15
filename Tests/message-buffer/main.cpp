@@ -1,6 +1,6 @@
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Test {
 
 static Core::NodeId GetConnectionNode()
@@ -17,7 +17,7 @@ private:
 
 public:
     PluginHost()
-        : _engine(WPEFramework::Core::ProxyType<WPEFramework::RPC::InvokeServerType<2, 0, 4>>::Create())
+        : _engine(Thunder::Core::ProxyType<Thunder::RPC::InvokeServerType<2, 0, 4>>::Create())
         , _comClient(Core::ProxyType<RPC::CommunicatorClient>::Create(GetConnectionNode(), Core::ProxyType<Core::IIPCServer>(_engine)))
     {
     }
@@ -62,7 +62,7 @@ public:
 private:
     Core::ProxyType<RPC::InvokeServerType<2, 0, 4> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _comClient;
-} _wpeFrameworkClient;
+} _thunderClient;
 
 }
 }
@@ -86,25 +86,25 @@ int main(int argc, char** argv)
 
             switch (element) {
                 case 'I': {
-                    WPEFramework::Test::_wpeFrameworkClient.Initialize();
+                    Thunder::Test::_thunderClient.Initialize();
                     fprintf(stdout, "PluginHost initialized..\n");
                     fflush(stdout);
                     break;
                 }
                 case 'D': {
-                    WPEFramework::Test::_wpeFrameworkClient.Deinitialize();
+                    Thunder::Test::_thunderClient.Deinitialize();
                     fprintf(stdout, "PluginHost deinitialized..\n");
                     fflush(stdout);
                     break;
                 }
                 case 'T': {
-                    WPEFramework::Test::_wpeFrameworkClient.Trace();
+                    Thunder::Test::_thunderClient.Trace();
                     fprintf(stdout, "Trace sent..\n");
                     fflush(stdout);
                     break;
                 }
                 case 'S': {
-                    WPEFramework::Test::_wpeFrameworkClient.Syslog();
+                    Thunder::Test::_thunderClient.Syslog();
                     fprintf(stdout, "Syslog sent..\n");
                     fflush(stdout);
                     break;

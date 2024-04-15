@@ -23,7 +23,7 @@
 #include "Messages.h"
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace ProxyStub {
 
