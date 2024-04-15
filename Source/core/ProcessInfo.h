@@ -62,7 +62,9 @@ namespace Core {
             ~Memory() = default;
 
             Memory(const Memory&);
+            Memory(Memory&&);
             Memory& operator=(const Memory&);
+            Memory& operator=(Memory&&);
 
         public:
             void MemoryStats();
@@ -118,6 +120,13 @@ namespace Core {
                 , _index(copy._index)
             {
             }
+            Iterator(Iterator&& move)
+                : _pids(std::move(move._pids))
+                , _current(std::move(move._current))
+                , _index(move._index)
+            {
+                move._index = 0;
+            }
             ~Iterator()
             {
             }
@@ -128,6 +137,18 @@ namespace Core {
                 _current = RHS._current;
                 _index = RHS._index;
 
+                return (*this);
+            }
+
+            Iterator& operator=(Iterator&& move)
+            {
+                if (this != &move) {
+                    _pids = std::move(move._pids);
+                    _current = std::move(move._current);
+                    _index = move._index;
+
+                    move._index = 0;
+                }
                 return (*this);
             }
 
@@ -177,7 +198,9 @@ namespace Core {
         ProcessInfo(const process_t id);
 
         ProcessInfo(const ProcessInfo&);
+        ProcessInfo(ProcessInfo&&);
         ProcessInfo& operator=(const ProcessInfo&);
+        ProcessInfo& operator=(ProcessInfo&&);
 
         ~ProcessInfo();
 

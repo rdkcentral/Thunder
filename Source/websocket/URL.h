@@ -60,15 +60,22 @@ namespace Core {
                 : _data(data) {
             }
             KeyValue(KeyValue&& move) noexcept
-                : _data(move._data) {
+                : _data(std::move(move._data)) {
             }
             KeyValue(const KeyValue& copy)
                 : _data(copy._data) {
             }
             ~KeyValue() = default;
 
-            KeyValue& operator= (const KeyValue& RHS) {
+            KeyValue& operator=(const KeyValue& RHS) {
                 _data = RHS._data;
+                return (*this);
+            }
+
+            KeyValue& operator=(KeyValue&& move) {
+                if (this != &move) {
+                    _data = std::move(move._data);
+                }
                 return (*this);
             }
 
@@ -238,6 +245,17 @@ namespace Core {
             , _ref(copy._ref)
         {
         }
+        URL(URL&& move)
+            : _scheme(std::move(move._scheme))
+            , _username(std::move(move._username))
+            , _password(std::move(move._password))
+            , _host(std::move(move._host))
+            , _port(std::move(move._port))
+            , _path(std::move(move._path))
+            , _query(std::move(move._query))
+            , _ref(std::move(move._ref))
+        {
+        }
         ~URL()
         {
         }
@@ -269,6 +287,21 @@ namespace Core {
             _path = copy._path;
             _query = copy._query;
             _ref = copy._ref;
+
+            return (*this);
+        }
+        inline URL& operator=(URL&& move)
+        {
+            if (this != &move) {
+                _scheme = std::move(move._scheme);
+                _username = std::move(move._username);
+                _password = std::move(move._password);
+                _host = std::move(move._host);
+                _port = std::move(move._port);
+                _path = std::move(move._path);
+                _query = std::move(move._query);
+                _ref = std::move(move._ref);
+            }
 
             return (*this);
         }
