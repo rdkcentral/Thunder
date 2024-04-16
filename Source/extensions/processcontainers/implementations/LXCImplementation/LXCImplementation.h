@@ -66,9 +66,11 @@ namespace ProcessContainers {
         public:
             class ConfigItem : public Core::JSON::Container {
             public:
+                ConfigItem& operator=(ConfigItem&&) = delete;
                 ConfigItem& operator=(const ConfigItem&) = delete;
 
-                ConfigItem(const ConfigItem& rhs);
+                ConfigItem(ConfigItem&& move);
+                ConfigItem(const ConfigItem& copy);
                 ConfigItem();
 
                 ~ConfigItem() override = default;
