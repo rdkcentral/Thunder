@@ -560,10 +560,12 @@ namespace PluginHost {
 
                 ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
 
+                string realMethod(Core::JSONRPC::Message::Method(method));
+
                 result = Core::ERROR_NONE;
 
                 if (_validate != nullptr) {
-                    classification validation = _validate(token, method, parameters);
+                    classification validation = _validate(token, realMethod, parameters);
                     if (validation == classification::INVALID) {
                         result = Core::ERROR_PRIVILIGED_REQUEST;
                     }
@@ -576,7 +578,6 @@ namespace PluginHost {
 
                     // Seems we are on the right handler..
                     // now see if someone supports this version
-                    string realMethod(Core::JSONRPC::Message::Method(method));
 
                     if (realMethod == _T("versions")) {
                         _versions.ToString(response);
