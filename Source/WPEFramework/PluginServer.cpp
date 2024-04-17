@@ -279,7 +279,7 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
+    void* Server::Service::QueryInterface(const uint32_t id) /* override */
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
@@ -290,8 +290,15 @@ namespace PluginHost {
             AddRef();
             result = static_cast<PluginHost::IShell*>(this);
         }
+        else if (id == PluginHost::IShell::ICOMLink::ID) {
+            AddRef();
+            result = static_cast<PluginHost::IShell::ICOMLink*>(this);
+        }
+        else if (id == PluginHost::IShell::IConnectionServer::ID) {
+            AddRef();
+            result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
+        }
         else {
-
             _pluginHandling.Lock();
 
             if (_handler != nullptr) {
