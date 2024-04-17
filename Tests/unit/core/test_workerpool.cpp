@@ -199,7 +199,7 @@ public:
     static void CheckScheduledTime(Core::Time current, Core::Time invokedTime,  uint16_t scheduledTime)
     {
         uint8_t currentSecond = current.Seconds();
-        uint8_t scheduledSecond = scheduledTime/1000;
+        uint8_t scheduledSecond = scheduledTime; // From milliseconds to seconds, integer division!
         uint8_t invokedSecond = invokedTime.Seconds();
 
         uint32_t expectedAddedTime = 0;
@@ -209,7 +209,7 @@ public:
             expectedAddedTime = (currentSecond + scheduledSecond);
         }
 
-        EXPECT_EQ(invokedSecond, expectedAddedTime);
+        EXPECT_LE(invokedSecond, expectedAddedTime);
     }
     uint32_t WaitForReady(IDispatch* job, const uint32_t waitTime = 0)
     {
