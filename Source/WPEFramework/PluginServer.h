@@ -924,7 +924,7 @@ namespace PluginHost {
             const string _linkPlugin;
             CompositPlugins _plugins;
         };
-        class Service : public IShell::ICOMLink, public PluginHost::Service {
+        class Service : public IShell::ICOMLink, public IShell::IConnectionServer, public PluginHost::Service {
         public:
             enum mode {
                 CONFIGURED,
@@ -1712,10 +1712,6 @@ namespace PluginHost {
                 result.ToString(info);
                 return (Core::ERROR_NONE);
             }
-            // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            IShell::ICOMLink* COMLink() override {
-                return (this);
-            }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
@@ -1736,6 +1732,14 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
+            void Register(IShell::IConnectionServer::INotification* sink) override
+            {
+                _administrator.Register(sink);
+            }
+            void Unregister(const IShell::IConnectionServer::INotification* sink) override
+            {
+                _administrator.Unregister(sink);
+            }
             void Register(IShell::ICOMLink::INotification* sink)
             {
                 _administrator.Register(sink);
@@ -1747,11 +1751,6 @@ namespace PluginHost {
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
                 return (_administrator.RemoteConnection(connectionId));
-            }
-
-            void Closed(const uint32_t /*id */)
-            {
-
             }
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
@@ -2284,6 +2283,103 @@ namespace PluginHost {
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
+            using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
+            using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
+
+            class Iterator {
+            public:
+                Iterator()
+                    : _container()
+                    , _index()
+                    , _position(0) {
+                }
+                Iterator(Shells&& services)
+                    : _container(services)
+                    , _index()
+                    , _position(0) {
+                }
+                Iterator(Iterator&& move)
+                    : _container(std::move(move._container))
+                    , _index()
+                    , _position(0) {
+                }
+                Iterator(const Iterator& copy)
+                    : _container(copy._container)
+                    , _index()
+                    , _position(0) {
+                }
+                ~Iterator() {
+                    for (const std::pair<const string, PluginHost::IShell*>& entry :  _container) {
+                        entry.second->Release();
+                    }
+                }
+
+                Iterator& operator=(Iterator&& move) {
+                    if (this != &move) {
+                        _container = std::move(move._container);
+                        _index = std::move(move._index);
+                        _position = move._position;
+                    }
+                    return (*this);
+                }
+                Iterator& operator=(const Iterator& copy) {
+                    _container = copy._container;
+                    _position = copy._position;
+                    if (_position > 0) {
+                        _index = _container.begin();
+                        uint32_t steps = _position - 1;
+                        while ((steps != 0) && (_index != _container.end())) {
+                            _index++;
+                            steps--;
+                        }
+                    }
+                    return (*this);
+                }
+
+            public:
+                bool IsValid() const {
+                    return ((_position > 0) && (_index != _container.end()));
+                }
+                void Reset() {
+                    _position = 0;
+                }
+                bool Next() {
+                    if (_position == 0) {
+                        _position = 1;
+                        _index = _container.begin();
+                    }
+                    else if (_index != _container.end()) {
+                        _position++;
+                        _index++;
+                    }
+                    return (_index != _container.end());
+                }
+                Core::ProxyType<PluginHost::IShell> Current() {
+                    ASSERT(IsValid());
+                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
+                }
+                uint32_t Count() const {
+                    return (static_cast<uint32_t>(_container.size()));
+                }
+                Core::ProxyType<PluginHost::IShell> operator->()
+                {
+                    ASSERT(IsValid());
+
+                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
+                }
+
+                Core::ProxyType<const PluginHost::IShell> operator->() const
+                {
+                    ASSERT(IsValid());
+
+                    return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
+                }
+
+            private:
+                 Shells _container;
+                 Shells::iterator _index;
+                 uint32_t _position;
+            }; 
 
         private:
             class CommunicatorServer : public RPC::Communicator {
@@ -2865,6 +2961,8 @@ POP_WARNING()
                 , _opened()
                 , _closed()
                 , _job(*this)                
+                , _shellObservers()
+                , _channelObservers()
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
@@ -3084,22 +3182,80 @@ POP_WARNING()
             {
                 _processAdministrator.Unregister(sink);
             }
+            void Register(IShell::IConnectionServer::INotification* sink)
+            {
+                _notificationLock.Lock();
+
+                ASSERT(std::find(_channelObservers.begin(), _channelObservers.end(), sink) == _channelObservers.end());
+
+                _channelObservers.push_back(sink);
+
+                ASSERT(sink != nullptr);
+                sink->AddRef();
+
+                _server.Visit([sink](const Channel& channel) {
+                        if (channel.IsOpen() == true) {
+                            sink->Opened(channel.Id());
+                        }
+                    });
+
+                _notificationLock.Unlock();
+            }
+            void Unregister(const IShell::IConnectionServer::INotification* sink)
+            {
+                _notificationLock.Lock();
+
+                ChannelObservers::iterator index(std::find(_channelObservers.begin(), _channelObservers.end(), sink));
+
+                ASSERT(index != _channelObservers.end());
+
+                if (index != _channelObservers.end()) {
+                    (*index)->Release();
+                    _channelObservers.erase(index);
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Register(Exchange::Controller::IShells::INotification* sink) {
+                _notificationLock.Lock();
+
+                // Make sure a sink is not registered multiple times.
+                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
+                ASSERT(index == _shellObservers.end());
+
+                if (index == _shellObservers.end()) {
+                    _shellObservers.push_back(sink);
+                    sink->AddRef();
+
+                    for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
+                        sink->Created(entry.first, entry.second.operator->());
+                        // Report any composit plugins that are active..
+                        entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                            sink->Created(callsign, proxy);
+                        });
+                    }
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Unregister(Exchange::Controller::IShells::INotification* sink) {
+                _notificationLock.Lock();
+
+                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
+
+                // Make sure you do not unregister something you did not register !!!
+                ASSERT(index != _shellObservers.end());
+
+                if (index != _shellObservers.end()) {
+                    (*index)->Release();
+                    _shellObservers.erase(index);
+                }
+
+                _notificationLock.Unlock();
+            }
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
-            }
-            void Closed(const uint32_t id) {
-                _adminLock.Lock();
-
-                // First stop all services running ...
-                ServiceContainer::iterator index(_services.begin());
-
-                while (index != _services.end()) {
-                    index->second->Closed(id);
-                    ++index;
-                }
-
-                _adminLock.Unlock();
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
@@ -3117,7 +3273,6 @@ POP_WARNING()
 
                 return (newService);
             }
-
             inline uint32_t Clone(const Core::ProxyType<IShell>& originalShell, const string& newCallsign, Core::ProxyType<IShell>& newService)
             {
                 uint32_t result = Core::ERROR_GENERAL;
@@ -3151,7 +3306,6 @@ POP_WARNING()
 
                 return (result);
             }
-
             inline void Destroy(const string& callSign)
             {
                 _adminLock.Lock();
@@ -3350,6 +3504,27 @@ POP_WARNING()
             }
 
 
+            void Opened(const uint32_t id)
+            {
+                _notificationLock.Lock();
+
+                for (auto& sink : _channelObservers) {
+                    sink->Opened(id);
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Closed(const uint32_t id)
+            {
+                _notificationLock.Lock();
+
+                for (auto& sink : _channelObservers) {
+                    sink->Closed(id);
+                }
+
+                _notificationLock.Unlock();
+            }
+
         private:
             void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
                 if (interfaceId == RPC::IRemoteConnection::INotification::ID)
@@ -3522,6 +3697,8 @@ POP_WARNING()
             Channels _opened;
             Channels _closed;
             Core::ThreadPool::JobType<ServiceMap&> _job;
+            ShellNotifiers _shellObservers;
+            ChannelObservers _channelObservers;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4270,6 +4447,8 @@ POP_WARNING()
                     _parent.Closed(Id());
                     _parent.Dispatcher().TriggerCleanup();
 
+                    _parent.Operational(Id(), false);
+
                 } else if (IsUpgrading() == true) {
 
                     ASSERT(_service.IsValid() == false);
@@ -4306,6 +4485,9 @@ POP_WARNING()
                             AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                         }
                     }
+                }
+                else if ((IsOpen() == true) && (IsWebSocket() == false)) {
+                    _parent.Operational(Id(), true);
                 }
             }
 
@@ -4401,19 +4583,11 @@ POP_WARNING()
                 }
 
                 // Start by closing the server thread..
-                Close(100);
-
                 // Kill all open connections, we are shutting down !!!
-                BaseClass::Iterator index(BaseClass::Clients());
+                BaseClass::Close(waitTime);
+                BaseClass::Cleanup();
 
-                while (index.Next() == true) {
-                    // Oops nothing hapened for a long time, kill the connection
-                    // give it 100ms to actually close, if not do it forcefully !!
-                    index.Client()->Close(100);
-                }
-
-                // Cleanup the closed sockets we created..
-                Cleanup();
+                return (Core::ERROR_NONE);
             }
 
         public:
@@ -4465,8 +4639,10 @@ POP_WARNING()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                // First clear all shit from last time..
-                Cleanup();
+                // Next Clean all Id's from JSONRPC nolonger available
+                // 
+                // First check and clear, closed connections
+                BaseClass::Cleanup();
 
                 if (_connectionCheckTimer != 0) {
                     // Now suspend those that have no activity.
@@ -4596,6 +4772,26 @@ POP_WARNING()
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
 
             return (infoBlob.Load());
+        }
+
+        void Visit(const std::function<void(const Channel&)>& handler)
+        {
+            ChannelMap::Iterator it = _connections.Clients();
+
+            while (it.Next() == true) {
+                handler(*it.Client());
+            }
+        }
+
+    private:
+        void Operational(const uint32_t id, const bool upAndRunning)
+        {
+            if (upAndRunning == true) {
+                Services().Opened(id);
+            }
+            else {
+                Services().Closed(id);
+            }
         }
 
     private:

@@ -32,6 +32,38 @@ namespace PluginHost {
 
     class EXTERNAL JSONRPC : public IDispatcher, public IDispatcher::ICallback {
     private:
+        class Notification : public IShell::IConnectionServer::INotification {
+        public:
+            Notification(JSONRPC& parent)
+                : _parent(parent)
+            {
+            }
+            ~Notification() = default;
+
+            Notification(const Notification&) = delete;
+            Notification(Notification&&) = delete;
+            Notification& operator=(const Notification&) = delete;
+            Notification& operator=(Notification&&) = delete;
+
+        public:
+            void Opened(const uint32_t channelId VARIABLE_IS_NOT_USED) override
+            {
+            }
+            void Closed(const uint32_t channelId) override
+            {
+                _parent.ChannelClosed(channelId);
+            }
+
+        public:
+            BEGIN_INTERFACE_MAP(Notification)
+                INTERFACE_ENTRY(IShell::IConnectionServer::INotification)
+            END_INTERFACE_MAP
+
+        private:
+            JSONRPC& _parent;
+        };
+
+    private:
         class Observer {
         private:
             using Destination = std::pair<uint32_t, string>;
@@ -366,6 +398,12 @@ namespace PluginHost {
             parameters.ToString(subject);
             return InternalNotify(event, subject, std::move(method));
         }
+        Core::hresult Event(const string& eventId, const string& parameters) {
+            return (InternalNotify(eventId, parameters));
+        }
+        void Response(const uint32_t channelId, const Core::ProxyType<Core::JSON::IElement>& message) {
+            _service->Submit(channelId, message);
+        }
 
         //
         // Methods to send responses to inbound invokaction methods (a-synchronous callbacks)
@@ -521,8 +559,10 @@ namespace PluginHost {
             return (Core::ERROR_NONE);
         }
 
-        void Dropped(const IDispatcher::ICallback* callback) override 
-        {
+
+        // Inherited via IDispatcher::ICallback
+        // ---------------------------------------------------------------------------------
+        void Dropped(const IDispatcher::ICallback* callback) override {
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.begin();
@@ -661,7 +701,36 @@ namespace PluginHost {
 
     private:
         uint32_t Subscribe(IDispatcher::ICallback* callback, const uint32_t channelId, const string& event, const string& designator) {
-            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+        virtual uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        {
+            uint32_t result;
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(eventId);
+
+            if (index == _observers.end()) {
+
+                if (_observers.empty() == true) {
+                    ASSERT(_service != nullptr);
+                    _service->Register(&_notification);
+                }
+
+                index = _observers.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(eventId),
+                    std::forward_as_tuple()).first;
+            }
+
+            result = index->second.Subscribe(channelId, designator);
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        virtual uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        {
+           uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             // This is to make sure that the actuall location (there weher the channels really end) are
             // aware of distributing the event.
@@ -683,6 +752,12 @@ namespace PluginHost {
                     index->second.Subscribe(callback);
 
                     _adminLock.Unlock();
+
+                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                    _observers.erase(index);
+
+                    ASSERT(_service != nullptr);
+                    _service->Unregister(&_notification);
                 }
                 result = Core::ERROR_NONE;
             }
@@ -713,6 +788,37 @@ namespace PluginHost {
             return (result);
         }
         uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+
+    private:
+        void ChannelClosed(const uint32_t channelId)
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.begin();
+
+            while (index != _observers.end()) {
+
+                index->second.Dropped(channelId);
+
+                if (index->second.IsEmpty() == true) {
+                    index = _observers.erase(index);
+
+                    if (_observers.empty() == true) {
+                        ASSERT(_service != nullptr);
+
+                        _service->Unregister(&_notification);
+                    }
+                }
+                else {
+                    index++;
+                }
+            }
+
+            _adminLock.Unlock();
+        }
+
+    private:
+        uint32_t InternalNotify(const string& event, const string& parameters, const std::function<bool(const string&)>& sendifmethod = std::function<bool(const string&)>()) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -752,6 +858,8 @@ namespace PluginHost {
         TokenCheckFunction _validate;
         VersionList _versions;
         ObserverMap _observers;
+        EventAliasesMap _eventAliases;
+        Core::SinkType<Notification> _notification;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {

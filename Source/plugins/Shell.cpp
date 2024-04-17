@@ -92,7 +92,7 @@ namespace PluginHost
                 }
             }
         } else {
-            ICOMLink* handler(COMLink());
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             if (handler != nullptr) {
                 string locator(rootConfig.Locator.Value());

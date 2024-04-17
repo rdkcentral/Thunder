@@ -40,15 +40,17 @@ namespace PluginHost {
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the main process, it will return a nullptr.
         /* @stubgen:omit */
-        struct EXTERNAL ICOMLink {
+        struct EXTERNAL ICOMLink : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_SHELL_COMLINK };
 
             struct INotification : virtual public Core::IUnknown {
-                virtual ~INotification() = default;
                 virtual void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
                 virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
             };
 
             virtual ~ICOMLink() = default;
+
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(const RPC::IRemoteConnection::INotification* sink) = 0;
 
@@ -57,6 +59,22 @@ namespace PluginHost {
 
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
+        };
+
+        struct EXTERNAL IConnectionServer : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_SHELL_CONNECTIONSERVER };
+
+            struct INotification : virtual public Core::IUnknown {
+
+                enum { ID = RPC::ID_SHELL_CONNECTIONSERVER_NOTIFICATION };
+
+                virtual void Opened(const uint32_t channelId) = 0;
+                virtual void Closed(const uint32_t channelId) = 0;
+            };
+
+            virtual void Register(INotification* sink) = 0;
+            virtual void Unregister(const INotification* sink) = 0;
         };
 
         enum class startup : uint8_t {
@@ -254,66 +272,82 @@ namespace PluginHost {
         virtual Core::hresult Hibernate(const uint32_t timeout) = 0;
         virtual reason Reason() const = 0;
 
+        virtual void Register(IConnectionServer::INotification* sink) = 0;
+        virtual void Unregister(const IConnectionServer::INotification* sink) = 0;
+
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
         // This method will return a error if it is NOT in the main process.
         /* @stubgen:stub */
         virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
-        // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
-        // This method will return a nullptr if it is NOT in the main process.
-        /* @stubgen:stub */
-        virtual ICOMLink* COMLink() = 0;
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Register(sink);
+                handler->Release();
             }
         }
         inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Unregister(sink);
+                handler->Release();
             }
         }
         inline void Register(ICOMLink::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Register(sink);
+                handler->Release();
             }
         }
         inline void Unregister(ICOMLink::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Unregister(sink);
+                handler->Release();
             }
         }
         inline RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
         {
-            ICOMLink* handler(COMLink());
+            RPC::IRemoteConnection* connection(nullptr);
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
-            return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
+            if (handler != nullptr) {
+                connection = handler->RemoteConnection(connectionId);
+                handler->Release();
+            }
+
+            return (connection);
         }
         inline uint32_t EnablePersistentStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
