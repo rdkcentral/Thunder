@@ -2282,28 +2282,28 @@
 <p>The following instructions will use the <code>CMAKE_INSTALL_PREFIX</code> option to install Thunder in a subdirectory of the current working directory instead of in the system-wide directories. This is recommended for development, but for production use you may need to change/remove this option to install Thunder in standard linux locations.</p>
 <h3 id="1-install-dependencies">1.  Install Dependencies</h3>
 <p>These instructions are based on Ubuntu 22.04 - you may need to change this for your distros package manager</p>
-<div class="highlight"><pre><span></span><code>$ sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+<div class="highlight"><pre><span></span><code>sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 </code></pre></div>
 <p>Thunder also uses Python 3 for code and documentation generation scripts. Ensure you have at least <strong>Python 3.5</strong> installed and install the <a href="https://pypi.org/project/jsonref/"><strong>jsonref</strong></a> library with pip:</p>
-<div class="highlight"><pre><span></span><code>$ pip install jsonref
+<div class="highlight"><pre><span></span><code>pip install jsonref
 </code></pre></div>
 <h3 id="2-build-thunder-tools">2. Build  Thunder Tools</h3>
 <p>Thunder Tools are various scripts and code generators used to build Thunder and any plugins. In older Thunder versions, they lived inside the main Thunder repo but have now been moved to their own repo.</p>
 <p>First, change the directory to where you want to build Thunder.</p>
 <p>Then clone ThunderTools repo:
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderTools.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderTools.git
 </code></pre></div>
 Next, we need to run the following commands to build and then install the code generators inside ThunderTools:
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span>
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div></p>
 <h3 id="3-build-thunder">3. Build Thunder</h3>
 <p>Clone the Thunder repo:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/Thunder.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/Thunder.git
 </code></pre></div>
 <p>Run the following commands to build and then install Thunder. The available <code>-DCMAKE_BUILD_TYPE</code> options are: <code>[Debug, Release, MinSizeRel]</code>.</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>Thunder<span class="w"> </span>-B<span class="w"> </span>build/Thunder<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>Thunder<span class="w"> </span>-B<span class="w"> </span>build/Thunder<span class="w"> </span><span class="se">\</span>
 -DBUILD_SHARED_LIBS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DBINDING<span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_BUILD_TYPE<span class="o">=</span><span class="s2">&quot;Debug&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -2316,7 +2316,7 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 -DSYSTEM_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/wpeframework/plugins&quot;</span><span class="w"> </span><span class="se">\</span>
 -DVOLATILE_PATH<span class="o">=</span><span class="s2">&quot;tmp&quot;</span>
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h3 id="4-build-thunderinterfaces">4. Build ThunderInterfaces</h3>
 <div class="admonition note">
@@ -2324,24 +2324,24 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 <p>The ThunderInterfaces repo is tagged/versioned the same as the main Thunder repo. So if you are using Thunder R4.1 for example, you should also use the R4.1 tag of ThunderInterfaces</p>
 </div>
 <p>Clone the ThunderInterfaces repo:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderInterfaces.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderInterfaces.git
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderInterfaces:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderInterfaces<span class="w"> </span>-B<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderInterfaces<span class="w"> </span>-B<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span>
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h3 id="5-build-plugins">5. Build Plugins</h3>
 <p>The exact repo and steps here will depend on exactly which plugins you want to build. </p>
 <h4 id="thundernanoservices">ThunderNanoServices</h4>
 <p>Clone the ThunderNanoServices repo:
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderNanoServices.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderNanoServices.git
 </code></pre></div></p>
 <p>Run the following commands to build and then install ThunderNanoServices. </p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServices<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServices<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_COMMANDER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2361,15 +2361,15 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 -DPLUGIN_WEBSHELL<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_WIFICONTROL<span class="o">=</span>ON
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h4 id="thundernanoservicesrdk">ThunderNanoServicesRDK</h4>
 <p>Clone the ThunderNanoServicesRDK repo:</p>
-<div class="highlight"><pre><span></span><code>$ git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
+<div class="highlight"><pre><span></span><code>git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderNanoServicesRDK.</p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServicesRDK<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServicesRDK<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DEVICEIDENTIFICATION<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2381,16 +2381,16 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 -DPLUGIN_OPENCDMI<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_PERFORMANCEMETRICS<span class="o">=</span>ON
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h3 id="6-build-thunder-client-libraries-optional">6. Build Thunder Client Libraries (optional)</h3>
 <p>If you require a convenience library from the ThunderClientLibraries repo, follow the below steps:</p>
 <p>Clone the ThunderClientLibraries repo:</p>
-<div class="highlight"><pre><span></span><code>$ git clone https://github.com/rdkcentral/ThunderClientLibraries.git
+<div class="highlight"><pre><span></span><code>git clone https://github.com/rdkcentral/ThunderClientLibraries.git
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderClientLibraries:</p>
 <p>In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple  fashion.</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderClientLibraries<span class="w"> </span>-B<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderClientLibraries<span class="w"> </span>-B<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DBLUETOOTHAUDIOSINK<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2402,29 +2402,29 @@ $<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </
 -DPROTOCOLS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DVIRTUALINPUT<span class="o">=</span>ON
 
-<span class="nv">$cmake</span><span class="w"> </span>--build<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h3 id="7-build-thunder-ui-optional">7. Build Thunder UI (optional)</h3>
 <p>Clone the ThunderUI repo:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderUI.git
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderUI.git
 </code></pre></div>
 <p>First, you have to install NodeJS + NPM, and this can be done with the following command:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>nodejs<span class="w"> </span>npm
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>nodejs<span class="w"> </span>npm
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderUI:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderUI<span class="w"> </span>-B<span class="w"> </span>build/ThunderUI<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderUI<span class="w"> </span>-B<span class="w"> </span>build/ThunderUI<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span>
 
-$<span class="w"> </span>cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span class="w"> </span>--target<span class="w"> </span>install
+cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h2 id="run-thunder">Run Thunder</h2>
 <p>After everything has been built and installed correctly, we can run Thunder.</p>
 <p>Since we installed Thunder in a custom installation directory, we need to provide an <code>LD_LIBRARY_PATH</code> to that location and set <code>PATH</code> to include the <code>bin</code> directory. If the libraries are installed in system-wide locations (e.g. <code>/usr/lib</code> and <code>/usr/bin</code>) then those environment variables are not required</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
-$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
 
-$<span class="w"> </span>WPEFramework<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/WPEFramework/config.json
+WPEFramework<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/WPEFramework/config.json
 </code></pre></div>
 <p>The following arguments should be specified to the WPEFramework binary:</p>
 <ul>
