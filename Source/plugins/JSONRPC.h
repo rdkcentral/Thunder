@@ -34,11 +34,42 @@ namespace PluginHost {
 
         virtual void Activate(IShell* service) = 0;
         virtual void Deactivate() = 0;
-        virtual void Dropped(const uint32_t channelId) = 0;
         virtual void Dropped(const IDispatcher::ICallback* callback) = 0;
     };
 
     class EXTERNAL JSONRPC : public ILocalDispatcher {
+    private:
+        class Notification : public IShell::IConnectionServer::INotification {
+        public:
+            Notification(JSONRPC& parent)
+                : _parent(parent)
+            {
+            }
+            ~Notification() = default;
+
+            Notification(const Notification&) = delete;
+            Notification(Notification&&) = delete;
+            Notification& operator=(const Notification&) = delete;
+            Notification& operator=(Notification&&) = delete;
+
+        public:
+            void Opened(const uint32_t channelId VARIABLE_IS_NOT_USED) override
+            {
+            }
+            void Closed(const uint32_t channelId) override
+            {
+                _parent.ChannelClosed(channelId);
+            }
+
+        public:
+            BEGIN_INTERFACE_MAP(Notification)
+                INTERFACE_ENTRY(IShell::IConnectionServer::INotification)
+            END_INTERFACE_MAP
+
+        private:
+            JSONRPC& _parent;
+        };
+
     private:
         class Observer {
         private:
@@ -78,7 +109,7 @@ namespace PluginHost {
                     }
                 }
 
-                Destination& operator= (Destination&& move) noexcept
+                Destination& operator=(Destination&& move) noexcept
                 {
                     if (_callback != nullptr) {
                         _callback->Release();
@@ -89,7 +120,7 @@ namespace PluginHost {
                     move._callback = nullptr;
                     return (*this);
                 }
-                Destination& operator= (const Destination& copy)
+                Destination& operator=(const Destination& copy)
                 {
                     if (_callback != nullptr) {
                         _callback->Release();
@@ -122,8 +153,8 @@ namespace PluginHost {
             using Destinations = std::vector<Destination>;
 
         public:
-            Observer& operator= (Observer&&) = delete;
-            Observer& operator= (const Observer&) = delete;
+            Observer& operator=(Observer&&) = delete;
+            Observer& operator=(const Observer&) = delete;
 
             Observer()
                 : _designators() {
@@ -296,7 +327,16 @@ namespace PluginHost {
                 Patch = rhs.Patch;
                 return (*this);
             }
-
+            VersionInfo& operator=(VersionInfo&& move)
+            {
+                if (this != &move) {
+                    Name = std::move(move.Name);
+                    Major = std::move(move.Major);
+                    Minor = std::move(move.Minor);
+                    Patch = std::move(move.Patch);
+		}
+                return (*this);
+            }
             ~VersionInfo() = default;
 
         private:
@@ -538,6 +578,9 @@ namespace PluginHost {
             parameters.ToString(subject);
             return InternalNotify(event, subject, std::move(method));
         }
+        Core::hresult Event(const string& eventId, const string& parameters) {
+            return (InternalNotify(eventId, parameters));
+        }
         void Response(const uint32_t channelId, const Core::ProxyType<Core::JSON::IElement>& message) {
             _service->Submit(channelId, message);
         }
@@ -551,10 +594,12 @@ namespace PluginHost {
 
                 ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
 
+                string realMethod(Core::JSONRPC::Message::Method(method));
+
                 result = Core::ERROR_NONE;
 
                 if (_validate != nullptr) {
-                    classification validation = _validate(token, method, parameters);
+                    classification validation = _validate(token, realMethod, parameters);
                     if (validation == classification::INVALID) {
                         result = Core::ERROR_PRIVILIGED_REQUEST;
                     }
@@ -567,7 +612,6 @@ namespace PluginHost {
 
                     // Seems we are on the right handler..
                     // now see if someone supports this version
-                    string realMethod(Core::JSONRPC::Message::Method(method));
 
                     if (realMethod == _T("versions")) {
                         _versions.ToString(response);
@@ -681,37 +725,19 @@ namespace PluginHost {
         {
             _adminLock.Lock();
 
-            _observers.clear();
-
             if (_service != nullptr) {
+                if (_observers.empty() == false) {
+                    _service->Unregister(&_notification);
+                }
+
                 _service->Release();
                 _service = nullptr;
             }
 
-            _adminLock.Unlock();
-        }
-        void Dropped(const uint32_t channelId) override
-        {
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.begin();
-
-            while (index != _observers.end()) {
-
-                index->second.Dropped(channelId);
-
-                if (index->second.IsEmpty() == true) {
-                    index = _observers.erase(index);
-                }
-                else {
-                    index++;
-                }
-            }
+            _callsign.clear();
+            _observers.clear();
 
             _adminLock.Unlock();
-        }
-        Core::hresult Event(const string& eventId, const string& parameters) {
-            return (InternalNotify(eventId, parameters));
         }
 
         // Inherited via IDispatcher::ICallback
@@ -781,6 +807,12 @@ namespace PluginHost {
             ObserverMap::iterator index = _observers.find(eventId);
 
             if (index == _observers.end()) {
+
+                if (_observers.empty() == true) {
+                    ASSERT(_service != nullptr);
+                    _service->Register(&_notification);
+                }
+
                 index = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(eventId),
                     std::forward_as_tuple()).first;
@@ -805,12 +837,43 @@ namespace PluginHost {
 
                 if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
                     _observers.erase(index);
+
+                    ASSERT(_service != nullptr);
+                    _service->Unregister(&_notification);
                 }
             }
 
             _adminLock.Unlock();
 
             return (result);
+        }
+
+    private:
+        void ChannelClosed(const uint32_t channelId)
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.begin();
+
+            while (index != _observers.end()) {
+
+                index->second.Dropped(channelId);
+
+                if (index->second.IsEmpty() == true) {
+                    index = _observers.erase(index);
+
+                    if (_observers.empty() == true) {
+                        ASSERT(_service != nullptr);
+
+                        _service->Unregister(&_notification);
+                    }
+                }
+                else {
+                    index++;
+                }
+            }
+
+            _adminLock.Unlock();
         }
 
     private:
@@ -874,6 +937,7 @@ namespace PluginHost {
         VersionList _versions;
         ObserverMap _observers;
         EventAliasesMap _eventAliases;
+        Core::SinkType<Notification> _notification;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {

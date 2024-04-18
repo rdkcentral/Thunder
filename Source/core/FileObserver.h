@@ -58,8 +58,12 @@ private:
         }
         void Register(ICallback *callback)
         {
-            ASSERT(std::find(_callbacks.begin(),_callbacks.end(), callback) == _callbacks.end());
-            _callbacks.emplace_back(callback);
+            std::list<ICallback *>::iterator index = std::find(_callbacks.begin(),_callbacks.end(), callback);
+            ASSERT(index == _callbacks.end());
+
+            if (index == _callbacks.end()) {
+                _callbacks.emplace_back(callback);
+            }
         }
         void Unregister(ICallback *callback)
         {
@@ -128,7 +132,9 @@ public:
             Observers::iterator loop = _observers.find(index->second);
             ASSERT(loop != _observers.end());
 
-            loop->second.Register(callback);
+            if (loop != _observers.end()) {
+                loop->second.Register(callback);
+            }
         }
         else
         {
@@ -171,25 +177,27 @@ public:
             Observers::iterator loop = _observers.find(index->second);
             ASSERT(loop != _observers.end());
 
-            loop->second.Unregister(callback);
-            if (loop->second.HasCallbacks() == false) {
-                if (inotify_rm_watch(_notifyFd, index->second) < 0) {
-                    TRACE_L1(_T("Invoke of inotify_rm_watch failed"));
-                }
-                // Clear this index, we are no longer observing
-                _files.erase(index);
-                _observers.erase(loop);
-                if (_files.size() == 0) {
-                    // This is the first entry, lets start monitoring
-                    _adminLock.Unlock();
-                    Core::ResourceMonitor::Instance().Unregister(*this);
+            if (loop != _observers.end()) {
+                loop->second.Unregister(callback);
+                if (loop->second.HasCallbacks() == false) {
+                    if (inotify_rm_watch(_notifyFd, index->second) < 0) {
+                        TRACE_L1(_T("Invoke of inotify_rm_watch failed"));
+                    }
+                    // Clear this index, we are no longer observing
+                    _files.erase(index);
+                    _observers.erase(loop);
+                    if (_files.size() == 0) {
+                        // This is the first entry, lets start monitoring
+                        _adminLock.Unlock();
+                        Core::ResourceMonitor::Instance().Unregister(*this);
+                    }
+                    else {
+                         _adminLock.Unlock();
+                    }
                 }
                 else {
                     _adminLock.Unlock();
                 }
-            }
-            else {
-                _adminLock.Unlock();
             }
         }
         else
@@ -284,8 +292,10 @@ private:
         using ClientList = std::list<ICallback*>;
     public:
         Context() = delete;
+        Context(Context&&) = delete;
         Context(const Context&) = delete;
-        Context& operator= (const Context&) = delete;
+        Context& operator=(Context&&) = delete;
+        Context& operator=(const Context&) = delete;
 
         Context(const string& pathName)
             : _adminLock()
@@ -330,11 +340,18 @@ private:
         // 4) IsEmpty
         // 5) Notify
         void Register(ICallback* client) {
-            ASSERT(std::find(_clients.begin(), _clients.end(), client) == _clients.end());
+            ASSERT(client != nullptr);
 
-            _clients.push_back(client);
+            ClientList::iterator index (std::find(_clients.begin(), _clients.end(), client));
+            ASSERT(index == _clients.end());
+
+            if (index == _clients.end()) {
+                _clients.push_back(client);
+            }
         }
         void Unregister(ICallback* client) {
+            ASSERT(client != nullptr);
+
             ClientList::iterator index (std::find(_clients.begin(), _clients.end(), client));
 
             ASSERT (index != _clients.end());
@@ -383,8 +400,10 @@ private:
     class Dispatcher : public Core::Thread {
     public:
         Dispatcher() = delete;
+        Dispatcher(Dispatcher&&) = delete;
         Dispatcher(const Dispatcher&) = delete;
-        Dispatcher& operator= (const Dispatcher&) = delete;
+        Dispatcher& operator=(Dispatcher&&) = delete;
+        Dispatcher& operator=(const Dispatcher&) = delete;
         Dispatcher(FileSystemMonitor& parent)
             : _parent(parent) {
         }
@@ -459,7 +478,9 @@ public:
 
             ASSERT(index != _observers.end());
 
-            index->second.Register(callback);
+            if (index != _observers.end()) {
+                index->second.Register(callback);
+            }
             subscribed = true;
         }
         _adminLock.Unlock();
