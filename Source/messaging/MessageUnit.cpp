@@ -72,6 +72,25 @@ namespace WPEFramework {
             return (handler.Offset());
         }
 
+        uint16_t MessageUnit::SerializeModules(uint8_t* buffer, const uint16_t length)
+        {
+            // TO-DO: change it to use iterate from core instead and the module name retrievale will take place here
+            std::vector<string> list;
+            Core::Messaging::IControl::Modules(list);
+
+            Core::FrameType<0> frame(buffer, length, length);
+            Core::FrameType<0>::Writer writer(frame, 0);
+
+            writer.Number<size_t>(list.size());
+
+            std::vector<string>::iterator it;
+            for (it = list.begin(); it != list.end(); ++it){
+                writer.NullTerminatedText(*it);
+            }
+
+            return (writer.Offset());
+        }
+
         void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable)
         {
             class Handler : public Core::Messaging::IControl::IHandler {

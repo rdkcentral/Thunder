@@ -25,7 +25,7 @@ namespace WPEFramework {
 
 namespace Messaging {
 
-    class MessageDataBuffer {
+    class EXTERNAL MessageDataBuffer {
     private:
         /**
         * @brief Metdata Callback. First two arguments are for data in. Two later for data out (responded to the other side).

@@ -116,18 +116,15 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             }
 
             // this method iterates through _controlList and fill a list strings with module names
-            void Modules(std::list<string>& modules)
+            void Modules(std::vector<string>& modules)
             {
+                std::cout << getpid() << " @@@@@ MessageStore.cpp Modules()" << std::endl;
                 _adminLock.Lock();
 
-                // Question: is it be better to pass std::list<std::string>& as a paramter to avoid the cast? 
-                // std::list<std::string>& modulesList = *reinterpret_cast<std::list<std::string>*>(modules);
-
                 for (auto& control : _controlList) {
-                    // Question: is it better to make a local variable for the module or call it twice if it is not yet on the list?
-                    // std::string& module = control->Metadata().Module();
-                    if (std::find(modules.begin(), modules.end(), control->Metadata().Module()) == modules.end()) {
-                        modules.push_back(control->Metadata().Module());
+                    const string& module = control->Metadata().Module();
+                    if (std::find(modules.begin(), modules.end(), module) == modules.end()) {
+                        modules.push_back(module);
                     }
                 }
 
@@ -444,7 +441,7 @@ namespace Core {
             ControlsInstance().Iterate(handler, module);
         }
 
-        /* static */ void IControl::Modules(std::list<string>& modules) {
+        /* static */ void IControl::Modules(std::vector<string>& modules) {
             return ControlsInstance().Modules(modules);
         }
 

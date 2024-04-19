@@ -137,27 +137,23 @@ namespace Messaging {
         _adminLock.Unlock();
     }
 
-    // TO-DO: If the controls from exclusively OOP module are missed, then this has to be changed to ask each client with a similar method to Load
-    // Question: do we what these methods to return hresult as well?
     /**
      * @brief Get list of currently announced message modules
      */
-    void MessageClient::Modules(std::list<string>& modules) const
+    void MessageClient::Modules(std::vector<string>& modules) const
     {
         // call a method in MessageStore and return a list of modules based on currently announced categories via parameter reference
         // but instead of simply calling Modules from core, we need call each client, which then calls Modules from core, to make sure the oop only controls won't be missed
-        // Question: is this proxy local list even necessary here? since we are making sure not to add to the list twice in Modules in core, this is probably skippable?
-        // std::list<string> list;
-
         _adminLock.Lock();
 
         for (auto& client : _clients) {
             client.second.Modules(modules);
         }
 
-        _adminLock.Unlock();
+        std::sort(modules.begin(), modules.end());
+        modules.erase(std::unique(modules.begin(), modules.end()), modules.end());
 
-        // modules = std::move(list);
+        _adminLock.Unlock();
     }
 
     /**

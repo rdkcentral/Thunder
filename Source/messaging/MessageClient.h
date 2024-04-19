@@ -52,8 +52,7 @@ namespace Messaging {
 
         // -----new methods -----
         // Modules() method calls a method from Controls in MessageStore and return a list of modules based on currently announced categories via the parameter reference
-        // Question: can we pass std::list reference here or would it be better to stick with string*& and use casts?
-        void Modules(std::list<string>& modules) const;
+        void Modules(std::vector<string>& modules) const;
 
         // the changed Controls() method works similarly to the previous Controls() method, but it takes a module name as an additioal parameter
         // then we can pass this parameter all the way to Iterate() from Controls in MessageStore
