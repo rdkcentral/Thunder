@@ -265,7 +265,7 @@ namespace RPC {
                 result = true;
             }
             else {
-                TRACE_L1("Failed to find a Stub for interface 0x08x!", id);
+                TRACE_L1("Failed to find a Stub for interface 0x%08x!", id);
             }
 
             return (result);
