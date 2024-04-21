@@ -1242,11 +1242,11 @@ namespace PluginHost {
             {
                 _administrator.Unregister(sink);
             }
-            void Register(IShell::ICOMLink::INotification* sink)
+            void Register(IShell::ICOMLink::INotification* sink) override
             {
                 _administrator.Register(sink);
             }
-            void Unregister(IShell::ICOMLink::INotification* sink)
+            void Unregister(const IShell::ICOMLink::INotification* sink) override
             {
                 _administrator.Unregister(sink);
             }
@@ -2116,7 +2116,7 @@ namespace PluginHost {
                         _adminLock.Unlock();
                     }
                 }
-                void Unregister(IShell::ICOMLink::INotification* sink)
+                void Unregister(const IShell::ICOMLink::INotification* sink)
                 {
                     ASSERT(sink != nullptr);
 
@@ -2817,7 +2817,7 @@ namespace PluginHost {
             {
                 _processAdministrator.Register(sink);
             }
-            void Unregister(IShell::ICOMLink::INotification* sink)
+            void Unregister(const IShell::ICOMLink::INotification* sink)
             {
                 _processAdministrator.Unregister(sink);
             }
