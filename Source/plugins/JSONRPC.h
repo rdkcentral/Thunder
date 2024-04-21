@@ -719,6 +719,8 @@ namespace PluginHost {
             _service->AddRef();
             _callsign = _service->Callsign();
 
+            _service->Register(&_notification);
+
             _adminLock.Unlock();
         }
         void Deactivate() override
@@ -726,10 +728,7 @@ namespace PluginHost {
             _adminLock.Lock();
 
             if (_service != nullptr) {
-                if (_observers.empty() == false) {
-                    _service->Unregister(&_notification);
-                }
-
+                _service->Unregister(&_notification);
                 _service->Release();
                 _service = nullptr;
             }
@@ -807,12 +806,6 @@ namespace PluginHost {
             ObserverMap::iterator index = _observers.find(eventId);
 
             if (index == _observers.end()) {
-
-                if (_observers.empty() == true) {
-                    ASSERT(_service != nullptr);
-                    _service->Register(&_notification);
-                }
-
                 index = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(eventId),
                     std::forward_as_tuple()).first;
@@ -837,9 +830,6 @@ namespace PluginHost {
 
                 if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
                     _observers.erase(index);
-
-                    ASSERT(_service != nullptr);
-                    _service->Unregister(&_notification);
                 }
             }
 
@@ -861,12 +851,6 @@ namespace PluginHost {
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
-
-                    if (_observers.empty() == true) {
-                        ASSERT(_service != nullptr);
-
-                        _service->Unregister(&_notification);
-                    }
                 }
                 else {
                     index++;
