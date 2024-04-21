@@ -55,7 +55,7 @@ namespace PluginHost {
             virtual void Unregister(const RPC::IRemoteConnection::INotification* sink) = 0;
 
             virtual void Register(INotification* sink) = 0;
-            virtual void Unregister(INotification* sink) = 0;
+            virtual void Unregister(const INotification* sink) = 0;
 
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
@@ -239,7 +239,7 @@ namespace PluginHost {
         virtual Core::hresult Resumed(const bool value) = 0;
 
         virtual string HashKey() const = 0;
-        
+
         virtual string ConfigLine() const = 0;
         virtual Core::hresult ConfigLine(const string& config) = 0;
         virtual Core::hresult Metadata(string& info /* @out */) const = 0;
@@ -272,9 +272,6 @@ namespace PluginHost {
         virtual Core::hresult Unavailable(const reason) = 0;
         virtual Core::hresult Hibernate(const uint32_t timeout) = 0;
         virtual reason Reason() const = 0;
-
-        virtual void Register(IConnectionServer::INotification* sink) = 0;
-        virtual void Unregister(const IConnectionServer::INotification* sink) = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
         // This method will return a error if it is NOT in the main process.
@@ -327,6 +324,32 @@ namespace PluginHost {
             ASSERT(sink != nullptr);
 
             ICOMLink* handler(QueryInterface<ICOMLink>());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+                handler->Release();
+            }
+        }
+        inline void Register(IConnectionServer::INotification* sink)
+        {
+            ASSERT(sink != nullptr);
+
+            IConnectionServer* handler(QueryInterface<IConnectionServer>());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
+                handler->Release();
+            }
+        }
+        inline void Unregister(const IConnectionServer::INotification* sink)
+        {
+            ASSERT(sink != nullptr);
+
+            IConnectionServer* handler(QueryInterface<IConnectionServer>());
 
             ASSERT(handler != nullptr);
 
