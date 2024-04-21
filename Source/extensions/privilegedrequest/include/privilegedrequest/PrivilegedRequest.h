@@ -127,7 +127,10 @@ namespace Core {
                 , _signal(true, true)
             {
             }
-            ~Connection() override = default;
+            ~Connection() override
+            {
+                Close();
+            };
 
         public:
             uint32_t Request(const uint32_t waitTime, const string& connector, const uint32_t id, Container& descriptors)
