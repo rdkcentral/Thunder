@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-   #test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
    #test_timer.cpp
    test_tristate.cpp
