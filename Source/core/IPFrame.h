@@ -25,6 +25,7 @@
 
 #ifdef __WINDOWS__
 #include <net/ipheaders.h>
+using ip = iphdr;
 #else
 #include<netinet/ip.h>
 #include<netinet/udp.h>
