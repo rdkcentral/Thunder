@@ -157,10 +157,15 @@ namespace Core {
             {
                 return ((_index != 0) && (_index <= _pids.size()));
             }
-            inline void Reset()
+            inline void Reset(bool start = true)
             {
-                _index = 0;
-                _current = _pids.begin();
+                if (start) {
+                    _index = 0;
+                    _current = _pids.begin();
+                } else {
+                    _index = _pids.size() + 1;
+                    _current = _pids.end();
+                }
             }
             bool Next()
             {
@@ -172,6 +177,17 @@ namespace Core {
                     }
                 }
                 return (_index <= _pids.size());
+            }
+            bool Previous()
+            {
+                if (_index > 0) {
+                    _index--;
+
+                    if (_index > 0) {
+                        _current--;
+                    }
+                }
+                return (_index > 0);
             }
             inline ProcessInfo Current() const
             {
