@@ -37,7 +37,7 @@ namespace WPEFramework {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint16_t MetadataBufferSize = 8 * 1024;
+            static constexpr uint16_t MetadataBufferSize = 4 * 1024;
             static constexpr uint16_t TempMetadataBufferSize = 128;
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
             static constexpr uint16_t TempDataBufferSize = 1024;
