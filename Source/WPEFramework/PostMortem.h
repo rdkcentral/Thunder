@@ -71,16 +71,39 @@ namespace PluginHost {
             Add(_T("module"), &Module);
             Add(_T("line"), &Line);
         }
+        CallstackData(CallstackData&& move)
+            : Core::JSON::Container()
+            , Address(std::move(move.Address))
+            , Function(std::move(move.Function))
+            , Module(std::move(move.Module))
+            , Line(std::move(move.Line))
+        {
+            Add(_T("address"), &Address);
+            Add(_T("function"), &Function);
+            Add(_T("module"), &Module);
+            Add(_T("line"), &Line);
+        }
 
         ~CallstackData() override = default;
 
-        CallstackData& operator=(const CallstackData& RHS)  {
-
+        CallstackData& operator=(const CallstackData& RHS)
+        {
             Address = RHS.Address;
             Function = RHS.Function;
             Module = RHS.Module;
             Line = RHS.Line;
 
+            return (*this);
+        }
+
+        CallstackData& operator=(CallstackData&& move)
+        {
+            if (this != &move) {
+                Address = std::move(move.Address);
+                Function = std::move(move.Function);
+                Module = std::move(move.Module);
+                Line = std::move(move.Line);
+            }
             return (*this);
         }
 
@@ -129,7 +152,8 @@ namespace PluginHost {
     public:
         PostMortemData(PostMortemData&&) = delete;
         PostMortemData(const PostMortemData&) = delete;
-        PostMortemData& operator= (const PostMortemData&) = delete;
+        PostMortemData& operator=(PostMortemData&&) = delete;
+        PostMortemData& operator=(const PostMortemData&) = delete;
 
         PostMortemData()
             : Core::JSON::Container()
