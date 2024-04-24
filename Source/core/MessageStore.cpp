@@ -89,43 +89,12 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Unlock();
             }
 
-            // here we are iterating through the whole controls list
             void Iterate(Core::Messaging::IControl::IHandler& handler)
             {
                 _adminLock.Lock();
 
                 for (auto& control : _controlList) {
                     handler.Handle(control);
-                }
-
-                _adminLock.Unlock();
-            }
-
-            // here what we want to achieve instead is to call handle only on the controls which match a single module
-            void Iterate(Core::Messaging::IControl::IHandler& handler, const string& module)
-            {
-                _adminLock.Lock();
-
-                for (auto& control : _controlList) {
-                    if (control->Metadata().Module() == module) {
-                        handler.Handle(control);
-                    }
-                }
-
-                _adminLock.Unlock();
-            }
-
-            // this method iterates through _controlList and fill a list strings with module names
-            void Modules(std::vector<string>& modules)
-            {
-                std::cout << getpid() << " @@@@@ MessageStore.cpp Modules()" << std::endl;
-                _adminLock.Lock();
-
-                for (auto& control : _controlList) {
-                    const string& module = control->Metadata().Module();
-                    if (std::find(modules.begin(), modules.end(), module) == modules.end()) {
-                        modules.push_back(module);
-                    }
                 }
 
                 _adminLock.Unlock();
@@ -435,14 +404,6 @@ namespace Core {
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
             ControlsInstance().Iterate(handler);
-        }
-
-        /* static */ void IControl::Iterate(IControl::IHandler& handler, const string& module) {
-            ControlsInstance().Iterate(handler, module);
-        }
-
-        /* static */ void IControl::Modules(std::vector<string>& modules) {
-            return ControlsInstance().Modules(modules);
         }
 
         /* static */ IStore* IStore::Instance() {

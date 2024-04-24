@@ -142,8 +142,6 @@ namespace Messaging {
      */
     void MessageClient::Modules(std::vector<string>& modules) const
     {
-        // call a method in MessageStore and return a list of modules based on currently announced categories via parameter reference
-        // but instead of simply calling Modules from core, we need call each client, which then calls Modules from core, to make sure the oop only controls won't be missed
         _adminLock.Lock();
 
         for (auto& client : _clients) {

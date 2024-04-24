@@ -562,32 +562,21 @@ namespace WPEFramework {
                 void Save() const
                 {
                     // Store all config info..
-                    // here we wanted to optimize it so that the local variable does not contain info about each control
-                    // but it looks like this is only called once at the start of Thunder and it actually saves only the info from the config file
-                    // TO-DO: Remove the filtration layer and sent the whole config, does not matter if difference from default or not
                     string settings = _path + DELIMITER +
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
                                Core::NumberType<uint16_t>(_dataSize).Text();
 
-                    // here we want to save to this local variable settings only the categories that are different from the default
                     for (auto& entry : _settings) {
-                        // here we will pass tracing categories which are enabled, so different from default being disabled
-                        // and we will also pass logging or reporting categories which are disabled, so different from default being enabled
-                        // TO-DO: Remove the filtration and then we don't need to worry about adding a new condition for new types
-                        if ((entry.Type() == Core::Messaging::Metadata::type::TRACING && entry.Enabled() == 1) ||
-                            ((entry.Type() == Core::Messaging::Metadata::type::LOGGING || entry.Type() == Core::Messaging::Metadata::type::REPORTING) && entry.Enabled() == 0)){
                             settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
                                         DELIMITER + entry.Module() +
                                         DELIMITER + entry.Category() +
                                         DELIMITER + (entry.Enabled() ? '1' : '0');
-                        }
-
-
                     }
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
+
                     std::cout << getpid() << " @@@@@ MessageUnit.h Save() settings: " << settings << std::endl;
                 }
 
@@ -596,7 +585,7 @@ namespace WPEFramework {
                     string settings;
                     Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings);
                     Core::TextSegmentIterator iterator(Core::TextFragment(settings, 0, static_cast<uint16_t>(settings.length())), false, DELIMITER);
-                    // it looks like this method is not very crucial, since Update is called right after it and all Controls go through it
+
                     std::cout << getpid() << " @@@@@ MessageUnit.h Load() settings: " << settings << std::endl;
 
                     _path.clear();
@@ -1051,7 +1040,7 @@ namespace WPEFramework {
             void Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) override;
 
         private:
-            uint16_t Serialize(uint8_t* buffer, const uint16_t length, string& module);
+            uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
             uint16_t SerializeModules(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();

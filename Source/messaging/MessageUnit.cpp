@@ -24,9 +24,7 @@ namespace WPEFramework {
 
     namespace Messaging {
 
-        // this Serialize is changed so that it has one more parameter - the name of the module
-        // which is passed to Iterate so that it only calls handle on the controls for a given module
-        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, string& module)
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, const string& module)
         {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
@@ -34,9 +32,10 @@ namespace WPEFramework {
                 Handler(const Handler&) = delete;
                 Handler& operator= (const Handler&) = delete;
 
-                Handler(uint8_t* buffer, const uint16_t length)
+                Handler(uint8_t* buffer, const uint16_t length, const string& module)
                     : _buffer(buffer)
                     , _length(length)
+                    , _module(module)
                     , _offset(0)
                 {
                 }
@@ -45,15 +44,19 @@ namespace WPEFramework {
             public:
                 void Handle(Core::Messaging::IControl* control) override
                 {
-                    Control info(control->Metadata(), control->Enable());
+                    const Core::Messaging::Metadata& metadata = control->Metadata();
 
-                    uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+                    if (_module == metadata.Module()) {
+                        Control info(metadata, control->Enable());
 
-                    if (moved == 0) {
-                        TRACE_L1("Controls are cut, not enough memory to fit all controls (MetadataBufferSize too small)");
-                    }
-                    else {
-                        _offset += moved;
+                        uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+
+                        if (moved == 0) {
+                            TRACE_L1("Controls are cut, not enough memory to fit all controls (MetadataBufferSize too small)");
+                        }
+                        else {
+                            _offset += moved;
+                        }
                     }
                 }
 
@@ -63,28 +66,54 @@ namespace WPEFramework {
 
             private:
                 uint8_t* _buffer;
-                uint16_t _length;
+                const uint16_t _length;
+                const string& _module;
                 uint16_t _offset;
-            } handler (buffer, length);
+            } handler(buffer, length, module);
 
-            Core::Messaging::IControl::Iterate(handler, module);
+            Core::Messaging::IControl::Iterate(handler);
 
             return (handler.Offset());
         }
-
+        
         uint16_t MessageUnit::SerializeModules(uint8_t* buffer, const uint16_t length)
         {
-            // TO-DO: change it to use iterate from core instead and the module name retrievale will take place here
-            std::vector<string> list;
-            Core::Messaging::IControl::Modules(list);
+            std::vector<string> modules;
+
+            class Handler : public Core::Messaging::IControl::IHandler {
+            public:
+                Handler() = delete;
+                Handler(const Handler&) = delete;
+                Handler& operator= (const Handler&) = delete;
+
+                Handler(std::vector<string>& modules)
+                    : _modules(modules)
+                {
+                }
+                ~Handler() override = default;
+
+            public:
+                void Handle(Core::Messaging::IControl* control) override
+                {
+                    const string& module = control->Metadata().Module();
+                    if (std::find(_modules.begin(), _modules.end(), module) == _modules.end()) {
+                        _modules.push_back(module);
+                    }
+                }
+
+            private:
+                std::vector<string>& _modules;
+            } handler(modules);
+
+            Core::Messaging::IControl::Iterate(handler);
 
             Core::FrameType<0> frame(buffer, length, length);
             Core::FrameType<0>::Writer writer(frame, 0);
 
-            writer.Number<size_t>(list.size());
+            writer.Number<size_t>(modules.size());
 
             std::vector<string>::iterator it;
-            for (it = list.begin(); it != list.end(); ++it){
+            for (it = modules.begin(); it != modules.end(); ++it){
                 writer.NullTerminatedText(*it);
             }
 
