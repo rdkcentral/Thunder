@@ -153,8 +153,6 @@ namespace WPEFramework {
 
         void MessageUnit::Update()
         {
-            // this method is used at the start of Thunder and updates each category of logging, reportingm, operational streams and traces from application
-            // it is also used at the start of each OOP plugin and there is also updates each category of logging, reporting. operational streams, but not traces from application
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
@@ -168,7 +166,6 @@ namespace WPEFramework {
                 void Handle(Core::Messaging::IControl* control) override
                 {
                     bool enabled = _settings.IsEnabled(control->Metadata());
-                    std::cout << getpid() << " @@@@@ MessageUnit.cpp Update() category: " << control->Metadata().Category() << ", module: " << control->Metadata().Module() << ", enabled: " << enabled << std::endl;
 
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);

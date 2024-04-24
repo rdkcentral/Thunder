@@ -493,8 +493,6 @@ namespace WPEFramework {
                  */
                 void Update(const Core::Messaging::Metadata& metaData, const bool isEnabled)
                 {
-                    // looks like this one is never used?
-                    std::cout << getpid() << " @@@@@ MessageUnit.h Update() category: " << metaData.Category() << ", module: " << metaData.Module().c_str() << ", enabled: " << isEnabled << std::endl;
                     bool enabled = metaData.Default();
 
                     TRACE_L1("Updating settings(s): '%s':'%s'->%u\n", metaData.Category().c_str(), metaData.Module().c_str(), isEnabled);
@@ -569,15 +567,13 @@ namespace WPEFramework {
                                Core::NumberType<uint16_t>(_dataSize).Text();
 
                     for (auto& entry : _settings) {
-                            settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
-                                        DELIMITER + entry.Module() +
-                                        DELIMITER + entry.Category() +
-                                        DELIMITER + (entry.Enabled() ? '1' : '0');
+                        settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
+                                    DELIMITER + entry.Module() +
+                                    DELIMITER + entry.Category() +
+                                    DELIMITER + (entry.Enabled() ? '1' : '0');
                     }
 
                     Core::SystemInfo::SetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings, true);
-
-                    std::cout << getpid() << " @@@@@ MessageUnit.h Save() settings: " << settings << std::endl;
                 }
 
                 void Load()
@@ -585,8 +581,6 @@ namespace WPEFramework {
                     string settings;
                     Core::SystemInfo::GetEnvironment(MESSAGE_DISPATCHER_CONFIG_ENV, settings);
                     Core::TextSegmentIterator iterator(Core::TextFragment(settings, 0, static_cast<uint16_t>(settings.length())), false, DELIMITER);
-
-                    std::cout << getpid() << " @@@@@ MessageUnit.h Load() settings: " << settings << std::endl;
 
                     _path.clear();
                     _identifier.clear();
@@ -734,8 +728,6 @@ namespace WPEFramework {
                  */
                 uint32_t Update(const uint32_t waitTime, const Core::Messaging::Metadata& control, const bool enabled)
                 {
-                    // this method is called when a control is enabled or disabled via jsonrpc call
-                    std::cout << getpid() << " @@@@@ MessageUnit.h Update() category: " << control.Category() << ", module: " << control.Module() << ", enabled: " << enabled << std::endl;
                     uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                     if (_channel.IsOpen() == true) {
@@ -748,13 +740,10 @@ namespace WPEFramework {
 
                         Core::FrameType<0> frame(dataBuffer, TempMetadataBufferSize, TempMetadataBufferSize);
                         Core::FrameType<0>::Writer writer(frame, 0);
-                        // passing 0 indicates that we want to update a control which came from Enable() call
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::UPDATE);
-                        std::cout << getpid() << " @@@@@ MessageUnit.h Update() writer.Offset(): " << writer.Offset() << std::endl;
 
                         Control message(control, enabled);
                         uint16_t length = message.Serialize(dataBuffer + writer.Offset(), sizeof(dataBuffer) - writer.Offset());
-                        std::cout << getpid() << " @@@@@ MessageUnit.h Update() length: " << length << std::endl;
 
                         metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
 
@@ -764,23 +753,18 @@ namespace WPEFramework {
                     return (result);
                 }
 
-                // Load() has an additional parameter called module, which specifies the module from which we want to get controls
                 void Load(ControlList& info, const string& module) const
                 {
-                    // this method is called when reloading the Messaging page in the UI (it loads all controls)
-                    std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info)" << std::endl;
                     if (_channel.IsOpen() == true) {
 
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
-                        // here we need to first write 1 in the buffer to let the other side know that we want to get the controls
-                        // and then we write a module name to the buffer, and pass this instead of the nullptr as parameter
                         uint8_t buffer[64];
                         Core::FrameType<0> frame(buffer, 64, 64);
                         Core::FrameType<0>::Writer writer(frame, 0);
-                        // passing 1 indicates that we want to get a list of controls for a given module
+
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::CONTROLS);
                         writer.NullTerminatedText(module);
 
@@ -791,7 +775,6 @@ namespace WPEFramework {
                         if (result == Core::ERROR_NONE) {
                             uint16_t index = 0;
                             uint16_t bufferSize = metaDataFrame->Response().Length();
-                            std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) bufferSize: " << bufferSize << std::endl;
                             const uint8_t* buffer = metaDataFrame->Response().Value();
 
                             while (index < bufferSize) {
@@ -806,7 +789,6 @@ namespace WPEFramework {
                                     index += length;
                                     if (std::find(info.begin(), info.end(), entry) == info.end()) {
                                         info.emplace_back(entry);
-                                        std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) category: " << entry.Category() << ", module: " << entry.Module() << ", enabled: " << entry.Enabled() << std::endl;
                                     }
                                 }
                             }
@@ -818,7 +800,6 @@ namespace WPEFramework {
                     }
                 }
 
-                // this proxy is necessary because we do not want to miss any oop only controls, so we have to make sure to call Modules from core on each process
                 void Modules(std::vector<string>& modules) const
                 {
                     if (_channel.IsOpen() == true) {
@@ -827,10 +808,8 @@ namespace WPEFramework {
                         uint8_t buffer[1];
                         Core::FrameType<0> frame(buffer, 1, 1);
                         Core::FrameType<0>::Writer writer(frame, 0);
-                        // passing 2 indicates that we want to get a list of controls for a given module
-                        std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) writer.Offset(): " << writer.Offset() << std::endl;
+
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::MODULES);
-                        std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) writer.Offset(): " << writer.Offset() << std::endl;
 
                         metaDataFrame->Parameters().Set(writer.Offset(), buffer);
 
@@ -838,7 +817,6 @@ namespace WPEFramework {
 
                         if (result == Core::ERROR_NONE) {
                             uint16_t bufferSize = metaDataFrame->Response().Length();
-                            std::cout << getpid() << " @@@@@ MessageUnit.h Load(ControlList& info) bufferSize: " << bufferSize << std::endl;
                             const uint8_t* buffer = metaDataFrame->Response().Value();
 
                             Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
@@ -883,52 +861,36 @@ namespace WPEFramework {
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
-                            std::cout << getpid() << " @@@@@ MessageUnit.h Procedure()" << std::endl;
                             uint8_t outBuffer[MetadataBufferSize];
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
-
-                            // What is coming in, is an update?
-
-                            // now we won't be able to differenciate by length, but instead we will use framereader to check the first byte
-                            // if it is 0, then we want to Deserialize and Update given control
-                            // if it is 1, then we want to read the module and then do the Serialize of all controls from a given module
 
                             Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
                             Core::FrameType<0>::Reader reader(frame, 0);
 
                             if (reader.HasData()) {
                                 metadataFrameProtocol protocol = reader.Number<metadataFrameProtocol>();
-                                std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() protocol: " << protocol << std::endl;
 
                                 if (protocol == metadataFrameProtocol::UPDATE) {
                                     Control newSettings;
-                                    std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() Length: " << message->Parameters().Length() << std::endl;
-
                                     newSettings.Deserialize(reader.Data(), reader.Length());
                                     _parent.Update(newSettings, newSettings.Enabled());
                                     message->Response().Set(0, nullptr);
                                 }
                                 else if (protocol == metadataFrameProtocol::CONTROLS && reader.HasData()) {
-                                    // instead of sending all of the controls, only sent control for a given module
                                     string module = reader.NullTerminatedText();
-                                    // we are writing over the module since it is no longer needed in the buffer
                                     uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
-                                    std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() length: " << length << std::endl;
                                     message->Response().Set(length, outBuffer);
                                 }
                                 else if (protocol == metadataFrameProtocol::MODULES) {
                                     uint16_t length = _parent.SerializeModules(outBuffer, sizeof(outBuffer));
-                                    std::cout << getpid() << " @@@@@ MessageUnit.h Procedure() length: " << length << std::endl;
                                     message->Response().Set(length, outBuffer);
                                 }
                                 else {
-                                    // it should always start with either 0 or 1 to indicate the intention of the frame
                                     ASSERT(false);
                                 }
                             }
                             else {
-                                // now it should no longer ever be empty
                                 ASSERT(false);
                             }
                             source.ReportResponse(data);
