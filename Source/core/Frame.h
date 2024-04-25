@@ -527,7 +527,7 @@ namespace Core {
         FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& operator=(FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>&& move) {
             if (this != &move) {
                 _size = move._size;
-                _data = std::move(move.data);
+                _data = std::move(move._data);
 
                 move._size = 0;
             }
