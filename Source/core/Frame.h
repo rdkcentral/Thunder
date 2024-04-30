@@ -111,7 +111,7 @@ namespace Core {
         template <const uint32_t STARTSIZE, typename SIZETYPE>
         class AllocatorType {
         public:
-            AllocatorType<STARTSIZE, SIZETYPE> operator=(const AllocatorType<STARTSIZE, SIZETYPE>&) = delete;
+            AllocatorType<STARTSIZE, SIZETYPE>& operator=(const AllocatorType<STARTSIZE, SIZETYPE>& copy) = delete;
 
             AllocatorType()
                 : _bufferSize(STARTSIZE)
@@ -171,6 +171,21 @@ namespace Core {
                 if ((STARTSIZE != 0) && (_data != nullptr)) {
                     ::free(_data);
                 }
+            }
+
+            AllocatorType<STARTSIZE, SIZETYPE>& operator=(AllocatorType<STARTSIZE, SIZETYPE>&& move) {
+                if (STARTSIZE != 0) {
+                    if (_data != nullptr) {
+                        ::free(_data);
+                    }
+                    _data ==  move._data;
+                    move._data = nullptr;
+                    _bufferSize = move._bufferSize;
+                }
+                else {
+                    ::memcpy(_data, move._data, _bufferSize);
+                }
+                return (*this);
             }
 
         public:
@@ -527,7 +542,7 @@ namespace Core {
         FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& operator=(FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>&& move) {
             if (this != &move) {
                 _size = move._size;
-                _data = std::move(move.data);
+                _data = std::move(move._data);
 
                 move._size = 0;
             }
