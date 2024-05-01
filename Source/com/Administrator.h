@@ -57,8 +57,8 @@ namespace RPC {
             RecoverySet() = delete;
             RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
-            RecoverySet& operator= (RecoverySet&&) = delete;
-            RecoverySet& operator= (const RecoverySet&) = delete;
+            RecoverySet& operator=(RecoverySet&&) = delete;
+            RecoverySet& operator=(const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
                 : _interfaceId(id)
@@ -250,13 +250,25 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Stub method for entries that the Stub returns to the callee
         template <typename ACTUALINTERFACE>
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
+        bool RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
         {
-            RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
+            return (RegisterInterface(channel, reference, ACTUALINTERFACE::ID));
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
+        bool RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
         {
-            RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
+            bool result = false;
+
+            Core::IUnknown* converted = Convert(const_cast<void*>(source), id);
+
+            if (converted != nullptr) {
+                RegisterUnknownInterface(channel, converted, id);
+                result = true;
+            }
+            else {
+                TRACE_L1("Failed to find a Stub for interface 0x%08x!", id);
+            }
+
+            return (result);
         }
 
         void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)

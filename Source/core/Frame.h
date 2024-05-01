@@ -41,10 +41,12 @@ namespace Core {
                 ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
             }
             SInt24(const SInt24&) = default;
+            SInt24(SInt24&&) = default;
             ~SInt24() = default;
 
         public:
             SInt24& operator=(const SInt24& value) = default;
+            SInt24& operator=(SInt24&& value) = default;
             SInt24& operator=(const int32_t value)
             {
                 ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
@@ -67,6 +69,8 @@ namespace Core {
                 : _value(0)
             {
             }
+            UInt24(const UInt24& value) = default;
+            UInt24(UInt24&& value) = default;
             UInt24(const uint32_t value)
                 : _value(value)
             {
@@ -75,7 +79,8 @@ namespace Core {
             ~UInt24() = default;
 
         public:
-            UInt24& operator=(const UInt24& value) = default;
+            UInt24& operator=(const UInt24& copy) = default;
+            UInt24& operator=(UInt24&& move) = default;
             UInt24& operator=(const uint32_t value)
             {
                 ASSERT((value >> 24) == 0);
@@ -106,7 +111,7 @@ namespace Core {
         template <const uint32_t STARTSIZE, typename SIZETYPE>
         class AllocatorType {
         public:
-            AllocatorType<STARTSIZE, SIZETYPE> operator=(const AllocatorType<STARTSIZE, SIZETYPE>&) = delete;
+            AllocatorType<STARTSIZE, SIZETYPE>& operator=(const AllocatorType<STARTSIZE, SIZETYPE>& copy) = delete;
 
             AllocatorType()
                 : _bufferSize(STARTSIZE)
@@ -139,6 +144,18 @@ namespace Core {
                 #endif
                 ::memcpy(_data, copy._data, _bufferSize);
             }
+            AllocatorType(AllocatorType<STARTSIZE, SIZETYPE>&& move)
+                : _bufferSize(move._bufferSize)
+                , _data(move._data)
+            {
+                // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+                // if if the template being instantiated is not really utilizing it!
+                #ifndef __WINDOWS__
+                static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
+                #endif
+                move._bufferSize = 0;
+                move._data = nullptr;
+            }
             AllocatorType(uint8_t buffer[], const SIZETYPE length)
                 : _bufferSize(length)
                 , _data(buffer)
@@ -154,6 +171,21 @@ namespace Core {
                 if ((STARTSIZE != 0) && (_data != nullptr)) {
                     ::free(_data);
                 }
+            }
+
+            AllocatorType<STARTSIZE, SIZETYPE>& operator=(AllocatorType<STARTSIZE, SIZETYPE>&& move) {
+                if (STARTSIZE != 0) {
+                    if (_data != nullptr) {
+                        ::free(_data);
+                    }
+                    _data ==  move._data;
+                    move._data = nullptr;
+                    _bufferSize = move._bufferSize;
+                }
+                else {
+                    ::memcpy(_data, move._data, _bufferSize);
+                }
+                return (*this);
             }
 
         public:
@@ -219,6 +251,13 @@ namespace Core {
                 : _offset(copy._offset)
                 , _container(copy._container)
             {
+            }
+            Reader(Reader&& move)
+                : _offset(move._offset)
+                , _container(move._container)
+            {
+                move._offset = 0;
+                move._container = nullptr;
             }
             ~Reader() = default;
 
@@ -372,6 +411,13 @@ namespace Core {
                 , _container(copy._container)
             {
             }
+            Writer(Writer&& move)
+                : _offset(move._offset)
+                , _container(move._container)
+            {
+                move._offset = 0;
+                move._container = nullptr;
+            }
             ~Writer() = default;
 
         public:
@@ -460,6 +506,18 @@ namespace Core {
             static_assert(BLOCKSIZE != 0, "This method can only be called if you allocate a new buffer");
             #endif
         }
+        FrameType(FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& move)
+            : _size(move._size)
+            , _data(std::move(move._data))
+        {
+            // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
+            // if if the template being instantiated is not really utilizing it!
+            #ifndef __WINDOWS__
+            static_assert(BLOCKSIZE != 0, "This method can only be called if you allocate a new buffer");
+            #endif
+            move._size = 0;
+        }
+
         FrameType(uint8_t* buffer, const SIZE_CONTEXT length, const SIZE_CONTEXT loadedSize = 0)
             : _size(loadedSize)
             , _data(buffer, length)
@@ -478,6 +536,15 @@ namespace Core {
                 if (Size() > 0) {
                     ::memcpy(&(_data[0]), rhs.Data(), Size());
                 }
+            }
+            return(*this);
+        }
+        FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>& operator=(FrameType<BLOCKSIZE, BIG_ENDIAN_ORDERING, SIZE_CONTEXT>&& move) {
+            if (this != &move) {
+                _size = move._size;
+                _data = std::move(move._data);
+
+                move._size = 0;
             }
             return(*this);
         }

@@ -106,11 +106,29 @@ namespace PluginHost {
                     _average = copy._average;
                     _count = copy._count;
                 }
-                Tuple& operator= (const Tuple& rhs) {
+                Tuple(Tuple&& move) {
+                    _minimum = move._minimum;
+                    _maximum = move._maximum;
+                    _average = move._average;
+                    _count = move._count;
+                    move.Clear();
+                }
+                Tuple& operator=(const Tuple& rhs) {
                     _minimum = rhs._minimum;
                     _maximum = rhs._maximum;
                     _average = rhs._average;
                     _count = rhs._count;
+
+                    return (*this);
+                }
+                Tuple& operator=(Tuple*& move) {
+                    if (this != &move) {
+                        _minimum = move._minimum;
+                        _maximum = move._maximum;
+                        _average = move._average;
+                        _count = move._count;
+                        move.Clear();
+		    }
 
                     return (*this);
                 }
@@ -151,8 +169,10 @@ namespace PluginHost {
 
         public:
             Statistics() = delete;
+            Statistics(Statistics&& move) = delete;
             Statistics(const Statistics& copy) = delete;
-            Statistics& operator= (const Statistics& rhs) = delete;
+            Statistics& operator=(Statistics&& rhs) = delete;
+            Statistics& operator=(const Statistics& rhs) = delete;
 
             Statistics(const uint32_t uptill)
                 : _adminLock()
@@ -240,8 +260,10 @@ namespace PluginHost {
         }
 
     public:
+        PerformanceAdministrator(PerformanceAdministrator&&) = delete;
         PerformanceAdministrator(const PerformanceAdministrator&) = delete;
-        PerformanceAdministrator& operator= (const PerformanceAdministrator&) = delete;
+        PerformanceAdministrator& operator=(PerformanceAdministrator&&) = delete;
+        PerformanceAdministrator& operator=(const PerformanceAdministrator&) = delete;
 
         static PerformanceAdministrator& Instance() {
             static PerformanceAdministrator singleton;
@@ -280,8 +302,10 @@ namespace PluginHost {
 
     class TrackingJSONRPC : public  Web::JSONRPC::Body {
     public:
+        TrackingJSONRPC(TrackingJSONRPC&&) = delete;
         TrackingJSONRPC(const TrackingJSONRPC&) = delete;
-        TrackingJSONRPC& operator= (const TrackingJSONRPC&) = delete;
+        TrackingJSONRPC& operator=(TrackingJSONRPC&&) = delete;
+        TrackingJSONRPC& operator=(const TrackingJSONRPC&) = delete;
 
         TrackingJSONRPC() = default;
         ~TrackingJSONRPC() override = default;
