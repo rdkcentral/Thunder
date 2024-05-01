@@ -26,7 +26,7 @@ using namespace WPEFramework;
 
 class Control : public Core::Messaging::IControl {
 public:
-    Control(const Core::Messaging::MetaData& metaData)
+    Control(const Core::Messaging::Metadata& metaData)
         : _metaData(metaData)
     {
     }
@@ -46,72 +46,105 @@ public:
     {
         _isEnabled = false;
     }
-    const Core::Messaging::MetaData& MessageMetaData() const override
+    const Core::Messaging::Metadata& Metadata() const override
     {
         return _metaData;
     }
 
 private:
     bool _isEnabled;
-    Core::Messaging::MetaData _metaData;
+    Core::Messaging::Metadata _metaData;
 };
 
 class Core_Messaging_MessageUnit : public testing::Test {
 protected:
     Core_Messaging_MessageUnit()
     {
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
-        _controls.emplace_back(new Control({ Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
+        _controls.emplace_back(new Control({ Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
+
+        _activeConfig = false;
     }
     ~Core_Messaging_MessageUnit() = default;
 
     static void SetUpTestSuite()
     {
-        Core::Messaging::MessageUnit::Instance().IsBackground(_background);
-        Core::Messaging::MessageUnit::Instance().Open(_basePath);
     }
 
     static void TearDownTestSuite()
     {
-        Core::Messaging::MessageUnit::Instance().Close();
         Core::Singleton::Dispose();
     }
+
     void SetUp() override
     {
-        for (const auto& control : _controls) {
-            Core::Messaging::MessageUnit::Instance().Announce(control.get());
-        }
+        AnnounceAllControls();
+
+        ToggleDefaultConfig(true);
+
+        _activeConfig = true;
     }
 
     void TearDown() override
     {
-        Core::Messaging::MessageUnit::Instance().Defaults(_T(""));
-        for (const auto& control : _controls) {
-            Core::Messaging::MessageUnit::Instance().Revoke(control.get());
-        }
+        RevokeAllControls();
+
+        ToggleDefaultConfig(false);
+
+        _activeConfig = false;
     }
 
     string DispatcherIdentifier()
     {
-        string result;
-        Core::SystemInfo::GetEnvironment(Core::Messaging::MessageUnit::MESSAGE_DISPACTHER_IDENTIFIER_ENV, result);
-        return result;
+        return Messaging::MessageUnit::Instance().Identifier();
     }
 
     string DispatcherBasePath()
     {
         string result;
-        Core::SystemInfo::GetEnvironment(Core::Messaging::MessageUnit::MESSAGE_DISPATCHER_PATH_ENV, result);
-        return result;
+        return Messaging::MessageUnit::Instance().BasePath();
+    }
+
+    void AnnounceAllControls()
+    {
+        for (const auto& control : _controls) {
+            // Only for 'controls' enabled in configuration
+            Core::Messaging::IControl::Announce(control.get());
+        }
+    }
+
+    void RevokeAllControls()
+    {
+        for (const auto& control : _controls) {
+            Core::Messaging::IControl::Revoke(control.get());
+        }
+    }
+
+    void ToggleDefaultConfig(bool activate)
+    {
+        ASSERT(_activeConfig != activate);
+
+        if (!_activeConfig && activate) {
+            Messaging::MessageUnit::Settings::Config configuration;
+            Messaging::MessageUnit::Instance().Open(Core_Messaging_MessageUnit::_basePath, configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+        }
+
+        if (_activeConfig && !activate) {
+            Messaging::MessageUnit::Instance().Close();
+        }
+
+        _activeConfig = !_activeConfig;
     }
 
     static bool _background;
     static string _basePath;
     std::list<std::unique_ptr<Core::Messaging::IControl>> _controls;
+
+    bool _activeConfig;
 };
 
 bool Core_Messaging_MessageUnit::_background = false;
@@ -119,455 +152,762 @@ string Core_Messaging_MessageUnit::_basePath = _T("/tmp/");
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessageIsEnabledByDefaultWhenConfigFullySpecified)
 {
-    const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":true}]}})";
+    Messaging::MessageUnit::Settings::Config configuration;
+    configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":true}]}})");
 
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+    Messaging::MessageUnit::Settings settings;
+    settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    Core::Messaging::Metadata metaData(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+    EXPECT_TRUE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessageIsDisabledByDefaultWhenConfigFullySpecified)
 {
-    const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":false}]}})";
+    Messaging::MessageUnit::Settings::Config configuration;
+    configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":false}]}})");
 
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+    Messaging::MessageUnit::Settings settings;
+    settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    Core::Messaging::Metadata metaData(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreEnabledWhenModuleNotSpecified)
 {
-    const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":true}]}})";
+    Messaging::MessageUnit::Settings::Config configuration;
+    configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","enabled":true}]}})");
 
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+    Messaging::MessageUnit::Settings settings;
+    settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    Core::Messaging::Metadata metaData(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+    EXPECT_TRUE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+    EXPECT_TRUE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
 }
 
 TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreDisabledWhenModuleNotSpecified)
 {
-    const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":false}]}})";
+    Messaging::MessageUnit::Settings::Config configuration;
+    configuration.FromString(R"({"tracing":{"messages":[{"category":"Information","enabled":false}]}})");
 
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+    Messaging::MessageUnit::Settings settings;
+    settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    Core::Messaging::Metadata metaData(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+    EXPECT_FALSE(settings.IsEnabled(metaData));
 }
 
 TEST_F(Core_Messaging_MessageUnit, LoggingMessageIsEnabledIfNotConfigured)
 {
-    //logging messages are enabled by default (if not specified otherwise in the config)
-    const string config = R"({"logging":{"messages":[{"category":"Startup","module":"SysLog","enabled":false}]}})";
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::LOGGING, _T("Startup"), _T("SysLog") }));
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Core::Messaging::MetaData::MessageType::LOGGING, _T("Notification"), _T("SysLog") }));
+    Messaging::MessageUnit::Settings::Config configuration;
+    configuration.FromString(R"({"logging":{"settings":[{"category":"Startup","module":"SysLog","enabled":false}]}})");
+
+    Messaging::MessageUnit::Settings settings;
+    settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    Core::Messaging::Metadata metaData(Core::Messaging::Metadata::type::LOGGING, _T("Startup"), _T("SysLog"));
+    // Internal Metadata::Default() is true for LOGGING but here overwritten because of element of config
+    EXPECT_FALSE(settings.IsEnabled(metaData));
+
+    metaData = Core::Messaging::Metadata(Core::Messaging::Metadata::type::LOGGING, _T("Notification"), _T("SysLog"));
+    // Internal Metadata::Default() is true for LOGGING and not overwritten because of no element of config
+    EXPECT_TRUE(settings.IsEnabled(metaData));
 }
 
 TEST_F(Core_Messaging_MessageUnit, MessageClientWillReturnListOfControls)
 {
     //this test is using metadata (IPC) passing, so no other proces tests for now
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
-    client.AddInstance(0); //we are in framework
-    auto it = client.Enabled();
+    Messaging::MessageClient client(Messaging::MessageUnit::Instance().Identifier(), Messaging::MessageUnit::Instance().BasePath());
+
+    client.AddInstance(0 /*id*/); //we are in framework
+
+    Messaging::MessageUnit::Iterator it;
+
+    client.Controls(it);
 
     int matches = 0;
     int count = 0;
     while (it.Next()) {
-        auto info = it.Current();
-        if (info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
+        if (it.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
             ++matches;
         }
         ++count;
     }
 
-    ASSERT_GE(count, 4);
-    ASSERT_EQ(matches, 4);
+    client.RemoveInstance(0);
+
+    EXPECT_GE(count, 4);
+    EXPECT_EQ(matches, 4);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldUpdateExistingDefaultConfig)
 {
-    const string config = R"({"tracing":{"messages":[{"category":"ExampleCategory","module":"ExampleModule","enabled":false}]}})";
-    Core::Messaging::MessageUnit::Instance().Defaults(config);
-    const Core::Messaging::MetaData toBeUpdated(Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+    // Reload with new configuration
+    ToggleDefaultConfig(false);
 
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Messaging::MessageUnit::Settings::Config configuration;
+
+    // If 'enabled' equals false the entry is not added to 'Settings'
+    configuration.FromString(R"({"tracing":{"settings":[{"category":"ExampleCategory","module":"ExampleModule","enabled":false}]}})");
+
+    // Populate settings with specified configuration
+    Messaging::MessageUnit::Instance().Open(Core_Messaging_MessageUnit::_basePath, configuration, Core_Messaging_MessageUnit::_background, Messaging::MessageUnit::OFF);
+
+    const Core::Messaging::Metadata toBeUpdated(Core::Messaging::Metadata::type::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+
+    Control control(toBeUpdated);
+    // Add to the internal list if it is not already
+    Core::Messaging::IControl::Announce(&control);
+
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+    // Creates a MessageUnit::Client internally with the id passed in
     client.AddInstance(0); //we are in framework
+
+    // Get the system 'status'
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
+
+    bool enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   toBeUpdated.Type() == it.Type()
+                      && toBeUpdated.Category() == it.Category()
+                      && toBeUpdated.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
+    }
+
+    EXPECT_FALSE(enabled);
+
+    // Enable message via metadata, eg, set enable for the previously added Control, eg, enable category
     client.Enable(toBeUpdated, true);
 
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+    client.Controls(it);
+
+    /* bool */ enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   toBeUpdated.Type() == it.Type()
+                      && toBeUpdated.Category() == it.Category()
+                      && toBeUpdated.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
+    }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
+
+    Core::Messaging::IControl::Revoke(&control);
+
+    Messaging::MessageUnit::Instance().Close();
+
+    ToggleDefaultConfig(true);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
 {
-    const Core::Messaging::MetaData toBeAdded(Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+    const Core::Messaging::Metadata toBeAdded(Core::Messaging::Metadata::type::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
 
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
     client.AddInstance(0); //we are in framework
-    client.Enable(toBeAdded, true);
 
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
-    auto defaultsString = Core::Messaging::MessageUnit::Instance().Defaults();
-    Core::Messaging::Settings settings;
-    settings.FromString(defaultsString);
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
-    ASSERT_EQ(settings.Tracing.Entries.Length(), 1);
-    auto entriesIt = settings.Tracing.Entries.Elements();
-    while (entriesIt.Next()) {
-        ASSERT_STREQ(entriesIt.Current().Category.Value().c_str(), toBeAdded.Category().c_str());
-        ASSERT_STREQ(entriesIt.Current().Module.Value().c_str(), toBeAdded.Module().c_str());
+    bool enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   toBeAdded.Type() == it.Type()
+                      && toBeAdded.Category() == it.Category()
+                      && toBeAdded.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
     }
+
+    EXPECT_FALSE(enabled);
+
+    Control control(toBeAdded);
+
+    Core::Messaging::IControl::Announce(&control);
+
+    client.Controls(it);
+
+    enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   toBeAdded.Type() == it.Type()
+                      && toBeAdded.Category() == it.Category()
+                      && toBeAdded.Module() == it.Module()
+                    )
+                 ;
+    }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
+
+    Core::Messaging::IControl::Revoke(&control);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingMessagesByTypeShouldEnableEverything)
 {
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    auto itBeforeUpdate = client.Enabled();
 
-    int matches = 0;
-    while (itBeforeUpdate.Next()) {
-        auto info = itBeforeUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
-            ++matches;
-        }
-    }
-    ASSERT_EQ(matches, 0);
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
-    matches = 0;
-    client.Enable({ Core::Messaging::MetaData::MessageType::TRACING, _T(""), _T("") }, true);
-    auto itAfterUpdate = client.Enabled();
-    while (itAfterUpdate.Next()) {
-        auto info = itAfterUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
-            ++matches;
-        }
+    bool enabled = true;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  && it.Enabled()
+                 ;
     }
-    ASSERT_GE(matches, 5);
+
+    // Controls from the default are disabled by default, except a few
+    EXPECT_FALSE(enabled);
+
+    // Enable message via metadata, eg, set enable for the previously added Control, eg, enable category
+    client.Enable({Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+
+    client.Controls(it);
+
+    enabled = true;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  && it.Enabled()
+                 ;
+    }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, LogMessagesCanToggledWhenLogModuleSpecified)
 {
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    auto itBeforeUpdate = client.Enabled();
-    Core::Messaging::MetaData messageToToggle(Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+
+    Core::Messaging::Metadata messageToToggle(Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
     int matches = 0;
-    while (itBeforeUpdate.Next()) {
-        auto info = itBeforeUpdate.Current();
-        if (info.first == messageToToggle && info.second == true) {
+    while (it.Next()) {
+        if (   it.Type() == messageToToggle.Type()
+            && it.Category() == messageToToggle.Category()
+            && it.Module() == messageToToggle.Module()
+            && it.Enabled()
+           ) {
             ++matches;
         }
     }
-    ASSERT_EQ(matches, 1);
+
+    EXPECT_EQ(matches, 1);
+
+    client.Enable(messageToToggle, false);
+
+    client.Controls(it);
 
     matches = 0;
-    client.Enable(messageToToggle, false);
-    auto itAfterUpdate = client.Enabled();
-    while (itAfterUpdate.Next()) {
-        auto info = itAfterUpdate.Current();
-        if (info.first == messageToToggle && info.second == false) {
+
+    while (it.Next()) {
+        if (   it.Type() == messageToToggle.Type()
+            && it.Category() == messageToToggle.Category()
+            && it.Module() == messageToToggle.Module()
+            && !it.Enabled()
+           ) {
             ++matches;
         }
     }
-    ASSERT_EQ(matches, 1);
+
+    EXPECT_EQ(matches, 1);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, LogEnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
 {
-    const Core::Messaging::MetaData tobeAdded(Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
-    ASSERT_TRUE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
+    const Core::Messaging::Metadata toBeAdded(Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
 
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    client.Enable(tobeAdded, false);
 
-    ASSERT_FALSE(Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
-    auto defaultsString = Core::Messaging::MessageUnit::Instance().Defaults();
-    Core::Messaging::Settings settings;
-    settings.FromString(defaultsString);
+    // LOGGING is enabled and available by default
 
-    ASSERT_EQ(settings.Logging.Entries.Length(), 1);
-    auto entriesIt = settings.Logging.Entries.Elements();
-    while (entriesIt.Next()) {
-        ASSERT_STREQ(entriesIt.Current().Category.Value().c_str(), tobeAdded.Category().c_str());
-        ASSERT_STREQ(entriesIt.Current().Module.Value().c_str(), tobeAdded.Module().c_str());
+    Messaging::MessageUnit::Iterator it;
+
+    client.Controls(it);
+
+    bool enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   toBeAdded.Type() == it.Type()
+                      && toBeAdded.Category() == it.Category()
+                      && toBeAdded.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
     }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingFullySpecifiedMessageUpdateOnlyThisOne)
 {
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Core::Messaging::Metadata message(Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
+
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    auto itBeforeUpdate = client.Enabled();
-    Core::Messaging::MetaData message(Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
 
-    int matches = 0;
-    while (itBeforeUpdate.Next()) {
-        auto info = itBeforeUpdate.Current();
-        if (info.first == message && info.second == false) {
-            ++matches;
-        }
+    // TRACING is not enabled but available by default
+
+    Messaging::MessageUnit::Iterator it;
+
+    client.Controls(it);
+
+    bool enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   message.Type() == it.Type()
+                      && message.Category() == it.Category()
+                      && message.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
     }
-    ASSERT_EQ(matches, 1);
 
-    matches = 0;
+    EXPECT_FALSE(enabled);
+
     client.Enable(message, true);
-    auto itAfterUpdate = client.Enabled();
-    while (itAfterUpdate.Next()) {
-        auto info = itAfterUpdate.Current();
-        if (info.first == message && info.second == true) {
-            ++matches;
-        }
+
+    client.Enable(message, true);
+
+    client.Controls(it);
+
+    enabled = false;
+
+    while (it.Next()) {
+        enabled =    enabled
+                  ||
+                     (   message.Type() == it.Type()
+                      && message.Category() == it.Category()
+                      && message.Module() == it.Module()
+                      && it.Enabled()
+                    )
+                 ;
     }
-    ASSERT_EQ(matches, 1);
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByModuleShouldEnableAllCategoriesInsideIt)
 {
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    const Core::Messaging::Metadata message(Core::Messaging::Metadata::type::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME));
+
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    auto itBeforeUpdate = client.Enabled();
 
-    int enabled = 0;
-    while (itBeforeUpdate.Next()) {
-        auto info = itBeforeUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
-            if (info.second == true) {
-                ++enabled;
-            }
-        }
-    }
-    ASSERT_EQ(enabled, 0);
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
-    enabled = 0;
-    client.Enable({ Core::Messaging::MetaData::MessageType::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME) }, true);
-    auto itAfterUpdate = client.Enabled();
-    while (itAfterUpdate.Next()) {
-        auto info = itAfterUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
-            if (info.second == true) {
-                ++enabled;
-            }
+    bool enabled = true;
+
+    while (it.Next()) {
+        if (   message.Type() == it.Type()
+            && message.Module() == it.Module()
+        ) {
+            enabled =    enabled
+                      && it.Enabled()
+                     ;
         }
     }
 
-    ASSERT_EQ(enabled, 4);
+    EXPECT_FALSE(enabled);
+
+    client.Enable(message, true);
+
+    client.Controls(it);
+
+    enabled = true;
+
+    while (it.Next()) {
+        if (   message.Type() == it.Type()
+            && message.Module() == it.Module()
+        ) {
+            enabled =    enabled
+                      && it.Enabled()
+                     ;
+        }
+    }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByCategoryShouldEnableItInAllModules)
 {
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    const Core::Messaging::Metadata message(Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T(""));
+
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
-    auto itBeforeUpdate = client.Enabled();
 
-    int enabled = 0;
-    while (itBeforeUpdate.Next()) {
-        auto info = itBeforeUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
-            if (info.second == true) {
-                ++enabled;
-            }
-        }
-    }
-    ASSERT_EQ(enabled, 0);
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
-    enabled = 0;
-    client.Enable({ Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("") }, true);
-    auto itAfterUpdate = client.Enabled();
-    while (itAfterUpdate.Next()) {
-        auto info = itAfterUpdate.Current();
-        if (info.first.Type() == Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
-            if (info.second == true) {
-                ++enabled;
-            }
+    bool enabled = true;
+
+    while (it.Next()) {
+        if (   message.Type() == it.Type()
+            && message.Category() == it.Category()
+        ) {
+            enabled =    enabled
+                      && it.Enabled()
+                     ;
         }
     }
 
-    ASSERT_EQ(enabled, 2);
+    EXPECT_FALSE(enabled);
+
+    client.Enable(message, true);
+
+    client.Controls(it);
+
+    enabled = true;
+
+    while (it.Next()) {
+        if (   message.Type() == it.Type()
+            && message.Category() == it.Category()
+        ) {
+            enabled =    enabled
+                      && it.Enabled()
+                     ;
+        }
+    }
+
+    EXPECT_TRUE(enabled);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, TextMessageEventIsProperlySerializedIfBufferBigEnough)
 {
-    uint8_t buffer[1 * 1024];
+    constexpr string::size_type bufferSize = 1024;
+
+    uint8_t buffer[bufferSize];
     const string testTextMessage = _T("TEST MESSAGE");
+
+    EXPECT_GT(bufferSize, sizeof(testTextMessage.size()));
 
     Messaging::TextMessage tm(testTextMessage);
     auto serialized = tm.Serialize(buffer, sizeof(buffer));
-    ASSERT_GT(serialized, 0);
+    EXPECT_GT(serialized, 0);
 
     auto deserialized = tm.Deserialize(buffer, sizeof(buffer));
-    ASSERT_EQ(serialized, deserialized);
+    EXPECT_EQ(serialized, deserialized);
 
-    string result;
-    tm.ToString(result);
-    ASSERT_STREQ(result.c_str(), testTextMessage.c_str());
+    string result = tm.Data();
+    EXPECT_STREQ(result.c_str(), testTextMessage.c_str());
 }
 
 TEST_F(Core_Messaging_MessageUnit, TextMessageEventIsProperlySerializedAndCutIfBufferNotBigEnough)
 {
-    uint8_t buffer[5];
+    constexpr string::size_type bufferSize = 5;
+
+    uint8_t buffer[bufferSize];
     const string testTextMessage = _T("abcdefghi");
+
+    EXPECT_LT(bufferSize, sizeof(testTextMessage.size()));
 
     Messaging::TextMessage tm(testTextMessage);
     auto serialized = tm.Serialize(buffer, sizeof(buffer));
-    ASSERT_GT(serialized, 0);
+    EXPECT_GT(serialized, 0);
 
     auto deserialized = tm.Deserialize(buffer, serialized);
-    ASSERT_EQ(serialized, deserialized);
+    EXPECT_EQ(serialized, deserialized);
 
-    string result;
-    tm.ToString(result);
-    //last byte reserved for null termination
-    ASSERT_STREQ(result.c_str(), _T("abcd"));
+    string result = tm.Data();
+
+    EXPECT_STREQ(result.c_str(), testTextMessage.substr(0, bufferSize - 1).c_str());
 }
 
 TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferBigEnough)
 {
-    uint8_t buffer[1 * 1024];
+    constexpr string::size_type bufferSize = 1024;
 
-    Core::Messaging::ControlList cl;
-    for (const auto& control : _controls) {
-        cl.Announce(control.get());
+    uint8_t buffer[bufferSize];
+
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+    client.AddInstance(0); //we are in framework
+
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
+
+    while (it.Next()) {
+        Messaging::MessageUnit::Control control({it.Type(), it.Category(), it.Module()}, it.Enabled());
+        auto serialized = control.Serialize(buffer, sizeof(buffer));
+
+        EXPECT_GT(serialized, 0);
+
+        auto deserialized = control.Deserialize(buffer, serialized);
+
+        EXPECT_EQ(serialized, deserialized);
     }
 
-    auto serialized = cl.Serialize(buffer, sizeof(buffer));
-    ASSERT_GT(serialized, 0);
-    ASSERT_EQ(buffer[0], _controls.size());
-
-    auto deserialized = cl.Deserialize(buffer, serialized);
-    ASSERT_EQ(serialized, deserialized);
-
-    auto informationIt = cl.Information();
-    auto controlsIt = _controls.cbegin();
-    while (informationIt.Next()) {
-        ASSERT_EQ(informationIt.Current().first, controlsIt->get()->MessageMetaData());
-        ++controlsIt;
-    }
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferNotBigEnough)
 {
-    const int controlsThatShouldFit = 2;
-    uint16_t maxBufferSize = 0;
-    auto it = _controls.cbegin();
-    for (int i = 0; i < controlsThatShouldFit; ++i, ++it) {
-        maxBufferSize += sizeof(it->get()->MessageMetaData().Type());
-        maxBufferSize += it->get()->MessageMetaData().Category().size() + 1;
-        maxBufferSize += it->get()->MessageMetaData().Module().size() + 1;
-        maxBufferSize += sizeof(bool);
-    }
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+    client.AddInstance(0); //we are in framework
+
+    Messaging::MessageUnit::Iterator it;
+    client.Controls(it);
 
     std::vector<uint8_t> buffer;
-    buffer.resize(maxBufferSize + 1);
 
-    Core::Messaging::ControlList cl;
-    for (const auto& control : _controls) {
-        cl.Announce(control.get());
+    while (it.Next()) {
+        buffer.resize(buffer.size() + sizeof(it.Type()), Core::Messaging::Metadata::type::INVALID);
+        buffer.resize(buffer.size() + it.Category().size() + 1, Core::Messaging::Metadata::type::INVALID);
+        buffer.resize(buffer.size() + it.Module().size() + 1, Core::Messaging::Metadata::type::INVALID);
+        buffer.resize(buffer.size() + sizeof(bool), Core::Messaging::Metadata::type::INVALID);
     }
 
-    auto serialized = cl.Serialize(buffer.data(), buffer.size());
-    ASSERT_GT(serialized, 0);
-    ASSERT_EQ(buffer[0], controlsThatShouldFit);
+    buffer.resize(buffer.size() + 1);
 
-    auto deserialized = cl.Deserialize(buffer.data(), serialized);
-    ASSERT_EQ(serialized, deserialized);
+    uint16_t index = 0;
 
-    auto informationIt = cl.Information();
-    auto controlsIt = _controls.cbegin();
-    while (informationIt.Next()) {
-        ASSERT_EQ(informationIt.Current().first, controlsIt->get()->MessageMetaData());
-        ++controlsIt;
+    client.Controls(it);
+
+    while (it.Next()) {
+        Messaging::MessageUnit::Control control({it.Type(), it.Category(), it.Module()}, it.Enabled());
+        auto serialized = control.Serialize(&(buffer.data()[index]), buffer.size());
+
+        EXPECT_GT(serialized, 0);
+
+        EXPECT_GT(buffer.size(), serialized);
+
+        auto deserialized = control.Deserialize(&buffer.data()[index], serialized);
+
+        index += serialized;
+
+        EXPECT_EQ(serialized, deserialized);
     }
+
+    EXPECT_LT(index, buffer.size());
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessage)
 {
-    const string traceMessage = _T("some trace");
-    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+    Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
     client.AddInstance(0); //we are in framework
 
     //factory should be added before attempting to pop data
-    Messaging::TraceFactory factory;
-    client.AddFactory(Core::Messaging::MetaData::MessageType::TRACING, &factory);
+    Messaging::TraceFactoryType<Core::Messaging::IStore::Tracing, Messaging::TextMessage> factory;
+    client.AddFactory(Core::Messaging::Metadata::type::TRACING, &factory);
 
+    Core::Messaging::Metadata metadata(Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
+
+    client.Enable(metadata, true);
+
+    const string traceMessage = _T("some trace");
     Messaging::TextMessage tm(traceMessage);
-    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
-        _T("some_category"),
-        EXPAND_AND_QUOTE(MODULE_NAME),
-        _T("some_file.cpp"),
-        1337,
-        Core::Time::Now().Ticks());
 
-    Core::Messaging::MessageUnit::Instance().Push(info, &tm);
+    Core::Messaging::IStore::Tracing info(Core::Messaging::MessageInfo(metadata, Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
 
-    auto messages = client.PopMessagesAsList();
-    ASSERT_EQ(messages.size(), 1);
-    auto message = messages.front();
+    Messaging::MessageUnit::Instance().Push(info, &tm);
 
-    ASSERT_NE(message.first.MessageMetaData().Type(), Core::Messaging::MetaData::MessageType::INVALID);
-    ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
+    // Risk of blocking or unknown suitable 'waittime'
+    //client.WaitForUpdates(Core::infinite);
+    // Instead 'flush' and continue
+    client.SkipWaiting();
 
-    string result;
-    message.second->ToString(result);
-    ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
-    ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
-    ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
-    ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+    bool present = false;
+
+    client.PopMessagesAndCall(
+        [&](const Core::ProxyType<Core::Messaging::MessageInfo>& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message) {
+            //(*metadata).TimeStamp();
+            //(*metadata).Module();
+            //(*metadata).Category();
+
+            if ((*metadata).Type() == Core::Messaging::Metadata::type::TRACING) {
+                TRACE_L1(
+                    _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
+                    , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
+                    , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
+                    , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
+                );
+
+                present = present || (*message).Data() == traceMessage;
+            } else {
+                TRACE_L1(_T("PopMessagesAndCall : Unknown message"));
+            }
+
+            // By defining a callback data could be further processed
+        }
+    );
+
+    EXPECT_TRUE(present);
+
+    client.RemoveInstance(0);
 }
 
 TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
 {
     const string traceMessage = _T("some trace");
-    Messaging::TextMessage tm(traceMessage);
-    Core::Messaging::Information info(Core::Messaging::MetaData::MessageType::TRACING,
-        _T("some_category"),
-        EXPAND_AND_QUOTE(MODULE_NAME),
-        _T("some_file.cpp"),
-        1337,
-        Core::Time::Now().Ticks());
 
-    auto lambdaFunc = [&](IPTestAdministrator& testAdmin) {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
-        client.AddInstance(0);
-        Messaging::TraceFactory factory;
-        client.AddFactory(Core::Messaging::MetaData::MessageType::TRACING, &factory);
-        testAdmin.Sync("setup");
-        testAdmin.Sync("writer wrote");
-        auto messages = client.PopMessagesAsList();
+    Core::Messaging::Metadata metadata(Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
 
-        ASSERT_EQ(messages.size(), 1);
-        auto message = messages.front();
+    // Make sure the parent does not miss out on the signal if the child completes prematurely
+    sigset_t sigset;
 
-        ASSERT_NE(message.first.MessageMetaData().Type(), Core::Messaging::MetaData::MessageType::INVALID);
-        ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGCHLD);
 
-        string result;
-        message.second->ToString(result);
-        ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
-        ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
-        ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
-        ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+    // Do not continue if it is not guaranteed a child can be killed / ended
+    ASSERT_FALSE(sigprocmask(SIG_BLOCK, &sigset, nullptr) == -1);
 
-        testAdmin.Sync("reader read");
-        testAdmin.Sync("done");
-    };
+    pid_t pid = fork();
 
-    static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
-    IPTestAdministrator testAdmin(otherSide);
+    switch(pid) {
+    case  -1    :   // error
+                    {
+                        EXPECT_TRUE(pid != -1);
+                        break;
+                    }
+    case 0      :   // child
+                    {
+                        ASSERT_FALSE(sigprocmask(SIG_UNBLOCK, &sigset, nullptr) == -1);
 
-    {
-        testAdmin.Sync("setup");
-        testAdmin.Sync("writer wrote");
-        Core::Messaging::MessageUnit::Instance().Push(info, &tm);
-        testAdmin.Sync("reader read");
+                        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+                        client.AddInstance(0);
+
+                        Messaging::TraceFactoryType<Core::Messaging::IStore::Tracing, Messaging::TextMessage> factory;
+                        client.AddFactory(Core::Messaging::Metadata::type::TRACING, &factory);
+
+                        client.Enable(metadata, true);
+
+                        client.WaitForUpdates(Core::infinite);
+//                        client.SkipWaiting();
+
+                        client.PopMessagesAndCall(
+                            [&](const Core::ProxyType<Core::Messaging::MessageInfo>& metadata, const Core::ProxyType<Core::Messaging::IEvent>& message) {
+                                if ((*metadata).Type() == Core::Messaging::Metadata::type::TRACING) {
+                                    TRACE_L1(
+                                        _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
+                                        , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
+                                        , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
+                                        , static_cast<Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
+                                    );
+
+                                    EXPECT_TRUE((*message).Data() == traceMessage);
+                                }
+                            }
+                        );
+
+                        client.RemoveFactory(Core::Messaging::Metadata::TRACING);
+
+                        client.RemoveInstance(0);
+
+                        break;
+                    }
+        default :   // parent
+                    {
+                        ASSERT_FALSE(sigprocmask(SIG_UNBLOCK, &sigset, nullptr) == -1);
+
+                        Messaging::TextMessage tm(traceMessage);
+
+                        Core::Messaging::IStore::Tracing info(Core::Messaging::MessageInfo(metadata, Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
+
+                        Messaging::MessageUnit::Instance().Push(info, &tm);
+
+                        struct timespec timeout;
+                        timeout.tv_sec = 60; // Arbitrary value
+                        timeout.tv_nsec = 0;
+
+                        do {
+                            if (sigtimedwait(&sigset, nullptr, &timeout) == -1) {
+                                int err = errno;
+                                if (err == EINTR) {
+                                    // Signal other than SIGCHLD
+                                    continue;
+                                } else if (err == EAGAIN) {
+                                    // Timeout and no SIGCHLD received
+                                    // Kill the child
+                                    EXPECT_FALSE(kill(pid, SIGKILL) == -1);
+                                } else {
+                                    // Error in executing sigtimedwait, 'abort'
+                                    EXPECT_FALSE(err == 0);
+                                }
+                            }
+
+                            break;
+                        } while(waitpid(-1, nullptr, WNOHANG) <= 0);
+                    }
     }
-    testAdmin.Sync("done");
 }
