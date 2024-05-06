@@ -113,8 +113,7 @@ namespace WPEFramework {
             Core::FrameType<0>::Writer writer(frame, 0);
 
             ASSERT(modules.size() < 256);
-            // probably need to add static cast of size to uint8 - check if there will be a warning for it
-            writer.Number<uint8_t>(modules.size());
+            writer.Number<uint8_t>(static_cast<uint8_t>(modules.size()));
 
             std::vector<string>::const_iterator it;
             for (it = modules.begin(); it != modules.end(); ++it){

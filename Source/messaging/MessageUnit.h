@@ -830,9 +830,9 @@ namespace WPEFramework {
                             uint8_t iterator = reader.Number<uint8_t>();
 
                             while(iterator > 0) {
-                                string module = reader.NullTerminatedText();
+                                const string& module = reader.NullTerminatedText();
 
-                                if (std::find(modules.begin(), modules.end(), &module) == modules.end()) {
+                                if (std::find(modules.begin(), modules.end(), module) == modules.end()) {
                                     modules.push_back(module);
                                 }
                                 --iterator;
