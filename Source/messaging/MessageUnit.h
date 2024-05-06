@@ -827,7 +827,7 @@ namespace WPEFramework {
                             Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                             Core::FrameType<0>::Reader reader(frame, 0);
 
-                            size_t iterator = reader.Number<size_t>();
+                            uint8_t iterator = reader.Number<uint8_t>();
 
                             while(iterator > 0) {
                                 string module = reader.NullTerminatedText();

@@ -112,7 +112,8 @@ namespace WPEFramework {
             Core::FrameType<0> frame(buffer, length, length);
             Core::FrameType<0>::Writer writer(frame, 0);
 
-            writer.Number<size_t>(modules.size());
+            ASSERT(modules.size() <= static_cast<uint8_t>(-1));
+            writer.Number<uint8_t>(modules.size());
 
             std::vector<string>::iterator it;
             for (it = modules.begin(); it != modules.end(); ++it){
