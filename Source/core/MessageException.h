@@ -29,7 +29,7 @@
 namespace WPEFramework {
 namespace Core {
 
-    class MessageException : public std::exception {
+    class EXTERNAL MessageException : public std::exception {
     private:
         MessageException();
 
