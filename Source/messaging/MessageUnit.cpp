@@ -78,7 +78,7 @@ namespace WPEFramework {
             return (handler.Offset());
         }
         
-        uint16_t MessageUnit::SerializeModules(uint8_t* buffer, const uint16_t length)
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
         {
             std::vector<string> modules;
 

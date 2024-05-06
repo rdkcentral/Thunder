@@ -892,7 +892,7 @@ namespace WPEFramework {
                                     message->Response().Set(length, outBuffer);
                                 }
                                 else if (protocol == metadataFrameProtocol::MODULES) {
-                                    uint16_t length = _parent.SerializeModules(outBuffer, sizeof(outBuffer));
+                                    uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
                                     message->Response().Set(length, outBuffer);
                                 }
                                 else {
@@ -1014,7 +1014,7 @@ namespace WPEFramework {
 
         private:
             uint16_t Serialize(uint8_t* buffer, const uint16_t length, const string& module);
-            uint16_t SerializeModules(uint8_t* buffer, const uint16_t length);
+            uint16_t Serialize(uint8_t* buffer, const uint16_t length);
             void Update(const Core::Messaging::Metadata& control, const bool enable);
             void Update();
 
