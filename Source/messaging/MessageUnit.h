@@ -767,7 +767,7 @@ namespace WPEFramework {
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
                         uint8_t buffer[64];
-                        Core::FrameType<0> frame(buffer, 64, 64);
+                        Core::FrameType<0> frame(buffer, sizeof(buffer), sizeof(buffer));
                         Core::FrameType<0>::Writer writer(frame, 0);
 
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::CONTROLS);
@@ -811,7 +811,7 @@ namespace WPEFramework {
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
                         uint8_t buffer[1];
-                        Core::FrameType<0> frame(buffer, 1, 1);
+                        Core::FrameType<0> frame(buffer, sizeof(buffer), sizeof(buffer));
                         Core::FrameType<0>::Writer writer(frame, 0);
 
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::MODULES);
