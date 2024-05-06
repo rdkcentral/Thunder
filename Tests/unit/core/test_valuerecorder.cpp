@@ -82,6 +82,9 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
     public:
         void ReaderJob()
         {
+            Next();
+            EXPECT_TRUE(IsValid());
+
             uint32_t time = 20;
             Core::Time curTime = Core::Time::Now();
             curTime.Add(time);
@@ -90,6 +93,7 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             StepForward();
             StepBack();
             ClearData();
+
             Reader obj1(_file, 1u);
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
@@ -112,12 +116,19 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
 TEST(test_valuerecorder, test_writer)
 {
     string filename = "baseRecorder.txt";
-    WriterClass obj1(filename);
-    obj1.Copy(obj1,1);
-    obj1.Copy(obj1,100);
-    obj1.WriterJob();
+
+    auto obj1 = RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
+
+    obj1->Copy(*(obj1),1);
+    obj1->Copy(*(obj1),100);
+
+    static_cast<WriterClass&>(*obj1).WriterJob();
+
     ReaderClass obj2(filename);
     obj2.ReaderJob();
-    ReaderClass obj3(ProxyType<WriterClass>(obj1));
+
+    ReaderClass obj4(ProxyType<WriterClass>(obj3));
+
+    obj1.Release();
 }
 
