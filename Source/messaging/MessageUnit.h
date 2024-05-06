@@ -830,7 +830,11 @@ namespace WPEFramework {
                             size_t iterator = reader.Number<size_t>();
 
                             while(iterator > 0) {
-                                modules.push_back(reader.NullTerminatedText());
+                                string module = reader.NullTerminatedText();
+
+                                if (std::find(modules.begin(), modules.end(), &module) == modules.end()) {
+                                    modules.push_back(module);
+                                }
                                 --iterator;
                             }
                         }

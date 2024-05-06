@@ -148,9 +148,6 @@ namespace Messaging {
             client.second.Modules(modules);
         }
 
-        std::sort(modules.begin(), modules.end());
-        modules.erase(std::unique(modules.begin(), modules.end()), modules.end());
-
         _adminLock.Unlock();
     }
 
