@@ -24,7 +24,9 @@
     <ClCompile Include="json\JsonEnum_Discovery.cpp" />
     <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
     <ClCompile Include="json\JsonEnum_Metadata.cpp" />
-    <ClCompile Include="json\JsonEnum_SystemManagement.cpp" />
+    <ClCompile Include="json\JsonEnum_System.cpp" />
+    <ClCompile Include="json\JsonEnum_Events.cpp" />
+    <ClCompile Include="json\JsonEnum_Subsystems.cpp" />
     <ClCompile Include="Metadata.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />

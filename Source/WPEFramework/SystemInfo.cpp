@@ -59,13 +59,16 @@ POP_WARNING()
     {
         _adminLock.Lock();
 
-        ASSERT(std::find(_notificationClients.begin(), _notificationClients.end(), notification) == _notificationClients.end());
+        std::list<PluginHost::ISubSystem::INotification*>::iterator index(std::find(_notificationClients.begin(), _notificationClients.end(), notification));
+        ASSERT(index == _notificationClients.end());
 
-        _notificationClients.push_back(notification);
-        notification->AddRef();
+        if (index == _notificationClients.end()) {
+            _notificationClients.push_back(notification);
+            notification->AddRef();
 
-        // Give the registering sink a chance to evaluate the current info before one actually changes.
-        notification->Updated();
+            // Give the registering sink a chance to evaluate the current info before one actually changes.
+            notification->Updated();
+        }
 
         _adminLock.Unlock();
     }

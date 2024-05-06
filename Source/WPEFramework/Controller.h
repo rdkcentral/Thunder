@@ -26,6 +26,9 @@
 #include "IController.h"
 #include "PostMortem.h"
 
+#include <plugins/json/JsonData_Events.h>
+#include <plugins/json/JEvents.h>
+
 namespace WPEFramework {
 namespace Plugin {
 
@@ -36,10 +39,12 @@ namespace Plugin {
         , public PluginHost::JSONRPC
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
-        , public Exchange::Controller::ISystemManagement
+        , public Exchange::Controller::ISystem
         , public Exchange::Controller::IMetadata
         , public Exchange::Controller::ILifeTime
-        , public Exchange::Controller::IShells {
+        , public Exchange::Controller::IShells
+        , public Exchange::Controller::ISubsystems
+        , public Exchange::Controller::IEvents {
     private:
         using Resumes = std::vector<string>;
         using ExternalSubSystems = std::vector<PluginHost::ISubSystem::subsystem>;
@@ -117,40 +122,6 @@ namespace Plugin {
         // PUT -> URL /<MetadataCallsign>/Deactivate/<Callsign>
         // DELETE -> URL /<MetadataCallsign>/Plugin/<Callsign>
     public:
-        class SubsystemsData : public Core::JSON::Container {
-        public:
-            SubsystemsData()
-                : Core::JSON::Container()
-            {
-                Init();
-            }
-
-            SubsystemsData(const SubsystemsData& other)
-                : Core::JSON::Container()
-                , Subsystem(other.Subsystem)
-                , Active(other.Active)
-            {
-                Init();
-            }
-
-            SubsystemsData& operator=(const SubsystemsData& rhs)
-            {
-                Subsystem = rhs.Subsystem;
-                Active = rhs.Active;
-                return (*this);
-            }
-
-        private:
-            void Init()
-            {
-                Add(_T("subsystem"), &Subsystem);
-                Add(_T("active"), &Active);
-            }
-
-        public:
-            Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> Subsystem;
-            Core::JSON::Boolean Active;
-        };
         class Config : public Core::JSON::Container {
         private:
             Config(const Config&) = delete;
@@ -201,9 +172,11 @@ namespace Plugin {
             Core::JSON::Boolean Ui;
         };
 
-    private:
-        Controller(const Controller&);
-        Controller& operator=(const Controller&);
+    public:
+        Controller(Controller&&) = delete;
+        Controller(const Controller&) = delete;
+        Controller& operator=(Controller&&) = delete;
+        Controller& operator=(const Controller&) = delete;
 
     protected:
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -236,9 +209,22 @@ namespace Plugin {
                 subSystems->Release();
             }
         }
-        inline void Notification(const PluginHost::Server::ForwardMessage& message)
+
+        void Notification(const string& callsign, const string& message)
         {
-            Notify("all", message);
+            ASSERT(callsign.empty() == false);
+            ASSERT(message.empty() == false);
+
+            Exchange::Controller::JEvents::Event::ForwardMessage(*this, callsign, message);
+        }
+
+        void Notification(const string& callsign, const string& event, const string& params)
+        {
+            ASSERT(callsign.empty() == false);
+            ASSERT(event.empty() == false);
+
+            Exchange::Controller::IEvents::INotification::Event data{event, params};
+            Exchange::Controller::JEvents::Event::ForwardEvent(*this, callsign, data);
         }
 
         inline void SetServer(PluginHost::Server* pluginServer, const std::vector<PluginHost::ISubSystem::subsystem>& externalSubsystems)
@@ -324,27 +310,33 @@ namespace Plugin {
 
         //  Controller methods
         // -------------------------------------------------------------------------------------------------------
+        // ISystem overrides
         Core::hresult Delete(const string& path) override;
         Core::hresult Reboot() override;
         Core::hresult Environment(const string& variable, string& value) const override;
         Core::hresult Clone(const string& callsign, const string& newcallsign, string& response) override;
 
+        // IDiscovery overrides
         Core::hresult StartDiscovery(const uint8_t ttl) override;
         Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
+        // IConfiguration overrides
         Core::hresult Persist() override;
         Core::hresult Configuration(const string& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
+        // ILifeTime overrides
         Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification) override;
         Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification) override;
-
         Core::hresult Activate(const string& callsign) override;
         Core::hresult Deactivate(const string& callsign) override;
         Core::hresult Unavailable(const string& callsign) override;
         Core::hresult Suspend(const string& callsign) override;
         Core::hresult Resume(const string& callsign) override;
-        Core::hresult Hibernate(const string& callsign, const uint32_t timeout);
+        Core::hresult Hibernate(const string& callsign, const uint32_t timeout) override;
+
+        // ISubsystems overrides
+        Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
 
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
@@ -353,10 +345,9 @@ namespace Plugin {
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
         Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
-        Core::hresult Subsystems(IMetadata::Data::ISubsystemsIterator*& subsystems) const override;
         Core::hresult Version(IMetadata::Data::Version& version) const override;
 
-        // Pushing notifications to interested sinks
+        // IShells overrides
         Core::hresult Register(Exchange::Controller::IShells::INotification* sink) override;
         Core::hresult Unregister(Exchange::Controller::IShells::INotification* sink) override;
 
@@ -368,10 +359,12 @@ namespace Plugin {
             INTERFACE_ENTRY(PluginHost::IDispatcher)
             INTERFACE_ENTRY(Exchange::Controller::IConfiguration)
             INTERFACE_ENTRY(Exchange::Controller::IDiscovery)
-            INTERFACE_ENTRY(Exchange::Controller::ISystemManagement)
+            INTERFACE_ENTRY(Exchange::Controller::ISystem)
             INTERFACE_ENTRY(Exchange::Controller::IMetadata)
             INTERFACE_ENTRY(Exchange::Controller::ILifeTime)
             INTERFACE_ENTRY(Exchange::Controller::IShells)
+            INTERFACE_ENTRY(Exchange::Controller::ISubsystems)
+            INTERFACE_ENTRY(Exchange::Controller::IEvents)
         END_INTERFACE_MAP
 
     private:

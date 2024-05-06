@@ -69,6 +69,7 @@ nav:
   - Misc:
     - Documentation: docs.md
     - References: references/references.md
+    - Filing an Issue: issuetemplate/issuetemplate.md
 
 
 markdown_extensions:

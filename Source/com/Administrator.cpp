@@ -29,6 +29,9 @@ namespace RPC {
         , _proxy()
         , _factory(8)
         , _channelProxyMap()
+        , _channelReferenceMap()
+        , _danglingProxies()
+        , _delegatedReleases(true)
     {
     }
 
@@ -108,7 +111,7 @@ namespace RPC {
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(proxy.LinkId()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -121,8 +124,17 @@ namespace RPC {
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-            } else {
-                TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
+                else {
+                    // If it is not found, check the dangling map
+                    Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
+
+                    if (index != _danglingProxies.end()) {
+                        _danglingProxies.erase(index);
+                    }
+                    else {
+                        TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+		    }
+		}
             }
         } else {
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
@@ -176,7 +188,7 @@ namespace RPC {
             if (result == false) {
                 _adminLock.Lock();
 
-                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel.operator->()));
+                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel->LinkId()));
                 const Core::IUnknown* unknown = Convert(reinterpret_cast<void*>(impl), id);
 
                 result = ((index != _channelReferenceMap.end()) &&
@@ -203,7 +215,7 @@ namespace RPC {
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -233,7 +245,7 @@ namespace RPC {
 
             _adminLock.Lock();
 
-            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+            ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
             if (index != _channelProxyMap.end()) {
                 Proxies::iterator entry(index->second.begin());
@@ -262,7 +274,7 @@ namespace RPC {
                     ASSERT(result != nullptr);
 
                     // Register it as it is remotely registered :-)
-                    _channelProxyMap[channel.operator->()].push_back(result);
+                    _channelProxyMap[channel->LinkId()].push_back(result);
 
                     // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
                     interface = result->QueryInterface(id);
@@ -281,52 +293,52 @@ namespace RPC {
 
     void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
-        if (reference != nullptr) {
-            _adminLock.Lock();
+        ASSERT(reference != nullptr);
 
-            ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
+        _adminLock.Lock();
 
-            if (index == _channelReferenceMap.end()) {
-                auto result = _channelReferenceMap.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(channel.operator->()),
-                    std::forward_as_tuple());
-                result.first->second.emplace_back(id, reference);
-                TRACE_L3("Registered interface %p(0x%08x).", reference, id);
-            } else {
-                // See that it does not already exists on this channel, no need to register
-                // it again!!!
-                std::list< RecoverySet >::iterator element(index->second.begin());
+        ReferenceMap::iterator index = _channelReferenceMap.find(channel->LinkId());
 
-                while ( (element != index->second.end()) && ((element->Id() != id) || (element->Unknown() != reference)) ) {
-                    element++;
-                }
+        if (index == _channelReferenceMap.end()) {
+            auto result = _channelReferenceMap.emplace(std::piecewise_construct,
+                std::forward_as_tuple(channel->LinkId()),
+                std::forward_as_tuple());
+            result.first->second.emplace_back(id, reference);
+            TRACE_L3("Registered interface %p(0x%08x).", reference, id);
+        } else {
+            // See that it does not already exists on this channel, no need to register
+            // it again!!!
+            std::list< RecoverySet >::iterator element(index->second.begin());
 
-                if (element == index->second.end()) {
-                    // Add this element to the list. We are referencing it now with a proxy on the other side..
-                    index->second.emplace_back(id, reference);
-                    TRACE_L3("Registered interface %p(0x%08x).", reference, id);
-                }
-                else {
-                    // If this happens, it means that the interface we are trying to register, is already handed out, over the same channel.
-                    // This means, that on the otherside (the receiving side) that will create a Proxy for this interface, finds this interface as well.
-                    // Now two things can happen:
-                    // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number
-                    //    of AddRefs the RemoteSide has on this Real Object is incremented by one).
-                    // 2) Corner case, unlikely top happen, but we need to cater for it. If during the return of this reference, that Proxy on the otherside
-                    //    might reach the reference 0. That will, on that side, clear out the proxy. That will send a Release for that proxy to this side and
-                    //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this
-                    //    interface reaches the other side, it will simply create a new proxy with an externalReference COunt of 1.
-                    //
-                    // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly
-                    // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map
-                    // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
-                    TRACE_L3("Interface 0x%p(0x%08x) is already registered.", reference, id);
-                    element->Increment();
-                }
+            while ( (element != index->second.end()) && ((element->Id() != id) || (element->Unknown() != reference)) ) {
+                element++;
             }
 
-            _adminLock.Unlock();
+            if (element == index->second.end()) {
+                // Add this element to the list. We are referencing it now with a proxy on the other side..
+                index->second.emplace_back(id, reference);
+                TRACE_L3("Registered interface %p(0x%08x).", reference, id);
+            }
+            else {
+                // If this happens, it means that the interface we are trying to register, is already handed out, over the same channel.
+                // This means, that on the otherside (the receiving side) that will create a Proxy for this interface, finds this interface as well.
+                // Now two things can happen:
+                // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number
+                //    of AddRefs the RemoteSide has on this Real Object is incremented by one).
+                // 2) Corner case, unlikely top happen, but we need to cater for it. If during the return of this reference, that Proxy on the otherside
+                //    might reach the reference 0. That will, on that side, clear out the proxy. That will send a Release for that proxy to this side and
+                //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this
+                //    interface reaches the other side, it will simply create a new proxy with an externalReference COunt of 1.
+                //
+                // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly
+                // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map
+                // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
+                TRACE_L3("Interface 0x%p(0x%08x) is already registered.", reference, id);
+                element->Increment();
+            }
         }
+
+        _adminLock.Unlock();
     }
 
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id)
@@ -345,7 +357,7 @@ namespace RPC {
     {
         _adminLock.Lock();
 
-        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel->LinkId()));
 
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
@@ -354,7 +366,7 @@ namespace RPC {
                 Core::IUnknown* iface = loop->Unknown();
                 ASSERT(iface != nullptr);
 
-                if ((iface != nullptr) && (loop->IsComposit() == false)) {
+                if ((_delegatedReleases == true) && (iface != nullptr) && (loop->IsComposit() == false)) {
 
                     uint32_t result;
 
@@ -370,19 +382,18 @@ namespace RPC {
             _channelReferenceMap.erase(remotes);
         }
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
 
         if (index != _channelProxyMap.end()) {
-            Proxies::iterator loop(index->second.begin());
-            while (loop != index->second.end()) {
-                // There is a small possibility that the last reference to this proxy
-                // interface is released in the same time before we report this interface
-                // to be dead. So lets keep a refernce so we can work on a real object
-                // still. This race condition, was observed by customer testing.
-                (*loop)->Invalidate();
-
-                loop++;
+            for (auto entry : index->second) {
+                entry->Invalidate();
+                _danglingProxies.emplace_back(entry);
             }
+            // The _channelProxyMap does have a reference for each Proxy it 
+            // holds, so it is safe to just move the vector from the map to
+            // the pendingProxies. The receiver of pendingProxies has to take
+            // care of releasing the last reference we, as administration layer
+            // hold upon this..
             pendingProxies = std::move(index->second);
             _channelProxyMap.erase(index);
         }
@@ -392,6 +403,5 @@ namespace RPC {
 
     /* static */ Administrator& Job::_administrator= Administrator::Instance();
 	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
-
 }
 } // namespace Core

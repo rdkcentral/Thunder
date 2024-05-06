@@ -136,12 +136,32 @@ namespace PluginHost {
                     Add(_T("value"), &Value);
                     Add(_T("override"), &Override);
                 }
+                Environment(Environment&& move)
+                    : Core::JSON::Container()
+                    , Key(std::move(move.Key))
+                    , Value(std::move(move.Value))
+                    , Override(std::move(move.Override))
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value);
+                    Add(_T("override"), &Override);
+                }
                 ~Environment() override = default;
                 Environment& operator=(const Environment& RHS)
                 {
                     Key = RHS.Key;
                     Value = RHS.Value;
                     Override = RHS.Override;
+
+                    return (*this);
+                }
+                Environment& operator=(Environment&& move)
+                {
+                    if (this != &move) {
+                        Key = std::move(move.Key);
+                        Value = std::move(move.Value);
+                        Override = std::move(move.Override);
+                    }
 
                     return (*this);
                 }
@@ -190,6 +210,25 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("umask"), &Umask);
                 }
+                ProcessSet(ProcessSet&& move)
+                    : Core::JSON::Container()
+                    , User(std::move(move.User))
+                    , Group(std::move(move.Group))
+                    , Priority(std::move(move.Priority))
+                    , OOMAdjust(std::move(move.OOMAdjust))
+                    , Policy(std::move(move.Policy))
+                    , StackSize(std::move(move.StackSize))
+                    , Umask(std::move(move.Umask))
+                {
+                    Add(_T("user"), &User);
+                    Add(_T("group"), &Group);
+                    Add(_T("priority"), &Priority);
+                    Add(_T("policy"), &Policy);
+                    Add(_T("oomadjust"), &OOMAdjust);
+                    Add(_T("stacksize"), &StackSize);
+                    Add(_T("umask"), &Umask);
+                }
+
                 ~ProcessSet() override = default;
 
                 ProcessSet& operator=(const ProcessSet& RHS)
@@ -202,6 +241,20 @@ namespace PluginHost {
                     StackSize = RHS.StackSize;
                     Umask = RHS.Umask;
 
+                    return (*this);
+                }
+
+                ProcessSet& operator=(ProcessSet&& move)
+                {
+                    if (this != &move) {
+                        User = std::move(move.User);
+                        Group = std::move(move.Group);
+                        Priority = std::move(move.Priority);
+                        Policy = std::move(move.Policy);
+                        OOMAdjust = std::move(move.OOMAdjust);
+                        StackSize = std::move(move.StackSize);
+                        Umask = std::move(move.Umask);
+                    }
                     return (*this);
                 }
 
@@ -242,6 +295,17 @@ namespace PluginHost {
                     Add(_T("type"), &Type);
                     Add(_T("output"), &OutputEnabled);
                 }
+                InputConfig(InputConfig&& move)
+                    : Core::JSON::Container()
+                    , Locator(std::move(move.Locator))
+                    , Type(std::move(move.Type))
+                    , OutputEnabled(std::move(move.OutputEnabled))
+                {
+                    Add(_T("locator"), &Locator);
+                    Add(_T("type"), &Type);
+                    Add(_T("output"), &OutputEnabled);
+                }
+
                 ~InputConfig() override = default;
 
                 InputConfig& operator=(const InputConfig& RHS)
@@ -252,6 +316,15 @@ namespace PluginHost {
                     return (*this);
                 }
 
+                InputConfig& operator=(InputConfig&& move)
+                {
+                    if (this != &move) {
+                        Locator = std::move(move.Locator);
+                        Type = std::move(move.Type);
+                        OutputEnabled = std::move(move.OutputEnabled);
+                    }
+                    return (*this);
+                }
                 Core::JSON::String Locator;
                 Core::JSON::EnumType<InputHandler::type> Type;
                 Core::JSON::Boolean OutputEnabled;
@@ -259,7 +332,8 @@ namespace PluginHost {
 
             class Observables : public Core::JSON::Container {
             public:
-                Observables& operator= (const Observables&);
+                Observables& operator=(Observables&&);
+                Observables& operator=(const Observables&);
 
                 Observables()
                     : Core::JSON::Container()
@@ -272,6 +346,13 @@ namespace PluginHost {
                     : Core::JSON::Container()
                     , ProxyStubPath(copy.ProxyStubPath)
                     , PluginConfigPath(copy.PluginConfigPath) {
+                    Add(_T("proxystubpath"), &ProxyStubPath);
+                    Add(_T("configpath"), &PluginConfigPath);
+                }
+                Observables(Observables&& move)
+                    : Core::JSON::Container()
+                    , ProxyStubPath(std::move(move.ProxyStubPath))
+                    , PluginConfigPath(std::move(move.PluginConfigPath)) {
                     Add(_T("proxystubpath"), &ProxyStubPath);
                     Add(_T("configpath"), &PluginConfigPath);
                 }
@@ -296,11 +377,23 @@ namespace PluginHost {
                 {
                     Add(_T("logging"), &Logging);
                 }
+                ProcessContainerConfig(ProcessContainerConfig&& move)
+                    : Logging(std::move(move.Logging))
+                {
+                    Add(_T("logging"), &Logging);
+                }
                 ~ProcessContainerConfig() override = default;
 
                 ProcessContainerConfig& operator=(const ProcessContainerConfig& RHS)
                 {
                     Logging = RHS.Logging;
+                    return (*this);
+                }
+                ProcessContainerConfig& operator=(ProcessContainerConfig&& move)
+                {
+                    if (this != &move) {
+                        Logging = std::move(move.Logging;
+                    }
                     return (*this);
                 }
 
@@ -323,11 +416,23 @@ namespace PluginHost {
                 {
                     Add(_T("locator"), &Locator);
                 }
+                HibernateConfig(HibernateConfig&& move)
+                    : Locator(std::move(move.Locator))
+                {
+                    Add(_T("locator"), &Locator);
+                }
                 ~HibernateConfig() override = default;
 
                 HibernateConfig& operator=(const HibernateConfig& RHS)
                 {
                     Locator = RHS.Locator;
+                    return (*this);
+                }
+                HibernateConfig& operator=(HibernateConfig&& move)
+                {
+                    if (this != &move) {
+                        Locator = std::move(move.Locator);
+                    }
                     return (*this);
                 }
 
@@ -378,6 +483,7 @@ namespace PluginHost {
                 , ExitReasons()
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
+                , DelegatedReleases(true)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -417,6 +523,7 @@ namespace PluginHost {
                 Add(_T("exitreasons"), &ExitReasons);
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
+                Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -460,6 +567,7 @@ namespace PluginHost {
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
+            Core::JSON::Boolean DelegatedReleases;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -487,8 +595,10 @@ namespace PluginHost {
             } 
 
         public:
+            InputInfo(InputInfo&&) = delete;
             InputInfo(const InputInfo&) = delete;
-            InputInfo& operator= (const InputInfo&) = delete;
+            InputInfo& operator=(InputInfo&&) = delete;
+            InputInfo& operator=(const InputInfo&) = delete;
 
             ~InputInfo() = default;
 
@@ -535,8 +645,10 @@ namespace PluginHost {
             } 
 
         public:
+            ProcessInfo(ProcessInfo&&) = delete;
             ProcessInfo(const ProcessInfo&) = delete;
-            ProcessInfo& operator= (const ProcessInfo&) = delete;
+            ProcessInfo& operator=(ProcessInfo&&) = delete;
+            ProcessInfo& operator=(const ProcessInfo&) = delete;
 
             ~ProcessInfo() = default;
 
@@ -578,8 +690,8 @@ namespace PluginHost {
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _prefix()
             , _webPrefix()
@@ -620,6 +732,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             , _reasons()
             , _substituter(*this)
             , _configLock()
+            , _delegatedReleases(true)
             #ifdef PROCESSCONTAINERS_ENABLED
             , _ProcessContainersLogging()
             #endif
@@ -669,6 +782,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
+                _delegatedReleases = config.DelegatedReleases.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -870,6 +984,9 @@ POP_WARNING()
         inline string EthernetCard() const {
             return _ethernetCard;
         }
+        inline bool DelegatedReleases() const {
+            return(_delegatedReleases);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1046,6 +1163,8 @@ POP_WARNING()
         std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
         mutable Core::CriticalSection _configLock;
+        bool _delegatedReleases;
+
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;
 #endif

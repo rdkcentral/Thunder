@@ -141,6 +141,7 @@ namespace Core {
         explicit File();
         explicit File(const string& fileName);
         explicit File(const File& copy);
+        explicit File(File&& move);
         ~File();
 
         File& operator=(const string& location)
@@ -171,6 +172,32 @@ namespace Core {
 
             return (*this);
         }
+
+        File& operator=(File&& move)
+        {
+            if (this != &move) {
+                _name = std::move(move._name);
+                _size = move._size;
+                _attributes = move._attributes;
+                _creation = std::move(move._creation);
+                _modification = std::move(move._modification);
+                _access = std::move(move._access);
+
+                if (_handle != INVALID_HANDLE_VALUE) {
+#ifdef __POSIX__
+                    close(_handle);
+#else
+                    ::CloseHandle(_handle);
+#endif
+                }
+                _handle = move._handle;
+
+                move._handle = INVALID_HANDLE_VALUE;
+                move._size = 0;
+                move._attributes = 0;
+            }
+            return (*this);
+	}
 
         static string Normalize(const string& input, bool& valid);
 
@@ -635,6 +662,7 @@ POP_WARNING()
         explicit Directory(const TCHAR location[]);
         Directory(const TCHAR location[], const TCHAR filter[]);
         Directory(const Directory& copy);
+        Directory(Directory&& move);
         ~Directory();
 
     public:
@@ -760,6 +788,39 @@ POP_WARNING()
         Directory& operator=(const Directory& RHS)
         {
             _name = RHS._name;
+            _filter = "";
+
+#ifdef __LINUX__
+            _dirFD = nullptr;
+            _entry = nullptr;
+#endif
+
+#ifdef __WINDOWS__
+            _dirFD = INVALID_HANDLE_VALUE;
+            noMoreFiles = false;
+#endif
+
+            return (*this);
+        }
+
+        Directory& operator=(Directory&& move)
+        {
+            if (this != &move) {
+                _name = std::move(move._name);
+                _filter = std::move(move._filter);
+#ifdef __LINUX__
+                _dirFD = move._dirFD;
+                _entry = move._entry;
+                move._dirFD = nullptr;
+                move._entry = nullptr;
+#endif
+#ifdef __WINDOWS__
+                _dirFD = move._dirFD;
+                noMoreFiles = move.noMoreFiles;
+                move._dirFD = INVALID_HANDLE_VALUE;
+                move.noMoreFiles = false;
+#endif
+            }
             return (*this);
         }
 

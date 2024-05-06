@@ -21,6 +21,7 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
 set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
+set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
 
 add_executable(${TARGET}
         Controller.cpp

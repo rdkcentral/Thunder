@@ -109,6 +109,7 @@ namespace Core {
                 }
             }
 
+            MeasurableJob& operator=(MeasurableJob&&) = default;
             MeasurableJob& operator=(const MeasurableJob&) = default;
 
         public:
@@ -393,14 +394,14 @@ POP_WARNING()
             void Info(Metadata& info) const {
                 info.Runs = _runs;
 
-		        _adminLock.Lock();
+                _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
-		            _adminLock.Unlock();
+                    _adminLock.Unlock();
                     info.Job.Clear();
                 }
                 else {
                     info.Job = _currentRequest->Identifier();
-		            _adminLock.Unlock();
+                    _adminLock.Unlock();
                 }
             }
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
