@@ -183,24 +183,6 @@ Using these methods, we can schedule the performance of a task, change the time 
     `ERROR_UNKNOWN_KEY (22)` will be returned in case the job was not previously scheduled!
     `ERROR_TIMEDOUT (11)` will be returned in case waiting time was exceeded!
 
-```cpp
-uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) override
-        {
-            uint32_t result(_timer.Revoke(Timer(this, job)) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
-
-            uint32_t report = _threadPool.Revoke(job, waitTime);
-
-            if (report == Core::ERROR_UNKNOWN_KEY) {
-                report = _external.Completed(job, waitTime);
-
-                if ( (report != Core::ERROR_UNKNOWN_KEY) && (result == Core::ERROR_UNKNOWN_KEY) ) {
-                    result = report;
-                }
-            }
-
-            return (result);
-        }
-```
 
 
 ### Job class scheduling methods
@@ -288,7 +270,7 @@ void ScheduleJob()
         }
 ```
 
-Here is example how to use workerpool methods to schedule jobs, code can be compiled and is part of Thunder tests in `Tests` directory. Example contains two tests, first one shows how to create and submit single job, second test is more complex. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution. At last we print all job's status. Job one and two should be `COMPLETED`, job three should be `CANCELED`.
+Here is example how to use workerpool methods to schedule jobs, code can be compiled and is part of Thunder tests in `Tests` directory. Example contains two tests, first one shows how to create and submit single job, second test is more complex. Our method will ask you to enter the number and then calculate nth number of Fibonacci sequence. At first we create three jobs, submit one and schedule the rest. After this we reschedule first job and run everything. Third job is revoked before starting it's execution.
 
 ```cpp
 #include <chrono>
@@ -299,39 +281,43 @@ Here is example how to use workerpool methods to schedule jobs, code can be comp
 class TestJob : public Core::IDispatch
 {
     public:
-    enum Status {
-         INITIATED,
-         CANCELED,
-         COMPLETED,
-    };
 
     TestJob() = delete;
     TestJob(const TestJob& copy) = delete;
     TestJob& operator=(const TestJob& RHS) = delete;
     ~TestJob() override = default;
     TestJob(const uint32_t waitTime = 0,)
-        : _status(Status::INITIATED)
-        , _waitTime(waitTime)
+        : _waitTime(waitTime)
     {
     }
 
 public:
-    Status GetStatus()
-    {
-        return _status;
-    }
-    void Cancel()
-    {
-        _status = (_status != COMPLETED) ? CANCELED : _status;
-    }
+
     void Dispatch() override
     {
-        _status = COMPLETED;
-        usleep(_waitTime);
+        int input;
+        std::cout << "Enter the number: " << std::endl;
+        std::cin >> input;
+        Fibonacci(input);
     }
 
 private:
-    Status _status;
+
+    int Fibonacci(const int n) {
+        int a = 0;
+        int b = 1;
+        int c = 0;
+        if (n <= 1)
+            return n;
+
+        for(int i = 2; i <= n; i++) {
+            c = a + b;
+            a = b;
+            b = c;
+        }
+        return b;
+    }
+
     uint32_t _waitTime;
 };
 
@@ -344,18 +330,11 @@ void CreateAndSubmitJob()
     workerpool.Join();
 
     // Now we are creating and submiting job
-    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 0));
+    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(0));
     workerpool.Submit(job);
-
-    // Print job status to check if it is initiated
-    std::cout << "Job status: " << job.GetStatus() << std::endl;
 
     // Now run the job and wait for it to complete
     workerpool.Run();
-    std::this_thread::sleep_for::(std::chrono::seconds(2));
-
-    // Print job status to check if it is completed
-    std::cout << "Job status: " << job.GetStatus() << std::endl;
 
     workerpool.Stop();
 }
@@ -370,14 +349,9 @@ void ScheduleJobs()
     workerpool.Join();
 
     // Now we are creating 3 jobs
-    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 50));
-    Core::ProxyType<Core::IDispatch> job_two = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 100));
-    Core::ProxyType<Core::IDispatch> job_three = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(TestJob::Status INITIATED, 150));
-
-    // Print jobs status to check if they are initiated
-    std::cout << "Job one status: " << job_one.GetStatus() << std::endl;
-    std::cout << "Job two status: " << job_two.GetStatus() << std::endl;
-    std::cout << "Job three status: " << job_three.GetStatus() << std::endl;
+    Core::ProxyType<Core::IDispatch> job_one = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(50));
+    Core::ProxyType<Core::IDispatch> job_two = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(100));
+    Core::ProxyType<Core::IDispatch> job_three = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob>(150));
 
     // Now we submit one job and schedule another two
     workerpool.Submit(job_one);
@@ -398,14 +372,9 @@ void ScheduleJobs()
     // Print error code to make sure job three was revoked 
     std::cout << "Job three error code: " << errorCode << std::endl;
 
-    // Wait for jobs to complete and print their status
-    std::this_thread::sleep_for::(std::chrono::seconds(20));
-    std::cout << "Job one status: " << job_one.GetStatus() << std::endl;
-    std::cout << "Job two status: " << job_two.GetStatus() << std::endl;
-    std::cout << "Job three status: " << job_three.GetStatus() << std::endl;
-
     workerpool.Stop();
 }
+
 
 // Run test of your choice
 int main() {
