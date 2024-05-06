@@ -100,6 +100,10 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
             : m_Value(copy.m_Value)
         {
         }
+        explicit EnumerateType(EnumerateType<ENUMERATE>&& move)
+            : m_Value(std::move(move.m_Value))
+        {
+        }
         explicit EnumerateType(const uint32_t Value)
             : m_Value()
         {
@@ -112,6 +116,14 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
         {
             m_Value = RHS.m_Value;
 
+            return (*this);
+        }
+
+        EnumerateType<ENUMERATE>& operator=(EnumerateType<ENUMERATE>&& move)
+        {
+            if (this != &move) {
+                m_Value = std::move(move.m_Value);
+            }
             return (*this);
         }
 

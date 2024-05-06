@@ -46,11 +46,22 @@ namespace Core {
                 : _data(copy._data)
             {
             }
+            inline ScalarType(ScalarType<SCALAR>&& move)
+                : _data(std::move(move._data))
+            {
+            }
             inline ~ScalarType() {}
 
             inline ScalarType<SCALAR>& operator=(const ScalarType<SCALAR>& rhs)
             {
                 _data = rhs._data;
+                return (*this);
+            }
+            inline ScalarType<SCALAR>& operator=(ScalarType<SCALAR>&& move)
+            {
+                if (this != &move) {
+                    _data = std::move(move._data);
+                }
                 return (*this);
             }
             inline ScalarType<SCALAR>& operator=(const SCALAR rhs)
@@ -93,6 +104,10 @@ namespace Core {
                 : _data(copy._data)
             {
             }
+            ScalarType(ScalarType<string>&& move)
+                : _data(std::move(move._data))
+            {
+            }
             ~ScalarType()
             {
             }
@@ -101,6 +116,13 @@ namespace Core {
             {
                 _data = rhs._data;
 
+                return (*this);
+            }
+            ScalarType<string>& operator=(ScalarType<string>&& move)
+            {
+                if (this != &move) {
+                    _data = std::move(move._data);
+                }
                 return (*this);
             }
             ScalarType<string>& operator=(const string& rhs)
@@ -187,6 +209,17 @@ namespace Core {
                 }
                 _text[_length] = '\0';
             }
+            inline Text(Text<LENGTH>&& move)
+                : _length(move._length)
+            {
+                if (_length > 0) {
+                    ::memcpy(_text, move._text, (_length * sizeof(TCHAR)));
+                }
+                _text[_length] = '\0';
+
+                move._length = 0;
+                move._text[0] = '\0';
+            }
             inline ~Text()
             {
             }
@@ -200,6 +233,21 @@ namespace Core {
                 }
                 _text[_length] = '\0';
 
+                return (*this);
+            }
+            inline Text<LENGTH>& operator=(Text<LENGTH>&& move)
+            {
+                if (this != &move) {
+                    _length = move._length;
+
+                    if (_length > 0) {
+                        ::memcpy(_text, move._text, _length);
+                    }
+                    _text[_length] = '\0';
+
+                    move._length = 0;
+                    move._text[0] = '\0';
+                }
                 return (*this);
             }
             inline Text<LENGTH>& operator=(const string& RHS)
@@ -248,8 +296,11 @@ namespace Core {
             uint16_t _length;
         };
 
-        template <const uint16_t LENGTH>
+        template <uint16_t LENGTH>
         class BufferType {
+        private:
+            static constexpr uint32_t _LENGTH = (LENGTH == static_cast<uint16_t>(~0) ? static_cast<uint32_t>(~0) : LENGTH);
+
         public:
             BufferType(const BufferType<LENGTH>& copy) = delete;
             BufferType<LENGTH>& operator=(const BufferType<LENGTH>& RHS) = delete;
@@ -258,10 +309,13 @@ namespace Core {
                 : _buffer()
             {
             }
-            inline BufferType(const uint16_t length, const uint8_t buffer[])
-                : _buffer()
+            inline BufferType(const uint16_t length)
+                : _buffer(length)
             {
-                _buffer.SetBufferType(0, length, buffer);
+            }
+            inline BufferType(const uint16_t length, uint8_t buffer[])
+                : _buffer(buffer, length)
+            {
             }
             inline ~BufferType()
             {
@@ -271,7 +325,7 @@ namespace Core {
             inline void Clear() {
                 _buffer.Size(0);
             }
-            inline uint32_t Length() const
+            inline uint16_t Length() const
             {
                 return (_buffer.Size());
             }
@@ -301,7 +355,7 @@ namespace Core {
             }
 
         private:
-            Core::FrameType<LENGTH> _buffer;
+            Core::FrameType<_LENGTH> _buffer;
         };
  
     }

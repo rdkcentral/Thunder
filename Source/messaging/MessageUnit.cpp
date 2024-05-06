@@ -29,8 +29,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(uint8_t* buffer, const uint16_t length)
                     : _buffer(buffer)
@@ -75,8 +77,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
@@ -106,8 +110,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Settings& settings) : _settings(settings) {}
                 ~Handler() override = default;
@@ -166,7 +172,7 @@ namespace WPEFramework {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
+            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
             if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -209,7 +215,7 @@ namespace WPEFramework {
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
+                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort()));
                 ASSERT(_dispatcher != nullptr);
 
                 if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -234,8 +240,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = default;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
                 ~Handler() override = default;
 
             public:
@@ -275,7 +283,7 @@ namespace WPEFramework {
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
+                uint8_t serializationBuffer[TempDataBufferSize];
                 uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);

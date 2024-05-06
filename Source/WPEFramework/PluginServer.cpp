@@ -279,7 +279,7 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
+    void* Server::Service::QueryInterface(const uint32_t id) /* override */
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
@@ -290,8 +290,15 @@ namespace PluginHost {
             AddRef();
             result = static_cast<PluginHost::IShell*>(this);
         }
+        else if (id == PluginHost::IShell::ICOMLink::ID) {
+            AddRef();
+            result = static_cast<PluginHost::IShell::ICOMLink*>(this);
+        }
+        else if (id == PluginHost::IShell::IConnectionServer::ID) {
+            AddRef();
+            result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
+        }
         else {
-
             _pluginHandling.Lock();
 
             if (_handler != nullptr) {
@@ -337,8 +344,8 @@ namespace PluginHost {
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::HIBERNATED) {
-            Unlock();
             result = Wakeup(3000);
+            Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
             // Load the interfaces, If we did not load them yet...
@@ -447,7 +454,7 @@ namespace PluginHost {
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
-                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+                    _administrator.Notification(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
@@ -524,9 +531,7 @@ namespace PluginHost {
 
             if(currentState == IShell::state::HIBERNATED)
             {
-                Unlock();
                 uint32_t wakeupResult = Wakeup(3000);
-                Lock();
                 if(wakeupResult != Core::ERROR_NONE)
                 {
                     //Force Activated state
@@ -588,7 +593,7 @@ namespace PluginHost {
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
     #endif
 
-                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+                    _administrator.Notification(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 
                 }
             }
@@ -679,7 +684,7 @@ namespace PluginHost {
             _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
 #endif
 
-            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+            _administrator.Notification(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -739,7 +744,13 @@ namespace PluginHost {
                 result = Core::ERROR_NONE;
 #endif
                 if (result == Core::ERROR_NONE) {
-                    SYSLOG(Logging::Startup, (_T("Hibernated plugin [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
+                    if (State() == IShell::state::HIBERNATED) {
+                        SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                    } else {
+                        // wakeup occured right after hibernation finished
+                        SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                        result = Core::ERROR_ABORTED;
+                    }
                 }
                 else if (State() == IShell::state::HIBERNATED) {
                     State(IShell::ACTIVATED);
@@ -755,8 +766,6 @@ namespace PluginHost {
 
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
         Core::hresult result = Core::ERROR_NONE;
-
-        Lock();
 
         IShell::state currentState(State());
 
@@ -791,7 +800,6 @@ namespace PluginHost {
                 local->Release();
             }
         }
-        Unlock();
 
         return (result);
     }
@@ -856,12 +864,13 @@ namespace PluginHost {
         Core::ProcessInfo::Iterator children(parentPID);
 
         if (children.Count() > 0) {
-
-            while (children.Next()) {
+            // make sure to wakeup PIDs in opposite order to hibernation
+            // to quickly go over not hibernated PIDs and abort currently processed
+            children.Reset(false);
+            while (children.Previous()) {
                 // Wakeup children of this process
                 // There is no recovery path while doing Wakeup, don't care about errors
                 WakeupChildren(children.Current().Id(), timeout);
-
                 TRACE(Activity, (_T("Wakeup of plugin [%s] child process [%u]"), Callsign().c_str(), children.Current().Id()));
                 result = WakeupProcess(timeout, children.Current().Id(), _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
             }
@@ -883,14 +892,17 @@ namespace PluginHost {
 
     void Server::Service::Notify(const string& message) /* override */
     {
-        const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
-
 #if THUNDER_RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
 #endif
 
-        _administrator.Notification(forwarder);
+        _administrator.Notification(PluginHost::Service::Callsign(), message);
+    }
+
+    void Server::Service::Notify(const string& event, const string& parameters) /* override */
+    {
+        _administrator.Notification(PluginHost::Service::Callsign(), event, parameters);
     }
 
     //
@@ -1172,18 +1184,47 @@ namespace PluginHost {
         IFactories::Assign(nullptr);
     }
 
-    void Server::Notification(const ForwardMessage& data)
+    void Server::Notification(const string& callsign, const string& data)
     {
         Plugin::Controller* controller;
         if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
 
-            controller->Notification(data);
+            controller->Notification(callsign, data);
 
 #if THUNDER_RESTFULL_API
-            string result;
-            data.ToString(result);
-            _controller->Notification(result);
+            JsonData::Events::ForwardMessageParamsData message;
+            message.Callsign = callsign;
+            message.Data = data;
+            string messageString;
+            message.ToString(messageString);
+            _controller->Notification(messageString);
 #endif
+        }
+    }
+
+    void Server::Notification(const string& callsign, const string& event, const string& parameters)
+    {
+        if (_controller.IsValid() == true) {
+            Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+
+            if (controller != nullptr) {
+                static const TCHAR allEvent[] = _T("all");
+
+                if ((callsign != controller->Callsign()) || (event != allEvent)) {
+
+                    controller->Notification(callsign, event, parameters);
+
+#if THUNDER_RESTFULL_API
+                    JsonData::Events::ForwardEventParamsData message;
+                    message.Callsign = callsign;
+                    message.Data.Event = event;
+                    message.Data.Params = parameters;
+                    string messageString;
+                    message.ToString(messageString);
+                    _controller->Notification(messageString);
+#endif
+                }
+            }
         }
     }
 

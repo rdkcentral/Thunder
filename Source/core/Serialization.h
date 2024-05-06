@@ -284,10 +284,12 @@ POP_WARNING()
     namespace Serialize {
         template <typename TEXTTERMINATOR, typename HANDLER>
         class ParserType {
-        private:
-            ParserType();
-            ParserType(const ParserType<TEXTTERMINATOR, HANDLER>&);
-            ParserType<TEXTTERMINATOR, HANDLER>& operator=(const ParserType<TEXTTERMINATOR, HANDLER>&);
+        public:
+            ParserType() = delete;
+            ParserType(ParserType<TEXTTERMINATOR, HANDLER>&&) = delete;
+            ParserType(const ParserType<TEXTTERMINATOR, HANDLER>&) = delete;
+            ParserType<TEXTTERMINATOR, HANDLER>& operator=(ParserType<TEXTTERMINATOR, HANDLER>&&) = delete;
+            ParserType<TEXTTERMINATOR, HANDLER>& operator=(const ParserType<TEXTTERMINATOR, HANDLER>&) = delete;
 
         public:
             enum ParseState {

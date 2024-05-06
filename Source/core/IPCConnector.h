@@ -342,7 +342,7 @@ namespace Core {
             // -----------------------------------------------------
             // Search for custom handling, Compile time !!!
             // -----------------------------------------------------
-            IS_MEMBER_AVAILABLE(Length, hasLength);
+            IS_MEMBER_AVAILABLE_CONVERTIBLE(Length, hasLength);
 
             template <typename SUBJECT=PACKAGE>
             typename Core::TypeTraits::enable_if<hasLength<const SUBJECT, uint32_t>::value, uint32_t>::type
@@ -525,11 +525,14 @@ POP_WARNING()
             {
                 _lock.Lock();
 
-				ASSERT(handler.IsValid() == true);
-                ASSERT(_handlers.find(id) == _handlers.end());
+                ASSERT(handler.IsValid() == true);
+                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
 
-                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));
+                ASSERT(index == _handlers.end());
 
+                if (index == _handlers.end()) {
+                    _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));
+                }
                 _lock.Unlock();
             }
 

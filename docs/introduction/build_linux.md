@@ -16,13 +16,13 @@ The following instructions will use the `CMAKE_INSTALL_PREFIX` option to install
 These instructions are based on Ubuntu 22.04 - you may need to change this for your distros package manager
 
 ```
-$ sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 ```
 
 Thunder also uses Python 3 for code and documentation generation scripts. Ensure you have at least **Python 3.5** installed and install the [**jsonref**](https://pypi.org/project/jsonref/) library with pip:
 
 ```
-$ pip install jsonref
+pip install jsonref
 ```
 
 ### 2. Build  Thunder Tools
@@ -33,13 +33,13 @@ First, change the directory to where you want to build Thunder.
 
 Then clone ThunderTools repo:
 ```shell
-$ git clone https://github.com/rdkcentral/ThunderTools.git
+git clone https://github.com/rdkcentral/ThunderTools.git
 ```
 Next, we need to run the following commands to build and then install the code generators inside ThunderTools:
 ```shell
-$ cmake -G Ninja -S ThunderTools -B build/ThunderTools -DCMAKE_INSTALL_PREFIX="install/usr"
+cmake -G Ninja -S ThunderTools -B build/ThunderTools -DCMAKE_INSTALL_PREFIX="install/usr"
 
-$ cmake --build build/ThunderTools --target install
+cmake --build build/ThunderTools --target install
 ```
 
 ### 3. Build Thunder
@@ -47,13 +47,13 @@ $ cmake --build build/ThunderTools --target install
 Clone the Thunder repo:
 
 ```shell
-$ git clone https://github.com/rdkcentral/Thunder.git
+git clone https://github.com/rdkcentral/Thunder.git
 ```
 
 Run the following commands to build and then install Thunder. The available `-DCMAKE_BUILD_TYPE` options are: `[Debug, Release, MinSizeRel]`.
 
 ```shell
-$ cmake -G Ninja -S Thunder -B build/Thunder \
+cmake -G Ninja -S Thunder -B build/Thunder \
 -DBUILD_SHARED_LIBS=ON \
 -DBINDING="127.0.0.1" \
 -DCMAKE_BUILD_TYPE="Debug" \
@@ -66,7 +66,7 @@ $ cmake -G Ninja -S Thunder -B build/Thunder \
 -DSYSTEM_PATH="${PWD}/install/usr/lib/wpeframework/plugins" \
 -DVOLATILE_PATH="tmp"
 
-$ cmake --build build/Thunder --target install
+cmake --build build/Thunder --target install
 ```
 
 ### 4. Build ThunderInterfaces
@@ -77,17 +77,17 @@ $ cmake --build build/Thunder --target install
 Clone the ThunderInterfaces repo:
 
 ```shell
-$ git clone https://github.com/rdkcentral/ThunderInterfaces.git
+git clone https://github.com/rdkcentral/ThunderInterfaces.git
 ```
 
 Run the following commands to build and then install ThunderInterfaces:
 
 ```shell
-$ cmake -G Ninja -S ThunderInterfaces -B build/ThunderInterfaces \
+cmake -G Ninja -S ThunderInterfaces -B build/ThunderInterfaces \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
 
-$ cmake --build build/ThunderInterfaces --target install
+cmake --build build/ThunderInterfaces --target install
 ```
 
 ### 5. Build Plugins
@@ -98,7 +98,7 @@ The exact repo and steps here will depend on exactly which plugins you want to b
 
 Clone the ThunderNanoServices repo:
 ```shell
-$ git clone https://github.com/rdkcentral/ThunderNanoServices.git
+git clone https://github.com/rdkcentral/ThunderNanoServices.git
 ```
 
 Run the following commands to build and then install ThunderNanoServices. 
@@ -106,7 +106,7 @@ Run the following commands to build and then install ThunderNanoServices.
 In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.
 
 ```shell
-$ cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
+cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
 -DPLUGIN_COMMANDER=ON \
@@ -126,7 +126,7 @@ $ cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DPLUGIN_WEBSHELL=ON \
 -DPLUGIN_WIFICONTROL=ON
 
-$ cmake --build build/ThunderNanoServices --target install
+cmake --build build/ThunderNanoServices --target install
 ```
 
 #### ThunderNanoServicesRDK
@@ -134,7 +134,7 @@ $ cmake --build build/ThunderNanoServices --target install
 Clone the ThunderNanoServicesRDK repo:
 
 ```
-$ git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
+git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
 ```
 
 Run the following commands to build and then install ThunderNanoServicesRDK.
@@ -142,7 +142,7 @@ Run the following commands to build and then install ThunderNanoServicesRDK.
 In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.
 
 ```shell
-$ cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
+cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
 -DPLUGIN_DEVICEIDENTIFICATION=ON \
@@ -154,7 +154,7 @@ $ cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
 -DPLUGIN_OPENCDMI=ON \
 -DPLUGIN_PERFORMANCEMETRICS=ON
 
-$ cmake --build build/ThunderNanoServicesRDK --target install
+cmake --build build/ThunderNanoServicesRDK --target install
 ```
 
 ### 6. Build Thunder Client Libraries (optional)
@@ -164,7 +164,7 @@ If you require a convenience library from the ThunderClientLibraries repo, follo
 Clone the ThunderClientLibraries repo:
 
 ```
-$ git clone https://github.com/rdkcentral/ThunderClientLibraries.git
+git clone https://github.com/rdkcentral/ThunderClientLibraries.git
 ```
 
 Run the following commands to build and then install ThunderClientLibraries:
@@ -172,7 +172,7 @@ Run the following commands to build and then install ThunderClientLibraries:
 In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple  fashion.
 
 ```shell
-$ cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
+cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
 -DBLUETOOTHAUDIOSINK=ON \
@@ -184,7 +184,7 @@ $ cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
 -DPROTOCOLS=ON \
 -DVIRTUALINPUT=ON
 
-$cmake --build build/ThunderClientLibraries --target install
+cmake --build build/ThunderClientLibraries --target install
 ```
 
 ### 7. Build Thunder UI (optional)
@@ -192,23 +192,23 @@ $cmake --build build/ThunderClientLibraries --target install
 Clone the ThunderUI repo:
 
 ```shell
-$ git clone https://github.com/rdkcentral/ThunderUI.git
+git clone https://github.com/rdkcentral/ThunderUI.git
 ```
 
 First, you have to install NodeJS + NPM, and this can be done with the following command:
 
 ```shell
-$ sudo apt install nodejs npm
+sudo apt install nodejs npm
 ```
 
 Run the following commands to build and then install ThunderUI:
 
 ```shell
-$ cmake -G Ninja -S ThunderUI -B build/ThunderUI \
+cmake -G Ninja -S ThunderUI -B build/ThunderUI \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
 -DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
 
-$ cmake --build build/ThunderUI --target install
+cmake --build build/ThunderUI --target install
 ```
 
 
@@ -219,10 +219,10 @@ After everything has been built and installed correctly, we can run Thunder.
 Since we installed Thunder in a custom installation directory, we need to provide an `LD_LIBRARY_PATH` to that location and set `PATH` to include the `bin` directory. If the libraries are installed in system-wide locations (e.g. `/usr/lib` and `/usr/bin`) then those environment variables are not required
 
 ```shell
-$ export LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH}
-$ export PATH=${PWD}/install/usr/bin:${PATH}
+export LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH}
+export PATH=${PWD}/install/usr/bin:${PATH}
 
-$ WPEFramework -f -c ${PWD}/install/etc/WPEFramework/config.json
+WPEFramework -f -c ${PWD}/install/etc/WPEFramework/config.json
 ```
 
 The following arguments should be specified to the WPEFramework binary:
