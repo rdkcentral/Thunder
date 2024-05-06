@@ -877,27 +877,24 @@ namespace WPEFramework {
                             Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
                             Core::FrameType<0>::Reader reader(frame, 0);
 
-                            if (reader.HasData()) {
-                                metadataFrameProtocol protocol = reader.Number<metadataFrameProtocol>();
+                            ASSERT(reader.HasData());
+                            metadataFrameProtocol protocol = reader.Number<metadataFrameProtocol>();
 
-                                if (protocol == metadataFrameProtocol::UPDATE) {
-                                    Control newSettings;
-                                    newSettings.Deserialize(reader.Data(), reader.Length());
-                                    _parent.Update(newSettings, newSettings.Enabled());
-                                    message->Response().Set(0, nullptr);
-                                }
-                                else if (protocol == metadataFrameProtocol::CONTROLS && reader.HasData()) {
-                                    string module = reader.NullTerminatedText();
-                                    uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
-                                    message->Response().Set(length, outBuffer);
-                                }
-                                else if (protocol == metadataFrameProtocol::MODULES) {
-                                    uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
-                                    message->Response().Set(length, outBuffer);
-                                }
-                                else {
-                                    ASSERT(false);
-                                }
+                            if (protocol == metadataFrameProtocol::UPDATE) {
+                                Control newSettings;
+                                newSettings.Deserialize(reader.Data(), reader.Length());
+                                _parent.Update(newSettings, newSettings.Enabled());
+                                message->Response().Set(0, nullptr);
+                            }
+                            else if (protocol == metadataFrameProtocol::CONTROLS) {
+                                ASSERT(reader.HasData());
+                                string module = reader.NullTerminatedText();
+                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
+                                message->Response().Set(length, outBuffer);
+                            }
+                            else if (protocol == metadataFrameProtocol::MODULES) {
+                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
+                                message->Response().Set(length, outBuffer);
                             }
                             else {
                                 ASSERT(false);
