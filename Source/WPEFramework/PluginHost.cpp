@@ -18,6 +18,7 @@
  */
 
 #include "PluginServer.h"
+#include "PluginHost.h"
 #include <fstream>
 
 #ifndef __WINDOWS__
@@ -161,6 +162,16 @@ POP_WARNING()
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
+        static void DumpCallStackData()
+        {
+            _adminLock.Lock();
+            std::list<WPEFramework::Core::callstack_info> stackList;
+            uint32_t threadId = WPEFramework::Core::Thread::ThreadId();
+            // Get the call stack for the current thread
+            ::DumpCallStack(threadId, stackList);
+	    _adminLock.Unlock();
+	}
+
         static void StartShutdown() {
             _adminLock.Lock();
             if ((_dispatcher != nullptr) && (_instance == nullptr)) {
@@ -189,7 +200,7 @@ POP_WARNING()
             else {
                 ExitHandler* destructor = _instance;
                 _instance = nullptr;
- 
+
                 _adminLock.Unlock();
 
                 delete destructor; //It will wait till the worker execution completed
@@ -299,8 +310,13 @@ POP_WARNING()
 
 #ifndef __WINDOWS__
 
+    static struct sigaction _originalSegmentationHandler;
+    static struct sigaction _originalAbortHandler;
+    static Core::CriticalSection _adminLock;
+
     void ExitDaemonHandler(int signo)
     {
+        string segname = "";
         if (_background) {
             syslog(LOG_NOTICE, "Signal received %d. in process [%d]", signo, getpid());
         } else {
@@ -318,7 +334,54 @@ POP_WARNING()
 
             ExitHandler::StartShutdown();
         }
+        else if ( (signo == SIGSEGV)  || (signo == SIGABRT) ) 
+        {
+            sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
+            sigaction(SIGABRT, &_originalAbortHandler, nullptr);
+
+            ExitHandler::DumpCallStackData();
+
+            segname = (signo == SIGSEGV) ? "a segmentation fault" : (signo == SIGABRT) ? "an abort" : "";
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to %s signal. All relevant data dumped", segname.c_str());
+            } else {
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to %s signal. All relevant data dumped\n", segname.c_str());
+                fflush(stderr);
+            }
+        }
     }
+
+    void SetupCrashHandler(void)
+    {
+        _adminLock.Lock();
+        struct sigaction sa, current_sa;
+
+        sigaction(SIGSEGV, nullptr, &current_sa);
+        if (current_sa.sa_handler != ExitDaemonHandler)
+        {
+            _originalSegmentationHandler = current_sa;
+             memset(&sa, 0, sizeof(struct sigaction));
+             sigemptyset(&sa.sa_mask);
+             sa.sa_handler = ExitDaemonHandler;
+             sa.sa_flags = 0;
+             syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGSEGV");
+             sigaction(SIGSEGV, &sa, nullptr);
+        }
+
+        sigaction(SIGABRT, nullptr, &current_sa);
+        if (current_sa.sa_handler != ExitDaemonHandler)
+        {
+            _originalAbortHandler = current_sa;
+             memset(&sa, 0, sizeof(struct sigaction));
+             sigemptyset(&sa.sa_mask);
+             sa.sa_handler = ExitDaemonHandler;
+             sa.sa_flags = 0;
+             syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGABRT");
+             sigaction(SIGABRT, &sa, nullptr);
+        }
+        _adminLock.Unlock();
+    }
+
 
 #endif
 
@@ -381,7 +444,7 @@ POP_WARNING()
 #ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
-            } else 
+            } else
 #endif
             {
                 fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
@@ -449,13 +512,15 @@ POP_WARNING()
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
+            sigaction(SIGABRT, &sa, &_originalAbortHandler);
         }
 
         if (atexit(ForcedExit) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
             ExitHandler::Destruct();
             exit(EXIT_FAILURE);
-        } 
+        }
 
         if (_background == true) {
             //Close Standard File Descriptors
@@ -517,7 +582,7 @@ POP_WARNING()
                 }
 
                 if (_config->StackSize() != 0) {
-                    Core::Thread::DefaultStackSize(_config->StackSize()); 
+                    Core::Thread::DefaultStackSize(_config->StackSize());
                 }
 
 #ifndef __WINDOWS__
@@ -540,7 +605,7 @@ POP_WARNING()
             }
 
             string messagingSettings (options.configFile);
- 
+
             // Create PostMortem path
             Core::Directory postMortemPath(_config->PostMortemPath().c_str());
             if (postMortemPath.Next() != true) {
@@ -591,7 +656,7 @@ POP_WARNING()
                     fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
                 }
             }
-            
+
 #ifdef __CORE_WARNING_REPORTING__
             if (WarningReporting::WarningReportingUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE) {
                 SYSLOG_GLOBAL(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable issue reporting functionality!")));
@@ -864,7 +929,7 @@ POP_WARNING()
                             flags[6] = (info.events & POLLHUP    ? 'H' : '-');
                             flags[7] = '\0';
 #endif
-                      
+
                             printf ("%6d %s[%s]: %s\n", info.descriptor, info.filename, flags, Core::ClassNameOnly(info.classname).Text().c_str());
                             index++;
                         }
@@ -898,7 +963,7 @@ POP_WARNING()
                     case '5':
                     case '6':
                     case '7':
-                    case '8': 
+                    case '8':
                     case '9': {
                         ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
@@ -948,7 +1013,7 @@ POP_WARNING()
             fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
             fflush(stderr);
         }
- 
+
         ExitHandler::Destruct();
         std::set_terminate(nullptr);
         _atExitActive = false;

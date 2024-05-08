@@ -206,11 +206,25 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
+void PrintCallStackInfo(const std::list<WPEFramework::Core::callstack_info>& stackList)
+{
+    int index = 0;
+    for (const auto& entry : stackList) 
+	{
+        std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
+        size_t offset = static_cast<size_t>((char*)entry.address - (char*)entry.line);
+
+        char buffer[1024];
+        snprintf(buffer, sizeof(buffer), "%-3d %*p %s + %zu\n", index++, int(2 + sizeof(void*) * 2), entry.address,
+        symbol.c_str(), offset);
+        syslog(LOG_ERR, "%s", buffer);
+    }
+}
+
 void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFramework::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
 #if defined(THUNDER_BACKTRACE)
     void* callstack[32];
-
     uint32_t entries = GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(callstack[0])));
 
     for (uint32_t i = 0; i < entries; i++) {
@@ -246,17 +260,17 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFr
                     entry.function = string(demangled);
                 }
                 
-                entry.line = (char*)callstack[i] - (char*)info.dli_saddr;
-
+		entry.line = static_cast<uint32_t>((char*)callstack[i] - (char*)info.dli_saddr);
                 if (demangled != nullptr) {
-                    free(demangled);
-                }
+		   free(demangled);
+		}
+      
             }
         }
 
         stackList.push_back(entry);
     }
-
+    PrintCallStackInfo(stackList);
 #else
 
     #ifdef __WINDOWS__

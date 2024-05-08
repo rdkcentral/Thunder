@@ -895,6 +895,7 @@ extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
 void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL PrintCallStackInfo(const std::list<WPEFramework::Core::callstack_info>& stackList);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
