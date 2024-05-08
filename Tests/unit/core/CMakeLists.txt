@@ -25,15 +25,15 @@ add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   #test_doorbell.cpp
+   test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
    test_hash.cpp
-   #test_ipc.cpp
-   #test_ipcclient.cpp
+   test_ipcclient.cpp
+   test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
    #test_jsonparser.cpp
