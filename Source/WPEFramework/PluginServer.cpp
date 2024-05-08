@@ -707,11 +707,12 @@ namespace PluginHost
 
                 if (result == HIBERNATE_ERROR_NONE) {
                     result = HibernateChildren(parentPID, timeout);
-                    if(result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
-                        //wakeup Parent process to revert Hibernation
-                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
-                        WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                    }
+                }
+
+                if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
+                    // try to wakeup Parent process to revert Hibernation and recover
+                    TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
+                    WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                 }
 
                 Lock();
@@ -810,15 +811,12 @@ namespace PluginHost
                     if (result == Core::ERROR_ABORTED) {
                         break;
                     }
-
-                    if (result != HIBERNATE_ERROR_NONE) {
-                        // revert Hibernation of parent
-                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), *iter, result));
-                        WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                    }
                 }
 
                 if (result != HIBERNATE_ERROR_NONE) {
+                    // try to recover by reverting current Hibernations
+                    TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), *iter, result));
+                    WakeupProcess(timeout, *iter, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
                     // revert previous Hibernations and break
                     while (iter != childrenPIDs.begin()) {
                         --iter;
