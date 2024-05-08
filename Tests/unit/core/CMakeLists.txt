@@ -32,8 +32,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_filesystem.cpp
    test_frametype.cpp
    test_hash.cpp
+   test_ipcclient.cpp
    test_ipc.cpp
-   #test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
    #test_jsonparser.cpp
