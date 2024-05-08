@@ -13,6 +13,9 @@ Designed from the ground up for embedded platforms and written in C++11, Thunder
 
 All documentation and build instructions for Thunder can be found here: [Documentation](https://rdkcentral.github.io/Thunder/)
 
+Interfaces documentation can be found here:
+https://webplatformforembedded.github.io/ServicesInterfaceDocumentation
+
 # Copyright and License
 
 Thunder is Copyright 2018 Metrological and licensed under the Apache License, Version 2.0. See the LICENSE and NOTICE files in the top level directory for further details.

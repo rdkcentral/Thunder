@@ -254,18 +254,18 @@ namespace Core {
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
-            struct timespec structTime;
+            struct timespec structTime = {0,0};
 
-            clock_gettime(CLOCK_REALTIME, &structTime);
+            clock_gettime(CLOCK_MONOTONIC, &structTime);
 
             structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
             structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
-                struct timespec nowTime;
+                struct timespec nowTime = {0,0};
 
-                clock_gettime(CLOCK_REALTIME, &nowTime);
+                clock_gettime(CLOCK_MONOTONIC, &nowTime);
                 if (nowTime.tv_nsec > structTime.tv_nsec) {
 
                     result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
