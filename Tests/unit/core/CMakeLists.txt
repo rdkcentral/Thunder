@@ -25,7 +25,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   #test_doorbell.cpp
+   test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
