@@ -49,7 +49,8 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
-        void Controls(Messaging::MessageUnit::Iterator& controls) const;
+        void Modules(std::vector<string>& modules) const;
+        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
 
         using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);
