@@ -36,7 +36,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
     namespace {
         /**
         * @brief Class responsible for storing information about announced controls and updating them based on incoming
-        *        metadata or  SettingsList from config. This class can be serialized, and then recreated on the other
+        *        metadata or SettingsList from config. This class can be serialized, and then recreated on the other
         *        side to get information about all announced controls on this side.
         */
         class Controls {
