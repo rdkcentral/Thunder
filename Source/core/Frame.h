@@ -465,11 +465,11 @@ namespace Core {
 
                 _offset += _container->SetText<TYPENAME>(_offset, text);
             }
-            void NullTerminatedText(const string& text)
+            void NullTerminatedText(const string& text, const SIZE_CONTEXT maxLength = 0)
             {
                 ASSERT(_container != nullptr);
 
-                _offset += _container->SetNullTerminatedText(_offset, text);
+                _offset += _container->SetNullTerminatedText(_offset, text, maxLength);
             }
 
         private:
@@ -647,16 +647,30 @@ namespace Core {
             return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
-        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value)
+        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
         {
+            // TO-DO: don't make the convertion if the value is already a std::string
             std::string convertedText(Core::ToString(value));
-            SIZE_CONTEXT requiredLength(static_cast< SIZE_CONTEXT>(convertedText.length() + 1));
+            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
 
-            if ((offset + requiredLength) >= _size) {
-                Size(offset + requiredLength);
+            if ((maxLength > 0) && (requiredLength > maxLength)) {
+                // maxLength was specified and the length of a string exceeds it, so we have to concatenate it
+                requiredLength = maxLength;
+
+                if ((offset + maxLength) >= _size) {
+                    Size(offset + maxLength);
+                }
+
+                ::memcpy(&(_data[offset]), convertedText.c_str(), maxLength - 1);
+                _data[offset + maxLength - 1] = '\0';
             }
+            else {
+                if ((offset + requiredLength) >= _size) {
+                    Size(offset + requiredLength);
+                }
 
-            ::memcpy(&(_data[offset]), convertedText.c_str(), convertedText.length() + 1);
+                ::memcpy(&(_data[offset]), convertedText.c_str(), convertedText.length() + 1);
+            }
 
             return (requiredLength);
         }
