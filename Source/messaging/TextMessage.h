@@ -43,10 +43,8 @@ namespace Messaging {
             Core::FrameType<0>::Writer writer(frame, 0);
 
             if (bufferSize < _text.size() + 1) {
-                string cutString(_text, 0, bufferSize - 1);
-                writer.NullTerminatedText(cutString);
+                writer.NullTerminatedText(_text, bufferSize);
                 length = bufferSize;
-
             }
             else {
                 writer.NullTerminatedText(_text);
