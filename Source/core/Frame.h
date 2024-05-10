@@ -651,13 +651,10 @@ namespace Core {
         {
             // TO-DO: don't make the convertion if the value is already a std::string
             std::string convertedText(Core::ToString(value));
-            SIZE_CONTEXT requiredLength;
+            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
 
-            if (maxLength > 0) {
-                requiredLength = std::min(static_cast<SIZE_CONTEXT>(convertedText.length() + 1), maxLength);
-            }
-            else {
-                requiredLength = static_cast<SIZE_CONTEXT>(convertedText.length() + 1);
+            if (maxLength > 0 && requiredLength > maxLength) {
+                requiredLength = maxLength;
             }
 
             if ((offset + requiredLength) >= _size) {
