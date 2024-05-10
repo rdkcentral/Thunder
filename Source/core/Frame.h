@@ -651,26 +651,21 @@ namespace Core {
         {
             // TO-DO: don't make the convertion if the value is already a std::string
             std::string convertedText(Core::ToString(value));
-            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
+            SIZE_CONTEXT requiredLength;
 
-            if ((maxLength > 0) && (requiredLength > maxLength)) {
-                // maxLength was specified and the length of a string exceeds it, so we have to concatenate it
-                requiredLength = maxLength;
-
-                if ((offset + maxLength) >= _size) {
-                    Size(offset + maxLength);
-                }
-
-                ::memcpy(&(_data[offset]), convertedText.c_str(), maxLength - 1);
-                _data[offset + maxLength - 1] = '\0';
+            if (maxLength > 0) {
+                requiredLength = std::min(static_cast<SIZE_CONTEXT>(convertedText.length() + 1), maxLength);
             }
             else {
-                if ((offset + requiredLength) >= _size) {
-                    Size(offset + requiredLength);
-                }
-
-                ::memcpy(&(_data[offset]), convertedText.c_str(), convertedText.length() + 1);
+                requiredLength = static_cast<SIZE_CONTEXT>(convertedText.length() + 1);
             }
+
+            if ((offset + requiredLength) >= _size) {
+                Size(offset + requiredLength);
+            }
+
+            ::memcpy(&(_data[offset]), convertedText.data(), requiredLength - 1);
+            _data[offset + requiredLength - 1] = '\0';
 
             return (requiredLength);
         }
