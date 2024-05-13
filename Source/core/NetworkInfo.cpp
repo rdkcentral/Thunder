@@ -1074,6 +1074,7 @@ namespace Core {
         ~IPNetworks()
         {
             _linkSocket.Close();
+            _networks.clear();
         }
 
         static IPNetworks& Instance()
