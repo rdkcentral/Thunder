@@ -34,10 +34,13 @@
 #endif
 
 #ifdef __LINUX__
+#ifndef __APPLE__
 #include <linux/netlink.h>
+#include <netpacket/packet.h>
+#endif
 #include <netinet/in.h>
 #include <sys/un.h>
-#include <netpacket/packet.h>
+
 #include <net/ethernet.h>
 #include <net/if.h>
 #endif
@@ -59,9 +62,11 @@ namespace Core {
     class EXTERNAL NodeId {
     private:
 #ifndef __WINDOWS__
+#ifndef __APPLE__
         struct netlink_extended : public sockaddr_nl {
             uint32_t nl_destination;
         };
+#endif
         struct domain_extended : public sockaddr_un {
             uint16_t un_access;
         };
@@ -83,25 +88,37 @@ namespace Core {
             TYPE_UNSPECIFIED = AF_UNSPEC,
             TYPE_IPV4 = AF_INET,
             TYPE_IPV6 = AF_INET6,
-            TYPE_DOMAIN = AF_UNIX,
+            TYPE_DOMAIN = AF_UNIX,            
             TYPE_NETLINK = AF_NETLINK,
             TYPE_BLUETOOTH = AF_BLUETOOTH,
             TYPE_PACKET = AF_PACKET,
             TYPE_EMPTY = 0xFF
         };
 
+
+#ifdef __WINDOWS__
+    using address_family_t = ADDRESS_FAMILY;
+#else
+    using address_family_t = sa_family_t;
+#endif
+
+
         union SocketInfo {
 #ifdef __WINDOWS__
-            ADDRESS_FAMILY FamilyType;
+            address_family_t Family;
+#elif defined(__APPLE__)
+            struct __sockaddr_header saddr_hdr;
 #else
-            sa_family_t FamilyType;
+            address_family_t Family;
 #endif
             struct ipv4_extended IPV4Socket;
             struct ipv6_extended IPV6Socket;
 #ifndef __WINDOWS__
             struct domain_extended DomainSocket;
+#ifndef __APPLE__            
             struct netlink_extended NetlinkSocket;
             struct sockaddr_ll RawSocket;
+#endif 
 #endif
 #ifdef __CORE_BLUETOOTH_SUPPORT__
             struct sockaddr_hci BTSocket;
@@ -109,9 +126,18 @@ namespace Core {
 #endif
 
         public:
+            address_family_t FamilyType() const
+            {
+#ifdef __APPLE__
+                return saddr_hdr.sa_family;
+#else
+                return Family;
+#endif
+            }
+
             uint32_t Extension() const
             {
-                switch (FamilyType) {
+                switch (FamilyType()) {
                 case AF_INET:
                     return (IPV4Socket.in_protocol);
                     break;
@@ -124,7 +150,7 @@ namespace Core {
                     return (L2Socket.l2_type);
                     break;
     #endif
-    #ifndef __WINDOWS__
+    #if !defined(__WINDOWS__) && !defined(__APPLE__)
                 case AF_NETLINK:
                     return (NetlinkSocket.nl_destination);
                     break;
@@ -137,7 +163,7 @@ namespace Core {
             }
             void Extension(const uint32_t extension)
             {
-                switch (FamilyType) {
+                switch (FamilyType()) {
                 case TYPE_IPV4:
                     IPV4Socket.in_protocol = extension;
                     break;
@@ -151,7 +177,7 @@ namespace Core {
                     L2Socket.l2_type = extension;
                     break;
     #endif
-    #ifndef __WINDOWS__
+    #if !defined(__WINDOWS__) && !defined(__APPLE__)
             case AF_NETLINK:
                     NetlinkSocket.nl_destination = extension;
                     break;
@@ -182,10 +208,12 @@ namespace Core {
         NodeId(const struct in6_addr& rInfo, const uint32_t protocol = 0);
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
+#ifndef __APPLE__        
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
-        NodeId(const struct sockaddr_ll& rInfo);
+        NodeId(const struct sockaddr_ll& rInfo); 
         NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgtype, const uint8_t haType, const uint8_t length, const uint8_t* address);
         NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address);
+#endif         
 #endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
@@ -219,7 +247,7 @@ namespace Core {
 
         NodeId::enumType Type() const
         {
-            return (static_cast<NodeId::enumType>(m_structInfo.FamilyType));
+            return (static_cast<NodeId::enumType>(m_structInfo.FamilyType()));
         }
         inline uint16_t PortNumber() const
         {
@@ -230,7 +258,7 @@ namespace Core {
 #endif
         }
 
-#ifndef __WINDOWS__
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
         inline uint16_t HardwareType() const {
             return (m_structInfo.RawSocket.sll_hatype);
         }
@@ -253,17 +281,45 @@ namespace Core {
         }
         inline unsigned short Size() const
         {
-#ifndef __WINDOWS__
-            return (m_structInfo.FamilyType == AF_INET ? sizeof(struct sockaddr_in) : 
-                   (m_structInfo.FamilyType == AF_INET6 ? sizeof(struct sockaddr_in6) : 
-                   (m_structInfo.FamilyType == AF_NETLINK ? sizeof(struct sockaddr_nl) :
-                   (m_structInfo.FamilyType == AF_PACKET ? sizeof(struct sockaddr_ll) :
-#ifdef __CORE_BLUETOOTH_SUPPORT__
-                   (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un))))));
-#else
-                    sizeof(struct sockaddr_un)))));
-#endif
 
+#ifndef __WINDOWS__
+        unsigned short size;
+        if (m_structInfo.FamilyType() == AF_INET)
+        {
+            size = sizeof(struct sockaddr_in);
+        }
+        else if (m_structInfo.FamilyType() == AF_INET6)
+        {
+            size = sizeof(struct sockaddr_in6);
+        }
+#ifndef __APPLE__
+        else if (m_structInfo.FamilyType() == AF_NETLINK)
+        {
+            size = sizeof(struct sockaddr_nl);
+        }
+        else if (m_structInfo.FamilyType() == AF_PACKET)
+        {
+            size = sizeof(struct sockaddr_ll);
+        }
+#endif
+#ifdef __CORE_BLUETOOTH_SUPPORT__
+        else if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH)
+        {
+            if (m_structInfo.L2Socket.l2_type == BTPROTO_HCI)
+            {
+                size = sizeof(struct sockaddr_hci);
+            }
+            else
+            {
+                size =  sizeof(struct sockaddr_l2);
+            }
+        }
+#endif
+        else
+        {
+            size = sizeof(struct sockaddr_un);
+        }
+        return size;
 #else
 #ifdef __CORE_BLUETOOTH_SUPPORT__
         return (m_structInfo.IPV4Socket.sin_family   == AF_INET      ? sizeof(struct sockaddr_in)  : 
@@ -316,8 +372,10 @@ namespace Core {
 
 #ifndef __WINDOWS__
         NodeId& operator=(const struct sockaddr_un& rInfo);
+#ifndef __APPLE__        
         NodeId& operator=(const struct sockaddr_nl& rInfo);
         NodeId& operator=(const struct sockaddr_ll& rInfo);
+#endif
 #endif
 #ifdef __CORE_BLUETOOTH_SUPPORT__
         NodeId& operator=(const struct sockaddr_hci& rInfo);

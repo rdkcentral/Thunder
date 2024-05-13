@@ -98,7 +98,7 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch, this)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this)
                 , _dispatch()
             {
                 Run();
@@ -4392,7 +4392,7 @@ namespace PluginHost {
 
                 std::list<Core::callstack_info> stackList;
 
-                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+                ::DumpCallStack((ThreadId)index.Current().Id.Value(), stackList);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
