@@ -123,7 +123,7 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 16, &_dispatch, this)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this)
                 , _dispatch()
             {
                 Run();
