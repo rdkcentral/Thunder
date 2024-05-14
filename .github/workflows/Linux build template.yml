@@ -121,7 +121,7 @@ jobs:
 
     - name: Upload
       if: matrix.shared_libs == 'ON'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Thunder-${{matrix.build_type}}-artifact
         path: ${{matrix.build_type}}.tar.gz
