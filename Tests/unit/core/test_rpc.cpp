@@ -282,6 +282,8 @@ namespace Tests {
           // Create remote instance of "IAdder".
           Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
 
+          ASSERT_TRUE(adder != nullptr);
+
           // Perform some arithmatic.
           EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
           adder->Add(20);
