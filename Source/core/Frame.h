@@ -465,7 +465,7 @@ namespace Core {
 
                 _offset += _container->SetText<TYPENAME>(_offset, text);
             }
-            void NullTerminatedText(const string& text, const SIZE_CONTEXT maxLength = 0)
+            void NullTerminatedText(const string& text, const SIZE_CONTEXT maxLength = ~0)
             {
                 ASSERT(_container != nullptr);
 
@@ -649,20 +649,14 @@ namespace Core {
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
         {
-            // TO-DO: don't make the convertion if the value is already a std::string
-            std::string convertedText(Core::ToString(value));
+            std::string convertedText(Core::ToString(value).data(), (((maxLength != static_cast<SIZE_CONTEXT>(~0)) && ((value.length() + 1) > maxLength)) ? (maxLength - 1) : value.length()));
             SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
-
-            if (maxLength > 0 && requiredLength > maxLength) {
-                requiredLength = maxLength;
-            }
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
             }
 
-            ::memcpy(&(_data[offset]), convertedText.data(), requiredLength - 1);
-            _data[offset + requiredLength - 1] = '\0';
+            ::memcpy(&(_data[offset]), convertedText.c_str(), requiredLength);
 
             return (requiredLength);
         }
