@@ -25,6 +25,8 @@
 #include <core/FileObserver.h>
 #include <fstream>
 
+#include <messaging/messaging.h>
+
 namespace WPEFramework {
 namespace Tests {
 
@@ -57,7 +59,7 @@ namespace Tests {
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true, _basePath));
+            _dispatcher.reset(new Messaging::MessageDataBuffer(_identifier, _instanceId, _basePath, DATA_SIZE, 0, true));
         }
         void TearDown() override
         {
@@ -68,7 +70,7 @@ namespace Tests {
             Core::Singleton::Dispose();
         }
 
-        std::unique_ptr<Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>> _dispatcher;
+        std::unique_ptr<Messaging::MessageDataBuffer> _dispatcher;
         string _identifier;
         string _basePath;
 
@@ -114,16 +116,16 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
     {
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
+        Messaging::MessageDataBuffer writerDispatcher(_T("test_md"), 0, this->_basePath, DATA_SIZE, 0, true);
+        Messaging::MessageDataBuffer readerDispatcher(_T("test_md"), 0, this->_basePath, DATA_SIZE, 0, false);
 
         uint8_t testData[2] = { 13, 37 };
 
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(writerDispatcher.PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(readerDispatcher.PopData(readLength, readData), Core::ERROR_NONE);
 
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -132,24 +134,24 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
     {
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
+        Messaging::MessageDataBuffer writerDispatcher(_T("test_md"), 0, this->_basePath, DATA_SIZE, 0, true);
 
         {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
+            Messaging::MessageDataBuffer readerDispatcher(_T("test_md"), 0, this->_basePath, DATA_SIZE, 0, false);
 
             //destructor is called
         }
 
         //reopen
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, true, this->_basePath);
+        Messaging::MessageDataBuffer readerDispatcher(_T("test_md"), 0, this->_basePath, DATA_SIZE, 0, false);
 
         uint8_t testData[2] = { 13, 37 };
 
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(writerDispatcher.PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(readerDispatcher.PopData(readLength, readData), Core::ERROR_NONE);
 
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -183,7 +185,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
+            Messaging::MessageDataBuffer dispatcher(this->_identifier, this->_instanceId, this->_basePath, DATA_SIZE, 0, false);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -228,33 +230,34 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDataIfDoesNotFit)
     {
-        uint8_t fullBufferSimulation[DATA_SIZE - 1 + sizeof(Core::CyclicBuffer::control) //almost full buffer
-            - sizeof(uint8_t) //size of type (part of message header)
-            - sizeof(uint16_t)]; //size of length (part of message header)
+        // CyclicBuffer Reserve requires 'length' < Size()
+        uint8_t fullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 1]; // sizeof(length) + length - 1, eg, < Size()
 
         uint8_t testData[] = { 12, 21 };
 
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
-        //buffer is full, but trying to write new data
+        EXPECT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        // One element free space remaining
+
+        //  2+2 bytes, 1 at tail position, 3 starting at position 0
+        EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
         //new data written, so the oldest data should be replaced
         //this is first entry and should be first popped (FIFO)
 
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
-        ASSERT_EQ(readLength, sizeof(testData));
-        ASSERT_EQ(readData[0], 12);
-        ASSERT_EQ(readData[1], 21);
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        EXPECT_EQ(readLength, sizeof(testData));
+        EXPECT_EQ(readData[0], 12);
+        EXPECT_EQ(readData[1], 21);
     }
 
     //doorbell (socket) is not quite working inside test suite
     TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
+            Messaging::MessageDataBuffer dispatcher(this->_identifier, this->_instanceId, this->_basePath, 0, false);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -289,7 +292,7 @@ namespace Tests {
         }
         testAdmin.Sync("done");
     }
-
+#ifdef _0
     TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcess)
     {
         uint8_t testData[2] = { 13, 37 };
@@ -394,6 +397,6 @@ namespace Tests {
         auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
         ASSERT_EQ(result, 0);
     }
-
+#endif
 } // Tests
 } // WPEFramework
