@@ -284,7 +284,7 @@ json_write("${CMAKE_BINARY_DIR}/Config.json" ${CONFIG})
 
 install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/
+        DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/
         RENAME config.json
         COMPONENT ${MODULE_NAME})
 else()
@@ -295,7 +295,7 @@ else()
         SKIP_CLASSNAME
         SKIP_LOCATOR
         CUSTOM_PARAMS_WHITELIST "${CMAKE_CURRENT_LIST_DIR}/params.config"
-        INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/"
+        INSTALL_PATH "../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/"
         INSTALL_NAME "config.json"
         PLUGINS "WPEFramework"
     )

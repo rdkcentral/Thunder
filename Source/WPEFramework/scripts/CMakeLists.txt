@@ -43,7 +43,7 @@ else()
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/init.d/
+            DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/init.d/
     )
 endif()
 

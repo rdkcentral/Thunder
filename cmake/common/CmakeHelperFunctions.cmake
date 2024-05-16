@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include (CMakePackageConfigHelpers)
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 macro(add_element list element)
     list(APPEND ${list} ${element})
@@ -307,7 +308,7 @@ function(InstallCMakeConfig)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
     endif()
 
-    set(_install_path "lib/cmake") # default path
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/cmake") # default path
     
     if(Agument_LOCATION)
         set(_install_path "${Agument_LOCATION}" FORCE)
@@ -542,7 +543,7 @@ function(InstallPackageConfig)
         endif()
 
         # Default path on UNIX, if you want Windows or Apple support add the path here. ;-) 
-        set(_install_path "lib/pkgconfig")
+        set(_install_path "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
         if (${Argument_OUTPUT_NAME})
             set(_pc_filename  ${Argument_OUTPUT_NAME})
@@ -625,7 +626,7 @@ function(InstallFindModule)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    set(DESTINATION lib/cmake/${NAMESPACE}/modules) 
+    set(DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules) 
 
     if(Argument_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
@@ -637,11 +638,11 @@ function(InstallFindModule)
         else()
             file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
         endif(Argument_RECURSE)
-        install(FILES "${extra_files}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
     endif()
 
     if (Argument_FILES)
-        install(FILES "${Argument_FILES}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
     endif()
 
 endfunction(InstallFindModule)
