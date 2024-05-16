@@ -795,6 +795,7 @@ namespace Core {
         static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
     #endif
     }
+#define COM_ERROR (0x80000000)
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
