@@ -55,11 +55,20 @@ namespace RPC {
             RecoverySet(const uint32_t id, Core::IUnknown* object)
                 : _interfaceId(id)
                 , _interface(object)
-                , _referenceCount(1) {
+                , _referenceCount(1 | (object->AddRef() == Core::ERROR_COMPOSIT_OBJECT ? 0x80000000 : 0)) {
+
+		// Check if this is a "Composit" object to which the IUnknown points. Composit means 
+		// that the object is owned by another object that controls its lifetime and that 
+		// object will handle the lifetime of this object. It will be released anyway, 
+		// no-recovery needed.
+		object->Release();
             }
             ~RecoverySet() = default;
 
         public:
+	    bool IsComposit() const {
+		return ((_referenceCount & 0x80000000) != 0);
+	    }
             inline uint32_t Id() const {
                 return (_interfaceId);
             }
@@ -67,16 +76,16 @@ namespace RPC {
                 return (_interface);
             }
             inline void Increment() {
-                _referenceCount++;
+                _referenceCount = ((_referenceCount & 0x7FFFFFFF) + 1) | (_referenceCount & 0x80000000);
             }
-            inline bool Decrement(const uint32_t dropCount = 1) {
-                ASSERT(_referenceCount >= dropCount);
-                _referenceCount -= dropCount;
-                return(_referenceCount > 0);
+            inline bool Decrement(const uint32_t dropCount) {
+                ASSERT((_referenceCount & 0x7FFFFFFF) >= dropCount);
+                _referenceCount = ((_referenceCount & 0x7FFFFFFF) - dropCount) | (_referenceCount & 0x80000000);
+                return((_referenceCount & 0x7FFFFFFF) > 0);
             }
 #ifdef __DEBUG__
             bool Flushed() const {
-                return (_referenceCount == 0);
+                return ((_referenceCount & 0x7FFFFFFF) == 0);
             }
 #endif
 

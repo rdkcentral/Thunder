@@ -735,7 +735,7 @@ namespace Core {
 
     struct EXTERNAL IReferenceCounted {
         virtual ~IReferenceCounted() = default;
-        virtual void AddRef() const = 0;
+        virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
     };
 
@@ -842,7 +842,8 @@ namespace Core {
         ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
         ERROR_CODE(ERROR_NOT_EXIST, 43) \
         ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
-        ERROR_CODE(ERROR_INVALID_RANGE, 45)
+        ERROR_CODE(ERROR_INVALID_RANGE, 45) \
+	ERROR_CODE(ERROR_COMPOSIT_OBJECT, 46)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
