@@ -52,6 +52,7 @@ endif()
 
 include(platform)
 include(CmakeHelperFunctions)
+include(GNUInstallDirs)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
