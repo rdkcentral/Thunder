@@ -140,7 +140,7 @@ namespace WarningReporting {
     }
 
     void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
-    {        
+    {
         WPEFramework::Core::Messaging::Metadata metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, information.Category(), WPEFramework::Core::Messaging::MODULE_REPORTING);
         WPEFramework::Core::Messaging::MessageInfo messageInfo(metadata, WPEFramework::Core::Time::Now().Ticks());
         WPEFramework::Core::Messaging::IStore::WarningReporting report(messageInfo, identifier);
