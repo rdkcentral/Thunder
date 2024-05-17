@@ -93,7 +93,7 @@ namespace Tests {
             }
             doorBell.Relinquish();
         }
-       // Core::Singleton::Dispose();
+       Core::Singleton::Dispose();
     }
 
 } // Tests

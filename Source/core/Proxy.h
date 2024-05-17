@@ -1177,7 +1177,7 @@ POP_WARNING()
         class UnlinkStorage {
         public:
             UnlinkStorage() = delete;
-            UnlinkStorage& operator= (const UnlinkStorage&) = delete;
+            UnlinkStorage& operator=(const UnlinkStorage&) = delete;
 
             UnlinkStorage(void (*callback)(void*), void* thisPtr)
                 : _callback(callback)
