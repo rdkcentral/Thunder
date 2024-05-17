@@ -822,21 +822,31 @@ namespace Plugin {
 
     Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
     {
+        ASSERT(notification != nullptr);
+
+        Core::hresult result = Core::ERROR_ALREADY_CONNECTED;
         _adminLock.Lock();
 
         // Make sure a sink is not registered multiple times.
-        ASSERT(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification) == _lifeTimeObservers.end());
+        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
+        ASSERT(index == _lifeTimeObservers.end());
 
-        _lifeTimeObservers.push_back(notification);
-        notification->AddRef();
+        if (index == _lifeTimeObservers.end()) {
+            _lifeTimeObservers.push_back(notification);
+            notification->AddRef();
+            result = Core::ERROR_NONE;
+        }
 
         _adminLock.Unlock();
 
-        return (Core::ERROR_NONE);
+        return (result);
     }
 
     Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
     {
+        ASSERT(notification != nullptr);
+
+        Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
         LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
@@ -847,11 +857,12 @@ namespace Plugin {
         if (index != _lifeTimeObservers.end()) {
             (*index)->Release();
             _lifeTimeObservers.erase(index);
+            result = Core::ERROR_NONE;
         }
 
         _adminLock.Unlock();
 
-        return (Core::ERROR_NONE);
+        return (result);
     }
 
     Core::hresult Controller::Register(Exchange::Controller::IShells::INotification* notification)

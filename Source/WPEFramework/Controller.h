@@ -172,9 +172,11 @@ namespace Plugin {
             Core::JSON::Boolean Ui;
         };
 
-    private:
-        Controller(const Controller&);
-        Controller& operator=(const Controller&);
+    public:
+        Controller(Controller&&) = delete;
+        Controller(const Controller&) = delete;
+        Controller& operator=(Controller&&) = delete;
+        Controller& operator=(const Controller&) = delete;
 
     protected:
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)

@@ -118,12 +118,25 @@ public:
         {
         }
 
+        Time(Time&& move)
+            : _time(std::move(move._time))
+        {
+        }
+
         ~Time() = default;
 
         Time& operator=(const Time& RHS)
         {
             _time = RHS._time;
 
+            return (*this);
+        }
+
+        Time& operator=(Time&& move)
+        {
+            if (this != &move) {
+                _time = std::move(move._time);
+            }
             return (*this);
         }
 
@@ -395,7 +408,9 @@ public:
         }
 
         TimeAsLocal() = default;
+        TimeAsLocal(TimeAsLocal&&) = default;
         TimeAsLocal(const TimeAsLocal&) = default;
+        TimeAsLocal& operator=(TimeAsLocal&&) = default;
         TimeAsLocal& operator=(const TimeAsLocal&) = default;
 
         ~TimeAsLocal() = default;

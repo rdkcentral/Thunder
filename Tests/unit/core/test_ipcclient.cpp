@@ -46,6 +46,8 @@ namespace Tests {
             error = serverChannel.Close(1000); // Wait for 1 Second.
             EXPECT_EQ(error, Core::ERROR_NONE);
 
+            serverChannel.Cleanup();
+
             factory->DestroyFactories();
         };
 

@@ -22,18 +22,18 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_cyclicbuffer.cpp
-   #test_databuffer.cpp
+   test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   #test_doorbell.cpp
+   test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
-   #test_hash.cpp
-   #test_ipc.cpp
-   #test_ipcclient.cpp
+   test_hash.cpp
+   test_ipcclient.cpp
+   test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
    #test_jsonparser.cpp
@@ -43,7 +43,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_measurementtype.cpp
    test_memberavailability.cpp
    #test_messageException.cpp
-   #test_networkinfo.cpp
+   test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
@@ -54,7 +54,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rangetype.cpp
    test_readwritelock.cpp
    test_rectangle.cpp
-   #test_rpc.cpp
+   test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-   #test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
    #test_timer.cpp
    test_tristate.cpp
@@ -77,7 +77,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
-   #test_workerpool.cpp
+   test_workerpool.cpp
    test_xgetopt.cpp
    #test_message_dispatcher.cpp
 )
@@ -110,6 +110,8 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+    ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+    ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
 )
 
 install(
