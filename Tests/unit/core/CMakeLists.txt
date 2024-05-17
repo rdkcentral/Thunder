@@ -43,7 +43,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_measurementtype.cpp
    test_memberavailability.cpp
    test_messageException.cpp
-   #test_networkinfo.cpp
+   test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
@@ -70,7 +70,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_threadpool.cpp
    test_time.cpp
-   #test_timer.cpp
+   test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp

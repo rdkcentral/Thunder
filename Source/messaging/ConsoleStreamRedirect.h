@@ -22,8 +22,7 @@ namespace WPEFramework {
                 if (OperationalStream::StandardOut::IsEnabled() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardOut::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
-                    string text(buffer, length);
-                    TextMessage data(text);
+                    TextMessage data(length, buffer);
                     MessageUnit::Instance().Push(operationalStream, &data);
                 }
             }
@@ -46,8 +45,7 @@ namespace WPEFramework {
                 if (OperationalStream::StandardError::IsEnabled() == true) {
                     Core::Messaging::MessageInfo messageInfo(OperationalStream::StandardError::Metadata(), Core::Time::Now().Ticks());
                     Core::Messaging::IStore::OperationalStream operationalStream(messageInfo);
-                    string text(buffer, length);
-                    TextMessage data(text);
+                    TextMessage data(length, buffer);
                     MessageUnit::Instance().Push(operationalStream, &data);
                 }
             }
