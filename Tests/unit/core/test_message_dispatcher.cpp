@@ -228,29 +228,94 @@ namespace Tests {
         ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_WRITE_ERROR);
     }
 
-    TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDataIfDoesNotFit)
+    TEST_F(Core_MessageDispatcher, OffsetCutPushDataShouldFlushOldDataIfDoesNotFitOffsetCut)
     {
         // CyclicBuffer Reserve requires 'length' < Size()
-        uint8_t fullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 1]; // sizeof(length) + length - 1, eg, < Size()
-
-        uint8_t testData[] = { 12, 21 };
-
+        uint8_t fullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 1]; // sizeof(length) + length - 1, eg. < Size()
+        uint8_t testData[] = { 12, 11, 13, 21 };
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
         EXPECT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
-
         // One element free space remaining
+        // 2+2 bytes, 1 at tail position, 3 starting at position 0
 
-        //  2+2 bytes, 1 at tail position, 3 starting at position 0
         EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        //new data written, so the oldest data should be replaced
-        //this is first entry and should be first popped (FIFO)
+        // new data written, so the oldest data should be replaced
+
+        // this is first entry and should be first popped (FIFO)
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+
+        EXPECT_EQ(readLength, sizeof(testData));
+        EXPECT_EQ(readData[0], testData[0]);
+        EXPECT_EQ(readData[3], testData[3]);
+    }
+
+    TEST_F(Core_MessageDispatcher, OnlyOffsetFitsPushDataShouldFlushOldDataIfDoesNotFit)
+    {
+        uint8_t onlyOffsetFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 2];
+        uint8_t testData[] = { 12, 11, 13, 21 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(onlyOffsetFitsSimulation), onlyOffsetFitsSimulation), Core::ERROR_NONE);
+        // Two elements free space remaining so offset of testData should fit at the end of the cyclic buffer,
+        // and content of testData buffer should be at the beginning of the cyclic buffer
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
 
         EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+
         EXPECT_EQ(readLength, sizeof(testData));
-        EXPECT_EQ(readData[0], 12);
-        EXPECT_EQ(readData[1], 21);
+        EXPECT_EQ(readData[0], testData[0]);
+        EXPECT_EQ(readData[3], testData[3]);
+    }
+
+    TEST_F(Core_MessageDispatcher, OffsetFitsBufferCutPushDataShouldFlushOldDataIfDoesNotFit)
+    {
+        uint8_t offsetPlusFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 3];
+        uint8_t testData[] = { 12, 11, 13, 21 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(offsetPlusFitsSimulation), offsetPlusFitsSimulation), Core::ERROR_NONE);
+        // Three elements free space remaining, so the offset of testData should still fit at the end of the cyclic buffer,
+        // as well as the first part of the testData buffer, but its second part should be at the beginning of the cyclic buffer
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+
+        EXPECT_EQ(readLength, sizeof(testData));
+        EXPECT_EQ(readData[0], testData[0]);
+        EXPECT_EQ(readData[3], testData[3]);
+    }
+
+    TEST_F(Core_MessageDispatcher, BufferGetsFilledToItsVeryMaximum)
+    {
+        uint8_t almostFullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 6];
+        uint8_t testData1[] = { 12, 11, 13, 21 };
+        uint8_t testData2[] = { 54, 62, 78, 91 };
+        uint8_t readData[4];
+        uint16_t readLength = sizeof(readData);
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(almostFullBufferSimulation), almostFullBufferSimulation), Core::ERROR_NONE);
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(testData1), testData1), Core::ERROR_NONE);
+        // The cyclic buffer is now full
+
+        EXPECT_EQ(_dispatcher->PushData(sizeof(testData2), testData2), Core::ERROR_NONE);
+        // The cyclic buffer needs to flush the almostFullBufferSimulation to make space for testData2
+
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        EXPECT_EQ(readLength, sizeof(testData1));
+        EXPECT_EQ(readData[0], testData1[0]);
+        EXPECT_EQ(readData[3], testData1[3]);
+
+        EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        EXPECT_EQ(readLength, sizeof(testData2));
+        EXPECT_EQ(readData[0], testData2[0]);
+        EXPECT_EQ(readData[3], testData2[3]);
     }
 
     //doorbell (socket) is not quite working inside test suite
