@@ -509,7 +509,7 @@ namespace Core {
             #ifdef __WINDOWS__
             udpHeader->len = htons(HeaderSize + length);    
             #else
-            udpHeader->uh_len = htons(HeaderSize + length);
+            udpHeader->uh_ulen = htons(HeaderSize + length);
             #endif
             Base::Length(HeaderSize + length);
             #ifdef __WINDOWS__
