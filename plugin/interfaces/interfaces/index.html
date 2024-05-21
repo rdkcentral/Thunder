@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.23">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24">
     
     
       
@@ -2580,22 +2580,22 @@
 <span class="nb">string</span><span class="p">(</span><span class="s">TOLOWER</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="w"> </span><span class="s">NAMESPACE_LIB</span><span class="p">)</span>
 <span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleProxyStubs</span>
 <span class="w">    </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleProxyStubsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
 <span class="p">)</span>
 
 <span class="nb">if</span><span class="p">(</span><span class="s">JSON_ENUM_SOURCES</span><span class="p">)</span>
 <span class="w">    </span><span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleDefinitions</span>
 <span class="w">        </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleDefinitionsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="nb">endif</span><span class="p">()</span>
 
 <span class="nb">install</span><span class="p">(</span><span class="s">FILES</span><span class="w"> </span><span class="o">${</span><span class="nv">INTERFACES_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">include/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces</span>
+<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_INCLUDEDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces</span>
 <span class="p">)</span>
 
 <span class="nb">install</span><span class="p">(</span><span class="s">FILES</span><span class="w"> </span><span class="o">${</span><span class="nv">JSON_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">include/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces/json</span>
+<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_INCLUDEDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces/json</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="worked-example">Worked Example</h2>
@@ -3391,7 +3391,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.ebd0bdb7.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.081f42fc.min.js"></script>
       
     
   </body>
