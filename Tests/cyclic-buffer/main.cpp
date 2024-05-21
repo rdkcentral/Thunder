@@ -43,7 +43,6 @@
 int main(int argc, char* argv[])
 {
     using namespace WPEFramework::Core;
-    using namespace WPEFramework::Tests;
 
     constexpr uint8_t maxChildren = 3;
 
@@ -55,7 +54,7 @@ int main(int argc, char* argv[])
     constexpr uint32_t totalRuntime = infinite /*20000*/; // Milliseconds
     constexpr uint32_t totalTimeout = /*totalRuntime +*/ 20000; // Milliseconds
 
-    Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
+    WPEFramework::Tests::Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
     bool result = false;
 

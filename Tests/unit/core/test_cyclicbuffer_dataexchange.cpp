@@ -50,8 +50,6 @@ namespace Tests {
 
 TEST(Core_CyclicBuffer, DataExchangeTimeout)
 {
-    using namespace WPEFramework::Tests;
-
     constexpr uint8_t maxChildren = 1;
 
     constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
@@ -62,7 +60,7 @@ TEST(Core_CyclicBuffer, DataExchangeTimeout)
     constexpr uint32_t totalRuntime = Core::infinite; // Milliseconds
     constexpr uint32_t timeout = 10000; // Milliseconds
 
-    Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
+    WPEFramework::Tests::Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
     ASYNC_TIMEOUT_BEGIN; // Avoid leaking resources, eg, children
 
@@ -78,8 +76,6 @@ TEST(Core_CyclicBuffer, DataExchangeTimeout)
 
 TEST(Core_CyclicBuffer, DataExchange)
 {
-    using namespace WPEFramework::Tests;
-
     constexpr uint8_t maxChildren = 1;
 
     constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
@@ -90,7 +86,7 @@ TEST(Core_CyclicBuffer, DataExchange)
     constexpr uint32_t totalRuntime = 10000; // Milliseconds
     constexpr uint32_t timeout = totalRuntime + 10000; // Milliseconds
 
-    Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
+    WPEFramework::Tests::Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
 
     ASYNC_TIMEOUT_BEGIN; // Avoid leaking resources, eg, children
 

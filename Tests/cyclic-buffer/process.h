@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
-#include <CyclicBuffer.h>
-#include <Thread.h>
+#define MODULE_NAME CyclicBufferStress
+
+#include <core/core.h>
 #include <cstdlib>
 #include <array>
 #include <memory>
