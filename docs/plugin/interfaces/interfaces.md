@@ -185,22 +185,22 @@ endif()
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 install(TARGETS ExampleProxyStubs
     EXPORT ExampleProxyStubsTargets # for downstream dependencies
-    LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs # shared lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT libs # shared lib
 )
 
 if(JSON_ENUM_SOURCES)
     install(TARGETS ExampleDefinitions
         EXPORT ExampleDefinitionsTargets # for downstream dependencies
-        LIBRARY DESTINATION lib/ COMPONENT libs # shared lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/ COMPONENT libs # shared lib
     )
 endif()
 
 install(FILES ${INTERFACES_HEADERS}
-    DESTINATION include/${NAMESPACE}/interfaces
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces
 )
 
 install(FILES ${JSON_HEADERS}
-    DESTINATION include/${NAMESPACE}/interfaces/json
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces/json
 )
 ```
 
