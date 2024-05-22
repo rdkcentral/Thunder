@@ -50,6 +50,12 @@ namespace Platform {
             , m_State(copy.m_State)
         {
         }
+	RequestResponseType(RequestResponseType<REQUEST, RESPONSE>&& move)
+            : m_Request(std::move(move.m_Request))
+            , m_Response(std::move(move.m_Response))
+            , m_State(std::move(move.m_State))
+        {
+        }
         ~RequestResponseType()
         {
         }
@@ -60,6 +66,15 @@ namespace Platform {
             m_Response = RHS.m_Response;
             m_State = RHS.m_State;
 
+            return (*this);
+        }
+        RequestResponseType<REQUEST, RESPONSE>& operator=(RequestResponseType<REQUEST, RESPONSE>&& move)
+        {
+            if (this != &move) {
+                m_Request = std::move(move.m_Request);
+                m_Response = std::move(move.m_Response);
+                m_State = std::move(move.m_State);
+            }
             return (*this);
         }
 

@@ -42,9 +42,14 @@ namespace Core {
             , m_Value(value)
         {
         }
-        KeyValueType(KeyValueType<KEY, VALUE>& copy)
+        KeyValueType(const KeyValueType<KEY, VALUE>& copy)
             : m_Key(copy.m_Key)
             , m_Value(copy.m_Value)
+        {
+        }
+        KeyValueType(KeyValueType<KEY, VALUE>&& move)
+            : m_Key(std::move(move.m_Key))
+            , m_Value(std::move(move.m_Value))
         {
         }
         ~KeyValueType()
@@ -56,6 +61,14 @@ namespace Core {
             m_Key = RHS.m_Key;
             m_Value = RHS.m_Value;
 
+            return (*this);
+        }
+        KeyValueType<KEY, VALUE>& operator=(KeyValueType<KEY, VALUE>&& move)
+        {
+            if (this != &move) {
+                m_Key = std::move(move.m_Key);
+                m_Value = std::move(move.m_Value);
+            }
             return (*this);
         }
 
@@ -115,6 +128,10 @@ namespace Core {
             : KeyValueType<TextFragment, VALUE>(copy)
         {
         }
+        TextKeyValueType(TextKeyValueType<KEY_CASESENSITIVE, VALUE>&& move)
+            : KeyValueType<TextFragment, VALUE>(move)
+        {
+        }
         ~TextKeyValueType()
         {
         }
@@ -123,6 +140,14 @@ namespace Core {
         {
             KeyValueType<TextFragment, VALUE>::operator=(RHS);
 
+            return (*this);
+        }
+
+        TextKeyValueType<KEY_CASESENSITIVE, VALUE>& operator=(TextKeyValueType<KEY_CASESENSITIVE, VALUE>&& move)
+        {
+            if (this != &move) {
+                KeyValueType<TextFragment, VALUE>::operator=(move);
+            }
             return (*this);
         }
 
