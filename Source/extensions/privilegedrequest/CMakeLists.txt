@@ -38,7 +38,7 @@ install(TARGETS ${MODULE_NAME} EXPORT ${MODULE_NAME}Targets)
 
 install(FILES 
             ${CMAKE_CURRENT_SOURCE_DIR}/include/privilegedrequest/PrivilegedRequest.h
-        DESTINATION include/${NAMESPACE}/privilegedrequest)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/privilegedrequest)
 
 include(HeaderOnlyInstall)
 

@@ -70,7 +70,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_threadpool.cpp
    test_time.cpp
-   #test_timer.cpp
+   test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
@@ -123,7 +123,7 @@ add_library(helloworld SHARED test_library_helloworld.cpp)
 
 install(
     TARGETS helloworld
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/testdata)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata)
 
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})
