@@ -342,11 +342,11 @@ namespace PluginHost {
 
             switch (type) {
             case PLATFORM: {
-                SYSLOG(Logging::Startup, (_T("EVENT: Platform")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Platform")));
                 break;
             }
             case NETWORK: {
-                SYSLOG(Logging::Startup, (_T("EVENT: Network")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Network")));
                 break;
             }
             case IDENTIFIER: {
@@ -385,10 +385,10 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(Logging::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
-                SYSLOG(Logging::Startup, (_T("EVENT: Architecture: %s"), _identifier->Architecture().c_str()));
-                SYSLOG(Logging::Startup, (_T("EVENT: Chipset: %s"), _identifier->Chipset().c_str()));
-                SYSLOG(Logging::Startup, (_T("EVENT: FirmwareVersion: %s"), _identifier->FirmwareVersion().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: Architecture: %s"), _identifier->Architecture().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: Chipset: %s"), _identifier->Chipset().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: FirmwareVersion: %s"), _identifier->FirmwareVersion().c_str()));
                 break;
             }
             case INTERNET: {
@@ -422,7 +422,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(Logging::Startup, (_T("EVENT: Internet [%s]"), _internet->PublicIPAddress().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: Internet [%s]"), _internet->PublicIPAddress().c_str()));
                 break;
             }
             case LOCATION: {
@@ -444,7 +444,7 @@ namespace PluginHost {
                 _location = location;
                 _adminLock.Unlock();
 
-                SYSLOG(Logging::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"), _location->TimeZone().c_str(), _location->Country().c_str(), _location->Region().c_str(), _location->City().c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"), _location->TimeZone().c_str(), _location->Country().c_str(), _location->Region().c_str(), _location->City().c_str()));
 
                 break;
             }
@@ -479,7 +479,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(Logging::Startup, (_T("EVENT: Time: %s"), Core::Time(_time->TimeSync()).ToRFC1123(false).c_str()));
+                SYSLOG(Logging::Activate, (_T("EVENT: Time: %s"), Core::Time(_time->TimeSync()).ToRFC1123(false).c_str()));
                 break;
             }
             case PROVISIONING: {
@@ -511,42 +511,42 @@ namespace PluginHost {
                 }
 
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Provisioning")));
                 break;
             }
             case DECRYPTION: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Decryption")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Decryption")));
                 break;
             }
             case GRAPHICS: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Graphics")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Graphics")));
                 break;
             }
             case WEBSOURCE: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: WebSource")));
+                SYSLOG(Logging::Activate, (_T("EVENT: WebSource")));
                 break;
             }
             case STREAMING: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Streaming")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Streaming")));
                 break;
             }
             case BLUETOOTH: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Bluetooth")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Bluetooth")));
                 break;
             }
             case CRYPTOGRAPHY: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Cryptography")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Cryptography")));
                 break;
             }
             case INSTALLATION: {
                 /* No information to set yet */
-                SYSLOG(Logging::Startup, (_T("EVENT: Installation")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Installation")));
                 break;
             }
             case SECURITY: {
@@ -580,7 +580,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(Logging::Startup, (_T("EVENT: Security")));
+                SYSLOG(Logging::Activate, (_T("EVENT: Security")));
                 break;
             }
             default: {
@@ -617,63 +617,63 @@ namespace PluginHost {
 
             switch (type) {
             case PLATFORM: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Platform")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Platform")));
                 break;
             }
             case NETWORK: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Network")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Network")));
                 break;
             }
             case IDENTIFIER: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Identifier")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Identifier")));
                 break;
             }
             case INTERNET: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Internet")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Internet")));
                 break;
             }
             case TIME: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Time")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Time")));
                 break;
             }
             case LOCATION: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Location")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Location")));
                 break;
             }
             case PROVISIONING: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Provisioning")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Provisioning")));
                 break;
             }
             case DECRYPTION: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Decryption")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Decryption")));
                 break;
             }
             case GRAPHICS: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Graphics")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Graphics")));
                 break;
             }
             case CRYPTOGRAPHY: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Cryptography")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Cryptography")));
                 break;
             }
             case INSTALLATION: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Installation")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Installation")));
                 break;
             }
             case BLUETOOTH: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Bluetooth")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Bluetooth")));
                 break;
             }
             case WEBSOURCE: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: WebSource")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: WebSource")));
                 break;
             }
             case STREAMING: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Streaming")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Streaming")));
                 break;
             }
             case SECURITY: {
-                SYSLOG(Logging::Shutdown, (_T("EVENT: Security")));
+                SYSLOG(Logging::Deactivate, (_T("EVENT: Security")));
                 break;
             }
             default: {
