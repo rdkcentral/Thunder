@@ -142,26 +142,26 @@ set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
 # ===========================================================================================
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins COMPONENT devel # for mac
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}   # default include path
 )
 
 install(
-        FILES ${JSON_DATA_HEADERS} DESTINATION include/${NAMESPACE}/plugins/json COMPONENT devel # for mac
+        FILES ${JSON_DATA_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT devel # for mac
 )
 
 install(
         TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets        # for downstream dependencies
-        ARCHIVE DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs                                  # binaries
-        FRAMEWORK DESTINATION bin/${NAMESPACE_LIB}/proxystubs COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/proxystubs COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}/proxystubs                    # headers
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # static lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs                                  # binaries
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT libs    # for mac
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs COMPONENT devel # for mac
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs                    # headers
 )
 
 # ===========================================================================================
