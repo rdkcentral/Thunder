@@ -925,11 +925,11 @@ namespace Core {
 
                     if (nResult == ETIMEDOUT) {
                         // Something went wrong, so assume...
-                        TRACE_L1("Timed out waiting for event <%d>.", nTime);
+                        TRACE_L5("Timed out waiting for event <%d>.", nTime);
                         nResult = Core::ERROR_TIMEDOUT;
                     } else if (nResult != 0) {
                         // Something went wrong, so assume...
-                        TRACE_L1("Waiting on semaphore failed. Error code <%d>", nResult);
+                        TRACE_L5("Waiting on semaphore failed. Error code <%d>", nResult);
                         nResult = Core::ERROR_GENERAL;
                     }
 
