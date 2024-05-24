@@ -53,6 +53,12 @@ namespace Core {
         {
         }
 
+        RangeType(RangeType<TYPE, BEGININCLUSIVE, ENDINCLUSIVE>&& move)
+            : m_Minumum(std::move(move.m_Minumum))
+            , m_Maximum(std::move(move.m_Maximum))
+        {
+        }
+
         ~RangeType()
         {
         }
@@ -62,6 +68,15 @@ namespace Core {
             m_Minumum = RHS.m_Minumum;
             m_Maximum = RHS.m_Maximum;
 
+            return (*this);
+        }
+
+        inline RangeType<TYPE, BEGININCLUSIVE, ENDINCLUSIVE>& operator=(RangeType<TYPE, BEGININCLUSIVE, ENDINCLUSIVE>&& move)
+        {
+            if (this != &move) {
+                m_Minumum = std::move(move.m_Minumum);
+                m_Maximum = std::move(move.m_Maximum);
+            }
             return (*this);
         }
 

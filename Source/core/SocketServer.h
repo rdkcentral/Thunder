@@ -62,6 +62,13 @@ namespace Core {
                 , _iterator(_clients.begin())
             {
             }
+            IteratorType(IteratorType<HANDLECLIENT>&& move)
+                : _atHead(move._atHead)
+                , _clients(std::move(move._clients))
+                , _iterator(std::move(move._iterator))
+            {
+                move._atHead = true;
+            }
             ~IteratorType()
             {
             }
@@ -72,6 +79,16 @@ namespace Core {
                 _atHead = RHS._atHead;
                 _clients = RHS._clients;
                 _iterator = RHS._iterator;
+            }
+            IteratorType& operator=(IteratorType<HANDLECLIENT>&& move)
+            {
+                if (this != &move) {
+                    _atHead = move._atHead;
+                    _clients = std::move(move._clients);
+                    _iterator = std::move(move._iterator);
+
+                    move._atHead = true;
+                }
             }
 
         public:
@@ -290,10 +307,10 @@ namespace Core {
                     _lock.Unlock();
                 }
             }
-			void Lock() 
-			{
+            void Lock()
+            {
                 _lock.Lock();
-			}
+            }
             void Unlock()
             {
                 _lock.Unlock();

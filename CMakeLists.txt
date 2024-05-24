@@ -52,6 +52,7 @@ endif()
 
 include(platform)
 include(CmakeHelperFunctions)
+include(GNUInstallDirs)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
@@ -96,18 +97,18 @@ configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake.in"
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
-        DESTINATION lib/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 install(DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config"
-    DESTINATION lib/cmake/${NAMESPACE})
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
 install(DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates"
-        DESTINATION lib/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
 
 if(APPLE)
     # Mac needed variables
@@ -115,7 +116,7 @@ if(APPLE)
     set(CMAKE_MACOSX_RPATH ON)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 

@@ -1687,7 +1687,7 @@ namespace Core {
                 return (_default);
             }
 
-            inline operator const string() const
+            inline operator string() const
             {
                 return (Value());
             }
@@ -2230,7 +2230,7 @@ namespace Core {
                 }
             }
 
-            Buffer& operator= (Buffer&& move) noexcept {
+            Buffer& operator=(Buffer&& move) noexcept {
                 _state = std::move(move._state);
                 _lastStuff = std::move(move._lastStuff);
                 _index = std::move(move._index);
@@ -4585,7 +4585,21 @@ namespace Core {
                 return (*this);
             }
 
+            VariantContainer& operator=(VariantContainer&& move)
+            {
+                if (this != &move) {
+                    _elements = std::move(move._elements);
+                    Elements::iterator index(_elements.begin());
 
+                    while (index != _elements.end()) {
+                        ASSERT (HasLabel(index->first.c_str()));
+                        Container::Add(index->first.c_str(), &(index->second));
+                        index++;
+                    }
+                }
+   
+                return (*this);
+            }
 
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
