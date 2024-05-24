@@ -150,7 +150,11 @@ namespace Core {
             ::memset (&node, 0, sizeof(node));
             node.sin_family = AF_INET;
             node.sin_port = 0;
+#ifdef __WINDOWS__
             node.sin_addr.S_un.S_addr = ipHeader->ip_src;
+#else
+            node.sin_addr = ipHeader->ip_src;
+#endif
             result = node;
 
             return (result);
@@ -161,7 +165,11 @@ namespace Core {
             ASSERT (node.Type() == NodeId::TYPE_IPV4);
 
             const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
+#ifdef __WINDOWS__
             ipHeader->ip_src = result.sin_addr.S_un.S_addr;
+#else
+	    ipHeader->ip_src = result.sin_addr;
+#endif
             ipHeader->ip_sum = Checksum();
         }
         inline NodeId Destination() const {
@@ -173,7 +181,11 @@ namespace Core {
             ::memset (&node, 0, sizeof(node));
             node.sin_family = AF_INET;
             node.sin_port = 0;
+#ifdef __WINDOWS__
             node.sin_addr.S_un.S_addr = ipHeader->ip_dst;
+#else
+	    node.sin_addr = ipHeader->ip_dst;
+#endif
             result = node;
 
             return (result);
@@ -185,7 +197,11 @@ namespace Core {
             ASSERT (node.Type() == NodeId::TYPE_IPV4);
 
             const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
+#ifdef __WINDOWS__
             ipHeader->ip_dst = result.sin_addr.S_un.S_addr;
+#else
+	    ipHeader->ip_dst = result.sin_addr;
+#endif
             ipHeader->ip_sum = Checksum();
         }
         inline uint8_t TTL() const {
