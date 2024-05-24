@@ -766,7 +766,7 @@ namespace PluginHost {
                     _pluginConfigPath = Core::Directory::Normalize(config.Observe.PluginConfigPath.Value());
                 }
                 _postMortemPath = Core::Directory::Normalize(config.PostMortemPath.Value());
-                _appPath = Core::File::PathName(Core::ProcessInfo().Executable());
+                _appPath = Core::Directory::Normalize(Core::File::PathName(Core::ProcessInfo().Executable()));
                 _hashKey = config.Signature.Value();
                 _communicator = Core::NodeId(config.Communicator.Value().c_str());
                 _redirect = config.Redirect.Value();
