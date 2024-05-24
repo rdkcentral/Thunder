@@ -39,11 +39,22 @@ TEST(Core_ProcessInfo, simpleSet)
     std::cout << "Size Resident  :" << (processInfo.Resident() >> 10) << " KB" << std::endl;
     std::cout << "Size Shared    :" << (processInfo.Shared() >> 10) << " KB" << std::endl;
 
-    Core::ProcessInfo::Iterator childIterator = processInfo.Children();
+    Core::ProcessInfo::Iterator childIterator = Core::ProcessInfo(0).Children();
 
-    std::cout << "Children (" << childIterator.Count() << ") " << std::endl;
+    childIterator.Reset(false);
+    std::list<uint32_t> pids;
+    std::cout << "Children of PID 0 (" << childIterator.Count() << ") in revers order" << std::endl;
+    while (childIterator.Previous()) {
+        Core::ProcessInfo childProcessInfo = childIterator.Current();
+        std::cout << "\tName        : " << childProcessInfo.Name() << " (" << childProcessInfo.Id() << "): " << childProcessInfo.Resident() << std::endl;
+        pids.push_front(childProcessInfo.Id());
+    }
+
+    std::cout << "Children of PID 0 (" << childIterator.Count() << ") " << std::endl;
     while (childIterator.Next()) {
         Core::ProcessInfo childProcessInfo = childIterator.Current();
         std::cout << "\tName        : " << childProcessInfo.Name() << " (" << childProcessInfo.Id() << "): " << childProcessInfo.Resident() << std::endl;
+        EXPECT_EQ(childProcessInfo.Id(),pids.front());
+        pids.pop_front();
     }
 }

@@ -62,7 +62,9 @@ namespace Core {
             ~Memory() = default;
 
             Memory(const Memory&);
+            Memory(Memory&&);
             Memory& operator=(const Memory&);
+            Memory& operator=(Memory&&);
 
         public:
             void MemoryStats();
@@ -118,6 +120,13 @@ namespace Core {
                 , _index(copy._index)
             {
             }
+            Iterator(Iterator&& move)
+                : _pids(std::move(move._pids))
+                , _current(std::move(move._current))
+                , _index(move._index)
+            {
+                move._index = 0;
+            }
             ~Iterator()
             {
             }
@@ -131,15 +140,32 @@ namespace Core {
                 return (*this);
             }
 
+            Iterator& operator=(Iterator&& move)
+            {
+                if (this != &move) {
+                    _pids = std::move(move._pids);
+                    _current = std::move(move._current);
+                    _index = move._index;
+
+                    move._index = 0;
+                }
+                return (*this);
+            }
+
         public:
             inline bool IsValid() const
             {
                 return ((_index != 0) && (_index <= _pids.size()));
             }
-            inline void Reset()
+            inline void Reset(bool start = true)
             {
-                _index = 0;
-                _current = _pids.begin();
+                if (start) {
+                    _index = 0;
+                    _current = _pids.begin();
+                } else {
+                    _index = static_cast<uint32_t>(_pids.size()) + 1;
+                    _current = _pids.end();
+                }
             }
             bool Next()
             {
@@ -151,6 +177,17 @@ namespace Core {
                     }
                 }
                 return (_index <= _pids.size());
+            }
+            bool Previous()
+            {
+                if (_index > 0) {
+                    _index--;
+
+                    if (_index > 0) {
+                        _current--;
+                    }
+                }
+                return (_index > 0);
             }
             inline ProcessInfo Current() const
             {
@@ -177,7 +214,9 @@ namespace Core {
         ProcessInfo(const process_t id);
 
         ProcessInfo(const ProcessInfo&);
+        ProcessInfo(ProcessInfo&&);
         ProcessInfo& operator=(const ProcessInfo&);
+        ProcessInfo& operator=(ProcessInfo&&);
 
         ~ProcessInfo();
 

@@ -28,6 +28,7 @@ extern "C" {
 
 #define HIBERNATE_ERROR_NONE        0
 #define HIBERNATE_ERROR_GENERAL     1
+#define HIBERNATE_ERROR_TIMEOUT     2
 
 uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage);
 uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage);

@@ -59,6 +59,7 @@ namespace PluginHost {
             }
             void Register(IShell* controller, const string& callsign)
             {
+                ASSERT(controller != nullptr);
                 _adminLock.Lock();
                 _callsign = callsign;
                 _state = state::REGISTRING;
@@ -83,20 +84,23 @@ namespace PluginHost {
             }
             void Unregister(IShell* controller)
             {
-                _adminLock.Lock();
+                ASSERT(controller != nullptr);
+                if (controller != nullptr) {
 
-                controller->Unregister(this);
-                _callsign.clear();
+                    _adminLock.Lock();
+                    controller->Unregister(this);
+                    _callsign.clear();
 
-                if (_designated != nullptr) {
+                    if (_designated != nullptr) {
 
-                    _designated->Release();
-                    _designated = nullptr;
+                        _designated->Release();
+                        _designated = nullptr;
 
-                    _parent.Deactivated();
+                        _parent.Deactivated();
+                    }
+
+                    _adminLock.Unlock();
                 }
-
-                _adminLock.Unlock();
             }
             INTERFACE* Interface()
             {
