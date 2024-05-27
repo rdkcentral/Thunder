@@ -436,6 +436,9 @@ namespace RPC {
             ~MonitorableProcess() override = default;
 
         public:
+            inline bool IsTerminated() const {
+                return (_cycle == static_cast<uint8_t>(~0));
+            }
             inline bool operator== (const RemoteConnectionMap& parent) const {
                 return (&parent == &_parent);
             }
@@ -457,17 +460,17 @@ namespace RPC {
                     ++_cycle;
                     ::SleepMs(1);
                 }
+                _cycle = ~0;
                 _parent.Terminated(this);
             }
             inline bool Destruct(uint64_t& timeSlot) {
-                bool destructed = false;
 
                 if (_time <= timeSlot) {
                     uint32_t delay = EndProcess();
 
                     if (delay == 0) {
+                        _cycle = ~0;
                         _parent.Terminated(this);
-                        destructed = true;
                     }
                     else {
                         timeSlot = Core::Time::Now().Ticks();
@@ -476,7 +479,7 @@ namespace RPC {
                     }
                 }
 
-                return (destructed);
+                return (IsTerminated());
             }
 
             BEGIN_INTERFACE_MAP(MonitorableProcess)
