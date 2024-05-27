@@ -120,6 +120,7 @@ namespace RPC {
     public:
         ProcessShutdown(ProcessShutdown&&) = delete;
         ProcessShutdown(const ProcessShutdown&) = delete;
+        ProcessShutdown& operator=(ProcessShutdown&&) = delete;
         ProcessShutdown& operator=(const ProcessShutdown&) = delete;
 
         ProcessShutdown()
@@ -165,7 +166,7 @@ namespace RPC {
         {
             _adminLock.Lock();
 
-            if (_destructors.find(id) == _destructors.end()) {
+            if ((entry.IsTerminated() == false) && (_destructors.find(id) == _destructors.end())) {
                 entry.AddRef();
                 _destructors.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
