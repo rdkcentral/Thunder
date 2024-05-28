@@ -36,7 +36,6 @@ namespace Core {
             return msg;
         }
 
-        /* static */ constexpr size_t Error::kContextMaxLength;
 
         /* static */ char IElement::NullTag[5] = { 'n', 'u', 'l', 'l', '\0' };
         /* static */ char IElement::TrueTag[5] = { 't', 'r', 'u', 'e', '\0' };

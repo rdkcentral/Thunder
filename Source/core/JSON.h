@@ -37,7 +37,8 @@ namespace WPEFramework {
 namespace Core {
 
     namespace JSON {
-
+        constexpr size_t kContextMaxLength = 80;
+        
         struct EXTERNAL Error {
             explicit Error(string&& message)
                 : _message(std::move(message))
@@ -73,8 +74,6 @@ namespace Core {
                 , _pos(0)
             {
             }
-
-            static constexpr size_t kContextMaxLength = 80;
 
             string _message;
             string _context;
@@ -511,6 +510,7 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
+                _default = std::move(move._default);
 
                 return (*this);
             }
@@ -519,6 +519,7 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+                _default = RHS._default;
 
                 return (*this);
             }
@@ -745,7 +746,7 @@ namespace Core {
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
+                    } else if (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
@@ -1029,6 +1030,8 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
+                _default = std::move(move._default);
+                _strValue = std::move(move._strValue);
 
                 return (*this);
             }
@@ -1037,6 +1040,8 @@ namespace Core {
             {
                 _value = RHS._value;
                 _set = RHS._set;
+                _default = RHS._default;
+                _strValue = RHS._strValue;
 
                 return (*this);
             }
@@ -1139,7 +1144,7 @@ namespace Core {
                         loaded++;
                         offset++;
                         _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
+                    } else if ( (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])))) || (stream[loaded] == '\0') ||
                                (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
                         completed = true;
                     } else {
@@ -1600,6 +1605,7 @@ namespace Core {
                 _default = std::move(move._default);
                 _value = std::move(move._value);
                 _flagsAndCounters = std::move(move._flagsAndCounters);
+                _storage = std::move(move._storage);
 
                 return (*this);
             }
@@ -1609,6 +1615,7 @@ namespace Core {
                 _default = RHS._default;
                 _value = RHS._value;
                 _flagsAndCounters = RHS._flagsAndCounters;
+                _storage = RHS._storage;
 
                 return (*this);
             }
@@ -1680,7 +1687,7 @@ namespace Core {
                 return (_default);
             }
 
-            inline operator const string() const
+            inline operator string() const
             {
                 return (Value());
             }
@@ -1736,8 +1743,8 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_flagsAndCounters & SetBit) != 0) {
-                    bool isQuoted = IsQuoted();
+                bool isQuoted = IsQuoted();
+                if ((_flagsAndCounters & SetBit) != 0 || (_value.empty() && isQuoted)) {
                     if (offset == 0)  {
                         if (isQuoted == true) {
                             // We always start with a quote or Block marker
@@ -1753,7 +1760,7 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1900,7 +1907,7 @@ namespace Core {
                             }
                             else if ((_flagsAndCounters & 0x1F) == 0) {
                                 // We are not in a nested area, see what 
-                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
+                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(static_cast<uint8_t>(current))));
                             }
                             else if (current == '}') {
                                 if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -1919,7 +1926,7 @@ namespace Core {
                                 // Write the amount we possibly can..
                                 _value += current;
                             }
-                            else if (::isspace(current) == false) {
+                            else if (::isspace(static_cast<uint8_t>(current)) == false) {
                                 // If we are creating an opaque string, drop all whitespaces if possible.
                                 _value += current;
 
@@ -1930,7 +1937,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
+                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 2] != '\\'))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -1948,7 +1955,7 @@ namespace Core {
                         } else if (current == '\"') {
                             // We are done! leave this element.
                             finished = true;
-                        } else if (current <= 0x1F) {
+                        } else if (static_cast<std::make_unsigned<TCHAR>::type>(current) <= 0x1F) {
                             error = Error{ "Unescaped control character detected" };
                         } else {
                             // Just copy and onto the next;
@@ -1984,11 +1991,11 @@ namespace Core {
                         // If we end up here, we are actually gathering unicode values to be decoded.
                         _flagsAndCounters--;
 
-                        if (::isxdigit(current) == false) {
+                        if (::isxdigit(static_cast<uint8_t>(current)) == false) {
                             error = Error{ "the unescaping of the u requires hexadecimal characters" };
                         }
                         else {
-                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
+                            _storage = (_storage << 4) | ((::isdigit(static_cast<uint8_t>(current)) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
                             result++;
                             if ((_flagsAndCounters & 0xFF) == 0x00) {
                                 _flagsAndCounters ^= SpecialSequenceBit;
@@ -2026,7 +2033,7 @@ namespace Core {
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
                         // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
+                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(static_cast<uint8_t>(ch))); }).base(), _value.end());
                     }
                 }
 
@@ -2223,7 +2230,7 @@ namespace Core {
                 }
             }
 
-            Buffer& operator= (Buffer&& move) noexcept {
+            Buffer& operator=(Buffer&& move) noexcept {
                 _state = std::move(move._state);
                 _lastStuff = std::move(move._lastStuff);
                 _index = std::move(move._index);
@@ -2392,7 +2399,7 @@ namespace Core {
                                 converted = 62;
                             } else if (current == '/') {
                                 converted = 63;
-                            } else if (::isspace(current)) {
+                            } else if (::isspace(static_cast<uint8_t>(current))) {
                                 continue;
                             } else if (current == '\"') {
                                 _state |= SET;
@@ -2598,6 +2605,10 @@ namespace Core {
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
+                _default = std::move(move._default);
+                _parser = std::move(move._parser);
+                _package = std::move(move._package);
+
                 return (*this);
             }
 
@@ -2605,6 +2616,9 @@ namespace Core {
             {
                 _value = RHS._value;
                 _state = RHS._state;
+                _default = RHS._default;
+                _parser = RHS._parser;
+                _package = RHS._package;
                 return (*this);
             }
 
@@ -2753,6 +2767,7 @@ namespace Core {
             enum modus : uint8_t {
                 ERROR = 0x80,
                 SET = 0x20,
+                EXTRACT = 0x01,
                 UNDEFINED = 0x40
             };
 
@@ -3067,6 +3082,7 @@ namespace Core {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
                 _iterator = IteratorType<ELEMENT>(_data);
+                _count = std::move(move._count);
 
                 return (*this);
             }
@@ -3076,6 +3092,7 @@ namespace Core {
                 _state = RHS._state;
                 _data = RHS._data;
                 _iterator = IteratorType<ELEMENT>(_data);
+                _count = RHS._count;
 
                 return (*this);
             }
@@ -3101,6 +3118,21 @@ namespace Core {
                 else {
                     _state &= (~modus::SET);
                 }
+            }
+
+            void SetExtractOnSingle(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= (modus::EXTRACT);
+                }
+                else {
+                    _state &= (~modus::EXTRACT);
+                }
+            }
+
+            bool IsExtractOnSingleSet() const
+            {
+                return ((_state & (modus::EXTRACT)) != 0);
             }
 
             void Clear() override
@@ -3236,7 +3268,9 @@ namespace Core {
 
                 if (offset == FIND_MARKER) {
                     _iterator.Reset();
-                    stream[loaded++] = '[';
+                    if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                        stream[loaded++] = '[';
+                    }
                     offset = (_iterator.Next() == false ? ~0 : PARSE);
                 } else if (offset == END_MARKER) {
                     offset = ~0;
@@ -3253,7 +3287,9 @@ namespace Core {
                 }
                 if (offset == static_cast<uint32_t>(~0)) {
                     if (loaded < maxLength) {
-                        stream[loaded++] = ']';
+                        if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                            stream[loaded++] = ']';
+                        }
                         offset = FIND_MARKER;
                     } else {
                         offset = END_MARKER;
@@ -3268,7 +3304,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
+                    while ((loaded < maxLength) && ::isspace(static_cast<uint8_t>(stream[loaded]))) {
                         loaded++;
                     }
                 }
@@ -3299,19 +3335,20 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case ']':
+                                _state |= (modus::SET);
                                 offset = FIND_MARKER;
                                 loaded++;
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
-                                    _state = ERROR;
+                                    _state = (ERROR | (_state & 0xF));
                                     error = Error{ "Expected new element, \",\" found." };
                                     offset = FIND_MARKER;
                                 } else {
@@ -3391,7 +3428,7 @@ namespace Core {
 
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
-                        _state = UNDEFINED;
+                        _state = (UNDEFINED | (_state & 0xF));
                         loaded = 1;
                     } else if ((stream[0] & 0xF0) == 0x90) {
                         _count = (stream[0] & 0x0F);
@@ -3664,7 +3701,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                    while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                         loaded++;
                     }
                 }
@@ -3696,7 +3733,7 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
@@ -4548,7 +4585,21 @@ namespace Core {
                 return (*this);
             }
 
+            VariantContainer& operator=(VariantContainer&& move)
+            {
+                if (this != &move) {
+                    _elements = std::move(move._elements);
+                    Elements::iterator index(_elements.begin());
 
+                    while (index != _elements.end()) {
+                        ASSERT (HasLabel(index->first.c_str()));
+                        Container::Add(index->first.c_str(), &(index->second));
+                        index++;
+                    }
+                }
+   
+                return (*this);
+            }
 
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
