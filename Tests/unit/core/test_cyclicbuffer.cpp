@@ -511,7 +511,7 @@ namespace Tests {
         data[BUFFERSIZE] = '0';
 
         EXPECT_EQ(buffer.Write(data, BUFFERSIZE - 1), BUFFERSIZE - 1);
-        EXPECT_EQ(buffer.Write(&data[BUFFERSIZE], 1), 1);
+        EXPECT_EQ(buffer.Write(&data[BUFFERSIZE - 1], 1), 1);
 
         for (size_t end = sizeof(data), index = 0; index < end; index++) {
             data[index] = '1';
@@ -520,7 +520,8 @@ namespace Tests {
         EXPECT_EQ(buffer.Read(data ,BUFFERSIZE), BUFFERSIZE);
 
         EXPECT_EQ(data[0], 'A');
-        EXPECT_EQ(data[BUFFERSIZE], '0');
+        EXPECT_EQ(data[BUFFERSIZE - 1], 'Z');
+        EXPECT_EQ(data[BUFFERSIZE], '1');
     }
 
     TEST(Core_CyclicBuffer, Peek)
