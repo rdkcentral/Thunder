@@ -15,5 +15,5 @@ jobs:
         run: |
           java -version
           curl -LJO https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
-          java -jar wss-unified-agent.jar -apiKey $ -product Thunder -project thunder-github-action-test
+          java -jar wss-unified-agent.jar -apiKey ${{ secrets.MEND_API_KEY }} -product Thunder -project thunder-github-action-test
           
