@@ -1,0 +1,19 @@
+name: Mend workflow
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: comcast-runner
+    steps:
+      #   It will checkout the latest code
+      - uses: actions/checkout@v3     
+      - name: Run Whitesource/Mend scan
+        run: |
+          java -version
+          curl -LJO https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
+          java -jar wss-unified-agent.jar -apiKey ${{ secrets.MEND_API_KEY }} -product Thunder -project thunder-github-action-test
+          
