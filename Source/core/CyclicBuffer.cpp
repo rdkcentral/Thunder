@@ -366,7 +366,7 @@ namespace Core {
                 break;
             }
 
-            Cursor cursor(*this, oldTail, std::min(length, result));
+            Cursor cursor(*this, oldTail, length);
             result = GetReadSize(cursor);
 
             //data was found if result is greater than 0 and the tail was not moved by the writer.
@@ -426,7 +426,7 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length < _administration->_size);
+        ASSERT(length <= _administration->_size);
         ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
