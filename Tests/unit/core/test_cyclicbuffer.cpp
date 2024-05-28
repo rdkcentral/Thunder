@@ -488,7 +488,7 @@ namespace Tests {
 
     TEST(Core_CyclicBuffer, ReadBufferLargerThanInternal)
     {
-        constexpr uint32_t BUFFERSIZE = 26;
+        constexpr uint32_t BUFFERSIZE = 27;
         constexpr char FILENAME[] = "CyclicBuffer";
 
         CyclicBuffer buffer{
@@ -507,11 +507,10 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), BUFFERSIZE);
         EXPECT_EQ(buffer.Used(), 0);
 
-        uint8_t data[BUFFERSIZE + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        data[BUFFERSIZE] = '0';
+        // 26 characters and 1 extra space for null-terminator
+        uint8_t data[BUFFERSIZE] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         EXPECT_EQ(buffer.Write(data, BUFFERSIZE - 1), BUFFERSIZE - 1);
-        EXPECT_EQ(buffer.Write(&data[BUFFERSIZE], 1), 1);
 
         for (size_t end = sizeof(data), index = 0; index < end; index++) {
             data[index] = '1';
@@ -520,7 +519,8 @@ namespace Tests {
         EXPECT_EQ(buffer.Read(data ,BUFFERSIZE), BUFFERSIZE);
 
         EXPECT_EQ(data[0], 'A');
-        EXPECT_EQ(data[BUFFERSIZE], '0');
+        EXPECT_EQ(data[BUFFERSIZE - 2], 'Z');
+        EXPECT_EQ(data[BUFFERSIZE - 1], '\0');
     }
 
     TEST(Core_CyclicBuffer, Peek)
