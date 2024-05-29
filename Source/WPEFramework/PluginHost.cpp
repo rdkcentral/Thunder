@@ -169,6 +169,12 @@ POP_WARNING()
             uint32_t threadId = WPEFramework::Core::Thread::ThreadId();
             // Get the call stack for the current thread
             ::DumpCallStack(threadId, stackList);
+            for(const WPEFramework::Core::callstack_info& entry : stackList)
+            {
+               std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
+               fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), entry.function.c_str(),entry.line,entry.address);
+            }
+            fflush(stderr);
 	    _adminLock.Unlock();
 	}
 
@@ -334,7 +340,7 @@ POP_WARNING()
 
             ExitHandler::StartShutdown();
         }
-        else if ( (signo == SIGSEGV)  || (signo == SIGABRT) ) 
+        else if ( (signo == SIGSEGV)  || (signo == SIGABRT) )
         {
             sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
             sigaction(SIGABRT, &_originalAbortHandler, nullptr);
