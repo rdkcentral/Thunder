@@ -124,6 +124,14 @@ namespace Core {
                         Code = Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
+                    case Core::ERROR_FAILED_REGISTERED:
+                        Code = Core::ERROR_UNKNOWN_KEY;
+                        Text = _T("Registration already done!!!.");
+                        break;
+                    case Core::ERROR_FAILED_UNREGISTERED:
+                        Code = Core::ERROR_UNKNOWN_KEY;
+                        Text = _T("Unregister was already done!!!.");
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         Text = Core::ErrorToString(frameworkError);
