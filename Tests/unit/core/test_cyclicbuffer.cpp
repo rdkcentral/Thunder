@@ -486,7 +486,7 @@ namespace Tests {
         const_cast<File&>(buffer.Storage()).Destroy();
     }
 
-    TEST(Core_CyclicBuffer, ReadBufferLargerThanInternal)
+    TEST(Core_CyclicBuffer, ReadBufferLargerThanInternalNoOverwrite)
     {
         constexpr uint32_t BUFFERSIZE = 26;
         constexpr char FILENAME[] = "CyclicBuffer";
@@ -496,7 +496,45 @@ namespace Tests {
             ,   Core::File::USER_READ  // Not relevant for readers
               | Core::File::USER_WRITE // Open the existing file with write permission
                                        // Readers normally require readonly but the cyclic buffer administration is updated after read
-//              | Core::File::CREATE     // Readers access exisitng underlying memory mapped files
+              | Core::File::CREATE     // Readers access exisitng underlying memory mapped files
+              | Core::File::SHAREABLE  // Updates are visible to other processes, but a reader should not update any content except when read data is (automatically) removed
+            , BUFFERSIZE // Readers do not specify sizes
+            , false // Overwrite unread data
+        };
+
+        EXPECT_EQ(buffer.IsValid(), true);
+        EXPECT_EQ(buffer.Size(), BUFFERSIZE);
+        EXPECT_EQ(buffer.Free(), BUFFERSIZE);
+        EXPECT_EQ(buffer.Used(), 0);
+
+        uint8_t data[BUFFERSIZE + 1] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        data[BUFFERSIZE] = '0';
+
+        EXPECT_EQ(buffer.Write(data, BUFFERSIZE - 1), BUFFERSIZE - 1);
+        EXPECT_EQ(buffer.Write(&data[BUFFERSIZE - 1], 1), 1);
+
+        for (size_t end = sizeof(data), index = 0; index < end; index++) {
+            data[index] = '1';
+        }
+
+        EXPECT_EQ(buffer.Read(data, BUFFERSIZE), BUFFERSIZE);
+
+        EXPECT_EQ(data[0], 'A');
+        EXPECT_EQ(data[BUFFERSIZE - 1], 'Z');
+        EXPECT_EQ(data[BUFFERSIZE], '1');
+    }
+
+    TEST(Core_CyclicBuffer, ReadBufferLargerThanInternalOverwrite)
+    {
+        constexpr uint32_t BUFFERSIZE = 26;
+        constexpr char FILENAME[] = "CyclicBuffer";
+
+        CyclicBuffer buffer{
+              FILENAME
+            ,   Core::File::USER_READ  // Not relevant for readers
+              | Core::File::USER_WRITE // Open the existing file with write permission
+                                       // Readers normally require readonly but the cyclic buffer administration is updated after read
+              | Core::File::CREATE     // Readers access exisitng underlying memory mapped files
               | Core::File::SHAREABLE  // Updates are visible to other processes, but a reader should not update any content except when read data is (automatically) removed
             , BUFFERSIZE // Readers do not specify sizes
             , true // Overwrite unread data
@@ -517,7 +555,7 @@ namespace Tests {
             data[index] = '1';
         }
 
-        EXPECT_EQ(buffer.Read(data ,BUFFERSIZE), BUFFERSIZE);
+        EXPECT_EQ(buffer.Read(data, BUFFERSIZE), BUFFERSIZE);
 
         EXPECT_EQ(data[0], 'A');
         EXPECT_EQ(data[BUFFERSIZE - 1], 'Z');
