@@ -114,7 +114,7 @@ namespace Core {
             AllocatorType<STARTSIZE, SIZETYPE>& operator=(const AllocatorType<STARTSIZE, SIZETYPE>& copy) = delete;
 
             AllocatorType()
-                : _bufferSize(STARTSIZE)
+                : _bufferSize(static_cast<SIZETYPE>(STARTSIZE))
                 , _data(static_cast<uint8_t*>(::malloc(_bufferSize)))
             {
                 // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
@@ -178,7 +178,7 @@ namespace Core {
                     if (_data != nullptr) {
                         ::free(_data);
                     }
-                    _data ==  move._data;
+                    _data =  move._data;
                     move._data = nullptr;
                     _bufferSize = move._bufferSize;
                 }

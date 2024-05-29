@@ -163,7 +163,7 @@ namespace Core {
                     _index = 0;
                     _current = _pids.begin();
                 } else {
-                    _index = _pids.size() + 1;
+                    _index = static_cast<uint32_t>(_pids.size()) + 1;
                     _current = _pids.end();
                 }
             }
