@@ -182,7 +182,7 @@ namespace Tests {
         ASSERT_EQ(readData[0], 40);
     }
 
-    TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
+    TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDifferentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
             Messaging::MessageDataBuffer dispatcher(this->_identifier, this->_instanceId, this->_basePath, DATA_SIZE, 0, false);
@@ -190,17 +190,13 @@ namespace Tests {
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
 
-            testAdmin.Sync("setup reader");
-            testAdmin.Sync("writer wrote");
-
+            // Arbitrary timeout value, 1 second
+            ASSERT_EQ(dispatcher.Wait(1000), Core::ERROR_NONE);
             ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
 
             ASSERT_EQ(readLength, 2);
             ASSERT_EQ(readData[0], 13);
             ASSERT_EQ(readData[1], 37);
-
-            testAdmin.Sync("reader read");
-            testAdmin.Sync("done");
         };
 
         static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -209,15 +205,11 @@ namespace Tests {
         // This side (tested) acts as writer
         IPTestAdministrator testAdmin(otherSide);
         {
-            testAdmin.Sync("setup reader");
-
             uint8_t testData[2] = { 13, 37 };
             ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-
-            testAdmin.Sync("writer wrote");
-            testAdmin.Sync("reader read");
+            // The 'ring' is implicit
+//            _dispatcher->Ring();
         }
-        testAdmin.Sync("done");
     }
 
     TEST_F(Core_MessageDispatcher, PushDataShouldNotFitWhenExcedingDataBufferSize)
@@ -263,7 +255,6 @@ namespace Tests {
         // and content of testData buffer should be at the beginning of the cyclic buffer
 
         EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-
         EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
 
         EXPECT_EQ(readLength, sizeof(testData));
@@ -283,7 +274,6 @@ namespace Tests {
         // as well as the first part of the testData buffer, but its second part should be at the beginning of the cyclic buffer
 
         EXPECT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-
         EXPECT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
 
         EXPECT_EQ(readLength, sizeof(testData));
@@ -317,151 +307,5 @@ namespace Tests {
         EXPECT_EQ(readData[0], testData2[0]);
         EXPECT_EQ(readData[3], testData2[3]);
     }
-
-    //doorbell (socket) is not quite working inside test suite
-    TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
-    {
-        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Messaging::MessageDataBuffer dispatcher(this->_identifier, this->_instanceId, this->_basePath, 0, false);
-
-            uint8_t readData[4];
-            uint16_t readLength = sizeof(readData);
-
-            bool called = false;
-            dispatcher.Wait(0); //initialize socket
-            testAdmin.Sync("init");
-
-            if (dispatcher.Wait(Core::infinite) == Core::ERROR_NONE) {
-                ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
-
-                ASSERT_EQ(readLength, 2);
-                ASSERT_EQ(readData[0], 13);
-                ASSERT_EQ(readData[1], 37);
-                called = true;
-            }
-            ASSERT_EQ(called, true);
-
-            testAdmin.Sync("done");
-        };
-
-        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
-
-        // This side (tested) acts as writer
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            uint8_t testData[2] = { 13, 37 };
-            testAdmin.Sync("init");
-
-            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        }
-        testAdmin.Sync("done");
-    }
-#ifdef _0
-    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcess)
-    {
-        uint8_t testData[2] = { 13, 37 };
-
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
-            EXPECT_EQ(length, sizeof(testData));
-            EXPECT_EQ(value[0], 13);
-            EXPECT_EQ(value[1], 37);
-
-            outValue[0] = 60;
-            outValue[1] = 61;
-            outLength = 2;
-        });
-
-        auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
-        ASSERT_EQ(result, 2);
-        ASSERT_EQ(testData[0], 60);
-        ASSERT_EQ(testData[1], 61);
-        ::SleepMs(50); //wait for callback complete before closing
-
-        _dispatcher->UnregisterDataAvailable();
-    }
-
-    TEST_F(Core_MessageDispatcher, WriteAndReadMetaDataAreEqualInSameProcessTwice)
-    {
-        uint8_t testData1[2] = { 13, 37 };
-        uint8_t testData2[2] = { 12, 34 };
-
-        //first write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
-            EXPECT_EQ(length, sizeof(testData1));
-            EXPECT_EQ(value[0], 13);
-            EXPECT_EQ(value[1], 37);
-
-            outValue[0] = 60;
-            outValue[1] = 61;
-            outLength = 2;
-        });
-        auto result = _dispatcher->PushMetadata(sizeof(testData1), testData1, sizeof(testData1));
-        ASSERT_EQ(result, 2);
-        ASSERT_EQ(testData1[0], 60);
-        ASSERT_EQ(testData1[1], 61);
-        ::SleepMs(50); //need to wait before unregistering, not clean solution though
-        _dispatcher->UnregisterDataAvailable();
-
-        //second write and read
-        _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
-            EXPECT_EQ(length, sizeof(testData2));
-            EXPECT_EQ(value[0], 12);
-            EXPECT_EQ(value[1], 34);
-
-            outValue[0] = 60;
-            outValue[1] = 61;
-            outLength = 2;
-        });
-        result = _dispatcher->PushMetadata(sizeof(testData2), testData2, sizeof(testData2));
-        ASSERT_EQ(result, 2);
-        ASSERT_EQ(testData2[0], 60);
-        ASSERT_EQ(testData2[1], 61);
-        ::SleepMs(50);
-        _dispatcher->UnregisterDataAvailable();
-    }
-
-    //socket problems inside test suite
-    TEST_F(Core_MessageDispatcher, DISABLED_WriteAndReadMetaDataAreEqualInDiffrentProcesses)
-    {
-        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
-            uint8_t testData[2] = { 13, 37 };
-            //testAdmin.Sync("setup");
-
-            auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
-            ASSERT_EQ(result, 2);
-            ASSERT_EQ(testData[0], 60);
-            ASSERT_EQ(testData[1], 61);
-            ::SleepMs(2000);
-        };
-
-        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
-
-        // This side (tested) acts as reader
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            _dispatcher->RegisterDataAvailable([&](const uint16_t length, const uint8_t* value, uint16_t& outLength, uint8_t* outValue) {
-                std::vector<uint8_t> result{ 60, 61 };
-                EXPECT_EQ(length, 2);
-                EXPECT_EQ(value[0], 13);
-                EXPECT_EQ(value[1], 37);
-                return result;
-            });
-
-            ::SleepMs(2000);
-        }
-        _dispatcher->UnregisterDataAvailable();
-    }
-
-    TEST_F(Core_MessageDispatcher, WriteMetaDataShouldFailIfReaderNotRegistered)
-    {
-        uint8_t testData[2] = { 13, 37 };
-
-        auto result = _dispatcher->PushMetadata(sizeof(testData), testData, sizeof(testData));
-        ASSERT_EQ(result, 0);
-    }
-#endif
 } // Tests
 } // WPEFramework
