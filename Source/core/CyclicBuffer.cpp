@@ -394,25 +394,25 @@ namespace Core {
                             foundData = false;
                         }
                     } else {
-                        uint32_t part1 = 0;
-                        uint32_t part2 = 0;
+                        uint32_t newOffset = 0;
 
                         if (_administration->_size < offset) {
-                            part2 = result - (offset - _administration->_size);
+                            const uint32_t skip = offset - _administration->_size;
+                            newOffset = skip + bufferLength;
+                            ::memcpy(buffer, _realBuffer + skip, bufferLength);
                         } else {
-                            part1 = _administration->_size - offset;
-                            part2 = result - part1;
-                        }
+                            const uint32_t part1 = _administration->_size - offset;
+                            newOffset = result - part1;
+                            ::memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
 
-                        memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
-
-                        if (part1 < bufferLength) {
-                            memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                            if (part1 < bufferLength) {
+                                ::memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                            }
                         }
 
                         // Add one round, but prevent overflow.
                         roundCount = (roundCount + 1) % _administration->_roundCountModulo;
-                        uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
+                        uint32_t newTail = newOffset + roundCount * (1 + _administration->_tailIndexMask);
                         if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
                             foundData = false;
                         }

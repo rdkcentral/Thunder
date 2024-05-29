@@ -26,7 +26,7 @@ if (SYSTEMD_SERVICE)
     )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/wpeframework.service "${MOD_WPEFRAMEWORK_SYSTEMD_SERVICE}")
 
-    install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/../lib)
+    install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/../${CMAKE_INSTALL_LIBDIR})
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework.service
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
@@ -43,7 +43,7 @@ else()
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/init.d/
+            DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/init.d/
     )
 endif()
 
