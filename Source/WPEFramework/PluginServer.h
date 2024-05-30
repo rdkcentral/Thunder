@@ -4393,6 +4393,12 @@ namespace PluginHost {
                 std::list<Core::callstack_info> stackList;
 
                 ::DumpCallStack((ThreadId)index.Current().Id.Value(), stackList);
+                for(const Core::callstack_info& entry : stackList)
+                {
+                    std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
+                    fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.c_str(),entry.line,entry.address);
+                }
+                fflush(stderr);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();

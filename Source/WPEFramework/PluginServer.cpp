@@ -19,6 +19,7 @@
 
 #include "PluginServer.h"
 #include "Controller.h"
+#include "PluginHost.h"
 
 #ifndef __WINDOWS__
 #include <syslog.h>
@@ -193,6 +194,8 @@ namespace PluginHost {
 
         WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(callsign.c_str());
     #endif
+      
+	    SetupCrashHandler();
 
     #ifdef __CORE_EXCEPTION_CATCHING__
 
