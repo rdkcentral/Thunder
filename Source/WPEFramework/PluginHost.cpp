@@ -172,10 +172,10 @@ POP_WARNING()
             for(const WPEFramework::Core::callstack_info& entry : stackList)
             {
                std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
-               fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), entry.function.c_str(),entry.line,entry.address);
+               fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.function.c_str(),entry.line,entry.address);
             }
             fflush(stderr);
-	    _adminLock.Unlock();
+	        _adminLock.Unlock();
 	}
 
         static void StartShutdown() {
@@ -366,23 +366,34 @@ POP_WARNING()
         if (current_sa.sa_handler != ExitDaemonHandler)
         {
             _originalSegmentationHandler = current_sa;
-             memset(&sa, 0, sizeof(struct sigaction));
-             sigemptyset(&sa.sa_mask);
-             sa.sa_handler = ExitDaemonHandler;
-             sa.sa_flags = 0;
-             syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGSEGV");
-             sigaction(SIGSEGV, &sa, nullptr);
+            memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = ExitDaemonHandler;
+            sa.sa_flags = 0;
+            if (_background) {
+                syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGSEGV");
+            } else {
+               fprintf(stdout, "Registering ExitDaemonHandler for SISEGV \n");
+               fflush(stdout);
+            }
+            sigaction(SIGSEGV, &sa, nullptr);
         }
-
+		
+        memset(&current_sa, 0, sizeof(struct sigaction));
         sigaction(SIGABRT, nullptr, &current_sa);
         if (current_sa.sa_handler != ExitDaemonHandler)
         {
             _originalAbortHandler = current_sa;
-             memset(&sa, 0, sizeof(struct sigaction));
-             sigemptyset(&sa.sa_mask);
-             sa.sa_handler = ExitDaemonHandler;
-             sa.sa_flags = 0;
-             syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGABRT");
+            memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = ExitDaemonHandler;
+            sa.sa_flags = 0;
+            if (_background) {
+                syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGABRT");
+            } else {
+               fprintf(stdout, "Registering ExitDaemonHandler for SIGABRT \n");
+               fflush(stdout);
+            }
              sigaction(SIGABRT, &sa, nullptr);
         }
         _adminLock.Unlock();
