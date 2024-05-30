@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-#   test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
@@ -77,7 +77,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
-#   test_workerpool.cpp
+   test_workerpool.cpp
    test_xgetopt.cpp
    test_message_dispatcher.cpp
 )
