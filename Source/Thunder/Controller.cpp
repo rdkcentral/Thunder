@@ -309,12 +309,14 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            Core::JSON::VariantContainer config;
+            Core::JSON::Variant config;
             Core::OptionalType<Core::JSON::Error> error;
             config.FromString(configuration, error);
+            result = Core::ERROR_INCOMPLETE_CONFIG;
             if (error.IsSet() == true) {
                 SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-                result = Core::ERROR_INCOMPLETE_CONFIG;
+            } else if (config.IsValid() != true) {
+                SYSLOG(Logging::ParsingError, (_T("Given configuration is not valid")));
             } else {
                 result = service->ConfigLine(configuration);
 
