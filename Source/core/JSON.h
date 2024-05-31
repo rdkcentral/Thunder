@@ -4731,7 +4731,11 @@ namespace Core {
                     string str(stream, endIndex + 1);
                     if (stream[0] == '{') {
                         _type = type::OBJECT;
-                        String::operator=(str);
+                        Core::JSON::VariantContainer container;
+                        container.FromString(str, error);
+                        if (error.IsSet() == false) {
+                            String::operator=(str);
+                        }
                     } else {
                         _type = type::ARRAY;
                         String::operator=(str);
@@ -4752,7 +4756,17 @@ namespace Core {
                         if ((Value() == _T("true")) || (Value() == _T("false"))) {
                             _type = type::BOOLEAN;
                         } else if (IsNull() == false) {
-                            _type = type::NUMBER;
+                            if (Value().find('.') != std::string::npos) {
+                                JSON::Double number;
+                                number.Deserialize(stream, maxLength, offset, error);
+                            } else {
+                                DecSInt64 number;
+                                number.Deserialize(stream, maxLength, offset, error);
+                            }
+                            if (error.IsSet() == false) {
+                                _type = type::NUMBER;
+                            }
+
                         }
                     }
                 }
