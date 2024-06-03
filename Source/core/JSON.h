@@ -4766,7 +4766,7 @@ namespace Core {
                 Core::JSON::ArrayType<JSON::Variant> stacked;
                 stacked.FromString(Value(), error);
                 result = (error.IsSet() == false);
-                Core::JSON::ArrayType<JSON::Variant>::ConstIterator index;
+                Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
                 if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
                     Variant::type type = index.Current().Content();
                     while ((index.Next() == true) && (index.Current().Content() == type) && (index.Current().IsValid())) {
