@@ -126,11 +126,7 @@ namespace Core {
     public:
        bool IsValid() const {
             const ip* ipHeader = reinterpret_cast<const ip*>(Base::Frame());
-            #ifdef __WINDOWS__
-            return ((ipHeader->protocol == PROTOCOL) && (Checksum() == ipHeader->check));
-            #else
             return ((ipHeader->ip_p == PROTOCOL) && (Checksum() == ipHeader->ip_sum));
-            #endif
         }
         uint16_t Load(const uint8_t buffer[], const uint16_t size) {
              uint16_t copySize = std::min(size, static_cast<uint16_t>(SIZE + HeaderSize));
