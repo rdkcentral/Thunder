@@ -22,7 +22,7 @@
     
     
       
-        <title>Basic Usage - Thunder (WPEFramework)</title>
+        <title>Basic Usage - Thunder</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#run-wpeframework" class="md-skip">
+        <a href="#run-thunder" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -503,13 +503,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-wpeframework" class="md-nav__link">
+  <a href="#run-thunder" class="md-nav__link">
     <span class="md-ellipsis">
-      Run WPEFramework
+      Run Thunder
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run WPEFramework">
+    <nav class="md-nav" aria-label="Run Thunder">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2120,13 +2120,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-wpeframework" class="md-nav__link">
+  <a href="#run-thunder" class="md-nav__link">
     <span class="md-ellipsis">
-      Run WPEFramework
+      Run Thunder
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run WPEFramework">
+    <nav class="md-nav" aria-label="Run Thunder">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2229,18 +2229,18 @@
 
   <h1>Basic Usage</h1>
 
-<h2 id="run-wpeframework">Run WPEFramework</h2>
-<p>To launch Thunder, execute the <code>WPEFramework</code> process from a command line.</p>
+<h2 id="run-thunder">Run Thunder</h2>
+<p>To launch Thunder, execute the <code>Thunder</code> process from a command line.</p>
 <p>If you have installed Thunder in a non-standard directory on Linux, you will need to set a few environment variables. If Thunder is installed in the standard system directories (e.g. <code>/usr/bin</code>) then you can just launch it directly</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
 $<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
 
-$<span class="w"> </span>WPEFramework<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/WPEFramework/config.json
+$<span class="w"> </span>Thunder<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/Thunder/config.json
 </code></pre></div>
 <h3 id="available-command-line-options">Available command-line options</h3>
 <ul>
 <li><code>-c</code>: Path to the config file to use</li>
-<li><code>-b</code>: Daemonise WPEFramework and run in the background</li>
+<li><code>-b</code>: Daemonise Thunder and run in the background</li>
 <li><code>-f</code>: Flush all trace/logging/warning reporting messages directly to the console without any abbreviation</li>
 <li><code>-F</code>: Flush all trace/logging/warning reporting messages directly to the console with some abbreviation</li>
 <li><code>-h</code>: Show usage/help message</li>
@@ -2330,17 +2330,17 @@ Connected<span class="w"> </span><span class="o">(</span>press<span class="w"> <
 </ul>
 <p>If a plugin is configured as auto-start, then it will automatically be activated when Thunder starts. Otherwise it is another applications responsibility to call the Controller plugin and activate the plugin manually. If a plugin is deactivated, it won't respond to any API requests.</p>
 <h2 id="systemd-service">Systemd Service</h2>
-<p>An example systemd service to run WPEFramework daemon is below. This could be used to run Thunder on system startup automatically.</p>
+<p>An example systemd service to run Thunder daemon is below. This could be used to run Thunder on system startup automatically.</p>
 <div class="highlight"><pre><span></span><code><span class="k">[Unit]</span>
-<span class="na">Description</span><span class="o">=</span><span class="s">wpeframework</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">thunder</span>
 <span class="na">Wants</span><span class="o">=</span><span class="s">multi-user.target</span>
 <span class="na">After</span><span class="o">=</span><span class="s">multi-user.target</span>
 
 <span class="k">[Service]</span>
-<span class="na">PIDFile</span><span class="o">=</span><span class="s">/var/run/WPEFramework.pid</span>
+<span class="na">PIDFile</span><span class="o">=</span><span class="s">/var/run/Thunder.pid</span>
 <span class="na">Environment</span><span class="o">=</span><span class="s">&quot;WAYLAND_DISPLAY=wayland-0&quot;</span>
 <span class="na">Environment</span><span class="o">=</span><span class="s">&quot;XDG_RUNTIME_DIR=/run&quot;</span>
-<span class="na">ExecStart</span><span class="o">=</span><span class="s">-/usr/bin/WPEFramework -b</span>
+<span class="na">ExecStart</span><span class="o">=</span><span class="s">-/usr/bin/Thunder -b</span>
 <span class="na">ExecStop</span><span class="o">=</span><span class="s">/bin/kill $MAINPID</span>
 
 <span class="k">[Install]</span>

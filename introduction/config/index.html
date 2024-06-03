@@ -22,7 +22,7 @@
     
     
       
-        <title>Configuration - Thunder (WPEFramework)</title>
+        <title>Configuration - Thunder</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -2067,9 +2067,9 @@
 
   <h1>Configuration</h1>
 
-<p>Thunder uses a JSON configuration file to modify the its behaviour. By default it looks for a config file in <code>/etc/WPEFramework/config.json</code> on Linux, although a custom path can be specified at launch.</p>
-<p>When building Thunder, it will generate a default config file based on the options provided to CMake at configure-time using the generic config builder here: <a href="https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/GenericConfig.cmake">https://github.com/rdkcentral/Thunder/blob/master/Source/WPEFramework/GenericConfig.cmake</a></p>
-<p>This section documents the available options for WPEFramework. This is different from the plugin-specific configuration which is documented elsewhere.</p>
+<p>Thunder uses a JSON configuration file to modify the its behaviour. By default it looks for a config file in <code>/etc/Thunder/config.json</code> on Linux, although a custom path can be specified at launch.</p>
+<p>When building Thunder, it will generate a default config file based on the options provided to CMake at configure-time using the generic config builder here: <a href="https://github.com/rdkcentral/Thunder/blob/master/Source/Thunder/GenericConfig.cmake">https://github.com/rdkcentral/Thunder/blob/master/Source/Thunder/GenericConfig.cmake</a></p>
+<p>This section documents the available options for Thunder. This is different from the plugin-specific configuration which is documented elsewhere.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Any options that are children of a parent option are documented as <code>parent.child</code>. E.G <code>parentOption.childOption = true</code> equates to the following JSON</p>
@@ -2139,21 +2139,21 @@
 <td>Directory to store persistent data in.<br /><br /> Each plugin will have an associated directory underneath this corresponding to the callsign of the plugin.</td>
 <td>string</td>
 <td>-</td>
-<td>/opt/wpeframework/</td>
+<td>/opt/thunder/</td>
 </tr>
 <tr>
 <td>datapath</td>
 <td>Read-only directory plugins can read data from. <br /><br />Each plugin will have an associated directory underneath this corresponding to the callsign of the plugin.</td>
 <td>string</td>
 <td>-</td>
-<td>usr/share/wpeframework</td>
+<td>usr/share/thunder</td>
 </tr>
 <tr>
 <td>systempath</td>
 <td>Directory plugin libraries are installed and available in</td>
 <td>string</td>
 <td>-</td>
-<td>/usr/lib/wpeframework/</td>
+<td>/usr/lib/thunder/</td>
 </tr>
 <tr>
 <td>volatilepath</td>
@@ -2167,7 +2167,7 @@
 <td>Directory to search for the generated proxy stub libraries</td>
 <td>string</td>
 <td>-</td>
-<td>/usr/lib/wpeframework/proxystubs</td>
+<td>/usr/lib/thunder/proxystubs</td>
 </tr>
 <tr>
 <td>postmortempath</td>
@@ -2234,28 +2234,28 @@
 </tr>
 <tr>
 <td>process.user</td>
-<td>The Linux user the WPEFramework process runs as</td>
+<td>The Linux user the Thunder process runs as</td>
 <td>string</td>
 <td>-</td>
 <td>myusr</td>
 </tr>
 <tr>
 <td>process.group</td>
-<td>The Linux group the WPEFramework process runs under</td>
+<td>The Linux group the Thunder process runs under</td>
 <td>string</td>
 <td>-</td>
 <td>mygrp</td>
 </tr>
 <tr>
 <td>process.priority</td>
-<td>The nice priority of the WPEFramework process</td>
+<td>The nice priority of the Thunder process</td>
 <td>integer</td>
 <td>-</td>
 <td>0</td>
 </tr>
 <tr>
 <td>process.policy</td>
-<td>The linux scheduling priority of the WPEFramework process. Valid values are: <code>Batch</code>, <code>FIFO</code>, <code>Idle</code>, <code>RoundRobin</code>, <code>Other</code></td>
+<td>The linux scheduling priority of the Thunder process. Valid values are: <code>Batch</code>, <code>FIFO</code>, <code>Idle</code>, <code>RoundRobin</code>, <code>Other</code></td>
 <td>string</td>
 <td>-</td>
 <td>OTHER</td>
@@ -2276,7 +2276,7 @@
 </tr>
 <tr>
 <td>process.umask</td>
-<td>Set the WPEFramework umask value</td>
+<td>Set the Thunder umask value</td>
 <td>integer</td>
 <td>-</td>
 <td>077</td>
@@ -2306,7 +2306,7 @@
 <td>configs</td>
 <td>Directory to search for plugin config files</td>
 <td>string</td>
-<td>If not set, will default to <code>&lt;wpeframework-config-directory&gt;/plugins</code>  (e.g. /etc/WPEFramework/plugins)</td>
+<td>If not set, will default to <code>&lt;thunder-config-directory&gt;/plugins</code>  (e.g. /etc/Thunder/plugins)</td>
 <td><code>/etc/thunder/plugins</code></td>
 </tr>
 <tr>
@@ -2325,7 +2325,7 @@
 </tr>
 <tr>
 <td>environments</td>
-<td>Array of environment variables to set for the WPEFramework process. Each item in the array should be an object with <code>key</code>, <code>value</code>, and <code>override</code> properties.<br /><br />Values can be built from path substitutions (e.g. <code>%persistentpath%</code>)</td>
+<td>Array of environment variables to set for the Thunder process. Each item in the array should be an object with <code>key</code>, <code>value</code>, and <code>override</code> properties.<br /><br />Values can be built from path substitutions (e.g. <code>%persistentpath%</code>)</td>
 <td>array</td>
 <td>-</td>
 <td><code>[{"name": "FOO", "value": "BAR", "override": true}]</code></td>
@@ -2360,17 +2360,17 @@
 </tr>
 <tr>
 <td>observe.proxystubpath</td>
-<td>Directory to monitor for new proxy stub libraries. If libraries are added during runtime, WPEFramework will load these new proxystubs</td>
+<td>Directory to monitor for new proxy stub libraries. If libraries are added during runtime, Thunder will load these new proxystubs</td>
 <td>string</td>
 <td>-</td>
-<td>/root/wpeframework/dynamic/proxystubs</td>
+<td>/root/thunder/dynamic/proxystubs</td>
 </tr>
 <tr>
 <td>observe.configpath</td>
-<td>Directory to monitor for new plugin configuration files. If config files are added during runtime, WPEFramework will load them</td>
+<td>Directory to monitor for new plugin configuration files. If config files are added during runtime, Thunder will load them</td>
 <td>string</td>
 <td>-</td>
-<td>/root/wpeframework/dynamic/config</td>
+<td>/root/thunder/dynamic/config</td>
 </tr>
 <tr>
 <td>hibernate.locator</td>

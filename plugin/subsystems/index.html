@@ -22,7 +22,7 @@
     
     
       
-        <title>Subsystems - Thunder (WPEFramework)</title>
+        <title>Subsystems - Thunder</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -2383,7 +2383,7 @@
 </tbody>
 </table>
 <p>All subsystems have a negated equivalent - e.g. <code>NOT_PLATFORM</code> and <code>NOT_SECURITY</code> that indicates the absence of those subsystems.</p>
-<p>When the WPEFramework process starts, Controller will check to see which subsystems are provided by plugins (as defined in the plugin metadata or the Controller configuration). These subsystems are sometimes referred to "external", since their lifetime is managed by a plugin external to the Thunder core. </p>
+<p>When the Thunder process starts, Controller will check to see which subsystems are provided by plugins (as defined in the plugin metadata or the Controller configuration). These subsystems are sometimes referred to "external", since their lifetime is managed by a plugin external to the Thunder core.</p>
 <p>If the subsystem is not provided by a plugin, then Controller will mark the subsystem as active at startup. The opposite happens at shutdown, with Controller marking the subsystems as inactive.</p>
 <h3 id="subsystem-metadata">Subsystem Metadata</h3>
 <div class="admonition warning">
@@ -2411,9 +2411,9 @@
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">TCHAR</span><span class="o">*</span><span class="w"> </span><span class="nf">ToString</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">network_type</span><span class="w"> </span><span class="n">value</span><span class="p">);</span>
 <span class="p">};</span>
 </code></pre></div>
-<p>Default implementations of these interfaces are provided in <code>Source/WPEFramework/SystemInfo.h</code>, which populate the values with sane defaults, but it is expected plugins that provide that subsystem provide their own implementations as required.</p>
+<p>Default implementations of these interfaces are provided in <code>Source/Thunder/SystemInfo.h</code>, which populate the values with sane defaults, but it is expected plugins that provide that subsystem provide their own implementations as required.</p>
 <h2 id="using-subsystems">Using Subsystems</h2>
-<p>Plugins can use the <code>ISubsystem</code> interface (as implemented by <code>Source/WPEFramework/SystemInfo.h</code>) to retrieve information about the state of the subsystems and mark subsystems as active/inactive. This interface can be retrieved from the plugin shell provided to the plugin at initialisation. </p>
+<p>Plugins can use the <code>ISubsystem</code> interface (as implemented by <code>Source/Thunder/SystemInfo.h</code>) to retrieve information about the state of the subsystems and mark subsystems as active/inactive. This interface can be retrieved from the plugin shell provided to the plugin at initialisation.</p>
 <h3 id="mark-subsystem-as-active">Mark Subsystem as Active</h3>
 <p>To mark a subsystem as active, call the <code>Set()</code> method on <code>ISubsystem</code>. </p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
