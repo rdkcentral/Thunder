@@ -26,7 +26,7 @@
 #include "Trace.h"
 #include "Timer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -592,4 +592,4 @@ namespace Core {
         ~ResourceMonitor() = default;
     };
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core

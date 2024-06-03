@@ -34,7 +34,7 @@
 #endif
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)

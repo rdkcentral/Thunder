@@ -18,7 +18,7 @@
  */
 #include "ConnectorType.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
 

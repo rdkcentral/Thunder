@@ -1,4 +1,4 @@
-In addition to the global WPEFramework config file (see [here](../introduction/config.md) for more details), each plugin has its own configuration file.
+In addition to the global Thunder config file (see [here](../introduction/config.md) for more details), each plugin has its own configuration file.
 
 This file contains some generic information about the plugin (name of the library, callsign, execution mode etc), but can easily be extended by developers to include their own options. Using this method for configuring plugins ensures consistency between plugins - there is therefore a single place to configure all plugins.
 
@@ -33,7 +33,7 @@ These are the options applicable to all plugins
 | configuration.root.locator       | When running out-of-process, the name of the library to load in the out-of-process host. Only needed if plugin is split into a core and Implementation library | string    | -           | libSamplePluginImplementation.so |
 | configuration.root.user          | When running out of process, the linux user to run the process as | string    | -           | plugin-user                      |
 | configuration.root.group         | When running out of process, the linux group to run the process as | string    | -           | plugin-group                     |
-| configuration.root.threads       | When running out of process, the max number of threads that the WPEProcess host worker pool will use | int       | 1           | 2                                |
+| configuration.root.threads       | When running out of process, the max number of threads that the ThunderPlugin host worker pool will use | int       | 1           | 2                                |
 | configuration.root.priority      | When running out of process, the priority of the process     | int       | -           | -                                |
 | configuration.root.outofprocess  | :warning: **Deprecated**: use `configuration.root.mode` instead.<br /><br />Set to true to run plugin out of process | bool      | false       | true                             |
 | configuration.root.mode          | The execution mode the plugin should run as. Includes: **Off** (in-process), **Local** (out-of-process), **Container** (out-of-process, in a container), **Distributed** (out-of-process, running on another device on the network) | string    | Local[^2]   | Off                              |
@@ -47,7 +47,7 @@ These are the options applicable to all plugins
 
 ```json
 {
-   "locator":"libWPEFrameworkSamplePlugin.so",
+   "locator":"libThunderSamplePlugin.so",
    "classname":"SamplePlugin",
    "startmode":"Activated",
    "configuration":{
@@ -70,7 +70,7 @@ For this example, we will create a config file for an example plugin that return
 
 ```json
 {
-   "locator":"libWPEFrameworkGreeterPlugin.so",
+   "locator":"libThunderGreeterPlugin.so",
    "classname":"Greeter",
    "startmode":"Activated",
    "configuration":{
@@ -85,7 +85,7 @@ For this example, we will create a config file for an example plugin that return
 First, create the JSON container object to hold your configuration
 
 ```cpp
-using namespace WPEFramework;
+using namespace Thunder;
 
 class GreeterPluginConfiguration : public Core::JSON::Container {
 public:
@@ -231,7 +231,7 @@ Make a JSON-RPC call to `Controller.configuration@<PluginName>` with no paramete
 
 #### Modify Config
 
-Controller will allow modifying the in-memory config for the plugin. This will not survive restarts of the WPEFramework daemon
+Controller will allow modifying the in-memory config for the plugin. This will not survive restarts of the Thunder daemon
 
 !!! warning
 	It is only possible to modify plugin configuration when the plugin is not currently activated. If the plugin is activated and an attempt is made to modify the config, an `ERROR_GENERAL` error will be returned. Deactivate the plugin and try again.

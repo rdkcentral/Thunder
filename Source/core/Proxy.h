@@ -38,7 +38,7 @@
 
 // ---- Class Definition ----
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
         template<typename CONTEXT>

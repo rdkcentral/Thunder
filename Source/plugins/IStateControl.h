@@ -24,7 +24,7 @@
 
 #include <com/ICOM.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     // This interface gives direct access to change occuring on the remote object

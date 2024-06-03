@@ -32,7 +32,7 @@
 #include "TextFragment.h"
 #include "Time.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename THREADLOCALSTORAGE>
     class ThreadLocalStorageType {

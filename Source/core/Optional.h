@@ -22,7 +22,7 @@
 
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename TYPE>
     class OptionalType {

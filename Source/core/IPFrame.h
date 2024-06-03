@@ -32,7 +32,7 @@ using ip = iphdr;
 #include<netinet/tcp.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -475,4 +475,4 @@ namespace Core {
         }
     };
 
-} } // namespace WPEFramework::Core
+} } // namespace Thunder::Core

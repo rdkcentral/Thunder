@@ -20,7 +20,7 @@
 #include "LXCImplementation.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
             : _current(UINT32_MAX)
@@ -412,7 +412,7 @@ namespace ProcessContainers {
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
         uint32_t retVal = BaseRefCount<IContainer>::Release();
 
-        ASSERT((retval != WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
+        ASSERT((retval != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
         return retval;
     }
 
@@ -538,4 +538,4 @@ namespace ProcessContainers {
     constexpr uint32_t LXCContainerAdministrator::maxReadSize;
 
 }
-} //namespace WPEFramework
+} //namespace Thunder

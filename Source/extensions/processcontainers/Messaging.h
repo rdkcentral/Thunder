@@ -23,7 +23,7 @@
 
 #include "../messaging/messaging.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     class EXTERNAL ProcessContainerization {
@@ -68,5 +68,5 @@ namespace ProcessContainers {
 
 
 } // ProcessContainers
-} // WPEFramework
+} // Thunder
 

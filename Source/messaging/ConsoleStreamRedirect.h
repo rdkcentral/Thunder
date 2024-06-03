@@ -4,7 +4,7 @@
 #include "Control.h"
 #include "OperationalCategories.h"
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Messaging {
         class EXTERNAL StandardOut {
         public:

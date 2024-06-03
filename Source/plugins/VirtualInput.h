@@ -25,7 +25,7 @@
 #include "Module.h"
 #include "IVirtualInput.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     class EXTERNAL VirtualInput {
@@ -970,6 +970,6 @@ namespace Core {
 
 } // namespace Core
 
-} // namespace WPEFramework
+} // namespace Thunder
 
 #endif // __VIRTUAL_INPUT__

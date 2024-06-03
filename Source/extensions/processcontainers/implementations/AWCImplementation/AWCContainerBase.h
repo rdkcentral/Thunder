@@ -3,7 +3,7 @@
 #include "common/BaseRefCount.h"
 #include "processcontainers/ProcessContainer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
 class AWCContainerBase:
@@ -21,4 +21,4 @@ public:
 };
 
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */

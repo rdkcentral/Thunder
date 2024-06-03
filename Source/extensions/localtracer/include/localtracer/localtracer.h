@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <iostream>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Messaging {
     class EXTERNAL LocalTracer {
     public:
