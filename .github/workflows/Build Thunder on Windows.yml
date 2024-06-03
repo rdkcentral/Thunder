@@ -33,7 +33,7 @@ jobs:
 
     name: Build type - ${{matrix.type}}${{matrix.version}}
     steps:
-# ----- Checkout -----
+# ----- Checkout & DependsOn regex -----
     - name: Checkout ThunderOnWindows
       uses: actions/checkout@v4
       with:
@@ -115,7 +115,7 @@ jobs:
         path: ThunderOnWindows/ThunderNanoServicesRDK
         repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
 
-# ----- Building -----
+# ----- Building & uploading artifacts -----
     - name: Install jsonref
       run: pip install jsonref
 
