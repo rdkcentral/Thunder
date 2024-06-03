@@ -23,7 +23,7 @@
 #include <core/core.h>
 #include <thread>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     struct TestWithMember {

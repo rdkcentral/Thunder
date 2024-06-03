@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <sys/sysinfo.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
 enum class Purpose {
@@ -560,18 +560,18 @@ TEST(Core_SystemInfo, Ticks_withDelay)
 } // Tests
 
 ENUM_CONVERSION_BEGIN(Tests::Purpose)
-    { WPEFramework::Tests::Purpose::MEM, _TXT("mem") },
-    { WPEFramework::Tests::Purpose::SWAP, _TXT("swap") },
-    { WPEFramework::Tests::Purpose::HOST, _TXT("host") },
-    { WPEFramework::Tests::Purpose::CHIPSET, _TXT("chipset") },
-    { WPEFramework::Tests::Purpose::CPULOAD, _TXT("cpuload") },
+    { Thunder::Tests::Purpose::MEM, _TXT("mem") },
+    { Thunder::Tests::Purpose::SWAP, _TXT("swap") },
+    { Thunder::Tests::Purpose::HOST, _TXT("host") },
+    { Thunder::Tests::Purpose::CHIPSET, _TXT("chipset") },
+    { Thunder::Tests::Purpose::CPULOAD, _TXT("cpuload") },
 ENUM_CONVERSION_END(Tests::Purpose)
 
 ENUM_CONVERSION_BEGIN(Tests::Function)
-    { WPEFramework::Tests::Function::TOTAL, _TXT("total") },
-    { WPEFramework::Tests::Function::FREE, _TXT("free") },
-    { WPEFramework::Tests::Function::AVAILABLE, _TXT("available") },
-    { WPEFramework::Tests::Function::CACHED, _TXT("cached") },
+    { Thunder::Tests::Function::TOTAL, _TXT("total") },
+    { Thunder::Tests::Function::FREE, _TXT("free") },
+    { Thunder::Tests::Function::AVAILABLE, _TXT("available") },
+    { Thunder::Tests::Function::CACHED, _TXT("cached") },
 ENUM_CONVERSION_END(Tests::Function)
 
-} // WPEFramework
+} // Thunder

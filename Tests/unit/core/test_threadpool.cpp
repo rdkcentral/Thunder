@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 static constexpr uint32_t MaxJobWaitTime = 1000; // In milliseconds
 static constexpr uint8_t MaxAdditionalWorker = 5;
@@ -433,7 +433,7 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob)
     minion.Shutdown();
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 1u);
 
@@ -458,7 +458,7 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob_CheckActiveStateInBetweenDispatch)
 
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 1u);
 
@@ -479,7 +479,7 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_BeforeProcessing)
     EXPECT_EQ(minion.IsActive(), false);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::CANCELED);
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 0u);
 
@@ -508,7 +508,7 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
     EXPECT_EQ(minion.IsActive(), false);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 1u);
 
@@ -531,7 +531,7 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing_ByAddingWaitOnTheDis
     minion.NotifyReady(job);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 1u);
 
@@ -573,7 +573,7 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs)
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
     }
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, 6u);
 
@@ -627,7 +627,7 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
 
     minion.Shutdown();
 
-    WPEFramework::Core::ThreadPool::Metadata info;
+    Thunder::Core::ThreadPool::Metadata info;
     minion.Info(info);
     EXPECT_EQ(info.Runs, queueSize);
 
@@ -736,7 +736,7 @@ void CheckThreadPool_ProcessMultipleJobs(const uint8_t threadCount, const uint8_
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -819,7 +819,7 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs_CancelInBetween)
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -876,7 +876,7 @@ void CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMultiplePool(const 
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1028,7 +1028,7 @@ void CheckThreadPool_JobType_Submit_Using_Idle(const uint8_t threadCount, const 
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1144,7 +1144,7 @@ void CheckThreadPool_JobType_Submit_Using_Submit(const uint8_t threadCount, cons
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1255,7 +1255,7 @@ void CheckThreadPool_JobType_Submit_Using_Reschedule(const uint8_t threadCount, 
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1352,7 +1352,7 @@ TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterSubmit)
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1415,7 +1415,7 @@ TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterIdle)
 
     uint8_t totalRuns = 0;
 
-    WPEFramework::Core::ThreadPool::Metadata info[threadCount];
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
     std::vector<string> jobsStrings;
 
     threadPool.Snapshot(threadCount, info, jobsStrings);

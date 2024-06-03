@@ -24,7 +24,7 @@
 #include "Enumerate.h"
 #include "Singleton.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
@@ -199,7 +199,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.Number(_timeStamp);
                     length += extra;
@@ -261,7 +261,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.NullTerminatedText(_className);
                     frameWriter.NullTerminatedText(_fileName);
@@ -333,7 +333,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.NullTerminatedText(_callsign);
                     length += extra;

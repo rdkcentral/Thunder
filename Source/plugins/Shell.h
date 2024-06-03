@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "IShell.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_HANDLER(PluginHost::IShell::reason)
 ENUM_CONVERSION_HANDLER(PluginHost::IShell::state)

@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 #include "core/core.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     TEST(HEX2StrSerialization, serialiation_working) {

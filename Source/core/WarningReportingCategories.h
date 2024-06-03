@@ -22,7 +22,7 @@
 #include "Module.h"
 #include <iostream>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace WarningReporting {
 
     class EXTERNAL TooLongWaitingForLock {
