@@ -14,7 +14,7 @@ jobs:
 
     name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
-# --------- Packages ---------
+# --------- Installing packages ---------
     - name: Install necessary packages
       uses: nick-fields/retry@v3
       with:
@@ -28,7 +28,7 @@ jobs:
           pip install jsonref
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 
-# ----- Regex & checkout -----
+# ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
     - name: Checkout Thunder - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
@@ -79,7 +79,7 @@ jobs:
         repository: rdkcentral/ThunderTools
         ref: ${{steps.tools.outputs.first_match}}
 
-# ----- Building & uploading -----
+# ----- Installing generators & Options regex -----
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
@@ -95,6 +95,7 @@ jobs:
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
 
+# ----- Building & uploading artifacts -----
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
