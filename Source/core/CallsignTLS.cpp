@@ -22,7 +22,7 @@
 
 #if defined(__CORE_WARNING_REPORTING__) || defined(__CORE_EXCEPTION_CATCHING__)
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     const TCHAR* CallsignTLS::Callsign() {

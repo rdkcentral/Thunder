@@ -40,7 +40,7 @@
 #include "../warningreporting/WarningReportingUnit.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     class EXTERNAL Object {
@@ -1679,7 +1679,7 @@ POP_WARNING()
             return (result);
         }
 
-        // Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient)
+        // Open and offer the requested interface (Applicable if the ThunderPlugin starts the RPCClient)
         uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
 
         template <typename INTERFACE>

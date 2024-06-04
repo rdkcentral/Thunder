@@ -45,7 +45,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
         class EXTERNAL SocketPort : public IResource {
         private:

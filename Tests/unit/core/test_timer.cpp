@@ -24,7 +24,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class TimeHandler {
@@ -179,4 +179,4 @@ namespace Tests {
         EXPECT_EQ(ret, Core::ERROR_NONE);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

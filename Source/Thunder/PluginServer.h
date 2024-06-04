@@ -37,7 +37,7 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     namespace System {

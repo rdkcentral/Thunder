@@ -25,7 +25,7 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Exchange {
     struct IAdder : virtual public Core::IUnknown {
         enum { ID = 0x80000001 };
@@ -303,4 +303,4 @@ namespace Tests {
        Core::Singleton::Dispose();
     }
 } // Tests
-} // WPEFramework
+} // Thunder

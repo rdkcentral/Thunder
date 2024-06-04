@@ -42,7 +42,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 // Description: Helper class to use pointers or proxies (if lifetime management needs to be automated)
 //              as a carrier to be executed by the threadpooltype.
 //
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename CONTENT>
     class TimerType {

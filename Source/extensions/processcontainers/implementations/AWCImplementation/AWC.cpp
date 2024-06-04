@@ -5,7 +5,7 @@
 #include "Tracing.h"
 
 
-using namespace WPEFramework::ProcessContainers;
+using namespace Thunder::ProcessContainers;
 
 
 AWCStateChangeNotifier::AWCStateChangeNotifier() : _listeners(), _mutex() {};

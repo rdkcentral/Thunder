@@ -24,7 +24,7 @@
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 constexpr char fileNameTemplate[] = "/tmp/shared_file_test_XXXXXX";
 

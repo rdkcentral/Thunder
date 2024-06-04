@@ -40,7 +40,7 @@
 #include <libproc.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 #ifndef __WINDOWS__
     const uint32_t PageSize = getpagesize();

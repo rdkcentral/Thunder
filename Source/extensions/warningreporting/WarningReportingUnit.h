@@ -28,7 +28,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 
 namespace WarningReporting {
 

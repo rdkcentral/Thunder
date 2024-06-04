@@ -28,7 +28,7 @@
 #include "Proxy.h"
 #include "Serialization.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // ---- Referenced classes and types ----

@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class DataClass {
@@ -153,4 +153,4 @@ namespace Tests {
             ValidateMap<DataMapIterator>(iterator, i);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

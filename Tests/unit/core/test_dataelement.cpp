@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/DataElement.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(test_data, simple_data)
 {

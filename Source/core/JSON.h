@@ -32,7 +32,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -4379,7 +4379,7 @@ namespace Core {
 
         class EXTERNAL VariantContainer : public Container {
         private:
-            using Elements = std::unordered_map<string, WPEFramework::Core::JSON::Variant>;
+            using Elements = std::unordered_map<string, Thunder::Core::JSON::Variant>;
 
         public:
             class Iterator {
@@ -4887,10 +4887,10 @@ namespace Core {
 
     } // namespace JSON
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
-using JsonObject = WPEFramework::Core::JSON::VariantContainer;
-using JsonValue = WPEFramework::Core::JSON::Variant;
-using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+using JsonObject = Thunder::Core::JSON::VariantContainer;
+using JsonValue = Thunder::Core::JSON::Variant;
+using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
 
 #endif // __JSON_H
