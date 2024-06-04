@@ -34,7 +34,7 @@
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class EXTERNAL ServiceAdministrator {
@@ -335,10 +335,10 @@ namespace Core {
 #define SERVICE_REGISTRATION(...) SERVICE_REGISTRATION_NAME(PUSH_COUNT_ARGS(__VA_ARGS__), __VA_ARGS__)
 
 #define SERVICE_REGISTRATION_3(ACTUALCLASS, MAJOR, MINOR) \
-static WPEFramework::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(WPEFramework::Core::System::MODULE_NAME, MAJOR, MINOR, 0);
+static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(Thunder::Core::System::MODULE_NAME, MAJOR, MINOR, 0);
 
 #define SERVICE_REGISTRATION_4(ACTUALCLASS, MAJOR, MINOR, PATCH) \
-static WPEFramework::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(WPEFramework::Core::System::MODULE_NAME, MAJOR, MINOR, PATCH);
+static Thunder::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##ACTUALCLASS(Thunder::Core::System::MODULE_NAME, MAJOR, MINOR, PATCH);
 
 
 #ifdef BEGIN_INTERFACE_MAP
@@ -360,9 +360,9 @@ static WPEFramework::Core::PublishedServiceType<ACTUALCLASS> ServiceMetadata_##A
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                     \
     void* QueryInterface(const uint32_t interfaceNumber) override            \
     {                                                                        \
-        if (interfaceNumber == WPEFramework::Core::IUnknown::ID) {                         \
+        if (interfaceNumber == Thunder::Core::IUnknown::ID) {                         \
             AddRef();                                                        \
-            return (static_cast<void*>(static_cast<WPEFramework::Core::IUnknown*>(this))); \
+            return (static_cast<void*>(static_cast<Thunder::Core::IUnknown*>(this))); \
         }
 
 #define INTERFACE_ENTRY(TYPE)                                  \

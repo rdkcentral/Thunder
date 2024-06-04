@@ -32,7 +32,7 @@ using ip = iphdr;
 #include<netinet/tcp.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -139,47 +139,65 @@ namespace Core {
         inline NodeId Source() const {
             NodeId result;
             const ip* ipHeader = reinterpret_cast<const ip*>(Base::Frame());
-            ASSERT (ipHeader->ip_v == IPV4_VERSION);
+
+            ASSERT(ipHeader->ip_v == IPV4_VERSION);
 
             sockaddr_in node;
             ::memset (&node, 0, sizeof(node));
             node.sin_family = AF_INET;
             node.sin_port = 0;
+#ifdef __WINDOWS__
+            node.sin_addr.S_un.S_addr = ipHeader->ip_src;
+#else
             node.sin_addr = ipHeader->ip_src;
+#endif
             result = node;
 
             return (result);
         }
         inline void Source(const NodeId& node) {
             ip* ipHeader = reinterpret_cast<ip*>(Base::Frame());
-            ASSERT (ipHeader->ip_v == IPV4_VERSION);
+            ASSERT(ipHeader->ip_v == IPV4_VERSION);
             ASSERT (node.Type() == NodeId::TYPE_IPV4);
 
             const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-            ipHeader->ip_src = result.sin_addr;
+#ifdef __WINDOWS__
+            ipHeader->ip_src = result.sin_addr.S_un.S_addr;
+#else
+	    ipHeader->ip_src = result.sin_addr;
+#endif
             ipHeader->ip_sum = Checksum();
         }
         inline NodeId Destination() const {
             NodeId result;
             const ip* ipHeader = reinterpret_cast<const ip*>(Base::Frame());
-            ASSERT (ipHeader->ip_v == IPV4_VERSION);
+            ASSERT(ipHeader->ip_v == IPV4_VERSION);
 
             sockaddr_in node;
             ::memset (&node, 0, sizeof(node));
             node.sin_family = AF_INET;
             node.sin_port = 0;
-            node.sin_addr = ipHeader->ip_dst;
+#ifdef __WINDOWS__
+            node.sin_addr.S_un.S_addr = ipHeader->ip_dst;
+#else
+	    node.sin_addr = ipHeader->ip_dst;
+#endif
             result = node;
 
             return (result);
         }
         inline void Destination(const NodeId& node) {
             ip* ipHeader = reinterpret_cast<ip*>(Base::Frame());
-            ASSERT (ipHeader->ip_v == IPV4_VERSION);
+    
+            ASSERT(ipHeader->ip_v == IPV4_VERSION);
             ASSERT (node.Type() == NodeId::TYPE_IPV4);
 
             const sockaddr_in& result = static_cast<const NodeId::SocketInfo&>(node).IPV4Socket;
-            ipHeader->ip_dst = result.sin_addr;
+#ifdef __WINDOWS__
+            ipHeader->ip_dst = result.sin_addr.S_un.S_addr;
+#else
+	    ipHeader->ip_dst = result.sin_addr;
+#endif
             ipHeader->ip_sum = Checksum();
         }
         inline uint8_t TTL() const {
@@ -187,7 +205,7 @@ namespace Core {
         }
         inline void TTL(const uint8_t ttl) {
             ip* ipHeader = reinterpret_cast<ip*>(Base::Frame());
-            ipHeader->ip_ttl   = ttl;
+            ipHeader->ip_ttl = ttl;
             ipHeader->ip_sum = Checksum();
         }
         inline uint16_t Length() const {
@@ -244,15 +262,14 @@ namespace Core {
 
     private:
         uint16_t Checksum() const {
-
-            ip*    ipHeader = const_cast<ip*>(reinterpret_cast<const ip*>(Base::Frame()));
+            ip* ipHeader = const_cast<ip*>(reinterpret_cast<const ip*>(Base::Frame()));
             uint16_t  original = ipHeader->ip_sum;
             ipHeader->ip_sum = 0;
             uint32_t result = Checksum(0, reinterpret_cast<const uint16_t*>(ipHeader), HeaderSize);
             ipHeader->ip_sum = original;
+
             return (Shrink(result));
         }
-
     };
 
     static constexpr uint16_t TCPv4FrameSize = sizeof(tcphdr);
@@ -449,6 +466,7 @@ namespace Core {
             udphdr* udpHeader = const_cast<udphdr*>(reinterpret_cast<const udphdr*>(Base::Frame()));
             uint16_t  original = udpHeader->uh_sum;
             udpHeader->uh_sum = 0;
+
             uint32_t result = Base::Checksum(0, reinterpret_cast<const uint16_t*>(pseudoHeader), sizeof(pseudoHeader));
             result = Base::Checksum (result, reinterpret_cast<const uint16_t*>(udpHeader), Base::Length());
             udpHeader->uh_sum = original;
@@ -457,4 +475,4 @@ namespace Core {
         }
     };
 
-} } // namespace WPEFramework::Core
+} } // namespace Thunder::Core

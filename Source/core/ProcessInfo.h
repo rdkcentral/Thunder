@@ -23,7 +23,7 @@
 #include "IIterator.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
@@ -163,7 +163,7 @@ namespace Core {
                     _index = 0;
                     _current = _pids.begin();
                 } else {
-                    _index = _pids.size() + 1;
+                    _index = static_cast<uint32_t>(_pids.size()) + 1;
                     _current = _pids.end();
                 }
             }
@@ -423,5 +423,5 @@ namespace Core {
     };
 
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 

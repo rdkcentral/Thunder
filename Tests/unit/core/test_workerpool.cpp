@@ -23,7 +23,7 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework; using namespace WPEFramework::Core;
+using namespace Thunder; using namespace Thunder::Core;
 
 static constexpr uint32_t MaxJobWaitTime = 1000; // In milliseconds
 static constexpr uint8_t MaxAdditionalWorker = 5;

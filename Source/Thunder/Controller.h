@@ -29,7 +29,7 @@
 #include <plugins/json/JsonData_Events.h>
 #include <plugins/json/JEvents.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // for now we must support the deprecated interface for backwards compatibility reasons 

@@ -9,7 +9,7 @@ This class should implement the `Updated()` method from the `ICallback` interfac
 ```c++
 #include <core/core.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 class FileChangeMonitor : Core::FileSystemMonitor::ICallback {
 public:

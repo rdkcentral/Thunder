@@ -33,7 +33,7 @@
 #include "Portability.h"
 #include "ResourceMonitor.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __WINDOWS__

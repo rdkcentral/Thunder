@@ -25,7 +25,7 @@
 #include "IShell.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure

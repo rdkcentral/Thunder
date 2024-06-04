@@ -1,14 +1,14 @@
 [Unit]
-Description=wpeframework
+Description=thunder
 Wants=multi-user.target
 After=multi-user.target EXTRA_DEPENDS
 
 [Service]
-PIDFile=/var/run/WPEFramework.pid
-EnvironmentFile=-/etc/wpeframework/WPEFramework.env
+PIDFile=/var/run/Thunder.pid
+EnvironmentFile=-/etc/thunder/Thunder.env
 Environment="WAYLAND_DISPLAY=wayland-0"
 Environment="XDG_RUNTIME_DIR=/run"
-ExecStart=-/usr/bin/WPEFramework -b
+ExecStart=-/usr/bin/Thunder -b
 ExecStop=/bin/kill $MAINPID
 
 [Install]

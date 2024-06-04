@@ -26,7 +26,7 @@
 #include "DataElement.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // ---- Referenced classes and types ----

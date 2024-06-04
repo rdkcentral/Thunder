@@ -34,7 +34,7 @@
 
 // ---- Helper types and constants ----
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     // Rationale:
@@ -220,6 +220,6 @@ namespace Core {
         uint8_t* _customerAdministration;
     };
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core
 
 #endif // __SHARED_BUFFER_H

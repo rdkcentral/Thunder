@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <ctime>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 int32_t GetMachineTimeDifference(const string& zone)
 {

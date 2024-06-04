@@ -31,7 +31,7 @@ extern "C" {
 #include <crun/utils.h>
 }
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     class CRunContainer : public BaseRefCount<IContainer> {

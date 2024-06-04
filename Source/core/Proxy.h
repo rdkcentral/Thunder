@@ -38,7 +38,7 @@
 
 // ---- Class Definition ----
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
         template<typename CONTEXT>
@@ -525,7 +525,6 @@ POP_WARNING()
             {
                 return (_refCount == a_RHS._refCount);
             }
-
             inline bool operator!=(const ProxyType<CONTEXT>& a_RHS) const
             {
                 return !(operator==(a_RHS));
@@ -534,10 +533,17 @@ POP_WARNING()
             {
                 return ((_refCount != nullptr) && (_realObject == &a_RHS));
             }
-
             inline bool operator!=(const CONTEXT& a_RHS) const
             {
                 return (!operator==(a_RHS));
+            }
+            inline bool operator==(const nullptr_t&) const
+            {
+                return (_refCount == nullptr);
+            }
+            inline bool operator!=(const nullptr_t&) const
+            {
+                return (_refCount != nullptr);
             }
 
             inline CONTEXT* operator->() const

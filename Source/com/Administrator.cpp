@@ -20,7 +20,7 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     Administrator::Administrator()
