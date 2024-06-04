@@ -26,7 +26,7 @@
 #include "Portability.h"
 #include "SocketPort.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class RoutingTable {
     public:

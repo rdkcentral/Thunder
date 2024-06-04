@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include "SystemInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class StopWatch {
@@ -53,4 +53,4 @@ namespace Core {
         uint64_t _lastMeasurement;
     };
 
-} } // namespace WPEFramework::Core
+} } // namespace Thunder::Core

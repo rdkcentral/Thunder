@@ -19,7 +19,7 @@
 
 #include "DataElement.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // CRC32 lookup table for polynomial 0x04c11db7 

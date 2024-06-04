@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     template <typename T, bool NEGATIVE = false>
@@ -248,4 +248,4 @@ namespace Tests {
         EXPECT_EQ(fractional3.Remainder(),4294967295);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

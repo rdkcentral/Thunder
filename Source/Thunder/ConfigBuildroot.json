@@ -1,0 +1,13 @@
+{
+	"port":9888,
+	"binding":"0.0.0.0",
+	"idletime":180,
+	"persistentpath":"/tmp",
+	"datapath":"/opt/thunder/Plugins/",
+	"plugins":
+	[
+	  {"callsign":"Tracing","locator":"/opt/thunder/libtracecontrol.so", "classname":"TraceControl", "configuration":{"console":true,"remote":{"port":4444,"binding":"0.0.0.0"}}},
+	  {"callsign":"FanControl", "locator":"/opt/thunder/libfancontrol.so",  "classname":"FanControl",  "configuration":{"deviceid":"/dev/ttyACM0"}},
+	  {"callsign":"DelayedResponse",  "locator":"/opt/thunder/libdelayedresponse.so", "classname":"DelayedResponse", "configuration":{"minimum":0,"maximum":30}}
+	]
+}

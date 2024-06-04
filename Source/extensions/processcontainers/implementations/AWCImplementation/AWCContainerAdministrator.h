@@ -9,7 +9,7 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "core/JSON.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
 struct PluginConfig: public Core::JSON::Container
@@ -44,4 +44,4 @@ public:
 };
 
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */

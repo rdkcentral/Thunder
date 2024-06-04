@@ -25,7 +25,7 @@
 #include "Module.h"
 #include "ICOM.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     typedef IteratorType<IStringIterator> StringIterator;

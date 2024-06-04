@@ -6,9 +6,9 @@
 
 #include <core/core.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Test {
 	template<typename STREAMTYPE>
 	class TextStreamRedirectType {

@@ -24,7 +24,7 @@
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     class RunCContainer : public BaseRefCount<IContainer> {
