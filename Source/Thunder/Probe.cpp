@@ -19,7 +19,7 @@
 
 #include "Probe.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     /* static */ const string Probe::SearchTarget(_T("urn:metrological-com:service:wpe:1"));

@@ -17,7 +17,7 @@ The following documentation will cover examples for some common use-cases for so
 
 Thunder provides a mechanism known as the "Resource Monitor" for monitoring file descriptors and sockets. The resource monitor is a singleton constructed at process launch, and uses `poll()` on Linux to listen to provided file descriptors. 
 
-Resource monitor uses a single thread, and it is strongly recommended that plugins use this to monitor file descriptors and sockets instead of spinning up their own thread(s). For out-of-process plugins, the WPEProcess host will run its own instance of ResourceMonitor, which can be useful for performance-criticial plugins.
+Resource monitor uses a single thread, and it is strongly recommended that plugins use this to monitor file descriptors and sockets instead of spinning up their own thread(s). For out-of-process plugins, the ThunderPlugin host will run its own instance of ResourceMonitor, which can be useful for performance-criticial plugins.
 
 !!! danger
 	The same instance of ResourceMonitor is also used for receiving incoming JSON-RPC and COM-RPC messages. Since this is a single thread, it is vitally important not to block the thread with any processing or long-lived task. If the thread is blocked, Thunder will not be able to process any incoming messages, impacting overall performance and responsiveness. Instead, make use of the worker pool to do any processing work.
@@ -42,17 +42,17 @@ virtual uint16_t Events() = 0;
 virtual void Handle(const uint16_t events) = 0;
 ```
 
-To view the current resources being monitored by the ResourceMonitor, run WPEFramework in a foreground terminal and press the **M** key:
+To view the current resources being monitored by the ResourceMonitor, run Thunder in a foreground terminal and press the **M** key:
 
 ```
 Resource Monitor Entry states:
 ============================================================
 Currently monitoring: 5 resources
-     5 socket:[1123804][I--:---]: LinkType<WPEFramework::Core::SocketPort, WPEFramework::Core::IMessage, WPEFramework::Core::IMessage, WPEFramework::Core::IPCChannel::IPCFactory&>::HandlerType<WPEFramework::Core::LinkType<WPEFramework::Core::SocketPort, WPEFramework::Core::IMessage, WPEFramework::Core::IMessage, WPEFramework::Core::IPCChannel::IPCFactory&>, WPEFramework::Core::SocketPort>
+     5 socket:[1123804][I--:---]: LinkType<Thunder::Core::SocketPort, Thunder::Core::IMessage, Thunder::Core::IMessage, Thunder::Core::IPCChannel::IPCFactory&>::HandlerType<Thunder::Core::LinkType<Thunder::Core::SocketPort, Thunder::Core::IMessage, Thunder::Core::IMessage, Thunder::Core::IPCChannel::IPCFactory&>, Thunder::Core::SocketPort>
      8 socket:[1121398][I--:---]: Handler
      9 socket:[1121399][I--:---]: Handler
     10 socket:[1121400][I--:---]: Handler
-    11 socket:[1129519][I-H:---]: WebSocketLinkType<WPEFramework::Core::SocketStream, WPEFramework::PluginHost::Request, WPEFramework::Web::Response, WPEFramework::Core::ProxyPoolType<WPEFramework::PluginHost::Request>&>::HandlerType<WPEFramework::Core::SocketStream>
+    11 socket:[1129519][I-H:---]: WebSocketLinkType<Thunder::Core::SocketStream, Thunder::PluginHost::Request, Thunder::Web::Response, Thunder::Core::ProxyPoolType<Thunder::PluginHost::Request>&>::HandlerType<Thunder::Core::SocketStream>
 ```
 
 Each line contains the following information:

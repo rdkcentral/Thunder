@@ -17,28 +17,33 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-#include "WarningReportingCategories.h"
+#pragma once
 
-namespace WPEFramework {
+#ifndef MODULE_NAME
+#define MODULE_NAME Application
+#endif
 
-namespace WarningReporting {
+#include <core/core.h>
+#include <cryptalgo/cryptalgo.h>
+#include <plugins/plugins.h>
+#include <websocket/websocket.h>
+#include <messaging/messaging.h>
 
-    // -----------------------------------------------------------------
-    // REGISTRATION
-    // -----------------------------------------------------------------
+#ifdef __CORE_WARNING_REPORTING__
+#include <warningreporting/warningreporting.h>
+#endif
 
-    namespace {
+#ifndef TREE_REFERENCE
+#define TREE_REFERENCE engineering_build_for_debug_purpose_only
+#endif
 
-        static class Instantiation {
-        public:
-            Instantiation()
-            {
-                ANNOUNCE_WARNING(TooLongPluginState);
-                ANNOUNCE_WARNING(TooLongInvokeMessage);
-            }
-        } ControlsRegistration;
-
-    }
+namespace Thunder {
+	namespace PluginHost {
+		static constexpr uint8_t Major = 4;
+		static constexpr uint8_t Minor = 0;
+		static constexpr uint8_t Patch = 0;
+	}
 }
-}
+
+#undef EXTERNAL
+#define EXTERNAL

@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <messaging/messaging.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 class Control : public Core::Messaging::IControl {
 public:

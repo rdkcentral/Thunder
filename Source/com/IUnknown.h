@@ -25,7 +25,7 @@
 #include "Administrator.h"
 #include "Messages.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
     class Communicator;

@@ -1,6 +1,6 @@
 #include <string>
 
-namespace WPEFramework{
+namespace Thunder{
     namespace Test{
         std::string HelloWorld(){
             return "Hello World!";

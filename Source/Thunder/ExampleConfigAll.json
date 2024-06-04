@@ -3,8 +3,8 @@
   "binding":"0.0.0.0",
   "idletime":180,
   "persistentpath":"/tmp",
-  "datapath":"/usr/share/wpeframework/",
-  "systempath":"/usr/lib/wpeframework/",
+  "datapath":"/usr/share/thunder/",
+  "systempath":"/usr/lib/thunder/",
   "webserver":"/boot/www",
   "plugins":
   [

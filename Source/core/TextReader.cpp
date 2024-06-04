@@ -19,7 +19,7 @@
  
 #include "TextReader.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     TextFragment TextReader::ReadLine() const

@@ -19,7 +19,7 @@
 
 #include "System.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace PluginHost {
 

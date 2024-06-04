@@ -25,7 +25,7 @@
 #include <core/FileObserver.h>
 #include <fstream>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class Core_MessageDispatcher : public testing::Test {
@@ -396,4 +396,4 @@ namespace Tests {
     }
 
 } // Tests
-} // WPEFramework
+} // Thunder

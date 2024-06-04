@@ -27,7 +27,7 @@
 #include "IPlugin.h"
 #include "IShell.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     class EXTERNAL Service : public IShell {

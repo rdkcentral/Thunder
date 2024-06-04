@@ -20,7 +20,7 @@
 #include "MessageUnit.h"
 #include "ConsoleStreamRedirect.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace Messaging {
 
@@ -191,7 +191,7 @@ namespace WPEFramework {
         }
 
         /**
-        * @brief Open MessageUnit. This method is used on the WPEFramework side.
+        * @brief Open MessageUnit. This method is used on the Thunder side.
         *        This method:
         *        - sets env variables, so the OOP components will get information (eg. where to place its files)
         *        - create buffer where all InProcess components will write
