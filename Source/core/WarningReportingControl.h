@@ -77,42 +77,42 @@
 //  - BoundsType to indicate type for boubnds values
 
 #define ANNOUNCE_WARNING(CATEGORY)  \
-    WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
+    Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled()
 
 #define REPORT_WARNING(CATEGORY, ...)                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
-        WPEFramework::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                               \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+    if (Thunder::WarningReporting::WarningReportingType<CATEGORY>::IsEnabled()) {                                 \
+        Thunder::WarningReporting::WarningReportingType<CATEGORY> __message__;                                    \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME,                                               \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
                 ##__VA_ARGS__)                                                                                         \
             == true) {                                                                                                 \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                  \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
                 __message__);                                                                                          \
         }                                                                                                              \
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING(CATEGORY, ACTUALVALUE, ...)                                                                                                                  \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(), \
+    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(), \
                 ACTUALVALUE,                                                                                                                                                    \
                 ##__VA_ARGS__)                                                                                                                                                  \
             == true) {                                                                                                                                                          \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                                          \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                                          \
                 __message__);                                                                                                                                                   \
         }                                                                                                                                                                       \
     }
 
 #define REPORT_OUTOFBOUNDS_WARNING_EX(CATEGORY, CALLSIGN, ACTUALVALUE, ...)                                                                                                     \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
+    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {                  \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;                             \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, CALLSIGN,                                                                                              \
                 ACTUALVALUE,                                                                                                                                                    \
                 ##__VA_ARGS__)                                                                                                                                                  \
             == true) {                                                                                                                                                          \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                                           \
                 CALLSIGN,                                                                                                                                                       \
                 __message__);                                                                                                                                                   \
         }                                                                                                                                                                       \
@@ -120,25 +120,25 @@
 
 
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)                                                                                                           \
-    if (WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
-        uint64_t start = WPEFramework::Core::SystemInfo::Instance().Ticks();                                                                                   \
+    if (Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) { \
+        uint64_t start = Thunder::Core::SystemInfo::Instance().Ticks();                                                                                   \
         CODE                                                                                                                                                   \
-        uint64_t duration = (WPEFramework::Core::SystemInfo::Instance().Ticks() - start) / WPEFramework::Core::Time::MicroSecondsPerMilliSecond;               \
-        WPEFramework::WarningReporting::WarningReportingType<WPEFramework::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME,                                                                                       \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
+        uint64_t duration = (Thunder::Core::SystemInfo::Instance().Ticks() - start) / Thunder::Core::Time::MicroSecondsPerMilliSecond;               \
+        Thunder::WarningReporting::WarningReportingType<Thunder::WarningReporting::WarningReportingBoundsCategory<CATEGORY>> __message__;            \
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME,                                                                                       \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                         \
                 duration,                                                                                                                                      \
                 ##__VA_ARGS__)                                                                                                                                 \
             == true) {                                                                                                                                         \
-            WPEFramework::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
-                WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),                                         \
+            Thunder::WarningReporting::WarningReportingUnitProxy::Instance().ReportWarningEvent(                                                          \
+                Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),                                         \
                 __message__);                                                                                                                                  \
         }                                                                                                                                                      \
     } else {                                                                                                                                                   \
         CODE                                                                                                                                                   \
     }
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     template <typename THREADLOCALSTORAGE>
@@ -396,7 +396,7 @@ namespace WarningReporting {
             WarningReportingControl()
                 : _categoryName(CallCategoryName())
                 , _enabled(0x03)
-                , _metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING, _categoryName, WPEFramework::Core::Messaging::MODULE_REPORTING)
+                , _metadata(Thunder::Core::Messaging::Metadata::type::REPORTING, _categoryName, Thunder::Core::Messaging::MODULE_REPORTING)
             {
                 // Register Our control unit, so it can be influenced from the outside
                 // if nessecary..

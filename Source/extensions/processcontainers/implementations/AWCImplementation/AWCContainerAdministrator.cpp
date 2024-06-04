@@ -5,8 +5,8 @@
 #include "AWCProxyContainer.h"
 #include "processcontainers/Tracing.h"
 
-using namespace WPEFramework::ProcessContainers;
-using namespace WPEFramework::Core;
+using namespace Thunder::ProcessContainers;
+using namespace Thunder::Core;
 
 
 PluginConfig::PluginConfig(const std::string &path):

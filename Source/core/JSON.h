@@ -32,7 +32,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -746,7 +746,7 @@ namespace Core {
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
+                    } else if (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
@@ -1144,7 +1144,7 @@ namespace Core {
                         loaded++;
                         offset++;
                         _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
+                    } else if ( (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])))) || (stream[loaded] == '\0') ||
                                (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
                         completed = true;
                     } else {
@@ -1760,7 +1760,7 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1907,7 +1907,7 @@ namespace Core {
                             }
                             else if ((_flagsAndCounters & 0x1F) == 0) {
                                 // We are not in a nested area, see what 
-                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
+                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(static_cast<uint8_t>(current))));
                             }
                             else if (current == '}') {
                                 if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -1926,7 +1926,7 @@ namespace Core {
                                 // Write the amount we possibly can..
                                 _value += current;
                             }
-                            else if (::isspace(current) == false) {
+                            else if (::isspace(static_cast<uint8_t>(current)) == false) {
                                 // If we are creating an opaque string, drop all whitespaces if possible.
                                 _value += current;
 
@@ -1937,7 +1937,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
+                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 2] != '\\'))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -1991,11 +1991,11 @@ namespace Core {
                         // If we end up here, we are actually gathering unicode values to be decoded.
                         _flagsAndCounters--;
 
-                        if (::isxdigit(current) == false) {
+                        if (::isxdigit(static_cast<uint8_t>(current)) == false) {
                             error = Error{ "the unescaping of the u requires hexadecimal characters" };
                         }
                         else {
-                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
+                            _storage = (_storage << 4) | ((::isdigit(static_cast<uint8_t>(current)) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
                             result++;
                             if ((_flagsAndCounters & 0xFF) == 0x00) {
                                 _flagsAndCounters ^= SpecialSequenceBit;
@@ -2033,7 +2033,7 @@ namespace Core {
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
                         // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
+                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(static_cast<uint8_t>(ch))); }).base(), _value.end());
                     }
                 }
 
@@ -2399,7 +2399,7 @@ namespace Core {
                                 converted = 62;
                             } else if (current == '/') {
                                 converted = 63;
-                            } else if (::isspace(current)) {
+                            } else if (::isspace(static_cast<uint8_t>(current))) {
                                 continue;
                             } else if (current == '\"') {
                                 _state |= SET;
@@ -3304,7 +3304,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
+                    while ((loaded < maxLength) && ::isspace(static_cast<uint8_t>(stream[loaded]))) {
                         loaded++;
                     }
                 }
@@ -3335,7 +3335,7 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
@@ -3701,7 +3701,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                    while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                         loaded++;
                     }
                 }
@@ -3733,7 +3733,7 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
@@ -4379,7 +4379,7 @@ namespace Core {
 
         class EXTERNAL VariantContainer : public Container {
         private:
-            using Elements = std::unordered_map<string, WPEFramework::Core::JSON::Variant>;
+            using Elements = std::unordered_map<string, Thunder::Core::JSON::Variant>;
 
         public:
             class Iterator {
@@ -4887,10 +4887,10 @@ namespace Core {
 
     } // namespace JSON
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
-using JsonObject = WPEFramework::Core::JSON::VariantContainer;
-using JsonValue = WPEFramework::Core::JSON::Variant;
-using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+using JsonObject = Thunder::Core::JSON::VariantContainer;
+using JsonValue = Thunder::Core::JSON::Variant;
+using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
 
 #endif // __JSON_H

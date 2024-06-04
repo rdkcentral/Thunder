@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "Serialization.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     namespace Frame {

@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     void CleanUpBuffer(string bufferName)
@@ -186,4 +186,4 @@ namespace Tests {
         Core::Singleton::Dispose();
     }
 } // Tests
-} // WPEFramework
+} // Thunder

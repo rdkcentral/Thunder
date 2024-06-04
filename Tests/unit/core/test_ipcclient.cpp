@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     TEST(Core_IPC, IPCClientConnection)
@@ -76,4 +76,4 @@ namespace Tests {
         testAdmin.Sync("done testing");
     }
 } // Tests
-} // WPEFramework
+} // Thunder

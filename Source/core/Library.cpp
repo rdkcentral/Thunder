@@ -25,7 +25,7 @@
 #include <fstream>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     static const TCHAR* GlobalSymbols = "Global Symbols";

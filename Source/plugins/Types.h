@@ -23,7 +23,7 @@
 #include "IPlugin.h"
 #include "IShell.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     template <typename INTERFACE, typename HANDLER>

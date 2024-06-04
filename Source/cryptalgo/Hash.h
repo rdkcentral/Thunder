@@ -80,7 +80,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     enum EnumHashType {
         HASH_MD5 = 16,

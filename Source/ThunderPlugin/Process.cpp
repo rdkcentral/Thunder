@@ -9,7 +9,7 @@
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-namespace WPEFramework {
+namespace Thunder {
     static string _background = _T("false");
 
 namespace Process {
@@ -533,9 +533,9 @@ private:
 
 } // Process
 
-} // WPEFramework
+} // Thunder
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 #ifdef __WINDOWS__
 int _tmain(int argc, _TCHAR* argv[])

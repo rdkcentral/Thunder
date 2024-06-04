@@ -27,7 +27,7 @@
 #include <functional>
 #include <vector>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

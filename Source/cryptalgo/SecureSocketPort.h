@@ -25,7 +25,7 @@ struct x509_store_ctx_st;
 struct x509_st;
 struct ssl_st;
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
 
     class EXTERNAL SecureSocketPort : public Core::IResource {

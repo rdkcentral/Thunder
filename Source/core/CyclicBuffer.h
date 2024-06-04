@@ -34,7 +34,7 @@
 
 // ---- Helper types and constants ----
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     // Rationale:

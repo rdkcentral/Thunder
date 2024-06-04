@@ -19,7 +19,7 @@
 
 #include "ISO639.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     static struct ISO639Entry g_ISO639Lookup[] = {

@@ -20,7 +20,7 @@
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     namespace {
@@ -701,4 +701,4 @@ namespace Core {
         return cursor.Size();
     }
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core

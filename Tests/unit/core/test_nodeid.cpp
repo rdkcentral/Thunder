@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 TEST(Core_NodeId, simpleSet)
 {

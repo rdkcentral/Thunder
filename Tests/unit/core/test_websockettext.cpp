@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class TextSocketServer : public Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
@@ -37,7 +37,7 @@ namespace Tests {
 	    TextSocketServer(const TextSocketServer&) = delete;
 	    TextSocketServer& operator=(const TextSocketServer&) = delete;
 
-        TextSocketServer(const SOCKET& socket, const WPEFramework::Core::NodeId& remoteNode, WPEFramework::Core::SocketServerType<TextSocketServer>*)
+        TextSocketServer(const SOCKET& socket, const Thunder::Core::NodeId& remoteNode, Thunder::Core::SocketServerType<TextSocketServer>*)
             : BaseClass(false, true, false, socket, remoteNode, 1024, 1024)
         {
         }
@@ -129,7 +129,7 @@ namespace Tests {
 
     private:
         string _dataReceived;
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable Thunder::Core::Event _dataPending;
     };
 
     TEST(WebSocket, DISABLED_Text)
@@ -171,4 +171,4 @@ namespace Tests {
     }
 
 } // Tests
-} // WPEFramework
+} // Thunder

@@ -19,7 +19,7 @@
 
 #include "WebSerializer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
 
     /* static */ const TCHAR* Request::GET = _T("GET");
@@ -90,7 +90,7 @@ static const TCHAR __CHARACTER_SET[] = _T("CHARSET=");
 
 #define __TXT(KeyWord) KeyWord, (sizeof(KeyWord) / sizeof(TCHAR)) - 1
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Web::MIMETypes)
 

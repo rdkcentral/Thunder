@@ -10,7 +10,7 @@
 
 #include "api.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 namespace dbus {
 
@@ -123,4 +123,4 @@ public:
 
 } /* dbus */
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */
