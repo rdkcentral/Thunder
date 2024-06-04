@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Config.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     // Forward declaration. We only have a smart pointer to a service.

@@ -3,7 +3,7 @@
 
 #define CHECK(cond) ASSERT((cond))
 
-using namespace WPEFramework::ProcessContainers;
+using namespace Thunder::ProcessContainers;
 
 AWCProxyContainer::DBusInterface::DBusInterface(
     AWCProxyContainer *container):

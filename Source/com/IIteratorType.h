@@ -20,7 +20,7 @@
 #pragma once
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
 

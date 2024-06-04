@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TEST_RUNNER_NAME "WPEFramework_test_core")
+set(TEST_RUNNER_NAME "Thunder_test_core")
 
 
 
@@ -85,12 +85,12 @@ add_executable(${TEST_RUNNER_NAME}
 #[[ if(MESSAGING)    
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkMessaging
+      ThunderMessaging
    )
 else()
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkTracing
+      ThunderTracing
    )
 endif() ]]
 

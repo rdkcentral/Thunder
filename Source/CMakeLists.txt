@@ -97,9 +97,9 @@ if(PLUGINS)
 endif()
 
 if(PROCESS)
-    add_subdirectory(WPEProcess)
+    add_subdirectory(ThunderPlugin)
 endif()
 
 if(EXECUTABLE)
-    add_subdirectory(WPEFramework)
+    add_subdirectory(Thunder)
 endif()

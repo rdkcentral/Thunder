@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
     using LxcContainerType = struct lxc_container;
 

@@ -25,8 +25,8 @@
 int argumentCount = 3;
 char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class ConsoleOptions : public Core::Options {
     public:

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: comcast-runner
+    runs-on: ubuntu-22.04
     steps:
       #   It will checkout the latest code
       - uses: actions/checkout@v3     

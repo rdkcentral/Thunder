@@ -19,7 +19,7 @@
 
 #include "DirectOutput.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace Messaging {
 

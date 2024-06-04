@@ -32,7 +32,7 @@
 #include "../extensions/hibernate/hibernate.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
@@ -369,7 +369,7 @@ namespace PluginHost {
                 _reason = why;
                 State(PRECONDITION);
 
-                if (WPEFramework::Messaging::LocalLifetimeType<Activity, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
+                if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
                     string feedback;
                     uint8_t index = 1;
                     uint32_t delta(_precondition.Delta(_administrator.SubSystemInfo().Value()));

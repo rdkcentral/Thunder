@@ -24,7 +24,7 @@
 #include "URL.h"
 #include "WebRequest.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     enum WebStatus {
         STATUS_CONTINUE = 100,
