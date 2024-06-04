@@ -25,7 +25,7 @@
 #include "StateTrigger.h"
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class EXTERNAL ReadWriteLock {
@@ -36,9 +36,11 @@ namespace Core {
             IDLE = 0x04
         };
 
-    private:
-        ReadWriteLock(const ReadWriteLock& copy);
-        ReadWriteLock& operator=(const ReadWriteLock& rhs);
+    public:
+        ReadWriteLock(const ReadWriteLock& copy) = delete;
+        ReadWriteLock(ReadWriteLock&& move) = delete;
+        ReadWriteLock& operator=(const ReadWriteLock& rhs) = delete;
+        ReadWriteLock& operator=(ReadWriteLock&& move) = delete;
 
     public:
         ReadWriteLock()

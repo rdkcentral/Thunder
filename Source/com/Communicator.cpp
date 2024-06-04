@@ -26,7 +26,7 @@
 #include "ProcessInfo.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     class ProcessShutdown;
@@ -38,8 +38,10 @@ namespace RPC {
         static constexpr TCHAR LoaderConfig[] = _T("/etc/ld.so.conf");
 
     public:
+        DynamicLoaderPaths(DynamicLoaderPaths&&) = delete;
         DynamicLoaderPaths(const DynamicLoaderPaths&) = delete;
-        DynamicLoaderPaths& operator= (const DynamicLoaderPaths&) = delete;
+        DynamicLoaderPaths& operator=(DynamicLoaderPaths&&) = delete;
+        DynamicLoaderPaths& operator=(const DynamicLoaderPaths&) = delete;
 
         DynamicLoaderPaths() 
             : _downloadLists()
@@ -141,7 +143,6 @@ namespace RPC {
 
             if (index != _destructors.end()) {
                 handler = index->second;
-                _destructors.erase(index);
             }
 
             _adminLock.Unlock();
@@ -152,6 +153,16 @@ namespace RPC {
                 handler->Destruct();
                 handler->Release();
             }
+
+            _adminLock.Lock();
+
+            index = _destructors.find(id);
+
+            if (index != _destructors.end()) {
+                _destructors.erase(index);
+            }
+
+            _adminLock.Unlock();
         }
         void Destruct(const uint32_t id, Communicator::MonitorableProcess& entry)
         {

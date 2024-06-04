@@ -50,7 +50,15 @@ elseif(PROCESSCONTAINERS_CLIB)
 elseif(PROCESSCONTAINERS_DOBBY)
         target_sources(${TARGET} PRIVATE implementations/DobbyImplementation/DobbyImplementation.cpp)
 elseif(PROCESSCONTAINERS_AWC)
-        target_sources(${TARGET} PRIVATE implementations/AWCImplementation/AWCImplementation.cpp)
+        target_sources(
+            ${TARGET} PRIVATE
+            implementations/AWCImplementation/AWC.cpp
+            implementations/AWCImplementation/AWCContainerAdministrator.cpp
+            implementations/AWCImplementation/AWCContainerBase.cpp
+            implementations/AWCImplementation/AWCImplementation.cpp
+            implementations/AWCImplementation/AWCProxyContainer.cpp
+            implementations/AWCImplementation/dbus/Client.cpp
+            implementations/AWCImplementation/dbus/api.c)
 endif()
 
 set(PUBLIC_HEADERS
@@ -116,26 +124,38 @@ elseif (PROCESSCONTAINERS_DOBBY)
 elseif (PROCESSCONTAINERS_AWC)
         find_package(LXC REQUIRED)
         find_package(Slauncher REQUIRED)
+        find_package(LibGio REQUIRED)
+        find_package(LibGioUnix REQUIRED)
+        find_package(LibGlib REQUIRED)
+        find_package(LibGobject REQUIRED)
         target_link_libraries(${TARGET}
                 PRIVATE
                 Slauncher::Slauncher
                 CompileSettingsDebug::CompileSettingsDebug
+                ${LIBGIO_INCLUDE_LIBRARIES}
+                ${LIBGIOUNIX_LIBRARIES}
+                ${LIBGLIB_LIBRARIES}
+                ${LIBGOBJECT_LIBRARIES}
                 )
 
         target_include_directories( ${TARGET}
                 PRIVATE
                 Slauncher::Slauncher
+                ${LIBGIO_INCLUDE_DIRS}
+                ${LIBGIOUNIX_INCLUDE_DIRS}
+                ${LIBGLIB_INCLUDE_DIRS}
+                ${LIBGOBJECT_INCLUDE_DIRS}
                 )
 endif()
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/processcontainers COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/processcontainers    # headers
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/processcontainers COMPONENT devel   # headers for mac (note the different component -> different package)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/processcontainers    # headers
 )
 
 InstallCMakeConfig(

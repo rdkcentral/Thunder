@@ -21,7 +21,7 @@
 
 #include "Number.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     extern "C" {
     unsigned char FromDigits(const TCHAR element)
@@ -101,6 +101,14 @@ namespace Core {
     {
     }
 
+    Fractional::Fractional(Fractional&& move)
+        : m_Integer(move.m_Integer)
+        , m_Remainder(move.m_Remainder)
+    {
+        move.m_Integer = 0;
+        move.m_Remainder = 0;
+    }
+
     /* virtual */ Fractional::~Fractional()
     {
     }
@@ -110,6 +118,18 @@ namespace Core {
         m_Integer = RHS.m_Integer;
         m_Remainder = RHS.m_Remainder;
 
+        return (*this);
+    }
+
+    Fractional& Fractional::operator=(Fractional&& move)
+    {
+        if (this != &move) {
+            m_Integer = move.m_Integer;
+            m_Remainder = move.m_Remainder;
+
+            move.m_Integer = 0;
+            move.m_Remainder = 0;
+        }
         return (*this);
     }
 }

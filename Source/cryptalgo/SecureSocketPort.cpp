@@ -27,8 +27,10 @@ namespace {
 
     class OpenSSL {
     public:
+        OpenSSL(OpenSSL&&) = delete;
         OpenSSL(const OpenSSL&) = delete;
-        OpenSSL& operator= (const OpenSSL&) = delete;
+        OpenSSL& operator=(OpenSSL&&) = delete;
+        OpenSSL& operator=(const OpenSSL&) = delete;
 
         OpenSSL()
         {
@@ -45,7 +47,7 @@ namespace {
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Crypto {
 
@@ -238,4 +240,4 @@ void SecureSocketPort::Handler::Update() {
     }
 }
 
-} } // namespace WPEFramework::Crypto
+} } // namespace Thunder::Crypto

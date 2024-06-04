@@ -29,7 +29,7 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // ---- Referenced classes and types ----
 
@@ -42,7 +42,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
         template <>                                                                                 \
         EXTERNAL const Core::EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
         {                                                                                           \
-            static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
+            static Thunder::Core::EnumerateConversion<ENUMERATE> table[] = {
 
 #define ENUM_CONVERSION_END(ENUMERATE)                                                                   \
     {                                                                                                    \
@@ -50,7 +50,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
     }                                                                                                    \
     }                                                                                                    \
     ;                                                                                                    \
-    return (index < ((sizeof(table) / sizeof(WPEFramework::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
+    return (index < ((sizeof(table) / sizeof(Thunder::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
     }                                                                                                    \
     }
 
@@ -100,6 +100,10 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
             : m_Value(copy.m_Value)
         {
         }
+        explicit EnumerateType(EnumerateType<ENUMERATE>&& move)
+            : m_Value(std::move(move.m_Value))
+        {
+        }
         explicit EnumerateType(const uint32_t Value)
             : m_Value()
         {
@@ -112,6 +116,14 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
         {
             m_Value = RHS.m_Value;
 
+            return (*this);
+        }
+
+        EnumerateType<ENUMERATE>& operator=(EnumerateType<ENUMERATE>&& move)
+        {
+            if (this != &move) {
+                m_Value = std::move(move.m_Value);
+            }
             return (*this);
         }
 

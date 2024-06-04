@@ -21,7 +21,7 @@
 #include "JSON.h"
 #include <thread>
 
-namespace WPEFramework {
+namespace Thunder {
 
 uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t timeout = Core::infinite)
 {
@@ -56,9 +56,11 @@ uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t time
 }
 
 class RunCStatus : public Core::JSON::Container {
-private:
-    RunCStatus(const RunCStatus&);
-    RunCStatus& operator=(const RunCStatus&);
+public:
+    RunCStatus(RunCStatus&&) = delete;
+    RunCStatus(const RunCStatus&) = delete;
+    RunCStatus& operator=(RunCStatus&&) = delete;
+    RunCStatus& operator=(const RunCStatus&) = delete;
 
 public:
     RunCStatus()
@@ -77,9 +79,11 @@ public:
 };
 
 class RunCListEntry : public Core::JSON::Container {
-private:
-    RunCListEntry(const RunCListEntry&);
-    RunCListEntry& operator=(const RunCListEntry&);
+public:
+    RunCListEntry(RunCListEntry&&) = delete;
+    RunCListEntry(const RunCListEntry&) = delete;
+    RunCListEntry& operator=(RunCListEntry&&) = delete;
+    RunCListEntry& operator=(const RunCListEntry&) = delete;
 
 public:
     RunCListEntry()
@@ -324,4 +328,4 @@ namespace ProcessContainers {
 
 } // namespace ProcessContainers
 
-} // namespace WPEFramework
+} // namespace Thunder

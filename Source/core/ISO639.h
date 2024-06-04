@@ -24,7 +24,7 @@
 #include "Portability.h"
 #include "Trace.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     struct ISO639Entry {
@@ -57,6 +57,12 @@ namespace Core {
             , m_Index(copy.m_Index)
         {
         }
+        Language(Language&& move)
+            : m_SelectedLanguage(std::move(move.m_SelectedLanguage))
+            , m_Index(std::move(move.m_Index))
+        {
+            move.m_SelectedLanguage = nullptr;
+        }
         ~Language()
         {
         }
@@ -68,7 +74,16 @@ namespace Core {
 
             return (*this);
         }
+        Language& operator=(Language&& move)
+        {
+            if (this != &move) {
+                m_SelectedLanguage = std::move(move.m_SelectedLanguage);
+                m_Index = std::move(move.m_Index);
 
+                move.m_SelectedLanguage = nullptr;
+            }
+            return (*this);
+        }
     public:
         inline bool IsValid() const
         {

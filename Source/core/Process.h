@@ -24,7 +24,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class Process {
@@ -53,6 +53,11 @@ namespace Core {
             Options(const Options& copy)
                 : _command(copy._command)
                 , _options(copy._options)
+            {
+            }
+            Options(Options&& move)
+                : _command(std::move(move._command))
+                , _options(std::move(move._options))
             {
             }
             ~Options()

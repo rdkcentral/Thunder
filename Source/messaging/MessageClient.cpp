@@ -19,7 +19,7 @@
 
 #include "MessageClient.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 
@@ -38,6 +38,7 @@ namespace Messaging {
         , _clients()
         , _factories()
     {
+        ::memset(_readBuffer, 0, sizeof(_readBuffer));
     }
 
     /**
@@ -137,16 +138,30 @@ namespace Messaging {
     }
 
     /**
-     * @brief Get list of currently announced message controls
+     * @brief Get list of currently announced message modules
      */
-    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls) const
+    void MessageClient::Modules(std::vector<string>& modules) const
+    {
+        _adminLock.Lock();
+
+        for (auto& client : _clients) {
+            client.second.Modules(modules);
+        }
+
+        _adminLock.Unlock();
+    }
+
+    /**
+     * @brief Get list of currently announced message controls for a given module
+     */
+    void MessageClient::Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const
     {
         Messaging::MessageUnit::ControlList list;
 
         _adminLock.Lock();
 
         for (auto& client : _clients) {
-            client.second.Load(list);
+            client.second.Load(list, module);
         }
 
         _adminLock.Unlock();

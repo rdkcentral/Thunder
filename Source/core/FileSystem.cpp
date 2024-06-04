@@ -20,7 +20,7 @@
 #include "AccessControl.h"
 #include "FileSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     File::File()
@@ -53,6 +53,19 @@ namespace Core {
         , _access(copy._access)
         , _handle(copy.DuplicateHandle())
     {
+    }
+    File::File(File&& move)
+        : _name(std::move(move._name))
+        , _size(move._size)
+        , _attributes(move._attributes)
+        , _creation(std::move(move._creation))
+        , _modification(std::move(move._modification))
+        , _access(std::move(move._access))
+        , _handle(move._handle)
+    {
+        move._size = 0;
+        move._attributes = 0;
+        move._handle = INVALID_HANDLE_VALUE;
     }
     File::~File()
     {
@@ -260,16 +273,33 @@ namespace Core {
     }
     Directory::Directory(const Directory& copy)
         : _name(copy._name)
-        ,
+        , _filter(copy._filter)
 #ifdef __LINUX__
-        _dirFD(nullptr)
+        , _dirFD(nullptr)
         , _entry(nullptr)
 #endif
 #ifdef __WINDOWS__
-              _dirFD(INVALID_HANDLE_VALUE)
+        , _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
     {
+    }
+    Directory::Directory(Directory&& move)
+        : _name(std::move(move._name))
+        , _filter(std::move(move._filter))
+    {
+#ifdef __LINUX__
+        _dirFD = move._dirFD;
+        _entry = move._entry;
+        move._dirFD = nullptr;
+        move._entry = nullptr;
+#endif
+#ifdef __WINDOWS__
+        _dirFD = move._dirFD;
+        noMoreFiles = move.noMoreFiles;
+        move._dirFD = INVALID_HANDLE_VALUE;
+        move.noMoreFiles = false;
+#endif
     }
     Directory::~Directory()
     {

@@ -32,14 +32,16 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class EXTERNAL Singleton {
     private:
         class EXTERNAL SingletonList {
-        private:
-            SingletonList(const SingletonList&);
-            SingletonList& operator=(const SingletonList&);
+        public:
+            SingletonList(SingletonList&&) = delete;
+            SingletonList(const SingletonList&) = delete;
+            SingletonList& operator=(SingletonList&&) = delete;
+            SingletonList& operator=(const SingletonList&) = delete;
 
         public:
             SingletonList();
@@ -53,9 +55,11 @@ namespace Core {
             std::list<Singleton*> m_Singletons;
         };
 
-    private:
-        Singleton(const Singleton&);
-        Singleton& operator=(const Singleton&);
+    public:
+        Singleton(Singleton&&) = delete;
+        Singleton(const Singleton&) = delete;
+        Singleton& operator=(Singleton&&) = delete;
+        Singleton& operator=(const Singleton&) = delete;
 
     public:
         inline Singleton(void** realDeal) : _realDeal(realDeal)

@@ -23,7 +23,7 @@
 #include "ResourceMonitor.h"
 #include "Number.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -109,6 +109,7 @@ namespace Core {
                 }
             }
 
+            MeasurableJob& operator=(MeasurableJob&&) = default;
             MeasurableJob& operator=(const MeasurableJob&) = default;
 
         public:
@@ -393,14 +394,14 @@ POP_WARNING()
             void Info(Metadata& info) const {
                 info.Runs = _runs;
 
-		        _adminLock.Lock();
+                _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
-		            _adminLock.Unlock();
+                    _adminLock.Unlock();
                     info.Job.Clear();
                 }
                 else {
                     info.Job = _currentRequest->Identifier();
-		            _adminLock.Unlock();
+                    _adminLock.Unlock();
                 }
             }
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
@@ -433,7 +434,7 @@ POP_WARNING()
                     #ifdef __CORE_WARNING_REPORTING__
                     // Add an entry into the JobMonitor list
                     DispatchedJobMetaData data{Thread::ThreadId(),
-                        string(WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign()),
+                        string(Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign()),
                         Time::Now().Ticks(), 0};
 
                     _parent.SaveDispatchedJobContext(data);

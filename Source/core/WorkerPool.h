@@ -23,7 +23,7 @@
 #include "ThreadPool.h"
 #include "Timer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -125,6 +125,12 @@ namespace Core {
                 : _job(copy._job)
                 , _pool(copy._pool)
             {
+            }
+            Timer(Timer&& move)
+                : _job(std::move(move._job))
+                , _pool(move._pool)
+            {
+                move._pool = nullptr;
             }
             Timer(IWorkerPool* pool, const ProxyType<IDispatch>& job)
                 : _job(job)

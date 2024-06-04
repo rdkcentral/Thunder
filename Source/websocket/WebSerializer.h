@@ -23,7 +23,7 @@
 #include "WebRequest.h"
 #include "WebResponse.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
 
     class EXTERNAL TextBody : public string, public IBody {
@@ -437,8 +437,8 @@ namespace Web {
         public:
             Body(Body&&) = delete;
             Body(const Body&) = delete;
-            Body& operator= (Body&&) = delete;
-            Body& operator= (const Body&) = delete;
+            Body& operator=(Body&&) = delete;
+            Body& operator=(const Body&) = delete;
 
             Body() = default;
             ~Body() override = default;

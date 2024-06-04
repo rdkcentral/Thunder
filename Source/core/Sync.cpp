@@ -47,13 +47,6 @@
 #include <time.h>
 #include <unistd.h>
 #endif
-#ifdef __APPLE__
-#include <mach/host_info.h>
-#include <mach/mach_host.h>
-#include <mach/mach_time.h>
-#include <mach/mach.h>
-#include <mach/clock.h>
-#endif
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 // GLOBAL INTERLOCKED METHODS
@@ -69,7 +62,7 @@ __gnu_cxx::recursive_init_error::~recursive_init_error()
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __WINDOWS__
@@ -180,9 +173,9 @@ namespace Core {
     {
         // Wait time in seconds.
         const int nTimeSecs = 5;
-        timespec structTime;
+        timespec structTime = {0,0};
 
-        clock_gettime(CLOCK_REALTIME, &structTime);
+        clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_sec += nTimeSecs;
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
@@ -932,11 +925,11 @@ namespace Core {
 
                     if (nResult == ETIMEDOUT) {
                         // Something went wrong, so assume...
-                        TRACE_L1("Timed out waiting for event <%d>.", nTime);
+                        TRACE_L5("Timed out waiting for event <%d>.", nTime);
                         nResult = Core::ERROR_TIMEDOUT;
                     } else if (nResult != 0) {
                         // Something went wrong, so assume...
-                        TRACE_L1("Waiting on semaphore failed. Error code <%d>", nResult);
+                        TRACE_L5("Waiting on semaphore failed. Error code <%d>", nResult);
                         nResult = Core::ERROR_GENERAL;
                     }
 

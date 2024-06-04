@@ -25,7 +25,7 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Exchange {
     struct IAdder : virtual public Core::IUnknown {
         enum { ID = 0x80000001 };
@@ -278,10 +278,11 @@ namespace Tests {
           EXPECT_TRUE(engine.IsValid());
           Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
           EXPECT_TRUE(client.IsValid());
-          engine->Announcements(client->Announcement());
 
           // Create remote instance of "IAdder".
           Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
+
+          ASSERT_TRUE(adder != nullptr);
 
           // Perform some arithmatic.
           EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
@@ -302,4 +303,4 @@ namespace Tests {
        Core::Singleton::Dispose();
     }
 } // Tests
-} // WPEFramework
+} // Thunder

@@ -20,7 +20,7 @@
 #include "LXCImplementation.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
             : _current(UINT32_MAX)
@@ -132,19 +132,19 @@ namespace ProcessContainers {
         return _interfaces.at(_current).addresses[id];
     }
 
-    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& rhs)
+    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& copy)
         : Core::JSON::Container()
-        , Key(rhs.Key)
-        , Value(rhs.Value)
+        , Key(copy.Key)
+        , Value(copy.Value)
     {
         Add(_T("key"), &Key);
         Add(_T("value"), &Value);
     }
 
-    LXCContainer::Config::ConfigItem::ConfigItem()
+    LXCContainer::Config::ConfigItem::ConfigItem(ConfigItem&& move)
         : Core::JSON::Container()
-        , Key()
-        , Value()
+        , Key(std::move(move.Key))
+        , Value(std::move(move.Value))
     {
         Add(_T("key"), &Key);
         Add(_T("value"), &Value);
@@ -412,7 +412,7 @@ namespace ProcessContainers {
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
         uint32_t retVal = BaseRefCount<IContainer>::Release();
 
-        ASSERT((retval != WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
+        ASSERT((retval != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
         return retval;
     }
 
@@ -538,4 +538,4 @@ namespace ProcessContainers {
     constexpr uint32_t LXCContainerAdministrator::maxReadSize;
 
 }
-} //namespace WPEFramework
+} //namespace Thunder

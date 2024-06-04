@@ -57,7 +57,7 @@
 
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class EXTERNAL NodeId {
     private:
@@ -96,14 +96,20 @@ namespace Core {
         };
 
 
+#ifdef __WINDOWS__
+    using address_family_t = ADDRESS_FAMILY;
+#else
+    using address_family_t = sa_family_t;
+#endif
+
 
         union SocketInfo {
 #ifdef __WINDOWS__
-            ADDRESS_FAMILY FamilyType;
+            address_family_t Family;
 #elif defined(__APPLE__)
             struct __sockaddr_header saddr_hdr;
 #else
-            sa_family_t FamilyType;
+            address_family_t Family;
 #endif
             struct ipv4_extended IPV4Socket;
             struct ipv6_extended IPV6Socket;
@@ -120,18 +126,18 @@ namespace Core {
 #endif
 
         public:
-            sa_family_t familyType() const
+            address_family_t FamilyType() const
             {
 #ifdef __APPLE__
                 return saddr_hdr.sa_family;
 #else
-                return FamilyType;
+                return Family;
 #endif
             }
 
             uint32_t Extension() const
             {
-                switch (familyType()) {
+                switch (FamilyType()) {
                 case AF_INET:
                     return (IPV4Socket.in_protocol);
                     break;
@@ -157,7 +163,7 @@ namespace Core {
             }
             void Extension(const uint32_t extension)
             {
-                switch (familyType()) {
+                switch (FamilyType()) {
                 case TYPE_IPV4:
                     IPV4Socket.in_protocol = extension;
                     break;
@@ -217,7 +223,9 @@ namespace Core {
         NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
         NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED, const uint32_t protocol = 0);
         NodeId(const NodeId& rInfo);
+        NodeId(NodeId&& rInfo);
         NodeId(const NodeId& rInfo, const uint16_t portNumber);
+        NodeId(NodeId&& rInfo, const uint16_t portNumber);
 
         //------------------------------------------------------------------------
         // Public Methods
@@ -239,7 +247,7 @@ namespace Core {
 
         NodeId::enumType Type() const
         {
-            return (static_cast<NodeId::enumType>(m_structInfo.familyType()));
+            return (static_cast<NodeId::enumType>(m_structInfo.FamilyType()));
         }
         inline uint16_t PortNumber() const
         {
@@ -276,20 +284,20 @@ namespace Core {
 
 #ifndef __WINDOWS__
         unsigned short size;
-        if (m_structInfo.familyType() == AF_INET)
+        if (m_structInfo.FamilyType() == AF_INET)
         {
             size = sizeof(struct sockaddr_in);
         }
-        else if (m_structInfo.familyType() == AF_INET6)
+        else if (m_structInfo.FamilyType() == AF_INET6)
         {
             size = sizeof(struct sockaddr_in6);
         }
 #ifndef __APPLE__
-        else if (m_structInfo.familyType() == AF_NETLINK)
+        else if (m_structInfo.FamilyType() == AF_NETLINK)
         {
             size = sizeof(struct sockaddr_nl);
         }
-        else if (m_structInfo.familyType() == AF_PACKET)
+        else if (m_structInfo.FamilyType() == AF_PACKET)
         {
             size = sizeof(struct sockaddr_ll);
         }
@@ -357,6 +365,7 @@ namespace Core {
         bool operator==(const NodeId& rInfo) const;
 
         NodeId& operator=(const NodeId& rInfo);
+        NodeId& operator=(NodeId&& rInfo);
         NodeId& operator=(const struct sockaddr_in& rInfo);
         NodeId& operator=(const struct sockaddr_in6& rInfo);
         NodeId& operator=(const union SocketInfo& rInfo); 
@@ -409,9 +418,18 @@ namespace Core {
             , _mask(copy._mask)
         {
         }
+        IPNode(IPNode&& move)
+            : Core::NodeId(move)
+            , _mask(move._mask)
+        {
+            move._mask = 0;
+        }
         ~IPNode()
         {
         }
+
+        IPNode& operator=(const IPNode& rInfo) = default;
+        IPNode& operator=(IPNode&& rInfo) = default;
 
     public:
         uint8_t Mask() const

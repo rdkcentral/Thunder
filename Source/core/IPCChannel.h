@@ -30,7 +30,7 @@
 #include "Trace.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     template <typename EXTENSION, const bool LISTENING, const bool INTERNALFACTORY>
@@ -315,10 +315,12 @@ namespace Core {
         {
             _adminLock.Lock();
 
-			ASSERT(handler.IsValid() == true);
+            ASSERT(handler.IsValid() == true);
             ASSERT(_handlers.find(id) == _handlers.end());
 
-            _handlers.emplace(id, handler);
+	    if (_handlers.find(id) == _handlers.end()) {
+                _handlers.emplace(id, handler);
+            }
 
             _adminLock.Unlock();
         }

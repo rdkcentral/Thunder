@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 static constexpr uint32_t MaxJobWaitTime = 1000; // In milliseconds
 static constexpr uint8_t MaxAdditionalWorker = 5;
@@ -305,7 +305,7 @@ public:
     ThreadPoolTester& operator=(const ThreadPoolTester&) = delete;
     ThreadPoolTester(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize)
         : JobControl(*this)
-        , ThreadPool(count, stackSize, queueSize, &_dispatcher, &_scheduler)
+        , ThreadPool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr)
         , _queueSize(queueSize)
         , _dispatcher()
         , _scheduler(*this)
@@ -425,16 +425,18 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob)
 
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500));
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
-    EXPECT_EQ(minion.IsActive(), false);
     minion.Submit(job);
-    EXPECT_EQ(minion.IsActive(), false);
     minion.Run();
 
     EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 2), Core::ERROR_NONE);
     minion.NotifyReady(job);
     minion.Shutdown();
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
-    EXPECT_EQ(minion.Runs(), 1u);
+
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 1u);
+
     job.Release();
 }
 TEST(Core_ThreadPool, CheckMinion_ProcessJob_CheckActiveStateInBetweenDispatch)
@@ -455,7 +457,11 @@ TEST(Core_ThreadPool, CheckMinion_ProcessJob_CheckActiveStateInBetweenDispatch)
     minion.Shutdown();
 
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
-    EXPECT_EQ(minion.Runs(), 1u);
+
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 1u);
+
     job.Release();
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_BeforeProcessing)
@@ -472,7 +478,11 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_BeforeProcessing)
     minion.Revoke(job);
     EXPECT_EQ(minion.IsActive(), false);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::CANCELED);
-    EXPECT_EQ(minion.Runs(), 0u);
+
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 0u);
+
     job.Release();
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
@@ -497,7 +507,11 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing)
     minion.Shutdown();
     EXPECT_EQ(minion.IsActive(), false);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
-    EXPECT_EQ(minion.Runs(), 1u);
+
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 1u);
+
     job.Release();
 }
 TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing_ByAddingWaitOnTheDispatcher)
@@ -516,7 +530,11 @@ TEST(Core_ThreadPool, CheckMinion_CancelJob_WhileProcessing_ByAddingWaitOnTheDis
     EXPECT_EQ(minion.IsActive(), true);
     minion.NotifyReady(job);
     EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
-    EXPECT_EQ(minion.Runs(), 1u);
+
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 1u);
+
     minion.Shutdown();
     usleep(100);
     EXPECT_EQ(minion.IsActive(), false);
@@ -555,7 +573,9 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs)
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
     }
 
-    EXPECT_EQ(minion.Runs(), 6u);
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, 6u);
 
     for (auto& job: jobs) {
         job.Release();
@@ -607,7 +627,9 @@ TEST(Core_ThreadPool, CheckMinion_ProcessMultipleJobs_CancelInBetween)
 
     minion.Shutdown();
 
-    EXPECT_EQ(minion.Runs(), queueSize);
+    Thunder::Core::ThreadPool::Metadata info;
+    minion.Info(info);
+    EXPECT_EQ(info.Runs, queueSize);
 
     for (auto& job: jobs) {
         job.Release();
@@ -622,16 +644,13 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessJob)
     ThreadPoolTester threadPool(threadCount, 0, queueSize);
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED, 500));
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Submit(job, 0);
     EXPECT_EQ(threadPool.Pending(), queueSize);
     EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
     while(threadPool.QueueIsEmpty() != true) {
         __asm__ volatile("nop");
     }
-    EXPECT_EQ(threadPool.Active(), true);
     EXPECT_EQ(threadPool.WaitForJobEvent(job, MaxJobWaitTime), Core::ERROR_NONE);
     EXPECT_EQ(threadPool.Pending(), 0u);
     threadPool.Stop();
@@ -648,15 +667,12 @@ TEST(Core_ThreadPool, CheckThreadPool_RevokeJob)
 
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED));
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Submit(job, 0);
     EXPECT_EQ(threadPool.Pending(), queueSize);
     threadPool.Revoke(job, 0);
     EXPECT_EQ(threadPool.Pending(), 0u);
     EXPECT_EQ(threadPool.QueueIsEmpty(), true);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Stop();
 
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
@@ -670,17 +686,14 @@ TEST(Core_ThreadPool, CheckThreadPool_CancelJob_WhileProcessing)
 
     Core::ProxyType<Core::IDispatch> job = Core::ProxyType<Core::IDispatch>(Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED, 1000));
     EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Submit(job, 0);
     EXPECT_EQ(threadPool.Pending(), queueSize);
     EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-    EXPECT_EQ(threadPool.Active(), false);
     threadPool.Run();
     EXPECT_EQ(threadPool.QueueIsEmpty(), false);
     while(threadPool.QueueIsEmpty() != true) {
         __asm__ volatile("nop");
     }
-    EXPECT_EQ(threadPool.Active(), true);
     threadPool.Revoke(job, 0);
     EXPECT_EQ(threadPool.Pending(), 0u);
     EXPECT_EQ(threadPool.WaitForJobEvent(job, MaxJobWaitTime * 3), Core::ERROR_NONE);
@@ -721,11 +734,15 @@ void CheckThreadPool_ProcessMultipleJobs(const uint8_t threadCount, const uint8_
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::COMPLETED);
     }
 
-    uint32_t counters[threadCount] = {0};
     uint8_t totalRuns = 0;
-    threadPool.Runs(threadCount, counters);
+
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
     for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
+        totalRuns += info[i].Runs;
     }
     EXPECT_EQ(totalRuns, static_cast<uint32_t>(queueSize + additionalJobs));
 
@@ -800,14 +817,18 @@ TEST(Core_ThreadPool, CheckThreadPool_ProcessMultipleJobs_CancelInBetween)
         }
     }
 
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
     uint8_t totalRuns = 0;
-    for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
-    }
 
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += info[i].Runs;
+    }
     EXPECT_EQ(totalRuns, queueSize + additionalJobs - 1);
+
     threadPool.Stop();
 
     for (auto& job: jobs) {
@@ -854,13 +875,17 @@ void CheckThreadPool_ProcessMultipleJobs_CancelInBetween_WithMultiplePool(const 
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
-    for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
-    }
 
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += info[i].Runs;
+    }
     EXPECT_EQ(totalRuns, queueSize + additionalJobs);
+
     threadPool.Stop();
 
     for (auto& job: jobs) {
@@ -1002,13 +1027,17 @@ void CheckThreadPool_JobType_Submit_Using_Idle(const uint8_t threadCount, const 
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
-    for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
-    }
 
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += info[i].Runs;
+    }
     EXPECT_EQ(totalRuns, queueSize + additionalJobs - cancelJobsCount);
+
     threadPool.Stop();
 
     for (auto& job: jobs) {
@@ -1114,13 +1143,17 @@ void CheckThreadPool_JobType_Submit_Using_Submit(const uint8_t threadCount, cons
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
-    for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
-    }
 
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += info[i].Runs;
+    }
     EXPECT_EQ(totalRuns, queueSize + additionalJobs - cancelJobsCount);
+
     threadPool.Stop();
 
     for (auto& job: jobs) {
@@ -1221,13 +1254,17 @@ void CheckThreadPool_JobType_Submit_Using_Reschedule(const uint8_t threadCount, 
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
-    for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
-    }
 
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
+    for (uint8_t i = 0; i < threadCount; ++i) {
+        totalRuns += info[i].Runs;
+    }
     EXPECT_EQ(totalRuns, (queueSize + additionalJobs - cancelJobsCount) * 2);
+
     threadPool.Stop();
 
     for (auto& job: jobs) {
@@ -1314,10 +1351,14 @@ TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterSubmit)
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
+
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
     for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
+        totalRuns += info[i].Runs;
     }
     EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
 
@@ -1373,10 +1414,14 @@ TEST(Core_ThreadPool, CheckThreadPool_JobType_Reschedule_AfterIdle)
     }
 
     uint8_t totalRuns = 0;
-    uint32_t counters[threadCount] = {0};
-    threadPool.Runs(threadCount, counters);
+
+    Thunder::Core::ThreadPool::Metadata info[threadCount];
+    std::vector<string> jobsStrings;
+
+    threadPool.Snapshot(threadCount, info, jobsStrings);
+
     for (uint8_t i = 0; i < threadCount; ++i) {
-        totalRuns += counters[i];
+        totalRuns += info[i].Runs;
     }
     EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
 

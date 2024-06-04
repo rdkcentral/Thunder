@@ -20,38 +20,45 @@
 #include "MessageUnit.h"
 #include "ConsoleStreamRedirect.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace Messaging {
 
-        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length, const string& module)
         {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
-                Handler(uint8_t* buffer, const uint16_t length)
+                Handler(uint8_t* buffer, const uint16_t length, const string& module)
                     : _buffer(buffer)
                     , _length(length)
+                    , _module(module)
                     , _offset(0)
                 {
                 }
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
-                    Control info(control->Metadata(), control->Enable());
+                    const Core::Messaging::Metadata& metadata = control->Metadata();
 
-                    uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+                    if (_module == metadata.Module()) {
+                        Control info(metadata, control->Enable());
 
-                    if (moved == 0) {
-                        TRACE_L1("Controls is cut, not enough memory to fit all controls (MetadataSize too small)");
-                    }
-                    else {
-                        _offset += moved;
+                        uint16_t moved = info.Serialize(&(_buffer[_offset]), _length - _offset);
+
+                        if (moved == 0) {
+                            TRACE_L1("Controls are cut, not enough memory to fit all controls (MetadataBufferSize too small)");
+                        }
+                        else {
+                            _offset += moved;
+                        }
                     }
                 }
 
@@ -61,13 +68,59 @@ namespace WPEFramework {
 
             private:
                 uint8_t* _buffer;
-                uint16_t _length;
+                const uint16_t _length;
+                const string& _module;
                 uint16_t _offset;
-            } handler (buffer, length);
+            } handler(buffer, length, module);
 
             Core::Messaging::IControl::Iterate(handler);
 
             return (handler.Offset());
+        }
+        
+        uint16_t MessageUnit::Serialize(uint8_t* buffer, const uint16_t length)
+        {
+            std::vector<string> modules;
+
+            class Handler : public Core::Messaging::IControl::IHandler {
+            public:
+                Handler() = delete;
+                Handler(const Handler&) = delete;
+                Handler& operator= (const Handler&) = delete;
+
+                Handler(std::vector<string>& modules)
+                    : _modules(modules)
+                {
+                }
+                ~Handler() override = default;
+
+            public:
+                void Handle(Core::Messaging::IControl* control) override
+                {
+                    const string& module = control->Metadata().Module();
+                    if (std::find(_modules.begin(), _modules.end(), module) == _modules.end()) {
+                        _modules.push_back(module);
+                    }
+                }
+
+            private:
+                std::vector<string>& _modules;
+            } handler(modules);
+
+            Core::Messaging::IControl::Iterate(handler);
+
+            Core::FrameType<0> frame(buffer, length, length);
+            Core::FrameType<0>::Writer writer(frame, 0);
+
+            ASSERT(modules.size() < 256);
+            writer.Number<uint8_t>(static_cast<uint8_t>(modules.size()));
+
+            std::vector<string>::const_iterator it;
+            for (it = modules.begin(); it != modules.end(); ++it){
+                writer.NullTerminatedText(*it);
+            }
+
+            return (writer.Offset());
         }
 
         void MessageUnit::Update(const Core::Messaging::Metadata& control, const bool enable)
@@ -75,8 +128,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Core::Messaging::Metadata& info, const bool enable)
                     : _info(info)
@@ -86,7 +141,7 @@ namespace WPEFramework {
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     if ( (_info.Applicable(control->Metadata()) == true) && (control->Enable() ^ _enable) ) {
                         control->Enable(_enable);
@@ -106,17 +161,19 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = delete;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
 
                 Handler(const Settings& settings) : _settings(settings) {}
                 ~Handler() override = default;
 
             public:
-                void Handle (Core::Messaging::IControl* control) override
+                void Handle(Core::Messaging::IControl* control) override
                 {
                     bool enabled = _settings.IsEnabled(control->Metadata());
-                    
+
                     if (enabled ^ control->Enable()) {
                         control->Enable(enabled);
                     }
@@ -134,7 +191,7 @@ namespace WPEFramework {
         }
 
         /**
-        * @brief Open MessageUnit. This method is used on the WPEFramework side.
+        * @brief Open MessageUnit. This method is used on the Thunder side.
         *        This method:
         *        - sets env variables, so the OOP components will get information (eg. where to place its files)
         *        - create buffer where all InProcess components will write
@@ -166,7 +223,7 @@ namespace WPEFramework {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.SocketPort()));
+            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort()));
             ASSERT(_dispatcher != nullptr);
 
             if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -209,7 +266,7 @@ namespace WPEFramework {
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.SocketPort()));
+                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort()));
                 ASSERT(_dispatcher != nullptr);
 
                 if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
@@ -234,8 +291,10 @@ namespace WPEFramework {
             class Handler : public Core::Messaging::IControl::IHandler {
             public:
                 Handler() = default;
+                Handler(Handler&&) = delete;
                 Handler(const Handler&) = delete;
-                Handler& operator= (const Handler&) = delete;
+                Handler& operator=(Handler&&) = delete;
+                Handler& operator=(const Handler&) = delete;
                 ~Handler() override = default;
 
             public:
@@ -274,10 +333,8 @@ namespace WPEFramework {
             //those should be just printed
             if (_settings.IsDirect() == true) {
                 _direct.Output(messageInfo, message);
-            }
-
-            if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[DataSize];
+            } else if (_dispatcher != nullptr) {
+                uint8_t serializationBuffer[TempDataBufferSize];
                 uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);

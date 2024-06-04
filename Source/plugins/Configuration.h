@@ -25,7 +25,7 @@
 #include "IShell.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
@@ -149,6 +149,29 @@ namespace Plugin {
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
             }
+            RootConfig(RootConfig&& move)
+                : Core::JSON::Container()
+                , Locator(std::move(move.Locator))
+                , User(std::move(move.User))
+                , Group(std::move(move.Group))
+                , Threads(std::move(move.Threads))
+                , Priority(std::move(move.Priority))
+                , OutOfProcess(std::move(move.OutOfProcess))
+                , Mode(std::move(move.Mode))
+                , RemoteAddress(std::move(move.RemoteAddress))
+                , Configuration(std::move(move.Configuration))
+            {
+                Add(_T("locator"), &Locator);
+                Add(_T("user"), &User);
+                Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
+                Add(_T("priority"), &Priority);
+                Add(_T("outofprocess"), &OutOfProcess);
+                Add(_T("mode"), &Mode);
+                Add(_T("remoteaddress"), &RemoteAddress);
+                Add(_T("configuration"), &Configuration);
+            }
+
             ~RootConfig() override = default;
 
             RootConfig& operator=(const RootConfig& RHS)
@@ -162,6 +185,23 @@ namespace Plugin {
                 Mode = RHS.Mode;
                 RemoteAddress = RHS.RemoteAddress;
                 Configuration = RHS.Configuration;
+
+                return (*this);
+            }
+
+            RootConfig& operator=(RootConfig&& move)
+            {
+                if (this != &move) {
+                    Locator = std::move(move.Locator);
+                    User = std::move(move.User);
+                    Group = std::move(move.Group);
+                    Threads = std::move(move.Threads);
+                    Priority = std::move(move.Priority);
+                    OutOfProcess = std::move(move.OutOfProcess);
+                    Mode = std::move(move.Mode);
+                    RemoteAddress = std::move(move.RemoteAddress);
+                    Configuration = std::move(move.Configuration);
+                }
 
                 return (*this);
             }
@@ -263,6 +303,41 @@ namespace Plugin {
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
         }
+        Config(Config&& move)
+            : Core::JSON::Container()
+            , Callsign(std::move(move.Callsign))
+            , Locator(std::move(move.Locator))
+            , ClassName(std::move(move.ClassName))
+            , Versions(std::move(move.Versions))
+            , Resumed(std::move(move.Resumed))
+            , WebUI(std::move(move.WebUI))
+            , Precondition(std::move(move.Precondition))
+            , Termination(std::move(move.Termination))
+            , Configuration(std::move(move.Configuration))
+            , PersistentPathPostfix(std::move(move.PersistentPathPostfix))
+            , VolatilePathPostfix(std::move(move.VolatilePathPostfix))
+            , SystemRootPath(std::move(move.SystemRootPath))
+            , StartupOrder(std::move(move.StartupOrder))
+            , StartMode(std::move(move.StartMode))
+            , Communicator(std::move(move.Communicator))
+        {
+            Add(_T("callsign"), &Callsign);
+            Add(_T("locator"), &Locator);
+            Add(_T("classname"), &ClassName);
+            Add(_T("versions"), &Versions);
+            Add(_T("resumed"), &Resumed);
+            Add(_T("webui"), &WebUI);
+            Add(_T("precondition"), &Precondition);
+            Add(_T("termination"), &Termination);
+            Add(_T("configuration"), &Configuration);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
+            Add(_T("systemrootpath"), &SystemRootPath);
+            Add(_T("startuporder"), &StartupOrder);
+            Add(_T("startmode"), &StartMode);
+            Add(_T("communicator"), &Communicator);
+        }
+
         ~Config() override = default;
 
         Config& operator=(const Config& RHS)
@@ -282,6 +357,27 @@ namespace Plugin {
             StartupOrder = RHS.StartupOrder;
             StartMode = RHS.StartMode;
             Communicator = RHS.Communicator;
+
+            return (*this);
+        }
+
+        Config& operator=(Config&& move)
+        {
+            Callsign = std::move(move.Callsign);
+            Locator = std::move(move.Locator);
+            ClassName = std::move(move.ClassName);
+            Versions = std::move(move.Versions);
+            Resumed = std::move(move.Resumed);
+            WebUI = std::move(move.WebUI);
+            Configuration = std::move(move.Configuration);
+            Precondition = std::move(move.Precondition);
+            Termination = std::move(move.Termination);
+            PersistentPathPostfix = std::move(move.PersistentPathPostfix);
+            VolatilePathPostfix = std::move(move.VolatilePathPostfix);
+            SystemRootPath = std::move(move.SystemRootPath);
+            StartupOrder = std::move(move.StartupOrder);
+            StartMode = std::move(move.StartMode);
+            Communicator = std::move(move.Communicator);
 
             return (*this);
         }

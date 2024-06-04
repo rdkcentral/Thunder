@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Optional.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class TriState {
@@ -82,6 +82,10 @@ namespace Core {
             : m_State(copy.m_State)
         {
         }
+        TriState(TriState&& move)
+            : m_State(std::move(move.m_State))
+        {
+        }
         ~TriState()
         {
         }
@@ -89,6 +93,14 @@ namespace Core {
         TriState& operator=(const TriState& rhs)
         {
             m_State = rhs.m_State;
+            return (*this);
+        }
+
+        TriState& operator=(TriState&& move)
+        {
+            if (this != &move) {
+                m_State = std::move(move.m_State);
+            }
             return (*this);
         }
 

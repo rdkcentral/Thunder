@@ -21,8 +21,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 enum class TestState {
     TEST_INIT = 0x00,
@@ -33,7 +33,7 @@ enum class TestState {
 
 TEST(test_statetrigger, simple_statetrigger)
 {
-    WPEFramework::Core::StateTrigger<TestState> state(TestState::TEST_READY);
+    Thunder::Core::StateTrigger<TestState> state(TestState::TEST_READY);
 
     EXPECT_EQ(state.GetState(),TestState::TEST_READY) << "State not equal to TEST_READY.";
     state.SetState(TestState::TEST_MESSAGE);

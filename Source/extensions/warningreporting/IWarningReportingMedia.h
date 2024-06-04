@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace WarningReporting {
     struct EXTERNAL IWarningReportingMedia {
         virtual ~IWarningReportingMedia() = default;

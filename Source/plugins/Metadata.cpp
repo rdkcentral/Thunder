@@ -22,7 +22,7 @@
 #include "IStateControl.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
 
@@ -64,10 +64,11 @@ namespace PluginHost
         return (*this);
     }
 
-    Metadata::Service::State& Metadata::Service::State::operator=(Metadata::Service::State&& RHS)
+    Metadata::Service::State& Metadata::Service::State::operator=(Metadata::Service::State&& move)
     {
-        Core::JSON::EnumType<state>::operator= (RHS);
-
+        if (this != &move) {
+            Core::JSON::EnumType<state>::operator= (move);
+        }
         return (*this);
     }
 
@@ -83,9 +84,11 @@ namespace PluginHost
         return (*this);
     }
 
-    Metadata::Channel::State& Metadata::Channel::State::operator=(Metadata::Channel::State&& RHS)
+    Metadata::Channel::State& Metadata::Channel::State::operator=(Metadata::Channel::State&& move)
     {
-        Core::JSON::EnumType<state>::operator=(RHS);
+        if (this != &move) {
+            Core::JSON::EnumType<state>::operator=(move);
+        }
 
         return (*this);
     }
@@ -130,17 +133,17 @@ namespace PluginHost
     }
     Metadata::Service::Service(Metadata::Service&& move)
         : Plugin::Config(move)
-        , JSONState(move.JSONState)
+        , JSONState(std::move(move.JSONState))
 #if THUNDER_RUNTIME_STATISTICS
-        , ProcessedRequests(move.ProcessedRequests)
-        , ProcessedObjects(move.ProcessedObjects)
+        , ProcessedRequests(std::move(move.ProcessedRequests))
+        , ProcessedObjects(std::move(move.ProcessedObjects))
 #endif
 #if THUNDER_RESTFULL_API
-        , Observers(move.Observers)
+        , Observers(std::move(move.Observers))
 #endif
-        , ServiceVersion(move.ServiceVersion)
-        , Module(move.Module)
-        , InterfaceVersion(move.InterfaceVersion)
+        , ServiceVersion(std::move(move.ServiceVersion))
+        , Module(std::move(move.Module))
+        , InterfaceVersion(std::move(move.InterfaceVersion))
     {
         Add(_T("state"), &JSONState);
 #if THUNDER_RUNTIME_STATISTICS
@@ -200,11 +203,11 @@ namespace PluginHost
     }
     Metadata::Channel::Channel(Metadata::Channel&& move)
         : Core::JSON::Container()
-        , Remote(move.Remote)
-        , JSONState(move.JSONState)
-        , Activity(move.Activity)
-        , ID(move.ID)
-        , Name(move.Name)
+        , Remote(std::move(move.Remote))
+        , JSONState(std::move(move.JSONState))
+        , Activity(std::move(move.Activity))
+        , ID(std::move(move.ID))
+        , Name(std::move(move.Name))
     {
         Core::JSON::Container::Add(_T("remote"), &Remote);
         Core::JSON::Container::Add(_T("state"), &JSONState);
@@ -227,13 +230,15 @@ namespace PluginHost
         Core::JSON::Container::Add(_T("name"), &Name);
     }
 
-    Metadata::Channel& Metadata::Channel::operator=(Metadata::Channel&& RHS)
+    Metadata::Channel& Metadata::Channel::operator=(Metadata::Channel&& move)
     {
-        Remote = RHS.Remote;
-        JSONState = RHS.JSONState;
-        Activity = RHS.Activity;
-        ID = RHS.ID;
-        Name = RHS.Name;
+        if (this != &move) {
+            Remote = std::move(move.Remote);
+            JSONState = std::move(move.JSONState);
+            Activity = std::move(move.Activity);
+            ID = std::move(move.ID);
+            Name = std::move(move.Name);
+        }
 
         return (*this);
     }
@@ -259,9 +264,9 @@ namespace PluginHost
     }
     Metadata::Server::Minion::Minion(Minion&& move)
         : Core::JSON::Container()
-        , Id(move.Id)
-        , Job(move.Job)
-        , Runs(move.Runs) {
+        , Id(std::move(move.Id))
+        , Job(std::move(move.Job))
+        , Runs(std::move(move.Runs)) {
         Add(_T("id"), &Id);
         Add(_T("job"), &Job);
         Add(_T("runs"), &Runs);

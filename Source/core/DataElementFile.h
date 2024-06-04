@@ -37,17 +37,19 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // The datapackage is the abstract of a package that needs to be send over the line.
     class EXTERNAL DataElementFile : public DataElement {
     public:
         DataElementFile() = delete;
+        DataElementFile& operator=(DataElementFile&&) = delete;
         DataElementFile& operator=(const DataElementFile&) = delete;
 
         DataElementFile(File& fileName, const uint32_t type);
         DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
         DataElementFile(const DataElementFile&);
+        DataElementFile(DataElementFile&&);
         ~DataElementFile() override {
             Close();
         }

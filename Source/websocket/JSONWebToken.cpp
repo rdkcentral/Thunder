@@ -19,7 +19,7 @@
 
 #include "JSONWebToken.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Web::JSONWebToken::mode)
 
@@ -94,9 +94,9 @@ namespace Web
             destinationBuffer,
             destinationLength / sizeof(TCHAR));
 
-		token = (_header + '.' + string(destinationBuffer, convertedLength));
+        token = (_header + '.' + string(destinationBuffer, convertedLength));
 
-		if (_mode == JSONWebToken::SHA256) {
+        if (_mode == JSONWebToken::SHA256) {
             TCHAR signature[((Crypto::SHA256HMAC::Length * 8) / 6) + 4];
             Crypto::SHA256HMAC hash(_key);
             hash.Input(reinterpret_cast<const uint8_t*>(token.c_str()), static_cast<uint16_t>(token.length()));
@@ -104,9 +104,9 @@ namespace Web
            
             convertedLength = Core::URL::Base64Encode(inputSignature, hash.Length, signature, sizeof(signature), false);
             token += '.' + string(signature, convertedLength);
-		}
+        }
 
-		ASSERT(token.length() < 0xFFFF);
+        ASSERT(token.length() < 0xFFFF);
 
         return (static_cast<uint16_t>(token.length()));
     }
@@ -114,29 +114,29 @@ namespace Web
     {
         uint16_t length = 0;
 
-		// Check what method to use
+        // Check what method to use
         size_t pos = token.find_first_of('.');
 
-		if (pos == string::npos) {
+        if (pos == string::npos) {
             length = ~0;
-		} else {
+        } else {
 
-			// Extract the header
+            // Extract the header
             string header(token.substr(0, pos));
             TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(header.length() * sizeof(TCHAR)));
 
             length = Core::URL::Base64Decode(
-				header.c_str(), 
-				static_cast<uint16_t>(header.length()), 
-				reinterpret_cast<uint8_t*>(output), 
-				static_cast<uint16_t>(header.length() * sizeof(TCHAR)), 
-				nullptr);
+                header.c_str(),
+                static_cast<uint16_t>(header.length()),
+                reinterpret_cast<uint8_t*>(output),
+                static_cast<uint16_t>(header.length() * sizeof(TCHAR)),
+                nullptr);
 
-			JSONWebData info(output, length);
+            JSONWebData info(output, length);
 
-			length = ~0;
+            length = ~0;
 
-			if ((info.Type.Value() == _T("JWT")) && (info.Algorithm.IsSet() == true) && (ValidSignature(info.Algorithm.Value(), token) == true)) {
+            if ((info.Type.Value() == _T("JWT")) && (info.Algorithm.IsSet() == true) && (ValidSignature(info.Algorithm.Value(), token) == true)) {
 
                 // Check if the Hash is correct..
                 size_t sig_pos = token.find_last_of('.');
@@ -153,45 +153,44 @@ namespace Web
         return (length);
     }
 
-	bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
-	{
+    bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
+    {
         bool result = false;
 
         // Check if the Hash is correct..
         size_t pos = token.find_last_of('.');
 
         if (pos != string::npos) {
-		
+
             if (type == JSONWebToken::mode::SHA256) {
                 // Now calculate what we think it should be..
                 Crypto::SHA256HMAC hash(_key);
 
                 // Extract the signature and convert it to a binary string.
-				uint8_t signature[Crypto::SHA256HMAC::Length];
-		if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 5)/6)))
-                {		    
-                if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
+                uint8_t signature[Crypto::SHA256HMAC::Length];
+                if ((token.length() - pos - 1) == ((((8 * sizeof(signature)) + 5)/6))) {
+                    if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
 
-					hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
-					result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
-				}
+                        hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
+                        result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
+                    }
                 }
             }
-		}
+        }
 
-		return (result);
+        return (result);
     }
 
-	uint16_t JSONWebToken::PayloadLength(const string& token) const
+    uint16_t JSONWebToken::PayloadLength(const string& token) const
     {
         uint16_t result = ~0;
         // Check if the Hash is correct..
         size_t first = token.find_first_of('.');
 
-		if (first != string::npos) {
+        if (first != string::npos) {
             size_t last = token.find_last_of('.');
             result = static_cast<uint16_t>((((last - first) * 6) + 6) / 8);
-		}
+        }
         return (result);
-	}
-} } // namespace WPEFramework::Web
+    }
+} } // namespace Thunder::Web

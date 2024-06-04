@@ -22,7 +22,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     using ProtocolsArray = Core::TokenizedStringList<',', true>;
 
@@ -118,6 +118,13 @@ namespace Web {
             ASSERT(_type <= sizeof(_hashValue));
             ::memcpy(_hashValue, copy._hashValue, _type);
         }
+        Signature(Signature&& move)
+            : _type(std::move(move._type))
+        {
+            ASSERT(_type <= sizeof(_hashValue));
+            ::memcpy(_hashValue, move._hashValue, _type);
+            ::memset(move._hashValue, 0, _type);
+        }
         ~Signature()
         {
         }
@@ -126,6 +133,17 @@ namespace Web {
         {
             _type = RHS._type;
             ::memcpy(_hashValue, RHS._hashValue, _type);
+
+            return (*this);
+        }
+
+        Signature& operator=(Signature&& move)
+        {
+            if (this != &move) {
+                _type = std::move(move._type);
+                ::memcpy(_hashValue, move._hashValue, _type);
+                ::memset(move._hashValue, 0, _type);
+            }
 
             return (*this);
         }
@@ -180,6 +198,11 @@ namespace Web {
             , _token(copy._token)
         {
         }
+        Authorization(Authorization&& move)
+            : _type(std::move(move._type))
+            , _token(std::move(move._token))
+        {
+        }
         ~Authorization()
         {
         }
@@ -188,6 +211,16 @@ namespace Web {
         {
             _type = RHS._type;
             _token = RHS._token;
+
+            return (*this);
+        }
+
+        Authorization& operator=(Authorization&& move)
+        {
+            if (this != &move) {
+                _type = std::move(move._type);
+                _token = std::move(move._token);
+            }
 
             return (*this);
         }

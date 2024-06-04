@@ -25,8 +25,10 @@
 #include <core/core.h>
 #include <sys/utsname.h>
 #include <inttypes.h>
+#include <unistd.h>
+#include <sys/sysinfo.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
 enum class Purpose {
@@ -252,7 +254,7 @@ std::string ExecuteCmd(const char* cmd, Purpose purpose, Function func) {
 float GetUpTime() {
     std::string uptime;
     std::ifstream file("/proc/uptime");
-    while(file >> uptime)
+    if (file >> uptime)
         return (ceil(stof(uptime)));
     return 0;
 }
@@ -402,24 +404,29 @@ TEST(Core_SystemInfo, FirmwareInfo)
 {
     EXPECT_STREQ(Core::SystemInfo::Instance().FirmwareVersion().c_str(), FirmwareVersion().c_str()); 
 }
+
 static constexpr uint32_t MegaBytesPerBytes = 1024 * 1024;
 static constexpr uint32_t MegaBytesPerKBytes = 1024;
+
 TEST(Core_SystemInfo, MemoryInfo)
 {
-    uint32_t pageSize = getpagesize();
-    EXPECT_EQ(Core::SystemInfo::Instance().GetPageSize(), static_cast<uint32_t>(getpagesize()));
+    long pageSize= sysconf(_SC_PAGESIZE);
+
+    EXPECT_NE(pageSize, -1);
+    EXPECT_EQ(Core::SystemInfo::Instance().GetPageSize(), static_cast<uint32_t>(pageSize));
 
     std::string cmd = "cat /proc/meminfo | grep MemTotal";
     string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
     if (result.empty() != true) {
-        uint64_t totalRam = stol(result) * 1024;
+        uint64_t totalRam = std::stoul(result) * 1024;
         EXPECT_EQ(Core::SystemInfo::Instance().GetTotalRam(), totalRam);
-        EXPECT_EQ(Core::SystemInfo::Instance().GetPhysicalPageCount(), static_cast<uint32_t>(totalRam / pageSize));
+        EXPECT_EQ(Core::SystemInfo::Instance().GetPhysicalPageCount(), static_cast<uint64_t>(totalRam / pageSize));
     }
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), static_cast<uint32_t>(stol(result) * 1024));
+        uint64_t totalSwap = std::stoul(result) * 1024;
+        EXPECT_EQ(Core::SystemInfo::Instance().GetTotalSwap(), static_cast<uint64_t>(totalSwap));
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -447,7 +454,8 @@ TEST(Core_SystemInfo, memorySnapShot)
     std::string cmd = "cat /proc/meminfo | grep MemTotal:";
     string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ(snapshot.Total(), static_cast<uint32_t>(stol(ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL))));
+        uint64_t total = std::stoul(result);
+        EXPECT_EQ(snapshot.Total(), total);
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -474,7 +482,8 @@ TEST(Core_SystemInfo, memorySnapShot)
     cmd = "cat /proc/meminfo | grep SwapTotal:";
     result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
     if (result.empty() != true) {
-        EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), static_cast<uint32_t>(stol(result) / MegaBytesPerKBytes));
+        uint64_t total = std::stoul(result);
+        EXPECT_EQ((snapshot.SwapTotal() / MegaBytesPerKBytes), total / MegaBytesPerKBytes);
     }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -496,7 +505,7 @@ TEST(Core_SystemInfo, memorySnapShot)
 }
 TEST(Core_SystemInfo, DISABLED_UPTime)
 {
-    EXPECT_EQ(Core::SystemInfo::Instance().GetUpTime(), GetUpTime());
+    EXPECT_FLOAT_EQ(static_cast<float>(Core::SystemInfo::Instance().GetUpTime()), GetUpTime());
 }
 TEST(Core_SystemInfo, DISABLED_CPUInfo)
 {
@@ -524,12 +533,10 @@ TEST(Core_SystemInfo, DISABLED_CPUInfo)
 
         uint64_t* cpuLoadAvg = Core::SystemInfo::Instance().GetCpuLoadAvg();
         double loadFromThunder[3];
-        loadFromThunder[0] = Round((cpuLoadAvg[0] / 65536.0), 2);
-        loadFromThunder[1] = Round((cpuLoadAvg[1] / 65536.0), 2);
-        loadFromThunder[2] = Round((cpuLoadAvg[2] / 65536.0), 2);
-        EXPECT_EQ(loadFromSystem[0], loadFromThunder[0]);
-        EXPECT_EQ(loadFromSystem[1], loadFromThunder[1]);
-        EXPECT_EQ(loadFromSystem[2], loadFromThunder[2]);
+        // Fixed point arithmetic
+        EXPECT_DOUBLE_EQ(loadFromSystem[0], cpuLoadAvg[0] / (1 << SI_LOAD_SHIFT));
+        EXPECT_DOUBLE_EQ(loadFromSystem[1], cpuLoadAvg[1] / (1 << SI_LOAD_SHIFT));
+        EXPECT_DOUBLE_EQ(loadFromSystem[2], cpuLoadAvg[2] / (1 << SI_LOAD_SHIFT));
     }
 }
 #endif
@@ -537,7 +544,8 @@ TEST(Core_SystemInfo, Ticks_withoutDelay)
 {
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ(tick1 / Core::Time::MicroSecondsPerSecond, tick2 / Core::Time::MicroSecondsPerSecond);
+    // Difference depends on the clock time resolution
+    EXPECT_LE(tick1, tick2);
 }
 TEST(Core_SystemInfo, Ticks_withDelay)
 {
@@ -545,24 +553,25 @@ TEST(Core_SystemInfo, Ticks_withDelay)
     uint64_t tick1 = Core::SystemInfo::Instance().Ticks();
     sleep(seconds);
     uint64_t tick2 = Core::SystemInfo::Instance().Ticks();
-    EXPECT_EQ((tick1 / Core::Time::MicroSecondsPerSecond) + seconds, tick2 / Core::Time::MicroSecondsPerSecond);
+    std::chrono::duration<uint8_t, std::micro> elapsed(tick2 - tick1);
+    EXPECT_GE(elapsed.count(), seconds);
 }
 
 } // Tests
 
 ENUM_CONVERSION_BEGIN(Tests::Purpose)
-    { WPEFramework::Tests::Purpose::MEM, _TXT("mem") },
-    { WPEFramework::Tests::Purpose::SWAP, _TXT("swap") },
-    { WPEFramework::Tests::Purpose::HOST, _TXT("host") },
-    { WPEFramework::Tests::Purpose::CHIPSET, _TXT("chipset") },
-    { WPEFramework::Tests::Purpose::CPULOAD, _TXT("cpuload") },
+    { Thunder::Tests::Purpose::MEM, _TXT("mem") },
+    { Thunder::Tests::Purpose::SWAP, _TXT("swap") },
+    { Thunder::Tests::Purpose::HOST, _TXT("host") },
+    { Thunder::Tests::Purpose::CHIPSET, _TXT("chipset") },
+    { Thunder::Tests::Purpose::CPULOAD, _TXT("cpuload") },
 ENUM_CONVERSION_END(Tests::Purpose)
 
 ENUM_CONVERSION_BEGIN(Tests::Function)
-    { WPEFramework::Tests::Function::TOTAL, _TXT("total") },
-    { WPEFramework::Tests::Function::FREE, _TXT("free") },
-    { WPEFramework::Tests::Function::AVAILABLE, _TXT("available") },
-    { WPEFramework::Tests::Function::CACHED, _TXT("cached") },
+    { Thunder::Tests::Function::TOTAL, _TXT("total") },
+    { Thunder::Tests::Function::FREE, _TXT("free") },
+    { Thunder::Tests::Function::AVAILABLE, _TXT("available") },
+    { Thunder::Tests::Function::CACHED, _TXT("cached") },
 ENUM_CONVERSION_END(Tests::Function)
 
-} // WPEFramework
+} // Thunder

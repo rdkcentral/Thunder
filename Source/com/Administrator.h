@@ -23,7 +23,7 @@
 #include "Messages.h"
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace ProxyStub {
 
@@ -46,9 +46,6 @@ namespace RPC {
     };
 
     class EXTERNAL Administrator {
-    public:
-        using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-
     private:
         Administrator();
 
@@ -57,8 +54,8 @@ namespace RPC {
             RecoverySet() = delete;
             RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
-            RecoverySet& operator= (RecoverySet&&) = delete;
-            RecoverySet& operator= (const RecoverySet&) = delete;
+            RecoverySet& operator=(RecoverySet&&) = delete;
+            RecoverySet& operator=(const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
                 : _interfaceId(id)
@@ -103,9 +100,6 @@ namespace RPC {
             uint32_t _referenceCount;
         };
 
-        using ChannelMap = std::map<const Core::IPCChannel*, Proxies>;
-        using ReferenceMap = std::map<const Core::IPCChannel*, std::list< RecoverySet > >;
-
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
 
@@ -130,6 +124,13 @@ namespace RPC {
         };
 
     public:
+        using Proxies = std::vector<ProxyStub::UnknownProxy*>;
+        using ChannelMap = std::unordered_map<uintptr_t, Proxies>;
+        using ReferenceMap = std::unordered_map<uintptr_t, std::list< RecoverySet > >;
+        using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
+        using Factories = std::unordered_map<uint32_t, IMetadata*>;
+
+    public:
         Administrator(Administrator&&) = delete;
         Administrator(const Administrator&) = delete;
         Administrator& operator=(Administrator&&) = delete;
@@ -140,21 +141,25 @@ namespace RPC {
         static Administrator& Instance();
 
     public:
-        // void action(const Client& client)
-        template<typename ACTION>
-        void Visit(ACTION&& action) {
-            _adminLock.Lock();
-            for (auto& entry : _channelProxyMap) {
-                action(*entry.first, entry.second);
-            }
-            _adminLock.Unlock();
+        bool DelegatedReleases() const {
+            return (_delegatedReleases);
+        }
+        void DelegatedReleases(const bool enabled) {
+            _delegatedReleases = enabled;
         }
         // void action(const Client& client)
         template<typename ACTION>
         void Visit(ACTION&& action) const {
             _adminLock.Lock();
+
             for (const auto& entry : _channelProxyMap) {
-                action(*entry.first, entry.second);
+                if (entry.second.empty() == false) {
+                    action(entry.second);
+                }
+            }
+
+            if (_danglingProxies.empty() == false) {
+                action(_danglingProxies);
             }
             _adminLock.Unlock();
         }
@@ -182,7 +187,7 @@ namespace RPC {
         {
             _adminLock.Lock();
 
-            std::map<uint32_t, ProxyStub::UnknownStub*>::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
+            Stubs::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
             if (stub != _stubs.end()) {
                 delete stub->second;
                 _stubs.erase(ACTUALINTERFACE::ID);
@@ -190,7 +195,7 @@ namespace RPC {
                 TRACE_L1("Failed to find a Stub for %d.", ACTUALINTERFACE::ID);
             }
 
-            std::map<uint32_t, IMetadata*>::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
+            Factories::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
             if (proxy != _proxy.end()) {
                 delete proxy->second;
                 _proxy.erase(ACTUALINTERFACE::ID);
@@ -232,8 +237,8 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Proxy Environment
         // ----------------------------------------------------------------------------------------------------
-        void AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
-        void Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount);
+        void AddRef(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
+        void Release(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount);
 
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
@@ -246,48 +251,41 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         // Stub method for entries that the Stub returns to the callee
         template <typename ACTUALINTERFACE>
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
+        bool RegisterInterface(const Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
         {
-            RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
+            return (RegisterInterface(channel, reference, ACTUALINTERFACE::ID));
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
+        bool RegisterInterface(const Core::ProxyType<Core::IPCChannel>& channel, const void* source, const uint32_t id)
         {
-            RegisterUnknownInterface(channel, Convert(const_cast<void*>(source), id), id);
-        }
+            bool result = false;
 
-        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
+            Core::IUnknown* converted = Convert(const_cast<void*>(source), id);
+
+            if (converted != nullptr) {
+                _adminLock.Lock();
+                if (channel.IsValid() == true) {
+                    RegisterUnknown(channel, converted, id);
+                    result = true;
+                }
+                _adminLock.Unlock();
+            }
+            else {
+                TRACE_L1("Failed to find a Stub for interface 0x%08x!", id);
+            }
+
+            return (result);
+        }
+        void UnregisterInterface(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount)
         {
             _adminLock.Lock();
 
-            ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
-
-            if (index != _channelReferenceMap.end()) {
-                std::list< RecoverySet >::iterator element(index->second.begin());
-
-                while ( (element != index->second.end()) && ((element->Id() != interfaceId) || (element->Unknown() != source)) ) {
-                    element++;
-                }
-
-                ASSERT(element != index->second.end());
-
-                if (element != index->second.end()) {
-                    if (element->Decrement(dropCount) == false) {
-                        index->second.erase(element);
-                        if (index->second.size() == 0) {
-                            _channelReferenceMap.erase(index);
-                            TRACE_L3("Unregistered interface %p(%u).", source, interfaceId);
-                        }
-                    }
-                } else {
-                    printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
-                }
-            } else {
-                printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            if (channel.IsValid() == true) {
+                UnregisterUnknown(channel, source, interfaceId, dropCount);
             }
 
             _adminLock.Unlock();
         }
-        void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
+        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy);
 
    private:
         // ----------------------------------------------------------------------------------------------------
@@ -295,16 +293,58 @@ namespace RPC {
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
-        void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
+        void RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
+        void UnregisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
         mutable Core::CriticalSection _adminLock;
-        std::map<uint32_t, ProxyStub::UnknownStub*> _stubs;
-        std::map<uint32_t, IMetadata*> _proxy;
+        Stubs _stubs;
+        Factories _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
         ChannelMap _channelProxyMap;
         ReferenceMap _channelReferenceMap;
+        Proxies _danglingProxies;
+
+        // Delegated release, if enabled, will release references held by connections 
+        // that close but still have references on objects in this process space.
+        // Whenever an interface is exposed to the otherside over the channel, it is
+        // recorded with this channel, if we received an Addref from the other side
+        // to keep the object here alive.
+        // If the connection dies and the object is still in this recorded set, it 
+        // means it will never receive the Release for it. Effectively that will mean 
+        // we have a leak on this object, since the Addref was done on behalf of the 
+        // other side of the link but the Release will never follow...... Ooops...
+        // Since we have this administartion and we know the channels is closed, we 
+        // could potentially do the Release for the otherside since we knwo the channel
+        // went done. This is a very welcome feature but it was only introduced in
+        // Thunder R3.X. 
+        // One of the selling reasons of having garbage collected languages is that you 
+        // do not need to be aware of the lifetime of object. No need to pair Addrefs 
+        // with Releases and Mallocs with Free's or new's with deletes. 
+        // C++ languages however expect you to know the lifetime and we know that this
+        // is one of the most made mistakes. 
+        // As we value stability of software and hate debuging crashes if we move to
+        // a new release this feature of automatic cleanup can backfire. If the software
+        // (read plugins) are poorly designed/coded and have an incorrect lifetime 
+        // management or the plugin is *not* coded/designed for non-happy day scenarios,
+        // these plugins might have been running succesfully be the lack of this feature 
+        // (at the cost of a memory leak but that is not so visible). Turning on this 
+        // feature might correctly cleanup object that in the past where leaking and will
+        // now lead to segmentation faults.
+        // Typically the first suspect is than the *new* release. As we have seen very 
+        // creative plugin implementations and from a Thunder team we have a limit amount
+        // of resources to investigate all these creative ways of implementing the plugin
+        // we allow for a flag to turn this *very* usefull feature off. 
+        // Whenever, after an upgrade to this new release, unexpected crashes are reported
+        // with an out-of-process plugins, we will ask the plugin developper to retest but 
+        // than with this feature off (flag in the config, no rebuild required). If the
+        // crash can than nolonger be reproduced we suggest the plugin developper to 
+        // check the lifetime handling on all object in his plugin (AddRef/Releases) and
+        // check the code for cleaning up in case of unexpected out-of-process plugin part
+        // shutdown.
+        // If the same crash continues, please reach out to the Thunder team for assitance!  
+        bool _delegatedReleases;
     };
 
     class EXTERNAL Job : public Core::IDispatch {
@@ -412,7 +452,7 @@ namespace RPC {
         InvokeServer& operator=(InvokeServer&&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
-        InvokeServer(Core::IWorkerPool* workers)
+        explicit InvokeServer(Core::IWorkerPool* workers)
             : _threadPoolEngine(*workers)
         {
             ASSERT(workers != nullptr);

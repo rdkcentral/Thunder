@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -150,6 +150,8 @@ namespace Core {
         public:
             MessageInfo(const MessageInfo&) = default;
             MessageInfo& operator=(const MessageInfo&) = default;
+            MessageInfo(MessageInfo&&) = default;
+            MessageInfo& operator=(MessageInfo&&) = default;
 
             MessageInfo()
                 : Metadata()
@@ -190,6 +192,8 @@ namespace Core {
             public:
                 Logging(const Logging&) = default;
                 Logging& operator=(const Logging&) = default;
+                Logging(Logging&&) = default;
+                Logging& operator=(Logging&&) = default;
 
                 Logging()
                     : MessageInfo()
@@ -209,6 +213,8 @@ namespace Core {
             public:
                 Tracing(const Tracing&) = default;
                 Tracing& operator=(const Tracing&) = default;
+                Tracing(Tracing&&) = default;
+                Tracing& operator=(Tracing&&) = default;
 
                 Tracing()
                     : MessageInfo()
@@ -257,6 +263,8 @@ namespace Core {
             public:
                 WarningReporting(const WarningReporting&) = default;
                 WarningReporting& operator=(const WarningReporting&) = default;
+                WarningReporting(WarningReporting&&) = default;
+                WarningReporting& operator=(WarningReporting&&) = default;
 
                 WarningReporting()
                     : MessageInfo()
@@ -291,6 +299,8 @@ namespace Core {
             public:
                 OperationalStream(const OperationalStream&) = default;
                 OperationalStream& operator=(const OperationalStream&) = default;
+                OperationalStream(OperationalStream&&) = default;
+                OperationalStream& operator=(OperationalStream&&) = default;
 
                 OperationalStream()
                     : MessageInfo()
@@ -303,7 +313,7 @@ namespace Core {
                 ~OperationalStream() = default;
             };
 
-	    public:
+            public:
             virtual ~IStore() = default;
             static IStore* Instance();
             static void Set(IStore*);

@@ -65,7 +65,7 @@
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
 #ifdef __DEBUG__
@@ -347,6 +347,9 @@ namespace WPEFramework {
             , m_ReceivedNode()
             , m_SendBuffer(nullptr)
             , m_ReceiveBuffer(nullptr)
+            , m_ReadBytes(0)
+            , m_SendBytes(0)
+            , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
         {
@@ -384,6 +387,9 @@ namespace WPEFramework {
             , m_ReceivedNode()
             , m_SendBuffer(nullptr)
             , m_ReceiveBuffer(nullptr)
+            , m_ReadBytes(0)
+            , m_SendBytes(0)
+            , m_SendOffset(0)
             , m_Interface(~0)
             , m_SystemdSocket(false)
         {

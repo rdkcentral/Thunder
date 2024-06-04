@@ -684,7 +684,7 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -911,6 +911,7 @@ namespace Core {
         ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
         ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
         ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
+        ERROR_CODE(ERROR_ABORTED, 58)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
@@ -955,6 +956,7 @@ namespace Core {
 }
 }
 
+namespace WPEFramework = Thunder;
 extern "C" {
 
 #ifdef __WINDOWS__
@@ -962,7 +964,7 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }

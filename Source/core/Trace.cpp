@@ -25,7 +25,7 @@
 #include <pthread.h>
 
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class Demangling {
     public:

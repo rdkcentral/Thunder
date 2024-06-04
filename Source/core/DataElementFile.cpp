@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     DataElementFile::DataElementFile(File& file, const uint32_t type)
         : DataElement()
@@ -82,6 +82,16 @@ namespace Core {
         , m_File(copy.m_File)
         , m_MemoryMappedFile(copy.m_MemoryMappedFile)
         , m_Flags(copy.m_Flags) {
+    }
+
+    DataElementFile::DataElementFile(DataElementFile&& move)
+        : DataElement(move)
+        , m_File(std::move(move.m_File))
+        , m_MemoryMappedFile(move.m_MemoryMappedFile)
+        , m_Flags(move.m_Flags)
+    {
+        move.m_Flags = 0;
+        m_MemoryMappedFile = INVALID_HANDLE_VALUE;
     }
 
     bool DataElementFile::Load() {

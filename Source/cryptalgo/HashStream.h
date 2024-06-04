@@ -32,7 +32,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     struct IHashStream {
         virtual ~IHashStream() = default;
@@ -46,10 +46,11 @@ namespace Crypto {
 
     template <typename HASHALGORITHM, const enum EnumHashType TYPE>
     class HashStreamType {
-        private :
-            HashStreamType(const HashStreamType<HASHALGORITHM, TYPE>&);
-        HashStreamType<HASHALGORITHM, TYPE> &
-        operator=(const HashStreamType<HASHALGORITHM, TYPE>&);
+    private :
+        HashStreamType(HashStreamType<HASHALGORITHM, TYPE>&&);
+        HashStreamType(const HashStreamType<HASHALGORITHM, TYPE>&);
+        HashStreamType<HASHALGORITHM, TYPE>& operator=(HashStreamType<HASHALGORITHM, TYPE>&&);
+        HashStreamType<HASHALGORITHM, TYPE>& operator=(const HashStreamType<HASHALGORITHM, TYPE>&);
 
         public :
             // For Hash streaming

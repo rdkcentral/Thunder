@@ -1,3 +1,8 @@
+/* 
+ * Modifications are Copyright 2024 Liberty Global B.V.
+ * Licensed under the Apache License, Version 2.0
+ */
+
 /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
@@ -19,7 +24,11 @@
 
 #pragma once
 
-namespace WPEFramework {
+
+
+#include "../Module.h"
+
+namespace Thunder {
 namespace ProcessContainers {
 
     template <typename CONTEXT>
@@ -55,4 +64,4 @@ namespace ProcessContainers {
     };
 
 } // ProcessContainers
-} // WPEFramework
+} // Thunder

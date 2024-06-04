@@ -24,7 +24,9 @@
     <ClCompile Include="json\JsonEnum_Discovery.cpp" />
     <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
     <ClCompile Include="json\JsonEnum_Metadata.cpp" />
-    <ClCompile Include="json\JsonEnum_SystemManagement.cpp" />
+    <ClCompile Include="json\JsonEnum_System.cpp" />
+    <ClCompile Include="json\JsonEnum_Events.cpp" />
+    <ClCompile Include="json\JsonEnum_Subsystems.cpp" />
     <ClCompile Include="Metadata.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
@@ -179,7 +181,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -218,7 +220,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -257,7 +259,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -300,7 +302,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>

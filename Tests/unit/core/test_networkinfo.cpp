@@ -22,18 +22,20 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(test_ipv4addressiterator, simple_ipv4addressiterator)
 {
-   AdapterIterator adapters;
-   AdapterIterator adapter("eth0");
-   IPV4AddressIterator result;
-   
-   result.Next();
-   //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
-   while (adapters.Next() == true) {
+    AdapterIterator adapters;
+    AdapterIterator adapters2;
+
+    AdapterIterator adapter("eth0");
+    IPV4AddressIterator result;
+
+    result.Next();
+    //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
+    while (adapters.Next() == true) {
        if (adapters.IsValid() == true) {
            IPV4AddressIterator index(adapters.IPV4Addresses());
            EXPECT_EQ(index.Count(),index.Count());
@@ -52,12 +54,14 @@ TEST(test_ipv4addressiterator, simple_ipv4addressiterator)
                }
            }
        }
-   }
+    }
 
-   IPV4AddressIterator ipv4addressiterator1;
-   ipv4addressiterator1 = result;
-   IPV4AddressIterator ipv4addressiterator2(result);
-   ipv4addressiterator1.Reset();
+    IPV4AddressIterator ipv4addressiterator1;
+    ipv4addressiterator1 = result;
+    IPV4AddressIterator ipv4addressiterator2(result);
+    ipv4addressiterator1.Reset();
+
+    Core::Singleton::Dispose();
 }
 
 TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
@@ -82,6 +86,8 @@ TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
     ipv6addressiterator1 = result;
     IPV6AddressIterator ipv6addressiterator2(result);
     ipv6addressiterator1.Reset();
+
+    Core::Singleton::Dispose();
 }
 
 TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
@@ -102,10 +108,14 @@ TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
     EXPECT_STREQ(adapter.MACAddress(':').c_str(),adapter.MACAddress(':').c_str());
     uint8_t buffer[32];
     adapter.MACAddress(buffer,32);
+
+    Core::Singleton::Dispose();
 }
 
 TEST(DISABLED_test_adapterobserver, simple_adapterobserver)
 {
     AdapterObserver::INotification* callback;
     AdapterObserver observer(callback);
+
+    Core::Singleton::Dispose();
 }

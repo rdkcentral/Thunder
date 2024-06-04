@@ -28,7 +28,7 @@
 #define __ERRORRESULT__ errno
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 
@@ -49,7 +49,8 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
-        void Controls(Messaging::MessageUnit::Iterator& controls) const;
+        void Modules(std::vector<string>& modules) const;
+        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
 
         using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);
@@ -75,8 +76,7 @@ namespace Messaging {
         const string _basePath;
         const uint16_t _socketPort;
 
-        mutable uint8_t _readBuffer[Messaging::MessageUnit::DataSize];
-        mutable uint8_t _writeBuffer[Messaging::MessageUnit::MetadataSize];
+        uint8_t _readBuffer[Messaging::MessageUnit::TempDataBufferSize];
 
         Clients _clients;
         Factories _factories;

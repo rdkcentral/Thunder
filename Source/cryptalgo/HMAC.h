@@ -31,7 +31,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     template <typename HASHALGORITHM>
     class HMACType {
