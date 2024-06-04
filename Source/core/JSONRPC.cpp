@@ -19,7 +19,7 @@
 
 #include "JSONRPC.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -28,4 +28,4 @@ namespace Core {
         /* static */ constexpr TCHAR Message::DefaultVersion[];
     }
 }
-} // namespace WPEramework::Core::JSONRPC
+} // namespace Thunder::Core::JSONRPC

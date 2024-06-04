@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 static int g_shared = 2; // Change it back to 1 after fixing and enabling simple_criticalsection test
 

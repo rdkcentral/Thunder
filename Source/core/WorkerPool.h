@@ -23,7 +23,7 @@
 #include "ThreadPool.h"
 #include "Timer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

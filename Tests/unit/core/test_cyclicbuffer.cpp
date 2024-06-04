@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 namespace Tests {
 
@@ -1856,4 +1856,4 @@ namespace Tests {
     }
 } // Tests
 } // Core
-} // WPEFramework
+} // Thunder

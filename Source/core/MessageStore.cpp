@@ -24,7 +24,7 @@
 #include "Enumerate.h"
 #include "Singleton.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },

@@ -25,7 +25,7 @@
 #include "Proxy.h"
 #include "SocketPort.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename CLIENT>
     class SocketServerType {
@@ -264,7 +264,18 @@ namespace Core {
                 typename ClientMap::iterator index = _clients.begin();
 
                 while (index != _clients.end()) {
-                    if ((index->second->IsClosed() == true) || ((index->second->IsSuspended() == true) && (index->second->Close(100) == Core::ERROR_NONE))) {
+                    // Do not change the Close() duration to a value >0. We should just test, but not wait for a statechange.
+                    // Waiting for a Statwchange might require, in the SocketPort imlementation of Close, WaitForCloseure with
+                    // parameter Core::infinite in case we have a faulthy socket. This call will than only return if the 
+                    // ResourceMonitor thread does report on CLosure of the socket. However, the ResourceMonitor thread might
+                    // also be calling into here for an Accept. 
+                    // In that case, the Accept will block on the _lock from this object as it is taken by this Cleanup call
+                    // running on a different thread but also this lock will not be freed as this cleanup thread is waiting 
+                    // now on the WaitForClosure that needs attention from the ResourceMonitor thread, which is currently 
+                    // blocked by the Accpet, waiting for this lock ;-)
+                    // By setting the Close wait time to 0, it wil never require the ReourceMonitor thread to participate 
+                    // in the evaluatio of this socket state and thus in due time, the Server lock is *always* released.
+                    if ((index->second->IsClosed() == true) || ((index->second->IsSuspended() == true) && (index->second->Close(0) == Core::ERROR_NONE))) {
                         // Step forward but remember where we were and delete that one....
                         index = _clients.erase(index);
                     }

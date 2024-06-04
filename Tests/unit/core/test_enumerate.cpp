@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     enum class TestEnum {
@@ -148,4 +148,4 @@ ENUM_CONVERSION_BEGIN(Tests::TestEnum)
     { Tests::TestEnum::TWO, _TXT("TWO") },
     { Tests::TestEnum::THREE, _TXT("THREE") },
 ENUM_CONVERSION_END(Tests::TestEnum)
-} // WPEFramework
+} // Thunder

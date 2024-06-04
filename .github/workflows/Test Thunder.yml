@@ -117,10 +117,10 @@ jobs:
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
     - name: Run IPTestAdministrator unit test
-      run: ${{env.path}} ${{env.lib}} WPEFramework_test_tests
+      run: ${{env.path}} ${{env.lib}} Thunder_test_tests
 
     - name: Run core unit tests
-      run: ${{env.path}} ${{env.lib}} WPEFramework_test_core
+      run: ${{env.path}} ${{env.lib}} Thunder_test_core
 
     - name: Tar files
       run: tar -czvf ${{matrix.shared_libs == 'OFF' && 'Static-' || ''}}${{matrix.build_type}}.tar.gz ${{matrix.build_type}}

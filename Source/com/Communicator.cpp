@@ -26,7 +26,7 @@
 #include "ProcessInfo.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     class ProcessShutdown;

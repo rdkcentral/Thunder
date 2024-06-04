@@ -19,7 +19,7 @@
 
 #include "Channel.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     /* static */ RequestPool Channel::_requestAllocator(10);
