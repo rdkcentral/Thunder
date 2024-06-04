@@ -36,7 +36,7 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // C = continuation. [1] Next byte is part of this element, [0] Last part of element
     // T = Type. [1] = Time / [0] = Value

@@ -25,7 +25,7 @@
 #include "Thread.h"
 #include "FileSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __LINUX__
@@ -551,4 +551,4 @@ private:
 #endif
 
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder

@@ -29,12 +29,12 @@ namespace {
     // Start day of the UNIX epoch (1970-01-01), also counting from BCE
     constexpr uint32_t DayUNIXEpochStarts = 719163;
 
-    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * WPEFramework::Core::Time::SecondsPerDay;
+    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * Thunder::Core::Time::SecondsPerDay;
 
 }
 
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     static bool IsLeapYear(const uint16_t year)

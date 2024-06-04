@@ -62,7 +62,7 @@ __gnu_cxx::recursive_init_error::~recursive_init_error()
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __WINDOWS__

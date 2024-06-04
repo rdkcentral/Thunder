@@ -20,7 +20,7 @@
 #include "Module.h"
 #include "ConsoleStreamRedirect.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Messaging {
 
     ConsoleStandardOut::ConsoleStandardOut()

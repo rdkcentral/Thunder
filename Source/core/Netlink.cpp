@@ -24,7 +24,7 @@
 
 // #define DEBUG_FRAMES 1
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -238,4 +238,4 @@ namespace Core {
     {
     }
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core

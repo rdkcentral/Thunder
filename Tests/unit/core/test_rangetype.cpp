@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     template <typename T, bool BOUNDARY_INCLUSIVE = true>
@@ -63,4 +63,4 @@ namespace Tests {
         EXPECT_EQ(withoutBoundary.Range(), 0u);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

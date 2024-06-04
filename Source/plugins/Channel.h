@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Request.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     class EXTERNAL Channel : public Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> {

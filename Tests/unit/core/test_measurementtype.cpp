@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     TEST(Core_MeasurementType, simpleSet)
@@ -45,4 +45,4 @@ namespace Tests {
         EXPECT_EQ(data.Measurements(), 0u);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

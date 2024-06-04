@@ -19,7 +19,7 @@
 
 #include "WebSocketLink.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     namespace WebSocket {
         static RequestAllocator _requestAllocator;

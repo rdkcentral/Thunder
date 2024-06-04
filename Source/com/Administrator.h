@@ -23,7 +23,7 @@
 #include "Messages.h"
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace ProxyStub {
 
@@ -452,7 +452,7 @@ namespace RPC {
         InvokeServer& operator=(InvokeServer&&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
-        InvokeServer(Core::IWorkerPool* workers)
+        explicit InvokeServer(Core::IWorkerPool* workers)
             : _threadPoolEngine(*workers)
         {
             ASSERT(workers != nullptr);

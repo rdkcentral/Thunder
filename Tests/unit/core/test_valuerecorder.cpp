@@ -22,8 +22,8 @@
 #include "gtest/gtest.h"
 #include "core/core.h"
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 const unsigned int BLOCKSIZE = 20;
 

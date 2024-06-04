@@ -22,7 +22,7 @@
 
 #include <com/ICOM.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Web {
 
@@ -257,7 +257,7 @@ namespace PluginHost {
     };
 
 } // namespace PluginHost
-} // namespace WPEFramework
+} // namespace Thunder
 
 
 #include "IShell.h" // needed for the proxy/stub generation

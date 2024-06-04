@@ -21,16 +21,16 @@
 #include "Module.h"
 #include "Communicator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     EXTERNAL Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer();
     EXTERNAL Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer();
 
     // This class is not thread safe. It is assumed that the Controller IUnknown
-    // is always set prior to any retrieval (WPEFramework/WPEProcess startup) and
+    // is always set prior to any retrieval (Thunder/ThunderPlugin startup) and
     // the interface is only revoked at process hsutdown, after shutting down all
-    // the other class (shutdown of WPEFrmaework or WPEProcess. So no need to
+    // the other class (shutdown of Thunder or ThunderPlugin. So no need to
     // lock the access to the _controller member variable.
     class EXTERNAL ConnectorController {
     private:
@@ -158,4 +158,4 @@ namespace RPC {
     };
 
 } // namespace RPC
-} // namespace WPEFramework
+} // namespace Thunder

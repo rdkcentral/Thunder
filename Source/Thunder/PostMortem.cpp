@@ -19,7 +19,7 @@
 
 #include "PluginServer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 
@@ -43,4 +43,4 @@ namespace PluginHost {
     }
 }
 
-} } // WPEFramework::PluginHost
+} } // Thunder::PluginHost

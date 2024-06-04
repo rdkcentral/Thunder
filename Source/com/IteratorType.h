@@ -20,7 +20,7 @@
 #pragma once
 
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
 
