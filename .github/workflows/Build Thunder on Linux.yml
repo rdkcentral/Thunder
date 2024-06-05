@@ -21,20 +21,20 @@ jobs:
 
   ThunderInterfaces:
     needs: Thunder
-    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@development/actions-checkouts
 
   ThunderLibraries:
     needs: Thunder
-    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
+    uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@development/actions-checkouts # change back to main
 
   ThunderClientLibraries:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@development/actions-checkouts
 
   ThunderNanoServices:
     needs: ThunderInterfaces
-    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@development/actions-checkouts
 
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
-    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@development/actions-checkouts
