@@ -32,16 +32,16 @@ add_executable(${TEST_RUNNER_NAME}
    test_filesystem.cpp
    test_frametype.cpp
    test_hash.cpp
-#   test_ipcclient.cpp
-#   test_ipc.cpp
+   test_ipcclient.cpp
+   test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
    #test_jsonparser.cpp
    test_keyvalue.cpp
-#   test_library.cpp
+   test_library.cpp
    test_lockablecontainer.cpp
    test_measurementtype.cpp
-#   test_memberavailability.cpp
+   test_memberavailability.cpp
    test_messageException.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
