@@ -3,7 +3,7 @@ name: Build Thunder on Windows
 on:
   workflow_dispatch:
   push:
-    # branches: ["master"]
+    branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
