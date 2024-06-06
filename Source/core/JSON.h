@@ -129,7 +129,7 @@ namespace Core {
 
                 realObject.Clear();
 
-                while (handled < size) {
+                while ( (handled < size) && (error.IsSet() == false) ) {
 
                     uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
@@ -3829,9 +3829,11 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            // It could be that the field name was used, as we are not interested in this field, if so,
-                            // do not forget to reset the field name..
-                            _fieldName.Clear();
+                            if (offset == FIND_MARKER) {
+                                // It could be that the field name was used, as we are not interested in this field, if so,
+                                // do not forget to reset the field name..
+                                _fieldName.Clear();
+                            }
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
@@ -4150,7 +4152,6 @@ namespace Core {
             {
             }
 
-
             Variant(const VariantContainer& object);
 
             ~Variant() override = default;
@@ -4170,6 +4171,8 @@ namespace Core {
             }
 
         public:
+            inline bool IsValid() const;
+
             type Content() const
             {
                 return _type;
@@ -4640,7 +4643,14 @@ namespace Core {
 
                 return (index->second);
             }
+            bool IsValid() const {
+                Elements::const_iterator index(_elements.begin());
 
+                while ((index != _elements.end()) && (index->second.IsValid() == true)) {
+                    index++;
+                }
+                return (index == _elements.end());
+            }
             const JSON::Variant& operator[](const TCHAR fieldName[]) const
             {
                 static const JSON::Variant emptyVariant;
@@ -4720,41 +4730,94 @@ namespace Core {
             return (result);
         }
 
-        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
-        {
-            uint16_t result = 0;
-            if (stream[0] == '{' || stream[0] == '[') {
-                uint16_t endIndex = FindEndOfScope(stream, maxLength);
-                if (endIndex > 0 && endIndex < maxLength) {
-                    result = endIndex + 1;
-                    SetQuoted(false);
-                    string str(stream, endIndex + 1);
-                    if (stream[0] == '{') {
-                        _type = type::OBJECT;
-                        String::operator=(str);
-                    } else {
-                        _type = type::ARRAY;
-                        String::operator=(str);
+        inline bool Variant::IsValid() const {
+            bool result = false;
+            switch (_type)
+            {
+            case type::EMPTY:
+            case type::STRING: {
+                result = true;
+                break;
+            }
+            case type::BOOLEAN: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::Boolean stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::NUMBER: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::DecUInt64 stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::DOUBLE:
+            case type::FLOAT: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::Double stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::ARRAY: {
+                Core::OptionalType<JSON::Error> error;
+                Core::JSON::ArrayType<JSON::Variant> stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
+                if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
+                    Variant::type type = index.Current().Content();
+                    while ((index.Next() == true) && (index.Current().Content() == type) && (index.Current().IsValid())) {
+                        // Intentionally left empty
                     }
                 }
+                result = result && (index.IsValid() == false);
+                break;
             }
-            if (result == 0) {
-                result = String::Deserialize(stream, maxLength, offset, error);
+            case type::OBJECT: {
+                Core::OptionalType<JSON::Error> error;
+                VariantContainer stacked;
+                stacked.FromString(Value(), error);
+                result = ((error.IsSet() == false) && (stacked.IsValid() == true));
+                break;
+            }
+            default:
+                break;
+            }
+            return (result);
+        }
 
-                _type = type::STRING;
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
+        {
+            uint16_t result = String::Deserialize(stream, maxLength, offset, error);
 
-                // If we are complete, try to guess what it was that we received...
-                if (offset == 0) {
-                    bool quoted = IsQuoted();
-                    SetQuoted(quoted);
-                    // If it is not quoted, it can be a boolean or a number...
-                    if (quoted == false) {
-                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
-                            _type = type::BOOLEAN;
-                        } else if (IsNull() == false) {
-                            _type = type::NUMBER;
-                        }
+            // If we are complete, try to guess what it was that we received...
+            if (offset == 0) {
+                if (IsQuoted() == false) {
+                    const string base = JSON::String::Value();
+                    if (IsNull() == true) {
+                        _type = type::EMPTY;
                     }
+                    else if (base[0] == '{') {
+                        _type = type::OBJECT;
+                    }
+                    else if (base[0] == '[') {
+                        _type = type::ARRAY;
+                    }
+                    else if ((base == _T("true")) || (base == _T("false"))) {
+                        _type = type::BOOLEAN;
+                    }
+                    else if (base.find('.') != std::string::npos) {
+                        _type = type::DOUBLE;
+                    }
+                    else {
+                        _type = type::NUMBER;
+                    }
+                }
+                else {
+                    _type = type::STRING;
                 }
             }
             return (result);
