@@ -14,10 +14,25 @@ jobs:
 
     name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
-# ----- Thunder -----
+# --------- Installing packages ---------
+    - name: Install necessary packages
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        command: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 fix --commit --launchpad --country=US
+          sudo apt-get update
+          sudo apt install python3-pip
+          pip install jsonref
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+
+# ----- Checkout & DependsOn regex -----
+# --------- Thunder ----------
     - name: Checkout Thunder - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: Thunder
         repository: rdkcentral/Thunder
@@ -33,16 +48,16 @@ jobs:
 
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: Thunder
         repository: rdkcentral/Thunder
         ref: ${{steps.thunder.outputs.first_match}}
 
-# ----- ThunderTools -----
+# ------- ThunderTools -------
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
@@ -58,26 +73,13 @@ jobs:
 
     - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderTools
         repository: rdkcentral/ThunderTools
         ref: ${{steps.tools.outputs.first_match}}
 
-# ----- Building -----
-    - name: Install necessary packages
-      uses: nick-fields/retry@v2
-      with:
-        timeout_minutes: 10
-        max_attempts: 10
-        command: |
-          sudo gem install apt-spy2
-          sudo apt-spy2 fix --commit --launchpad --country=US
-          sudo apt-get update
-          sudo apt install python3-pip
-          pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-
+# ----- Installing generators & Options regex -----
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
@@ -93,6 +95,7 @@ jobs:
         regex_flags: 'gim'
         search_string: ${{github.event.pull_request.body}}
 
+# ----- Building & uploading artifacts -----
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
@@ -119,7 +122,7 @@ jobs:
 
     - name: Upload
       if: matrix.shared_libs == 'ON'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Thunder-${{matrix.build_type}}-artifact
         path: ${{matrix.build_type}}.tar.gz
