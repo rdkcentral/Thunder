@@ -32,7 +32,7 @@ TEST(test_messageException, simple_messageException)
     EXPECT_STREQ(exception.Message(),msg.c_str());
     
     MessageException exception1(msg.c_str(),true);
-    char buffer[50];
+    char buffer[58];
     string status = ": File exists";
     snprintf(buffer, msg.size()+status.size()+1, "%s%s",msg.c_str(),status.c_str());
 #ifdef BUILD_ARM
