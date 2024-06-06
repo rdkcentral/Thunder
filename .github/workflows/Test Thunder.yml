@@ -36,7 +36,7 @@ jobs:
     - name: Set up GCC
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: 11.4
+        version: 11
     
     - name: Install necessary packages
       uses: nick-fields/retry@v3
