@@ -240,4 +240,4 @@ namespace Core {
     }
 }
 } // namespace Thunder::Core
-#endif
+#endif //!defined (__WINDOWS__) && !defined(__APPLE__)
