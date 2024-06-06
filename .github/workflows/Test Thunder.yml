@@ -3,7 +3,7 @@ name: Test Thunder
 on:
   workflow_dispatch:
   push:
-    branches: ["master"]
+    # branches: ["master"]
     paths-ignore:
       - 'doc/**'
       - 'docs/**'
@@ -27,6 +27,8 @@ jobs:
     env:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
+      CC: gcc-11
+      CXX: g++-11
 
     name: Testing - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
