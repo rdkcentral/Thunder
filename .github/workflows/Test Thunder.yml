@@ -17,7 +17,7 @@ on:
 
 jobs:
   Thunder:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -27,17 +27,10 @@ jobs:
     env:
       lib: LD_LIBRARY_PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH
       path: PATH=${{github.workspace}}/${{matrix.build_type}}/install/usr/bin:$PATH
-      CC: gcc-11
-      CXX: g++-11
 
     name: Testing - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
     steps:
 # ----- Installing packages -----
-    - name: Set up GCC
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: 11
-    
     - name: Install necessary packages
       uses: nick-fields/retry@v3
       with:
