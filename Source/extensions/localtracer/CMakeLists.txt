@@ -1,5 +1,5 @@
 project(LocalTracer LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.15)
 
 set(MODULE_NAME ${NAMESPACE}LocalTracer)
 
