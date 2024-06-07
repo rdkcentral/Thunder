@@ -3100,7 +3100,7 @@ POP_WARNING()
 
                 if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
-                    Plugin::Config newConfiguration(original->Configuration());
+                    Plugin::Config newConfiguration(Core::ProxyType<PluginHost::Service>(original)->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
                     Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
