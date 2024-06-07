@@ -3100,13 +3100,12 @@ POP_WARNING()
 
                 if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
-                    Plugin::Config newConfiguration;
-                    newConfiguration.FromString(original->Configuration());
+                    Plugin::Config newConfiguration(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
                     Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
 
-                    if (newService.IsValid() == true) {
+                    if (clone.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
                         _services.emplace(
                             std::piecewise_construct,
