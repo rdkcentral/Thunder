@@ -58,12 +58,12 @@ cmake -G Ninja -S Thunder -B build/Thunder \
 -DBINDING="127.0.0.1" \
 -DCMAKE_BUILD_TYPE="Debug" \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
--DDATA_PATH="${PWD}/install/usr/share/WPEFramework" \
--DPERSISTENT_PATH="${PWD}/install/var/wpeframework" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
+-DDATA_PATH="${PWD}/install/usr/share/Thunder" \
+-DPERSISTENT_PATH="${PWD}/install/var/thunder" \
 -DPORT="55555" \
--DPROXYSTUB_PATH="${PWD}/install/usr/lib/wpeframework/proxystubs" \
--DSYSTEM_PATH="${PWD}/install/usr/lib/wpeframework/plugins" \
+-DPROXYSTUB_PATH="${PWD}/install/usr/lib/thunder/proxystubs" \
+-DSYSTEM_PATH="${PWD}/install/usr/lib/thunder/plugins" \
 -DVOLATILE_PATH="tmp"
 
 cmake --build build/Thunder --target install
@@ -85,7 +85,7 @@ Run the following commands to build and then install ThunderInterfaces:
 ```shell
 cmake -G Ninja -S ThunderInterfaces -B build/ThunderInterfaces \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules"
 
 cmake --build build/ThunderInterfaces --target install
 ```
@@ -108,7 +108,7 @@ In the command below, there is a complete list of plugins that do not require an
 ```shell
 cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
 -DPLUGIN_COMMANDER=ON \
 -DPLUGIN_DHCPSERVER=ON \
 -DPLUGIN_DIALSERVER=ON \
@@ -144,7 +144,7 @@ In the command below, there is a complete list of plugins that do not require an
 ```shell
 cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
 -DPLUGIN_DEVICEIDENTIFICATION=ON \
 -DPLUGIN_DEVICEINFO=ON \
 -DPLUGIN_LOCATIONSYNC=ON \
@@ -174,7 +174,7 @@ In the command below, there is a complete list of client libraries that do not r
 ```shell
 cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules" \
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
 -DBLUETOOTHAUDIOSINK=ON \
 -DDEVICEINFO=ON \
 -DDISPLAYINFO=ON \
@@ -206,7 +206,7 @@ Run the following commands to build and then install ThunderUI:
 ```shell
 cmake -G Ninja -S ThunderUI -B build/ThunderUI \
 -DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/WPEFramework/Modules"
+-DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules"
 
 cmake --build build/ThunderUI --target install
 ```
@@ -222,25 +222,25 @@ Since we installed Thunder in a custom installation directory, we need to provid
 export LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH}
 export PATH=${PWD}/install/usr/bin:${PATH}
 
-WPEFramework -f -c ${PWD}/install/etc/WPEFramework/config.json
+$ Thunder -f -c ${PWD}/install/etc/Thunder/config.json
 ```
 
-The following arguments should be specified to the WPEFramework binary:
+The following arguments should be specified to the Thunder binary:
 
 * `-f`: Flush plugin messages/logs directly to the console - useful for debugging. In production, you should use the `MessageControl` plugin to forward messages to a suitable sink. 
-* `-c`: Path to WPEFramework config file
+* `-c`: Path to Thunder config file
 
 All being well, you should see Thunder start up:
 
 ```
-[Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:584]:[main]:[Startup]: WPEFramework
+[Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:584]:[main]:[Startup]: Thunder
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:585]:[main]:[Startup]: Starting time: Tue, 06 Jun 2023 09:04:31 GMT
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:586]:[main]:[Startup]: Process Id:    25382
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:587]:[main]:[Startup]: Tree ref:      engineering_build_for_debug_purpose_only
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:588]:[main]:[Startup]: Build ref:     engineering_build_for_debug_purpose_only
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:589]:[main]:[Startup]: Version:       4:0:0
 ...
-[Tue, 06 Jun 2023 10:04:32]:[PluginHost.cpp:609]:[main]:[Startup]: WPEFramework actively listening
+[Tue, 06 Jun 2023 10:04:32]:[PluginHost.cpp:609]:[main]:[Startup]: Thunder actively listening
 ```
 
 If you followed these instructions, Thunder will be listening for web requests on `localhost:55555`

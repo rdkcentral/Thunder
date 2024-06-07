@@ -23,7 +23,7 @@
 #include "WebRequest.h"
 #include "WebResponse.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
 
     class EXTERNAL TextBody : public string, public IBody {

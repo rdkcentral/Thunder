@@ -49,7 +49,7 @@
 #include <net/if_dl.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

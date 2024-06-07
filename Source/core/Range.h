@@ -30,7 +30,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename TYPE, const bool BEGININCLUSIVE, const bool ENDINCLUSIVE>
     class RangeType {

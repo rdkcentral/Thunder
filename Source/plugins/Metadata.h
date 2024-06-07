@@ -26,7 +26,7 @@
 #include <plugins/json/JsonData_Metadata.h>
 #include <plugins/json/JsonData_Discovery.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     // Status information

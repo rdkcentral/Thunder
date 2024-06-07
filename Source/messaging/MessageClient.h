@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 

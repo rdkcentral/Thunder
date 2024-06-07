@@ -26,23 +26,23 @@
 #ifdef __WINDOWS__
 
 #define DEFINE_OPERATIONAL_CATEGORY(CATEGORY)                                                           \
-    DEFINE_MESSAGING_CATEGORY(WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY)
+    DEFINE_MESSAGING_CATEGORY(Thunder::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY)
 
 #else
 
 #define DEFINE_OPERATIONAL_CATEGORY(CATEGORY)                                                           \
-    DEFINE_MESSAGING_CATEGORY(WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY) \
+    DEFINE_MESSAGING_CATEGORY(Thunder::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY) \
     template<>                                                                                          \
-    EXTERNAL typename WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::Control           \
-                      WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::_control;
+    EXTERNAL typename Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Control           \
+                      Thunder::OperationalStream::BaseOperationalType<CATEGORY>::_control;
 
 #endif
 
 #define OPERATIONAL_STREAM_ANNOUNCE(CATEGORY)                                                           \
-        template<> WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::Control              \
-        WPEFramework::OperationalStream::BaseOperationalType<CATEGORY>::_control(true)
+        template<> Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Control              \
+        Thunder::OperationalStream::BaseOperationalType<CATEGORY>::_control(true)
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace OperationalStream {
 

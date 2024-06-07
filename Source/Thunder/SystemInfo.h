@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Config.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     class SystemInfo : public PluginHost::ISubSystem {

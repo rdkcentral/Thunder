@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.3)
 
-project(WPEFramework)
+project(Thunder)
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 0)

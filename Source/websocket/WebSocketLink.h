@@ -24,7 +24,7 @@
 #include "WebRequest.h"
 #include "WebResponse.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     namespace WebSocket {
         class EXTERNAL Protocol {
@@ -1435,4 +1435,4 @@ POP_WARNING()
         Handler<LINK> _channel;
     };
 }
-} // namespace WPEFramework.Web
+} // namespace Thunder.Web

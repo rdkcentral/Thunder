@@ -28,7 +28,7 @@
 #include "SocketPort.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

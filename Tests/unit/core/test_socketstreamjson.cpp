@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     enum class CommandType {
@@ -269,4 +269,4 @@ ENUM_CONVERSION_BEGIN(Tests::CommandType)
     { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
 ENUM_CONVERSION_END(Tests::CommandType)
 
-} // WPEFramework
+} // Thunder

@@ -20,7 +20,7 @@
 #include "Service.h"
 #include "Channel.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 

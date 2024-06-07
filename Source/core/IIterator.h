@@ -26,7 +26,7 @@
 
 #include <map>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     struct IIterator {
         virtual ~IIterator() = default;

@@ -25,7 +25,7 @@
 #include "AWC.h"
 #include "AWCContainerBase.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
 class AWCContainer:
@@ -59,5 +59,5 @@ private:
 };
 
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */
 

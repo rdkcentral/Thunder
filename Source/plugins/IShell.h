@@ -25,7 +25,7 @@
 
 #include <com/ICOM.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace RPC {
         class Object;

@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     // As COMRPC might run between a 32 bit and 64 bit system, the largest must be accommodated.

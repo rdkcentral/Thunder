@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Optional.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class TriState {
