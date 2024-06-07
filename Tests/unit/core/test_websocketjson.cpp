@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class Message : public Core::JSON::Container {
@@ -251,4 +251,4 @@ namespace Tests {
     }
 
 } // Tests
-} // WPEFramework
+} // Thunder

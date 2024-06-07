@@ -100,17 +100,17 @@ Each interface definition will result in up to 4 auto-generated files depending 
 
 The resulting generated code is then compiled into 2 libraries:
 
-* `/usr/lib/wpeframework/proxystubs/libWPEFrameworkMarshalling.so`
+* `/usr/lib/thunder/proxystubs/libThunderMarshalling.so`
     * This contains all the generated proxy stub code responsible for handling COM-RPC serialisation/deserialisation
 
-* `/usr/lib/wpeframework/libWPEFrameworkDefinitions.so`
+* `/usr/lib/thunder/libThunderDefinitions.so`
     * This contains all generated data types (e.g. json enums and conversions) that can be used by plugins
 
 !!! note
-	There will also be a library called `libWPEFrameworkProxyStubs.so` installed in the `proxystubs` directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).
+	There will also be a library called `libThunderProxyStubs.so` installed in the `proxystubs` directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal Thunder interfaces (such as Controller and Dispatcher).
 
 
-The installation path can be changed providing the `proxystubpath` option in the WPEFramework config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the `proxystubpath` directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.
+The installation path can be changed providing the `proxystubpath` option in the Thunder config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the `proxystubpath` directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.
 
 If you are building the interface as part of a standalone repository instead of ThunderInterfaces, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:
 
@@ -122,7 +122,7 @@ The below CMakeLists.txt file is an example of how to invoke the code generators
 ```cmake title="CMakeLists.txt" linenums="1"
 project(SampleInterface)
 
-find_package(WPEFramework)
+find_package(Thunder)
 find_package(${NAMESPACE}Core REQUIRED)
 find_package(${NAMESPACE}COM REQUIRED)
 find_package(CompileSettingsDebug REQUIRED)
@@ -257,7 +257,7 @@ Each COM-RPC interface should be defined in a C++ header file with the same name
 
 // @stubgen:include <com/IIteratorType.h> // (1)
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Exchange {
     struct EXTERNAL IWiFi : virtual public Core::IUnknown {
         enum {
@@ -337,7 +337,7 @@ Here, the `@json` tag was passed a version number `1.0.0`, which can be used to 
 
 // @stubgen:include <com/IIteratorType.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Exchange {
     // @json 1.0.0
     struct EXTERNAL IWiFi : virtual public Core::IUnknown {
@@ -363,7 +363,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
     #include "JsonData_WiFi.h"
     #include <interfaces/IWiFi.h>
     
-    namespace WPEFramework {
+    namespace Thunder {
     
     namespace Exchange {
     
@@ -466,7 +466,7 @@ The generated `JWiFi.h` file contains two methods - `Register` and `Unregister`,
     
     } // namespace Exchange
     
-    } // namespace WPEFramework
+    } // namespace Thunder
        
     ```
 
@@ -484,7 +484,7 @@ The auto-generated `JsonData_WiFi.h` file contains code that can convert from th
     #include <core/JSON.h>
     #include <interfaces/IWiFi.h>
     
-    namespace WPEFramework {
+    namespace Thunder {
     
     namespace JsonData {
     

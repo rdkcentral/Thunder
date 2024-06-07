@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
  
     class EXTERNAL Time {

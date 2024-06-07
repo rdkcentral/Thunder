@@ -21,7 +21,7 @@
 #include "LoggingCategories.h"
 #include <fstream>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Logging {
 

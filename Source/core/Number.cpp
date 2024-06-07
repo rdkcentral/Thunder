@@ -21,7 +21,7 @@
 
 #include "Number.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     extern "C" {
     unsigned char FromDigits(const TCHAR element)

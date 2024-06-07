@@ -25,7 +25,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     extern "C" {
     EXTERNAL unsigned char FromDigits(const TCHAR element);

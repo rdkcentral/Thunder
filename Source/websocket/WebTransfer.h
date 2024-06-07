@@ -25,7 +25,7 @@
 #include "WebLink.h"
 #include "WebSerializer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     template <typename ELEMENT>
     class SingleElementFactoryType {

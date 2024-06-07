@@ -22,7 +22,7 @@
 #include "IStateControl.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
 

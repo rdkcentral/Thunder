@@ -21,7 +21,7 @@
 #include "IShell.h"
 #include "Configuration.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost
 {

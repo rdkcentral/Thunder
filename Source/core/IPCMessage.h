@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include "Frame.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

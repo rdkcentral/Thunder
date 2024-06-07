@@ -19,29 +19,29 @@ set(SYSTEMD_SERVICE "false" CACHE STRING "Select systemd service scripts, by def
 set(SYSTEM_ROOT_PATH "root" CACHE STRING "System root directory location")
 
 if (SYSTEMD_SERVICE)
-    file(READ wpeframework.service.in WPEFRAMEWORK_SYSTEMD_SERVICE)
+    file(READ thunder.service.in THUNDER_SYSTEMD_SERVICE)
     string(
            REGEX REPLACE "EXTRA_DEPENDS" "${SYSTEMD_EXTRA_DEPENDS}"
-           MOD_WPEFRAMEWORK_SYSTEMD_SERVICE "${WPEFRAMEWORK_SYSTEMD_SERVICE}"
+           MOD_THUNDER_SYSTEMD_SERVICE "${THUNDER_SYSTEMD_SERVICE}"
     )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/wpeframework.service "${MOD_WPEFRAMEWORK_SYSTEMD_SERVICE}")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/thunder.service "${MOD_THUNDER_SYSTEMD_SERVICE}")
 
     install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/../${CMAKE_INSTALL_LIBDIR})
     install(
-            FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework.service
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/thunder.service
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_INSTALL_PATH}/system/
     )
 else()
-    file(READ wpeframework.in WPEFRAMEWORK_INITD)
+    file(READ thunder.in THUNDER_INITD)
     string(
            REGEX REPLACE "ROOT_PATH" "${SYSTEM_ROOT_PATH}/${NAMESPACE}"
-           MOD_WPEFRAMEWORK_INITD "${WPEFRAMEWORK_INITD}"
+           MOD_THUNDER_INITD "${THUNDER_INITD}"
     )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/wpeframework "${MOD_WPEFRAMEWORK_INITD}")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/thunder "${MOD_THUNDER_INITD}")
 
     install(
-            FILES ${CMAKE_CURRENT_BINARY_DIR}/wpeframework
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/thunder
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/init.d/
     )

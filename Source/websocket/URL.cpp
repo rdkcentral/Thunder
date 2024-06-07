@@ -19,7 +19,7 @@
 
 #include "URL.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(URL::SchemeType)
 

@@ -297,7 +297,7 @@ else()
         CUSTOM_PARAMS_WHITELIST "${CMAKE_CURRENT_LIST_DIR}/params.config"
         INSTALL_PATH "../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/"
         INSTALL_NAME "config.json"
-        PLUGINS "WPEFramework"
+        PLUGINS "Thunder"
     )
 
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
