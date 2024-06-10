@@ -16,8 +16,8 @@ on:
       - 'ReleaseNotes/**'
 
 env:
-  bridge: Thunder\Source\WPEFramework\bridge.vcxproj
-  comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
+  bridge: Thunder\Source\Thunder\bridge.vcxproj
+  comProcess: Thunder\Source\ThunderPlugin\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
   solution: Thunder.sln
   warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
