@@ -25,7 +25,7 @@
 #include <provision/Signature.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class Probe {

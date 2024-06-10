@@ -18,7 +18,7 @@
  */
 
 #include "SystemInfo.h"
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -275,4 +275,4 @@ POP_WARNING()
     }
 
 } //namspace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

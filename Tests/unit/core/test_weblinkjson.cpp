@@ -23,7 +23,7 @@
 #include <core/core.h>
 #include <websocket/websocket.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
 namespace {
@@ -99,9 +99,9 @@ namespace {
 
     }
 
-    class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> {
+    class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request>&> {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> BaseClass;
+        typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request>&> BaseClass;
 
     public:
         JSONWebServer() = delete;
@@ -117,12 +117,12 @@ namespace {
 
         virtual ~JSONWebServer()
         {
-            Close(WPEFramework::Core::infinite);
+            Close(Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
+        virtual void LinkBody(Core::ProxyType<Thunder::Web::Request>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
@@ -157,16 +157,16 @@ namespace {
         Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
-    class JSONWebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
+    class JSONWebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
+        typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
     public:
         JSONWebClient() = delete;
         JSONWebClient(const JSONWebClient& copy) = delete;
         JSONWebClient& operator=(const JSONWebClient&) = delete;
 
-        JSONWebClient(const WPEFramework::Core::NodeId& remoteNode)
+        JSONWebClient(const Thunder::Core::NodeId& remoteNode)
             : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
             , _responseFactory(5)
@@ -176,12 +176,12 @@ namespace {
 
         virtual ~JSONWebClient()
         {
-            Close(WPEFramework::Core::infinite);
+            Close(Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
+        virtual void LinkBody(Core::ProxyType<Thunder::Web::Response>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
@@ -222,7 +222,7 @@ namespace {
         }
 
     private:
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable Thunder::Core::Event _dataPending;
         string _dataReceived;
         Core::ProxyPoolType<Web::Response> _responseFactory;
         Core::ProxyPoolType<CommandBody> _commandBodyFactory;
@@ -276,4 +276,4 @@ ENUM_CONVERSION_BEGIN(Tests::CommandType)
     { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
 ENUM_CONVERSION_END(Tests::CommandType)
 
-} // WPEFramework
+} // Thunder

@@ -19,7 +19,7 @@
 
 #include "OperationalCategories.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace OperationalStream {
 

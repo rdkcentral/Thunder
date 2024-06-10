@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(Core_Library, simpleSet)
 {
@@ -35,7 +35,7 @@ TEST(Core_Library, simpleSet)
     //const string file =  _T("/usr/lib/libwpe-0.2.so"); //For box.
 #endif
     const TCHAR* function = _T("Test::HelloWorld()");
-    const string file1 = _T("libWPEFramework.so");
+    const string file1 = _T("libThunder.so");
     Library LibObj1(file.c_str());
     LibObj1.LoadFunction(function);
     Library LibObjTest(file1.c_str());

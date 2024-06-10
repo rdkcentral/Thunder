@@ -20,6 +20,6 @@
 #include "Module.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
-} // namespace WPEFramework
+} // namespace Thunder

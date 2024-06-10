@@ -31,7 +31,7 @@
 // CLASS: Thread
 //-----------------------------------------------------------------------------------------------
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     //Definitions of static members

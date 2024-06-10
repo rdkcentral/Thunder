@@ -37,7 +37,7 @@
 
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     namespace System {
@@ -2923,13 +2923,12 @@ namespace PluginHost {
 
                 if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
-                    Plugin::Config newConfiguration;
-                    newConfiguration.FromString(original->ConfigLine());
+                    Plugin::Config newConfiguration(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
                     Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
 
-                    if (newService.IsValid() == true) {
+                    if (clone.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
                         _services.emplace(
                             std::piecewise_construct,

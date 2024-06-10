@@ -1,6 +1,6 @@
 #include "AWCContainerBase.h"
 
-using namespace WPEFramework::ProcessContainers;
+using namespace Thunder::ProcessContainers;
 
 struct AWCMemoryInfo : public BaseRefCount<IMemoryInfo> {
     AWCMemoryInfo()

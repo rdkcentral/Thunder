@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class TextConnector : public Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> {
@@ -37,7 +37,7 @@ namespace Tests {
         TextConnector(const TextConnector& copy) = delete;
         TextConnector& operator=(const TextConnector&) = delete;
 
-        TextConnector(const WPEFramework::Core::NodeId& remoteNode)
+        TextConnector(const Thunder::Core::NodeId& remoteNode)
             : BaseClass(false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _serverSocket(false)
             , _dataPending(false, false)
@@ -100,7 +100,7 @@ namespace Tests {
     private:
         bool _serverSocket;
         string _dataReceived;
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable Thunder::Core::Event _dataPending;
         static bool _done;
 
     public:
@@ -150,4 +150,4 @@ namespace Tests {
         Core::Singleton::Dispose();
     }
 } // Tests
-} // WPEFramework
+} // Thunder

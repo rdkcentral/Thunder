@@ -24,7 +24,7 @@
 #include <cryptalgo/cryptalgo.h>
 #include <thread>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     std::string GetSystemHash(std::string result)

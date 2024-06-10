@@ -20,7 +20,7 @@
 #include "JSON.h"
 #include <thread>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
     // Container administrator
     // ----------------------------------
@@ -306,4 +306,4 @@ namespace ProcessContainers {
 
 } // namespace ProcessContainers
 
-} // namespace WPEFramework
+} // namespace Thunder

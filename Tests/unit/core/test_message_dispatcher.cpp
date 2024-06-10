@@ -27,7 +27,8 @@
 
 #include <messaging/messaging.h>
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Tests {
 
     class Core_MessageDispatcher : public testing::Test {
@@ -308,4 +309,4 @@ namespace Tests {
         EXPECT_EQ(readData[3], testData2[3]);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

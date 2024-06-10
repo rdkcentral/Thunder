@@ -25,7 +25,7 @@
 // @stubgen:include <plugins/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Exchange {
 

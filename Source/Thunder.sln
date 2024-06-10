@@ -61,14 +61,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "interfaces", "interfaces\in
 		{B63FDAE4-53A4-4B19-BFEC-6E6A2EF841F5} = {B63FDAE4-53A4-4B19-BFEC-6E6A2EF841F5}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "comprocess", "WPEProcess\comprocess.vcxproj", "{B88DE14D-3E0D-440E-A753-CE7ADD5DF3CA}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "comprocess", "ThunderPlugin\comprocess.vcxproj", "{B88DE14D-3E0D-440E-A753-CE7ADD5DF3CA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0936A7B8-E995-452D-8062-CA9311854018} = {0936A7B8-E995-452D-8062-CA9311854018}
 		{B63FDAE4-53A4-4B19-BFEC-6E6A2EF841F5} = {B63FDAE4-53A4-4B19-BFEC-6E6A2EF841F5}
 		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bridge", "WPEFramework\bridge.vcxproj", "{F3DF5408-637E-49DB-BF6B-0B7D17509AC0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bridge", "Thunder\bridge.vcxproj", "{F3DF5408-637E-49DB-BF6B-0B7D17509AC0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B88DE14D-3E0D-440E-A753-CE7ADD5DF3CA} = {B88DE14D-3E0D-440E-A753-CE7ADD5DF3CA}
 		{6A3B427D-D8AF-4D2A-B400-924D2596DCF7} = {6A3B427D-D8AF-4D2A-B400-924D2596DCF7}
@@ -107,9 +107,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JSONRPCClient", "..\..\Thun
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configurations", "Configurations", "{008FC636-F920-4BA2-B90F-F100E723FA51}"
 	ProjectSection(SolutionItems) = preProject
-		WPEFramework\ExampleConfigAll.json = WPEFramework\ExampleConfigAll.json
-		WPEFramework\ExampleConfigLinux.json = WPEFramework\ExampleConfigLinux.json
-		WPEFramework\ExampleConfigWindows.json = WPEFramework\ExampleConfigWindows.json
+		Thunder\ExampleConfigAll.json = Thunder\ExampleConfigAll.json
+		Thunder\ExampleConfigLinux.json = Thunder\ExampleConfigLinux.json
+		Thunder\ExampleConfigWindows.json = Thunder\ExampleConfigWindows.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Thunder", "Thunder", "{D7AD4AF2-B32F-44C6-9F19-90484D586346}"

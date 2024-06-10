@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 namespace Tests {
 
@@ -30,7 +30,7 @@ TEST(Core_DataBuffer, simple)
 {
     constexpr uint32_t blocksize = 10;
 
-    WPEFramework::Core::ScopedStorage<blocksize> storage;
+    Thunder::Core::ScopedStorage<blocksize> storage;
 
     EXPECT_EQ(storage.Size(), blocksize);
 
@@ -39,4 +39,4 @@ TEST(Core_DataBuffer, simple)
 
 } // Tests
 } // Core
-} // WPEFramework
+} // Thunder
