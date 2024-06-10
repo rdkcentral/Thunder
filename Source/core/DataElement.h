@@ -75,6 +75,8 @@ namespace Core {
     public:
         inline void Copy(const uint8_t data[], const uint16_t length, const uint16_t offset = 0)
         {
+            ASSERT(_buffer != nullptr);
+
             ASSERT(offset < _size);
             if (offset < _size) {
                 ASSERT(static_cast<uint32_t>(offset + length) <= _size);
@@ -345,6 +347,8 @@ namespace Core {
 
         bool Expand(const uint64_t offset, const uint32_t size)
         {
+            ASSERT(IsValid());
+
             bool expanded = false;
 
             // Make sure we are not shrinking beyond the size boundary
@@ -362,7 +366,9 @@ namespace Core {
         }
 
         bool Shrink(const uint64_t offset, const uint32_t size)
-        {
+       {
+            ASSERT(IsValid());
+
             // Make sure we are not shrinking beyond the size boundary
             ASSERT(m_Size >= (offset + size));
 
@@ -370,18 +376,21 @@ namespace Core {
             m_Size -= size;
 
             // Shift all data back the beginning in..
-            ::memcpy(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+            ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
 
             return (true);
         }
 
         bool Copy(const DataElement& RHS, const uint64_t offset = 0)
         {
+            ASSERT(IsValid());
+            ASSERT(RHS.IsValid());
+
             bool copied = false;
 
             // see if we need to resize
             if ((RHS.Size() + offset) > m_Size) {
-                if (Size(offset + RHS.m_Size) == true) {
+                if ((Size(offset + RHS.m_Size) == true) && (this != &RHS)) {
                     ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
                     m_Size = offset + RHS.m_Size;
                     copied = true;
@@ -577,6 +586,9 @@ namespace Core {
 
         inline void GetBuffer(const uint64_t offset, const uint32_t size, uint8_t* buffer) const
         {
+            ASSERT(IsValid());
+            ASSERT(buffer != nullptr);
+
             // Check if we cross a boundary for the read..
             ASSERT((offset + size) <= m_Size);
 
@@ -694,6 +706,9 @@ namespace Core {
 
         void SetBuffer(const uint64_t offset, const uint32_t size, const uint8_t* buffer)
         {
+            ASSERT(IsValid());
+            ASSERT(buffer != nullptr);
+
             // Check if we cross a boundary for the write..
             ASSERT((offset + size) <= m_Size);
 

@@ -91,8 +91,11 @@ namespace Core {
 
     void LinkedDataElement::GetBuffer(uint64_t offset, uint32_t size, uint8_t* buffer) const
     {
+        ASSERT(IsValid());
+        ASSERT(buffer != nullptr);
+
         // Check if we cross a boundary for the read..
-        if ((offset + size) <= Size()) {
+        if (((offset + size) <= Size()) && (buffer != Buffer())) {
             // Nope, one plain copy !!!
             ::memcpy(buffer, &(Buffer()[offset]), size);
         } else {
@@ -113,8 +116,11 @@ namespace Core {
 
     void LinkedDataElement::SetBuffer(uint64_t offset, uint32_t size, const uint8_t* buffer)
     {
+        ASSERT(IsValid());
+        ASSERT(buffer != nullptr);
+
         // Check if we cross a boundary for the write..
-        if ((offset + size) <= Size()) {
+        if (((offset + size) <= Size()) && (buffer != Buffer())) {
             // Nope, one plain copy !!!
             ::memcpy(&(Buffer()[offset]), buffer, size);
         } else {
@@ -135,6 +141,9 @@ namespace Core {
 
     uint64_t LinkedDataElement::Copy(const uint64_t offset, const LinkedDataElement& copy)
     {
+        ASSERT(IsValid());
+        ASSERT(copy.IsValid());
+
         const LinkedDataElement* source = &copy;
         LinkedDataElement* destination = this;
         uint64_t sourceOffset = 0;
@@ -142,7 +151,7 @@ namespace Core {
         uint64_t copiedSize = 0;
 
         do {
-            if ((source->Size() - sourceOffset) > (destination->Size() - destinationOffset)) {
+            if ((source->Size() - sourceOffset) > (destination->Size() - destinationOffset) && (source != destination)) {
                 // The destination is the limiting factor, fill the destination up..
                 ::memcpy(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(destination->Size() - destinationOffset));
 
