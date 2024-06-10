@@ -532,6 +532,15 @@ namespace Core {
                 return (*this);
             }
 
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline TYPE Default() const
             {
                 return _default;
@@ -1054,6 +1063,15 @@ namespace Core {
                 return (*this);
             }
 
+            FloatType<TYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline TYPE Default() const
             {
                 return _default;
@@ -1347,6 +1365,15 @@ namespace Core {
                 return (*this);
             }
 
+            Boolean& operator=(const Core::OptionalType<bool>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline bool Value() const
             {
                 return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
@@ -1578,6 +1605,15 @@ namespace Core {
             {
                 Core::ToString(RHS.c_str(), _value);
                 _flagsAndCounters |= SetBit;
+
+                return (*this);
+            }
+
+            String& operator=(const Core::OptionalType<string>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -2630,6 +2666,15 @@ namespace Core {
                 return (*this);
             }
 
+            EnumType<ENUMERATE>& operator=(const Core::OptionalType<ENUMERATE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline const ENUMERATE Default() const
             {
                 return (_default);
@@ -3238,6 +3283,16 @@ namespace Core {
                     }
 
                     bit <<= 1;
+                }
+
+                return (*this);
+            }
+
+            template<typename ENUM>
+            ArrayType<ELEMENT>& operator=(const Core::OptionalType<ENUM>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
                 }
 
                 return (*this);
