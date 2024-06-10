@@ -17,7 +17,7 @@ on:
 
 jobs:
   Thunder:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
