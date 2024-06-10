@@ -118,6 +118,8 @@ namespace Core {
     protected:
         void UpdateCache(const uint64_t offset, uint8_t* buffer, const uint64_t size, const uint64_t maxSize)
         {
+            ASSERT(buffer != nullptr);
+
             // Update the cache...
             m_Offset = offset;
             m_Size = size;
@@ -126,6 +128,7 @@ namespace Core {
         }
         void UpdateCache(const Core::DataElement& data, const uint64_t offset, const uint64_t size)
         {
+            ASSERT(data.IsValid());
             ASSERT((offset + size) <= data.Size());
 
             // Update the cache...
@@ -193,6 +196,8 @@ namespace Core {
             , m_Size(move.m_Size)
             , m_MaxSize(move.m_MaxSize)
         {
+            ASSERT(this != &move);
+
             move.m_Buffer = nullptr;
             move.m_Offset = 0;
             move.m_Size = 0;
@@ -219,6 +224,8 @@ namespace Core {
             , m_Size(move.m_Size - offset)
             , m_MaxSize(move.m_MaxSize)
         {
+            ASSERT(this != &move);
+
             if (size != 0) {
                 m_Size = size;
             }

@@ -79,6 +79,7 @@ namespace Core {
     /// <returns>Calculated CRC value</returns>
     uint32_t DataElement::CRC32(const uint64_t offset, const uint64_t size) const
     {
+        ASSERT(IsValid());
         ASSERT(offset + size <= m_Size);
         uint32_t crc = 0xffffffff;
 
