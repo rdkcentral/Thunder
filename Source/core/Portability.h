@@ -956,7 +956,10 @@ namespace Core {
 }
 }
 
-namespace WPEFramework = Thunder;
+namespace WPEFramework {
+    using namespace Thunder;
+}
+
 extern "C" {
 
 #ifdef __WINDOWS__
