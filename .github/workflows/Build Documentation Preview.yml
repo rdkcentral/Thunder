@@ -24,15 +24,15 @@ jobs:
     if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.x
       - run: pip install mkdocs-material
       - run: mkdocs build
       - run: echo "${{ github.event.number }}" >> ./site/.pr_number
       - name : Upload preview site artifact
-        uses : actions/upload-artifact@v3
+        uses : actions/upload-artifact@v4
         with:
           name: preview_site
           path: ./site
@@ -43,7 +43,7 @@ jobs:
     steps:
       - run: mkdir pr_tmp
       - run: echo "${{ github.event.number }}" >> ./pr_tmp/.pr_number
-      - uses : actions/upload-artifact@v3
+      - uses : actions/upload-artifact@v4
         with:
           name: closed_pr_number
           path: ./pr_tmp

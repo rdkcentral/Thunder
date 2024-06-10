@@ -646,7 +646,9 @@ POP_WARNING()
                                 result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
 
                             } else {
-                                _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                if (actualDataSize != 0) {
+                                   _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                }
 
                                 result += (headerSize + actualDataSize);
                             }
