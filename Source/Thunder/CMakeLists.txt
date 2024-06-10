@@ -43,7 +43,7 @@ target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
 if (TREE_REFERENCE)
     target_compile_definitions(${TARGET}
-            PRIVATE
+        PRIVATE
               -DTREE_REFERENCE=${TREE_REFERENCE}
             )
 endif()
@@ -52,7 +52,6 @@ target_include_directories( ${TARGET}
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
         )
-
 
 if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
@@ -99,15 +98,15 @@ set_target_properties(${TARGET} PROPERTIES
         )
 
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
 )
 
 install(DIRECTORY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/../${PERSISTENT_PATH/${NAMESPACE}}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/../${PERSISTENT_PATH}/${NAMESPACE}}
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
 

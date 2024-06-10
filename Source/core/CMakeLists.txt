@@ -58,7 +58,6 @@ add_library(${TARGET}
         ResourceMonitor.cpp
         )
 
-
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
@@ -237,7 +236,6 @@ if (NOT BUILD_SHARED_LIBS)
     )
 endif()
 
-
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
@@ -270,13 +268,13 @@ endif()
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT devel   # for mac 
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}   # default include path
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT ${NAMESPACE}_Development   
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 # ===========================================================================================
