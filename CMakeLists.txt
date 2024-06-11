@@ -33,9 +33,18 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
+option(HUMAN_VERSIONED_BINARIES
+    "Create binaries with a human readeable version suffix" ON)
+option(VERSIONED_LIBRARY_LOADING
+    "Uses the major version (*.so.<major>) to load libraries rather then *.so" OFF)
+    
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
+endif()
+
+if(VERSIONED_LIBRARY_LOADING)
+    add_definitions(-DVERSIONED_LIBRARY_LOADING)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH
