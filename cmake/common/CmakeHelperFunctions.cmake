@@ -691,7 +691,7 @@ function(InstallCompatibleCMakeConfig)
 
     cmake_parse_arguments(Arg "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    if(Argument_UNPARSED_ARGUMENTS)
+    if(Arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Arg_UNPARSED_ARGUMENTS}\".")
     endif()
 
