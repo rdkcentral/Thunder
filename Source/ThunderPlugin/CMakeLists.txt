@@ -63,9 +63,14 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${Thunder_VERSION}
         SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 install(
         TARGETS COMProcess ${TARGET}  EXPORT ${TARGET}Targets

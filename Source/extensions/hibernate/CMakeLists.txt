@@ -38,9 +38,14 @@ set(PUBLIC_HEADERS
 set_target_properties(${TARGET} PROPERTIES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}"
-        VERSION ${Thunder_VERSION}
         SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 if(HIBERNATE_CHECKPOINTLIB)
         find_package(Memcr REQUIRED)

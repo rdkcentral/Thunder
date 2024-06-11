@@ -125,17 +125,27 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        VERSION ${Thunder_VERSION}
         SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${Thunder_VERSION}
         SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 # ===========================================================================================
 # Install ARTIFACTS:
@@ -157,7 +167,7 @@ install(
 install(
         TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets      
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Development
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
         FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs COMPONENT ${NAMESPACE}_Development
