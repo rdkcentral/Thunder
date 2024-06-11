@@ -17,7 +17,10 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(Thunder)
+project(Thunder
+        VERSION 5.0.0
+        DESCRIPTION "Thunder framework"
+        HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 0)
@@ -33,7 +36,7 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
-     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
+     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -138,4 +141,3 @@ endif()
 add_subdirectory(Source)
 
 add_subdirectory(Tests)
-
