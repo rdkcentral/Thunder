@@ -615,7 +615,7 @@ namespace Core {
             ASSERT((offset + size) <= m_Size);
 
             // Nope, one plain copy !!!
-            ::memcpy(buffer, &m_Buffer[offset], size);
+            ::memmove(buffer, &m_Buffer[offset], size);
         }
 
         template <typename TYPENAME, const NumberEndian ENDIAN>
