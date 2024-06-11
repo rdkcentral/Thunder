@@ -96,9 +96,9 @@ namespace Core {
         ASSERT(buffer != nullptr);
 
         // Check if we cross a boundary for the read..
-        if (((offset + size) <= Size()) && (buffer != Buffer())) {
+        if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
-            ::memcpy(buffer, &(Buffer()[offset]), size);
+            ::memmove(buffer, &(Buffer()[offset]), size);
         } else {
             // If we want to read more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
@@ -121,9 +121,9 @@ namespace Core {
         ASSERT(buffer != nullptr);
 
         // Check if we cross a boundary for the write..
-        if (((offset + size) <= Size()) && (buffer != Buffer())) {
+        if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
-            ::memcpy(&(Buffer()[offset]), buffer, size);
+            ::memmove(&(Buffer()[offset]), buffer, size);
         } else {
             // If we want to write more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
