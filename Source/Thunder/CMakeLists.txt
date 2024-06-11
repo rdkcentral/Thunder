@@ -20,7 +20,6 @@ find_package(Threads REQUIRED)
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
-set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
 
 add_executable(${TARGET}
@@ -115,8 +114,6 @@ install(DIRECTORY
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
 
-if (ENABLE_INITSCRIPT_SUPPORT)
-    add_subdirectory(scripts)
-endif()
+add_subdirectory(scripts)
 
 include(GenericConfig.cmake)
