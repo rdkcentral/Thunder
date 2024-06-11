@@ -22,15 +22,9 @@ project(Thunder
         DESCRIPTION "Thunder framework"
         HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 0)
-
-set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
-
 string(TIMESTAMP BUILD_TIMESTAMP UTC)
 
-message(STATUS "Setting up ${PROJECT_NAME} v${VERSION}")
+message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
 
 option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
