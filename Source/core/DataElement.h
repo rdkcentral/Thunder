@@ -397,7 +397,7 @@ namespace Core {
 
             // see if we need to resize
             if ((RHS.Size() + offset) > m_Size) {
-                if ((Size(offset + RHS.m_Size) == true) && (this != &RHS)) {
+                if ((this != &RHS) && (Size(offset + RHS.m_Size) == true)) {
                     ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
                     m_Size = offset + RHS.m_Size;
                     copied = true;
