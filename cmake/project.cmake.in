@@ -35,6 +35,11 @@ macro(project_version)
     set(VERSION ${PROJECT_VERSION})
 endmacro()
 
+set(Thunder_VERSION_MAJOR @Thunder_VERSION_MAJOR@)
+set(Thunder_VERSION_MINOR @Thunder_VERSION_MINOR@)
+set(Thunder_VERSION_PATCH @Thunder_VERSION_PATCH@)
+set(Thunder_VERSION @Thunder_VERSION@)
+
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
   return()
