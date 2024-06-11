@@ -307,6 +307,9 @@ namespace Core {
         }
         inline bool operator==(const DataElement& RHS) const
         {
+            ASSERT(IsValid());
+            ASSERT(RHS.IsValid());
+
             return ((m_Size == RHS.m_Size) && (::memcmp(m_Buffer, RHS.m_Buffer, static_cast<size_t>(m_Size)) == 0));
         }
         inline bool operator!=(const DataElement& RHS) const
@@ -334,16 +337,24 @@ namespace Core {
 
         inline uint8_t& operator[](const uint32_t index)
         {
+            ASSERT(IsValid());
+            ASSERT(index < m_Size);
+
             return (m_Buffer[index]);
         }
 
         inline const uint8_t& operator[](const uint32_t index) const
         {
+            ASSERT(IsValid());
+            ASSERT(index < m_Size);
+
             return (m_Buffer[index]);
         }
 
         void Set(const uint8_t value, const uint64_t offset = 0, const uint64_t size = NUMBER_MAX_UNSIGNED(uint64_t))
         {
+            ASSERT(IsValid());
+
             ASSERT((size == NUMBER_MAX_UNSIGNED(uint64_t)) || ((offset + size) < m_Size));
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(m_Size - offset));
@@ -417,6 +428,8 @@ namespace Core {
 
         uint64_t Search(const uint64_t offset, const uint8_t pattern[], const uint32_t size) const
         {
+            ASSERT(IsValid());
+
             bool found = false;
             uint64_t index = offset;
 
@@ -451,6 +464,8 @@ namespace Core {
         template <typename TYPENAME, const NumberEndian ENDIAN>
         uint64_t SearchNumber(const uint64_t offset, const TYPENAME info) const
         {
+            ASSERT(IsValid());
+
             // Make sure we do not pass the boundaries !!!
             ASSERT(offset < m_Size);
 
