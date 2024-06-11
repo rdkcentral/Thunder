@@ -152,9 +152,9 @@ namespace Core {
         uint64_t copiedSize = 0;
 
         do {
-            if ((source->Size() - sourceOffset) > (destination->Size() - destinationOffset) && (source != destination)) {
+            if ((source->Size() - sourceOffset) > (destination->Size() - destinationOffset)) {
                 // The destination is the limiting factor, fill the destination up..
-                ::memcpy(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(destination->Size() - destinationOffset));
+                ::memmove(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(destination->Size() - destinationOffset));
 
                 sourceOffset += (destination->Size() - destinationOffset);
                 copiedSize += (destination->Size() - destinationOffset);
@@ -169,8 +169,10 @@ namespace Core {
                 source = source->m_Next;
                 sourceOffset = 0;
             }
-
-        } while ((destination != nullptr) && (source != nullptr));
+        } while (   (destination != nullptr)
+                 && (source != nullptr)
+                 && !((copiedSize >= destination->Size()) && (destination->m_Next == nullptr))
+        );
 
         return (copiedSize);
     }
