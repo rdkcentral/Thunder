@@ -251,8 +251,14 @@ namespace RPC {
 
         Core::TextSegmentIterator places(Core::TextFragment(pathName), false, '|');
 
+#ifdef VERSIONED_LIBRARY_LOADING
+        static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+#else
+        static const std::string suffixFilter = ".so";
+#endif
+
         while (places.Next() == true) {
-            Core::Directory index(places.Current().Text().c_str(), _T("*.so"));
+            Core::Directory index(places.Current().Text().c_str(), _T(suffixFilter.c_str()));
 
             while (index.Next() == true) {
                 // Check if this ProxySTub file is already loaded in this process space..
