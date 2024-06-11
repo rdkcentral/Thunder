@@ -86,7 +86,7 @@ TEST(test_data, simple_data)
 TEST(test_linkeddata, simple_linkeddata)
 {
     uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};
-    uint8_t arr1[] ={};
+    uint8_t arr1[] = {};
     const uint64_t offset= 0;
     DataElement objt1(10,arr);
     LinkedDataElement ob1;
@@ -96,6 +96,7 @@ TEST(test_linkeddata, simple_linkeddata)
     EXPECT_EQ(ob3.Enclosed(), &ob2);
     ob3.SetBuffer(2,9,arr);
     ob3.GetBuffer(2,9,arr1);
+
     LinkedDataElement ob4;
     ob4 = ob2;
     EXPECT_EQ(ob4.Copy(offset,ob2), unsigned(10));
