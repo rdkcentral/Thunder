@@ -286,7 +286,7 @@ install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
         DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/
         RENAME config.json
-        COMPONENT ${MODULE_NAME})
+        COMPONENT ${NAMESPACE}_Runtime)
 else()
     find_package(ConfigGenerator REQUIRED)
 
