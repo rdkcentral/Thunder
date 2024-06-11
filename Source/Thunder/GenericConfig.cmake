@@ -65,7 +65,7 @@ map()
     key(tracing)
   endif()
   key(version)
-  val(${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_REVISION})
+  val(${Thunder_VERSION_MAJOR}.${Thunder_VERSION_MINOR}.${Thunder_VERSION_PATCH})
 end()
 ans(CONFIG)
 

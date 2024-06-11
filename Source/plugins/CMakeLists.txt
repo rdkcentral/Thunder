@@ -125,16 +125,16 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
+        VERSION ${Thunder_VERSION}
+        SOVERSION ${Thunder_VERSION_MAJOR}
         )
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
+        VERSION ${Thunder_VERSION}
+        SOVERSION ${Thunder_VERSION_MAJOR}
         )
 
 # ===========================================================================================
