@@ -22,6 +22,9 @@ find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
+message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
+
 add_library(${TARGET}
         Module.cpp
 	    DoorBell.cpp
@@ -145,6 +148,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
@@ -238,6 +242,7 @@ endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
