@@ -41,6 +41,9 @@ target_compile_definitions(${TARGET}
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/version/version.h" @ONLY)
+message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/version/version.h")
+
 if (TREE_REFERENCE)
     target_compile_definitions(${TARGET}
         PRIVATE
@@ -48,9 +51,11 @@ if (TREE_REFERENCE)
             )
 endif()
 
-target_include_directories( ${TARGET}
+target_include_directories(${TARGET}
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
+        PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
         )
 
 if (EXCEPTION_CATCHING)

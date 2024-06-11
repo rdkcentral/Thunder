@@ -1,0 +1,14 @@
+/***
+ * DO NOT EDIT, THIS FILE IS GENERATED @ @BUILD_TIMESTAMP@
+ */
+
+#pragma once
+
+namespace Thunder
+{
+    namespace PluginHost {
+        static constexpr uint8_t Major = @Thunder_VERSION_MAJOR@;
+        static constexpr uint8_t Minor = @Thunder_VERSION_MINOR@;
+        static constexpr uint8_t Patch = @Thunder_VERSION_PATCH@;
+    }
+}

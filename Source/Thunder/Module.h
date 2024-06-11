@@ -37,13 +37,7 @@
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only
 #endif
 
-namespace Thunder {
-	namespace PluginHost {
-		static constexpr uint8_t Major = 4;
-		static constexpr uint8_t Minor = 0;
-		static constexpr uint8_t Patch = 0;
-	}
-}
+#include <version/version.h>
 
 #undef EXTERNAL
 #define EXTERNAL
