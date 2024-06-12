@@ -56,16 +56,16 @@ namespace ProcessContainers {
             };
 
             Core::File configBundleFile(path + "/Container" + CONFIG_NAME);
-            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s, %s"), id.c_str(), configBundleFile.Name().c_str(), configBundleFile.PathName().c_str()));
+            TRACE(Trace::Information, (_T("searching %s container at %s, %s"), id.c_str(), configBundleFile.Name().c_str(), configBundleFile.PathName().c_str()));
             if (configBundleFile.Exists()) {
-                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
+                TRACE(Trace::Information, (_T("Found %s container!"), id.c_str()));
                 return createContainer(false, configBundleFile.PathName());
             }
 
             Core::File configSpecFile(path + CONFIG_NAME_SPEC);
-            TRACE(ProcessContainers::ProcessContainerization, (_T("searching %s container at %s"), id.c_str(), configSpecFile.Name().c_str(), configSpecFile.Name().c_str()));
+            TRACE(Trace::Information, (_T("searching %s container at %s"), id.c_str(), configSpecFile.Name().c_str(), configSpecFile.Name().c_str()));
             if (configSpecFile.Exists()) {
-                TRACE(ProcessContainers::ProcessContainerization, (_T("Found %s container!"), id.c_str()));
+                TRACE(Trace::Information, (_T("Found %s container!"), id.c_str()));
                 return createContainer(true, configSpecFile.Name());
             }
         }
@@ -112,7 +112,7 @@ namespace ProcessContainers {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
                     // found the container, now try stopping it...
-                    TRACE(ProcessContainers::ProcessContainerization, (_T("destroying container: %s "), name.c_str()));
+                    TRACE(Trace::Information, (_T("destroying container: %s "), name.c_str()));
 
                     // Dobby stop is async - block until we get the notification the container
                     // has actually stopped
@@ -134,7 +134,7 @@ namespace ProcessContainers {
                         // Block here until container has stopped (max 5 seconds)
                         std::future_status status = future.wait_for(std::chrono::seconds(5));
                         if (status == std::future_status::ready) {
-                            TRACE(ProcessContainers::ProcessContainerization, (_T("Container %s has stopped"), name.c_str()));
+                            TRACE(Trace::Information, (_T("Container %s has stopped"), name.c_str()));
                         } else if (status == std::future_status::timeout) {
                             TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
                         }
@@ -163,7 +163,7 @@ namespace ProcessContainers {
         if (!runningContainers.empty()) {
             for (const std::pair<int32_t, std::string>& c : runningContainers) {
                 if (c.second == name) {
-                    TRACE(ProcessContainers::ProcessContainerization, (_T("container %s already running..."), name.c_str()));
+                    TRACE(Trace::Information, (_T("container %s already running..."), name.c_str()));
                     result = true;
                     break;
                 }
@@ -361,7 +361,7 @@ namespace ProcessContainers {
         }
 
         if (_useSpecFile) {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("path set to %s for name %s"), _path.c_str(), _name.c_str()));
+            TRACE(Trace::Information, (_T("path set to %s for name %s"), _path.c_str(), _name.c_str()));
 
             std::ifstream jsonSpecFile(_path);
 
@@ -370,7 +370,7 @@ namespace ProcessContainers {
 
             // convert ostringstream to std::string
             std::string containerSpecString = specFileStream.str();
-            TRACE(ProcessContainers::ProcessContainerization, (_T("container spec string: %s"), containerSpecString.c_str()));
+            TRACE(Trace::Information, (_T("container spec string: %s"), containerSpecString.c_str()));
 
             _descriptor = admin.mDobbyProxy->startContainerFromSpec(_name, containerSpecString , emptyList, fullCommand);
         } else {
@@ -381,10 +381,10 @@ namespace ProcessContainers {
             TRACE(Trace::Error, (_T("Failed to start container %s - internal Dobby error."), _name.c_str()));
             result = false;
         } else {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("started %s container! descriptor: %d"), _name.c_str(), _descriptor));
+            TRACE(Trace::Information, (_T("started %s container! descriptor: %d"), _name.c_str(), _descriptor));
             result = true;
         }
-        _adminLock.UnLock();
+        _adminLock.Unlock();
 
         return result;
     }

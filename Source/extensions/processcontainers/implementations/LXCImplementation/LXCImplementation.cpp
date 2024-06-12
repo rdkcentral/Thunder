@@ -210,7 +210,7 @@ namespace ProcessContainers {
             Stop(2000);
         }
 
-        TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
+        TRACE(Trace::Information, (_T("Container [%s] released"), _name.c_str()));
 
         static_cast<LXCContainerAdministrator&>(LXCContainerAdministrator::Instance()).RemoveContainer(this);
     }
@@ -360,9 +360,9 @@ namespace ProcessContainers {
 
         if (result == true) {
             _pid = _lxcContainer->init_pid(_lxcContainer);
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] was started successfully! pid=%u"), _name.c_str(), _pid));
+            TRACE(Trace::Information, (_T("Container [%s] was started successfully! pid=%u"), _name.c_str(), _pid));
         } else {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] could not be started!"), _name.c_str()));
+            TRACE(Trace::Information, (_T("Container [%s] could not be started!"), _name.c_str()));
         }
         _adminLock.Unlock();
 
@@ -375,7 +375,7 @@ namespace ProcessContainers {
 
         _adminLock.Lock();
         if (_lxcContainer->is_running(_lxcContainer) == true) {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container name [%s] Stop activated"), _name.c_str()));
+            TRACE(Trace::Information, (_T("Container name [%s] Stop activated"), _name.c_str()));
             int internaltimeout = defaultTimeOutInMSec / 1000;
 #if 0
             if (timeout == Core::infinite) {
@@ -453,7 +453,7 @@ namespace ProcessContainers {
         : BaseContainerAdministrator()
         , _globalLogDir()
     {
-        TRACE(ProcessContainers::ProcessContainerization, (_T("LXC library initialization, version: %s"), lxc_get_version()));
+        TRACE(Trace::Information, (_T("LXC library initialization, version: %s"), lxc_get_version()));
     }
 
     LXCContainerAdministrator::~LXCContainerAdministrator()
@@ -490,7 +490,7 @@ namespace ProcessContainers {
         };
 
         if (container == nullptr) {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));
+            TRACE(Trace::Information, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));
         }
 
         return static_cast<IContainer*>(container);
