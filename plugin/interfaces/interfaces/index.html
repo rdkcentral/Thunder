@@ -2579,14 +2579,14 @@
 <span class="c"># Install libs &amp; headers</span>
 <span class="nb">string</span><span class="p">(</span><span class="s">TOLOWER</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="w"> </span><span class="s">NAMESPACE_LIB</span><span class="p">)</span>
 <span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleProxyStubs</span>
-<span class="w">    </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleProxyStubsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">    </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleProxyStubsTargets</span>
+<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">_Runtime</span>
 <span class="p">)</span>
 
 <span class="nb">if</span><span class="p">(</span><span class="s">JSON_ENUM_SOURCES</span><span class="p">)</span>
 <span class="w">    </span><span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleDefinitions</span>
-<span class="w">        </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleDefinitionsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">        </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleDefinitionsTargets</span>
+<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">_Runtime</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="nb">endif</span><span class="p">()</span>
 
