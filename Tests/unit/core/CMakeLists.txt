@@ -42,7 +42,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_lockablecontainer.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
-   #test_messageException.cpp
+   test_messageException.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
