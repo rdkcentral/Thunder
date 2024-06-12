@@ -95,8 +95,6 @@ if(VERSIONED_LIBRARY_LOADING)
     add_definitions(-DVERSIONED_LIBRARY_LOADING)
 endif()
 
-endif()
-
 set(CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@ CACHE INTERNAL "" FORCE)
 
 # FIX_ME: Disable fortify source.
