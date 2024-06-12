@@ -65,7 +65,7 @@ map()
     key(tracing)
   endif()
   key(version)
-  val(${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_REVISION})
+  val(${Thunder_VERSION_MAJOR}.${Thunder_VERSION_MINOR}.${Thunder_VERSION_PATCH})
 end()
 ans(CONFIG)
 
@@ -286,7 +286,7 @@ install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
         DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/
         RENAME config.json
-        COMPONENT ${MODULE_NAME})
+        COMPONENT ${NAMESPACE}_Runtime)
 else()
     find_package(ConfigGenerator REQUIRED)
 
