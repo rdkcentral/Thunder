@@ -35,6 +35,7 @@ TEST(test_data, simple_data)
     uint32_t size = 1024;
     EXPECT_EQ(obj1.Size(),size);
     obj1.Size(1025);
+    ASSERT_EQ(obj1.Size(), 1025);
     EXPECT_EQ(*obj1.Buffer(),10);
 
     uint8_t arr1[] = {10,20,30,40,50,60,70,80,90,100};
@@ -60,7 +61,7 @@ TEST(test_data, simple_data)
     uint64_t GetNumber = 10;
     EXPECT_EQ((obj2.GetNumber<uint64_t, Core::ENDIAN_BIG>(2)),GetNumber);
 
-    obj2.Search(2,arr2,5);
+    EXPECT_EQ(obj2.Search(2,arr2,5), obj2.Size()); // Unable to find pattern
     obj2.SetBitNumber<uint64_t>(2,5,8,10);
     uint64_t GetBitNumber = 10;
     EXPECT_EQ(obj2.GetBitNumber<uint64_t>(2,5,8),GetBitNumber);
@@ -99,7 +100,7 @@ TEST(test_linkeddata, simple_linkeddata)
     EXPECT_EQ(ob4.Copy(offset,ob2), unsigned(10));
     EXPECT_EQ(ob2.Copy(offset,ob3), unsigned(10));
 
-    ob1.Enclosed();
+    EXPECT_EQ(ob1.Enclosed(), nullptr);
     EXPECT_EQ(ob2.LinkedSize(), unsigned(10));
     EXPECT_EQ(ob2.LinkedElements(),unsigned(1));
 }
