@@ -107,7 +107,7 @@ namespace Core {
 #ifdef __WINDOWS__
             address_family_t Family;
 #elif defined(__APPLE__)
-            struct __sockaddr_header saddr_hdr;
+            struct sockaddr saddr_hdr;
 #else
             address_family_t Family;
 #endif
@@ -208,9 +208,9 @@ namespace Core {
         NodeId(const struct in6_addr& rInfo, const uint32_t protocol = 0);
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
-#ifndef __APPLE__        
+#ifndef __APPLE__
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
-        NodeId(const struct sockaddr_ll& rInfo); 
+        NodeId(const struct sockaddr_ll& rInfo);
         NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgtype, const uint8_t haType, const uint8_t length, const uint8_t* address);
         NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address);
 #endif         
