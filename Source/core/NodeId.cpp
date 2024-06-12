@@ -286,7 +286,6 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
     {
     }
 #endif
-#endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
     NodeId::NodeId(const uint16_t device, const uint16_t channel)
