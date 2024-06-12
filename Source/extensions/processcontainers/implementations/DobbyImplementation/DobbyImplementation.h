@@ -24,7 +24,7 @@
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-#include "Messaging.h"
+#include "messaging/messaging.h"
 
 #include <Dobby/DobbyProtocol.h>
 #include <Dobby/Public/Dobby/IDobbyProxy.h>
