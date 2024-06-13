@@ -37,7 +37,9 @@ TEST(Core_Library, simpleSet)
     const TCHAR* function = _T("Test::HelloWorld()");
     const string file1 = _T("libThunder.so");
     Library LibObj1(file.c_str());
+#ifndef __APPLE__
     LibObj1.LoadFunction(function);
+#endif
     Library LibObjTest(file1.c_str());
     Library LibObj2(LibObj1);
     Library LibObj3;

@@ -25,6 +25,10 @@
 #include <condition_variable>
 #include <mutex>
 
+#ifdef __APPLE__
+#include <time.h>
+#endif
+
 namespace Thunder {
 namespace Core {
 namespace Tests {

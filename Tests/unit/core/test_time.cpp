@@ -71,7 +71,7 @@ std::string GetSystemTime(bool local)
 
 TEST(Core_Time, DISABLED_Ctor_TimeSpec)
 {
-#ifdef __POSIX__
+#if defined(__POSIX__) && !defined(__APPLE__)
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     Time time(ts);

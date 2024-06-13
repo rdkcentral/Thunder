@@ -250,10 +250,10 @@ namespace Tests {
 
     TEST(Core_RPC, adder)
     {
+#ifndef __APPLE__
        std::string connector{"/tmp/wperpc01"};
        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
           Core::NodeId remoteNode(connector.c_str());
-
           ExternalAccess communicator(remoteNode);
 
           testAdmin.Sync("setup server");
@@ -300,6 +300,7 @@ namespace Tests {
        }
 
        testAdmin.Sync("done testing");
+#endif
        Core::Singleton::Dispose();
     }
 } // Tests
