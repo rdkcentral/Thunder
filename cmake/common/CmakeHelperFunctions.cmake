@@ -691,7 +691,7 @@ function(InstallCompatibleCMakeConfig)
 
     cmake_parse_arguments(Arg "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    if(Argument_UNPARSED_ARGUMENTS)
+    if(Arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Arg_UNPARSED_ARGUMENTS}\".")
     endif()
 
@@ -733,8 +733,8 @@ function(InstallCompatibleCMakeConfig)
     install(
             TARGETS ${Arg_LEGACY_TARGET}
             EXPORT ${Arg_LEGACY_TARGET}Targets
-            PUBLIC_HEADER DESTINATION ${Arg_LEGACY_PUBLIC_HEADER_LOCATION} COMPONENT devel
-            INCLUDES DESTINATION  ${Arg_LEGACY_INCLUDE_DIR} # default include path
+            PUBLIC_HEADER DESTINATION ${Arg_LEGACY_PUBLIC_HEADER_LOCATION} COMPONENT ${NAMESPACE}_Development
+            INCLUDES DESTINATION  ${Arg_LEGACY_INCLUDE_DIR}
     )
 
     installcmakeconfig(TARGETS ${Arg_LEGACY_TARGET} EXTRA_DEPENDENCIES  ${Arg_TARGET})

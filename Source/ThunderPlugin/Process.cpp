@@ -476,10 +476,16 @@ public:
         uint32_t result;
         uint32_t waitTime (RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut);
 
+#ifdef VERSIONED_LIBRARY_LOADING
+        static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+#else
+        static const std::string suffixFilter = ".so";
+#endif
+
         TRACE_L1("Loading ProxyStubs from %s", (pathName.empty() == false ? pathName.c_str() : _T("<< No Proxy Stubs Loaded >>")));
 
         if (pathName.empty() == false) {
-            Core::Directory index(pathName.c_str(), _T("*.so"));
+            Core::Directory index(pathName.c_str(), _T(suffixFilter.c_str()));
 
             while (index.Next() == true) {
                 Core::Library library(index.Current().c_str());

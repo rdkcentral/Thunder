@@ -184,14 +184,14 @@ endif()
 # Install libs & headers
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 install(TARGETS ExampleProxyStubs
-    EXPORT ExampleProxyStubsTargets # for downstream dependencies
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT libs # shared lib
+    EXPORT ExampleProxyStubsTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
 )
 
 if(JSON_ENUM_SOURCES)
     install(TARGETS ExampleDefinitions
-        EXPORT ExampleDefinitionsTargets # for downstream dependencies
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/ COMPONENT libs # shared lib
+        EXPORT ExampleDefinitionsTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/ COMPONENT ${NAMESPACE}_Runtime
     )
 endif()
 

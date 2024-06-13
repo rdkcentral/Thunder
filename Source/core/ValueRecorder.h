@@ -431,7 +431,7 @@ namespace Core {
                 ASSERT((_storage[_index] & 0x80) == 0);
 
                 // we need to loopback for another 0..
-                while ((_storage[_index - 1] & 0x80) != 0) {
+                while (_index > 0 && (_storage[_index - 1] & 0x80) != 0) {
                     result = (result << 7) | (_storage[_index] & 0x7F);
                     _index--;
                     stepBack++;

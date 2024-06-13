@@ -4,13 +4,13 @@ start() {
     # Core dumps
     #echo 1 > /proc/sys/kernel/core_uses_pid
     #echo 2 > /proc/sys/fs/suid_dumpable
-    #echo "/ROOT_PATH/cores/core-pid_%p--process%E" > /proc/sys/kernel/core_pattern
-    #mkdir -p /ROOT_PATH/cores
+    #echo "@ROOT_PATH@/cores/core-pid_%p--process%E" > /proc/sys/kernel/core_pattern
+    #mkdir -p @ROOT_PATH@/cores
     #ulimit -c unlimited
 
-    if [ ! -d /ROOT_PATH/Netflix/dpi ]; then
-        mkdir -p /ROOT_PATH/Netflix/dpi
-        ln -sfn /etc/playready /ROOT_PATH/Netflix/dpi/playready
+    if [ ! -d @ROOT_PATH@/Netflix/dpi ]; then
+        mkdir -p @ROOT_PATH@/Netflix/dpi
+        ln -sfn /etc/playready @ROOT_PATH@/Netflix/dpi/playready
     fi
 
     # needed for wayland/westeros/weston

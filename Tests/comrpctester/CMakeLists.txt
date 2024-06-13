@@ -28,5 +28,5 @@ set_target_properties(comrpctester PROPERTIES
         CXX_STANDARD_REQUIRED YES
         )
 
-install(TARGETS comrpctester DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS comrpctester DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 
