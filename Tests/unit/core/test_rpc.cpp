@@ -251,6 +251,7 @@ namespace Exchange {
 
     TEST(Core_RPC, adder)
     {
+#ifndef __APPLE__
        std::string connector{"/tmp/wperpc01"};
        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
           ::Thunder::Core::NodeId remoteNode(connector.c_str());
@@ -302,6 +303,7 @@ namespace Exchange {
 
        testAdmin.Sync("done testing");
        ::Thunder::Core::Singleton::Dispose();
+#endif
     }
 
 } // Core

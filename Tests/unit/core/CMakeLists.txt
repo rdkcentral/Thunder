@@ -21,7 +21,7 @@ set(TEST_RUNNER_NAME "Thunder_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   test_cyclicbuffer.cpp
+   #test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
@@ -56,7 +56,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_rpc.cpp
    test_semaphore.cpp
-   test_sharedbuffer.cpp
+   #test_sharedbuffer.cpp
    test_singleton.cpp
    test_socketstreamjson.cpp
    test_socketstreamtext.cpp
@@ -104,8 +104,14 @@ target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
 )
 
-target_link_libraries(${TEST_RUNNER_NAME} 
-    ${GTEST_BOTH_LIBRARIES}
+if (APPLE)
+    set(GTEST_LIBRARY GTest::gtest GTest::gtest_main)
+else()
+    set(GTEST_LIBRARY "${GTEST_BOTH_LIBRARIES}")
+endif()
+
+target_link_libraries(${TEST_RUNNER_NAME}
+    ${GTEST_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM

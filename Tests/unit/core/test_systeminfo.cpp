@@ -21,7 +21,9 @@
 #include <sys/utsname.h>
 #include <inttypes.h>
 #include <unistd.h>
+#ifndef __APPLE__
 #include <sys/sysinfo.h>
+#endif
 
 #include <gtest/gtest.h>
 

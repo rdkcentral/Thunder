@@ -60,7 +60,7 @@
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
-#if BUILD_TESTS
+#if defined(BUILD_TESTS) && !defined(__APPLE__)
 // TODO: What is going on here??
 //  https://github.com/google/googletest/issues/2328
 #include <cxxabi.h>
@@ -432,7 +432,6 @@ namespace Core {
         if (nTime == Core::infinite) {
             return (Lock());
         } else {
-
             // See if we can check the state.
             pthread_mutex_lock(&m_syncAdminLock);
 
