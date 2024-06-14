@@ -22,17 +22,18 @@
 #include "Module.h"
 #include "BaseCategory.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Logging {
 
     // ...but logging controls have to be visible outside of the Messaging lib
-    DEFINE_LOGGING_CATEGORY(Startup);
-    DEFINE_LOGGING_CATEGORY(Shutdown);
-    DEFINE_LOGGING_CATEGORY(Notification);
-    DEFINE_LOGGING_CATEGORY(Error);
-    DEFINE_LOGGING_CATEGORY(ParsingError);
-    DEFINE_LOGGING_CATEGORY(Fatal);
-    DEFINE_LOGGING_CATEGORY(Crash);
+    DEFINE_LOGGING_CATEGORY(Startup)
+    DEFINE_LOGGING_CATEGORY(Shutdown)
+    DEFINE_LOGGING_CATEGORY(Notification)
+    DEFINE_LOGGING_CATEGORY(Error)
+    DEFINE_LOGGING_CATEGORY(ParsingError)
+    DEFINE_LOGGING_CATEGORY(Fatal)
+    DEFINE_LOGGING_CATEGORY(Crash)
 
 } // namespace Logging
 }

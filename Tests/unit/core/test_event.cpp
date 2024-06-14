@@ -23,8 +23,8 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class ThreadClass : public Core::Thread {
 public:
@@ -98,7 +98,7 @@ TEST(test_event, unlock_event)
     object.Stop();
 }
 
-TEST(DISABLE_test_event, set_event)
+TEST(DISABLED_test_event, set_event)
 {
     Event event(false,true);
     std::thread::id parentTid;

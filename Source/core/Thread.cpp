@@ -31,7 +31,7 @@
 // CLASS: Thread
 //-----------------------------------------------------------------------------------------------
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     //Definitions of static members
@@ -81,7 +81,7 @@ namespace Core {
         ASSERT(err == 0);
 
         if ((err == 0) && (stackSize != 0)) {
-            size_t new_size = (stackSize < PTHREAD_STACK_MIN) ? PTHREAD_STACK_MIN : stackSize;
+            size_t new_size = (stackSize < static_cast<uint32_t>(PTHREAD_STACK_MIN)) ? PTHREAD_STACK_MIN : stackSize;
             err = pthread_attr_setstacksize(&attr, new_size);
             ASSERT(err == 0);
         }
@@ -100,7 +100,7 @@ namespace Core {
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
 
-        m_ThreadId = (uint32_t)(size_t)m_hThreadInstance;
+        m_ThreadId = m_hThreadInstance;
 #endif
 
         if (threadName != nullptr) {
@@ -129,7 +129,7 @@ namespace Core {
     {
 #ifdef __WINDOWS__
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
+        return (::GetCurrentThreadId());
 POP_WARNING()
 #else
         return static_cast<::ThreadId>(pthread_self());
@@ -150,6 +150,7 @@ POP_WARNING()
         sigset_t mask;
         sigemptyset(&mask);
         sigaddset(&mask, SIGTERM);
+        sigaddset(&mask, SIGPIPE);
         pthread_sigmask(SIG_BLOCK, &mask, nullptr);
 #endif
 
@@ -437,6 +438,15 @@ POP_WARNING()
         } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
 #endif // __DEBUG__
+#else
+        int rc = pthread_setname_np(m_hThreadInstance, threadName);
+        if (rc == ERANGE) {
+            // name too long - max 16 chars allowed
+            char truncName[16];
+            strncpy(truncName, threadName, sizeof(truncName));
+            truncName[15] = '\0';
+            pthread_setname_np(m_hThreadInstance, truncName);
+        }
 #endif // __WINDOWS__
     }
 

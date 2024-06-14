@@ -28,7 +28,7 @@
 #define __ERRORRESULT__ errno
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -195,6 +195,7 @@ POP_WARNING()
 
     DoorBell::~DoorBell()
     {
+        _signal.SetEvent();
     }
 }
 }

@@ -24,7 +24,7 @@
 #include "WebRequest.h"
 #include "WebResponse.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     namespace WebSocket {
         class EXTERNAL Protocol {
@@ -121,6 +121,18 @@ namespace Web {
 
             uint16_t Encoder(uint8_t* dataFrame, const uint16_t maxSendSize, const uint16_t usedSize);
             uint16_t Decoder(uint8_t* dataFrame, uint16_t& receivedSize);
+
+        private:
+            inline void GenerateMaskKey(uint8_t *maskKey)
+            {
+                uint32_t value;
+                // Generate a new mask value
+                Crypto::Random(value);
+                maskKey[0] = value & 0xFF;
+                maskKey[1] = (value >> 8) & 0xFF;
+                maskKey[2] = (value >> 16) & 0xFF;
+                maskKey[3] = (value >> 24) & 0xFF;
+            }
 
         private:
             uint8_t _setFlags;
@@ -533,10 +545,10 @@ POP_WARNING()
                 _state |= ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
-                    if (maxSendSize > 4) {
-                        result = _parent.SendData(&(dataFrame[4]), (maxSendSize - 4));
+                    if (maxSendSize > 8) {
+                        result = _parent.SendData(&(dataFrame[4]), (maxSendSize - 8));
 
-                        result = _handler.Encoder(dataFrame, (maxSendSize - 4), result);
+                        result = _handler.Encoder(dataFrame, (maxSendSize - 8), result);
                     }
                 } else {
                     result = _serializerImpl.Serialize(dataFrame, maxSendSize);
@@ -634,7 +646,9 @@ POP_WARNING()
                                 result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
 
                             } else {
-                                _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                if (actualDataSize != 0) {
+                                   _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                }
 
                                 result += (headerSize + actualDataSize);
                             }
@@ -1022,9 +1036,34 @@ POP_WARNING()
         {
             return (_channel.AbortUpgrade(status, reason));
         }
+        uint32_t WaitForLink(const uint32_t time) const
+        {
+            // Make sure the state does not change in the mean time.
+            Lock();
+
+            uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
+
+            // Right, a wait till connection is closed is requested..
+            while ((waiting > 0) && (IsWebSocket() == false)) {
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
+
+                Unlock();
+                // Right, lets sleep in slices of 100 ms
+                SleepMs(sleepSlot);
+                Lock();
+
+                waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+            }
+
+            uint32_t result = (((time == 0) || (IsWebSocket() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+            Unlock();
+            return (result);
+        }
         uint32_t Open(const uint32_t waitTime)
         {
-            return (_channel.Open(waitTime));
+            _channel.Open(0);
+
+            return WaitForLink(waitTime);
         }
         uint32_t Close(const uint32_t waitTime)
         {
@@ -1398,4 +1437,4 @@ POP_WARNING()
         Handler<LINK> _channel;
     };
 }
-} // namespace WPEFramework.Web
+} // namespace Thunder.Web

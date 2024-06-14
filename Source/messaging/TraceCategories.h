@@ -22,21 +22,22 @@
 #include "Module.h"
 #include "BaseCategory.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Trace {
 
     // for backwards compatibility 
     template <typename... Args>
     inline void Format(string& dst, Args&&... args) { Core::Format(dst, std::forward<Args>(args)...); }
     template <typename... Args>
-    inline string Format(Args&&... args) { return Core::Format(std::forward<Args>(args)...); }
+    inline string Format(Args&&... args) { return (Core::Format(std::forward<Args>(args)...)); }
 
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Text);
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Initialisation);
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Information);
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Warning);
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Error);
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING>, Fatal);
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Text)
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Initialisation)
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Information)
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Warning)
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Error)
+    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Fatal)
 
     class EXTERNAL Constructor {
     private:
@@ -46,13 +47,11 @@ namespace Trace {
         Constructor& operator=(const Constructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -68,13 +67,11 @@ namespace Trace {
         CopyConstructor& operator=(const CopyConstructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -90,13 +87,11 @@ namespace Trace {
         AssignmentOperator& operator=(const AssignmentOperator&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -112,13 +107,11 @@ namespace Trace {
         Destructor& operator=(const Destructor&) = delete;
 
     public:
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
@@ -126,7 +119,7 @@ namespace Trace {
         static const string _text;
     };
 
-    class EXTERNAL MethodEntry : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
+    class EXTERNAL MethodEntry : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING> {
     private:
         MethodEntry() = delete;
         ~MethodEntry() = default;
@@ -140,7 +133,7 @@ namespace Trace {
         }
     };
 
-    class EXTERNAL MethodExit : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
+    class EXTERNAL MethodExit : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING> {
     private:
         MethodExit() = delete;
         ~MethodExit() = default;
@@ -154,7 +147,7 @@ namespace Trace {
         }
     };
 
-    class EXTERNAL Duration : public Messaging::BaseCategoryType<Core::Messaging::MessageType::TRACING> {
+    class EXTERNAL Duration : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING> {
     public:
         Duration() = delete;
         Duration(const Duration&) = delete;
@@ -182,4 +175,3 @@ namespace Trace {
 
 } // namespace Trace
 }
-

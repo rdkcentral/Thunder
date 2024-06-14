@@ -22,8 +22,8 @@
 #include "gtest/gtest.h"
 #include "core/core.h"
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 const unsigned int BLOCKSIZE = 20;
 
@@ -47,11 +47,12 @@ class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
         {
             uint8_t arr[] = {1,2,3};
             SetBuffer(arr);
-            Create(_file);
+            auto object = Create(_file);
             Record(10);
-            Time();
-            Source();
-            Value();
+            uint64_t TimeValue = Time();
+            std::string storageName = Source();
+            uint32_t  value = Value();
+            object.Release();
         }
 
     private:
@@ -82,14 +83,18 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
     public:
         void ReaderJob()
         {
+            Next();
+            EXPECT_TRUE(IsValid());
+
             uint32_t time = 20;
             Core::Time curTime = Core::Time::Now();
             curTime.Add(time);
-            Store(curTime.Ticks(), 1);
+            uint32_t index = Store(curTime.Ticks(), 1);
             
             StepForward();
             StepBack();
             ClearData();
+
             Reader obj1(_file, 1u);
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
@@ -101,8 +106,8 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             else
                 EXPECT_EQ(EndId(),2u);
 
-            EndId();
-            Source();
+            uint32_t id = EndId();
+            std::string storageName = Source();
         }
 
     private:
@@ -112,12 +117,19 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
 TEST(test_valuerecorder, test_writer)
 {
     string filename = "baseRecorder.txt";
-    WriterClass obj1(filename);
-    obj1.Copy(obj1,1);
-    obj1.Copy(obj1,100);
-    obj1.WriterJob();
+
+    auto obj1 = RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
+
+    obj1->Copy(*(obj1),1);
+    obj1->Copy(*(obj1),100);
+
+    static_cast<WriterClass&>(*obj1).WriterJob();
+
     ReaderClass obj2(filename);
     obj2.ReaderJob();
-    ReaderClass obj3(ProxyType<WriterClass>(obj1));
+
+    ReaderClass obj4(ProxyType<WriterClass>(obj3));
+
+    obj1.Release();
 }
 

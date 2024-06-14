@@ -1,0 +1,7 @@
+/***
+ * DO NOT EDIT, THIS FILE IS GENERATED @ @BUILD_TIMESTAMP@
+ */
+
+#pragma once
+
+#define THUNDER_VERSION @Thunder_VERSION_MAJOR@

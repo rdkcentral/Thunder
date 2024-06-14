@@ -22,8 +22,8 @@
 #include "Module.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
-ENUM_CONVERSION_HANDLER(PluginHost::ISubSystem::subsystem);
+ENUM_CONVERSION_HANDLER(PluginHost::ISubSystem::subsystem)
 
 }

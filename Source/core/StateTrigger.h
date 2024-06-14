@@ -33,14 +33,16 @@
 
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <class enumerate>
     class StateTrigger {
-    private:
-        StateTrigger();
-        StateTrigger(const StateTrigger& a_Copy);
-        StateTrigger& operator=(const StateTrigger& a_RHS);
+    public:
+        StateTrigger() = delete;
+        StateTrigger(StateTrigger&& move) = delete;
+        StateTrigger(const StateTrigger& a_Copy) = delete;
+        StateTrigger& operator=(StateTrigger&& move) = delete;
+        StateTrigger& operator=(const StateTrigger& a_RHS) = delete;
 
     public:
         explicit StateTrigger(const enumerate a_State);

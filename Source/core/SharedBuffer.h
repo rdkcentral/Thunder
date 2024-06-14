@@ -34,14 +34,14 @@
 
 // ---- Helper types and constants ----
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     // Rationale:
     // This class allows to share data over process boundaries. This is a simple version of the
     // CyclicBuffer.
     // The rationale behind this buffer is to share buffer space (SharedMemory file) between two
-    // porocesses. One process produces data, the othere process consumes it. The signalling
+    // processes. One process produces data, the othere process consumes it. The signalling
     // between the two processes is based on a semaphore (binairy semaphore) The Producer creates
     // the SharedBuffer object, indicting it has the Producer role. It will automatically own
     // the producer lock. If the producer has placed the data in the buffer and would like the
@@ -201,7 +201,7 @@ namespace Core {
 
             return result;
         }
-        uint32_t Permission(uint32_t mode) const
+        uint32_t Permission(uint16_t mode) const
         {
             uint32_t result = _administrationBuffer.Permission(mode);
 
@@ -220,6 +220,6 @@ namespace Core {
         uint8_t* _customerAdministration;
     };
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core
 
 #endif // __SHARED_BUFFER_H

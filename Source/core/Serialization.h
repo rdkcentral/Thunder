@@ -25,7 +25,7 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 #ifdef _UNICODE
     inline int ToCharacter(const char* character, TCHAR converted[], unsigned int count)
@@ -255,15 +255,15 @@ POP_WARNING()
     //------------------------------------------------------------------------
     // Serialize: binary buffer
     //------------------------------------------------------------------------
-    void EXTERNAL ToHexString(const uint8_t object[], const uint16_t length, string& result);
-    uint16_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint16_t maxLength);
+    void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter = '\0');
+    uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter = '\0');
 
     //------------------------------------------------------------------------
     // Serialize: Base64
     //------------------------------------------------------------------------
-    void EXTERNAL ToString(const uint8_t object[], const uint16_t length, const bool padding, string& result);
-
+    void EXTERNAL ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result);
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
+    uint32_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList = nullptr);
 
     //------------------------------------------------------------------------
     // Codepoint: Operations to extract and convert code points.
@@ -279,13 +279,17 @@ POP_WARNING()
     int8_t EXTERNAL ToCodePoint(const TCHAR* data, const uint8_t length, uint32_t& codePoint);
     int8_t EXTERNAL FromCodePoint(uint32_t codePoint, TCHAR* data, const uint8_t length);
 
+    string EXTERNAL ToQuotedString(const TCHAR quote, const string& input);
+
     namespace Serialize {
         template <typename TEXTTERMINATOR, typename HANDLER>
         class ParserType {
-        private:
-            ParserType();
-            ParserType(const ParserType<TEXTTERMINATOR, HANDLER>&);
-            ParserType<TEXTTERMINATOR, HANDLER>& operator=(const ParserType<TEXTTERMINATOR, HANDLER>&);
+        public:
+            ParserType() = delete;
+            ParserType(ParserType<TEXTTERMINATOR, HANDLER>&&) = delete;
+            ParserType(const ParserType<TEXTTERMINATOR, HANDLER>&) = delete;
+            ParserType<TEXTTERMINATOR, HANDLER>& operator=(ParserType<TEXTTERMINATOR, HANDLER>&&) = delete;
+            ParserType<TEXTTERMINATOR, HANDLER>& operator=(const ParserType<TEXTTERMINATOR, HANDLER>&) = delete;
 
         public:
             enum ParseState {
@@ -298,6 +302,7 @@ POP_WARNING()
 
             ParserType(HANDLER& parent)
                 : _state(0)
+                , _locator(0)
                 , _buffer()
                 , _parent(parent)
                 , _terminator()

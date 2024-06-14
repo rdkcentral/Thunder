@@ -24,12 +24,8 @@ option(CRYPTALGO
         "Include the encyption algorithm library." ON)
 option(WEBSOCKET
         "Include the websocket library." ON)
-option(TRACING
-        "Include the tracing library." ON)
 option(MESSAGING
-        "Include the messaging library." OFF)
-option(PROFILER
-        "Include the profiler library." OFF)
+        "Include the messaging library." ON)
 option(COM
         "Include the COM library." ON)
 option(PROCESS
@@ -38,12 +34,6 @@ option(PLUGINS
         "Include plugins library." ON)
 option(EXECUTABLE
         "Include the hosting executable." ON)
-option(VIRTUALINPUT
-        "Include VirtualInput for external applications." OFF)
-option(PROCESSCONTAINERS
-        "Include containerization in the build." OFF)
-option(TEST_APPS
-        "Include test applications." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(WCHAR_SUPPORT
@@ -55,8 +45,6 @@ option(EXCEPTION_CATCHING
         "Enable unhandled exception handling catching." OFF)
 option(DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
-option(WARNING_REPORTING
-        "Include warning reporting in the build." OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -66,11 +54,11 @@ endif()
 if(ENABLE_STRICT_COMPILER_SETTINGS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         message(FATAL_ERROR "Compiling with Clang")
-        set(CMAKE_STRICT_COMPILER_SETTINGS "-Weverything -Wextra -Werror=return-type -Werror=array-bounds")
+        set(CMAKE_STRICT_COMPILER_SETTINGS "-Weverything -Wextra -Wpedantic -Werror")
         set(CMAKE_STRICT_CXX_COMPILER_SETTINGS "${CMAKE_STRICT_COMPILER_SETTINGS} -Wnon-virtual-dtor")
     elseif(${CMAKE_COMPILER_IS_GNUCXX})
         message(STATUS "Compiling with GCC")
-        set(CMAKE_STRICT_COMPILER_SETTINGS "-Wall -Wextra -Werror=return-type -Werror=array-bounds")
+        set(CMAKE_STRICT_COMPILER_SETTINGS "-Wall -Wextra -Wpedantic -Werror")
         set(CMAKE_STRICT_CXX_COMPILER_SETTINGS "${CMAKE_STRICT_COMPILER_SETTINGS} -Wnon-virtual-dtor")
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         message(STATUS "Compiling with MS Visual Studio")
@@ -82,16 +70,6 @@ if(ENABLE_STRICT_COMPILER_SETTINGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_STRICT_COMPILER_SETTINGS}")
 endif()
 
-set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
-        "List of events assumed to be provided by other plugins.")
-string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
-message(STATUS "Assuming external events: ${EXTERN_EVENT_LIST}")
-
-if(TRACING AND MESSAGING)
-    message(WARNING "Disabled Tracing, because Messaging and Tracing are mutually exclusive.")
-    set(TRACING OFF)
-endif()
-
 if(CORE)
     add_subdirectory(core)
 endif()
@@ -100,38 +78,18 @@ if(CRYPTALGO)
     add_subdirectory(cryptalgo)
 endif()
 
-if(PROCESSCONTAINERS)
-    add_subdirectory(processcontainers)
-endif()
-
 if(WEBSOCKET)
     add_subdirectory(websocket)
-endif()
-
-if(TRACING)
-    add_subdirectory(tracing)
 endif()
 
 if(MESSAGING)
     add_subdirectory(messaging)
 endif()
 
-if(WARNING_REPORTING)
-    add_subdirectory(warningreporting)
-endif()
-
-if(PROFILER)
-    message(FATAL_ERROR "PROFILER option does not exist?")
-    set(PROFILER_INCLUDE_DIR "${ROOT}/Source/profiler")
-    add_subdirectory(profiler)
-endif()
+add_subdirectory(extensions)
 
 if(COM)
     add_subdirectory(com)
-endif()
-
-if(PROTOCOLS)
-    add_subdirectory(protocols)
 endif()
 
 if(PLUGINS)
@@ -139,12 +97,9 @@ if(PLUGINS)
 endif()
 
 if(PROCESS)
-    add_subdirectory(WPEProcess)
+    add_subdirectory(ThunderPlugin)
 endif()
 
 if(EXECUTABLE)
-    add_subdirectory(WPEFramework)
+    add_subdirectory(Thunder)
 endif()
-
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
-        DESTINATION include/${NAMESPACE})

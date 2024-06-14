@@ -20,7 +20,7 @@
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     namespace {
@@ -56,8 +56,35 @@ namespace Core {
             if (bufferSize != 0) {
 
                 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                pthread_condattr_t cond_attr;
+
+                // default values
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifdef __DEBUG__
+                ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
                 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -120,8 +147,35 @@ namespace Core {
             if (initiator == true) {
 
 #ifndef __WINDOWS__
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                pthread_condattr_t cond_attr;
+
+                // default values
+                int ret = pthread_condattr_init(&cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                pthread_mutexattr_t mutex_attr;
+
+                // default values
+                ret = pthread_mutexattr_init(&mutex_attr);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                // enable access for threads, also in different processes
+                ret = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifdef __DEBUG__
+                ret = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
+
+                ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
+                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -153,10 +207,11 @@ namespace Core {
     {
     }
 
-    bool CyclicBuffer::Validate() {
+    bool CyclicBuffer::Open()
+    {
         bool loaded = (_administration != nullptr);
 
-        if (loaded == false)  {
+        if (loaded == false) {
             loaded = _buffer.Load();
             if (loaded == true) {
                 _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
@@ -167,10 +222,18 @@ namespace Core {
         return (loaded);
     }
 
+    void CyclicBuffer::Close()
+    {
+        _buffer.Destroy();
+        _realBuffer = nullptr;
+        _administration = nullptr;
+    }
+
     void CyclicBuffer::AdminLock()
     {
 #ifdef __POSIX__
-        pthread_mutex_lock(&(_administration->_mutex));
+        int ret = pthread_mutex_lock(&(_administration->_mutex));
+        ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
 #ifdef __DEBUG__
         if (::WaitForSingleObjectEx(_mutex, 2000, FALSE) != WAIT_OBJECT_0) {
@@ -191,18 +254,18 @@ namespace Core {
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
-            struct timespec structTime;
+            struct timespec structTime = {0,0};
 
-            clock_gettime(CLOCK_REALTIME, &structTime);
+            clock_gettime(CLOCK_MONOTONIC, &structTime);
 
             structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
             structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
-                struct timespec nowTime;
+                struct timespec nowTime = {0,0};
 
-                clock_gettime(CLOCK_REALTIME, &nowTime);
+                clock_gettime(CLOCK_MONOTONIC, &nowTime);
                 if (nowTime.tv_nsec > structTime.tv_nsec) {
 
                     result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
@@ -235,7 +298,8 @@ namespace Core {
     void CyclicBuffer::AdminUnlock()
     {
 #ifdef __POSIX__
-        pthread_mutex_unlock(&(_administration->_mutex));
+        int ret = pthread_mutex_unlock(&(_administration->_mutex));
+        ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #else
         ReleaseSemaphore(_mutex, 1, nullptr);
 #endif
@@ -289,6 +353,8 @@ namespace Core {
         uint32_t head = 0;
         uint32_t offset = 0;
 
+        ASSERT(length > 0);
+
         while (!foundData) {
             oldTail = _administration->_tail;
             head = _administration->_head;
@@ -328,25 +394,25 @@ namespace Core {
                             foundData = false;
                         }
                     } else {
-                        uint32_t part1 = 0;
-                        uint32_t part2 = 0;
+                        uint32_t newOffset = 0;
 
                         if (_administration->_size < offset) {
-                            part2 = result - (offset - _administration->_size);
+                            const uint32_t skip = offset - _administration->_size;
+                            newOffset = skip + bufferLength;
+                            ::memcpy(buffer, _realBuffer + skip, bufferLength);
                         } else {
-                            part1 = _administration->_size - offset;
-                            part2 = result - part1;
-                        }
+                            const uint32_t part1 = _administration->_size - offset;
+                            newOffset = result - part1;
+                            ::memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
 
-                        memcpy(buffer, _realBuffer + offset, std::min(part1, bufferLength));
-
-                        if (part1 < bufferLength) {
-                            memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                            if (part1 < bufferLength) {
+                                ::memcpy(buffer + part1, _realBuffer, bufferLength - part1);
+                            }
                         }
 
                         // Add one round, but prevent overflow.
                         roundCount = (roundCount + 1) % _administration->_roundCountModulo;
-                        uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
+                        uint32_t newTail = newOffset + roundCount * (1 + _administration->_tailIndexMask);
                         if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
                             foundData = false;
                         }
@@ -631,4 +697,4 @@ namespace Core {
         return cursor.Size();
     }
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core

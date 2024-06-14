@@ -20,7 +20,7 @@
 #pragma once
 
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
 
@@ -85,7 +85,7 @@ namespace RPC {
         }
 
     public:
-        virtual void AddRef() const = 0;
+        virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
 
         virtual bool IsValid() const override

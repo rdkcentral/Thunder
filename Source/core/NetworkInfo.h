@@ -26,7 +26,7 @@
 #include "Portability.h"
 #include "SocketPort.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class RoutingTable {
     public:
@@ -60,10 +60,34 @@ namespace Core {
                 , _protocol(copy._protocol)
                 , _scope(copy._scope) {
             }
+            Route(Route&& move)
+                : _source(std::move(move._source))
+                , _destination(std::move(move._destination))
+                , _preferred(std::move(move._preferred))
+                , _gateway(std::move(move._gateway))
+                , _priority(move._priority)
+                , _interface(move._interface)
+                , _metrics(move._metrics)
+                , _table(move._table)
+                , _mask(move._mask)
+                , _flags(move._flags)
+                , _protocol(move._protocol)
+                , _scope(move._scope) {
+
+                move._priority = 0;
+                move._interface = 0;
+                move._metrics = 0;
+                move._table = 0;
+                move._mask = 0;
+                move._flags = 0;
+                move._protocol = 0;
+                move._scope = 0;
+            }
+
             Route(const uint8_t stream[], const uint16_t length);
             ~Route() = default;
 
-            Route& operator= (const Route& rhs) {
+            Route& operator=(const Route& rhs) {
                 _source = rhs._source;
                 _destination = rhs._destination;
                 _preferred = rhs._preferred;
@@ -80,6 +104,33 @@ namespace Core {
                 return (*this);
             }
  
+            Route& operator=(Route&& move) {
+                if (this != &move) {
+                    _source = std::move(move._source);
+                    _destination = std::move(move._destination);
+                    _preferred = std::move(move._preferred);
+                    _gateway = std::move(move._gateway);
+                    _priority = move._priority;
+                    _interface = move._interface;
+                    _metrics = move._metrics;
+                    _table = move._table;
+                    _mask = move._mask;
+                    _flags = move._flags;
+                    _protocol = move._protocol;
+                    _scope = move._scope;
+
+                    move._priority = 0;
+                    move._interface = 0;
+                    move._metrics = 0;
+                    move._table = 0;
+                    move._mask = 0;
+                    move._flags = 0;
+                    move._protocol = 0;
+                    move._scope = 0;
+                }
+                return (*this);
+            }
+
         public:
             inline const NodeId& Source() const {
                 return (_source);
@@ -117,8 +168,10 @@ namespace Core {
         };
     public:
         RoutingTable() = delete;
+        RoutingTable(RoutingTable&&) = delete;
         RoutingTable(const RoutingTable&) = delete;
-        RoutingTable& operator= (const RoutingTable&) = delete;
+        RoutingTable& operator=(RoutingTable&&) = delete;
+        RoutingTable& operator=(const RoutingTable&) = delete;
 
         RoutingTable(const bool ipv4);
         ~RoutingTable() = default;
@@ -177,6 +230,19 @@ namespace Core {
             , _section3(copy._section3)
         {
         }
+        inline IPV4AddressIterator(IPV4AddressIterator&& move)
+            : _adapter(move._adapter)
+            , _index(move._index)
+            , _section1(move._section1)
+            , _section2(move._section2)
+            , _section3(move._section3)
+        {
+            move._adapter = (static_cast<uint16_t>(~0));
+            move._index = (static_cast<uint16_t>(~0));
+            move._section1 = 0;
+            move._section2 = 0;
+            move._section3 = 0;
+        }
         inline ~IPV4AddressIterator()
         {
         }
@@ -190,6 +256,24 @@ namespace Core {
             _section2 = RHS._section2;
             _section3 = RHS._section3;
 
+            return (*this);
+        }
+
+        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move)
+        {
+            if (this != &move) {
+                _adapter = move._adapter;
+                _index = move._index;
+                _section1 = move._section1;
+                _section2 = move._section2;
+                _section3 = move._section3;
+
+                move._adapter = (static_cast<uint16_t>(~0));
+                move._index = (static_cast<uint16_t>(~0));
+                move._section1 = 0;
+                move._section2 = 0;
+                move._section3 = 0;
+            }
             return (*this);
         }
 
@@ -245,6 +329,20 @@ namespace Core {
             , _section3(copy._section3)
         {
         }
+        inline IPV6AddressIterator(IPV6AddressIterator&& move)
+            : _adapter(move._adapter)
+            , _index(move._index)
+            , _section1(move._section1)
+            , _section2(move._section2)
+            , _section3(move._section3)
+        {
+            move._adapter = (static_cast<uint16_t>(~0));
+            move._index = (static_cast<uint16_t>(~0));
+            move._section1 = 0;
+            move._section2 = 0;
+            move._section3 = 0;
+        }
+
         inline ~IPV6AddressIterator()
         {
         }
@@ -256,6 +354,24 @@ namespace Core {
             _section1 = RHS._section1;
             _section2 = RHS._section2;
             _section3 = RHS._section3;
+            return (*this);
+        }
+
+        inline IPV6AddressIterator& operator=(IPV6AddressIterator&& move)
+        {
+            if (this != &move) {
+                _adapter = move._adapter;
+                _index = move._index;
+                _section1 = move._section1;
+                _section2 = move._section2;
+                _section3 = move._section3;
+
+                move._adapter = (static_cast<uint16_t>(~0));
+                move._index = (static_cast<uint16_t>(~0));
+                move._section1 = 0;
+                move._section2 = 0;
+                move._section3 = 0;
+            }
             return (*this);
         }
 
@@ -326,6 +442,11 @@ namespace Core {
             : _index(copy._index)
         {
         }
+        inline AdapterIterator(AdapterIterator&& move)
+            : _index(move._index)
+        {
+            move._index = (static_cast<uint16_t>(~0));
+        }
         inline ~AdapterIterator()
         {
         }
@@ -333,6 +454,16 @@ namespace Core {
         inline AdapterIterator& operator=(const AdapterIterator& RHS)
         {
             _index = RHS._index;
+            return (*this);
+        }
+
+        inline AdapterIterator& operator=(AdapterIterator&& move)
+        {
+            if (this != &move) {
+                _index = move._index;
+
+                move._index = (static_cast<uint16_t>(~0));
+            }
             return (*this);
         }
 
@@ -379,6 +510,7 @@ namespace Core {
 
         string MACAddress(const char delimiter) const;
         void MACAddress(uint8_t buffer[], const uint8_t length) const;
+        uint32_t MACAddress(const uint8_t buffer[6]);
 
         uint32_t Add(const IPNode& address);
         uint32_t Delete(const IPNode& address);
@@ -408,6 +540,12 @@ namespace Core {
             , _list(copy._list)
             , _index(_list.begin()) {
         }
+        inline IPV4AddressIterator(IPV4AddressIterator&& move)
+            : _reset(move._reset)
+            , _list(std::move(move._list))
+            , _index(std::move(move._index)) {
+            move._reset = true;
+        }
         inline ~IPV4AddressIterator() = default;
 
         inline IPV4AddressIterator& operator=(const IPV4AddressIterator& RHS)
@@ -423,6 +561,17 @@ namespace Core {
             return (*this);
         }
 
+        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move)
+        {
+            if (this != &move) {
+                _reset = move._reset;
+                _list = std::move(move._list);
+                _index = std::move(move._index);
+
+                move._reset = true;
+            }
+            return (*this);
+        }
     public:
         inline bool IsValid() const
         {
@@ -573,6 +722,7 @@ namespace Core {
         uint32_t Gateway(const IPNode& network, const NodeId& gateway);
         void Update(const struct rtattr* rtatp, const uint16_t length);
         void Addresses();
+        uint32_t MAC(const uint8_t buffer[6]);
 
     private:
         mutable Core::CriticalSection _adminLock;
@@ -581,7 +731,6 @@ namespace Core {
         string _name;
         std::list<IPNode> _ipv4Nodes;
         std::list<IPNode> _ipv6Nodes;
-        bool _loaded;
     };
 
     class EXTERNAL AdapterIterator {
@@ -593,9 +742,11 @@ namespace Core {
         AdapterIterator(const uint16_t index);
         AdapterIterator(const string& name);
         AdapterIterator(const AdapterIterator& copy);
+        AdapterIterator(AdapterIterator&& move);
         ~AdapterIterator() = default;
 
         AdapterIterator& operator=(const AdapterIterator& RHS);
+        AdapterIterator& operator=(AdapterIterator&& move);
 
     public:
         inline bool IsValid() const
@@ -647,6 +798,12 @@ namespace Core {
             ASSERT(IsValid());
 
             (*_index)->MAC(buffer, length);
+        }
+        uint32_t MACAddress(const uint8_t buffer[6]) 
+        {
+            ASSERT(IsValid());
+
+            return((*_index)->MAC(buffer));
         }
         inline IPV4AddressIterator IPV4Addresses() const {
             ASSERT(IsValid());

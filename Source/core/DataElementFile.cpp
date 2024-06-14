@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     DataElementFile::DataElementFile(File& file, const uint32_t type)
         : DataElement()
@@ -62,7 +62,7 @@ namespace Core {
 
         if ((type & File::CREATE) != 0) {
             m_File.Create(type);
-            m_File.Permission(type & ~(File::CREATE | Core::File::SHAREABLE));
+            m_File.Permission(type & 0xFFFF);
         } else {
             m_File.Open((type & File::USER_WRITE) == 0);
         }
@@ -82,6 +82,16 @@ namespace Core {
         , m_File(copy.m_File)
         , m_MemoryMappedFile(copy.m_MemoryMappedFile)
         , m_Flags(copy.m_Flags) {
+    }
+
+    DataElementFile::DataElementFile(DataElementFile&& move)
+        : DataElement(move)
+        , m_File(std::move(move.m_File))
+        , m_MemoryMappedFile(move.m_MemoryMappedFile)
+        , m_Flags(move.m_Flags)
+    {
+        move.m_Flags = 0;
+        m_MemoryMappedFile = INVALID_HANDLE_VALUE;
     }
 
     bool DataElementFile::Load() {
@@ -122,12 +132,12 @@ namespace Core {
         }
     }
 
-    /* virtual */ DataElementFile::~DataElementFile()
+    void DataElementFile::Close()
     {
         if ((IsValid()) && (m_MemoryMappedFile != INVALID_HANDLE_VALUE)) {
             DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
             // Set the last size...
-            ::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(AllocatedSize()));
+            ::UnmapViewOfFile(Buffer());
             ::CloseHandle(m_MemoryMappedFile);
 
             m_MemoryMappedFile = INVALID_HANDLE_VALUE;
@@ -220,7 +230,7 @@ namespace Core {
         OpenMemoryMappedFile(m_File.Size());
     }
 
-    /* virtual */ DataElementFile::~DataElementFile()
+    void DataElementFile::Close()
     {
         if ((IsValid()) && (m_MemoryMappedFile != INVALID_HANDLE_VALUE)) {
 

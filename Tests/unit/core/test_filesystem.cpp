@@ -22,10 +22,10 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
-TEST (DISABLED_test_file, file)
+TEST (test_file, file)
 {
     File file;
     File fileObj1("Sample.txt");

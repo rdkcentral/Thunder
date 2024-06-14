@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/DataElement.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(test_data, simple_data)
 {
@@ -91,6 +91,7 @@ TEST(test_linkeddata, simple_linkeddata)
     LinkedDataElement ob2(objt1);
     LinkedDataElement ob3(ob2);
     ob3.Enclosed(&ob2);
+    EXPECT_EQ(ob3.Enclosed(), &ob2);
     ob3.SetBuffer(2,9,arr);
     ob3.GetBuffer(2,9,arr1);
     LinkedDataElement ob4;

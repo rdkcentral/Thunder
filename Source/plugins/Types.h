@@ -23,7 +23,7 @@
 #include "IPlugin.h"
 #include "IShell.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     template <typename INTERFACE, typename HANDLER>
@@ -59,6 +59,7 @@ namespace PluginHost {
             }
             void Register(IShell* controller, const string& callsign)
             {
+                ASSERT(controller != nullptr);
                 _adminLock.Lock();
                 _callsign = callsign;
                 _state = state::REGISTRING;
@@ -83,20 +84,23 @@ namespace PluginHost {
             }
             void Unregister(IShell* controller)
             {
-                _adminLock.Lock();
+                ASSERT(controller != nullptr);
+                if (controller != nullptr) {
 
-                controller->Unregister(this);
-                _callsign.clear();
+                    _adminLock.Lock();
+                    controller->Unregister(this);
+                    _callsign.clear();
 
-                if (_designated != nullptr) {
+                    if (_designated != nullptr) {
 
-                    _designated->Release();
-                    _designated = nullptr;
+                        _designated->Release();
+                        _designated = nullptr;
 
-                    _parent.Deactivated();
+                        _parent.Deactivated();
+                    }
+
+                    _adminLock.Unlock();
                 }
-
-                _adminLock.Unlock();
             }
             INTERFACE* Interface()
             {
@@ -229,7 +233,7 @@ namespace PluginHost {
 
     private:
         HANDLER _reporter;
-        Core::Sink<Sink> _sink;
+        Core::SinkType<Sink> _sink;
     };
 }
 
@@ -249,6 +253,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             : _controller(nullptr)
             , _administrator()
             , _monitor(*this)
+            , _connectionId(~0)
         {
         }
 POP_WARNING()
@@ -258,6 +263,9 @@ POP_WARNING()
         }
 
     public:
+        uint32_t ConnectionId() const {
+            return (_connectionId);
+        }
         bool IsOperational() const
         {
             return (_monitor.IsOperational());
@@ -274,10 +282,14 @@ POP_WARNING()
                 controller->Release();
             }
             if (_controller == nullptr) {
-                _controller = _administrator.template Aquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
+                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
             }
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
+                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
+                if (channel.IsValid() == true) {
+                    _connectionId = channel->ConnectionId();
+                }
             }
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
@@ -293,9 +305,9 @@ POP_WARNING()
             return (Core::ERROR_NONE);
         }
         template <typename EXPECTED_INTERFACE>
-        EXPECTED_INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
+        EXPECTED_INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
         {
-            return (_administrator.template Aquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
+            return (_administrator.template Acquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
         }
 
         INTERFACE* Interface()
@@ -351,6 +363,104 @@ POP_WARNING()
         PluginHost::IShell* _controller;
         ConnectorType<ENGINE> _administrator;
         Monitor _monitor;
+        uint32_t _connectionId;
     };
+
+    template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
+    class SmartControllerInterfaceType {
+
+    public:
+        SmartControllerInterfaceType(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
+        SmartControllerInterfaceType<INTERFACE, ENGINE>& operator=(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
+
+        SmartControllerInterfaceType()
+            : _controller(nullptr)
+            , _administrator()
+            , _connectionId(~0)
+        {
+        }
+        
+        ~SmartControllerInterfaceType()
+        {
+            ASSERT(_controller == nullptr);
+        }
+
+    public:
+        uint32_t ConnectionId() const {
+            return (_connectionId);
+        }
+        bool IsOperational() const
+        {
+            return (_controller != nullptr);
+        }
+        uint32_t Open(const uint32_t waitTime, const Core::NodeId& node)
+        {
+            Core::IUnknown* controller = RPC::ConnectorController::Instance().Controller();
+
+            ASSERT(_controller == nullptr);
+
+            if (controller != nullptr) {
+                // Seems like we already have a connection to the IShell of the Controller plugin, reuse it.
+                _controller = controller->QueryInterface<PluginHost::IShell>();
+                controller->Release();
+            }
+            if (_controller == nullptr) {
+                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
+            }
+            if (_controller != nullptr) {
+                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
+                if (channel.IsValid() == true) {
+                    _connectionId = channel->ConnectionId();
+                }
+            }
+
+            return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+        }
+        uint32_t Close(const uint32_t waitTime)
+        {
+            if (_controller != nullptr) {
+                _controller->Release();
+                _controller = nullptr;
+            }
+
+            return (Core::ERROR_NONE);
+        }
+
+        INTERFACE* Interface()
+        {
+            INTERFACE* result = nullptr;
+            if(_controller != nullptr) {
+                result = _controller->QueryInterface<INTERFACE>();
+            }
+            return result;
+        }
+        const INTERFACE* Interface() const
+        {
+            INTERFACE* result = nullptr;
+            if(_controller != nullptr) {
+                result = _controller->QueryInterface<INTERFACE>();
+            }
+            return result;
+        }
+        PluginHost::IShell* ControllerInterface()
+        {
+            return _controller;
+        }
+        const PluginHost::IShell* ControllerInterface() const
+        {
+            return _controller;
+        }
+
+        static Core::NodeId Connector()
+        {
+            return SmartInterfaceType<PluginHost::IShell>::Connector();
+        }
+
+    private:
+        PluginHost::IShell* _controller;
+        ConnectorType<ENGINE> _administrator;
+        uint32_t _connectionId;
+    };
+
 }
 }

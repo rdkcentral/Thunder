@@ -80,7 +80,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     enum EnumHashType {
         HASH_MD5 = 16,
@@ -101,9 +101,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        MD5(const MD5&);
-        MD5& operator=(const MD5&);
+    public:
+        MD5(MD5&&) = delete;
+        MD5(const MD5&) = delete;
+        MD5& operator=(MD5&&) = delete;
+        MD5& operator=(const MD5&) = delete;
 
     public:
         inline MD5()
@@ -183,9 +185,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        SHA1(const SHA1&);
-        SHA1& operator=(const SHA1&);
+    public:
+        SHA1(SHA1&&) = delete;
+        SHA1(const SHA1&) = delete;
+        SHA1& operator=(SHA1&&) = delete;
+        SHA1& operator=(const SHA1&) = delete;
 
     public:
         inline SHA1()
@@ -300,9 +304,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        SHA256(const SHA256&);
-        SHA256& operator=(const SHA256&);
+    public:
+        SHA256(SHA256&&) = delete;
+        SHA256(const SHA256&) = delete;
+        SHA256& operator=(SHA256&&) = delete;
+        SHA256& operator=(const SHA256&) = delete;
 
     public:
         inline SHA256()
@@ -365,9 +371,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        SHA224(const SHA224&);
-        SHA224& operator=(const SHA224&);
+    public:
+        SHA224(SHA224&&) = delete;
+        SHA224(const SHA224&) = delete;
+        SHA224& operator=(SHA224&&) = delete;
+        SHA224& operator=(const SHA224&) = delete;
 
     public:
         inline SHA224()
@@ -430,9 +438,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        SHA512(const SHA512&);
-        SHA512& operator=(const SHA512&);
+    public:
+        SHA512(SHA512&&) = delete;
+        SHA512(const SHA512&) = delete;
+        SHA512& operator=(SHA512&&) = delete;
+        SHA512& operator=(const SHA512&) = delete;
 
     public:
         inline SHA512()
@@ -495,9 +505,11 @@ namespace Crypto {
     public:
         typedef Crypto::Context Context;
 
-    private:
-        SHA384(const SHA384&);
-        SHA384& operator=(const SHA384&);
+    public:
+        SHA384(SHA384&&) = delete;
+        SHA384(const SHA384&) = delete;
+        SHA384& operator=(SHA384&&) = delete;
+        SHA384& operator=(const SHA384&) = delete;
 
     public:
         inline SHA384()

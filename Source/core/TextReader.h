@@ -26,7 +26,7 @@
 #include "DataElement.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // ---- Referenced classes and types ----
@@ -51,6 +51,12 @@ namespace Core {
             , m_DataBlock(copy.m_DataBlock)
         {
         }
+        TextReader(TextReader&& move)
+            : m_Index(move.m_Index)
+            , m_DataBlock(std::move(move.m_DataBlock))
+        {
+            move.m_Index = 0;
+        }
         ~TextReader() = default;
 
         TextReader& operator=(const TextReader& rhs)
@@ -58,6 +64,16 @@ namespace Core {
             m_Index = rhs.m_Index;
             m_DataBlock = rhs.m_DataBlock;
 
+            return (*this);
+        }
+        TextReader& operator=(TextReader&& move)
+        {
+            if (this != &move) {
+                m_Index = move.m_Index;
+                m_DataBlock = std::move(move.m_DataBlock);
+
+                move.m_Index = 0;
+            }
             return (*this);
         }
 

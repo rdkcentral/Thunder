@@ -26,7 +26,7 @@
 
 #include <map>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     struct IIterator {
         virtual ~IIterator() = default;
@@ -67,15 +67,21 @@ namespace Core {
                 index++;
             }
         }
+        IteratorType(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
+            : m_Container(move.m_Container)
+            , m_Iterator(std::move(move.m_Iterator))
+            , m_Index(move.m_Index)
+        {
+            move.m_Container = nullptr;
+            move.m_Index = 0;
+        }
         IteratorType(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& copy)
             : m_Container(copy.m_Container)
             , m_Iterator(copy.m_Iterator)
             , m_Index(copy.m_Index)
         {
         }
-        ~IteratorType()
-        {
-        }
+        ~IteratorType() = default;
 
         IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(const IteratorType<CONTAINER, ELEMENT, ITERATOR>& RHS)
         {
@@ -83,6 +89,18 @@ namespace Core {
             m_Iterator = RHS.m_Iterator;
             m_Index = RHS.m_Index;
 
+            return (*this);
+        }
+        IteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(IteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
+        {
+            if (this != &move) {
+                m_Container = move.m_Container;
+                m_Iterator = std::move(move.m_Iterator);
+                m_Index = move.m_Index;
+
+                move.m_Container = nullptr;
+                move.m_Index = 0;
+            }
             return (*this);
         }
 
@@ -256,6 +274,14 @@ namespace Core {
             , m_Index(copy.m_Index)
         {
         }
+        IteratorMapType(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
+            : m_Container(move.m_Container)
+            , m_Iterator(std::move(move.m_Iterator))
+            , m_Index(move.m_Index)
+        {
+            move.m_Container = nullptr;
+            move.m_Index = 0;
+        }
         ~IteratorMapType()
         {
         }
@@ -266,6 +292,18 @@ namespace Core {
             m_Iterator = RHS.m_Iterator;
             m_Index = RHS.m_Index;
 
+            return (*this);
+        }
+        IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>& operator=(IteratorMapType<CONTAINER, KEY, ELEMENT, ITERATOR>&& move)
+        {
+            if (this != &move) {
+                m_Container = move.m_Container;
+                m_Iterator = std::move(move.m_Iterator);
+                m_Index = move.m_Index;
+
+                move.m_Container = nullptr;
+                move.m_Index = 0;
+            }
             return (*this);
         }
 
@@ -430,6 +468,10 @@ namespace Core {
                 IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container()->ReadLock();
             }
         }
+        LockableIteratorType(LockableIteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
+            : IteratorType<CONTAINER, ELEMENT, ITERATOR>(move)
+        {
+        }
         ~LockableIteratorType()
         {
             if (IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container() != nullptr) {
@@ -451,6 +493,18 @@ namespace Core {
                 }
             } else {
                 IteratorType<CONTAINER, ELEMENT, ITERATOR>::operator=(RHS);
+            }
+
+            return (*this);
+        }
+	LockableIteratorType<CONTAINER, ELEMENT, ITERATOR>& operator=(LockableIteratorType<CONTAINER, ELEMENT, ITERATOR>&& move)
+        {
+            if (this != &move) {
+                if (IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container() != nullptr) {
+                    IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container()->ReadUnlock();
+                }
+
+                IteratorType<CONTAINER, ELEMENT, ITERATOR>::operator=(move);
             }
 
             return (*this);

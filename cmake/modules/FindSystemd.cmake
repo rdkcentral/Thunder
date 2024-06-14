@@ -45,8 +45,8 @@ if(${PC_SYSTEMD_FOUND})
     set(SYSTEMD_DEFINITIONS ${PC_SYSTEMD_CFLAGS_OTHER})
 
     include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Systemd DEFAULT_MSG SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES)
-    mark_as_advanced(Systemd_FOUND SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES SYSTEMD_DEFINITIONS)
+    find_package_handle_standard_args(Systemd DEFAULT_MSG SYSTEMD_INCLUDE SYSTEMD_LIBRARY)
+    mark_as_advanced(Systemd_FOUND SYSTEMD_INCLUDE SYSTEMD_LIBRARY SYSTEMD_DEFINITIONS)
 
     set(SYSTEMD_FOUND ${Systemd_FOUND})
     if(Systemd_FOUND AND NOT TARGET Systemd::Systemd)

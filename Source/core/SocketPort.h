@@ -45,7 +45,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
         class EXTERNAL SocketPort : public IResource {
         private:
@@ -180,11 +180,11 @@ namespace WPEFramework {
             }
             inline string LocalId() const
             {
-                return (m_LocalNode.QualifiedName());
+                return (m_LocalNode.HostAddress());
             }
             inline string RemoteId() const
             {
-                return (m_RemoteNode.QualifiedName());
+                return (m_RemoteNode.HostAddress());
             }
             inline const NodeId& ReceivedNode() const
             {
@@ -255,9 +255,18 @@ namespace WPEFramework {
             virtual uint32_t Initialize();
             virtual int32_t Read(uint8_t buffer[], const uint16_t length) const;
             virtual int32_t Write(const uint8_t buffer[], const uint16_t length);
+            void SetError() {
+                m_State |= SocketPort::EXCEPTION;
+            }
+            void Lock() const {
+                m_syncAdmin.Lock();
+            }
+            void Unlock() const {
+                m_syncAdmin.Unlock();
+            }
 
         private:
-            virtual IResource::handle Descriptor() const override
+            IResource::handle Descriptor() const override
             {
                 return (static_cast<IResource::handle>(m_Socket));
             }
@@ -265,8 +274,8 @@ namespace WPEFramework {
             {
                 return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : (m_SocketType == SEQUENCED ? SOCK_SEQPACKET : SOCK_RAW)));
             }
-            virtual uint16_t Events() override;
-            virtual void Handle(const uint16_t events) override;
+            uint16_t Events() override;
+            void Handle(const uint16_t events) override;
             bool Closed();
             void Opened();
             void Accepted();

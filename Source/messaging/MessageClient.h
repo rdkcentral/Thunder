@@ -20,8 +20,10 @@
 #pragma once
 
 #include "Module.h"
+#include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Messaging {
 
     /**
@@ -46,28 +48,30 @@ namespace Messaging {
         void WaitForUpdates(const uint32_t waitTime);
         void SkipWaiting();
 
-        void Enable(const Core::Messaging::MetaData& metaData, const bool enable);
-        void Controls(Core::Messaging::ControlList::InformationStorage& controls) const;
+        void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
+        void Modules(std::vector<string>& modules) const;
+        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
 
-        void PopMessagesAndCall(std::function<void(const Core::Messaging::Information& info, const Core::ProxyType<Core::Messaging::IEvent>& message)> function);
+        using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
+        void PopMessagesAndCall(const MessageHandler& handler);
 
-        void AddFactory(Core::Messaging::MessageType type, Core::Messaging::IEventFactory* factory);
-        void RemoveFactory(Core::Messaging::MessageType type);
+        void AddFactory(Core::Messaging::Metadata::type type, IEventFactory* factory);
+        void RemoveFactory(Core::Messaging::Metadata::type type);
 
     private:
-        using Factories = std::unordered_map<Core::Messaging::MessageType, Core::Messaging::IEventFactory*>;
-        using Clients = std::unordered_map<uint32_t, Core::Messaging::MessageUnit::MessageDispatcher>;
+        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
+        using Clients = std::map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;
         const string _identifier;
         const string _basePath;
         const uint16_t _socketPort;
 
-        mutable uint8_t _readBuffer[Core::Messaging::MessageUnit::DataSize];
-        mutable uint8_t _writeBuffer[Core::Messaging::MessageUnit::MetaDataSize];
+        uint8_t _readBuffer[Messaging::MessageUnit::TempDataBufferSize];
 
         Clients _clients;
         Factories _factories;
     };
-}
+
+} // namespace Messaging
 }

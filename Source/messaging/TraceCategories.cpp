@@ -23,7 +23,8 @@
 #include "TraceFactory.h"
 #endif // __WINDOWS__
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Trace {
 
     /* static */ const string Constructor::_text(_T("Constructor called"));

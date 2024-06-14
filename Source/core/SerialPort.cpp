@@ -49,10 +49,8 @@
 #define ERROR_AGAIN ERROR_IO_PENDING
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
-
-    static constexpr uint32_t SLEEPSLOT_TIME = 100;
 
 //////////////////////////////////////////////////////////////////////
 // SerialPort::SerialMonitor
@@ -82,9 +80,11 @@ namespace Core {
     class SerialMonitor {
     private:
         class MonitorWorker : public Core::Thread {
-        private:
-            MonitorWorker(const MonitorWorker&);
-            MonitorWorker& operator=(const MonitorWorker&);
+        public:
+            MonitorWorker(const MonitorWorker&) = delete;
+            MonitorWorker(MonitorWorker&&) = delete;
+            MonitorWorker& operator=(const MonitorWorker&) = delete;
+            MonitorWorker& operator=(MonitorWorker&&) = delete;
 
         public:
             MonitorWorker(SerialMonitor& parent)
@@ -109,9 +109,11 @@ namespace Core {
         };
 
         static const uint8_t SLOT_ALLOCATION = 8;
-
-        SerialMonitor(const SerialMonitor&);
-        SerialMonitor& operator=(const SerialMonitor&);
+    public:
+        SerialMonitor(const SerialMonitor&) = delete;
+        SerialMonitor(SerialMonitor&&) = delete;
+        SerialMonitor& operator=(const SerialMonitor&) = delete;
+        SerialMonitor& operator=(SerialMonitor&&) = delete;
 
     public:
         SerialMonitor()
@@ -646,11 +648,11 @@ namespace Core {
                 // Make sure we aren't in the monitor thread waiting for close completion.
                 ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_POLLING_TIME ? SLEEPSLOT_POLLING_TIME : waiting);
 
                 _adminLock.Unlock();
 
-                // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
+                // Right, lets sleep in slices of <= SLEEPSLOT_POLLING_TIME ms
                 SleepMs(sleepSlot);
 
                 _adminLock.Lock();

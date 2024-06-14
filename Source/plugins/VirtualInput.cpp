@@ -19,7 +19,7 @@
 
 #include "VirtualInput.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
@@ -33,7 +33,76 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
     { PluginHost::VirtualInput::KeyMap::LEFTCTRL, _TXT("leftctrl") },
     { PluginHost::VirtualInput::KeyMap::RIGHTCTRL, _TXT("rightctrl") },
 
-    ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
+ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
+
+namespace {
+    class InputEvent {
+    public:
+        InputEvent(InputEvent&&) = delete;
+        InputEvent(const InputEvent&) = delete;
+        InputEvent& operator=(const InputEvent&) = delete;
+
+        InputEvent(const IVirtualInput::KeyData& data) {
+            switch (data.Action) {
+            case IVirtualInput::KeyData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("KeyData: RELEASED [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("KeyData: PRESSED [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::REPEAT:
+                _text = Core::ToString(Core::Format(_T("KeyData: REPEAT [0x%X]"), data.Code));
+                break;
+            case IVirtualInput::KeyData::type::COMPLETED:
+                _text = Core::ToString(Core::Format(_T("KeyData: COMPLETED [0x%X]"), data.Code));
+                break;
+            }
+        }
+        InputEvent(const IVirtualInput::MouseData& data) {
+            switch (data.Action) {
+            case IVirtualInput::MouseData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("MouseData: RELEASED%d (x=%d,y=%d)"), data.Button, data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("MouseData: PRESSED%d (x=%d,y=%d)"), data.Button, data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::MOTION:
+                _text = Core::ToString(Core::Format(_T("MouseData: MOTION (x=%d,y=%d)"), data.Horizontal, data.Vertical));
+                break;
+            case IVirtualInput::MouseData::type::SCROLL:
+                _text = Core::ToString(Core::Format(_T("MouseData: SCROLL (x=%d,y=%d)"), data.Horizontal, data.Vertical));
+                break;
+            }
+        }
+        InputEvent(const IVirtualInput::TouchData& data) {
+            switch (data.Action) {
+            case IVirtualInput::TouchData::type::RELEASED:
+                _text = Core::ToString(Core::Format(_T("TouchData: RELEASED (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            case IVirtualInput::TouchData::type::PRESSED:
+                _text = Core::ToString(Core::Format(_T("TouchData: PRESSED (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            case IVirtualInput::TouchData::type::MOTION:
+                _text = Core::ToString(Core::Format(_T("TouchData: MOTION (index=%d,x=%d,y=%d)"), data.Index, data.X, data.Y));
+                break;
+            }
+        }
+        ~InputEvent() = default;
+
+    public:
+        const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+}
 
 namespace PluginHost
 {
@@ -196,9 +265,12 @@ POP_WARNING()
             _lock.Lock();
 
             // Only register a callback once !!
-            ASSERT(std::find(_notifierList.begin(), _notifierList.end(), callback) == _notifierList.end());
+            NotifierList::iterator index = std::find(_notifierList.begin(), _notifierList.end(), callback);
 
-            _notifierList.push_back(callback);
+            ASSERT(index == _notifierList.end());
+            if (index == _notifierList.end()) {
+                _notifierList.push_back(callback);
+            }
 
             _lock.Unlock();
 
@@ -208,9 +280,12 @@ POP_WARNING()
             NotifierList& notifierList(_notifierMap[keyCode]);
 
             // Only register a callback once !!
-            ASSERT(std::find(notifierList.begin(), notifierList.end(), callback) == notifierList.end());
+            NotifierList::iterator index = std::find(notifierList.begin(), notifierList.end(), callback);
 
-            notifierList.push_back(callback);
+            ASSERT(index == notifierList.end());
+            if (index == notifierList.end()) {
+                notifierList.push_back(callback);
+            }
 
             _lock.Unlock();
         }
@@ -300,7 +375,7 @@ POP_WARNING()
     {
         IVirtualInput::TouchData event;
         event.Action = (state == 0 ? IVirtualInput::TouchData::MOTION: 
-                       (state == 1 ? IVirtualInput::TouchData::PRESSED : IVirtualInput::TouchData::RELEASED));
+                       (state == 1 ? IVirtualInput::TouchData::RELEASED : IVirtualInput::TouchData::PRESSED));
         event.Index = index;
         event.X = x;
         event.Y = y;
@@ -612,7 +687,10 @@ POP_WARNING()
                 });
 
                 // We are ready! Create that device!
-                (void)write(_eventDescriptor, &_uidev, sizeof(_uidev));
+                PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT);
+                write(_eventDescriptor, &_uidev, sizeof(_uidev));
+                POP_WARNING()
+
                 ioctl(_eventDescriptor, UI_DEV_CREATE);
             }
         }
@@ -634,7 +712,10 @@ POP_WARNING()
             ev.code  = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? 0 : data.Code);
 
             TRACE_L1("Inserted a keycode: %d", data.Code);
-            (void)write(_eventDescriptor, &ev, sizeof(ev));
+
+            PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT);
+            write(_eventDescriptor, &ev, sizeof(ev));
+            POP_WARNING()
         }
     }
 
@@ -704,45 +785,40 @@ POP_WARNING()
 
     /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const
     {
-        uint16_t index = 0;
         std::list<string> container;
-        Core::ProxyType<const VirtualInputChannelServer::Client> client;
             
-        do {
-            client = _service[index];
-            index++;
-                
-            if (client.IsValid() == true) {
-                container.push_back(client->Extension().Name());
+        _service.Visit(
+            [ &container ](const VirtualInputChannelServer::Client& element)
+            {
+                string result = element.Extension().Name();
+                container.push_back(result);
             }
-        } while (client.IsValid() == true);
-            
+        );
+
         return (VirtualInput::Iterator(std::move(container)));
     }
 
     /* virtual */ bool IPCUserInput::Consumer(const string& name) const {
-        uint16_t index = 0;
-        Core::ProxyType<const VirtualInputChannelServer::Client> client;
-            
-        do {
-            client = _service[index];
-            index++;
-        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+        Core::ProxyType<const VirtualInputChannelServer::Client> result = _service.Find(
+            [name] (const VirtualInputChannelServer::Client& element)
+            {
+                return (element.Extension().Name() == name);
+            }
+        );
 
-        return (client.IsValid() ? client->Extension().Enable() : false); 
+        return(result.IsValid() && result->Extension().Enable());
     }
 
     /* virtual */ void IPCUserInput::Consumer(const string& name, const bool enabled) {
-        uint16_t index = 0;
-        Core::ProxyType<VirtualInputChannelServer::Client> client;
-            
-        do {
-            client = _service[index];
-            index++;
-        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+        Core::ProxyType<VirtualInputChannelServer::Client> result = _service.Find(
+            [name](const VirtualInputChannelServer::Client& element)
+            {
+                return (element.Extension().Name() == name);
+            }
+        );
 
-        if (client.IsValid() == true) {
-            client->Extension().Enable(enabled);
+        if (result.IsValid() == true) {
+            result->Extension().Enable(enabled);
         }
     }
 
@@ -763,6 +839,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -772,6 +849,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -781,6 +859,7 @@ POP_WARNING()
 
         message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(message);
+        TRACE(InputEvent, (data));
         _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
@@ -788,15 +867,14 @@ POP_WARNING()
 
     /* virtual */ void IPCUserInput::LookupChanges(const string& linkName)
     {
-        uint16_t index = 0;
-        Core::ProxyType<VirtualInputChannelServer::Client> current(_service[index++]);
-
-        while (current.IsValid() == true) {
-            if (current->Extension().Name() == linkName) {
-                current->Extension().Reload();
+        _service.Visit(
+            [ linkName ](VirtualInputChannelServer::Client& element)
+            {
+                if (element.Extension().Name() == linkName) {
+                    element.Extension().Reload();
+                }
             }
-            current = Core::ProxyType<VirtualInputChannelServer::Client>(_service[index++]);
-        }
+        );
     }
 
 } // Namespace PluginHost

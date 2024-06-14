@@ -22,12 +22,12 @@
 #include "Module.h"
 #include "Channel.h"
 #include "Configuration.h"
-#include "MetaData.h"
+#include "Metadata.h"
 #include "System.h"
 #include "IPlugin.h"
 #include "IShell.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     class EXTERNAL Service : public IShell {
@@ -35,7 +35,9 @@ namespace PluginHost {
         class EXTERNAL Config {
         public:
             Config() = delete;
+            Config(Config&&) = delete;
             Config(const Config&) = delete;
+            Config& operator=(Config&&) = delete;
             Config& operator=(const Config&) = delete;
 
             Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
@@ -52,9 +54,7 @@ namespace PluginHost {
 
                 Update(plugin);
             }
-            ~Config()
-            {
-            }
+            ~Config() = default;
 
         public:
             inline bool IsSupported(const uint8_t number) const
@@ -65,21 +65,17 @@ namespace PluginHost {
             {
                 _config.Configuration = value;
             }
-            inline void Startup(const PluginHost::IShell::startup value)
+            inline void StartMode(const PluginHost::IShell::startmode value)
             {
-                _config.Startup = value;
-            }
-            inline void AutoStart(const bool value)
-            {
-                _config.AutoStart = value;
-            }
-            inline void Resumed(const bool value)
-            {
-                _config.Resumed = value;
+                _config.StartMode = value;
             }
             inline void SystemRootPath(const string& value)
             {
                 _config.SystemRootPath = value;
+            }
+            inline void Resumed(const bool value)
+            {
+                _config.Resumed = value;
             }
             inline const Plugin::Config& Configuration() const
             {
@@ -137,10 +133,6 @@ namespace PluginHost {
                 if (_versions.empty() == true) {
                     _versions.push_back(1);
                 }
-
-                _config.Startup = ((_config.AutoStart.Value() == true) ?
-                                   PluginHost::IShell::startup::ACTIVATED :
-                                   PluginHost::IShell::startup::DEACTIVATED);
             }
 
         private:
@@ -174,7 +166,7 @@ namespace PluginHost {
             , _notifiers()
             #endif
         {
-            if ( (plugin.Startup.IsSet() == true) && (plugin.Startup.Value() == PluginHost::IShell::startup::UNAVAILABLE) ) {
+            if ( (plugin.StartMode.IsSet() == true) && (plugin.StartMode.Value() == PluginHost::IShell::startmode::UNAVAILABLE) ) {
                 _state = UNAVAILABLE;
             }
         }
@@ -206,14 +198,15 @@ namespace PluginHost {
             Core::SafeSyncType<Core::CriticalSection> sync(_adminLock);
             return (_config.Configuration().Configuration.Value());
         }
-        uint32_t ConfigLine(const string& newConfiguration) override
+        Core::hresult ConfigLine(const string& newConfiguration) override
         {
-            uint32_t result = Core::ERROR_ILLEGAL_STATE;
+            Core::hresult result = Core::ERROR_ILLEGAL_STATE;
 
             Lock();
 
             if (State() == PluginHost::IShell::DEACTIVATED || 
                 State() == PluginHost::IShell::DEACTIVATION ||
+                State() == PluginHost::IShell::PRECONDITION ||
                 State() == PluginHost::IShell::UNAVAILABLE ) {
 
                 // Time to update the config line...
@@ -242,7 +235,7 @@ namespace PluginHost {
         {
             return (_config.Configuration().SystemRootPath.Value());
         }
-        uint32_t SystemRootPath(const string& systemRootPath) override
+        Core::hresult SystemRootPath(const string& systemRootPath) override
         {
             _config.SystemRootPath(systemRootPath);
             return (Core::ERROR_NONE);
@@ -253,21 +246,20 @@ namespace PluginHost {
         }
         bool Resumed() const override
         {
-            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().Startup.Value() == PluginHost::IShell::startup::ACTIVATED)));
+            return ((_config.Configuration().Resumed.IsSet() ? _config.Configuration().Resumed.Value() : (_config.Configuration().StartMode.Value() == PluginHost::IShell::startmode::ACTIVATED)));
         }
-        uint32_t Resumed(const bool resumed) override
+        Core::hresult Resumed(const bool resumed) override
         {
             _config.Resumed(resumed);
             return (Core::ERROR_NONE);
         }
-        PluginHost::IShell::startup Startup() const override
+        PluginHost::IShell::startmode StartMode() const override
         {
-            return _config.Configuration().Startup.Value();
+            return _config.Configuration().StartMode.Value();
         }
-        uint32_t Startup(const PluginHost::IShell::startup value) override
+        Core::hresult StartMode(const PluginHost::IShell::startmode value) override
         {
-            _config.Startup(value);
-            _config.AutoStart(value == PluginHost::IShell::startup::ACTIVATED);
+            _config.StartMode(value);
 
             return (Core::ERROR_NONE);
         }
@@ -318,6 +310,10 @@ namespace PluginHost {
         {
             return (_state == ACTIVATED);
         }
+        inline bool IsHibernated() const
+        {
+            return (_state == HIBERNATED);
+        }
         inline bool HasError() const
         {
             return (_errorMessage.empty() == false);
@@ -326,7 +322,7 @@ namespace PluginHost {
         {
             return (_errorMessage);
         }
-        inline void GetMetaData(MetaData::Service& metaData) const
+        inline void GetMetadata(Metadata::Service& metaData) const
         {
             metaData = _config.Configuration();
             #if THUNDER_RESTFULL_API
@@ -346,17 +342,6 @@ namespace PluginHost {
             metaData.ProcessedRequests = _processedRequests;
             metaData.ProcessedObjects = _processedObjects;
             #endif
-
-            uint8_t value;
-            if ((value = Major()) != static_cast<uint8_t>(~0)) {
-                metaData.Major = value;
-            }
-            if ((value = Minor()) != static_cast<uint8_t>(~0)) {
-                metaData.Minor = value;
-            }
-            if ((value = Patch()) != static_cast<uint8_t>(~0)) {
-                metaData.Patch = value;
-            }
         }
 
         bool IsWebServerRequest(const string& segment) const;

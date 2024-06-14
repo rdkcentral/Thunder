@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include <functional>
 
-namespace WPEFramework {
+namespace Thunder {
 
 template <bool PARAMETER>
 using EnableIfParameter = typename std::enable_if<PARAMETER, int>::type;
@@ -158,6 +158,26 @@ namespace Core {
         template <typename U,                                                                   \
                   typename RR = decltype(std::declval<U>().func(std::declval<Args>()...)),      \
                   typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>       \
+        static yes& chk(int);                                                                   \
+        template <typename U>                                                                   \
+        static no& chk(...);                                                                    \
+        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                             \
+    }
+
+// func: name of function that should be present
+// name: name of the struct that later can be used to override using SFINEA
+// T:    type on which it should be chekced if func is available. If only const versions of func need to be taken into account specify it as const T
+// R:    expected return type for func
+// Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
+// use this macro instead of IS_MEMBER_AVAILABLE when the return type of the function does not have to be exactly the same but instead it can be convertible to the expected one
+#define IS_MEMBER_AVAILABLE_CONVERTIBLE(func, name)                                             \
+    template <typename T, typename R, typename... Args>                                         \
+    struct name {                                                                               \
+        typedef char yes[1];                                                                    \
+        typedef char no[2];                                                                     \
+        template <typename U,                                                                   \
+                  typename RR = decltype(std::declval<U>().func(std::declval<Args>()...)),      \
+                  typename Z = typename std::enable_if<std::is_convertible<RR, R>::value>::type>\
         static yes& chk(int);                                                                   \
         template <typename U>                                                                   \
         static no& chk(...);                                                                    \

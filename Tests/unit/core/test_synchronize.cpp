@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class SynchronizeClass {
 public:
@@ -61,7 +61,7 @@ TEST(test_synchronize, synchronize_test)
     syncObject2.Evaluate();
 
     syncObject3.Load(syncObject1);
-    EXPECT_EQ(syncObject3.Aquire(unsigned(5)), unsigned(11));
+    EXPECT_EQ(syncObject3.Acquire(unsigned(5)), unsigned(11));
     syncObject3.Load(syncObject1);
     EXPECT_TRUE(syncObject3.Evaluate<string>(MESSAGE));
 

@@ -42,7 +42,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 // Description: Helper class to use pointers or proxies (if lifetime management needs to be automated)
 //              as a carrier to be executed by the threadpooltype.
 //
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename CONTENT>
     class TimerType {
@@ -75,9 +75,9 @@ namespace Core {
             {
             }
 
-            inline TimedInfo(TimedInfo&& copy) noexcept
-                : m_ScheduleTime(copy.m_ScheduleTime)
-                , m_Info(std::move(copy.m_Info))
+            inline TimedInfo(TimedInfo&& move) noexcept
+                : m_ScheduleTime(move.m_ScheduleTime)
+                , m_Info(std::move(move.m_Info))
             {
             }
 
@@ -102,11 +102,12 @@ namespace Core {
                 return (*this);
             }
 
-            inline TimedInfo& operator=(TimedInfo&& RHS)
+            inline TimedInfo& operator=(TimedInfo&& move)
             {
-                m_ScheduleTime = RHS.m_ScheduleTime;
-                m_Info = std::move(RHS.m_Info);
-
+                if (this != &move) {
+                    m_ScheduleTime = move.m_ScheduleTime;
+                    m_Info = std::move(move.m_Info);
+                }
                 return (*this);
             }
 
@@ -325,7 +326,7 @@ namespace Core {
 
         uint32_t Pending() const
         {
-            return (_pendingQueue.size());
+            return (static_cast<uint32_t>(_pendingQueue.size()));
         }
 
         ::ThreadId ThreadId() const
@@ -355,6 +356,7 @@ namespace Core {
 
                 _adminLock.Unlock();
 
+                ASSERT(_executing != nullptr);
                 uint64_t reschedule = _executing->Timed(info.ScheduleTime());
 
                 _adminLock.Lock();

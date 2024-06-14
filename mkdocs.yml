@@ -1,0 +1,119 @@
+site_name: Thunder
+site_url: https://rdkcentral.github.com/Thunder
+
+repo_name: rdkcentral/Thunder
+repo_url: https://github.com/rdkcentral/Thunder/
+
+nav:
+  - Home: index.md
+  - Introduction:
+    - What is Thunder: introduction/intro.md
+    - Getting Started:
+      - Repository Structure: introduction/repos.md
+      - Linux Build: introduction/build_linux.md
+      - Windows Build: introduction/build_windows.md
+      - Configuration: introduction/config.md
+      - Basic Usage: introduction/usage.md
+    - Architecture:
+      - Overview: introduction/architecture/overview.md
+      - RPC Protocols:
+        - JSON-RPC: introduction/architecture/rpc/jsonrpc.md
+        - COM-RPC: introduction/architecture/rpc/comrpc.md
+  - Plugin Development:
+    - Introduction: plugin/intro.md
+    - Execution Modes: plugin/execution-modes.md
+    - Plugin Lifecycle: plugin/lifecycle.md
+    - Design Principles: plugin/principles.md
+    - Interfaces:
+      - Interface-Driven Development: plugin/interfaces/interfaces.md
+      - Documentation generation: plugin/interfaces/docs.md
+      - Tags: plugin/interfaces/tags.md
+    - Configuration: plugin/config.md
+    - Error Handling: plugin/errors.md
+    - Versioning: plugin/versioning.md
+    - Messaging: plugin/messaging.md
+    - Subsystems: plugin/subsystems.md
+    - ProxyPool: plugin/proxypool.md
+    - Private COM-RPC : plugin/private-comrpc.md
+    - Split Implementation: plugin/split-implementation.md
+    - Composite Plugins: plugin/composite.md
+  - Common Utilities:
+    - Strings: utils/strings.md
+    - File Handling:
+      - Filesystem Interface: utils/files/files.md
+      - File Observer: utils/files/observer.md
+    - JSON Parser: utils/json.md
+    - Threading:
+      - Worker Pool: utils/threading/worker-pool.md
+      - Mutexes: utils/threading/mutex.md
+    - Time: utils/time.md
+    - Timers: utils/timers.md
+    - Web Requests: utils/web.md
+    - Sockets: utils/sockets.md
+    - Processes: utils/processes.md
+  - Client Development:
+    - Introduction: client/intro.md
+    - JSON-RPC App: client/json-rpc.md
+    - COM-RPC App: client/com-rpc.md
+  - Debugging:
+    - Debug Tips: debugging/debug.md
+    - ThunderShark: debugging/thundershark.md
+  - Walkthrough:
+    - Hello World:
+      - Workspace setup: walkthrough/hello-world/setup.md
+      - Plugin development: walkthrough/hello-world/guide.md
+      - Client development:
+        - JSON-RPC: walkthrough/hello-world/client-jsonrpc.md
+        - COM-RPC: walkthrough/hello-world/client-comrpc.md
+  - Misc:
+    - Documentation: docs.md
+    - References: references/references.md
+    - Filing an Issue: issuetemplate/issuetemplate.md
+
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - def_list
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      toc_depth: 4
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_css:
+  - stylesheets/extra.css
+
+theme:
+  name: material
+  features:
+    - navigation.footer
+    - navigation.sections
+    - toc.follow
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode

@@ -21,11 +21,13 @@
 
 #include "Module.h"
 #include "TextMessage.h"
+#include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Messaging {
 
-    using MessageType = Core::Messaging::MessageType;
+    using MessageType = Core::Messaging::Metadata::type;
 
     template <typename CONTROLCATEGORY, const char** CONTROLMODULENAME, MessageType CONTROLTYPE>
     class ControlType : public Core::Messaging::IControl {
@@ -36,50 +38,44 @@ namespace Messaging {
 
         ControlType(const bool enabled)
             : _enabled(0x02 | (enabled ? 0x01 : 0x00))
-            , _metaData(CONTROLTYPE, Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULENAME)
-        {
+            , _metaData(CONTROLTYPE, Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text(), *CONTROLMODULENAME) {
             // Register Our trace control unit, so it can be influenced from the outside
             // if nessecary..
-            Core::Messaging::MessageUnit::Instance().Announce(this);
+            Core::Messaging::IControl::Announce(this);
         }
-        ~ControlType() override
-        {
+        ~ControlType() override {
             Destroy();
         }
 
     public:
-        const Core::Messaging::MetaData& MessageMetaData() const override
-        {
+        const Core::Messaging::Metadata& Metadata() const override {
             return (_metaData);
         }
 
         //non virtual method, so it can be called faster
-        bool IsEnabled() const
-        {
+        bool IsEnabled() const {
             return ((_enabled & 0x01) != 0);
         }
 
-        bool Enable() const override
-        {
+        bool Enable() const override {
             return (IsEnabled());
         }
 
-        void Enable(const bool enabled) override
-        {
+        void Enable(const bool enabled) override {
             _enabled = (_enabled & 0xFE) | (enabled ? 0x01 : 0x00);
         }
 
         void Destroy() override
         {
             if ((_enabled & 0x02) != 0) {
-                Core::Messaging::MessageUnit::Instance().Revoke(this);
+                Core::Messaging::IControl::Revoke(this);
                 _enabled = 0;
             }
         }
 
     private:
         uint8_t _enabled;
-        Core::Messaging::MetaData _metaData;
+        Core::Messaging::Metadata _metaData;
     };
 
     template <typename CATEGORY, const char** MODULENAME, MessageType TYPE>
@@ -92,21 +88,20 @@ namespace Messaging {
         ~LocalLifetimeType() = default;
 
     public:
-        inline static void Announce()
-        {
+        inline static void Announce() {
             IsEnabled();
         }
-        inline static bool IsEnabled()
-        {
+
+        inline static bool IsEnabled() {
             return (_control.IsEnabled());
         }
-        inline static void Enable(const bool enable)
-        {
+
+        inline static void Enable(const bool enable) {
             _control.Enable(enable);
         }
-        inline static const Core::Messaging::MetaData& MetaData()
-        {
-            return (_control.MessageMetaData());
+        
+        inline static const Core::Messaging::Metadata& Metadata() {
+            return (_control.Metadata());
         }
 
     private:

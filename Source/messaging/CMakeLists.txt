@@ -14,39 +14,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+set(TARGET ${NAMESPACE}Messaging)
+
+add_library(${TARGET} 
+        Module.cpp
+        MessageClient.cpp
+        MessageUnit.cpp
+        TraceCategories.cpp
+        Logging.cpp
+        DirectOutput.cpp
+        ConsoleStreamRedirect.cpp
+        OperationalCategories.cpp)
+
 set(PUBLIC_HEADERS
         Module.h
         MessageClient.h
         messaging.h
+        MessageDispatcher.h
+        MessageUnit.h
         TraceCategories.h
         TraceControl.h
         Control.h
         Logging.h
         LoggingCategories.h
+        DirectOutput.h
         Module.h
         TraceFactory.h
         TextMessage.h
         BaseCategory.h
-        )
-
-set(SOURCES 
-        Module.cpp
-        MessageClient.cpp
-        TraceCategories.cpp
-        Logging.cpp
-)
-
-
-set(TARGET ${NAMESPACE}Messaging)
-
-add_library(${TARGET} SHARED ${SOURCES})
+        ConsoleStreamRedirect.h
+        OperationalCategories.h)
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          ${NAMESPACE}Core::${NAMESPACE}Core
         PRIVATE
+          ${NAMESPACE}Core::${NAMESPACE}Core
           CompileSettingsDebug::CompileSettingsDebug
         )
 
@@ -55,9 +59,14 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
+        SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
@@ -67,13 +76,13 @@ target_include_directories( ${TARGET}
         )
 
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/messaging COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/messaging COMPONENT ${NAMESPACE}_Development
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 InstallCMakeConfig(TARGETS ${TARGET})
@@ -95,8 +104,6 @@ createlink(
        )
 install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/tracing.h
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/tracing/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/tracing/
        )
 endif()
-
-

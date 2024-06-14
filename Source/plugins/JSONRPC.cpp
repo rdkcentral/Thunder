@@ -19,56 +19,72 @@
 
 #include "JSONRPC.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
-namespace PluginHost {
+    namespace PluginHost {
 
-    JSONRPC::JSONRPC()
-        : _adminLock()
-        , _handlers()
-        , _service(nullptr)
-        , _callsign()
-        , _validate()
-    {
-        std::vector<uint8_t> versions = { 1 };
+        JSONRPC::JSONRPC()
+            : _adminLock()
+            , _handlers()
+            , _service(nullptr)
+            , _callsign()
+            , _validate()
+            , _versions()
+            , _observers()
+            , _eventAliases()
+            , _notification(*this)
+        {
+            std::vector<uint8_t> versions = { 1 };
 
-        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+            _handlers.emplace_back(versions);
+        }
+
+        JSONRPC::JSONRPC(const std::vector<uint8_t>& versions)
+            : _adminLock()
+            , _handlers()
+            , _service(nullptr)
+            , _callsign()
+            , _validate()
+            , _versions()
+            , _observers()
+            , _eventAliases()
+            , _notification(*this)
+        {
+            _handlers.emplace_back(versions);
+        }
+
+        JSONRPC::JSONRPC(const TokenCheckFunction& validation)
+            : _adminLock()
+            , _handlers()
+            , _service(nullptr)
+            , _callsign()
+            , _validate(validation)
+            , _versions()
+            , _observers()
+            , _eventAliases()
+            , _notification(*this)
+        {
+            std::vector<uint8_t> versions = { 1 };
+
+            _handlers.emplace_back(versions);
+        }
+
+        JSONRPC::JSONRPC(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : _adminLock()
+            , _handlers()
+            , _service(nullptr)
+            , _callsign()
+            , _validate(validation)
+            , _versions()
+            , _observers()
+            , _eventAliases()
+            , _notification(*this)
+        {
+            _handlers.emplace_back(versions);
+        }
+
+        /* virtual */ JSONRPC::~JSONRPC()
+        {
+        }
     }
-
-    JSONRPC::JSONRPC(const std::vector<uint8_t>& versions)
-        : _adminLock()
-        , _handlers()
-        , _service(nullptr)
-        , _callsign()
-        , _validate()
-    {
-        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
-    }
-
-    JSONRPC::JSONRPC(const TokenCheckFunction& validation)
-        : _adminLock()
-        , _handlers()
-        , _service(nullptr)
-        , _callsign()
-        , _validate(validation)
-    {
-        std::vector<uint8_t> versions = { 1 };
-
-        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
-    }
-
-    JSONRPC::JSONRPC(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
-        : _adminLock()
-        , _handlers()
-        , _service(nullptr)
-        , _callsign()
-        , _validate(validation)
-    {
-        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
-    }
-
-    /* virtual */ JSONRPC::~JSONRPC()
-    {
-    }
-
-} }
+}

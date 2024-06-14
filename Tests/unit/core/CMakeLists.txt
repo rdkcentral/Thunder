@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TEST_RUNNER_NAME "WPEFramework_test_core")
+set(TEST_RUNNER_NAME "Thunder_test_core")
 
 
 
@@ -25,25 +25,25 @@ add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   #test_doorbell.cpp
+   test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
    test_hash.cpp
-   #test_ipc.cpp
-   #test_ipcclient.cpp
+   test_ipcclient.cpp
+   test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
-   test_jsonparser.cpp
+   #test_jsonparser.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
-   #test_messageException.cpp
-   #test_networkinfo.cpp
+   test_messageException.cpp
+   test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
@@ -70,29 +70,29 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_threadpool.cpp
    test_time.cpp
-   #test_timer.cpp
+   test_timer.cpp
    test_tristate.cpp
-   #test_valuerecorder.cpp
+   test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
-   test_message_dispatcher.cpp
+   #test_message_dispatcher.cpp
 )
     
-if(MESSAGING)    
+#[[ if(MESSAGING)    
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkMessaging
+      ThunderMessaging
    )
 else()
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkTracing
+      ThunderTracing
    )
-endif()
+endif() ]]
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
@@ -105,16 +105,25 @@ target_compile_definitions(${TEST_RUNNER_NAME}
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
-    ${GTEST_LIBRARY}
-    ${GTEST_MAIN_LIBRARY}
+    ${GTEST_BOTH_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    WPEFrameworkCore
-    WPEFrameworkCOM
-    WPEFrameworkWebSocket
+    ${NAMESPACE}Core::${NAMESPACE}Core
+    ${NAMESPACE}COM::${NAMESPACE}COM
+    ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+    ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+    ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
 )
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
+
+
+add_library(helloworld SHARED test_library_helloworld.cpp)
+
+install(
+    TARGETS helloworld
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata COMPONENT ${NAMESPACE}_Test)
+
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})

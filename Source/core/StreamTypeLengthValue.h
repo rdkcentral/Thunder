@@ -24,7 +24,7 @@
 
 #include <atomic>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Exchange {
 
@@ -355,9 +355,10 @@ POP_WARNING()
         }
         inline uint32_t Flush()
         {
+            _channel.Flush();
+
             _responses.Lock();
 
-            _channel.Flush();
             _responses.Flush();
             _buffer.Flush();
 
@@ -406,7 +407,7 @@ POP_WARNING()
 
                 _channel.Trigger();
 
-                result = _responses.Aquire(allowedTime);
+                result = _responses.Acquire(allowedTime);
 
                 _responses.Lock();
 

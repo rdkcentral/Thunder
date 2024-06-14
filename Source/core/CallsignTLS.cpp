@@ -20,25 +20,25 @@
 #include "CallsignTLS.h"
 #include "Thread.h"
 
-#ifdef __CORE_WARNING_REPORTING__
+#if defined(__CORE_WARNING_REPORTING__) || defined(__CORE_EXCEPTION_CATCHING__)
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
-    const char* CallsignTLS::Callsign() {
+    const TCHAR* CallsignTLS::Callsign() {
 
         Core::ThreadLocalStorageType<CallsignTLS>& instance = Core::ThreadLocalStorageType<CallsignTLS>::Instance();
-        const char* name = nullptr;
+        const TCHAR* name = nullptr;
         if( ( instance.IsSet() == true ) && ( instance.Context().Name() != nullptr ) ) {
             name = instance.Context().Name(); // should be safe, nobody should for this thread be able to change this while we are using it 
         }
         return name;
     }
 
-    void CallsignTLS::Callsign(const char* callsign) {
+    void CallsignTLS::Callsign(const TCHAR* callsign) {
         Core::ThreadLocalStorageType<CallsignTLS>::Instance().Context().Name(callsign);
     }
 }
 } 
 
-#endif
+#endif // defined(__CORE_WARNING_REPORTING__) || defined(__CORE_EXCEPTION_CATCHING__)

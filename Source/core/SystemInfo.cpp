@@ -65,7 +65,7 @@ long get_avphys_pages (void);
 
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     /* static */ SystemInfo SystemInfo::_systemInfo;
@@ -77,12 +77,7 @@ namespace Core {
         const uint8_t SystemPrefixLength,
         const uint8_t KeyLength)
     {
-#ifdef __WINDOWS__
-        TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
-#else
-        TCHAR buffer[KeyLength + 1];
-        buffer[0] = '\0';
-#endif
+        TCHAR* buffer = static_cast<TCHAR*>(ALLOCA(sizeof(TCHAR) * (KeyLength + 1)));
 
         if (KeyLength == UINT8_MAX) {
             ::memcpy(buffer, SystemPrefix, SystemPrefixLength);
@@ -357,9 +352,9 @@ namespace Core {
 #endif
     }
 
-    void SystemInfo::SetTimeZone(const string& tz)
+    void SystemInfo::SetTimeZone(const string& tz, const bool forcedupdate)
     {
-       SetEnvironment(_T("TZ"), tz);
+       SetEnvironment(_T("TZ"), tz, forcedupdate);
 #ifdef __LINUX__
        ::tzset();
 #endif
@@ -535,4 +530,4 @@ namespace Core {
     } // Extern "C":: System
 
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder

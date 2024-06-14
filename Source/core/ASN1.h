@@ -31,7 +31,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     namespace ASN1 {
 
@@ -63,6 +63,11 @@ namespace Core {
             {
                 AddRef();
             }
+            Buffer(Buffer&& move)
+                : _buffer(move._buffer)
+            {
+                move._buffer = nullptr;
+            }
             ~Buffer()
             {
                 Release();
@@ -77,6 +82,16 @@ namespace Core {
                 }
                 return (*this);
             }
+            Buffer& operator=(Buffer&& move)
+            {
+                if (&move != this) {
+                    Release();
+                    _buffer = move._buffer;
+                    move._buffer = nullptr;
+                }
+                return (*this);
+            }
+
 
         public:
             inline void Size(const uint16_t length)
@@ -148,6 +163,15 @@ namespace Core {
                     , _buffer(copy._buffer)
                 {
                 }
+                Iterator(Iterator&& move)
+                    : _length(move._length)
+                    , _index(move._index)
+                    , _buffer(move._buffer)
+                {
+                    move._length = 0;
+                    move._index = 0xFFFF;
+                    move._buffer = 0;
+                }
                 ~Iterator()
                 {
                 }
@@ -157,6 +181,18 @@ namespace Core {
                     _length = RHS._length;
                     _index = RHS._index;
                     _buffer = RHS._buffer;
+                    return (*this);
+                }
+                Iterator& operator=(Iterator&& move)
+                {
+                    if (this != &move) {
+                        _length = move._length;
+                        _index = move._index;
+                        _buffer = move._buffer;
+                        move._length = 0;
+                        move._index = 0xFFFF;
+                        move._buffer = 0;
+                    }
                     return (*this);
                 }
 
@@ -283,6 +319,13 @@ namespace Core {
                 ::memcpy(_buffer, copy._buffer, copy._length);
                 _length = copy._length;
             }
+            OID(OID&& move)
+            {
+                ::memcpy(_buffer, move._buffer, move._length);
+                _length = move._length;
+                ::memset(move._buffer, 0, 255);
+                move._length = 0;
+            }
             ~OID()
             {
             }
@@ -292,6 +335,16 @@ namespace Core {
                 ::memcpy(_buffer, RHS._buffer, RHS._length);
                 _length = RHS._length;
 
+                return (*this);
+            }
+            OID& operator=(OID&& move)
+            {
+                if (this != &move) {
+                    ::memcpy(_buffer, move._buffer, move._length);
+                    _length = move._length;
+                    ::memset(move._buffer, 0, 255);
+                    move._length = 0;
+		}
                 return (*this);
             }
 
@@ -318,7 +371,7 @@ namespace Core {
                     uint16_t value = index.Number();
 
                     while (value > 0) {
-                        textValue += static_cast<char>((value % 10) + '0') + textValue;
+                        textValue = static_cast<char>((value % 10) + '0') + textValue;
                         value /= 10;
                     }
 
@@ -412,6 +465,14 @@ namespace Core {
                 , _length(copy._length)
             {
             }
+            Sequence(Sequence&& move)
+                : _buffer(std::move(move._buffer))
+                , _index(move._index)
+                , _length(move._length)
+            {
+                move._index = 0;
+                move._length = 0;
+            }
             ~Sequence()
             {
             }
@@ -422,6 +483,18 @@ namespace Core {
                 _buffer = RHS._buffer;
                 _index = RHS._index;
                 _length = RHS._length;
+
+                return (*this);
+            }
+            Sequence& operator=(Sequence&& move)
+            {
+                if (this != &move) {
+                    _buffer = std::move(move._buffer);
+                    _index = move._index;
+                    _length = move._length;
+                    move._index = 0;
+                    move._length = 0;
+                }
 
                 return (*this);
             }

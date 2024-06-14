@@ -28,7 +28,7 @@
 #include "Proxy.h"
 #include "Serialization.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // ---- Referenced classes and types ----
@@ -75,6 +75,8 @@ namespace Core {
     public:
         inline void Copy(const uint8_t data[], const uint16_t length, const uint16_t offset = 0)
         {
+            ASSERT(_buffer != nullptr);
+
             ASSERT(offset < _size);
             if (offset < _size) {
                 ASSERT(static_cast<uint32_t>(offset + length) <= _size);
@@ -116,6 +118,8 @@ namespace Core {
     protected:
         void UpdateCache(const uint64_t offset, uint8_t* buffer, const uint64_t size, const uint64_t maxSize)
         {
+            ASSERT(buffer != nullptr);
+
             // Update the cache...
             m_Offset = offset;
             m_Size = size;
@@ -124,6 +128,7 @@ namespace Core {
         }
         void UpdateCache(const Core::DataElement& data, const uint64_t offset, const uint64_t size)
         {
+            ASSERT(data.IsValid());
             ASSERT((offset + size) <= data.Size());
 
             // Update the cache...
@@ -184,6 +189,21 @@ namespace Core {
             , m_MaxSize(RHS.m_MaxSize)
         {
         }
+        inline DataElement(DataElement&& move)
+            : m_Storage(std::move(move.m_Storage))
+            , m_Buffer(move.m_Buffer)
+            , m_Offset(move.m_Offset)
+            , m_Size(move.m_Size)
+            , m_MaxSize(move.m_MaxSize)
+        {
+            ASSERT(this != &move);
+
+            move.m_Buffer = nullptr;
+            move.m_Offset = 0;
+            move.m_Size = 0;
+            move.m_MaxSize = 0;
+        }
+
         inline DataElement(const DataElement& RHS, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(RHS.m_Storage)
             , m_Buffer(&(RHS.m_Buffer[offset]))
@@ -197,6 +217,25 @@ namespace Core {
 
             ASSERT(offset + size <= RHS.m_Size);
         }
+        inline DataElement(DataElement&& move, const uint64_t offset, const uint64_t size = 0)
+            : m_Storage(std::move(move.m_Storage))
+            , m_Buffer(&(move.m_Buffer[offset]))
+            , m_Offset(move.m_Offset + offset)
+            , m_Size(move.m_Size - offset)
+            , m_MaxSize(move.m_MaxSize)
+        {
+            ASSERT(this != &move);
+
+            if (size != 0) {
+                m_Size = size;
+            }
+            ASSERT(offset + size <= move.m_Size);
+
+            move.m_Buffer = nullptr;
+            move.m_Offset = 0;
+            move.m_Size = 0;
+            move.m_MaxSize = 0;
+        }
         virtual ~DataElement() = default;
 
         inline DataElement& operator=(const DataElement& RHS)
@@ -207,6 +246,22 @@ namespace Core {
             m_Storage = RHS.m_Storage;
             m_MaxSize = RHS.m_MaxSize;
 
+            return (*this);
+        }
+        inline DataElement& operator=(DataElement&& move)
+        {
+            if (this != &move) {
+                m_Size = move.m_Size;
+                m_Offset = move.m_Offset;
+                m_Buffer = move.m_Buffer;
+                m_MaxSize = move.m_MaxSize;
+                m_Storage = std::move(move.m_Storage);
+
+                move.m_Buffer = nullptr;
+                move.m_Offset = 0;
+                move.m_Size = 0;
+                move.m_MaxSize = 0;
+            }
             return (*this);
         }
 
@@ -228,7 +283,10 @@ namespace Core {
                 m_Buffer = newPointer;
                 m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
                 m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
-                TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
+
+                if (adjust != 0) {
+                    TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!", adjust, m_Buffer);
+                }
             }
         }
         inline uint64_t AllocatedSize() const
@@ -249,6 +307,9 @@ namespace Core {
         }
         inline bool operator==(const DataElement& RHS) const
         {
+            ASSERT(IsValid());
+            ASSERT(RHS.IsValid());
+
             return ((m_Size == RHS.m_Size) && (::memcmp(m_Buffer, RHS.m_Buffer, static_cast<size_t>(m_Size)) == 0));
         }
         inline bool operator!=(const DataElement& RHS) const
@@ -276,16 +337,24 @@ namespace Core {
 
         inline uint8_t& operator[](const uint32_t index)
         {
+            ASSERT(IsValid());
+            ASSERT(index < m_Size);
+
             return (m_Buffer[index]);
         }
 
         inline const uint8_t& operator[](const uint32_t index) const
         {
+            ASSERT(IsValid());
+            ASSERT(index < m_Size);
+
             return (m_Buffer[index]);
         }
 
         void Set(const uint8_t value, const uint64_t offset = 0, const uint64_t size = NUMBER_MAX_UNSIGNED(uint64_t))
         {
+            ASSERT(IsValid());
+
             ASSERT((size == NUMBER_MAX_UNSIGNED(uint64_t)) || ((offset + size) < m_Size));
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(m_Size - offset));
@@ -296,6 +365,8 @@ namespace Core {
 
         bool Expand(const uint64_t offset, const uint32_t size)
         {
+            ASSERT(IsValid());
+
             bool expanded = false;
 
             // Make sure we are not shrinking beyond the size boundary
@@ -303,7 +374,7 @@ namespace Core {
 
             if (Size(size) == true) {
                 // Shift all data back the beginning in..
-                ::memrcpy(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
 
                 // Now the total size is smaller, adjust
                 m_Size += size;
@@ -313,7 +384,9 @@ namespace Core {
         }
 
         bool Shrink(const uint64_t offset, const uint32_t size)
-        {
+       {
+            ASSERT(IsValid());
+
             // Make sure we are not shrinking beyond the size boundary
             ASSERT(m_Size >= (offset + size));
 
@@ -321,18 +394,21 @@ namespace Core {
             m_Size -= size;
 
             // Shift all data back the beginning in..
-            ::memcpy(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+            ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
 
             return (true);
         }
 
         bool Copy(const DataElement& RHS, const uint64_t offset = 0)
         {
+            ASSERT(IsValid());
+            ASSERT(RHS.IsValid());
+
             bool copied = false;
 
             // see if we need to resize
             if ((RHS.Size() + offset) > m_Size) {
-                if (Size(offset + RHS.m_Size) == true) {
+                if ((this != &RHS) && (Size(offset + RHS.m_Size) == true)) {
                     ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
                     m_Size = offset + RHS.m_Size;
                     copied = true;
@@ -352,6 +428,8 @@ namespace Core {
 
         uint64_t Search(const uint64_t offset, const uint8_t pattern[], const uint32_t size) const
         {
+            ASSERT(IsValid());
+
             bool found = false;
             uint64_t index = offset;
 
@@ -386,6 +464,8 @@ namespace Core {
         template <typename TYPENAME, const NumberEndian ENDIAN>
         uint64_t SearchNumber(const uint64_t offset, const TYPENAME info) const
         {
+            ASSERT(IsValid());
+
             // Make sure we do not pass the boundaries !!!
             ASSERT(offset < m_Size);
 
@@ -528,6 +608,9 @@ namespace Core {
 
         inline void GetBuffer(const uint64_t offset, const uint32_t size, uint8_t* buffer) const
         {
+            ASSERT(IsValid());
+            ASSERT(buffer != nullptr);
+
             // Check if we cross a boundary for the read..
             ASSERT((offset + size) <= m_Size);
 
@@ -645,6 +728,9 @@ namespace Core {
 
         void SetBuffer(const uint64_t offset, const uint32_t size, const uint8_t* buffer)
         {
+            ASSERT(IsValid());
+            ASSERT(buffer != nullptr);
+
             // Check if we cross a boundary for the write..
             ASSERT((offset + size) <= m_Size);
 
@@ -714,6 +800,14 @@ namespace Core {
             // Don't set the size bigger than the cummulated one!!!
             ASSERT(offset + size < RHS.LinkedSize());
         }
+        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0)
+            : DataElement(move, offset, (offset + size > move.Size() ? 0 : size))
+            , m_Next(move.m_Next)
+        {
+            // Don't set the size bigger than the cummulated one!!!
+            ASSERT(offset + size < move.LinkedSize());
+            move.m_Next = nullptr;
+        }
         inline LinkedDataElement(const uint64_t Size, uint8_t* Buffer, LinkedDataElement* Enclosure)
             : DataElement(Size, Buffer)
             , m_Next(Enclosure)
@@ -728,6 +822,15 @@ namespace Core {
             DataElement::operator=(RHS);
             m_Next = RHS.m_Next;
 
+            return (*this);
+        }
+        inline LinkedDataElement& operator=(LinkedDataElement&& move)
+        {
+            if (this != &move) {
+                DataElement::operator=(move);
+                m_Next = move.m_Next;
+                move.m_Next = nullptr;
+            }
             return (*this);
         }
 
@@ -825,10 +928,12 @@ namespace Core {
 
     // Use this class if you want to "read" and forward on access or write and forward on access..
     class DataElementParser {
-    private:
-        DataElementParser();
-        DataElementParser(const DataElementParser&);
-        DataElementParser& operator=(const DataElementParser&);
+    public:
+        DataElementParser() = delete;
+        DataElementParser(const DataElementParser&) = delete;
+        DataElementParser(DataElementParser&&) = delete;
+        DataElementParser& operator=(const DataElementParser&) = delete;
+        DataElementParser& operator=(DataElementParser&&) = delete;
 
     public:
         inline DataElementParser(DataElement& element, const unsigned int offset = 0)

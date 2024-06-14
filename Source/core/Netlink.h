@@ -31,7 +31,7 @@
 #include <linux/connector.h>
 #include <linux/rtnetlink.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -170,6 +170,15 @@ namespace Core {
             , _mySequence(copy._mySequence)
         {
         }
+        Netlink(Netlink&& move)
+            : _type(move._type)
+            , _flags(move._flags)
+            , _mySequence(move._mySequence)
+        {
+            _type = NLMSG_DONE;
+            _flags = 0;
+            _mySequence = ~0;    
+        }
         virtual ~Netlink() = default;
 
     public:
@@ -215,10 +224,16 @@ namespace Core {
 
         ConnectorType()
             : Netlink()
+            , _ack(0)
         {
         }
         ConnectorType(const ConnectorType<IDX, VAL>& copy)
             : Netlink(copy)
+            , _ack(copy._ack)
+        {
+        }
+        ConnectorType(ConnectorType<IDX, VAL>&& move)
+            : Netlink(move)
         {
         }
         ~ConnectorType() = default;
@@ -401,13 +416,11 @@ namespace Core {
         virtual void StateChange() override;
 
     private:
-        uint32_t _bufferBefore;
         CriticalSection _adminLock;
-        uint32_t _bufferAfter;
         PendingList _pending;
     };
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
 #endif // __WINDOWS__
 

@@ -20,7 +20,7 @@
 #include "AccessControl.h"
 #include "FileSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     File::File()
@@ -53,6 +53,19 @@ namespace Core {
         , _access(copy._access)
         , _handle(copy.DuplicateHandle())
     {
+    }
+    File::File(File&& move)
+        : _name(std::move(move._name))
+        , _size(move._size)
+        , _attributes(move._attributes)
+        , _creation(std::move(move._creation))
+        , _modification(std::move(move._modification))
+        , _access(std::move(move._access))
+        , _handle(move._handle)
+    {
+        move._size = 0;
+        move._attributes = 0;
+        move._handle = INVALID_HANDLE_VALUE;
     }
     File::~File()
     {
@@ -190,6 +203,11 @@ namespace Core {
             _attributes |= (access(_name.c_str(), W_OK) == 0 ? 0 : FILE_READONLY);
             _attributes |= (_name[0] == '.' ? FILE_HIDDEN : 0);
             _attributes |= ((data.st_mode & (S_IFCHR | S_IFBLK)) != 0 ? FILE_DEVICE : 0);
+
+            if (lstat(_name.c_str(), &data) == 0) {
+                _attributes |= (data.st_mode & FILE_LINK);
+            }
+
         } else {
             _attributes = 0;
         }
@@ -206,7 +224,7 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
-    uint32_t File::Permission(uint32_t flags) const
+    uint32_t File::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);
     }
@@ -255,16 +273,33 @@ namespace Core {
     }
     Directory::Directory(const Directory& copy)
         : _name(copy._name)
-        ,
+        , _filter(copy._filter)
 #ifdef __LINUX__
-        _dirFD(nullptr)
+        , _dirFD(nullptr)
         , _entry(nullptr)
 #endif
 #ifdef __WINDOWS__
-              _dirFD(INVALID_HANDLE_VALUE)
+        , _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
     {
+    }
+    Directory::Directory(Directory&& move)
+        : _name(std::move(move._name))
+        , _filter(std::move(move._filter))
+    {
+#ifdef __LINUX__
+        _dirFD = move._dirFD;
+        _entry = move._entry;
+        move._dirFD = nullptr;
+        move._entry = nullptr;
+#endif
+#ifdef __WINDOWS__
+        _dirFD = move._dirFD;
+        noMoreFiles = move.noMoreFiles;
+        move._dirFD = INVALID_HANDLE_VALUE;
+        move.noMoreFiles = false;
+#endif
     }
     Directory::~Directory()
     {
@@ -357,6 +392,29 @@ namespace Core {
         return true;
     }
 
+    bool Directory::Exists() const {
+        bool result = false;
+
+#ifdef __WINDOWS__
+        WIN32_FILE_ATTRIBUTE_DATA data;
+        GET_FILEEX_INFO_LEVELS infoLevelId = GetFileExInfoStandard;
+
+        if (GetFileAttributesEx(_name.c_str(), infoLevelId, &data) != FALSE) {
+            result = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
+#endif
+
+#ifdef __POSIX__
+        struct stat data;
+        if (stat(_name.c_str(), &data) == 0) {
+            result = ( (data.st_mode & S_IFDIR) != 0);
+        }
+#endif
+
+        return (result);
+
+    }
+
     uint32_t Directory::User(const string& userName) const
     {
         return AccessControl::OwnerShip(_name, userName, "");
@@ -367,7 +425,7 @@ namespace Core {
         return AccessControl::OwnerShip(_name, "", groupName);
     }
 
-    uint32_t Directory::Permission(uint32_t flags) const
+    uint32_t Directory::Permission(uint16_t flags) const
     {
         return AccessControl::Permission(_name, flags);
     }

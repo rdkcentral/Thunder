@@ -34,7 +34,7 @@
 
 // ---- Helper types and constants ----
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     // Rationale:
@@ -94,6 +94,8 @@ namespace Core {
 
             uint32_t GetCompleteTail(uint32_t offset) const
             {
+                ASSERT(_Parent._administration->_tailIndexMask < static_cast<uint32_t>(~0));
+
                 uint32_t oldTail = _Tail;
                 uint32_t roundCount = oldTail / (1 + _Parent._administration->_tailIndexMask);
                 oldTail &= _Parent._administration->_tailIndexMask;
@@ -169,7 +171,7 @@ namespace Core {
         {
             return (_buffer.Group(groupName));
         }
-        inline uint32_t Permission(uint32_t mode) const
+        inline uint32_t Permission(uint16_t mode) const
         {
             return (_buffer.Permission(mode));
         }
@@ -211,7 +213,8 @@ namespace Core {
         {
             return (_administration->_size);
         }        
-        bool Validate();
+        bool Open();
+        void Close();
       
         // THREAD SAFE
         // If there are threads blocked in the Lock, they can be relinquised by
@@ -245,6 +248,18 @@ namespace Core {
 
         virtual void DataAvailable();
 
+    protected:
+        inline bool Unlink()
+        {
+            _administration = nullptr;
+            return (_buffer.Unlink());
+        }
+        inline bool Destroy()
+        {
+            _administration = nullptr;
+            return (_buffer.Destroy());
+        }
+ 
     private:
         // If the write occures, this method is called to determine the amount of spaces
         // that should be cleared out. The returned number of bytes must be equal to, or

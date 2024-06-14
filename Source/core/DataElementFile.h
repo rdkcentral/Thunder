@@ -37,18 +37,22 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // The datapackage is the abstract of a package that needs to be send over the line.
     class EXTERNAL DataElementFile : public DataElement {
     public:
         DataElementFile() = delete;
+        DataElementFile& operator=(DataElementFile&&) = delete;
         DataElementFile& operator=(const DataElementFile&) = delete;
 
         DataElementFile(File& fileName, const uint32_t type);
         DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
         DataElementFile(const DataElementFile&);
-        ~DataElementFile() override;
+        DataElementFile(DataElementFile&&);
+        ~DataElementFile() override {
+            Close();
+        }
 
     public:
         inline const string& Name() const
@@ -79,14 +83,35 @@ namespace Core {
         {
             return (m_File.Group(groupName));
         }
-        inline uint32_t Permission(uint32_t mode) const
+        inline uint32_t Permission(uint16_t mode) const
         {
             return (m_File.Permission(mode));
+        }
+        bool Unlink()
+        {
+            bool closed = IsValid();
+
+            if (closed == true) {
+                Close();
+                closed = m_File.Unlink();
+            }
+            return (closed);
+        }
+        bool Destroy()
+        {
+            bool closed = IsValid();
+
+            if (closed == true) {
+                Close();
+                closed = m_File.Destroy();
+            }
+            return (closed);
         }
         bool Load();
         void Sync();
 
     protected:
+        void Close();
         virtual void Reallocation(const uint64_t size);
 
         void ReopenMemoryMappedFile();

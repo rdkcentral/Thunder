@@ -22,9 +22,9 @@
 #include "Module.h"
 #include "IStateControl.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command);
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state);
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
+ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
 
 }

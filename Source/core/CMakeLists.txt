@@ -22,8 +22,12 @@ find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
 
-add_library(${TARGET} SHARED
-	DoorBell.cpp
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
+message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
+
+add_library(${TARGET}
+        Module.cpp
+	    DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -56,7 +60,6 @@ add_library(${TARGET} SHARED
         XGetopt.cpp
         ResourceMonitor.cpp
         )
-
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -127,6 +130,7 @@ set(PUBLIC_HEADERS
         SystemInfo.h
         TextFragment.h
         TextReader.h
+        TextStreamRedirectType.h
         Thread.h
         ThreadPool.h
         Time.h
@@ -143,9 +147,11 @@ set(PUBLIC_HEADERS
         Module.h
         CallsignTLS.h
         TokenizedStringList.h
-        MessageDispatcher.h
-        MessageUnit.h
+        MessageStore.h
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
+
+target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
 # non-buildable interface target to carry the definitions
 # All build flags that are applicable to the whole system should be set here in the 
@@ -163,12 +169,12 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE MessageUnit.cpp)
+    target_sources(${TARGET} PRIVATE MessageStore.cpp)
     message(STATUS "Messaging enabled")
 endif()
 
 if(WARNING_REPORTING)
-    target_sources(${TARGET} PRIVATE WarningReportingControl.cpp)
+    target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)
     message(STATUS "Warning reporting enabled")
 endif()
@@ -193,6 +199,11 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
+if (INSTANCE_ID_BITS)
+    target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
+    message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
+endif()
+
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
     message(STATUS "Enable bluetooth support.")
@@ -207,9 +218,8 @@ if(BUILD_TESTS)
 endif()
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          CompileSettings::CompileSettings
         PRIVATE
+          CompileSettings::CompileSettings
           CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
           Threads::Threads
@@ -220,13 +230,24 @@ set_target_properties(${TARGET} PROPERTIES
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-          VERSION ${VERSION}
-          SOVERSION ${VERSION_MAJOR}
+          SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
+
+if (NOT BUILD_SHARED_LIBS)
+    set_property(TARGET  ${TARGET}
+            APPEND PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE ON
+    )
+endif()
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
@@ -257,13 +278,13 @@ endif()
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
-        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # for mac 
-        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT ${NAMESPACE}_Development   
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 # ===========================================================================================

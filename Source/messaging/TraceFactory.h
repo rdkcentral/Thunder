@@ -20,27 +20,45 @@
 #pragma once
 #include "TextMessage.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Messaging {
 
-    class EXTERNAL TraceFactory : public Core::Messaging::IEventFactory {
+    struct EXTERNAL IEventFactory {
+        virtual ~IEventFactory() = default;
+        virtual Core::ProxyType<Core::Messaging::MessageInfo> GetMetadata() = 0;
+        virtual Core::ProxyType<Core::Messaging::IEvent> GetMessage() = 0;
+    };
+
+    template<typename METADATA, typename EVENT>
+    class TraceFactoryType : public IEventFactory {
     public:
-        TraceFactory()
-            : _tracePool(2)
+        TraceFactoryType(const TraceFactoryType<METADATA, EVENT>&) = delete;
+        TraceFactoryType<METADATA, EVENT>& operator=(const TraceFactoryType<METADATA, EVENT>&) = delete;
+
+        TraceFactoryType() : _eventPool(2), _metadataPool(2)
         {
         }
-        ~TraceFactory() override = default;
-        TraceFactory(const TraceFactory&) = delete;
-        TraceFactory& operator=(const TraceFactory&) = delete;
+        ~TraceFactoryType() override = default;
 
-        inline Core::ProxyType<Core::Messaging::IEvent> Create() override
+    public:
+        Core::ProxyType<Core::Messaging::MessageInfo> GetMetadata() override
         {
-            Core::ProxyType<TextMessage> proxy = _tracePool.Element();
-            return Core::ProxyType<Core::Messaging::IEvent>(proxy);
+            Core::ProxyType<METADATA> proxy = _metadataPool.Element();
+
+            return (Core::ProxyType<Core::Messaging::MessageInfo>(proxy));
+        }
+        Core::ProxyType<Core::Messaging::IEvent> GetMessage() override
+        {
+            Core::ProxyType<EVENT> proxy = _eventPool.Element();
+
+            return (Core::ProxyType<Core::Messaging::IEvent>(proxy));
         }
 
     private:
-        Core::ProxyPoolType<Messaging::TextMessage> _tracePool;
+        Core::ProxyPoolType<EVENT> _eventPool;
+        Core::ProxyPoolType<METADATA> _metadataPool;
     };
-}
+
+} // namespace Messaging
 }

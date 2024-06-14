@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(test_keyvaluetype, simple_keyvaluetype)
 {
@@ -54,6 +54,6 @@ TEST(test_textkeyvaluetype, simple_textkeyvaluetype)
    OptionalType<TextFragment> value = TextFragment(string(buffer));
    const bool CASESENSITIVE = true;
 
-   TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype();
+   TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype;
    TextKeyValueType<CASESENSITIVE, TextFragment> textkeyvaluetype1(key, value);
 }

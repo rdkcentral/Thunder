@@ -19,13 +19,13 @@
 
 #include "JSONRPCLink.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
-ENUM_CONVERSION_BEGIN(WPEFramework::JSONRPC::JSONPluginState)
+ENUM_CONVERSION_BEGIN(Thunder::JSONRPC::JSONPluginState)
 
-    { WPEFramework::JSONRPC::DEACTIVATED, _TXT("Deactivated") },
-    { WPEFramework::JSONRPC::ACTIVATED, _TXT("Activated") },
+    { Thunder::JSONRPC::DEACTIVATED, _TXT("Deactivated") },
+    { Thunder::JSONRPC::ACTIVATED, _TXT("Activated") },
 
-ENUM_CONVERSION_END(WPEFramework::JSONRPC::JSONPluginState)
+ENUM_CONVERSION_END(Thunder::JSONRPC::JSONPluginState)
 
 }

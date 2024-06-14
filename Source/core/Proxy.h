@@ -38,13 +38,13 @@
 
 // ---- Class Definition ----
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
         template<typename CONTEXT>
         class ProxyType;
 
-PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
+        PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
         template <typename CONTEXT>
         class ProxyObject final : public CONTEXT, public std::conditional<std::is_base_of<IReferenceCounted, CONTEXT>::value, Void, IReferenceCounted>::type {
         public:
@@ -93,6 +93,7 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
                 operator delete(
                     void* stAllocateBlock)
             {
+                reinterpret_cast<ProxyObject<CONTEXT>*>(stAllocateBlock)->__Destructed();
                 ::free(stAllocateBlock);
             }
 
@@ -118,12 +119,14 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
         public:
-            void AddRef() const override
+            uint32_t AddRef() const override
             {
                 if (_refCount == 1) {
                     const_cast<ProxyObject<CONTEXT>*>(this)->__Acquire();
                 }
                 _refCount++;
+
+                return (Core::ERROR_NONE);
             }
             uint32_t Release() const override
             {
@@ -131,8 +134,8 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
                 uint32_t lastRef = --_refCount;
 
                 if (lastRef == 0) {
-                    delete this;
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                    delete this;
                 }
                 else if (lastRef == 1) {
                     const_cast<ProxyObject<CONTEXT>*>(this)->__Relinquish();
@@ -248,6 +251,24 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
             // -----------------------------------------------------
+            // Check for Destructed method on Object
+            // -----------------------------------------------------
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Destructed, hasDestructed);
+
+            template <typename TYPE = CONTEXT>
+            inline typename Core::TypeTraits::enable_if<hasDestructed<TYPE, void>::value, void>::type
+                __Destructed()
+            {
+                TYPE::Destructed();
+            }
+            template <typename TYPE = CONTEXT>
+            inline typename Core::TypeTraits::enable_if<!hasDestructed<TYPE, void>::value, void>::type
+                __Destructed()
+            {
+            }
+
+
+            // -----------------------------------------------------
             // Check for IsInitialized method on Object
             // -----------------------------------------------------
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(IsInitialized, hasIsInitialized);
@@ -266,7 +287,7 @@ PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
 
@@ -493,18 +514,17 @@ POP_WARNING()
 
                 return (result);
             }
-            inline void AddRef() const
+            inline uint32_t AddRef() const
             {
                 // Only allowed on valid objects.
                 ASSERT(_refCount != nullptr);
 
-                _refCount->AddRef();
+                return (_refCount->AddRef());
             }
             inline bool operator==(const ProxyType<CONTEXT>& a_RHS) const
             {
                 return (_refCount == a_RHS._refCount);
             }
-
             inline bool operator!=(const ProxyType<CONTEXT>& a_RHS) const
             {
                 return !(operator==(a_RHS));
@@ -513,10 +533,17 @@ POP_WARNING()
             {
                 return ((_refCount != nullptr) && (_realObject == &a_RHS));
             }
-
             inline bool operator!=(const CONTEXT& a_RHS) const
             {
                 return (!operator==(a_RHS));
+            }
+            inline bool operator==(const nullptr_t&) const
+            {
+                return (_refCount == nullptr);
+            }
+            inline bool operator!=(const nullptr_t&) const
+            {
+                return (_refCount != nullptr);
             }
 
             inline CONTEXT* operator->() const
@@ -1156,7 +1183,7 @@ POP_WARNING()
         class UnlinkStorage {
         public:
             UnlinkStorage() = delete;
-            UnlinkStorage& operator= (const UnlinkStorage&) = delete;
+            UnlinkStorage& operator=(const UnlinkStorage&) = delete;
 
             UnlinkStorage(void (*callback)(void*), void* thisPtr)
                 : _callback(callback)
@@ -1329,7 +1356,7 @@ POP_WARNING()
             }
 
             // -----------------------------------------------------
-            // Check for Aquire method on Object
+            // Check for Acquire method on Object
             // -----------------------------------------------------
 
             IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Acquire, hasAcquire);
@@ -1550,6 +1577,27 @@ POP_WARNING()
             }
 
         public:
+            struct IFind {
+                // Return true if Check is ok
+                virtual bool Check(const PROXYKEY& key, const Core::ProxyType<PROXYELEMENT>& element) const = 0;
+                virtual ~IFind() = default;
+            };
+
+            bool Find(const IFind& callback) const {
+                bool found(false);
+
+                _lock.Lock();
+                for (const auto& entry : _map) {
+                    if(callback.Check(entry.first, entry.second.first) == true){
+                        found = true;
+                        break; 
+                    }
+                }
+                _lock.Unlock();
+
+                return found;
+            }
+
             template <typename ACTUALOBJECT, typename... Args>
             Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key, Args&&... args)
             {

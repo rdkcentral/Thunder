@@ -23,7 +23,7 @@
 #include "ThreadPool.h"
 #include "Timer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -93,7 +93,7 @@ namespace Core {
         };
 
         struct Metadata {
-            uint32_t Pending;
+            std::vector<string> Pending;
             uint8_t Slots;
             ThreadPool::Metadata* Slot;
         };
@@ -125,6 +125,12 @@ namespace Core {
                 : _job(copy._job)
                 , _pool(copy._pool)
             {
+            }
+            Timer(Timer&& move)
+                : _job(std::move(move._job))
+                , _pool(move._pool)
+            {
+                move._pool = nullptr;
             }
             Timer(IWorkerPool* pool, const ProxyType<IDispatch>& job)
                 : _job(job)
@@ -308,19 +314,19 @@ namespace Core {
         WorkerPool& operator=(const WorkerPool&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler)
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback)
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
             , _joined(0)
             #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(*this, static_cast<uint32_t>(DispatchedJobMonitor::DefaultScheduleIntervalInMilliSeconds))
-            #endif
+            #endif 
         {
-            _metadata.Slots = threadCount + 1;
-            _metadata.Slot = new Core::ThreadPool::Metadata[threadCount + 1];
+            _metadata.Slots = threadCount + 2;
+            _metadata.Slot = new Core::ThreadPool::Metadata[threadCount + 2];
         }
 POP_WARNING()
 
@@ -394,14 +400,14 @@ POP_WARNING()
 
             return (result);
         }
-        virtual const Metadata& Snapshot() const
+        const Metadata& Snapshot() const
         {
-            _metadata.Pending = _threadPool.Pending();
-            _external.Info(_metadata.Slot[0]);
-            _metadata.Slot[0].WorkerId = _joined;
-
-            _threadPool.Info(_threadPool.Count(), &(_metadata.Slot[1]));
-
+            _metadata.Slot[0].WorkerId = _timer.ThreadId();
+            _metadata.Slot[0].Runs = _timer.Pending();
+            _metadata.Slot[0].Job = string(_T("WorkerPool::Timer"));
+            _external.Info(_metadata.Slot[1]);
+            _threadPool.Snapshot(_threadPool.Count(), &(_metadata.Slot[2]), _metadata.Pending);
+            _metadata.Slot[1].WorkerId = _joined;
             return (_metadata);
         }
         void Run()

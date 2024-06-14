@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class Response {
@@ -276,7 +276,7 @@ namespace Tests {
             uint64_t context = 3;
             uint32_t result = 6;
 
-            error = continousChannel.Invoke(tripletResponseData, 5000);
+            error = continousChannel.Invoke(tripletResponseData, 2000);
             EXPECT_EQ(error, Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
@@ -355,7 +355,8 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
-            //Core::Singleton::Dispose(); TODO
+
+            Core::Singleton::Dispose();
 
             testAdmin.Sync("done testing");
         };
@@ -389,13 +390,12 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             testAdmin.Sync("setup client");
-
             testAdmin.Sync("setup server");
-
             testAdmin.Sync("done testing");
 
             error = continousChannel.Source().Close(1000); // Wait for 1 second
             EXPECT_EQ(error, Core::ERROR_NONE);
+
             continousChannel.Unregister(TripletResponse::Id());
             continousChannel.Unregister(VoidTriplet::Id());
             continousChannel.Unregister(TextText::Id());
@@ -653,6 +653,8 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
 
             factory->DestroyFactories();
+
+            Core::Singleton::Dispose();
         };
 
         static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -714,7 +716,7 @@ namespace Tests {
 
             Core::Singleton::Dispose();
         }
-        testAdmin.Sync("done testing");
+//        testAdmin.Sync("done testing");
     }
 
     TEST(Core_IPC, MultiChannelReversed)
@@ -727,7 +729,6 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
-
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
@@ -752,8 +753,7 @@ namespace Tests {
             uint32_t surface = 2;
             uint64_t context = 3;
             uint32_t result = 6;
-
-            error = multiChannel.Invoke(tripletResponseData, 2000);
+            error = multiChannel.Invoke(tripletResponseData, 5000);
             EXPECT_EQ(error, Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
@@ -767,8 +767,20 @@ namespace Tests {
             EXPECT_EQ(error, Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
 
+            tripletResponseData.Release();
+            voidTripletData.Release();
+            textTextData.Release();
+
             error = multiChannel.Source().Close(1000); // Wait for 1 Second.
             EXPECT_EQ(error, Core::ERROR_NONE);
+
+            handler1.Release();
+            handler2.Release();
+            handler3.Release();
+
+            factory->DestroyFactory<TripletResponse>();
+            factory->DestroyFactory<VoidTriplet>();
+            factory->DestroyFactory<TextText>();
 
             factory->DestroyFactories();
 
@@ -787,7 +799,6 @@ namespace Tests {
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
-
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
@@ -812,9 +823,22 @@ namespace Tests {
             error = multiChannel.Close(1000); // Wait for 1 Second.
             EXPECT_EQ(error, Core::ERROR_NONE);
 
+            handler1.Release();
+            handler2.Release();
+            handler3.Release();
+
+            multiChannel.Cleanup();
+
+            factory->DestroyFactory<TripletResponse>();
+            factory->DestroyFactory<VoidTriplet>();
+            factory->DestroyFactory<TextText>();
+
             factory->DestroyFactories();
+
             Core::Singleton::Dispose();
+
+//            testAdmin.Sync("done testing");
         }
     }
 } // Tests
-} // WPEFramework
+} // Thunder

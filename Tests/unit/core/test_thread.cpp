@@ -24,7 +24,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class ThreadClass : public Core::Thread {
@@ -104,7 +104,7 @@ namespace Tests {
     std::condition_variable Job::_cv;
     ::ThreadId Job::_parentTPid = Core::Thread::ThreadId();
 
-    TEST(DISABLED_Core_Thread, SimpleThread)
+    TEST(Core_Thread, DISABLED_SimpleThread)
     {
         ::ThreadId parentTid = Core::Thread::ThreadId();
         volatile bool threadDone = false;
@@ -123,4 +123,4 @@ namespace Tests {
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

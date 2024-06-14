@@ -23,14 +23,18 @@
 #include "ResourceMonitor.h"
 #include "Number.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
     class EXTERNAL ThreadPool {
     public:
+        struct EXTERNAL ICallback {
+            virtual ~ICallback() = default;
+            virtual void Idle() = 0;
+        };
         struct EXTERNAL IJob : public IDispatch {
-            ~IJob() override = default;
+            virtual ~IJob() override = default;
 
             virtual ProxyType<IDispatch> Resubmit(Time& time) = 0;
         };
@@ -105,6 +109,7 @@ namespace Core {
                 }
             }
 
+            MeasurableJob& operator=(MeasurableJob&&) = default;
             MeasurableJob& operator=(const MeasurableJob&) = default;
 
         public:
@@ -157,10 +162,12 @@ namespace Core {
             ProxyType<IDispatch> _job;
             uint64_t _time;
         };
-        typedef QueueType< MeasurableJob > MessageQueue;
+        using QueueElement = MeasurableJob;
         #else
-        typedef QueueType< ProxyType<IDispatch> > MessageQueue;
+        using QueueElement = ProxyType<IDispatch>;
         #endif
+
+        using MessageQueue = QueueType< QueueElement >;
 
     public:   
         template<typename IMPLEMENTATION>
@@ -354,7 +361,6 @@ POP_WARNING()
                 return("UnknownJob");
             }
 
-
         private:
             IMPLEMENTATION _implementation;
             std::atomic<state> _state;
@@ -381,17 +387,21 @@ POP_WARNING()
             ~Minion() = default;
 
         public:
+            bool IsActive() const {
+                Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                return (_currentRequest.IsValid());
+            }
             void Info(Metadata& info) const {
                 info.Runs = _runs;
 
-		_adminLock.Lock();
+                _adminLock.Lock();
                 if (_currentRequest.IsValid() == false) {
-		    _adminLock.Unlock();
+                    _adminLock.Unlock();
                     info.Job.Clear();
                 }
                 else {
                     info.Job = _currentRequest->Identifier();
-		    _adminLock.Unlock();
+                    _adminLock.Unlock();
                 }
             }
             uint32_t Completed (const ProxyType<IDispatch>& job, const uint32_t waitTime) {
@@ -424,7 +434,7 @@ POP_WARNING()
                     #ifdef __CORE_WARNING_REPORTING__
                     // Add an entry into the JobMonitor list
                     DispatchedJobMetaData data{Thread::ThreadId(),
-                        string(WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign()),
+                        string(Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign()),
                         Time::Now().Ticks(), 0};
 
                     _parent.SaveDispatchedJobContext(data);
@@ -468,6 +478,8 @@ POP_WARNING()
                         _signal.ResetEvent();
                     }
                     _adminLock.Unlock();
+
+                    _parent.Idle();
                 }
 
                 _dispatcher->Deinitialize();
@@ -506,6 +518,9 @@ POP_WARNING()
             }
 
         public:
+            bool IsActive() const {
+                return (_minion.IsActive());
+            }
             void Info(Metadata& info) const {
                 _minion.Info(info);
                 info.WorkerId = Id();
@@ -536,12 +551,14 @@ POP_WARNING()
         ThreadPool(const ThreadPool& a_Copy) = delete;
         ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback) 
             : _queue(queueSize)
             , _scheduler(scheduler)
             #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(nullptr)
             #endif
+            , _external(external)
+            , _callback(callback)
         {
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -558,19 +575,27 @@ POP_WARNING()
         {
             return (static_cast<uint8_t>(_units.size()));
         }
-        uint32_t Pending() const
-        {
+        uint32_t Pending() const {
             return (_queue.Length());
         }
-        void Info(const uint8_t length, Metadata* entries) const 
+        void Snapshot(const uint8_t length, Metadata* entries, std::vector<string>& jobs) const
         {
             uint8_t count = 0;
             std::list<Executor>::const_iterator ptr = _units.cbegin();
+
+            // Make sure jobs do not move while we are creating a snapshot !!
+            _queue.Lock();
+
             while ((count < length) && (ptr != _units.cend())) { 
                 ptr->Info(entries[count]);
                 ptr++; 
                 count++; 
             }
+            _queue.Visit([&](const QueueElement& element) {
+                jobs.emplace_back(element->Identifier());
+                });
+
+            _queue.Unlock();
         }
         ::ThreadId Id(const uint8_t index) const
         {
@@ -665,7 +690,27 @@ POP_WARNING()
                 _dispatchedJobMonitor->RemoveDispatchedJobMetaData(data);
         }
         #endif
+
     private:
+        void Idle() {
+            if (_callback != nullptr) {
+                _queue.Lock();
+                if ((_queue.IsEmpty() == false) || ((_external != nullptr) && (_external->IsActive() == true))) {
+                    _queue.Unlock();
+                }
+                else {
+                    std::list<Executor>::const_iterator index(_units.begin());
+                    while ((index != _units.end()) && (index->IsActive() == false)) { index++; }
+                    bool idle = (index == _units.end());
+                    _queue.Unlock();
+
+                    if (idle == true) {
+                        // There is nothing to process, we are idle, going into Idle mode...
+                        _callback->Idle();
+                    }
+                }
+            }
+        }
         void Closure(IJob& job) {
             Time scheduleTime;
             _queue.Lock();
@@ -689,6 +734,8 @@ POP_WARNING()
         #ifdef __CORE_WARNING_REPORTING__
         IDispatchedJobMonitor* _dispatchedJobMonitor;
         #endif
+        Minion* _external;
+        ICallback* _callback;
     };
 
 }

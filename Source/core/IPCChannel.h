@@ -30,25 +30,25 @@
 #include "Trace.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     template <typename EXTENSION, const bool LISTENING, const bool INTERNALFACTORY>
     class IPCChannelClientType : public IPCChannelType<SocketPort, EXTENSION> {
     private:
+        using BaseClass = IPCChannelType<SocketPort, EXTENSION>;
+
+    public:
         IPCChannelClientType() = delete;
+        IPCChannelClientType(IPCChannelClientType<EXTENSION, LISTENING, INTERNALFACTORY>&&) = delete;
         IPCChannelClientType(const IPCChannelClientType<EXTENSION, LISTENING, INTERNALFACTORY>&) = delete;
         IPCChannelClientType<EXTENSION, LISTENING, INTERNALFACTORY>& operator=(const IPCChannelClientType<EXTENSION, LISTENING, INTERNALFACTORY>&) = delete;
 
-        typedef IPCChannelType<SocketPort, EXTENSION> BaseClass;
-
-    public:
         template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0>
         IPCChannelClientType(const NodeId& node, const uint32_t bufferSize)
             : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
             , _factory(ProxyType<FactoryType<IIPC, uint32_t>>::Create())
         {
-
             static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
             TRACE_L1("Created an internal factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
 
@@ -61,7 +61,6 @@ namespace Core {
             : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
             , _factory(factory)
         {
-
             static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
             TRACE_L1("Created an external factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
 
@@ -83,7 +82,7 @@ namespace Core {
             // We are ready to communicate over this socket.
             BaseClass::Source().Open(0);
         }
-        virtual ~IPCChannelClientType()
+        ~IPCChannelClientType() override
         {
             IPCChannelType<SocketPort, EXTENSION>::Source().Close(Core::infinite);
 
@@ -93,24 +92,24 @@ namespace Core {
         }
 
     public:
-        inline uint32_t Open(const uint32_t waitTime)
+        uint32_t Open(const uint32_t waitTime)
         {
             return (BaseClass::Source().Open(waitTime));
         }
-        inline uint32_t Close(const uint32_t waitTime)
+        uint32_t Close(const uint32_t waitTime)
         {
             return (BaseClass::Source().Close(waitTime));
         }
-        inline bool IsOpen() const
+        bool IsOpen() const
         {
             return (BaseClass::Source().IsOpen());
         }
-        inline bool IsClosed() const
+        bool IsClosed() const
         {
             return (BaseClass::Source().IsClosed());
         }
         template <typename ACTUALELEMENT>
-        inline void CreateFactory(const uint32_t initialSize)
+        void CreateFactory(const uint32_t initialSize)
         {
             ASSERT(_factory.IsValid());
             ASSERT(BaseClass::Source().IsOpen() == false);
@@ -120,7 +119,7 @@ namespace Core {
             _factory->CreateFactory<ACTUALELEMENT>(initialSize);
         }
         template <typename ACTUALELEMENT>
-        inline void DestroyFactory()
+        void DestroyFactory()
         {
 
             ASSERT(_factory.IsValid());
@@ -132,7 +131,7 @@ namespace Core {
         }
 
     protected:
-        virtual void StateChange()
+        void StateChange() override
         {
             // Do not forget to call the base...
             BaseClass::StateChange();
@@ -141,7 +140,7 @@ namespace Core {
         }
 
     private:
-        inline void StateChange(const TemplateIntToType<true>&)
+        void StateChange(const TemplateIntToType<true>&)
         {
             if ((BaseClass::Source().HasError() == true) && (BaseClass::Source().IsListening() == false)) {
 
@@ -165,7 +164,7 @@ namespace Core {
                 }
             }
         }
-        inline void StateChange(const TemplateIntToType<false>&)
+        void StateChange(const TemplateIntToType<false>&)
         {
             if (BaseClass::Source().HasError() == true) {
                 TRACE_L1("Error on socket. Not much we can do except for closing up, Try to recover. (%d)", BaseClass::Source().State());
@@ -182,14 +181,15 @@ namespace Core {
     template <typename EXTENSION, const bool INTERNALFACTORY>
     class IPCChannelServerType : public SocketListner {
     public:
-        typedef IPCChannelClientType<EXTENSION, false, false> Client;
+        using Client = IPCChannelClientType<EXTENSION, false, false>;
 
     private:
-        typedef IPCChannelServerType<EXTENSION, INTERNALFACTORY> ThisClass;
-        typedef std::map<EXTENSION*, ProxyType<Client>> ClientMap;
+        using ThisClass = IPCChannelServerType<EXTENSION, INTERNALFACTORY>;
+        using Clients = std::unordered_map<EXTENSION*, ProxyType<Client>>;
 
     public:
         IPCChannelServerType() = delete;
+        IPCChannelServerType(IPCChannelServerType<EXTENSION, INTERNALFACTORY>&&) = delete;
         IPCChannelServerType(const IPCChannelServerType<EXTENSION, INTERNALFACTORY>&) = delete;
         IPCChannelServerType<EXTENSION, INTERNALFACTORY>& operator=(IPCChannelServerType<EXTENSION, INTERNALFACTORY>&) = delete;
 
@@ -202,9 +202,6 @@ namespace Core {
             , _connector()
             , _bufferSize(bufferSize)
         {
-
-            ASSERT(node.IsValid() == true);
-
             static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
 
             if (node.IsValid() == true) {
@@ -226,9 +223,6 @@ namespace Core {
             , _connector()
             , _bufferSize(bufferSize)
         {
-
-            ASSERT(node.IsValid() == true);
-
             static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
 
             if (node.IsValid() == true) {
@@ -241,16 +235,14 @@ namespace Core {
                 }
             }
         }
-
-        virtual ~IPCChannelServerType()
-        {
+        ~IPCChannelServerType() override {
             TRACE_L1("Closing server in Process. %d", ProcessInfo().Id());
 
             Close(infinite);
 
-            ASSERT(_clients.size() == 0);
+            ASSERT(_clients.empty() == true);
 
-            if (_clients.size() > 0) {
+            if (_clients.empty() == false) {
 
                 TRACE_L1("Closing clients that should have been closed before destruction [%d].", static_cast<uint32_t>(_clients.size()));
                 CloseClients();
@@ -260,68 +252,79 @@ namespace Core {
         }
 
     public:
-        inline Core::ProxyType<Client> operator[](const uint32_t index)
-        {
-            Core::ProxyType<Client> result;
-            uint32_t steps = index;
-
+        uint32_t Open(const uint32_t waitTime) {
+            ASSERT(_connector.empty() == false);
+            return (SocketListner::Open(waitTime));
+        }
+        uint32_t Close(const uint32_t waitTime) {
+            return (SocketListner::Close(waitTime));
+        }
+        // void action(const Client& client)
+        template<typename ACTION>
+        void Visit(ACTION&& action) {
             _adminLock.Lock();
-
-            typename ClientMap::iterator current(_clients.begin());
-
-            while ((steps != 0) && (current != _clients.end())) {
-                --steps;
-                ++current;
+            for (const std::pair< EXTENSION* const, ProxyType<Client>>& entry : _clients) {
+                action(*(entry.second));
             }
-
-            if (current != _clients.end()) {
-                result = current->second;
-            }
-
             _adminLock.Unlock();
-
+        }
+        // void action(const Client& client)
+        template<typename ACTION>
+        void Visit(ACTION&& action) const {
+            _adminLock.Lock();
+            for (const std::pair< EXTENSION* const, ProxyType<Client>>& entry : _clients) {
+                action(*(entry.second));
+            }
+            _adminLock.Unlock();
+        }
+        // bool action(const Client& client) const
+        template<typename ACTION>
+        ProxyType<Client> Find(ACTION&& action) {
+            ProxyType<Client> result;
+            _adminLock.Lock();
+            typename Clients::iterator index = _clients.begin();
+            while ((result.IsValid() == false) && (index != _clients.end())) {
+                if (action(*(index->second)) == true) {
+                    result = index->second;
+                }
+                index++;
+            }
+            _adminLock.Unlock();
             return (result);
         }
-        inline Core::ProxyType<const Client> operator[](const uint32_t index) const
-        {
-            Core::ProxyType<const Client> result;
-            uint32_t steps = index;
-
+        // bool action(const Client& client) const
+        template<typename ACTION>
+        ProxyType<const Client> Find(ACTION&& action) const {
+            ProxyType<const Client> result;
             _adminLock.Lock();
-
-            typename ClientMap::const_iterator current(_clients.begin());
-
-            while ((steps != 0) && (current != _clients.end())) {
-                --steps;
-                ++current;
+            typename Clients::const_iterator index = _clients.cbegin();
+            while ((result.IsValid() == false) && (index != _clients.cend())) {
+                if (action(*(index->second)) == true) {
+                    result = index->second;
+                }
+                index++;
             }
-
-            if (current != _clients.end()) {
-                result = Core::ProxyType<const Client>(current->second);
-            }
-
             _adminLock.Unlock();
-
             return (result);
         }
-        inline const string& Connector() const
+        const string& Connector() const
         {
             return (_connector);
         }
-
-        inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
+        void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _adminLock.Lock();
 
-			ASSERT(handler.IsValid() == true);
+            ASSERT(handler.IsValid() == true);
             ASSERT(_handlers.find(id) == _handlers.end());
 
-            _handlers.emplace(id, handler);
+	    if (_handlers.find(id) == _handlers.end()) {
+                _handlers.emplace(id, handler);
+            }
 
             _adminLock.Unlock();
         }
-
-        inline void Unregister(const uint32_t id)
+        void Unregister(const uint32_t id)
         {
             _adminLock.Lock();
 
@@ -337,7 +340,7 @@ namespace Core {
         }
 
         template <typename ACTUALELEMENT>
-        inline void CreateFactory(const uint32_t initialSize)
+        void CreateFactory(const uint32_t initialSize)
         {
             ASSERT(_factory.IsValid());
             ASSERT(SocketListner::IsListening() == false);
@@ -350,9 +353,8 @@ namespace Core {
 
             _factory->CreateFactory<ACTUALELEMENT>(initialSize);
         }
-
         template <typename ACTUALELEMENT>
-        inline void DestroyFactory()
+        void DestroyFactory()
         {
 
             ASSERT(_factory.IsValid());
@@ -369,11 +371,11 @@ namespace Core {
             // Lock the list, unlock if we reach the end...
             _adminLock.Lock();
 
-            typename ClientMap::iterator index(_clients.begin());
+            typename Clients::iterator index(_clients.begin());
 
             return (CallRecursive(index, command, waitTime));
         }
-        inline void Cleanup()
+        void Cleanup()
         {
             _adminLock.Lock();
 
@@ -391,7 +393,7 @@ namespace Core {
         }
 
     private:
-        inline ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
+        ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (__InvokeAllowed(client, command));
         }
@@ -399,20 +401,20 @@ namespace Core {
         IS_MEMBER_AVAILABLE(InvokeAllowed, hasInvokeAllowed);
 
         template <typename CLASSNAME = EXTENSION>
-        inline typename Core::TypeTraits::enable_if<hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
+        typename Core::TypeTraits::enable_if<hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (client.Extension().InvokeAllowed(command));
         }
 
         template <typename CLASSNAME = EXTENSION>
-        inline typename Core::TypeTraits::enable_if<!hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
+        typename Core::TypeTraits::enable_if<!hasInvokeAllowed<const CLASSNAME, ProxyType<IIPC>, const ProxyType<IIPC>&>::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
         {
             return (command);
         }
 
-        inline void UnregisterHandlers(const typename ClientMap::iterator& client)
+        void UnregisterHandlers(const typename Clients::iterator& client)
         {
             // Make sure all handlers of the server are deattached from the client...
             std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
@@ -426,7 +428,7 @@ namespace Core {
         }
         void InternalCleanup()
         {
-            typename ClientMap::iterator cleaner(_clients.begin());
+            typename Clients::iterator cleaner(_clients.begin());
 
             while (cleaner != _clients.end()) {
                 if (cleaner->second->IsClosed() == true) {
@@ -442,7 +444,7 @@ namespace Core {
             uint32_t result = Core::ERROR_NONE;
 
             _adminLock.Lock();
-            typename ClientMap::iterator index(_clients.begin());
+            typename Clients::iterator index(_clients.begin());
 
             while (index != _clients.end()) {
                 Core::ProxyType<Client> item(index->second);
@@ -479,16 +481,17 @@ namespace Core {
 
             return (result);
         }
-        virtual void Accept(SOCKET& newClient, const NodeId& remoteId)
+        void Accept(SOCKET& newClient, const NodeId& remoteId) override
         {
-
             _adminLock.Lock();
 
             InternalCleanup();
 
             ProxyType<Client> newLink(ProxyType<Client>::Create(remoteId, _bufferSize, _factory, newClient));
 
-            _clients.insert(std::pair<EXTENSION*, ProxyType<Client>>(&(newLink->Extension()), newLink));
+            _clients.emplace(std::piecewise_construct, 
+                                std::forward_as_tuple(&(newLink->Extension())),
+                                std::forward_as_tuple(newLink));
 
             // Make sure all handlers form the server are attached to the client...
             std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
@@ -502,7 +505,7 @@ namespace Core {
 
             _adminLock.Unlock();
         }
-        uint32_t CallRecursive(typename ClientMap::iterator& index, ProxyType<IIPC>& command, const uint32_t waitTime)
+        uint32_t CallRecursive(typename Clients::iterator& index, ProxyType<IIPC>& command, const uint32_t waitTime)
         {
             uint32_t result = Core::ERROR_NONE;
 
@@ -533,7 +536,7 @@ namespace Core {
         mutable CriticalSection _adminLock;
         ProxyType<FactoryType<IIPC, uint32_t>> _factory;
         std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
-        ClientMap _clients;
+        Clients _clients;
         string _connector;
         const uint32_t _bufferSize;
     };

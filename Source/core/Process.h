@@ -24,7 +24,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class Process {
@@ -55,6 +55,11 @@ namespace Core {
                 , _options(copy._options)
             {
             }
+            Options(Options&& move)
+                : _command(std::move(move._command))
+                , _options(std::move(move._options))
+            {
+            }
             ~Options()
             {
             }
@@ -66,9 +71,10 @@ namespace Core {
             }
             inline void Erase(const string& value)
             {
-PUSH_WARNING(DISABLE_WARNING_DISCARD_RETURN_VALUE_FOR_NONDISCARD_FUNCTION)
-                std::remove(_options.begin(), _options.end(), value);
-POP_WARNING()
+                std::vector<string>::iterator index(std::find(_options.begin(), _options.end(), value));
+                if (index != _options.end()) {
+                    _options.erase(index);
+                }
             }
             inline void Clear()
             {

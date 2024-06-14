@@ -25,7 +25,7 @@
 #include "StateTrigger.h"
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class EXTERNAL ReadWriteLock {
@@ -36,9 +36,11 @@ namespace Core {
             IDLE = 0x04
         };
 
-    private:
-        ReadWriteLock(const ReadWriteLock& copy);
-        ReadWriteLock& operator=(const ReadWriteLock& rhs);
+    public:
+        ReadWriteLock(const ReadWriteLock& copy) = delete;
+        ReadWriteLock(ReadWriteLock&& move) = delete;
+        ReadWriteLock& operator=(const ReadWriteLock& rhs) = delete;
+        ReadWriteLock& operator=(ReadWriteLock&& move) = delete;
 
     public:
         ReadWriteLock()
@@ -54,24 +56,24 @@ namespace Core {
     public:
         bool ReadLock(const uint32_t waitTime = Core::infinite)
         {
-            bool aquired = false;
+            bool acquired = false;
 
-            while ((aquired == false) && (m_State.WaitState(IDLE | READERS, waitTime) == true)) {
+            while ((acquired == false) && (m_State.WaitState(IDLE | READERS, waitTime) == true)) {
                 m_State.Lock();
 
                 if (m_State == IDLE) {
                     m_State.SetState(READERS);
                     m_Readers++;
-                    aquired = true;
+                    acquired = true;
                 } else if (m_State == READERS) {
                     m_Readers++;
-                    aquired = true;
+                    acquired = true;
                 }
 
                 m_State.Unlock();
             }
 
-            return (aquired);
+            return (acquired);
         }
 
         void ReadUnlock()
@@ -93,22 +95,22 @@ namespace Core {
         bool WriteLock(const uint32_t waitTime = Core::infinite)
         {
             // Only 1 allowed, so we need to be in INDLE state
-            bool aquired = false;
+            bool acquired = false;
 
-            while ((aquired == false) && (m_State.WaitState(IDLE, waitTime) == true)) {
+            while ((acquired == false) && (m_State.WaitState(IDLE, waitTime) == true)) {
                 m_State.Lock();
 
                 if (m_State == IDLE) {
                     ASSERT(m_Readers == 0);
 
                     m_State.SetState(WRITER);
-                    aquired = true;
+                    acquired = true;
                 }
 
                 m_State.Unlock();
             }
 
-            return (aquired);
+            return (acquired);
         }
         void WriteUnlock()
         {

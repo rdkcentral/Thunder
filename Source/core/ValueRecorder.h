@@ -36,7 +36,7 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // C = continuation. [1] Next byte is part of this element, [0] Last part of element
     // T = Type. [1] = Time / [0] = Value
@@ -61,9 +61,11 @@ namespace Core {
     class RecorderType {
     private:
         class BaseRecorder {
-        private:
-            BaseRecorder(const BaseRecorder&);
-            BaseRecorder& operator=(const BaseRecorder&);
+        public:
+            BaseRecorder(BaseRecorder&&) = delete;
+            BaseRecorder(const BaseRecorder&) = delete;
+            BaseRecorder& operator=(BaseRecorder&&) = delete;
+            BaseRecorder& operator=(const BaseRecorder&) = delete;
 
         public:
             struct Absolute {
@@ -429,7 +431,7 @@ namespace Core {
                 ASSERT((_storage[_index] & 0x80) == 0);
 
                 // we need to loopback for another 0..
-                while ((_storage[_index - 1] & 0x80) != 0) {
+                while (_index > 0 && (_storage[_index - 1] & 0x80) != 0) {
                     result = (result << 7) | (_storage[_index] & 0x7F);
                     _index--;
                     stepBack++;
@@ -483,16 +485,20 @@ namespace Core {
             uint8_t* _storage;
         };
 
-    private:
-        RecorderType(const RecorderType<STOREVALUE, BLOCKSIZE>&);
-        RecorderType<STOREVALUE, BLOCKSIZE> operator=(const RecorderType<STOREVALUE, BLOCKSIZE>&);
+    public:
+        RecorderType(RecorderType<STOREVALUE, BLOCKSIZE>&&) = delete;
+        RecorderType(const RecorderType<STOREVALUE, BLOCKSIZE>&) = delete;
+        RecorderType<STOREVALUE, BLOCKSIZE> operator=(RecorderType<STOREVALUE, BLOCKSIZE>&&) = delete;
+        RecorderType<STOREVALUE, BLOCKSIZE> operator=(const RecorderType<STOREVALUE, BLOCKSIZE>&) = delete;
 
     public:
         class Writer : public BaseRecorder {
-        private:
-            Writer();
-            Writer(const Writer& copy);
-            Writer& operator=(const Writer& copy);
+        public:
+            Writer() = delete;
+            Writer(Writer&& move) = delete;
+            Writer(const Writer& copy) = delete;
+            Writer& operator=(Writer&& move) = delete;
+            Writer& operator=(const Writer& copy) = delete;
 
         protected:
             Writer(const string fileName)
@@ -606,9 +612,11 @@ namespace Core {
         };
 
         class Reader : public BaseRecorder {
-        private:
-            Reader(const Reader& copy);
-            Reader& operator=(const Reader& copy);
+        public:
+            Reader(Reader&& move) = delete;
+            Reader(const Reader& copy) = delete;
+            Reader& operator=(Reader&& move) = delete;
+            Reader& operator=(const Reader& copy) = delete;
 
         public:
             Reader(const ProxyType<Writer>& recorder, const uint32_t id = static_cast<uint32_t>(~0))

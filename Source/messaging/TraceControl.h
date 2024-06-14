@@ -34,44 +34,64 @@
 
 #else // _THUNDER_PRODUCTION
 
-#define TRACE_CONTROL(CATEGORY) \
-    WPEFramework::Messaging::LocalLifetimeType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME, WPEFramework::Messaging::MessageType::TRACING>
+#define TRACE_CONTROL(CATEGORY)                                                              \
+    Thunder::Messaging::LocalLifetimeType<CATEGORY, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>
 
-#define TRACE_ENABLED(CATEGORY) \
+#define TRACE_ENABLED(CATEGORY)                                                              \
     TRACE_CONTROL(CATEGORY)::IsEnabled()
 
-#define _TRACE_INTERNAL(CATEGORY, CLASSNAME, PARAMETERS) \
-    do {                                                                                                \
-        using __control__ = TRACE_CONTROL(CATEGORY);                                                    \
-        if (__control__::IsEnabled() == true) {                                                         \
-            CATEGORY __data__ PARAMETERS;                                                               \
-            WPEFramework::Core::Messaging::Information __info__(                                        \
-                __control__::MetaData(),                                                                \
-                __FILE__,                                                                               \
-                __LINE__,                                                                               \
-                (CLASSNAME),                                                                            \
-                WPEFramework::Core::Time::Now().Ticks()                                                 \
-            );                                                                                          \
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                          \
-            WPEFramework::Core::Messaging::MessageUnit::Instance().Push(__info__, &__message__);        \
-        }                                                                                               \
+#define TRACE(CATEGORY, PARAMETERS)                                                          \
+    do {                                                                                     \
+        using __control__ = TRACE_CONTROL(CATEGORY);                                         \
+        if (__control__::IsEnabled() == true) {                                              \
+            CATEGORY __data__ PARAMETERS;                                                    \
+            Thunder::Core::Messaging::MessageInfo __info__(                             \
+                __control__::Metadata(),                                                     \
+                Thunder::Core::Time::Now().Ticks()                                      \
+            );                                                                               \
+            Thunder::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
+                __FILE__,                                                                    \
+                __LINE__,                                                                    \
+                Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()               \
+            );                                                                               \
+            Thunder::Messaging::TextMessage __message__(__data__.Data());               \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+        }                                                                                    \
     } while(false)
 
-#define TRACE(CATEGORY, PARAMETERS) _TRACE_INTERNAL(CATEGORY, typeid(*this).name(), PARAMETERS)
-#define TRACE_GLOBAL(CATEGORY, PARAMETERS) _TRACE_INTERNAL(CATEGORY, __FUNCTION__, PARAMETERS)
-
-#define TRACE_DURATION(CODE, ...) \
-    do {                                                                        \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();       \
-        { CODE }                                                                \
-        TRACE(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));           \
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                                   \
+    do {                                                                                     \
+        using __control__ = TRACE_CONTROL(CATEGORY);                                         \
+        if (__control__::IsEnabled() == true) {                                              \
+            CATEGORY __data__ PARAMETERS;                                                    \
+            Thunder::Core::Messaging::MessageInfo __info__(                             \
+                __control__::Metadata(),                                                     \
+                Thunder::Core::Time::Now().Ticks()                                      \
+            );                                                                               \
+            Thunder::Core::Messaging::IStore::Tracing __trace__(                        \
+                __info__,                                                                    \
+                __FILE__,                                                                    \
+                __LINE__,                                                                    \
+                __FUNCTION__                                                                 \
+            );                                                                               \
+            Thunder::Messaging::TextMessage __message__(__data__.Data());               \
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);  \
+        }                                                                                    \
     } while(false)
 
-#define TRACE_DURATION_GLOBAL(CODE, ...) \
-    do {                                                                        \
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();       \
-        { CODE }                                                                \
-        TRACE_GLOBAL(WPEFramework::Trace::Duration, (start, ##__VA_ARGS__));    \
+#define TRACE_DURATION(CODE, ...)                                                            \
+    do {                                                                                     \
+        Thunder::Core::Time start = Thunder::Core::Time::Now();                    \
+        { CODE }                                                                             \
+        TRACE(Thunder::Trace::Duration, (start, ##__VA_ARGS__));                        \
+    } while(false)
+
+#define TRACE_DURATION_GLOBAL(CODE, ...)                                                     \
+    do {                                                                                     \
+        Thunder::Core::Time start = Thunder::Core::Time::Now();                    \
+        { CODE }                                                                             \
+        TRACE_GLOBAL(Thunder::Trace::Duration, (start, ##__VA_ARGS__));                 \
     } while(false)
 
 #endif // _THUNDER_PRODUCTION

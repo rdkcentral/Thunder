@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class EXTERNAL Library {
     private:
@@ -45,10 +45,12 @@ namespace Core {
         Library();
         Library(const void* functionInLibrary);
         Library(const TCHAR fileName[]);
+        Library(Library&& move);
         Library(const Library& copy);
         ~Library();
 
         Library& operator=(const Library& RHS);
+        Library& operator=(Library&& move);
 
     public:
         inline bool IsLoaded() const

@@ -40,7 +40,7 @@
 #include <libproc.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 #ifndef __WINDOWS__
     const uint32_t PageSize = getpagesize();
@@ -205,7 +205,6 @@ namespace Core {
             (void)closedir(dp);
         }
     }
-
 #endif
     /*
     // Get the Processes with this name.
@@ -257,7 +256,7 @@ namespace Core {
         , _index(0)
     {
 #ifndef __WINDOWS__
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
             ProcessName(foundparentPID, fullname, sizeof(fullname));
@@ -275,13 +274,13 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent pid
-    ProcessInfo::Iterator::Iterator(const uint32_t parentPID, const string& childname, const bool removepath)
+    ProcessInfo::Iterator::Iterator(const process_t parentPID, const string& childname, const bool removepath)
         : _pids()
         , _current()
         , _index(0)
     {
 #ifndef __WINDOWS__
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
 
             if (parentPID == foundparentPID) {
@@ -296,7 +295,7 @@ namespace Core {
     }
 
     // Get the Children of the given PID.
-    ProcessInfo::Iterator::Iterator(const uint32_t parentPID)
+    ProcessInfo::Iterator::Iterator(const process_t parentPID)
     {
 #ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -340,6 +339,16 @@ namespace Core {
 #endif
     {
     }
+
+    // Move Info
+    ProcessInfo::ProcessInfo(ProcessInfo&& move)
+        : _pid(std::move(move._pid))
+        , _memory(std::move(move._memory))
+#ifdef __WINDOWS__
+        , _handle(std::move(move._handle))
+#endif
+    {
+    }
     // Specifice Process Info
     ProcessInfo::ProcessInfo(const process_t id)
         : _pid(id)
@@ -375,6 +384,21 @@ namespace Core {
         _handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid);
 #endif
 
+        return (*this);
+    }
+    ProcessInfo& ProcessInfo::operator=(ProcessInfo&& move)
+    {
+        if (this != &move) {
+            _pid = std::move(move._pid);
+            _memory = std::move(move._memory);
+
+#ifdef __WINDOWS__
+            if (_handle) {
+                CloseHandle(_handle);
+            }
+            _handle = std::move(move._handle);
+#endif
+        }
         return (*this);
     }
     uint64_t ProcessInfo::Allocated() const
@@ -602,8 +626,8 @@ namespace Core {
 
             // Collect number of groups in which this user added
             getgrouplist(pwd->pw_name, pwd->pw_gid, nullptr, &numberOfGroups);
-            gid_t groups[numberOfGroups];
-            memset(groups, 0, sizeof(groups));
+            gid_t* groups = static_cast<gid_t*>(ALLOCA(sizeof(gid_t) * numberOfGroups));
+            memset(groups, 0, (sizeof(gid_t) * numberOfGroups));
 
             // Collect actual groups details
             getgrouplist(pwd->pw_name, pwd->pw_gid, groups, &numberOfGroups);
@@ -703,6 +727,20 @@ POP_WARNING()
     {
     }
 
+    ProcessInfo::Memory::Memory(ProcessInfo::Memory&& move)
+        : _pid(std::move(move._pid))
+        , _uss(move._uss)
+        , _pss(move._pss)
+        , _rss(move._rss)
+        , _vss(move._vss)
+        , _shared(move._shared)
+    {
+        move._uss = 0;
+        move._rss = 0;
+        move._vss = 0;
+        move._shared = 0;
+    }
+
     ProcessInfo::Memory& ProcessInfo::Memory::operator=(const ProcessInfo::Memory& other)
     {
         if (&other == this) {
@@ -712,7 +750,26 @@ POP_WARNING()
         _uss = 0;
         _pss = 0;
         _rss = 0;
+        _vss = 0;
         _shared = 0;
+        return *this;
+    }
+
+    ProcessInfo::Memory& ProcessInfo::Memory::operator=(ProcessInfo::Memory&& move)
+    {
+        if (this != &move) {
+            _pid = std::move(move._pid);
+            _uss = move._uss;
+            _pss = move._pss;
+            _rss = move._rss;
+            _vss = move._vss;
+            _shared = move._shared;
+
+            move._uss = 0;
+            move._rss = 0;
+            move._vss = 0;
+            move._shared = 0;
+        }
         return *this;
     }
 

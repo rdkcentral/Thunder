@@ -49,7 +49,7 @@
 #include <net/if_dl.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -462,6 +462,10 @@ namespace Core {
         }
     }
 
+    uint32_t AdapterIterator::MACAddress(const uint8_t[6]) {
+        return (Core::ERROR_NOT_SUPPORTED);
+    }
+
     static std::map<uint64_t, ULONG> _contextSaving;
 
     uint32_t AdapterIterator::Add(const IPNode& address)
@@ -719,7 +723,7 @@ namespace Core {
     class IPNetworks {
     private:
         using Map = std::map<uint32_t, Core::ProxyType<Network> >;
-        using Element = std::pair<uint32_t, Core::ProxyType<Network> >;
+        using Element = std::pair<const uint32_t, Core::ProxyType<Network> >;
         using Iterator = IteratorMapType<Map, const Core::ProxyType<const Network>&, uint32_t>;
 
         class LinkSocket : public SocketNetlink {
@@ -1070,6 +1074,7 @@ namespace Core {
         ~IPNetworks()
         {
             _linkSocket.Close();
+            _networks.clear();
         }
 
         static IPNetworks& Instance()
@@ -1091,14 +1096,19 @@ namespace Core {
             _adminLock.Unlock();
         }
         void Register(AdapterObserver::INotification* client) {
+            ASSERT(client != nullptr);
+
             _adminLock.Lock();
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
+            ASSERT(index == _observers.end());
             if (index == _observers.end()) {
                 _observers.push_back(client);
             }
             _adminLock.Unlock();
         }
         void Unregister(AdapterObserver::INotification* client) {
+            ASSERT(client != nullptr);
+
             _adminLock.Lock();
             std::list<AdapterObserver::INotification*>::iterator index (std::find(_observers.begin(), _observers.end(), client));
             if (index != _observers.end()) {
@@ -1573,9 +1583,35 @@ namespace Core {
                 }
             default:
                 // TRACE_L1("Unknown option encountered: %d", rtatp->rta_type);
-		break;
+                break;
             }
         }
+    }
+
+    uint32_t Network::MAC(const uint8_t buffer[6]) {
+        uint32_t result = (IsUp() == false ? Core::ERROR_NONE : Core::ERROR_ILLEGAL_STATE);
+
+        if (result == Core::ERROR_NONE) {
+            struct ifreq ifr;
+
+            ::bzero(ifr.ifr_name, IFNAMSIZ);
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+            ::memcpy(ifr.ifr_hwaddr.sa_data, buffer, 6);
+            ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+
+            int fd = socket(AF_INET, SOCK_DGRAM, 0);
+            if(fd < 0) {
+                result = Core::ERROR_OPENING_FAILED;
+            }
+            else {
+                if(ioctl(fd, SIOCSIFHWADDR, &ifr) < 0)
+                {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+                ::close(fd);
+            }
+        }
+        return(result);
     }
 
     AdapterIterator::AdapterIterator()
@@ -1604,6 +1640,14 @@ namespace Core {
             while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
         }
     }
+    AdapterIterator::AdapterIterator(AdapterIterator&& move)
+        : AdapterIterator() {
+        _reset = move._reset;
+        _list = std::move(move._list);
+        _index = std::move(move._index);
+
+         move._reset = 0;
+    }
 
     AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
     {
@@ -1614,6 +1658,19 @@ namespace Core {
         if (RHS.IsValid()) {
             string name (RHS.Name());
             while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+
+        return (*this);
+    }
+
+    AdapterIterator& AdapterIterator::operator=(AdapterIterator&& move)
+    {
+        if (this != &move) {
+            _reset = move._reset;
+            _list = std::move(move._list);
+            _index = std::move(move._index);
+
+            move._reset = 0;
         }
 
         return (*this);
@@ -1630,16 +1687,16 @@ namespace Core {
 
         //void Callback(PWNODE_HEADER wnode, . . .)
         //{
-        //	auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
-        //	auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
-        //		instance->DataBlockOffset + sizeof(ULONG));
-        //	auto linkState = (PNDIS_LINK_STATE)(header + 1);
+        //    auto instance = (PWNODE_SINGLE_INSTANCE)wnode;
+        //    auto header = (PNDIS_WMI_EVENT_HEADER)((PUCHAR)instance +
+        //                  instance->DataBlockOffset + sizeof(ULONG));
+        //    auto linkState = (PNDIS_LINK_STATE)(header + 1);
 
-        //	switch (linkState->MediaConnectState)
-        //	{
-        //	case MediaConnectStateConnected:
-        //		. . .
-        //	}
+        //    switch (linkState->MediaConnectState)
+        //    {
+        //        case MediaConnectStateConnected:
+        //                . . .
+        //    }
         //}
 
 #endif

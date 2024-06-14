@@ -23,10 +23,10 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
-static int g_shared = 1;
+static int g_shared = 2; // Change it back to 1 after fixing and enabling simple_criticalsection test
 
 class ThreadClass : public Core::Thread {
 public:
@@ -65,21 +65,21 @@ private:
     volatile bool _done;
 };
 
-TEST(DISABLED_test_criticalsection, simple_criticalsection)
+TEST(test_criticalsection, DISABLED_simple_criticalsection)
 {
     Core::CriticalSection lock;
-    std::thread::id parentId;
 
-    ThreadClass object(lock,parentId);
+    ThreadClass object(lock, std::this_thread::get_id());
     object.Run();
     lock.Lock();
     g_shared++;
     lock.Unlock();
     object.Stop();
+    object.Wait(Core::Thread::STOPPED, Core::infinite);
     EXPECT_EQ(g_shared,2);
 }
 
-TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore_timeout)
+TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
 {
     BinairySemaphore bsem(true);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
@@ -92,7 +92,7 @@ TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore_timeout)
     EXPECT_EQ(g_shared,3);
 }
 
-TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore)
+TEST(test_binairysemaphore, simple_binairysemaphore)
 {
     BinairySemaphore bsem(1,5);
     bsem.Lock();
@@ -101,7 +101,7 @@ TEST(DISABLED_test_binairysemaphore, simple_binairysemaphore)
     EXPECT_EQ(g_shared,4);
 }
 
-TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore_timeout)
+TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
 {
     CountingSemaphore csem(1,5);
     uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
@@ -127,7 +127,7 @@ TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore_timeout)
     EXPECT_EQ(g_shared,6);
 }
 
-TEST(DISABLED_test_countingsemaphore, simple_countingsemaphore)
+TEST(test_countingsemaphore, simple_countingsemaphore)
 {
     CountingSemaphore csem(1,5);
     csem.Lock();

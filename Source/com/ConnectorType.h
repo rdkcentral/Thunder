@@ -21,16 +21,16 @@
 #include "Module.h"
 #include "Communicator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     EXTERNAL Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer();
     EXTERNAL Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer();
 
     // This class is not thread safe. It is assumed that the Controller IUnknown
-    // is always set prior to any retrieval (WPEFramework/WPEProcess startup) and
+    // is always set prior to any retrieval (Thunder/ThunderPlugin startup) and
     // the interface is only revoked at process hsutdown, after shutting down all
-    // the other class (shutdown of WPEFrmaework or WPEProcess. So no need to
+    // the other class (shutdown of Thunder or ThunderPlugin. So no need to
     // lock the access to the _controller member variable.
     class EXTERNAL ConnectorController {
     private:
@@ -90,8 +90,9 @@ namespace RPC {
             Channel(const Channel&) = delete;
             Channel& operator=(const Channel&) = delete;
 
-            Channel(const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
+            Channel(ConnectorType<ENGINE>& parent, const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
                 : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
+                , _parent(parent)
             {
             }
             ~Channel() override = default;
@@ -109,36 +110,47 @@ namespace RPC {
             {
                 CommunicatorClient::Close(Core::infinite);
             }
+            void StateChange() override {
+                CommunicatorClient::StateChange();
+                _parent.Operational(CommunicatorClient::Source().IsOpen());
+            }
+
+        private:
+            ConnectorType<ENGINE>& _parent;
         };
+
     public:
+        ConnectorType(ConnectorType<ENGINE>&&) = delete;
         ConnectorType(const ConnectorType<ENGINE>&) = delete;
         ConnectorType<ENGINE>& operator=(const ConnectorType<ENGINE>&) = delete;
 
         ConnectorType()
             : _comChannels() {
         }
-        ~ConnectorType() = default;
+        virtual ~ConnectorType() = default;
 
     public:
         template <typename INTERFACE>
-        INTERFACE* Aquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
+        INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
         {
             INTERFACE* result = nullptr;
 
-            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, nodeId, ENGINE());
+            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, *this, nodeId, ENGINE());
 
             if (channel.IsValid() == true) {
-                result = channel->template Aquire<INTERFACE>(waitTime, className, version);
+                result = channel->template Acquire<INTERFACE>(waitTime, className, version);
             }
 
             return (result);
         }
-        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId){
-            return _comChannels.Find(nodeId);
+        Core::ProxyType<CommunicatorClient> Communicator(const Core::NodeId& nodeId) {
+            return (Core::ProxyType<CommunicatorClient>(_comChannels.Find(nodeId)));
         }
         RPC::IIPCServer& Engine()
         {
             return *ENGINE();
+        }
+        virtual void Operational(const bool /* operational */ ) {
         }
 
     private:
@@ -146,4 +158,4 @@ namespace RPC {
     };
 
 } // namespace RPC
-} // namespace WPEFramework
+} // namespace Thunder

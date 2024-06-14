@@ -33,7 +33,7 @@
 #include "Portability.h"
 #include "ResourceMonitor.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __WINDOWS__
@@ -139,9 +139,11 @@ namespace Core {
         // constructor. Prevent them from being used, generatoed by the compiler.
         // define them but do not implement them. Compile error and/or link error.
         // -------------------------------------------------------------------------
-    private:
-        SerialPort(const SerialPort& a_RHS);
-        SerialPort& operator=(const SerialPort& a_RHS);
+    public:
+        SerialPort(SerialPort&& move) = delete;
+        SerialPort(const SerialPort& a_RHS) = delete;
+        SerialPort& operator=(SerialPort&& move) = delete;
+        SerialPort& operator=(const SerialPort& a_RHS) = delete;
 
     public:
         SerialPort();

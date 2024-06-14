@@ -21,16 +21,22 @@ string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IShell.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IShell.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::Exchange" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+JsonGenerator(CODE NAMESPACE Thunder::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
+file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
 
 add_library(${TARGET} SHARED
         Channel.cpp
         JSONRPC.cpp
-        MetaData.cpp
+        Metadata.cpp
         Module.cpp
         Service.cpp
         Shell.cpp
@@ -38,14 +44,12 @@ add_library(${TARGET} SHARED
         SubSystem.cpp
         VirtualInput.cpp
         System.cpp
+        ${JSON_ENUM_SOURCES}
         )
 
+file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
 add_library(${TARGET_PROXYSTUBS} SHARED
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Plugin.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Shell.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_Controller.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_StateControl.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs_SubSystem.cpp
+        ${PROXY_STUB_SOURCES}
         Module.cpp
         )
 
@@ -60,9 +64,10 @@ set(PUBLIC_HEADERS
         IStateControl.h
         StateControl.h
         ISubSystem.h
+        IDispatcher.h
         SubSystem.h
         JSONRPC.h
-        MetaData.h
+        Metadata.h
         plugins.h
         Request.h
         Service.h
@@ -74,13 +79,14 @@ set(PUBLIC_HEADERS
         )
 
 target_link_libraries(${TARGET}
+        PUBLIC
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+          ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
-          ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-          ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
 if (WARNING_REPORTING)
@@ -90,16 +96,21 @@ if (WARNING_REPORTING)
             )
 endif()
 
+# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
+# as usage of those deprecated methods is valid here
+target_compile_options(${TARGET_PROXYSTUBS} PRIVATE -Wno-deprecated-declarations)
+
 target_link_libraries(${TARGET_PROXYSTUBS}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
+          ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}COM::${NAMESPACE}COM
         )
 
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
@@ -114,39 +125,53 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
+        SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
+        SOVERSION ${Thunder_VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${Thunder_VERSION}
+        )
+endif()
 
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins COMPONENT ${NAMESPACE}_Development
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 install(
-        TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets        # for downstream dependencies
-        ARCHIVE DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
-        RUNTIME DESTINATION bin COMPONENT libs                                  # binaries
-        FRAMEWORK DESTINATION bin/${NAMESPACE_LIB}/proxystubs COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/proxystubs COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}/proxystubs                    # headers
+        FILES ${JSON_DATA_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT ${NAMESPACE}_Development
+)
+
+install(
+        TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets      
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs COMPONENT ${NAMESPACE}_Development
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs
 )
 
 # ===========================================================================================
@@ -157,6 +182,7 @@ InstallPackageConfig(
         DESCRIPTION "Basic library to realize the glue between a proprietary plugin and the framework host.")
 
 InstallCMakeConfig(
+        EXTRA_DEPENDENCIES "ConfigGenerator"
         TARGETS ${TARGET})
 
 InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})

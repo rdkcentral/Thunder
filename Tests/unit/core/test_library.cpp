@@ -22,20 +22,20 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 TEST(Core_Library, simpleSet)
 {
     Library libObj;
 #ifdef BUILD_ARM
-    const string file =  _T("/usr/lib/libWPEFrameworkCore.so"); //For QEMU
+    const string file = _T("/usr/lib/testdata/libhelloworld.so"); // For QEMU
 #else
-    const string file = string(BUILD_DIR) + _T("/../../../Source/core/libWPEFrameworkCore.so"); //For PC
+    const string file = string(BUILD_DIR) + _T("/libhelloworld.so"); // For PC
     //const string file =  _T("/usr/lib/libwpe-0.2.so"); //For box.
 #endif
-    const TCHAR* function = _T("Core::Library::AddRef()");
-    const string file1 = _T("libWPEFramework.so");
+    const TCHAR* function = _T("Test::HelloWorld()");
+    const string file1 = _T("libThunder.so");
     Library LibObj1(file.c_str());
     LibObj1.LoadFunction(function);
     Library LibObjTest(file1.c_str());

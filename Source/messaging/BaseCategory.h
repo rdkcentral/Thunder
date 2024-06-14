@@ -21,10 +21,11 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
+
 namespace Messaging {
 
-    template <const Core::Messaging::MessageType TYPE>
+    template <const Core::Messaging::Metadata::type TYPE>
     class BaseCategoryType {
     public:
         ~BaseCategoryType() = default;
@@ -50,21 +51,18 @@ namespace Messaging {
     public:
         using BaseCategory = BaseCategoryType<TYPE>;
 
-        static constexpr Core::Messaging::MessageType Type = TYPE;
+        static constexpr Core::Messaging::Metadata::type Type = TYPE;
 
-        const char* Data() const
-        {
+        const char* Data() const {
             return (_text.c_str());
         }
 
-        uint16_t Length() const
-        {
+        uint16_t Length() const {
             return (static_cast<uint16_t>(_text.length()));
         }
 
     protected:
-        void Set(const string& text)
-        {
+        void Set(const string& text) {
             _text = text;
         }
 

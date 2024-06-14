@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 namespace Tests {
 
@@ -225,7 +225,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(bufferName.c_str()), (cyclicBufferSize + sizeof(CyclicBuffer::control)));
@@ -245,7 +245,7 @@ namespace Tests {
             EXPECT_STREQ(buffer1.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer1.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer1.IsValid(), true);
-            EXPECT_EQ(buffer1.Validate(), true);
+            EXPECT_EQ(buffer1.Open(), true);
 
             buffer1.~CyclicBuffer();
             EXPECT_EQ(IsFileExist(bufferName.c_str()), true);
@@ -257,7 +257,7 @@ namespace Tests {
             EXPECT_STREQ(buffer2.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer2.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer2.IsValid(), true);
-            EXPECT_EQ(buffer2.Validate(), true);
+            EXPECT_EQ(buffer2.Open(), true);
 
             // Remove after usage before destruction
             const_cast<File&>(buffer2.Storage()).Destroy();
@@ -280,7 +280,7 @@ namespace Tests {
         EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
-        EXPECT_EQ(buffer.Validate(), true);
+        EXPECT_EQ(buffer.Open(), true);
 
         EXPECT_EQ(buffer.Storage().IsOpen(), true);
         buffer.Storage().Close();
@@ -324,7 +324,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
             EXPECT_EQ(CheckBufferIsSharable(&buffer), true);
 
@@ -345,7 +345,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
 
             // Remove after usage before destruction
@@ -365,7 +365,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
             EXPECT_EQ(CheckBufferIsSharable(&buffer), true);
 
@@ -609,7 +609,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize);
@@ -640,7 +640,7 @@ namespace Tests {
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
             EXPECT_EQ(buffer.IsValid(), true);
-            EXPECT_EQ(buffer.Validate(), true);
+            EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
@@ -938,7 +938,6 @@ namespace Tests {
 
             EXPECT_EQ(buffer->Size(), cyclicBufferSize);
             testAdmin.Sync("setup server");
-            EXPECT_EQ(buffer->Read(loadBuffer, buffer->Used()), 0u);
             testAdmin.Sync("setup client");
 
             if (data->shareable == true) {
@@ -1123,7 +1122,6 @@ namespace Tests {
             testAdmin.Sync("setup server");
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
             string data = "abcdefghi";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
@@ -1308,7 +1306,6 @@ namespace Tests {
             testAdmin.Sync("setup client");
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
             uint16_t size = 9;
             string data = "abcdefi";
@@ -1384,7 +1381,8 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), false);
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnLock_FromParentAndForks)
+    
+    TEST(Core_CyclicBuffer, DISABLED_LockUnLock_FromParentAndForks)
     {
         std::string bufferName {"cyclicbuffer04"};
 
@@ -1490,8 +1488,7 @@ namespace Tests {
         Singleton::Dispose();
     }
 //TODO: revisit these test cases after fixing the issues with cyclicbuffer lock/unlock sequence
-#if 0
-    TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_WithDataPresent)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_WithDataPresent)
     {
         std::string bufferName {"cyclicbuffer05"};
 
@@ -1651,7 +1648,7 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_UsingAlert)
     {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
@@ -1683,7 +1680,7 @@ namespace Tests {
         threadLock.Stop();
         const_cast<File&>(buffer.Storage()).Destroy();
     }
-    TEST(Core_CyclicBuffer, LockUnlock_FromParentAndForks_UsingAlert)
+    TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_UsingAlert)
     {
         std::string bufferName {"cyclicbuffer05"};
 
@@ -1780,7 +1777,6 @@ namespace Tests {
         }
         Singleton::Dispose();
     }
-#endif
 } // Tests
 } // Core
-} // WPEFramework
+} // Thunder

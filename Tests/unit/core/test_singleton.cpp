@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class SingletonTypeOne {
     public:
@@ -54,7 +54,7 @@ class SingletonTypeThree {
         }
 };
 
-TEST(DISABLED_test_singleton, simple_singleton)
+TEST(test_singleton, simple_singleton)
 {
     static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
     static SingletonTypeOne& object_sample = SingletonType<SingletonTypeOne>::Instance();

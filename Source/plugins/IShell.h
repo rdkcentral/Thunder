@@ -25,7 +25,7 @@
 
 #include <com/ICOM.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace RPC {
         class Object;
@@ -40,26 +40,44 @@ namespace PluginHost {
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the main process, it will return a nullptr.
         /* @stubgen:omit */
-        struct EXTERNAL ICOMLink {
+        struct EXTERNAL ICOMLink : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_SHELL_COMLINK };
 
             struct INotification : virtual public Core::IUnknown {
-                virtual ~INotification() = default;
-                virtual void CleanedUp(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
+                virtual void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
                 virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
             };
 
             virtual ~ICOMLink() = default;
+
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
-            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual void Unregister(const RPC::IRemoteConnection::INotification* sink) = 0;
 
             virtual void Register(INotification* sink) = 0;
-            virtual void Unregister(INotification* sink) = 0;
+            virtual void Unregister(const INotification* sink) = 0;
 
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
             virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
-        enum class startup : uint8_t {
+        struct EXTERNAL IConnectionServer : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_SHELL_CONNECTIONSERVER };
+
+            struct INotification : virtual public Core::IUnknown {
+
+                enum { ID = RPC::ID_SHELL_CONNECTIONSERVER_NOTIFICATION };
+
+                virtual void Opened(const uint32_t channelId) = 0;
+                virtual void Closed(const uint32_t channelId) = 0;
+            };
+
+            virtual void Register(INotification* sink) = 0;
+            virtual void Unregister(const INotification* sink) = 0;
+        };
+
+        enum class startmode : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
             ACTIVATED
@@ -73,6 +91,7 @@ namespace PluginHost {
             ACTIVATED,
             ACTIVATION,
             PRECONDITION,
+            HIBERNATED,
             DESTROYED
         };
 
@@ -159,18 +178,6 @@ namespace PluginHost {
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) = 0;
         virtual void DisableWebServer() = 0;
 
-        //! Version: Returns the version of the application hosting the plugin
-        virtual string Version() const = 0;
-
-        //! Version: Returns the Major version of the plugin
-        virtual uint8_t Major() const = 0;
-
-        //! Version: Returns the Minor version of the plugin
-        virtual uint8_t Minor() const = 0;
-
-        //! Version: Returns the Patch version of the plugin
-        virtual uint8_t Patch() const = 0;
-
         //! Model: Returns a Human Readable name for the platform it is running on.
         virtual string Model() const = 0;
 
@@ -217,24 +224,25 @@ namespace PluginHost {
         virtual string SystemRootPath() const = 0;
 
         //! SystemRootPath: Set <config:systemrootpath>/
-        virtual uint32_t SystemRootPath(const string& systemRootPath) = 0;
+        virtual Core::hresult SystemRootPath(const string& systemRootPath) = 0;
 
-        //! Startup: <config:startup>/
-        virtual PluginHost::IShell::startup Startup() const = 0;
+        //! StartMode: <config:startmode>/
+        virtual PluginHost::IShell::startmode StartMode() const = 0;
 
-        //! Startup: Set<startup,autostart,resumed states>/
-        virtual uint32_t Startup(const startup value) = 0;
+        //! StartMode: Set<startmode states>/
+        virtual Core::hresult StartMode(const startmode value) = 0;
 
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
 
         virtual bool Resumed() const = 0;
-        virtual uint32_t Resumed(const bool value) = 0;
+        virtual Core::hresult Resumed(const bool value) = 0;
 
         virtual string HashKey() const = 0;
-        
+
         virtual string ConfigLine() const = 0;
-        virtual uint32_t ConfigLine(const string& config) = 0;
+        virtual Core::hresult ConfigLine(const string& config) = 0;
+        virtual Core::hresult Metadata(string& info /* @out */) const = 0;
 
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
@@ -247,6 +255,7 @@ namespace PluginHost {
         // It is expected to be JSON formatted strings as it is assumed that this is for reaching websockets clients living in
         // the web world that have build in functionality to parse JSON structs.
         virtual void Notify(const string& message) = 0;
+        virtual void Notify(const string& event, const string& parameters) = 0;
 
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
@@ -258,9 +267,10 @@ namespace PluginHost {
 
         // Methods to Activate/Deactivate and Unavailable the aggregated Plugin to this shell.
         // NOTE: These are Blocking calls!!!!!
-        virtual uint32_t Activate(const reason) = 0;
-        virtual uint32_t Deactivate(const reason) = 0;
-        virtual uint32_t Unavailable(const reason) = 0;
+        virtual Core::hresult Activate(const reason) = 0;
+        virtual Core::hresult Deactivate(const reason) = 0;
+        virtual Core::hresult Unavailable(const reason) = 0;
+        virtual Core::hresult Hibernate(const uint32_t timeout) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
@@ -268,67 +278,106 @@ namespace PluginHost {
         /* @stubgen:stub */
         virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
-        // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
-        // This method will return a nullptr if it is NOT in the main process.
-        /* @stubgen:stub */
-        virtual ICOMLink* COMLink() = 0;
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Register(sink);
+                handler->Release();
             }
         }
-        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
+        inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Unregister(sink);
+                handler->Release();
             }
         }
         inline void Register(ICOMLink::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Register(sink);
+                handler->Release();
             }
         }
         inline void Unregister(ICOMLink::INotification* sink)
         {
-            ICOMLink* handler(COMLink());
+            ASSERT(sink != nullptr);
+
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 handler->Unregister(sink);
+                handler->Release();
+            }
+        }
+        inline void Register(IConnectionServer::INotification* sink)
+        {
+            ASSERT(sink != nullptr);
+
+            IConnectionServer* handler(QueryInterface<IConnectionServer>());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
+                handler->Release();
+            }
+        }
+        inline void Unregister(const IConnectionServer::INotification* sink)
+        {
+            ASSERT(sink != nullptr);
+
+            IConnectionServer* handler(QueryInterface<IConnectionServer>());
+
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+                handler->Release();
             }
         }
         inline RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
         {
-            ICOMLink* handler(COMLink());
+            RPC::IRemoteConnection* connection(nullptr);
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
-            return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
+            if (handler != nullptr) {
+                connection = handler->RemoteConnection(connectionId);
+                handler->Release();
+            }
+
+            return (connection);
         }
-        inline uint32_t EnablePersistentStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnablePersistentStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(PersistentPath(), permission, user, group));
         }
-        inline uint32_t EnableVolatileStorage(uint32_t permission = 0, const string& user = {}, const string& group = {})
+        inline uint32_t EnableVolatileStorage(uint16_t permission = 0, const string& user = {}, const string& group = {})
         {
             return (EnableStoragePath(VolatilePath(), permission, user, group));
         }
@@ -358,7 +407,7 @@ namespace PluginHost {
         }
 
     private:
-        inline uint32_t EnableStoragePath(const string& storagePath, uint32_t permission, const string& user, const string& group)
+        inline uint32_t EnableStoragePath(const string& storagePath, uint16_t permission, const string& user, const string& group)
         {
             uint32_t result = Core::ERROR_NONE;
 
@@ -366,18 +415,20 @@ namespace PluginHost {
             Core::File path(storagePath);
 
             if (path.IsDirectory() == false) {
-                if (Core::Directory(PersistentPath().c_str()).Create() != true) {
+                if (Core::Directory(storagePath.c_str()).Create() != true) {
                     result = Core::ERROR_BAD_REQUEST;
                 }
             }
-            if (permission) {
-                path.Permission(permission);
-            }
-            if (user.empty() != true) {
-                path.User(user);
-            }
-            if (group.empty() != true) {
-                path.Group(group);
+            if (result == Core::ERROR_NONE) {
+                if (permission) {
+                    path.Permission(permission);
+                }
+                if (user.empty() != true) {
+                    path.User(user);
+                }
+                if (group.empty() != true) {
+                    path.Group(group);
+                }
             }
 
             return (result);

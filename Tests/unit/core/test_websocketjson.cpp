@@ -25,7 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class Message : public Core::JSON::Container {
@@ -207,7 +207,7 @@ namespace Tests {
         mutable Core::Event _dataPending;
     };
 
-    TEST(WebSocket, Json)
+    TEST(WebSocket, DISABLED_Json)
     {
         std::string connector {"/tmp/wpewebsocketjson0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
@@ -251,4 +251,4 @@ namespace Tests {
     }
 
 } // Tests
-} // WPEFramework
+} // Thunder

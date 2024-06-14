@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Config.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     // Forward declaration. We only have a smart pointer to a service.
@@ -106,11 +106,29 @@ namespace PluginHost {
                     _average = copy._average;
                     _count = copy._count;
                 }
-                Tuple& operator= (const Tuple& rhs) {
+                Tuple(Tuple&& move) {
+                    _minimum = move._minimum;
+                    _maximum = move._maximum;
+                    _average = move._average;
+                    _count = move._count;
+                    move.Clear();
+                }
+                Tuple& operator=(const Tuple& rhs) {
                     _minimum = rhs._minimum;
                     _maximum = rhs._maximum;
                     _average = rhs._average;
                     _count = rhs._count;
+
+                    return (*this);
+                }
+                Tuple& operator=(Tuple*& move) {
+                    if (this != &move) {
+                        _minimum = move._minimum;
+                        _maximum = move._maximum;
+                        _average = move._average;
+                        _count = move._count;
+                        move.Clear();
+		    }
 
                     return (*this);
                 }
@@ -151,8 +169,10 @@ namespace PluginHost {
 
         public:
             Statistics() = delete;
+            Statistics(Statistics&& move) = delete;
             Statistics(const Statistics& copy) = delete;
-            Statistics& operator= (const Statistics& rhs) = delete;
+            Statistics& operator=(Statistics&& rhs) = delete;
+            Statistics& operator=(const Statistics& rhs) = delete;
 
             Statistics(const uint32_t uptill)
                 : _adminLock()
@@ -240,8 +260,10 @@ namespace PluginHost {
         }
 
     public:
+        PerformanceAdministrator(PerformanceAdministrator&&) = delete;
         PerformanceAdministrator(const PerformanceAdministrator&) = delete;
-        PerformanceAdministrator& operator= (const PerformanceAdministrator&) = delete;
+        PerformanceAdministrator& operator=(PerformanceAdministrator&&) = delete;
+        PerformanceAdministrator& operator=(const PerformanceAdministrator&) = delete;
 
         static PerformanceAdministrator& Instance() {
             static PerformanceAdministrator singleton;
@@ -278,10 +300,12 @@ namespace PluginHost {
         StatisticsList _statistics;
     };
 
-    class TrackingJSONRPC : public Web::JSONBodyType<Core::JSONRPC::Message> {
+    class TrackingJSONRPC : public  Web::JSONRPC::Body {
     public:
+        TrackingJSONRPC(TrackingJSONRPC&&) = delete;
         TrackingJSONRPC(const TrackingJSONRPC&) = delete;
-        TrackingJSONRPC& operator= (const TrackingJSONRPC&) = delete;
+        TrackingJSONRPC& operator=(TrackingJSONRPC&&) = delete;
+        TrackingJSONRPC& operator=(const TrackingJSONRPC&) = delete;
 
         TrackingJSONRPC() = default;
         ~TrackingJSONRPC() override = default;
@@ -290,14 +314,14 @@ namespace PluginHost {
         void Clear() {
             _in = 0;
             _out = 0;
-            Web::JSONBodyType<Core::JSONRPC::Message>::Clear();
+            Web::JSONRPC::Body::Clear();
 
         }
 	void In(const uint32_t data) {
             if (data == 0) {
                 uint64_t now = Core::Time::Now().Ticks();
                 _statistics.Deserialization = static_cast<uint32_t>(now - _stamp);
-		_stamp = now;
+		        _stamp = now;
             }
             _in += data;
         }
@@ -347,7 +371,7 @@ namespace PluginHost {
     };
     using JSONRPCMessage = TrackingJSONRPC;
 #else
-    using JSONRPCMessage = Web::JSONBodyType<Core::JSONRPC::Message>;
+    using JSONRPCMessage = Web::JSONRPC::Body;
 #endif
 
     typedef Core::ProxyPoolType<PluginHost::Request> RequestPool;

@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Channel.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Controller.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Plugin.cpp" />
-    <ClCompile Include="generated\ProxyStubs_Shell.cpp" />
-    <ClCompile Include="generated\ProxyStubs_StateControl.cpp" />
-    <ClCompile Include="generated\ProxyStubs_SubSystem.cpp" />
-    <ClCompile Include="MetaData.cpp" />
+    <ClCompile Include="json\JsonEnum_Configuration.cpp" />
+    <ClCompile Include="json\JsonEnum_Discovery.cpp" />
+    <ClCompile Include="json\JsonEnum_LifeTime.cpp" />
+    <ClCompile Include="json\JsonEnum_Metadata.cpp" />
+    <ClCompile Include="json\JsonEnum_System.cpp" />
+    <ClCompile Include="json\JsonEnum_Events.cpp" />
+    <ClCompile Include="json\JsonEnum_Subsystems.cpp" />
+    <ClCompile Include="Metadata.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Shell.cpp" />
@@ -39,13 +41,28 @@
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Configuration.h" />
+    <CustomBuild Include="IController.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CustomBuild>
+    <ClInclude Include="IDispatcher.h">
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)json/JDispatcher.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)json/JDispatcher.h</Outputs>
+    </ClInclude>
     <ClInclude Include="IPlugin.h" />
-    <ClInclude Include="IRemoteInstantiation.h" />
     <ClInclude Include="IShell.h" />
     <ClInclude Include="IStateControl.h" />
     <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="JSONRPC.h" />
-    <ClInclude Include="MetaData.h" />
+    <ClInclude Include="Metadata.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="Request.h" />
@@ -155,6 +172,23 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+    </CustomBuildStep>
+    <CustomBuild>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSON Generated Code</Message>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -177,6 +211,23 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+    </CustomBuildStep>
+    <CustomBuild>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSON Generated Code</Message>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -199,6 +250,23 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+    </CustomBuildStep>
+    <CustomBuild>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSON Generated Code</Message>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -225,6 +293,23 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+    </CustomBuildStep>
+    <CustomBuild>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSON Generated Code</Message>
+      <Outputs>$(ProjectDir)json/json_%(FileName).h</Outputs>
+      <OutputItemType>ClInclude</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

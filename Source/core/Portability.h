@@ -91,6 +91,12 @@
   #endif
 #endif
 
+#if defined(__GNUC__)
+    #pragma GCC system_header
+#elif defined(__clang__)
+    #pragma clang system_header
+#endif
+
 #ifdef __WINDOWS__
     #define DO_PRAGMA(x) __pragma(x)
 
@@ -103,7 +109,7 @@
 
     #if defined(__clang__)
         #define PUSH_WARNING_ _Pragma("clang diagnostic push")
-        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored #WARNING)
+        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored WARNING)
         #define POP_WARNING_ _Pragma("clang diagnostic pop")
 
     #elif (__GNUC__ >= 4)
@@ -167,9 +173,20 @@
 // W3 -- Code uses a function, class member, variable, or typedef that's marked deprecated
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_(4996)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS
-#define DISABLE_WARNING_UNUSED_VARIABLES
+// W3 - 'identifier': unreferenced local variable
+#define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_(4101)
+// W4 - 'identifier': unreferenced formal parameter
+#define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_(4100)
+// W4 - 'function': unreferenced function with internal linkage has been removed
+#define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_(5242)
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
+#define DISABLE_WARNING_UNUSED_RESULT
+#define DISABLE_WARNING_TYPE_LIMITS
+#define DISABLE_WARNING_STRING_OPERATION_OVERREAD
+#define DISABLE_WARNING_PEDANTIC
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS
+#define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -179,7 +196,6 @@
 #define DISABLE_WARNING_NO_MATCHING_OPERATOR_DELETE
 #define DISABLE_WARNING_CONVERSION_TRUNCATION
 #define DISABLE_WARNING_POINTER_TRUNCATION
-#define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE
 #define DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST
 #define DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS
 #define DISABLE_WARNING_DISCARD_RETURN_VALUE_FOR_NONDISCARD_FUNCTION
@@ -187,9 +203,18 @@
 #if defined(__clang__) || (__GNUC__ >= 4)
 #define DISABLE_WARNING_MISSING_FIELD_INITIALIZERS PUSH_WARNING_ARG_("-Wmissing-field-initializers")
 #define DISABLE_WARNING_UNUSED_VARIABLES PUSH_WARNING_ARG_("-Wunused-variable")
+#define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_("-Wunused-parameter")
+#define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_("-Wunused-function")
+#define DISABLE_WARNING_UNUSED_RESULT PUSH_WARNING_ARG_("-Wunused-result")
 #define DISABLE_WARNING_DEPRECATED_USE PUSH_WARNING_ARG_("-Wdeprecated-declarations")
 #define DISABLE_WARNING_DEPRECATED_COPY PUSH_WARNING_ARG_("-Wdeprecated-copy")
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
+#define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
+#define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
+#define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wpedantic")
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS PUSH_WARNING_ARG_("-Woverloaded-virtual")
+#define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE PUSH_WARNING_ARG_("-Wint-to-pointer-cast")
+#define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND PUSH_WARNING_ARG_("-Wconstant-logical-operand")
 #endif
 #endif
 
@@ -232,6 +257,8 @@ PUSH_WARNING( \
 #include <array>
 #include <thread>
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+#include <inttypes.h>
+#include <io.h>
 
 #define AF_NETLINK 16
 #define AF_PACKET  17
@@ -317,6 +344,8 @@ typedef std::string string;
 #undef min
 #undef max
 #undef ERROR_NOT_SUPPORTED
+#undef ERROR_HIBERNATED
+#undef ERROR_INVALID_PARAMETER
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -332,48 +361,51 @@ typedef std::string string;
 #endif
 
 #ifdef __LINUX__
-
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+#include <string>
+#include <sys/time.h>
 #include <algorithm>
 #include <atomic>
 #include <array>
 #include <map>
+#include <unordered_map>
 #include <list>
-#include <alloca.h>
-#include <arpa/inet.h>
-#include <assert.h>
-#include <cxxabi.h>
+#include <typeinfo>
 #include <cmath>
+#include <thread>
+
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+#include <alloca.h>
+#include <cxxabi.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <getopt.h>
-#include <list>
 #include <math.h>
-#include <map>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <strings.h>
+#include <inttypes.h>
+
 #include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <termios.h>
-#include <typeinfo>
-#include <unistd.h>
-#include <unordered_map>
-#include <thread>
-#include <stdarg.h> /* va_list, va_start, va_arg, va_end */
+#include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+
+#include <arpa/inet.h>
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -385,13 +417,28 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
+
+#define AF_NETLINK 16
+#define AF_PACKET  17
+
+#ifndef POLLRDHUP
+#define POLLRDHUP 0x2000
+#endif
+
+#define __APPLE_USE_RFC_3542
+
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
-int clock_gettime(int, struct timespec*);
+//clock_gettime is available in OSX Darwin >= 10.12
+//int clock_gettime(int, struct timespec*);
+extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>
 #include <linux/uinput.h>
 #include <sys/signalfd.h>
+
+uint64_t htonll(const uint64_t& value);
+uint64_t ntohll(const uint64_t& value);
 #endif
 
 #define ONESTOPBIT 0
@@ -493,14 +540,17 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 #define DEPRECATED __attribute__((deprecated))
 #define VARIABLE_IS_NOT_USED __attribute__((unused))
 #define WARNING_RESULT_NOT_USED __attribute__((warn_unused_result))
+#define PRINTF_FORMAT(fmt, ellipsis) __attribute__ ((format (printf, fmt, ellipsis)))
 #elif defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
 #define VARIABLE_IS_NOT_USED
 #define WARNING_RESULT_NOT_USED
+#define PRINTF_FORMAT(fmt, ellipsis)
 #else
 #define DEPRECATED
 #define VARIABLE_IS_NOT_USED
 #define WARNING_RESULT_NOT_USED
+#define PRINTF_FORMAT(fmt, ellipsis)
 #endif
 
 #if !defined(NDEBUG)
@@ -558,13 +608,15 @@ struct TemplateIntToType {
 
 extern "C" {
 
-extern EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
-
-#if defined(__LINUX__)
-uint64_t htonll(const uint64_t& value);
-uint64_t ntohll(const uint64_t& value);
-#endif
+DEPRECATED inline EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
+{
+    return (::memmove(_Dst, _Src, _MaxCount));
 }
+
+
+}
+
+#define SLEEPSLOT_POLLING_TIME 100
 
 // ---- Helper types and constants ----
 #define _TXT(THETEXT) \
@@ -606,7 +658,6 @@ typedef enum {
 
 
 #endif // __LINUX__
-
 #ifdef _UNICODE
 typedef std::wstring string;
 #endif
@@ -621,7 +672,7 @@ typedef std::string string;
 #ifdef __LINUX__
 typedef pthread_t ThreadId;
 #else
-typedef HANDLE ThreadId;
+typedef DWORD ThreadId;
 #endif
 
 #define QUOTE(str) #str
@@ -633,16 +684,29 @@ typedef HANDLE ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
+    #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
+    #if __CORE_INSTANCE_BITS__ <= 8
+    typedef uint8_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 16
+    typedef uint16_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 32 
+    typedef uint32_t instance_id;
+    #elif __CORE_INSTANCE_BITS__ <= 64
+    typedef uint64_t instance_id;
+    #endif
+    #else
     #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
     typedef uint64_t instance_id;
     #else
     typedef uint32_t instance_id;
     #endif
+    #endif
 
+    typedef uint32_t hresult;
 
     struct callstack_info {
         void*    address;
@@ -705,8 +769,8 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
-    string EXTERNAL Format(const TCHAR formatter[], ...);
-    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    string EXTERNAL Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
     void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
 
     const uint32_t infinite = -1;
@@ -725,12 +789,19 @@ namespace Core {
 
     struct EXTERNAL IReferenceCounted {
         virtual ~IReferenceCounted() = default;
-        virtual void AddRef() const = 0;
+        virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
     };
 
     struct EXTERNAL IUnknown : public IReferenceCounted  {
-        enum { ID = 0x00000000 };
+
+        enum : uint32_t {
+            ID_OFFSET_INTERNAL  = 0x00000000,
+            ID_OFFSET_PUBLIC    = 0x00000040,
+            ID_OFFSET_CUSTOM    = 0x80000000
+        };
+
+        enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
 
         ~IUnknown() override = default;
 
@@ -749,12 +820,12 @@ namespace Core {
         }
 
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* QueryInterface() const
+        const REQUESTEDINTERFACE* QueryInterface() const
         {
             const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
@@ -778,6 +849,8 @@ namespace Core {
         static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
     #endif
     }
+
+    #define COM_ERROR (0x80000000)
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
@@ -825,7 +898,20 @@ namespace Core {
         ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
         ERROR_CODE(ERROR_NOT_EXIST, 43) \
         ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
-        ERROR_CODE(ERROR_INVALID_RANGE, 45)
+        ERROR_CODE(ERROR_INVALID_RANGE, 45) \
+        ERROR_CODE(ERROR_HIBERNATED, 46) \
+        ERROR_CODE(ERROR_INPROC, 47) \
+        ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
+        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) \
+        ERROR_CODE(ERROR_PARSE_FAILURE, 50) \
+        ERROR_CODE(ERROR_PRIVILIGED_DEFERRED, 51) \
+        ERROR_CODE(ERROR_INVALID_ENVELOPPE, 52) \
+        ERROR_CODE(ERROR_UNKNOWN_METHOD, 53) \
+        ERROR_CODE(ERROR_INVALID_PARAMETER, 54) \
+        ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
+        ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
+        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
+        ERROR_CODE(ERROR_ABORTED, 58)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 
@@ -870,6 +956,10 @@ namespace Core {
 }
 }
 
+namespace WPEFramework {
+    using namespace Thunder;
+}
+
 extern "C" {
 
 #ifdef __WINDOWS__
@@ -877,7 +967,7 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
@@ -901,6 +991,6 @@ namespace std {
 #endif
 #endif
 
-#define THUNDER_VERSION 4
+#include "Version.h"
 
 #endif // __PORTABILITY_H

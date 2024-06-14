@@ -21,40 +21,7 @@
 #include "IShell.h"
 #include "Configuration.h"
 
-namespace WPEFramework {
-
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
-
-    { PluginHost::IShell::UNAVAILABLE, _TXT("Unavailable") },
-    { PluginHost::IShell::DEACTIVATED, _TXT("Deactivated") },
-    { PluginHost::IShell::DEACTIVATION, _TXT("Deactivation") },
-    { PluginHost::IShell::ACTIVATED, _TXT("Activated") },
-    { PluginHost::IShell::ACTIVATION, _TXT("Activation") },
-    { PluginHost::IShell::PRECONDITION, _TXT("Precondition") },
-    { PluginHost::IShell::DESTROYED, _TXT("Destroyed") },
-
-ENUM_CONVERSION_END(PluginHost::IShell::state)
-
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
-
-    { PluginHost::IShell::REQUESTED, _TXT("Requested") },
-    { PluginHost::IShell::AUTOMATIC, _TXT("Automatic") },
-    { PluginHost::IShell::FAILURE, _TXT("Failure") },
-    { PluginHost::IShell::MEMORY_EXCEEDED, _TXT("MemoryExceeded") },
-    { PluginHost::IShell::STARTUP, _TXT("Startup") },
-    { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
-    { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },
-    { PluginHost::IShell::WATCHDOG_EXPIRED, _TXT("WatchdogExpired") },
-
-ENUM_CONVERSION_END(PluginHost::IShell::reason)
-
-ENUM_CONVERSION_BEGIN(PluginHost::IShell::startup)
-
-    { PluginHost::IShell::startup::UNAVAILABLE, _TXT("Unavailable") },
-    { PluginHost::IShell::startup::DEACTIVATED, _TXT("Deactivated") },
-    { PluginHost::IShell::startup::ACTIVATED,   _TXT("Activated")   },
-
-ENUM_CONVERSION_END(PluginHost::IShell::startup)
+namespace Thunder {
 
 namespace PluginHost
 {
@@ -92,7 +59,7 @@ namespace PluginHost
                 }
             }
         } else {
-            ICOMLink* handler(COMLink());
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -131,6 +98,6 @@ ENUM_CONVERSION_BEGIN(Plugin::Config::RootConfig::ModeType)
     { Plugin::Config::RootConfig::ModeType::CONTAINER, _TXT("Container") },
     { Plugin::Config::RootConfig::ModeType::DISTRIBUTED, _TXT("Distributed") },
 
-ENUM_CONVERSION_END(Plugin::Config::RootConfig::ModeType);
+ENUM_CONVERSION_END(Plugin::Config::RootConfig::ModeType)
 
 } // namespace 

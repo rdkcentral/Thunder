@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     void CleanUpBuffer(string bufferName)
@@ -38,7 +38,7 @@ namespace Tests {
         system(const_cast<char*>(systemCmd));
     }
 
-    TEST(DISABLED_Core_SharedBuffer, simpleSet)
+    TEST(Core_SharedBuffer, simpleSet)
     {
         std::string bufferName {"testbuffer01"} ;
         auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
@@ -186,4 +186,4 @@ namespace Tests {
         Core::Singleton::Dispose();
     }
 } // Tests
-} // WPEFramework
+} // Thunder

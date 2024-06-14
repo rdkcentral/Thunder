@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename MESSAGE>
     class SynchronizeType {
@@ -97,7 +97,7 @@ namespace Core {
 
             _adminLock.Unlock();
         }
-        uint32_t Aquire(const uint32_t duration)
+        uint32_t Acquire(const uint32_t duration)
         {
             uint32_t result = _signal.Lock(duration);
 

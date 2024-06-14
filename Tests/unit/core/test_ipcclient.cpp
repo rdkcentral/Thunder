@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     TEST(Core_IPC, IPCClientConnection)
@@ -45,6 +45,8 @@ namespace Tests {
 
             error = serverChannel.Close(1000); // Wait for 1 Second.
             EXPECT_EQ(error, Core::ERROR_NONE);
+
+            serverChannel.Cleanup();
 
             factory->DestroyFactories();
         };
@@ -74,4 +76,4 @@ namespace Tests {
         testAdmin.Sync("done testing");
     }
 } // Tests
-} // WPEFramework
+} // Thunder
