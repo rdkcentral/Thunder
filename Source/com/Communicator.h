@@ -661,7 +661,6 @@ namespace RPC {
 
     private:
         friend class ProcessShutdown;
-        class RemoteConnectionMap;
 
         class MonitorableProcess : public RemoteConnection, public IMonitorableProcess {
         public:

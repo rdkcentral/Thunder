@@ -484,7 +484,7 @@ namespace PluginHost {
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::state::DEACTIVATED) ) {
+        } else if (currentState == IShell::state::DEACTIVATED) {
             result = Activate(why);
             currentState = State();
         }
