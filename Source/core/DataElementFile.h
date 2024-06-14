@@ -112,7 +112,7 @@ namespace Core {
 
     protected:
         void Close();
-        virtual void Reallocation(const uint64_t size);
+        void Reallocation(const uint64_t size) override;
 
         void ReopenMemoryMappedFile();
 

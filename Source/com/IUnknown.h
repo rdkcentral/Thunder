@@ -52,10 +52,10 @@ namespace ProxyStub {
         inline uint16_t Length() const {
             return (3);
         }
-	    virtual Core::IUnknown* Convert(void* incomingData) const {
+        virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
         }
-	    virtual uint32_t InterfaceId() const {
+        virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
@@ -87,14 +87,15 @@ namespace ProxyStub {
         {
             return (_myHandlerCount + UnknownStub::Length());
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const
+        Core::IUnknown* Convert(void* incomingData) const override
         {
             return (reinterpret_cast<INTERFACE*>(incomingData));
         }
-    	virtual uint32_t InterfaceId() const {
+    	uint32_t InterfaceId() const override
+        {
             return (INTERFACE::ID);
         }
-        virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
+        void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) override
         {
             uint16_t baseNumber(UnknownStub::Length());
 
