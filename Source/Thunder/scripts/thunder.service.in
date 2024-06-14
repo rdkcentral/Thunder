@@ -1,7 +1,7 @@
 [Unit]
 Description=thunder
 Wants=multi-user.target
-After=multi-user.target EXTRA_DEPENDS
+After=multi-user.target @EXTRA_DEPENDS@
 
 [Service]
 PIDFile=/var/run/Thunder.pid
