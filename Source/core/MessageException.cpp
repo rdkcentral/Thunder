@@ -36,11 +36,11 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     }
 POP_WARNING()
 
-    MessageException::~MessageException() noexcept(true)
+    MessageException::~MessageException() throw()
     {
     }
 
-    const TCHAR* MessageException::Message() const noexcept(true)
+    const TCHAR* MessageException::Message() const throw()
     {
         return m_Message.c_str();
     }
