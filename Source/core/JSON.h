@@ -2179,10 +2179,10 @@ namespace Core {
                 //      'Test \" and \" and than \\\"' are all escaped quotes 
                 uint32_t index = static_cast<uint32_t>(value.length() - 1);
                 uint32_t start = index;
-                while ( (index >= 0) && (value[index] == '\\') ) {
+                while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
                     index--;
                 }
-                return ((start - index) % 2 == 0);
+                return (((start - index) % 2) == 0);
             }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
