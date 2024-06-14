@@ -648,6 +648,27 @@ namespace RPC {
                 }
             }
 
+            uint32_t Hibernate(uint32_t timeout)
+            {
+                uint32_t result = Core::ERROR_ILLEGAL_STATE;
+                if (_channel.IsValid() == true) {
+                    result = _channel->Hibernate(timeout);
+                }
+                return result;
+            }
+
+            void Wakeup()
+            {
+                if (_channel.IsValid() == true) {
+                    _channel->Wakeup();
+                }
+            }
+
+            void RegisterWakeupRequest(Core::IPCChannel::IPCWakeupRequest *request)
+            {
+                _channel->RegisterWakeupRequest(request);
+            }
+
             BEGIN_INTERFACE_MAP(RemoteConnection)
                 INTERFACE_ENTRY(IRemoteConnection)
             END_INTERFACE_MAP
@@ -1568,6 +1589,32 @@ POP_WARNING()
             _connectionMap.Destroy();
         }
         void Destroy(const uint32_t id);
+        uint32_t HibernateConnection(const uint32_t id, uint32_t timeout)
+        {
+            uint32_t result = Core::ERROR_UNAVAILABLE;
+            RemoteConnection *connection = _connectionMap.Connection(id);
+            if(connection != nullptr)
+            {
+                result = connection->Hibernate(timeout);
+            }
+            return result;
+        }
+        void WakeupConnection(const uint32_t id)
+        {
+            RemoteConnection *connection = _connectionMap.Connection(id);
+            if(connection != nullptr)
+            {
+                connection->Wakeup();
+            }
+        }
+        void RegisterWakeupRequestInConnection(const uint32_t id, Core::IPCChannel::IPCWakeupRequest *request)
+        {
+            RemoteConnection *connection = _connectionMap.Connection(id);
+            if(connection != nullptr)
+            {
+                connection->RegisterWakeupRequest(request);
+            }
+        }
 
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)

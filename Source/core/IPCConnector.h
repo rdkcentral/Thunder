@@ -692,10 +692,21 @@ POP_WARNING()
             std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
         };
 
+        class EXTERNAL IPCWakeupRequest {
+        public:
+            virtual ~IPCWakeupRequest() = default;
+            virtual uint32_t Request() = 0;
+        };
+
     protected:
         IPCChannel()
             : _administration()
             , _customData(nullptr)
+            , _lock()
+            , _signal(false, true)
+            , _hibernated(false)
+            , _wakeupRequest(nullptr)
+            , _executions(0)
         {
         }
 
@@ -712,6 +723,11 @@ POP_WARNING()
         IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             : _administration(factory)
             , _customData(nullptr)
+            , _lock()
+            , _signal(false, true)
+            , _hibernated(false)
+            , _wakeupRequest(nullptr)
+            , _executions(0)
         {
         }
         virtual ~IPCChannel() = default;
@@ -737,20 +753,40 @@ POP_WARNING()
         template <typename ACTUALELEMENT>
         uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
-            return (Execute(Core::ProxyType<IIPC>(command), completed));
+            uint32_t result = Prepare();
+            if (result == Core::ERROR_NONE) {
+                result = Execute(Core::ProxyType<IIPC>(command), completed);
+                Complete();
+            }
+            return result;
         }
         template <typename ACTUALELEMENT>
         uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
         {
-            return (Execute(Core::ProxyType<IIPC>(command), waitTime));
+            uint32_t result = Prepare();
+            if (result == Core::ERROR_NONE) {
+                result = Execute(Core::ProxyType<IIPC>(command), waitTime);
+                Complete();
+            }
+            return result;
         }
         uint32_t Invoke(const ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
         {
-            return (Execute(command, completed));
+            uint32_t result = Prepare();
+            if (result == Core::ERROR_NONE) {
+                result = Execute(command, completed);
+                Complete();
+            }
+            return result;
         }
         uint32_t Invoke(const ProxyType<Core::IIPC>& command, const uint32_t waitTime)
         {
-            return (Execute(command, waitTime));
+            uint32_t result = Prepare();
+            if (result == Core::ERROR_NONE) {
+                result = Execute(command, waitTime);
+                Complete();
+            }
+            return result;
         }
 
         const void* CustomData() const
@@ -764,15 +800,89 @@ POP_WARNING()
 
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
+        void RegisterWakeupRequest(IPCWakeupRequest* request)
+        {
+            _lock.Lock();
+            _wakeupRequest = request;
+            _lock.Unlock();
+        }
+
+        uint32_t Hibernate(uint32_t timeout)
+        {
+            int result = Core::ERROR_NONE;
+            _lock.Lock();
+            _hibernated = true;
+            _signal.ResetEvent();
+            while (_executions > 0 && result == Core::ERROR_NONE) {
+                _lock.Unlock();
+                if (_signal.Lock(timeout) != Core::ERROR_NONE) {
+                    result = Core::ERROR_TIMEDOUT;
+                }
+                _lock.Lock();
+            }
+
+            if (_hibernated && _executions == 0) {
+                result = Core::ERROR_NONE;
+            } else {
+                _hibernated = false;
+                result = Core::ERROR_TIMEDOUT;
+            }
+
+            _lock.Unlock();
+            return result;
+        }
+
+        void Wakeup()
+        {
+            _lock.Lock();
+            _hibernated = false;
+            _lock.Unlock();
+        }
     private:
         virtual uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) = 0;
         virtual uint32_t Execute(const ProxyType<IIPC>& command, const uint32_t waitTime) = 0;
+
+        uint32_t Prepare()
+        {
+            uint32_t result = Core::ERROR_NONE;
+            _lock.Lock();
+            if (_hibernated) {
+                 result = Core::ERROR_HIBERNATED;
+                if (_wakeupRequest) {
+                    IPCWakeupRequest *wakeup = _wakeupRequest;
+                    _lock.Unlock();
+                    // This may try to wakeup the IPC channel with call to Wakeup()
+                    result = wakeup->Request();
+                    _lock.Lock();
+                }
+            }
+
+            if (result == Core::ERROR_NONE) {
+                _executions++;
+            }
+            _lock.Unlock();
+
+            return result;
+        }
+
+        void Complete()
+        {
+            _lock.Lock();
+            _executions--;
+            _signal.SetEvent();
+            _lock.Unlock();
+        }
 
     protected:
         IPCFactory _administration;
 
     private:
         const void* _customData;
+        CriticalSection _lock;
+        Event _signal;
+        bool _hibernated;
+        IPCWakeupRequest *_wakeupRequest;
+        int _executions;
     };
 
     template <typename ACTUALSOURCE, typename EXTENSION>

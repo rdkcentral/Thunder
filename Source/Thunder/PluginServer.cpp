@@ -714,48 +714,55 @@ namespace PluginHost {
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
-                State(IShell::HIBERNATED);
+                uint32_t connectionId = _connection->Id();
+                result = _administrator.HibernateRemoteConnection(connectionId, timeout);
+                if (result != Core::ERROR_NONE) {
+                    SYSLOG(Logging::Startup, ("Hibernation of connection for [%s]:[%s] failed with error [%d]", ClassName().c_str(), Callsign().c_str(), result));
+                    local->Release();
+                } else {
+                    State(IShell::HIBERNATED);
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                Core::process_t parentPID = local->ParentPID();
-                local->Release();
-                Unlock();
+                    Core::process_t parentPID = local->ParentPID();
+                    local->Release();
+                    Unlock();
 
-                TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                Lock();
-                if (State() != IShell::HIBERNATED) {
-                    SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                    result = Core::ERROR_ABORTED;
-                }
-                Unlock();
-
-                if (result == HIBERNATE_ERROR_NONE) {
-                    result = HibernateChildren(parentPID, timeout);
-                }
-
-                if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
-                    // try to wakeup Parent process to revert Hibernation and recover
-                    TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
-                    WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                }
-
-                Lock();
-#else
-                local->Release();
-                result = Core::ERROR_NONE;
-#endif
-                if (result == Core::ERROR_NONE) {
-                    if (State() == IShell::state::HIBERNATED) {
-                        SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
-                    } else {
-                        // wakeup occured right after hibernation finished
-                        SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                    TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
+                    result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    Lock();
+                    if (State() != IShell::HIBERNATED) {
+                        SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
                         result = Core::ERROR_ABORTED;
                     }
-                }
-                else if (State() == IShell::state::HIBERNATED) {
-                    State(IShell::ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    Unlock();
+
+                    if (result == HIBERNATE_ERROR_NONE) {
+                        result = HibernateChildren(parentPID, timeout);
+                    }
+
+                    if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
+                        // try to wakeup Parent process to revert Hibernation and recover
+                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
+                        WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    }
+
+                    Lock();
+#else
+                    local->Release();
+                    result = Core::ERROR_NONE;
+#endif
+                    if (result == Core::ERROR_NONE) {
+                        if (State() == IShell::state::HIBERNATED) {
+                            SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                        } else {
+                            // wakeup occured right after hibernation finished
+                            SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                            result = Core::ERROR_ABORTED;
+                        }
+                    } else if (State() == IShell::state::HIBERNATED) {
+                        _administrator.WakeupRemoteConnection(connectionId);
+                        State(IShell::ACTIVATED);
+                        SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    }
                 }
             }
         }
@@ -764,6 +771,21 @@ namespace PluginHost {
         return (result);
 
     }
+
+    uint32_t Server::Service::OnWakeupRequest() {
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+        Lock();
+        if (State() == IShell::HIBERNATED) {
+            Wakeup(10000);
+        }
+        Unlock();
+        return Core::ERROR_NONE;
+#else
+        SYSLOG(Logging::Error, (_T("Request refused, autowakeup on enabled!")));
+        return Core::ERROR_NOT_SUPPORTED;
+#endif
+    }
+
 
     uint32_t Server::Service::Wakeup(const uint32_t timeout VARIABLE_IS_NOT_USED) {
         Core::hresult result = Core::ERROR_NONE;
@@ -794,10 +816,9 @@ namespace PluginHost {
 #else
                 result = Core::ERROR_NONE;
 #endif
-                if (result == Core::ERROR_NONE) {
-                    State(ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
-                }
+                _administrator.WakeupRemoteConnection(_connection->Id());
+                State(ACTIVATED);
+                SYSLOG(Logging::Startup, (_T("Activated plugin from hibernation [%s]:[%s]"), ClassName().c_str(), Callsign().c_str()));
                 local->Release();
             }
         }

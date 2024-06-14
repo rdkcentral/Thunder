@@ -88,10 +88,15 @@ if (PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 if(HIBERNATESUPPORT)
+    option(HIBERNATESUPPORT_AUTOWAKEUP "Autowakeup on IPC call for Hibernate" OFF)
     target_link_libraries(${TARGET} PRIVATE
         ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
     target_compile_definitions(${TARGET} PUBLIC
          HIBERNATE_SUPPORT_ENABLED=1)
+    if(HIBERNATESUPPORT_AUTOWAKEUP)
+         target_compile_definitions(${TARGET} PUBLIC
+               HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED=1)
+     endif()
 endif()
 
 set_target_properties(${TARGET} PROPERTIES

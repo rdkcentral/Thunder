@@ -690,6 +690,28 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
+
+            class WakeupRequestSink : public Core::IPCChannel::IPCWakeupRequest {
+            public:
+                WakeupRequestSink() = delete;
+                WakeupRequestSink(const WakeupRequestSink&) = delete;
+                WakeupRequestSink& operator=(const WakeupRequestSink&) = delete;
+
+                WakeupRequestSink(Service& parent):
+                    _parent(parent)
+                {
+                }
+                ~WakeupRequestSink() = default;
+            private:
+                uint32_t Request() override
+                {
+                    return _parent.OnWakeupRequest();
+                }
+
+                Service& _parent;
+            };
+
+
             static Core::NodeId PluginNodeId(const PluginHost::Config& config, const Plugin::Config& plugin) {
                 Core::NodeId result;
                 if (plugin.Communicator.IsSet() == true) {
@@ -749,6 +771,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata()
                 , _library()
+                , _wakeupRequestSink(*this)
                 , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
                 , _administrator(administrator)
                 , _composit(*this)
@@ -1223,7 +1246,9 @@ namespace PluginHost {
                 void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
 
                 _connection = _administrator.RemoteConnection(sessionId);
-
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                _administrator.RegisterWakeupRequestInRemoteConnection(sessionId, &_wakeupRequestSink);
+#endif
                 return (result);
             }
             void Register(RPC::IRemoteConnection::INotification* sink) override
@@ -1293,6 +1318,8 @@ namespace PluginHost {
             const Composit& Composits() const {
                 return (_composit);
             }
+
+            uint32_t OnWakeupRequest();
 
         private:
             uint32_t Wakeup(const uint32_t timeout);
@@ -1550,6 +1577,7 @@ namespace PluginHost {
             ControlData _metadata;
             Core::Library _library;
             void* _hibernateStorage;
+            WakeupRequestSink _wakeupRequestSink;
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
@@ -2895,6 +2923,29 @@ namespace PluginHost {
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
+            }
+            uint32_t HibernateRemoteConnection(const uint32_t connectionId, uint32_t timeout)
+            {
+                uint32_t result = Core::ERROR_UNAVAILABLE;
+                if (connectionId != 0)
+                {
+                    result = _processAdministrator.HibernateConnection(connectionId, timeout);
+                }
+                return result;
+            }
+            void WakeupRemoteConnection(const uint32_t connectionId)
+            {
+                if (connectionId != 0)
+                {
+                    _processAdministrator.WakeupConnection(connectionId);
+                }
+            }
+            void RegisterWakeupRequestInRemoteConnection(const uint32_t connectionId, Core::IPCChannel::IPCWakeupRequest *request)
+            {
+                if (connectionId != 0)
+                {
+                    _processAdministrator.RegisterWakeupRequestInConnection(connectionId, request);
+                }
             }
             inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
             {
