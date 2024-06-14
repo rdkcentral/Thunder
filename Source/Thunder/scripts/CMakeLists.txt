@@ -27,7 +27,7 @@ if (SYSTEMD_SERVICE)
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder.service
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_INSTALL_PATH}/system/ 
+            DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/systemd/system/ 
             COMPONENT ${NAMESPACE}_Runtime
     )
 
@@ -44,7 +44,7 @@ if (INITV_SCRIPT)
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             RENAME S${SYSV_INIT_LEVEL}thunder
-            DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/init.d/ 
+            DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/init.d/ 
             COMPONENT ${NAMESPACE}_Runtime
     )
 endif()
