@@ -48,6 +48,7 @@ set(ETHERNETCARD_NAME "eth0" CACHE STRING "Ethernet Card name which has to be as
 set(GROUP "" CACHE STRING "Define which system group will be used")
 set(UMASK "" CACHE STRING "Set the permission mask for the creation of new files. e.g. 0760")
 set(COMMUNICATOR "" CACHE STRING "Define the ComRPC socket e.g. 127.0.0.1:62000 or /tmp/communicator|750")
+set(LOCATOR "/tmp/memcrcom" CACHE STRING "Default Memecr Socket path")
 
 # Controller Plugin Settings.
 set(PLUGIN_CONTROLLER_UI_ENABLED "true" CACHE STRING "Enable the Controller's UI")
@@ -89,6 +90,12 @@ map_set(${CONFIG} ethernetcard ${ETHERNETCARD_NAME})
 if(NOT COMMUNICATOR STREQUAL "")
     map_set(${CONFIG} communicator ${COMMUNICATOR})
 endif()
+
+map()
+kv(locator ${LOCATOR})
+end()
+ans(HIBERNATE_CONFIG)
+map_append(${CONFIG} hibernate ${HIBERNATE_CONFIG})
 
 map()
     kv(priority ${PRIORITY})
