@@ -24,18 +24,18 @@ set(IDLE_TIME 180 CACHE STRING "Idle time")
 set(SOFT_KILL_CHECK_WAIT_TIME 10  CACHE STRING "Soft kill check waiting time")
 set(HARD_KILL_CHECK_WAIT_TIME 4  CACHE STRING "Hard kill check waiting time")
 set(PERSISTENT_PATH "/root" CACHE STRING "Persistent path")
-set(DATA_PATH "${CMAKE_INSTALL_PREFIX}/share/${NAMESPACE}" CACHE STRING "Data path")
-set(SYSTEM_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/plugins" CACHE STRING "System path")
+set(DATA_PATH "${CMAKE_INSTALL_FULL_DATAROOTDIR}/${NAMESPACE}" CACHE STRING "Data path")
+set(SYSTEM_PATH "${CMAKE_INSTALL_FULL_LIBDIR}/${NAMESPACE_LIB}/plugins" CACHE STRING "System path")
 set(WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
 set(WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
-set(PROXYSTUB_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs" CACHE STRING "Proxy stub path")
+set(PROXYSTUB_PATH "${CMAKE_INSTALL_FULL_LIBDIR}/${NAMESPACE_LIB}/proxystubs" CACHE STRING "Proxy stub path")
 set(POSTMORTEM_PATH "/opt/minidumps" CACHE STRING "Core file path to do the postmortem of the crash")
 set(MESSAGECONTROL_PATH "MessageDispatcher" CACHE STRING "MessageControl base path to create message files")
 set(MESSAGING_PORT 0 CACHE STRING "The port for the messaging")
 set(MESSAGING_STDOUT false CACHE STRING "Enable message rederict from stdout")
 set(MESSAGING_STDERR false CACHE STRING "Enable message rederict from stderr")
 set(MESSAGING_DATASIZE 20480 CACHE STRING "Size of the data buffer in bytes [max 63KB]")
-set(CONFIG_INSTALL_PATH "/etc/${NAMESPACE}" CACHE STRING "Install location of the configuration")
+set(CONFIG_INSTALL_PATH "${CMAKE_INSTALL_FULL_SYSCONFDIR}/${NAMESPACE}" CACHE STRING "Install location of the configuration")
 set(IPV6_SUPPORT false CACHE STRING "Controls if should application supports ipv6")
 set(LEGACY_INITIALZE false CACHE STRING "Enables legacy Plugin Initialize behaviour (Deinit not called on failed Init)")
 set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
@@ -284,7 +284,7 @@ json_write("${CMAKE_BINARY_DIR}/Config.json" ${CONFIG})
 
 install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
-        DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/
+        DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/${NAMESPACE}/
         RENAME config.json
         COMPONENT ${NAMESPACE}_Runtime)
 else()
@@ -295,7 +295,7 @@ else()
         SKIP_CLASSNAME
         SKIP_LOCATOR
         CUSTOM_PARAMS_WHITELIST "${CMAKE_CURRENT_LIST_DIR}/params.config"
-        INSTALL_PATH "../${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}/"
+        INSTALL_PATH "${CMAKE_INSTALL_FULL_SYSCONFDIR}/${NAMESPACE}/"
         INSTALL_NAME "config.json"
         PLUGINS "Thunder"
     )
