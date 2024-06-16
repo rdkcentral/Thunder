@@ -221,6 +221,7 @@ namespace Plugin {
             , StartupOrder(50)
             , Startup(PluginHost::IShell::startup::DEACTIVATED)
             , Communicator()
+            , Root()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -238,6 +239,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -257,6 +259,7 @@ namespace Plugin {
             , StartupOrder(copy.StartupOrder)
             , Startup(copy.Startup)
             , Communicator(copy.Communicator)
+            , Root(copy.Root)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -274,6 +277,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &Startup);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
         ~Config() override = default;
 
@@ -295,6 +299,7 @@ namespace Plugin {
             StartupOrder = RHS.StartupOrder;
             Startup = RHS.Startup;
             Communicator = RHS.Communicator;
+            Root = RHS.Root;
 
             return (*this);
         }
@@ -328,6 +333,7 @@ namespace Plugin {
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<PluginHost::IShell::startup> Startup;
         Core::JSON::String Communicator;
+        RootConfig Root;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

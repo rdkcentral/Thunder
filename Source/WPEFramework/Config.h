@@ -374,6 +374,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , SoftKillCheckWaitTime(10)
                 , HardKillCheckWaitTime(4)
+                , OutOfProcessWaitTime(3)
                 , IPV6(false)
                 , LegacyInitialize(false)
                 , DefaultMessagingCategories(false)
@@ -412,6 +413,7 @@ namespace PluginHost {
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("softkillcheckwaittime"), &SoftKillCheckWaitTime);
                 Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
+                Add(_T("outofprocesswaittime"), &OutOfProcessWaitTime);
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("legacyinitialize"), &LegacyInitialize);
                 Add(_T("messaging"), &DefaultMessagingCategories);
@@ -457,6 +459,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::DecUInt8 SoftKillCheckWaitTime;
             Core::JSON::DecUInt8 HardKillCheckWaitTime;
+            Core::JSON::DecUInt8 OutOfProcessWaitTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::Boolean LegacyInitialize;
             Core::JSON::String DefaultMessagingCategories; 
@@ -623,6 +626,7 @@ namespace PluginHost {
             , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
+            , _outOfProcessWaitTime(3000)
             , _stackSize(0)
             , _inputInfo()
             , _processInfo()
@@ -671,6 +675,7 @@ namespace PluginHost {
                 _idleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
+                _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
                 _IPV6 = config.IPV6.Value();
                 _legacyInitialize = config.LegacyInitialize.Value();
                 _binding = config.Binding.Value();
@@ -873,6 +878,9 @@ POP_WARNING()
         inline uint8_t HardKillCheckWaitTime() const {
             return _hardKillCheckWaitTime;
         }
+        inline uint16_t OutOfProcessWaitTime() const {
+            return _outOfProcessWaitTime;
+        }
         inline const string& URL() const {
             return (_URL);
         }
@@ -1054,6 +1062,7 @@ POP_WARNING()
         uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
+        uint16_t _outOfProcessWaitTime;
         uint32_t _stackSize;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
