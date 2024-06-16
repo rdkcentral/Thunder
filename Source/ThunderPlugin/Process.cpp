@@ -479,7 +479,7 @@ public:
 #ifdef VERSIONED_LIBRARY_LOADING
         static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
 #else
-        static const std::string suffixFilter = ".so";
+        static const std::string suffixFilter = "*.so";
 #endif
 
         TRACE_L1("Loading ProxyStubs from %s", (pathName.empty() == false ? pathName.c_str() : _T("<< No Proxy Stubs Loaded >>")));
