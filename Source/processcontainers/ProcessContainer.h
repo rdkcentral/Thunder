@@ -29,7 +29,7 @@ namespace ProcessContainers {
     public:
         ~INetworkInterfaceIterator() override = default;
 
-        // Return interface name (eg. veth0)
+        // Return interface name (eg. eth0)
         virtual string Name() const = 0;
 
         // Return numver of ip addresses assigned to the interface

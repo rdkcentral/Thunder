@@ -475,9 +475,10 @@ namespace RPC {
     };
 
     class EXTERNAL Communicator {
-    protected:
-        class ChannelLink;
-
+        protected:
+            class ChannelLink;
+        public:
+            using Client = Core::IPCChannelServerType<ChannelLink, true>::Client;
         class EXTERNAL RemoteConnection : public IRemoteConnection {
         private:
             friend class RemoteConnectionMap;
@@ -1384,11 +1385,11 @@ POP_WARNING()
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
-            std::list<ProxyStub::UnknownProxy*> deadProxies;
+            Administrator::Proxies deadProxies;
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
 
-            std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Dangling((*loop)->Parent(), (*loop)->InterfaceId());
 

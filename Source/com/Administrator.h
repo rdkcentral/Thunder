@@ -41,6 +41,10 @@ namespace RPC {
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
     class EXTERNAL Administrator {
+    public:
+        using Proxies = std::vector<ProxyStub::UnknownProxy*>;
+
+
     private:
         Administrator();
         Administrator(const Administrator&) = delete;
@@ -48,18 +52,30 @@ namespace RPC {
 
         class RecoverySet {
         public:
+
             RecoverySet() = delete;
+            RecoverySet(RecoverySet&&) = delete;
             RecoverySet(const RecoverySet&) = delete;
+            RecoverySet& operator= (RecoverySet&&) = delete;
             RecoverySet& operator= (const RecoverySet&) = delete;
 
             RecoverySet(const uint32_t id, Core::IUnknown* object)
                 : _interfaceId(id)
                 , _interface(object)
-                , _referenceCount(1) {
+                , _referenceCount(1 | (object->AddRef() == Core::ERROR_COMPOSIT_OBJECT ? 0x80000000 : 0)) {
+
+		// Check if this is a "Composit" object to which the IUnknown points. Composit means 
+		// that the object is owned by another object that controls its lifetime and that 
+		// object will handle the lifetime of this object. It will be released anyway, 
+		// no-recovery needed.
+		object->Release();
             }
             ~RecoverySet() = default;
 
         public:
+	    bool IsComposit() const {
+		return ((_referenceCount & 0x80000000) != 0);
+	    }
             inline uint32_t Id() const {
                 return (_interfaceId);
             }
@@ -67,16 +83,16 @@ namespace RPC {
                 return (_interface);
             }
             inline void Increment() {
-                _referenceCount++;
+                _referenceCount = ((_referenceCount & 0x7FFFFFFF) + 1) | (_referenceCount & 0x80000000);
             }
-            inline bool Decrement(const uint32_t dropCount = 1) {
-                ASSERT(_referenceCount >= dropCount);
-                _referenceCount -= dropCount;
-                return(_referenceCount > 0);
+            inline bool Decrement(const uint32_t dropCount) {
+                ASSERT((_referenceCount & 0x7FFFFFFF) >= dropCount);
+                _referenceCount = ((_referenceCount & 0x7FFFFFFF) - dropCount) | (_referenceCount & 0x80000000);
+                return((_referenceCount & 0x7FFFFFFF) > 0);
             }
 #ifdef __DEBUG__
             bool Flushed() const {
-                return (_referenceCount == 0);
+                return ((_referenceCount & 0x7FFFFFFF) == 0);
             }
 #endif
 
@@ -87,8 +103,8 @@ namespace RPC {
         };
 
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
-        typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list< RecoverySet > > ReferenceMap;
+        using ChannelMap = std::unordered_map<uintptr_t, Proxies>;
+        using ReferenceMap = std::unordered_map<uintptr_t, std::list< RecoverySet > >;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
@@ -166,7 +182,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
@@ -216,7 +232,7 @@ namespace RPC {
         {
             _adminLock.Lock();
 
-            ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
+            ReferenceMap::iterator index(_channelReferenceMap.find(channel->LinkId()));
 
             if (index != _channelReferenceMap.end()) {
                 std::list< RecoverySet >::iterator element(index->second.begin());
@@ -243,6 +259,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
+        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy);
         void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
         
    private:
@@ -260,6 +277,47 @@ namespace RPC {
         Core::ProxyPoolType<InvokeMessage> _factory;
         ChannelMap _channelProxyMap;
         ReferenceMap _channelReferenceMap;
+        Proxies _danglingProxies;
+
+        // Delegated release, if enabled, will release references held by connections 
+        // that close but still have references on objects in this process space.
+        // Whenever an interface is exposed to the otherside over the channel, it is
+        // recorded with this channel, if we received an Addref from the other side
+        // to keep the object here alive.
+        // If the connection dies and the object is still in this recorded set, it 
+        // means it will never receive the Release for it. Effectively that will mean 
+        // we have a leak on this object, since the Addref was done on behalf of the 
+        // other side of the link but the Release will never follow...... Ooops...
+        // Since we have this administartion and we know the channels is closed, we 
+        // could potentially do the Release for the otherside since we knwo the channel
+        // went done. This is a very welcome feature but it was only introduced in
+        // Thunder R3.X. 
+        // One of the selling reasons of having garbage collected languages is that you 
+        // do not need to be aware of the lifetime of object. No need to pair Addrefs 
+        // with Releases and Mallocs with Free's or new's with deletes. 
+        // C++ languages however expect you to know the lifetime and we know that this
+        // is one of the most made mistakes. 
+        // As we value stability of software and hate debuging crashes if we move to
+        // a new release this feature of automatic cleanup can backfire. If the software
+        // (read plugins) are poorly designed/coded and have an incorrect lifetime 
+        // management or the plugin is *not* coded/designed for non-happy day scenarios,
+        // these plugins might have been running succesfully be the lack of this feature 
+        // (at the cost of a memory leak but that is not so visible). Turning on this 
+        // feature might correctly cleanup object that in the past where leaking and will
+        // now lead to segmentation faults.
+        // Typically the first suspect is than the *new* release. As we have seen very 
+        // creative plugin implementations and from a Thunder team we have a limit amount
+        // of resources to investigate all these creative ways of implementing the plugin
+        // we allow for a flag to turn this *very* usefull feature off. 
+        // Whenever, after an upgrade to this new release, unexpected crashes are reported
+        // with an out-of-process plugins, we will ask the plugin developper to retest but 
+        // than with this feature off (flag in the config, no rebuild required). If the
+        // crash can than nolonger be reproduced we suggest the plugin developper to 
+        // check the lifetime handling on all object in his plugin (AddRef/Releases) and
+        // check the code for cleaning up in case of unexpected out-of-process plugin part
+        // shutdown.
+        // If the same crash continues, please reach out to the Thunder team for assitance!  
+        bool _delegatedReleases;
     };
 
     class EXTERNAL Job : public Core::IDispatch {

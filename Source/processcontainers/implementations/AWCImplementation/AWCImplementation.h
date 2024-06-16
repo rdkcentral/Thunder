@@ -73,7 +73,7 @@ namespace ProcessContainers {
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
-        void AddRef() const override;
+        uint32_t AddRef() const override;
         uint32_t Release() const override;
         void notifyStateChange(int req_id, awc::awc_app_state_t app_state, int status, unsigned int pid) override;
 
@@ -82,7 +82,6 @@ namespace ProcessContainers {
         uint32_t _pid;
         int _runId;
         awc::awc_app_state_t _appState;
-        mutable uint32_t _referenceCount;
         awc::AWCClient * _client;
         AWCStateChangeNotifier * _notifier;
         mutable std::mutex _mutex;

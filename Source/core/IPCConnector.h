@@ -285,8 +285,8 @@ namespace Core {
             ~RawSerializedType() override = default;
 
         public:
-            void AddRef() const override {
-                _parent.AddRef();
+            uint32_t AddRef() const override {
+                return (_parent.AddRef());
             }
             uint32_t Release() const override {
                 return(_parent.Release());
@@ -706,6 +706,10 @@ POP_WARNING()
         virtual ~IPCChannel() = default;
 
     public:
+        uintptr_t LinkId() const {
+            return (reinterpret_cast<uintptr_t>(this));
+        }
+
         void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _administration.Register(id, handler);

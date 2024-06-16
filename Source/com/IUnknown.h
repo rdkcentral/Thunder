@@ -39,23 +39,23 @@ namespace ProxyStub {
     typedef void (*MethodHandler)(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
 
     class EXTERNAL UnknownStub {
-    private:
+    public:
+        UnknownStub(UnknownStub&&) = delete;
         UnknownStub(const UnknownStub&) = delete;
+        UnknownStub& operator=(UnknownStub&&) = delete;
         UnknownStub& operator=(const UnknownStub&) = delete;
 
-    public:
-        UnknownStub();
-        virtual ~UnknownStub();
+        UnknownStub() = default;
+        virtual ~UnknownStub() = default;
 
     public:
-        inline uint16_t Length() const
-        {
+        inline uint16_t Length() const {
             return (3);
         }
-	virtual Core::IUnknown* Convert(void* incomingData) const {
+	    virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
         }
-	virtual uint32_t InterfaceId() const {
+	    virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
@@ -66,11 +66,12 @@ namespace ProxyStub {
     public:
         typedef INTERFACE* CLASS_INTERFACE;
 
-    private:
+    public:
+        UnknownStubType(UnknownStubType<INTERFACE, METHODS>&&) = delete;
         UnknownStubType(const UnknownStubType<INTERFACE, METHODS>&) = delete;
+        UnknownStubType<INTERFACE, METHODS>& operator=(UnknownStubType<INTERFACE, METHODS>&&) = delete;
         UnknownStubType<INTERFACE, METHODS>& operator=(const UnknownStubType<INTERFACE, METHODS>&) = delete;
 
-    public:
         UnknownStubType()
         {
             _myHandlerCount = 0;
@@ -90,7 +91,7 @@ namespace ProxyStub {
         {
             return (reinterpret_cast<INTERFACE*>(incomingData));
         }
-	virtual uint32_t InterfaceId() const {
+    	virtual uint32_t InterfaceId() const {
             return (INTERFACE::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
@@ -123,12 +124,11 @@ namespace ProxyStub {
     // Inbound proxies can cache a pending AddRef if required.
     // Inbound and Outbound do require a remote Release on a transaition from 1 -> 0 AddRef.
     // -------------------------------------------------------------------------------------------
-    class UnknownProxy {
+    class EXTERNAL UnknownProxy {
     private:
         enum mode : uint8_t {
             CACHING_ADDREF   = 0x01,
-            CACHING_RELEASE  = 0x02,
-            INVALID          = 0x04
+            CACHING_RELEASE  = 0x02
         };
 
     public:
@@ -139,7 +139,7 @@ namespace ProxyStub {
 
         UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
             : _adminLock()
-            , _refCount(0)
+            , _refCount(1)
             , _mode(outbound ? 0 : CACHING_ADDREF)
             , _interfaceId(interfaceId)
             , _implementation(implementation)
@@ -151,17 +151,12 @@ namespace ProxyStub {
         virtual ~UnknownProxy() = default;
 
     public:
-    	bool Invalidate() {
-            bool invalidated = false;
+        void Invalidate() {
+            ASSERT(_refCount > 0);
+            fprintf(stderr,"==> parent Id: %s _interfaceId :%d refCount:%d \n",typeid(_parent).name(),_interfaceId,_refCount);
             _adminLock.Lock();
-            if (_refCount > 0) {
-                _refCount++;
-                _mode |= INVALID;
-                invalidated = true;
-            }
+            _channel.Release();
             _adminLock.Unlock();
-
-            return (invalidated);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
@@ -172,7 +167,7 @@ namespace ProxyStub {
 
             _adminLock.Lock();
 
-            if (_refCount > 0) {
+            if (_refCount > 1) {
                 if (outbound == false) {
                     _mode |= CACHING_RELEASE;
                 }
@@ -191,52 +186,61 @@ namespace ProxyStub {
 
             return(result);
         }
-        void AddRef() const {
+        uint32_t AddRef() const {
             _adminLock.Lock();
             _refCount++;
             _adminLock.Unlock();
+	    return (Core::ERROR_NONE);
         }
         uint32_t Release() const {
             uint32_t result = Core::ERROR_NONE;
-
             _adminLock.Lock();
+            ASSERT(_refCount > 0);
             _refCount--;
 
-            if (_refCount != 0) {
+            if (_refCount > 1 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
                 _adminLock.Unlock();
+            } 
+            else if( _refCount == 0 ) {
+                _adminLock.Unlock();
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                ASSERT(_channel.IsValid() == false);
             }
             else {
-                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF|INVALID)) == 0) {
+                if ((_channel.IsValid() == true) && ((_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0)) {
 
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
-
                     message->Parameters().Set(_implementation, _interfaceId, 1);
-
-                    // Pass on the number of reference we need to lower, since it is indictaed by the amount of times this proxy had to be created
+                    // Pass on the number of reference we need to lower, since it is indicated by the amount of times this proxy had to be created
                     message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
 
                     // Just try the destruction for few Seconds...
-                    result = Invoke(message, RPC::CommunicationTimeOut);
+                    result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                     if (result != Core::ERROR_NONE) {
                         TRACE_L1("Could not remote release the Proxy.");
-                    } else {
+                        result |= COM_ERROR;
+                    }
+                    else {
                         // Pass the remote release return value through
                         result = message->Response().Reader().Number<uint32_t>();
                     }
                 }
-
+                
                 _adminLock.Unlock();
-
                 // Remove our selves from the Administration, we are done..
-                RPC::Administrator::Instance().UnregisterProxy(*this);
+                if (RPC::Administrator::Instance().UnregisterUnknownProxy(*this) == true ) {
+                    ASSERT(_refCount == 1);
+                    _refCount = 0;
+                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                }
 
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
 
             return (result);
         }
+        const Core::SocketPort* Socket() const;
         inline void* RemoteInterface(const uint32_t id) const
         {
             void* result = nullptr;
@@ -245,11 +249,19 @@ namespace ProxyStub {
 
             message->Parameters().Set(_implementation, _interfaceId, 2);
             parameters.Number<uint32_t>(id);
-            if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
+
+            _adminLock.Lock();
+
+            if ((_channel.IsValid() == false) || (_channel->Invoke(message, RPC::CommunicationTimeOut) != Core::ERROR_NONE)) {
+                _adminLock.Unlock();
+            }
+            else {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
                 Core::instance_id impl = response.Number<Core::instance_id>();
                 // From what is returned, we need to create a proxy
                 RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
+
+                _adminLock.Unlock();
             }
             return (result);
         }
@@ -257,10 +269,25 @@ namespace ProxyStub {
         {
             return (&_parent);
         }
-        const Core::ProxyType<Core::IPCChannel>& Channel() const
+        uintptr_t LinkId() const
         {
-            return (_channel);
+            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+            return (_channel.IsValid() ? _channel->LinkId() : 0);
         }
+
+        void* Interface(const Core::instance_id& implementation, const uint32_t id) const
+        {
+            void* result = nullptr;
+
+            _adminLock.Lock();
+
+            if (_channel.IsValid() == true) {
+                RPC::Administrator::Instance().ProxyInstance(_channel, implementation, true, id, result);
+            }
+            _adminLock.Unlock();
+
+            return (result);
+         }
         inline uint32_t InterfaceId() const
         {
             return (_interfaceId);
@@ -302,6 +329,7 @@ namespace ProxyStub {
                 uint32_t id = reader.Number<uint32_t>();
                 RPC::Data::Output::mode how = reader.Number<RPC::Data::Output::mode>();
 
+                _adminLock.Lock();
                 if (how == RPC::Data::Output::mode::CACHED_ADDREF) {
                     // Just AddRef this implementation
                     RPC::Administrator::Instance().AddRef(_channel, impl, id);
@@ -313,6 +341,8 @@ namespace ProxyStub {
                     // No clue what tp do now......
                     ASSERT(false);
                 }
+
+                _adminLock.Unlock();
             }
         }
 
@@ -344,7 +374,7 @@ namespace ProxyStub {
                 // We completed the first cycle. Clear Pending, if it was active..
                 _mode ^= CACHING_ADDREF;
 
-                if (_refCount >= 1) {
+                if (_refCount > 1) {
                     response.AddImplementation(_implementation, _interfaceId, RPC::Data::Output::mode::CACHED_ADDREF);
                 }
             }
@@ -353,14 +383,14 @@ namespace ProxyStub {
                 // We completed the current cycle. Clear the CACHING_RELEASE, if it was active..
                 _mode ^= CACHING_RELEASE;
 
-                if (_refCount == 0) {
+                if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
                     response.AddImplementation(_implementation, _interfaceId, RPC::Data::Output::mode::CACHED_RELEASE);
                 }
             }
 
             _adminLock.Unlock();
 
-            if (result != Core::ERROR_NONE) {
+            if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
                 delete &_parent;
             }
         }
@@ -413,9 +443,7 @@ namespace ProxyStub {
         }
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
-            void* result = nullptr;
-            RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(),implementation,true,id,result);
-            return (result);
+            return (_unknown.Interface(implementation, id));
         }
         void Complete(RPC::Data::Frame::Reader& reader) const
         {
@@ -425,15 +453,16 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Applications calls to the Proxy
         // -------------------------------------------------------------------------------------------------------------------------------
-        void AddRef() const override
+        uint32_t AddRef() const override
         {
-            _unknown.AddRef();
+            return (_unknown.AddRef());
         }
         uint32_t Release() const override
         {
             uint32_t result = _unknown.Release();
 
             if (result != Core::ERROR_NONE) {
+                fprintf(stderr,"==> %s deleted, threadid [%ld]\n", typeid(this).name(), Core::Thread::ThreadId());
                 delete (this);
             }
 
