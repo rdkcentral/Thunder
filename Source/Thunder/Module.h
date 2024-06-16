@@ -37,7 +37,5 @@
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only
 #endif
 
-#include <version/version.h>
-
 #undef EXTERNAL
 #define EXTERNAL

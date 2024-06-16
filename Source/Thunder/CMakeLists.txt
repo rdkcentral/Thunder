@@ -40,9 +40,6 @@ target_compile_definitions(${TARGET}
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/version/version.h" @ONLY)
-message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/version/version.h")
-
 if (TREE_REFERENCE)
     target_compile_definitions(${TARGET}
         PRIVATE
@@ -98,7 +95,7 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 
 install(
@@ -110,7 +107,7 @@ install(
 )
 
 install(DIRECTORY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/../${PERSISTENT_PATH}/${NAMESPACE}}
+    DESTINATION ${PERSISTENT_PATH}/${NAMESPACE}} COMPONENT ${NAMESPACE}_Runtime
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
 

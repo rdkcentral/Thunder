@@ -651,7 +651,7 @@ POP_WARNING()
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
+            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
             if (_config->MessagingCategoriesFile() == false) {
                 SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
             }
