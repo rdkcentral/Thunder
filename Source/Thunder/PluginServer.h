@@ -1393,16 +1393,17 @@ namespace PluginHost {
                     if (progressedState == 0) {
                         ErrorMessage(_T("library does not exist"));
                     }
-                    else if (progressedState == 2) {
+                    else if (progressedState == 1) {
                         ErrorMessage(_T("library could not be loaded"));
                     }
-                    else if (progressedState == 3) {
+                    else if (progressedState == 2) {
                         ErrorMessage(_T("library does not contain the right methods"));
                     }
                 }
 
                 return (result);
             }
+
             void AcquireInterfaces()
             {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
@@ -1421,13 +1422,40 @@ namespace PluginHost {
                     }
                 } else {
                     _library = LoadLibrary(locator);
-                    if (_library.IsLoaded() == false) {
-                        ErrorMessage(_T("Library could not be loaded"));
-                    }
-                    else {
-                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
-                            ErrorMessage(_T("class definitions/version does not exist"));
-                            _library = Core::Library();
+                    if (_library.IsLoaded() == true) { 
+                        if ((PluginHost::Service::Configuration().Root.IsSet() == false) || (PluginHost::Service::Configuration().Root.Mode.Value() == Plugin::Config::RootConfig::ModeType::OFF)) {
+                            if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
+                                ErrorMessage(_T("class definitions/version does not exist"));
+                                Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                            }
+                        }
+                        else {
+                            uint32_t pid;
+                            const string libraryToLoad = _library.Name();
+                            Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+
+                            // Time to fire up the remote process to instantiate the IPlugin
+                            const Plugin::Config::RootConfig& rootConfig = PluginHost::Service::Configuration().Root;
+
+                            RPC::Object definition(libraryToLoad,
+                                classNameString,
+                                Callsign(),
+                                IPlugin::ID,
+                                version,
+                                PluginHost::Service::Configuration().Root.User.Value(),
+                                PluginHost::Service::Configuration().Root.Group.Value(),
+                                PluginHost::Service::Configuration().Root.Threads.Value(),
+                                PluginHost::Service::Configuration().Root.Priority.Value(),
+                                PluginHost::Service::Configuration().Root.HostType(),
+                                SystemRootPath(),
+                                PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
+                                PluginHost::Service::Configuration().Root.Configuration.Value());
+
+                            newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
+
+                            if (newIF == nullptr) {
+                                ErrorMessage(_T("could not start the plugin in a detached mode"));
+                            }
                         }
                     }
                 }

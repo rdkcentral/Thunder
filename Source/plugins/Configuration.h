@@ -252,6 +252,7 @@ namespace Plugin {
             , StartupOrder(50)
             , StartMode(PluginHost::IShell::startmode::ACTIVATED)
             , Communicator()
+            , Root()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -268,6 +269,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -286,6 +288,7 @@ namespace Plugin {
             , StartupOrder(copy.StartupOrder)
             , StartMode(copy.StartMode)
             , Communicator(copy.Communicator)
+            , Root(copy.Root)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -302,8 +305,9 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
-        Config(Config&& move)
+        Config(Config&& move) noexcept
             : Core::JSON::Container()
             , Callsign(std::move(move.Callsign))
             , Locator(std::move(move.Locator))
@@ -320,6 +324,7 @@ namespace Plugin {
             , StartupOrder(std::move(move.StartupOrder))
             , StartMode(std::move(move.StartMode))
             , Communicator(std::move(move.Communicator))
+            , Root(std::move(move.Root))
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -336,6 +341,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
 
         ~Config() override = default;
@@ -357,11 +363,12 @@ namespace Plugin {
             StartupOrder = RHS.StartupOrder;
             StartMode = RHS.StartMode;
             Communicator = RHS.Communicator;
+            Root = RHS.Root;
 
             return (*this);
         }
 
-        Config& operator=(Config&& move)
+        Config& operator=(Config&& move) noexcept
         {
             Callsign = std::move(move.Callsign);
             Locator = std::move(move.Locator);
@@ -378,6 +385,7 @@ namespace Plugin {
             StartupOrder = std::move(move.StartupOrder);
             StartMode = std::move(move.StartMode);
             Communicator = std::move(move.Communicator);
+            Root = std::move(move.Root);
 
             return (*this);
         }
@@ -410,6 +418,7 @@ namespace Plugin {
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
         Core::JSON::String Communicator;
+        RootConfig Root;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 
