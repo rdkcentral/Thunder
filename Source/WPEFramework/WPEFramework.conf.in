@@ -15,6 +15,9 @@ redirect = '/Service/Controller/UI'
 ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
 
+hibernate = JSON()
+hibernate.add("locator", '@LOCATOR@')
+
 process = JSON()
 process.add("priority", '@PRIORITY@')
 process.add("policy", '@POLICY@')
