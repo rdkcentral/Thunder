@@ -176,7 +176,7 @@ POP_WARNING()
                     Add(_T("key"), &Key);
                     Add(_T("modifiers"), &Modifiers);
                 }
-                inline KeyMapEntry(KeyMapEntry&& move)
+                inline KeyMapEntry(KeyMapEntry&& move) noexcept
                     : Core::JSON::Container()
                     , Code(std::move(move.Code))
                     , Key(std::move(move.Key))
@@ -322,7 +322,7 @@ POP_WARNING()
                 , _position(copy._position)
             {
             }
-            Iterator(Iterator&& move)
+            Iterator(Iterator&& move) noexcept
                 : _consumers(std::move(move._consumers))
                 , _index(std::move(move._index))
                 , _position(move._position)
@@ -341,7 +341,7 @@ POP_WARNING()
                 return (*this);
             }
 
-            Iterator& operator=(Iterator&& move)
+            Iterator& operator=(Iterator&& move) noexcept
             {
                 if (this != &move) {
                     _consumers = std::move(move._consumers);
@@ -427,7 +427,7 @@ POP_WARNING()
                         Add(_T("code"), &Code);
                         Add(_T("mods"), &Mods);
                     }
-                    KeyCode(KeyCode&& move)
+                    KeyCode(KeyCode&& move) noexcept
                         : Core::JSON::Container()
                         , Code(std::move(move.Code))
                         , Mods(std::move(move.Mods))
@@ -459,7 +459,7 @@ POP_WARNING()
                     Add(_T("in"), &In);
                     Add(_T("out"), &Out);
                 }
-                Conversion(Conversion&& move)
+                Conversion(Conversion&& move) noexcept
                     : Core::JSON::Container()
                     , In(std::move(move.In))
                     , Out(std::move(move.Out))

@@ -506,7 +506,7 @@ namespace Core {
             }
             ~NumberType() override = default;
 
-            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
@@ -2650,7 +2650,7 @@ namespace Core {
 
             ~EnumType() override = default;
 
-            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
+            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
@@ -3135,7 +3135,7 @@ namespace Core {
 
             ~ArrayType() override = default;
 
-            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move)
+            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move) noexcept
             {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
@@ -4656,7 +4656,7 @@ namespace Core {
                 return (*this);
             }
 
-            VariantContainer& operator=(VariantContainer&& move)
+            VariantContainer& operator=(VariantContainer&& move) noexcept
             {
                 if (this != &move) {
                     _elements = std::move(move._elements);

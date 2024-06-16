@@ -51,7 +51,7 @@ namespace Core {
             , m_DataBlock(copy.m_DataBlock)
         {
         }
-        TextReader(TextReader&& move)
+        TextReader(TextReader&& move) noexcept
             : m_Index(move.m_Index)
             , m_DataBlock(std::move(move.m_DataBlock))
         {
@@ -66,7 +66,7 @@ namespace Core {
 
             return (*this);
         }
-        TextReader& operator=(TextReader&& move)
+        TextReader& operator=(TextReader&& move) noexcept
         {
             if (this != &move) {
                 m_Index = move.m_Index;

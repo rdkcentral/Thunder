@@ -45,7 +45,7 @@ namespace Core {
         {
         }
 
-        OptionalType(OptionalType<TYPE>&& value)
+        OptionalType(OptionalType<TYPE>&& value) noexcept
             : m_Value(std::move(value.m_Value))
             , m_Set(value.m_Set)
         {
@@ -65,7 +65,7 @@ namespace Core {
             return (*this);
         }
 
-        inline OptionalType<TYPE>& operator=(OptionalType<TYPE>&& move)
+        inline OptionalType<TYPE>& operator=(OptionalType<TYPE>&& move) noexcept
         {
             if (this != &move) {
                 m_Value = std::move(move.m_Value);
