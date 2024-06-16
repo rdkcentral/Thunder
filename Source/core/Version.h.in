@@ -4,4 +4,15 @@
 
 #pragma once
 
-#define THUNDER_VERSION @Thunder_VERSION_MAJOR@
+#include <stdint.h>
+
+#define THUNDER_VERSION @VERSION_MAJOR@
+
+namespace Thunder
+{
+    namespace Versioning {
+        static constexpr uint8_t Major = @VERSION_MAJOR@;
+        static constexpr uint8_t Minor = @VERSION_MINOR@;
+        static constexpr uint8_t Patch = @VERSION_PATCH@;
+    }
+}

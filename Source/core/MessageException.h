@@ -29,15 +29,15 @@
 namespace Thunder {
 namespace Core {
 
-    class EXTERNAL MessageException : public std::exception {
+    class MessageException : public std::exception {
     private:
         MessageException();
 
     public:
-        MessageException(const string& message, bool inclSysMsg = false) noexcept(true);
+        MessageException(const string& message, bool inclSysMsg = false) throw();
         ~MessageException() throw();
 
-        const TCHAR* Message() const noexcept(true);
+        const TCHAR* Message() const throw();
 
     private:
         string m_Message; // Exception message
