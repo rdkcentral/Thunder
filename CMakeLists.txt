@@ -22,6 +22,11 @@ project(Thunder
         DESCRIPTION "Thunder framework"
         HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
+set(VERSION       ${${PROJECT_NAME}_VERSION})
+set(VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+set(VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+set(VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
+
 string(TIMESTAMP BUILD_TIMESTAMP UTC)
 
 message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")

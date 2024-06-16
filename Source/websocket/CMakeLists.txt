@@ -58,12 +58,12 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        SOVERSION ${Thunder_VERSION_MAJOR}
+        SOVERSION ${VERSION_MAJOR}
         )
 
 if(HUMAN_VERSIONED_BINARIES)
 set_target_properties(${TARGET} PROPERTIES
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 endif()
 

@@ -4415,9 +4415,9 @@ namespace PluginHost {
         }
         inline void Metadata(PluginHost::Metadata::Version& data) const
         {
-            data.Major = PluginHost::Major;
-            data.Minor = PluginHost::Minor;
-            data.Patch = PluginHost::Patch;
+            data.Major = Versioning::Major;
+            data.Minor = Versioning::Minor;
+            data.Patch = Versioning::Patch;
             data.Hash = string(Core::System::ModuleBuildRef());
         }
         inline void Metadata(Core::JSON::ArrayType<PluginHost::Metadata::Channel>& data) const
