@@ -132,24 +132,6 @@ namespace ProcessContainers {
         return _interfaces.at(_current).addresses[id];
     }
 
-    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& copy)
-        : Core::JSON::Container()
-        , Key(copy.Key)
-        , Value(copy.Value)
-    {
-        Add(_T("key"), &Key);
-        Add(_T("value"), &Value);
-    }
-
-    LXCContainer::Config::ConfigItem::ConfigItem(ConfigItem&& move)
-        : Core::JSON::Container()
-        , Key(std::move(move.Key))
-        , Value(std::move(move.Value))
-    {
-        Add(_T("key"), &Key);
-        Add(_T("value"), &Value);
-    }
-
     LXCContainer::Config::Config()
         : Core::JSON::Container()
         , ConsoleLogging("0")
@@ -369,7 +351,7 @@ namespace ProcessContainers {
         return result;
     }
 
-    bool LXCContainer::Stop(const uint32_t timeout /*ms*/)
+    bool LXCContainer::Stop(const uint32_t timeout VARIABLE_IS_NOT_USED /*ms*/)
     {
         bool result = true;
 
@@ -410,7 +392,7 @@ namespace ProcessContainers {
     uint32_t LXCContainer::Release() const
     {
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
-        uint32_t retVal = BaseRefCount<IContainer>::Release();
+        uint32_t retval = BaseRefCount<IContainer>::Release();
 
         ASSERT((retval != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
         return retval;
