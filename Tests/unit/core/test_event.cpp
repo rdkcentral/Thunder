@@ -23,93 +23,98 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class ThreadClass : public Core::Thread {
-public:
-    ThreadClass() = delete;
-    ThreadClass(const ThreadClass&) = delete;
-    ThreadClass& operator=(const ThreadClass&) = delete;
+    class ThreadClass : public Thunder::Core::Thread {
+    public:
+        ThreadClass() = delete;
+        ThreadClass(const ThreadClass&) = delete;
+        ThreadClass& operator=(const ThreadClass&) = delete;
 
-    ThreadClass(Event& event, std::thread::id parentTid, bool& threadDone, volatile bool& lock, volatile bool& setEvent)
-        : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
-        , _threadDone(threadDone)
-        , _lock(lock)
-        , _setEvent(setEvent)
-        , _event(event)
-        , _parentTid(parentTid)
-    {
-    }
-
-    virtual ~ThreadClass()
-    {
-    }
-
-    virtual uint32_t Worker() override
-    {
-        while (IsRunning() && (!_threadDone)) {
-            EXPECT_TRUE(_parentTid != std::this_thread::get_id());
-            ::SleepMs(50);
-            if (_lock) {
-                _threadDone = true;
-                _lock = false;
-                _event.Unlock();
-            }else if (_setEvent) {
-                _threadDone = true;
-                _setEvent = false;
-                _event.SetEvent();
-            }
+        ThreadClass(Thunder::Core::Event& event, std::thread::id parentTid, bool& threadDone, volatile bool& lock, volatile bool& setEvent)
+            : Thunder::Core::Thread(Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
+            , _threadDone(threadDone)
+            , _lock(lock)
+            , _setEvent(setEvent)
+            , _event(event)
+            , _parentTid(parentTid)
+        {
         }
-        return (Core::infinite);
+
+        virtual ~ThreadClass()
+        {
+        }
+
+        virtual uint32_t Worker() override
+        {
+            while (IsRunning() && (!_threadDone)) {
+                EXPECT_TRUE(_parentTid != std::this_thread::get_id());
+                ::SleepMs(50);
+                if (_lock) {
+                    _threadDone = true;
+                    _lock = false;
+                    _event.Unlock();
+                }else if (_setEvent) {
+                    _threadDone = true;
+                    _setEvent = false;
+                    _event.SetEvent();
+                }
+            }
+            return (Thunder::Core::infinite);
+        }
+    private:
+        volatile bool&  _threadDone;
+        volatile bool&  _lock;
+        volatile bool&  _setEvent;
+        Thunder::Core::Event& _event;
+        std::thread::id _parentTid;
+    };
+
+    TEST(test_event, simple_event)
+    {
+        Thunder::Core::Event event(false,true);
+        uint64_t timeOut(Thunder::Core::Time::Now().Add(3).Ticks());
+        uint64_t now(Thunder::Core::Time::Now().Ticks());
+
+        if (now < timeOut) {
+            event.Lock(static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+            EXPECT_FALSE(event.IsSet());
+        }
     }
-private:
-    volatile bool&  _threadDone;
-    volatile bool&  _lock;
-    volatile bool&  _setEvent;
-    Event& _event;
-    std::thread::id _parentTid;
-};
 
-TEST(test_event, simple_event)
-{
-    Event event(false,true);
-    uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
-    uint64_t now(Core::Time::Now().Ticks());
+    TEST(test_event, unlock_event)
+    {    
+        Thunder::Core::Event event(false,true);
+        std::thread::id parentTid;
+        bool threadDone = false;
+        volatile bool lock = true;
+        volatile bool setEvent = false;
 
-    if (now < timeOut) {
-        event.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
-        EXPECT_FALSE(event.IsSet());
+        ThreadClass object(event, parentTid, threadDone, lock, setEvent);
+        object.Run();
+        event.Lock();
+        EXPECT_FALSE(lock);
+        object.Stop();
     }
-}
 
-TEST(test_event, unlock_event)
-{    
-    Event event(false,true);
-    std::thread::id parentTid;
-    bool threadDone = false;
-    volatile bool lock = true;
-    volatile bool setEvent = false;
+    TEST(DISABLED_test_event, set_event)
+    {
+        Thunder::Core::Event event(false,true);
+        std::thread::id parentTid;
+        bool threadDone = false;
+        volatile bool lock = false;
+        volatile bool setEvent = true;
 
-    ThreadClass object(event, parentTid, threadDone, lock, setEvent);
-    object.Run();
-    event.Lock();
-    EXPECT_FALSE(lock);
-    object.Stop();
-}
+        event.ResetEvent();
+        ThreadClass object(event, parentTid, threadDone, lock, setEvent);
+        object.Run();
+        event.Lock();
+        EXPECT_FALSE(setEvent);
+        object.Stop();     
+    }
 
-TEST(DISABLED_test_event, set_event)
-{
-    Event event(false,true);
-    std::thread::id parentTid;
-    bool threadDone = false;
-    volatile bool lock = false;
-    volatile bool setEvent = true;
-
-    event.ResetEvent();
-    ThreadClass object(event, parentTid, threadDone, lock, setEvent);
-    object.Run();
-    event.Lock();
-    EXPECT_FALSE(setEvent);
-    object.Stop();     
-}
+} // Core
+} // Tests
+} // Thunder

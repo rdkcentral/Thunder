@@ -44,22 +44,22 @@ namespace Tests {
 
     TEST(Core_RangeType, BoundaryExclusive)
     {
-        Core::RangeType<uint8_t, false, false> data(1u, 100u);
-        RangeTest<Core::RangeType<uint8_t, false, false>, false>(data);
+        Thunder::Core::RangeType<uint8_t, false, false> data(1u, 100u);
+        RangeTest<Thunder::Core::RangeType<uint8_t, false, false>, false>(data);
     }
 
     TEST(Core_RangeType, BoundaryInclusive)
     {
-        Core::RangeType<uint8_t, true, true> data(1u, 100u);
-        RangeTest<Core::RangeType<uint8_t, true, true>>(data);
+        Thunder::Core::RangeType<uint8_t, true, true> data(1u, 100u);
+        RangeTest<Thunder::Core::RangeType<uint8_t, true, true>>(data);
     }
 
     TEST(Core_RangeType, EqualBoundary)
     {
-        Core::RangeType<uint8_t, true, true> withBoundary(2u, 2u);
+        Thunder::Core::RangeType<uint8_t, true, true> withBoundary(2u, 2u);
         EXPECT_EQ(withBoundary.Range(), 1u);
 
-        Core::RangeType<uint8_t, false, false> withoutBoundary(2u, 2u);
+        Thunder::Core::RangeType<uint8_t, false, false> withoutBoundary(2u, 2u);
         EXPECT_EQ(withoutBoundary.Range(), 0u);
     }
 } // Tests

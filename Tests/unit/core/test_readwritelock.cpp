@@ -22,18 +22,22 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {    
 
-TEST(test_ReadWritelock, simpleSet)
-{
-    ReadWriteLock readObj;
-    EXPECT_TRUE(readObj.ReadLock());
+    TEST(test_ReadWritelock, simpleSet)
+    {
+        Thunder::Core::ReadWriteLock readObj;
+        EXPECT_TRUE(readObj.ReadLock());
 
-    readObj.ReadUnlock();
-    ReadWriteLock writeObj;
-    EXPECT_TRUE(writeObj.WriteLock());
+        readObj.ReadUnlock();
+        Thunder::Core::ReadWriteLock writeObj;
+        EXPECT_TRUE(writeObj.WriteLock());
 
-    writeObj.WriteUnlock();
-}
+        writeObj.WriteUnlock();
+    }
 
+} // Core
+} // Tests
+} // Thunder

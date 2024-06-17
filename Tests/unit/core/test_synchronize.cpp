@@ -22,54 +22,59 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class SynchronizeClass {
-public:
-    SynchronizeClass()
-        : _msg("")
+    class SynchronizeClass {
+    public:
+        SynchronizeClass()
+            : _msg("")
+        {
+        }
+
+        ~SynchronizeClass()
+        {
+        }
+
+    public:
+        bool Copy(const string message)
+        {
+            bool result = false;
+            _msg = message;
+            if (!_msg.empty())
+                result = true;
+            return result;
+        }
+
+    private:
+        string _msg;
+    };
+
+    TEST(test_synchronize, synchronize_test)
     {
+        string MESSAGE = "SynchronizeType request";
+        SynchronizeClass syncObject1;
+        Thunder::Core::SynchronizeType<string> syncObject2;
+        Thunder::Core::SynchronizeType<SynchronizeClass> syncObject3;
+
+        syncObject2.Load();
+        syncObject2.Evaluate();
+
+        syncObject3.Load(syncObject1);
+        EXPECT_EQ(syncObject3.Acquire(unsigned(5)), unsigned(11));
+        syncObject3.Load(syncObject1);
+        EXPECT_TRUE(syncObject3.Evaluate<string>(MESSAGE));
+
+        syncObject2.Lock();
+        syncObject2.Flush();
+        syncObject2.Unlock();
+
+        syncObject3.Lock();
+        syncObject3.Flush();
+        syncObject3.Unlock();
     }
 
-    ~SynchronizeClass()
-    {
-    }
-
-public:
-    bool Copy(const string message)
-    {
-        bool result = false;
-        _msg = message;
-        if (!_msg.empty())
-            result = true;
-        return result;
-    }
-
-private:
-    string _msg;
-};
-
-TEST(test_synchronize, synchronize_test)
-{
-    string MESSAGE = "SynchronizeType request";
-    SynchronizeClass syncObject1;
-    SynchronizeType<string> syncObject2;
-    SynchronizeType<SynchronizeClass> syncObject3;
-
-    syncObject2.Load();
-    syncObject2.Evaluate();
-
-    syncObject3.Load(syncObject1);
-    EXPECT_EQ(syncObject3.Acquire(unsigned(5)), unsigned(11));
-    syncObject3.Load(syncObject1);
-    EXPECT_TRUE(syncObject3.Evaluate<string>(MESSAGE));
-
-    syncObject2.Lock();
-    syncObject2.Flush();
-    syncObject2.Unlock();
-
-    syncObject3.Lock();
-    syncObject3.Flush();
-    syncObject3.Unlock();
-}
+} // Core
+} // Tests
+} // Thunder

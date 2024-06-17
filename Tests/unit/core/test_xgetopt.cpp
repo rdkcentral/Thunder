@@ -22,49 +22,57 @@
 #include <gtest/gtest.h>
 #include <core/XGetopt.h>
 
-int argumentCount = 3;
-char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-using namespace Thunder;
-using namespace Thunder::Core;
+    int argumentCount = 3;
+    char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
 
-class ConsoleOptions : public Core::Options {
-    public:
-        ConsoleOptions() = delete;
+    
+    
 
-        ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("chb"))
-        {
-            Parse();
-        }
+    class ConsoleOptions : public Thunder::Core::Options {
+        public:
+            ConsoleOptions() = delete;
 
-        ~ConsoleOptions()
-        {
-        }
-
-     private:
-        virtual void Option(const TCHAR option, const TCHAR* argument)
-        {
-            switch (option) {
-            case 'c':
-                EXPECT_EQ(option,'c');
-                break;
-#ifndef __WIN32__
-            case 'b':
-                EXPECT_EQ(option,'b');
-                break;
-#endif
-            case 'h':
-                EXPECT_EQ(option,'h');
-                break;
-            default:
-                printf("default\n");
-                break;
+            ConsoleOptions(int argumentCount, TCHAR* arguments[])
+                : Thunder::Core::Options(argumentCount, arguments, _T("chb"))
+            {
+                Parse();
             }
-        }
-};
 
-TEST(test_xgetopt, simple_xgetopt)
-{
-    ConsoleOptions consoleOptions(argumentCount,arguments);
-}
+            ~ConsoleOptions()
+            {
+            }
+
+         private:
+            virtual void Option(const TCHAR option, const TCHAR* argument)
+            {
+                switch (option) {
+                case 'c':
+                    EXPECT_EQ(option,'c');
+                    break;
+#ifndef __WIN32__
+                case 'b':
+                    EXPECT_EQ(option,'b');
+                    break;
+#endif
+                case 'h':
+                    EXPECT_EQ(option,'h');
+                    break;
+                default:
+                    printf("default\n");
+                    break;
+                }
+            }
+    };
+
+    TEST(test_xgetopt, simple_xgetopt)
+    {
+        ConsoleOptions consoleOptions(argumentCount,arguments);
+    }
+
+} // Core
+} // Tests
+} // Thunder

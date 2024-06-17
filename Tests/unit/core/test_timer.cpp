@@ -26,6 +26,7 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     class TimeHandler {
     public:
@@ -50,7 +51,7 @@ namespace Tests {
 
             _cv.notify_one();
 
-            Core::Time nextTick = Core::Time::Now() + time;
+            Thunder::Core::Time nextTick = Thunder::Core::Time::Now() + time;
 
             return nextTick.Ticks();
         }
@@ -76,14 +77,14 @@ namespace Tests {
     std::mutex TimeHandler::_mutex;
     std::condition_variable TimeHandler::_cv;
 
-    class WatchDogHandler : Core::WatchDogType<WatchDogHandler&> {
+    class WatchDogHandler : Thunder::Core::WatchDogType<WatchDogHandler&> {
     private:
-        typedef Core::WatchDogType<WatchDogHandler&> BaseClass;
+        typedef Thunder::Core::WatchDogType<WatchDogHandler&> BaseClass;
 
     public:
         WatchDogHandler& operator=(const WatchDogHandler&) = delete;
         WatchDogHandler()
-            : BaseClass(Core::Thread::DefaultStackSize(), _T("WatchDogTimer"), *this)
+            : BaseClass(Thunder::Core::Thread::DefaultStackSize(), _T("WatchDogTimer"), *this)
             , _event(false, true)
         {
         }
@@ -99,7 +100,7 @@ namespace Tests {
         uint32_t Expired()
         {
             _event.SetEvent();
-            return Core::infinite;
+            return Thunder::Core::infinite;
         }
 
         int Wait(unsigned int milliseconds) const
@@ -109,16 +110,16 @@ namespace Tests {
 
     private:
         uint32_t _delay;
-        mutable Core::Event _event;
+        mutable Thunder::Core::Event _event;
     };
 
     TEST(Core_Timer, LoopedTimer)
     {
         constexpr uint32_t time = 100;
 
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("LoopedTimer"));
+        Thunder::Core::TimerType<TimeHandler> timer(Thunder::Core::Thread::DefaultStackSize(), _T("LoopedTimer"));
 
-        Core::Time nextTick = Core::Time::Now() + time;
+        Thunder::Core::Time nextTick = Thunder::Core::Time::Now() + time;
 
         timer.Schedule(nextTick.Ticks(), TimeHandler());
 
@@ -132,9 +133,9 @@ namespace Tests {
     {
         constexpr uint32_t time = 100;
 
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("QueuedTimer"));
+        Thunder::Core::TimerType<TimeHandler> timer(Thunder::Core::Thread::DefaultStackSize(), _T("QueuedTimer"));
 
-        Core::Time nextTick = Core::Time::Now();
+        Thunder::Core::Time nextTick = Thunder::Core::Time::Now();
 
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
@@ -155,9 +156,9 @@ namespace Tests {
     {
         constexpr uint32_t time = 100;
 
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("PastTime"));
+        Thunder::Core::TimerType<TimeHandler> timer(Thunder::Core::Thread::DefaultStackSize(), _T("PastTime"));
 
-        Core::Time pastTime = Core::Time::Now();
+        Thunder::Core::Time pastTime = Thunder::Core::Time::Now();
 
         ASSERT_GT(pastTime.Ticks() / 1000, 0);
 
@@ -176,7 +177,9 @@ namespace Tests {
         WatchDogHandler timer;
         timer.Start(100); // 100 milliseconds delay
         int ret = timer.Wait(200); // Wait for 200 milliseconds
-        EXPECT_EQ(ret, Core::ERROR_NONE);
+        EXPECT_EQ(ret, Thunder::Core::ERROR_NONE);
     }
+
+} // Core
 } // Tests
 } // Thunder

@@ -23,93 +23,98 @@
 #include <core/core.h>
 #include <thread>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class ThreadClass : public Core::Thread {
-public:
-    ThreadClass() = delete;
-    ThreadClass(const ThreadClass&) = delete;
-    ThreadClass& operator=(const ThreadClass&) = delete;
+    class ThreadClass : public Thunder::Core::Thread {
+    public:
+        ThreadClass() = delete;
+        ThreadClass(const ThreadClass&) = delete;
+        ThreadClass& operator=(const ThreadClass&) = delete;
 
-    ThreadClass(std::thread::id parentId)
-        : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
-        , _threadDone(false)
-        , _parentId(parentId)
-    {
-    }
-
-    virtual ~ThreadClass()
-    {
-    }
-
-    virtual uint32_t Worker() override
-    {
-        while (IsRunning() && (!_threadDone)) {
-            EXPECT_TRUE(_parentId != std::this_thread::get_id());
-            _threadDone = true;
-            ::SleepMs(50);
+        ThreadClass(std::thread::id parentId)
+            : Thunder::Core::Thread(Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
+            , _threadDone(false)
+            , _parentId(parentId)
+        {
         }
-        return (Core::infinite);
+
+        virtual ~ThreadClass()
+        {
+        }
+
+        virtual uint32_t Worker() override
+        {
+            while (IsRunning() && (!_threadDone)) {
+                EXPECT_TRUE(_parentId != std::this_thread::get_id());
+                _threadDone = true;
+                ::SleepMs(50);
+            }
+            return (Thunder::Core::infinite);
+        }
+
+    private:
+        volatile bool _threadDone;
+        std::thread::id _parentId;
+    };
+
+    TEST(test_portability, simple_upper)
+    {
+        std::string input = "hello";
+        std::string output;
+        Thunder::Core::ToUpper(input,output);
+        EXPECT_STREQ(output.c_str(),_T("HELLO"));
+
+        Thunder::Core::ToUpper(input);
+        EXPECT_STREQ(input.c_str(),_T("HELLO"));
     }
 
-private:
-    volatile bool _threadDone;
-    std::thread::id _parentId;
-};
+    TEST(test_portability, simple_lower)
+    {
+        std::string input = "HELLO";
+        std::string output;
+        Thunder::Core::ToLower(input,output);
+        EXPECT_STREQ(output.c_str(),_T("hello"));
+        
+        Thunder::Core::ToLower(input);
+        EXPECT_STREQ(input.c_str(),_T("hello"));
+    }
 
-TEST(test_portability, simple_upper)
-{
-    std::string input = "hello";
-    std::string output;
-    ToUpper(input,output);
-    EXPECT_STREQ(output.c_str(),_T("HELLO"));
+    TEST(test_portability, simple_generic)
+    {
+        SleepS(1);
+        SleepMs(1);
+        EXPECT_EQ(htonl(12345),ntohl(12345));
 
-    ToUpper(input);
-    EXPECT_STREQ(input.c_str(),_T("HELLO"));
-}
+        std::thread::id parentId;
+        ThreadClass object(parentId);
+        object.Run();
 
-TEST(test_portability, simple_lower)
-{
-    std::string input = "HELLO";
-    std::string output;
-    ToLower(input,output);
-    EXPECT_STREQ(output.c_str(),_T("hello"));
-    
-    ToLower(input);
-    EXPECT_STREQ(input.c_str(),_T("hello"));
-}
+    //#ifdef __DEBUG__
+    //    DumpCallStack(object.Id(), nullptr);
+    //#endif
 
-TEST(test_portability, simple_generic)
-{
-    SleepS(1);
-    SleepMs(1);
-    EXPECT_EQ(htonl(12345),ntohl(12345));
+        object.Stop();
 
-    std::thread::id parentId;
-    ThreadClass object(parentId);
-    object.Run();
+        std::string s1 = "Hello";
+        uint8_t dest_buffer[6];
+        ::memmove((void*)dest_buffer,(void*)s1.c_str(),  static_cast<size_t>(5));
+        dest_buffer[5] = '\0';
+        EXPECT_STREQ((const char*)(dest_buffer),s1.c_str());
+    }
 
-//#ifdef __DEBUG__
-//    DumpCallStack(object.Id(), nullptr);
-//#endif
+    TEST(test_error, simple_error)
+    {
+        EXPECT_STREQ(ErrorToString(Thunder::Core::ERROR_NONE),"ERROR_NONE");
+    }
 
-    object.Stop();
+    TEST(test_void, simple_void)
+    {
+        Thunder::Core::Void v;
+        Thunder::Core::Void v2 = v;
+    }
 
-    std::string s1 = "Hello";
-    uint8_t dest_buffer[6];
-    ::memmove((void*)dest_buffer,(void*)s1.c_str(),  static_cast<size_t>(5));
-    dest_buffer[5] = '\0';
-    EXPECT_STREQ((const char*)(dest_buffer),s1.c_str());
-}
-
-TEST(test_error, simple_error)
-{
-    EXPECT_STREQ(ErrorToString(ERROR_NONE),"ERROR_NONE");
-}
-
-TEST(test_void, simple_void)
-{
-    Void v;
-    Void v2 = v;
-}
+} // Core
+} // Tests
+} // Thunder

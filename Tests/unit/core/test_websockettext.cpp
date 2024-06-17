@@ -27,10 +27,11 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
-    class TextSocketServer : public Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
+    class TextSocketServer : public Thunder::Core::StreamTextType<Web::WebSocketServerType<Thunder::Core::SocketStream>, Thunder::Core::TerminatorCarriageReturn> {
     private:
-        typedef Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
+        typedef Thunder::Core::StreamTextType<Web::WebSocketServerType<Thunder::Core::SocketStream>, Thunder::Core::TerminatorCarriageReturn> BaseClass;
 
     public:
         TextSocketServer() = delete;
@@ -82,16 +83,16 @@ namespace Tests {
     std::mutex TextSocketServer::_mutex;
     std::condition_variable TextSocketServer::_cv;
 
-    class TextSocketClient : public Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
+    class TextSocketClient : public Thunder::Core::StreamTextType<Web::WebSocketClientType<Thunder::Core::SocketStream>, Thunder::Core::TerminatorCarriageReturn> {
     private:
-		typedef Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
+		typedef Thunder::Core::StreamTextType<Web::WebSocketClientType<Thunder::Core::SocketStream>, Thunder::Core::TerminatorCarriageReturn> BaseClass;
 
     public:
         TextSocketClient() = delete;
 	    TextSocketClient(const TextSocketClient&) = delete;
         TextSocketClient& operator=(const TextSocketClient&) = delete;
 
-        TextSocketClient(const Core::NodeId& remoteNode)
+        TextSocketClient(const Thunder::Core::NodeId& remoteNode)
             : BaseClass(_T("/"), _T("echo"), "", "", false, true, false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _dataPending(false, false)
         {
@@ -136,8 +137,8 @@ namespace Tests {
     {
         std::string connector {"/tmp/wpewebsockettext0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextSocketServer> textWebSocketServer(Core::NodeId(connector.c_str()));
-            textWebSocketServer.Open(Core::infinite);
+            Thunder::Core::SocketServerType<TextSocketServer> textWebSocketServer(Thunder::Core::NodeId(connector.c_str()));
+            textWebSocketServer.Open(Thunder::Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(TextSocketServer::_mutex);
             while (!TextSocketServer::GetState()) {
@@ -155,8 +156,8 @@ namespace Tests {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            TextSocketClient textWebSocketClient(Core::NodeId(connector.c_str()));
-            textWebSocketClient.Open(Core::infinite);
+            TextSocketClient textWebSocketClient(Thunder::Core::NodeId(connector.c_str()));
+            textWebSocketClient.Open(Thunder::Core::infinite);
             testAdmin.Sync("server open");
             string sentString = "Test String";
             textWebSocketClient.Submit(sentString);
@@ -164,11 +165,12 @@ namespace Tests {
             string received;
             textWebSocketClient.Retrieve(received);
             EXPECT_STREQ(sentString.c_str(), received.c_str());
-            textWebSocketClient.Close(Core::infinite);
+            textWebSocketClient.Close(Thunder::Core::infinite);
             testAdmin.Sync("client done");
         }
-        Core::Singleton::Dispose();
+        Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
 } // Thunder

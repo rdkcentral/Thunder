@@ -26,16 +26,17 @@
 #include <core/Portability.h>
 
 namespace Thunder {
+namespace Tests {
+namespace Core {
+
 namespace Exchange {
-    struct IAdder : virtual public Core::IUnknown {
+    struct IAdder : virtual public Thunder::Core::IUnknown {
         enum { ID = 0x80000001 };
         virtual uint32_t GetValue() = 0;
         virtual void Add(uint32_t value) = 0;
         virtual uint32_t GetPid() = 0;
     };
 } // Exchange
-
-namespace Tests {
 
     class Adder : public Exchange::IAdder
     {
@@ -87,7 +88,7 @@ namespace Tests {
     ProxyStub::MethodHandler AdderStubMethods[] = {
         // virtual uint32_t GetValue() = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Thunder::Core::ProxyType<Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
@@ -102,7 +103,7 @@ namespace Tests {
 
         // virtual void Add(uint32_t) = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Thunder::Core::ProxyType<Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // read parameters
@@ -117,7 +118,7 @@ namespace Tests {
 
         // virtual uint32_t GetPid() = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Thunder::Core::ProxyType<Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
@@ -148,7 +149,7 @@ namespace Tests {
 
     class AdderProxy final : public ProxyStub::UnknownProxyType<IAdder> {
     public:
-        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, Core::instance_id implementation, const bool otherSideInformed)
+        AdderProxy(const Thunder::Core::ProxyType<Thunder::Core::IPCChannel>& channel, Thunder::Core::instance_id implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -159,7 +160,7 @@ namespace Tests {
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+            if ((output = Invoke(newMessage)) == Thunder::Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
@@ -186,7 +187,7 @@ namespace Tests {
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+            if ((output = Invoke(newMessage)) == Thunder::Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
@@ -222,15 +223,15 @@ namespace Tests {
             ExternalAccess(const ExternalAccess &) = delete;
             ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-            ExternalAccess(const Core::NodeId & source)
+            ExternalAccess(const Thunder::Core::NodeId & source)
                 : RPC::Communicator(source, _T(""))
             {
-                Open(Core::infinite);
+                Open(Thunder::Core::infinite);
             }
 
             ~ExternalAccess()
             {
-                Close(Core::infinite);
+                Close(Thunder::Core::infinite);
             }
 
         private:
@@ -239,7 +240,7 @@ namespace Tests {
                 void* result = nullptr;
 
                 if (interfaceId == Exchange::IAdder::ID) {
-                    Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
+                    Exchange::IAdder * newAdder = Thunder::Core::Service<Adder>::Create<Exchange::IAdder>();
                     result = newAdder;
                 }
 
@@ -252,7 +253,7 @@ namespace Tests {
     {
        std::string connector{"/tmp/wperpc01"};
        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-          Core::NodeId remoteNode(connector.c_str());
+          Thunder::Core::NodeId remoteNode(connector.c_str());
 
           ExternalAccess communicator(remoteNode);
 
@@ -260,7 +261,7 @@ namespace Tests {
 
           testAdmin.Sync("done testing");
 
-          communicator.Close(Core::infinite);
+          communicator.Close(Thunder::Core::infinite);
        };
 
        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -272,11 +273,11 @@ namespace Tests {
        testAdmin.Sync("setup server");
 
        {
-          Core::NodeId remoteNode(connector.c_str());
+          Thunder::Core::NodeId remoteNode(connector.c_str());
 
-          Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
+          Thunder::Core::ProxyType<Thunder::RPC::InvokeServerType<4, 0, 1>> engine = Thunder::Core::ProxyType<Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
           EXPECT_TRUE(engine.IsValid());
-          Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
+          Thunder::Core::ProxyType<Thunder::RPC::CommunicatorClient> client = Thunder::Core::ProxyType<Thunder::RPC::CommunicatorClient>::Create(remoteNode, Thunder::Core::ProxyType<Thunder::Core::IIPCServer>(engine));
           EXPECT_TRUE(client.IsValid());
 
           // Create remote instance of "IAdder".
@@ -296,11 +297,13 @@ namespace Tests {
 
           adder->Release();
 
-          client->Close(Core::infinite);
+          client->Close(Thunder::Core::infinite);
        }
 
        testAdmin.Sync("done testing");
-       Core::Singleton::Dispose();
+       Thunder::Core::Singleton::Dispose();
     }
+
+} // Core
 } // Tests
 } // Thunder
