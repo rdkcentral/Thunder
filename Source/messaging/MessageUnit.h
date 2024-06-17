@@ -288,7 +288,7 @@ namespace Thunder {
                                 Category = category;
                                 Enabled = enabled;
                             }
-                            Entry(Entry&& other)
+                            Entry(Entry&& other) noexcept
                                 : Core::JSON::Container()
                                 , Module(std::move(other.Module))
                                 , Category(std::move(other.Category))
@@ -309,7 +309,7 @@ namespace Thunder {
                                 Add(_T("enabled"), &Enabled);
                             }
 
-                            Entry& operator=(Entry&& other)
+                            Entry& operator=(Entry&& other) noexcept
                             {
                                 if (&other != this) {
                                     Module = std::move(other.Module);
