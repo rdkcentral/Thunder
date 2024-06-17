@@ -149,7 +149,7 @@ namespace Plugin {
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
             }
-            RootConfig(RootConfig&& move)
+            RootConfig(RootConfig&& move) noexcept
                 : Core::JSON::Container()
                 , Locator(std::move(move.Locator))
                 , User(std::move(move.User))
@@ -189,7 +189,7 @@ namespace Plugin {
                 return (*this);
             }
 
-            RootConfig& operator=(RootConfig&& move)
+            RootConfig& operator=(RootConfig&& move) noexcept
             {
                 if (this != &move) {
                     Locator = std::move(move.Locator);

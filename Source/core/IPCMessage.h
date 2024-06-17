@@ -104,7 +104,7 @@ namespace Core {
                 : _data(copy._data)
             {
             }
-            ScalarType(ScalarType<string>&& move)
+            ScalarType(ScalarType<string>&& move) noexcept
                 : _data(std::move(move._data))
             {
             }
@@ -118,7 +118,7 @@ namespace Core {
 
                 return (*this);
             }
-            ScalarType<string>& operator=(ScalarType<string>&& move)
+            ScalarType<string>& operator=(ScalarType<string>&& move) noexcept
             {
                 if (this != &move) {
                     _data = std::move(move._data);
