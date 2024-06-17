@@ -29,17 +29,8 @@ namespace WPEFramework {
 
 namespace PluginHost {
 
-    struct EXTERNAL ILocalDispatcher : public IDispatcher {
-        virtual ~ILocalDispatcher() override = default;
 
-        virtual uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) = 0;
-
-        virtual void Activate(IShell* service) = 0;
-        virtual void Deactivate() = 0;
-        virtual void Dropped(const uint32_t channelId) = 0;
-    };
-
-    class EXTERNAL JSONRPC : public ILocalDispatcher, public IDispatcher::ICallback {
+    class EXTERNAL JSONRPC : public IDispatcher, public IDispatcher::ICallback {
     private:
         class Observer {
         private:
@@ -456,9 +447,6 @@ namespace PluginHost {
             }
             return (Core::ERROR_NONE);
         }
-        ILocalDispatcher* Local() override {
-            return (this);
-        }
 
         // Inherited via ILocalDispatcher
         // ---------------------------------------------------------------------------------
@@ -499,27 +487,41 @@ namespace PluginHost {
 
             return (result);
         }
-        void Activate(IShell* service) override
+
+        Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) override
         {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
 
+            _adminLock.Lock();
+
             _service = service;
             _service->AddRef();
             _callsign = _service->Callsign();
-        }
-        void Deactivate() override
-        {
-            _adminLock.Lock();
-            _observers.clear();
+
+            sink = &_notification;
+            sink->AddRef();
+
             _adminLock.Unlock();
 
-            if (_service != nullptr) {
-                _service->Release();
-                _service = nullptr;
-            }
+            return (Core::ERROR_NONE);
         }
-        void Dropped(const uint32_t channelId) override
+        Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) override
+        {
+            _adminLock.Lock();
+
+            sink = &_notification;
+            sink->AddRef();
+
+            _callsign.clear();
+            _observers.clear();
+
+            _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
+        }
+
+        void Dropped(const IDispatcher::ICallback* callback) override 
         {
             _adminLock.Lock();
 
@@ -527,7 +529,7 @@ namespace PluginHost {
 
             while (index != _observers.end()) {
 
-                index->second.Dropped(channelId);
+                index->second.Dropped(callback);
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
@@ -536,8 +538,6 @@ namespace PluginHost {
                     index++;
                 }
             }
-
-
             _adminLock.Unlock();
         }
 
@@ -599,6 +599,8 @@ namespace PluginHost {
             _adminLock.Unlock();
 
             return (result);
+
+            return (Core::ERROR_NONE);
         }
         Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
         {

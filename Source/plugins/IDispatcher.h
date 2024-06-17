@@ -16,17 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef __IDISPATCHER_H__
-#define __IDISPATCHER_H__
-
+ 
+#pragma once
+ 
 #include <com/ICOM.h>
+#include "IShell.h"
+
+ // @stubgen:include <plugins/IShell.h>
 
 namespace WPEFramework {
 
     namespace PluginHost {
-
-        struct EXTERNAL ILocalDispatcher;
 
         struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
             virtual ~IDispatcher() override = default;
@@ -50,12 +50,15 @@ namespace WPEFramework {
             virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters /* @restrict:(4M-1) */, string& response /* @restrict:(4M-1) @out */) = 0;
             virtual Core::hresult Revoke(ICallback* callback) = 0;
 
-            // If we need to activate this locally, we can get access to the base..
-            /* @stubgen:stub */
-            virtual ILocalDispatcher* Local() = 0;
+            // Lifetime managment of the IDispatcher.
+            // Attach is to be called prior to receiving JSONRPC requests!
+            // Detach is to be called if the service is nolonger required!
+            virtual Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) = 0;
+            virtual Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) = 0;
+
+            // If a callback is unexpectedly dropepd (non-happy day scenarios) it is reported through this 
+            // method that all subscribtions for a certain callback can be dropped..
+            virtual void Dropped(const ICallback* callback) = 0;
         };
     }
-
 }
-
-#endif
