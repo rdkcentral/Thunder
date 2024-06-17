@@ -29,15 +29,7 @@ namespace Thunder {
 
 namespace PluginHost {
 
-    struct EXTERNAL ILocalDispatcher : public IDispatcher {
-        virtual ~ILocalDispatcher() = default;
-
-        virtual void Activate(IShell* service) = 0;
-        virtual void Deactivate() = 0;
-        virtual void Dropped(const IDispatcher::ICallback* callback) = 0;
-    };
-
-    class EXTERNAL JSONRPC : public ILocalDispatcher {
+    class EXTERNAL JSONRPC : public IDispatcher {
     public:
         using SendIfMethod = std::function<bool(const string&)>;
 
@@ -710,13 +702,7 @@ namespace PluginHost {
 
             return (result);
         }
-        ILocalDispatcher* Local() override {
-            return (this);
-        }
-
-        // Inherited via ILocalDispatcher
-        // ---------------------------------------------------------------------------------
-        void Activate(IShell* service) override
+        Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) override
         {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
@@ -727,28 +713,28 @@ namespace PluginHost {
             _service->AddRef();
             _callsign = _service->Callsign();
 
-            _service->Register(&_notification);
+            sink = &_notification;
+            sink->AddRef();
 
             _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
         }
-        void Deactivate() override
+        Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) override
         {
             _adminLock.Lock();
 
-            if (_service != nullptr) {
-                _service->Unregister(&_notification);
-                _service->Release();
-                _service = nullptr;
-            }
+            sink = &_notification;
+            sink->AddRef();
 
             _callsign.clear();
             _observers.clear();
 
             _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
         }
 
-        // Inherited via IDispatcher::ICallback
-        // ---------------------------------------------------------------------------------
         void Dropped(const IDispatcher::ICallback* callback) override {
             _adminLock.Lock();
 

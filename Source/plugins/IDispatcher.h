@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef __IDISPATCHER_H__
-#define __IDISPATCHER_H__
+#pragma once
 
 #include <com/ICOM.h>
+#include "IShell.h"
+
+ // @stubgen:include <plugins/IShell.h>
 
 namespace Thunder {
 
     namespace PluginHost {
-
-        struct EXTERNAL ILocalDispatcher;
 
         struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
             ~IDispatcher() override = default;
@@ -46,14 +46,15 @@ namespace Thunder {
             virtual Core::hresult Subscribe(ICallback* callback, const string& event, const string& designator) = 0;
             virtual Core::hresult Unsubscribe(ICallback* callback, const string& event, const string& designator) = 0;
 
-            // If this is a local instance of this interface, we get access to the IShell
-            // of this service which in turn allows access to the channels and thus the 
-            // possibility to return responses on the right JSONRPC channels.
-            /* @stubgen:stub */
-            virtual ILocalDispatcher* Local() = 0;
+            // Lifetime managment of the IDispatcher.
+            // Attach is to be called prior to receiving JSONRPC requests!
+            // Detach is to be called if the service is nolonger required!
+            virtual Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) = 0;
+            virtual Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) = 0;
+
+            // If a callback is unexpectedly dropepd (non-happy day scenarios) it is reported through this 
+            // method that all subscribtions for a certain callback can be dropped..
+            virtual void Dropped(const ICallback* callback) = 0;
         };
     }
-
 }
-
-#endif

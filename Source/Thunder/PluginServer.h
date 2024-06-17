@@ -690,6 +690,7 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
+
             static Core::NodeId PluginNodeId(const PluginHost::Config& config, const Plugin::Config& plugin) {
                 Core::NodeId result;
                 if (plugin.Communicator.IsSet() == true) {
@@ -1222,7 +1223,9 @@ namespace PluginHost {
 
                 void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
 
-                _connection = _administrator.RemoteConnection(sessionId);
+                if (result != nullptr) {
+                    _connection = _administrator.RemoteConnection(sessionId);
+                }
 
                 return (result);
             }
@@ -1431,13 +1434,12 @@ namespace PluginHost {
                         }
                         else {
                             uint32_t pid;
-                            const string libraryToLoad = _library.Name();
                             Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
 
                             // Time to fire up the remote process to instantiate the IPlugin
                             const Plugin::Config::RootConfig& rootConfig = PluginHost::Service::Configuration().Root;
 
-                            RPC::Object definition(libraryToLoad,
+                            RPC::Object definition(locator,
                                 classNameString,
                                 Callsign(),
                                 IPlugin::ID,
@@ -1451,8 +1453,7 @@ namespace PluginHost {
                                 PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
                                 PluginHost::Service::Configuration().Root.Configuration.Value());
 
-                            newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
-
+                                newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
                             if (newIF == nullptr) {
                                 ErrorMessage(_T("could not start the plugin in a detached mode"));
                             }
@@ -1467,10 +1468,8 @@ namespace PluginHost {
                     _textSocket = newIF->QueryInterface<ITextSocket>();
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
-                    IDispatcher* jsonrpc = newIF->QueryInterface<IDispatcher>();
-                    if (jsonrpc != nullptr) {
-                        _jsonrpc = jsonrpc->Local();
-                    }
+                    _jsonrpc = newIF->QueryInterface<IDispatcher>();
+
                     _composit.AquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
@@ -1568,7 +1567,7 @@ namespace PluginHost {
             ITextSocket* _textSocket;
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
-            ILocalDispatcher* _jsonrpc;
+            IDispatcher* _jsonrpc;
             reason _reason;
             Condition _precondition;
             Condition _termination;
@@ -1904,7 +1903,7 @@ namespace PluginHost {
             }; 
 
         private:
-           class CommunicatorServer : public RPC::Communicator {
+            class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
@@ -2563,6 +2562,8 @@ namespace PluginHost {
                 string _observerPath;
             };
 
+            using Channels = std::vector<uint32_t>;
+
         public:
             ServiceMap() = delete;
             ServiceMap(ServiceMap&&) = delete;
@@ -2598,6 +2599,9 @@ namespace PluginHost {
                 , _configObserver(*this, server._config.PluginConfigPath())
                 , _shellObservers()
                 , _channelObservers()
+                , _opened()
+                , _closed()
+                , _job(*this)
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
@@ -3164,23 +3168,25 @@ namespace PluginHost {
 
             void Opened(const uint32_t id)
             {
-                _notificationLock.Lock();
+                _adminLock.Lock();
+                _opened.push_back(id);
+                _adminLock.Unlock();
 
-                for (auto& sink : _channelObservers) {
-                    sink->Opened(id);
-                }
-
-                _notificationLock.Unlock();
+                _job.Submit();
             }
             void Closed(const uint32_t id)
             {
-                _notificationLock.Lock();
-
-                for (auto& sink : _channelObservers) {
-                    sink->Closed(id);
+                _adminLock.Lock();
+                Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
+                if (index != _opened.end()) {
+                    _opened.erase(index);
                 }
+                else {
+                    _closed.push_back(id);
+                }
+                _adminLock.Unlock();
 
-                _notificationLock.Unlock();
+                _job.Submit();
             }
 
         private:
@@ -3305,6 +3311,31 @@ namespace PluginHost {
                 return (_server.WorkerPool());
             }
 
+            friend class Core::ThreadPool::JobType<ServiceMap&>;
+            void Dispatch()
+            {
+                _adminLock.Lock();
+                Channels opened(std::move(_opened));
+                Channels closed(std::move(_closed));
+                _adminLock.Unlock();
+
+                _notificationLock.Lock();
+
+                for (uint32_t id : opened) {
+                    for (auto& sink : _channelObservers) {
+                        sink->Opened(id);
+                    }
+                }
+
+                for (uint32_t id : closed) {
+                    for (auto& sink : _channelObservers) {
+                        sink->Closed(id);
+                    }
+                }
+
+                _notificationLock.Unlock();
+            }
+
         private:
             Server& _server;
             mutable Core::CriticalSection _adminLock;
@@ -3319,6 +3350,9 @@ namespace PluginHost {
             ConfigObserver _configObserver;
             ShellNotifiers _shellObservers;
             ChannelObservers _channelObservers;
+            Channels _opened;
+            Channels _closed;
+            Core::ThreadPool::JobType<ServiceMap&> _job;
         };
 
         // Connection handler is the listening socket and keeps track of all open

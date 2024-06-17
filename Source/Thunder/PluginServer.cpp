@@ -298,6 +298,12 @@ namespace PluginHost {
             AddRef();
             result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
         }
+        else if (id == PluginHost::IDispatcher::ID) {
+            if (_jsonrpc != nullptr) {
+                _jsonrpc->AddRef();
+                result = _jsonrpc;
+            }
+        }
         else {
             _pluginHandling.Lock();
 
@@ -416,16 +422,17 @@ namespace PluginHost {
 
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
 
+                    _reason = reason::INITIALIZATION_FAILED;
+                    _administrator.Deinitialized(callSign, this);
+
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
-                        Deactivate(reason::INITIALIZATION_FAILED);
-                    } else {
-                        _reason = reason::INITIALIZATION_FAILED;
-                        _administrator.Deinitialized(callSign, this);
-                        Lock();
-                        ReleaseInterfaces();
-                        State(DEACTIVATED);
-                        Unlock();
+                        REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
                     }
+
+                    Lock();
+                    ReleaseInterfaces();
+                    State(DEACTIVATED);
+                    Unlock();
 
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
@@ -435,7 +442,12 @@ namespace PluginHost {
                     }
 
                     if (_jsonrpc != nullptr) {
-                        _jsonrpc->Activate(this);
+                        PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+                        _jsonrpc->Attach(sink, this);
+                        if (sink != nullptr) {
+                            Register(sink);
+                            sink->Release();
+                        }
                     }
 
                     if (_external.Connector().empty() == false) {
@@ -579,7 +591,12 @@ namespace PluginHost {
                 Lock();
 
                 if (_jsonrpc != nullptr) {
-                    _jsonrpc->Deactivate();
+                    PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+                    _jsonrpc->Detach(sink);
+                    if (sink != nullptr) {
+                        Unregister(sink);
+                        sink->Release();
+                    }
                 }
 
                 if (_external.Connector().empty() == false) {
