@@ -35,7 +35,7 @@ namespace Core {
 
     public:
         MessageException(const string& message, bool inclSysMsg = false) noexcept(true);
-        ~MessageException() throw();
+        ~MessageException() noexcept(true);
 
         const TCHAR* Message() const noexcept(true);
 
