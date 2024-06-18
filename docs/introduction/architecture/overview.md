@@ -57,55 +57,55 @@ Interface-based development is a software design principle that emphasizes defin
 In Thunder, interfaces are typically named with a capital `I` prefix, and the actual classes implementing these interfaces follow a consistent naming convention. The `IPlugin` interface can be a good example of that principle. This interface defines methods that any plugin must implement. Below you can see only a part of this interface and its methods with a detailed explanation. This code can be found [here](https://github.com/rdkcentral/Thunder/blob/e1b416eee5b057a8ffe5acfd68dfda04ad4f30eb/Source/plugins/IPlugin.h) in the Thunder repository.
 
 ```c++
-    struct EXTERNAL IPlugin : public virtual Core::IUnknown {
+struct EXTERNAL IPlugin : public virtual Core::IUnknown {
 
-        enum { ID = RPC::ID_PLUGIN };
+    enum { ID = RPC::ID_PLUGIN };
 
-        struct INotification : virtual public Core::IUnknown {
+    struct INotification : virtual public Core::IUnknown {
 
-            enum { ID = RPC::ID_PLUGIN_NOTIFICATION };
+        enum { ID = RPC::ID_PLUGIN_NOTIFICATION };
 
-            ~INotification() override = default;
+        ~INotification() override = default;
 
-            //! @{
-            //! ================================== CALLED ON THREADPOOL THREAD =====================================
-            //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
-            //! on this state change.
-            //! @}
-            virtual void Activated(const string& callsign, IShell* plugin) = 0;
-            virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
-            virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
-        };
+        //! @{
+        //! ================================== CALLED ON THREADPOOL THREAD =====================================
+        //! Whenever a plugin changes state, this is reported to an observer so proper actions could be taken
+        //! on this state change.
+        //! @}
+        virtual void Activated(const string& callsign, IShell* plugin) = 0;
+        virtual void Deactivated(const string& callsign, IShell* plugin) = 0;
+        virtual void Unavailable(const string& callsign, IShell* plugin) = 0;
+    };
 
 ...
 
-        //! @{
-        //! ==================================== CALLED ON THREADPOOL THREAD ======================================
-        //! First time initialization. Whenever a plugin is loaded, it is offered a Service object with relevant
-        //! information and services for this particular plugin. The Service object contains configuration information that
-        //! can be used to initialize the plugin correctly. If Initialization succeeds, return nothing (empty string)
-        //! If there is an error, return a string describing the issue why the initialisation failed.
-        //! The Service object is *NOT* reference counted, lifetime ends if the plugin is deactivated.
-        //! The lifetime of the Service object is guaranteed till the deinitialize method is called.
-        //! @}
-        virtual const string Initialize(PluginHost::IShell* shell) = 0;
+    //! @{
+    //! ==================================== CALLED ON THREADPOOL THREAD ======================================
+    //! First time initialization. Whenever a plugin is loaded, it is offered a Service object with relevant
+    //! information and services for this particular plugin. The Service object contains configuration information that
+    //! can be used to initialize the plugin correctly. If Initialization succeeds, return nothing (empty string)
+    //! If there is an error, return a string describing the issue why the initialisation failed.
+    //! The Service object is *NOT* reference counted, lifetime ends if the plugin is deactivated.
+    //! The lifetime of the Service object is guaranteed till the deinitialize method is called.
+    //! @}
+    virtual const string Initialize(PluginHost::IShell* shell) = 0;
 
-        //! @{
-        //! ==================================== CALLED ON THREADPOOL THREAD ======================================
-        //! The plugin is unloaded from framework. This is call allows the module to notify clients
-        //! or to persist information if needed. After this call the plugin will unlink from the service path
-        //! and be deactivated. The Service object is the same as passed in during the Initialize.
-        //! After theis call, the lifetime of the Service object ends.
-        //! @}
-        virtual void Deinitialize(PluginHost::IShell* shell) = 0;
+    //! @{
+    //! ==================================== CALLED ON THREADPOOL THREAD ======================================
+    //! The plugin is unloaded from framework. This is call allows the module to notify clients
+    //! or to persist information if needed. After this call the plugin will unlink from the service path
+    //! and be deactivated. The Service object is the same as passed in during the Initialize.
+    //! After theis call, the lifetime of the Service object ends.
+    //! @}
+    virtual void Deinitialize(PluginHost::IShell* shell) = 0;
 
-        //! @{
-        //! ==================================== CALLED ON THREADPOOL THREAD ======================================
-        //! Returns an interface to a JSON struct that can be used to return specific metadata information with respect
-        //! to this plugin. This Metadata can be used by the MetData plugin to publish this information to the ouside world.
-        //! @}
-        virtual string Information() const = 0;
-    };
+    //! @{
+    //! ==================================== CALLED ON THREADPOOL THREAD ======================================
+    //! Returns an interface to a JSON struct that can be used to return specific metadata information with respect
+    //! to this plugin. This Metadata can be used by the MetData plugin to publish this information to the ouside world.
+    //! @}
+    virtual string Information() const = 0;
+};
 
 ...
 ```
