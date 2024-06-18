@@ -26,7 +26,7 @@ namespace Thunder {
 namespace Core {
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-    MessageException::MessageException(const string& message, bool inclSysMsg) throw()
+    MessageException::MessageException(const string& message, bool inclSysMsg) noexcept(true)
         : m_Message(message)
     {
         if (inclSysMsg) {
@@ -36,11 +36,11 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     }
 POP_WARNING()
 
-    MessageException::~MessageException() throw()
+    MessageException::~MessageException() noexcept(true)
     {
     }
 
-    const TCHAR* MessageException::Message() const throw()
+    const TCHAR* MessageException::Message() const noexcept(true)
     {
         return m_Message.c_str();
     }
