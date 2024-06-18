@@ -21,23 +21,42 @@
 #define EXCEPTION_H
 
 #include <exception> // For exception class
+#include <errno.h>
 
 #include "Module.h"
 #include "Portability.h"
 #include "TextFragment.h"
+#include "Serialization.h"
 
 namespace Thunder {
 namespace Core {
 
-    class EXTERNAL MessageException : public std::exception {
+    class  MessageException : public std::exception {
     private:
-        MessageException();
+        inline MessageException()
+        {
+        }
 
     public:
-        MessageException(const string& message, bool inclSysMsg = false) noexcept(true);
-        ~MessageException() noexcept(true);
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+        inline MessageException(const string& message, bool inclSysMsg) noexcept(true)
+            : m_Message(message)
+        {
+            if (inclSysMsg) {
+                m_Message.append(_T(": "));
+                m_Message.append(Core::ToString(strerror(errno)));
+            }
+        }
+POP_WARNING()
 
-        const TCHAR* Message() const noexcept(true);
+        inline ~MessageException() noexcept(true)
+        {
+        }
+
+        inline const TCHAR* Message() const noexcept(true)
+        {
+            return m_Message.c_str();
+        }
 
     private:
         string m_Message; // Exception message

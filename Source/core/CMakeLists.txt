@@ -36,7 +36,6 @@ add_library(${TARGET}
         JSON.cpp
         JSONRPC.cpp
         Library.cpp
-        MessageException.cpp
         Netlink.cpp
         NetworkInfo.cpp
         NodeId.cpp
