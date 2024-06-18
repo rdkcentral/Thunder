@@ -32,12 +32,13 @@ namespace Thunder {
 namespace Core {
 
     class  MessageException : public std::exception {
-    private:
-        inline MessageException()
-        {
-        }
-
     public:
+        MessageException() = delete;
+        MessageException(const MessageException&) = delete;
+        MessageException(MessageException&&) = delete;
+        MessageException& operator=(const MessageException&) = delete;
+        MessageException& operator=(MessageException&&) = delete;
+
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         inline MessageException(const string& message, bool inclSysMsg) noexcept(true)
             : m_Message(message)
