@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "CRunImplementation.h"
-#include "JSON.h"
 #include <thread>
 
 namespace Thunder {
@@ -31,7 +31,7 @@ namespace ProcessContainers {
         return cRunContainerAdministrator;
     }
 
-    IContainer* CRunContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration)
+    IContainer* CRunContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration VARIABLE_IS_NOT_USED)
     {
         searchpaths.Reset(0);
         while (searchpaths.Next()) {
@@ -61,7 +61,7 @@ namespace ProcessContainers {
     {
     }
 
-    void CRunContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
+    void CRunContainerAdministrator::Logging(const string& logPath VARIABLE_IS_NOT_USED, const string& loggingOptions VARIABLE_IS_NOT_USED)
     {
         // Only container-scope logging
     }
@@ -101,7 +101,7 @@ namespace ProcessContainers {
             Core::Directory(logPath.c_str()).CreatePath();
 
             libcrun_error_t error = nullptr;
-            int ret = init_logging(&_context.output_handler, &_context.output_handler_arg, _name.c_str(), (logPath + "/container.log").c_str(), &error);
+            int ret = libcrun_init_logging(&_context.output_handler, &_context.output_handler_arg, _name.c_str(), (logPath + "/container.log").c_str(), &error);
             if (ret != 0) {
                 TRACE_L1("Cannot initialize logging of container \"%s\" in directory %s\n. Error %d: %s", _name.c_str(), logPath.c_str(), error->status, error->msg);
             }
@@ -225,7 +225,7 @@ namespace ProcessContainers {
         return result;
     }
 
-    bool CRunContainer::Stop(const uint32_t timeout /*ms*/)
+    bool CRunContainer::Stop(const uint32_t timeout /*ms*/ VARIABLE_IS_NOT_USED)
     {
         bool result = true;
         libcrun_error_t error = nullptr;

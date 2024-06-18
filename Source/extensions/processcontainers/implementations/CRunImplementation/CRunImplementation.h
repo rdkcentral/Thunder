@@ -24,12 +24,17 @@
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
+
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
+
 extern "C" {
 #include <crun/container.h>
 #include <crun/error.h>
 #include <crun/status.h>
 #include <crun/utils.h>
 }
+
+POP_WARNING()
 
 namespace Thunder {
 namespace ProcessContainers {
