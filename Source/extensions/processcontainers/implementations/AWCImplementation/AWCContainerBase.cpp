@@ -33,7 +33,7 @@ struct AWCProcessorInfo : public BaseRefCount<IProcessorInfo> {
         return 0;
     }
 
-    uint64_t CoreUsage(uint32_t coreNum) const
+    uint64_t CoreUsage(uint32_t coreNum VARIABLE_IS_NOT_USED) const
     {
         return 0;
     }
