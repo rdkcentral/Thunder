@@ -7,13 +7,13 @@ Thunder leverages robust communication mechanisms, including JSON-RPC and COM-RP
 
 
 
-## Resource-constrained focus
+## Resource-Constrained Focus
 
 Thunder is meticulously designed with resource constraints in mind, making it exceptionally suitable for embedded systems and environments where memory and processing power are limited. The architecture prioritizes efficiency and optimization to ensure that the framework operates smoothly even under severe resource limitations.
 
 This focus on resource constraints drives several key design decisions, including the use of lightweight communication protocols, modular plugin systems, and efficient resource management strategies.
 
-### Execution architecture
+### Execution Architecture
 
 The execution architecture of Thunder is a critical aspect that ensures optimal performance and resource utilization. Execution architecture refers to the structural organization of computational elements and their interactions within a system. In the context of Thunder, this architecture is geared towards maximizing efficiency and maintaining stability in resource-constrained environments.
 
@@ -28,7 +28,7 @@ In the nutshell, the `ResourceMonitor` operates as a separate thread dedicated t
 
 This resource-centric approach is complemented by Thunder’s use of efficient communication protocols, such as COM-RPC, which minimizes overhead and maximizes throughput. By employing COM-RPC within the execution architecture, Thunder ensures that inter-component communication is both fast and resource-efficient, which is crucial for maintaining performance in embedded systems.
 
-### Benefits of execution architecture in Thunder
+### Benefits of Execution Architecture in Thunder
 
 - **Efficiency**: The architecture is optimized for minimal resource usage, ensuring that the framework can run on devices with limited processing power and memory.
 - **Stability**: By isolating components and managing resources dynamically, Thunder can prevent the failure of one component from affecting the entire system.
@@ -38,14 +38,14 @@ To sum up, Thunder’s focus on resource constraints and its robust execution ar
 
 
 
-## Interface-based development
+## Interface-Based Development
 
 Interface-based development is a software design principle that emphasizes defining clear, stable interfaces between components. This approach decouples the implementation details from the interface, allowing for greater flexibility, maintainability, and scalability.
 
 !!! warning
 	Interfaces serve as contracts that define the methods and properties a component must implement, enabling different components to interact seamlessly without being tightly coupled to each other's implementations.
 
-### Main benefits
+### Main Benefits
 
 1. **Modularity:** Interfaces allow different parts of the system to be developed, tested, and maintained independently. This modularity simplifies updates and improvements without disrupting the entire system.
 2. **Interchangeability:** Implementations can be changed with minimal changes to the system. This is particularly useful for testing and upgrading components.
@@ -119,7 +119,7 @@ Overall, interface-based development is a cornerstone of Thunder’s design phil
 
 
 
-## Abstraction and portability
+## Abstraction and Portability
 
 In the development journey, it's crucial for plugin developers to understand the breadth and depth of functionalities already integrated into the framework. While it may be tempting to implement custom features targeting specific operating systems, it's probably almost always more efficient to leverage the extensive capabilities already provided by Thunder. This not only aligns with the principles of portability and scalability but also ensures optimized performance of the plugin.
 
@@ -135,7 +135,7 @@ Moreover, if there are changes in the specifications or functionalities of any o
 !!! warning
 	As a general rule of thumb, in order to avoid reinventing the wheel, always do the research to make sure that the feature you want to implement is not already available in Thunder.
 
-### Scalability and efficient resource management
+### Scalability and Efficient Resource Management
 
 Thunder is designed to support the concurrent execution of multiple plugins, each with its own set of functionalities and resources. Utilizing Thunder's built-in capabilities ensures that plugins can seamlessly coexist and interact within the framework, without introducing unnecessary overhead or resource contention. This optimized approach not only improves the overall responsiveness of the system but also simplifies the management and deployment of plugins in large-scale environments.
 
@@ -148,7 +148,7 @@ Simply put, thanks to the principles of abstraction and portability, Thunder ens
 
 
 
-## Isolation: out-of-process plugins
+## Isolation: Out-of-process Plugins
 
 Besides the fact that in-process plugins in Thunder offer significant advantages in terms of communication efficiency and simplicity, they also consume less memory due to the absence of extra processes. These plugins run within the same memory space as the core framework, allowing for direct function calls and reducing the overhead associated with inter-process communication.
 
@@ -159,20 +159,20 @@ However, despite these benefits, the use of out-of-process plugins remains cruci
 
 This isolation is vital in preventing a single point of failure from cascading through the system, thereby enhancing the robustness and reliability of the entire environment.
 
-### Ensuring stability with out-of-process plugins
+### Ensuring Stability with Out-of-process Plugins
 
 Out-of-process plugins provide an extra layer of security by running in a separate memory space. This separation means that if a plugin encounters a fatal error, the failure is contained within that process, allowing the core system to continue running uninterrupted.
 
 !!! warning
 	This architectural decision is especially important in complex systems with multiple plugins, as it prevents a single faulty plugin from compromising the entire system.
 
-### Strategic use of in-process plugins
+### Strategic Use of In-process Plugins
 
 While the primary advantage of out-of-process plugins is their isolation, there are scenarios where in-process plugins are preferable due to their efficiency. An example within Thunder is the `MessageControl` plugin, which aggregates and handles all communication within the framework. Running such a plugin in-process minimizes latency and maximizes performance, which is crucial for high-throughput communication tasks.
 
 However, incorporating in-process plugins requires meticulous attention to detail to ensure they are robust and free of bugs. This involves rigorous testing, code reviews, and adherence to best practices in software development to minimize the risk of crashes. The benefits of in-process plugins, such as reduced memory footprint and faster communication, justify this additional effort for components that are central to the framework’s operation.
 
-### Balancing efficiency and stability
+### Balancing Efficiency and Stability
 
 The architecture of Thunder exemplifies a balanced approach to plugin management, leveraging both in-process and out-of-process plugins as needed. 
 
@@ -183,7 +183,7 @@ In conclusion, Thunder’s hybrid approach to plugin architecture, combining the
 
 
 
-## Minimizing layers
+## Minimizing Layers
 
 In any embedded systems, it's critical to minimize the addition of extra layers to maintain optimal performance and efficiency. Adding unnecessary layers can significantly impact both processing speed and resource utilization. For instance, when a plugin runs within the same process as Thunder, all interactions are handled through local virtual function calls, which are highly efficient. This approach avoids the overhead associated with Remote Procedure Calls (RPC), such as JSON-RPC, which introduce additional latency and processing requirements.
 
@@ -194,7 +194,7 @@ However, when plugins operate out-of-process, using proxies and inter-process co
 
 Therefore, developers should strive to use the most direct and efficient communication methods available without introducing additional unnecessary steps.
 
-### Advantages of minimizing additional communication layers
+### Main Advantages
 
 * **Reduced latency** - minimizing additional communication layers can significantly reduce latency in the system. Each additional layer introduces a delay, which can accumulate and become noticeable, especially in real-time applications. In Thunder, using direct virtual function calls within the same process ensures that interactions are swift and efficient, crucial for maintaining responsiveness.
 
