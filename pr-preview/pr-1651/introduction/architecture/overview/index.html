@@ -2449,8 +2449,8 @@
 <p>Thunder leverages robust communication mechanisms, including JSON-RPC and COM-RPC protocols, to facilitate seamless interaction between plugins and external clients. The framework also emphasizes secure service management, with mechanisms for authentication, authorization, and secure communication.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>Overall, Thunder's architecture is geared towards providing a high-performance, reliable platform that can adapt to various use cases and deployment environments.</p>
 </div>
-<p>​   Overall, Thunder's architecture is geared towards providing a high-performance, reliable platform that can adapt to various use cases and deployment environments.</p>
 <h2 id="resource-constrained-focus">Resource-Constrained Focus</h2>
 <p>Thunder is meticulously designed with resource constraints in mind, making it exceptionally suitable for embedded systems and environments where memory and processing power are limited. The architecture prioritizes efficiency and optimization to ensure that the framework operates smoothly even under stringent resource limitations.</p>
 <p>This focus on resource constraints drives several key design decisions, including the use of lightweight communication protocols, modular plugin systems, and efficient resource management strategies.</p>
@@ -2459,7 +2459,7 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 </div>
-<p>​   A core component of Thunder’s execution architecture is the <code>ResourceMonitor</code>, and a more detailed documentation about it can be found <a href="https://rdkcentral.github.io/Thunder/utils/sockets/#resource-monitor">here</a>.</p>
+<p>​    A core component of Thunder’s execution architecture is the <code>ResourceMonitor</code>, and a more detailed documentation about it can be found <a href="https://rdkcentral.github.io/Thunder/utils/sockets/#resource-monitor">here</a>.</p>
 <p>In the nutshell, the <code>ResourceMonitor</code> operates as a separate thread dedicated to the aggregation, allocation, and management of resources. It plays a pivotal role in monitoring system resources, ensuring that each component receives the necessary resources while preventing over-allocation that could lead to system instability. Providing a centralized management system helps in identifying potential issues early and taking corrective actions before they escalate. The <code>ResourceMonitor</code>'s responsibilities include:</p>
 <ul>
 <li><strong>Resource Aggregation</strong>: Collecting data on resource usage from various components and plugins.</li>
@@ -2479,7 +2479,7 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 </div>
-<p>​   Interfaces serve as contracts that define the methods and properties a component must implement, enabling different components to interact seamlessly without being tightly coupled to each other's implementations.</p>
+<p>​    Interfaces serve as contracts that define the methods and properties a component must implement, enabling different components to interact seamlessly without being tightly coupled to each other's implementations.</p>
 <h3 id="benefits-of-interface-based-development">Benefits of Interface-Based Development</h3>
 <ol>
 <li><strong>Modularity:</strong> Interfaces allow different parts of the system to be developed, tested, and maintained independently. This modularity simplifies updates and improvements without disrupting the entire system.</li>
@@ -2543,8 +2543,8 @@
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>A class implementing this interface, for example, <code>MyPlugin</code>, must define all the methods declared in <code>IPlugin</code>, which allows Thunder to manage plugins uniformly, relying on the interface rather than the specific implementation.</p>
 </div>
-<p>​   A class implementing this interface, for example, <code>MyPlugin</code>, must define all the methods declared in <code>IPlugin</code>, which allows Thunder to manage plugins uniformly, relying on the interface rather than the specific implementation.</p>
 <p>In the end, by adhering to an interface-based architecture, Thunder ensures that its components remain decoupled and maintainable. This approach not only benefits the framework’s development but also encourages developers using Thunder to adopt best practices in their own projects. The clear separation of interface and implementation simplifies upgrades, enhances flexibility, and makes the system easier to understand and extend.</p>
 <p>Overall, interface-based development is a cornerstone of Thunder’s design philosophy, promoting a clean, modular, and scalable architecture. This ensures that Thunder remains robust and adaptable, capable of evolving alongside the ever-changing demands of embedded systems and the wider software development landscape.</p>
 <h2 id="abstraction-and-portability">Abstraction and portability</h2>
@@ -2553,13 +2553,13 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 </div>
-<p>​   By leveraging Thunder's abstraction, developers can write platform-independent code that remains consistent across different environments, eliminating the need to manage OS-specific implementations and dependencies.</p>
+<p>​    By leveraging Thunder's abstraction, developers can write platform-independent code that remains consistent across different environments, eliminating the need to manage OS-specific implementations and dependencies.</p>
 <p>Thunder can be deployed on numerous platforms, including Linux, Windows, and macOS, with potential support for additional platforms in the future. The key benefit of using the features implemented within the framework rather than developing them locally within your plugin is that you don't have to worry about portability—the framework handles that for you. This is particularly advantageous as it allows developers to focus on the functionality of their plugins rather than the intricacies of different operating systems.</p>
 <p>Moreover, if there are changes in the specifications or functionalities of any operating system, maintaining the system becomes much simpler. Instead of modifying each component (plugin) separately, changes need only be made within the framework. This centralized approach significantly reduces the maintenance burden and ensures consistency across all plugins.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 </div>
-<p>​   As a general rule of thumb, in order to avoid reinventing the wheel, always do the research to make sure that the feature you want to implement is not already available in Thunder.</p>
+<p>​    As a general rule of thumb, in order to avoid reinventing the wheel, always do the research to make sure that the feature you want to implement is not already available in Thunder.</p>
 <h3 id="scalability-and-efficient-resource-management">Scalability and Efficient Resource Management</h3>
 <p>Thunder is designed to support the concurrent execution of multiple plugins, each with its own set of functionalities and resources. Utilizing Thunder's built-in capabilities ensures that plugins can seamlessly coexist and interact within the framework, without introducing unnecessary overhead or resource contention. This optimized approach not only improves the overall responsiveness of the system but also simplifies the management and deployment of plugins in large-scale environments.</p>
 <p>A prime example of this is the usage of Thunder's <code>WorkerPool</code> to handle specific jobs on separate threads instead of creating threads within individual plugins. More detail information about this feature can be found <a href="https://rdkcentral.github.io/Thunder/utils/threading/worker-pool/">here</a>. The main advantage of this approach is that there are a few threads that wait for a job, execute it, and then return to the waiting state for the next job. This eliminates the overhead associated with creating and destroying threads each time a task needs to be performed.</p>
