@@ -17,8 +17,6 @@
 
 set(TEST_RUNNER_NAME "Thunder_test_core")
 
-
-
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_cyclicbuffer.cpp

@@ -17,13 +17,19 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
-#include <gtest/gtest.h>
-#include <core/core.h>
 #include <thread>
 #include <condition_variable>
 #include <mutex>
+
+#include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {

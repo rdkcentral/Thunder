@@ -17,16 +17,19 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
-#include <messaging/messaging.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
 namespace Core {
-
-    
 
     class Control : public Thunder::Core::Messaging::IControl {
     public:

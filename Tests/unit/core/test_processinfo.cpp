@@ -17,16 +17,17 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
 namespace Tests {
 namespace Core {
-
-    
 
     TEST(Core_ProcessInfo, simpleSet)
     {

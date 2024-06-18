@@ -17,35 +17,6 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
 #ifndef MODULE_NAME
-#include "../Module.h"
+#define MODULE_NAME ThunderUnitTests
 #endif
-
-#include <core/core.h>
-
-namespace Thunder {
-namespace Tests {
-namespace Core {
-
-    TEST(test_messageException, simple_messageException)
-    {
-        const std::string msg = "Testing the message exception.";
-
-        // No 'error' concatenated
-        Thunder::Core::MessageException exception(msg, false);
-
-        EXPECT_STREQ(exception.Message(), msg.c_str());
-
-        // 'error' concatenated
-        Thunder::Core::MessageException exception1(msg, true);
-
-        const string result = msg + ": No such file or directory";
-
-        EXPECT_STREQ(exception1.Message(), result.c_str());
-    }
-
-} // Core
-} // Tests
-} // Thunder

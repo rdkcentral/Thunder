@@ -16,17 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
 namespace Tests {
 namespace Core {
-
-    
-    
 
     enum class TestState {
         TEST_INIT = 0x00,

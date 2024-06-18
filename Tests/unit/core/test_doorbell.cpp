@@ -16,10 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
+
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
@@ -63,8 +69,6 @@ namespace Core {
 
     TEST(Core_DoorBell, simpleSetReversed)
     {
-        
-
         std::string fileName {"/tmp/doorbell02"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
             Thunder::Core::DoorBell doorBell(fileName.c_str());

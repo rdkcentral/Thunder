@@ -25,6 +25,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef MODULE_NAME
+#define MODULE_NAME ThunderTestsCoreIPAdministrator
+#endif
+
 #include <core/core.h>
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE);
