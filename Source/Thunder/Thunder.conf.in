@@ -1,4 +1,4 @@
-version = '@VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_REVISION@'
+version = '@Thunder_VERSION_MAJOR@.@Thunder_VERSION_MINOR@.@Thunder_VERSION_PATCH@'
 port = '@PORT@'
 binding = '@BINDING@'
 ipv6 = '@IPV6_SUPPORT@'
@@ -14,6 +14,9 @@ postmortempath = '@POSTMORTEM_PATH@'
 redirect = '/Service/Controller/UI'
 ethernetcard = '@ETHERNETCARD_NAME@'
 communicator = '@COMMUNICATOR@'
+
+hibernate = JSON()
+hibernate.add("locator", '@LOCATOR@')
 
 process = JSON()
 process.add("priority", '@PRIORITY@')

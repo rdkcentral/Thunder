@@ -2923,13 +2923,12 @@ namespace PluginHost {
 
                 if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
                     // Copy original configuration
-                    Plugin::Config newConfiguration;
-                    newConfiguration.FromString(original->ConfigLine());
+                    Plugin::Config newConfiguration(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
 
                     Core::ProxyType<Service> clone = Core::ProxyType<Service>::Create(Configuration(), newConfiguration, *this, Service::mode::CLONED, _engine);
 
-                    if (newService.IsValid() == true) {
+                    if (clone.IsValid() == true) {
                         // Fire up the interface. Let it handle the messages.
                         _services.emplace(
                             std::piecewise_construct,
@@ -4416,9 +4415,9 @@ namespace PluginHost {
         }
         inline void Metadata(PluginHost::Metadata::Version& data) const
         {
-            data.Major = PluginHost::Major;
-            data.Minor = PluginHost::Minor;
-            data.Patch = PluginHost::Patch;
+            data.Major = Versioning::Major;
+            data.Minor = Versioning::Minor;
+            data.Patch = Versioning::Patch;
             data.Hash = string(Core::System::ModuleBuildRef());
         }
         inline void Metadata(Core::JSON::ArrayType<PluginHost::Metadata::Channel>& data) const

@@ -65,7 +65,7 @@ namespace Core {
                     Add(_T("message"), &Text);
                     Add(_T("data"), &Data);
                 }
-                Info(Info&& move)
+                Info(Info&& move) noexcept
                     : Core::JSON::Container()
                     , Code(std::move(move.Code))
                     , Text(std::move(move.Text))
@@ -85,7 +85,7 @@ namespace Core {
                     return (*this);
                 }
 
-                Info& operator=(Info&& move)
+                Info& operator=(Info&& move) noexcept
                 {
                     if (this != &move) {
                         Code = std::move(move.Code);
@@ -218,7 +218,7 @@ namespace Core {
                 Add(_T("error"), &Error);
             }
 
-            Message(Message&& move)
+            Message(Message&& move) noexcept
                 : Core::JSON::Container()
                 , JSONRPC(std::move(move.JSONRPC))
                 , Id(std::move(move.Id))
@@ -438,7 +438,7 @@ namespace Core {
                 , _sequence(copy._sequence)
                 , _token(copy._token) {
             }
-            Context(Context&& move)
+            Context(Context&& move) noexcept
                 : _channelId(move._channelId)
                 , _sequence(move._sequence)
                 , _token(std::move(move._token)) {
@@ -464,9 +464,9 @@ namespace Core {
             }
 
         private:
-            const uint32_t _channelId;
-            const uint32_t _sequence;
-            const string _token;
+            uint32_t _channelId;
+            uint32_t _sequence;
+            string _token;
         };
 
         typedef std::function<void(const Context& context, const string& parameters, Core::OptionalType<Core::JSON::Error>&)> CallbackFunction;
@@ -545,7 +545,7 @@ namespace Core {
                     , _info(copy._info, copy._asynchronous)
                 {
                 }
-                Entry(Entry&& move)
+                Entry(Entry&& move) noexcept
                     : _asynchronous(move._asynchronous)
                     , _info(std::move(move._info), move._asynchronous)
                 {
@@ -621,7 +621,7 @@ namespace Core {
                     , _position(copy._position)
                 {
                 }
-                EventIterator(EventIterator&& move)
+                EventIterator(EventIterator&& move) noexcept
                     : _container(move._container)
                     , _index(std::move(move._index))
                     , _position(move._position)
@@ -639,7 +639,7 @@ namespace Core {
 
                     return (*this);
                 }
-                EventIterator& operator=(EventIterator&& move)
+                EventIterator& operator=(EventIterator&& move) noexcept
                 {
                     if (this != &move) {
                         _container = move._container;

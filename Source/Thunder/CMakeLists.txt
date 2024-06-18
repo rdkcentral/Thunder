@@ -20,7 +20,6 @@ find_package(Threads REQUIRED)
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT "4" CACHE STRING "The number of threads in the thread pool")
-set(ENABLE_INITSCRIPT_SUPPORT ON CACHE STRING "Enable init script(systemd/initd) install support from the thunder source tree")
 set(ENABLE_TRACING_MODULES ""  CACHE STRING "A space separated list of specific tracing modules to be enabled at start.")
 
 add_executable(${TARGET}
@@ -43,16 +42,17 @@ target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 
 if (TREE_REFERENCE)
     target_compile_definitions(${TARGET}
-            PRIVATE
+        PRIVATE
               -DTREE_REFERENCE=${TREE_REFERENCE}
             )
 endif()
 
-target_include_directories( ${TARGET}
+target_include_directories(${TARGET}
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../plugins/generated/jsonrpc>
+        PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
         )
-
 
 if (EXCEPTION_CATCHING)
     set_source_files_properties( PluginServer.cpp PROPERTIES COMPILE_FLAGS "-fexceptions" )
@@ -99,20 +99,18 @@ set_target_properties(${TARGET} PROPERTIES
         )
 
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
 )
 
 install(DIRECTORY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/../${PERSISTENT_PATH/${NAMESPACE}}
+    DESTINATION ${PERSISTENT_PATH}/${NAMESPACE}} COMPONENT ${NAMESPACE}_Runtime
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE
 )
 
-if (ENABLE_INITSCRIPT_SUPPORT)
-    add_subdirectory(scripts)
-endif()
+add_subdirectory(scripts)
 
 include(GenericConfig.cmake)

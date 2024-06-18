@@ -22,9 +22,12 @@ find_package(Threads REQUIRED)
 find_package(ExecInfo)
 find_package(LIBRT)
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
+message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
+
 add_library(${TARGET}
         Module.cpp
-	    DoorBell.cpp
+        DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -57,7 +60,6 @@ add_library(${TARGET}
         XGetopt.cpp
         ResourceMonitor.cpp
         )
-
 
 #TODO: Remove all non public headers from this list,
 # All the interface headers are here, these will be installed to staging
@@ -146,6 +148,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 
 target_compile_options (${TARGET} PRIVATE -Wno-psabi)
@@ -227,9 +230,14 @@ set_target_properties(${TARGET} PROPERTIES
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-          VERSION ${VERSION}
           SOVERSION ${VERSION_MAJOR}
         )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${VERSION}
+        )
+endif()
 
 if (NOT BUILD_SHARED_LIBS)
     set_property(TARGET  ${TARGET}
@@ -237,9 +245,9 @@ if (NOT BUILD_SHARED_LIBS)
     )
 endif()
 
-
 target_include_directories( ${TARGET}
         PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
           $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
@@ -270,13 +278,13 @@ endif()
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # static lib
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libs      # shared lib
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT devel   # for mac 
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}   # default include path
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core COMPONENT ${NAMESPACE}_Development   
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 # ===========================================================================================

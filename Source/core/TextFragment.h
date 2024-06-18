@@ -54,7 +54,7 @@ namespace Core {
                 , m_Length(copy.m_Length)
             {
             }
-            inline Index(Index&& move)
+            inline Index(Index&& move) noexcept
                 : m_Begin(move.m_Begin)
                 , m_Length(move.m_Length)
             {
@@ -73,7 +73,7 @@ namespace Core {
                 return (*this);
             }
 
-            inline Index& operator=(Index&& move)
+            inline Index& operator=(Index&& move) noexcept
             {
                 if (this != &move) {
                     m_Begin = move.m_Begin;
@@ -196,7 +196,7 @@ namespace Core {
             , m_Buffer(copy.m_Buffer)
         {
         }
-        TextFragment(TextFragment&& move)
+        TextFragment(TextFragment&& move) noexcept
             : m_Index(std::move(move.m_Index))
             , m_Start(move.m_Start)
             , m_Buffer(std::move(move.m_Buffer))
@@ -215,7 +215,7 @@ namespace Core {
 
             return (*this);
         }
-        TextFragment& operator=(TextFragment&& move)
+        TextFragment& operator=(TextFragment&& move) noexcept
         {
             if (this != &move) {
                 m_Index = std::move(move.m_Index);
@@ -615,7 +615,7 @@ namespace Core {
             , _suppressEmpty(copy._suppressEmpty)
         {
         }
-        TextSegmentIterator(TextSegmentIterator&& move, const bool fixatFromCurrentPosition = false)
+        TextSegmentIterator(TextSegmentIterator&& move, const bool fixatFromCurrentPosition = false) noexcept
             : _delimiter(move._delimiter)
             , _delimiters(std::move(move._delimiters))
             , _index(fixatFromCurrentPosition ? (move._index < move._source.Length() ? 0 : 1) : move._index)
@@ -645,7 +645,7 @@ namespace Core {
             return (*this);
         }
 
-        TextSegmentIterator& operator=(TextSegmentIterator&& move)
+        TextSegmentIterator& operator=(TextSegmentIterator&& move) noexcept
         {
             if (this != &move) {
                 _delimiter = move._delimiter;

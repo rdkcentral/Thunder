@@ -8,5 +8,5 @@ target_link_libraries(local_trace_test PRIVATE
     ${NAMESPACE}LocalTracer::${NAMESPACE}LocalTracer)
 
 if(EXAMPLE_LOCALTRACER)
-    install(TARGETS local_trace_test DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS local_trace_test DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 endif()

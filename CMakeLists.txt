@@ -15,17 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.15)
 
-project(Thunder)
+project(Thunder
+        VERSION 5.0.0
+        DESCRIPTION "Thunder framework"
+        HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 0)
+set(VERSION       ${${PROJECT_NAME}_VERSION})
+set(VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+set(VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+set(VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
 
-set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+string(TIMESTAMP BUILD_TIMESTAMP UTC)
 
-message(STATUS "Setting up ${PROJECT_NAME} v${VERSION}")
+message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
 
 option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
@@ -33,10 +37,19 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
-     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
+     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
+option(HUMAN_VERSIONED_BINARIES
+    "Create binaries with a human readeable version suffix" ON)
+option(VERSIONED_LIBRARY_LOADING
+    "Uses the major version (*.so.<major>) to load libraries rather then *.so" OFF)
+    
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
+endif()
+
+if(VERSIONED_LIBRARY_LOADING)
+    add_definitions(-DVERSIONED_LIBRARY_LOADING)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH
@@ -116,7 +129,7 @@ if(APPLE)
     set(CMAKE_MACOSX_RPATH ON)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
@@ -138,4 +151,3 @@ endif()
 add_subdirectory(Source)
 
 add_subdirectory(Tests)
-

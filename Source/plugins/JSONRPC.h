@@ -305,7 +305,7 @@ namespace PluginHost {
             {
                 Init();
             }
-            VersionInfo(VersionInfo&& move)
+            VersionInfo(VersionInfo&& move) noexcept
                 : Core::JSON::Container()
                 , Name(std::move(move.Name))
                 , Major(std::move(move.Major))
@@ -330,7 +330,7 @@ namespace PluginHost {
                 Patch = rhs.Patch;
                 return (*this);
             }
-            VersionInfo& operator=(VersionInfo&& move)
+            VersionInfo& operator=(VersionInfo&& move) noexcept
             {
                 if (this != &move) {
                     Name = std::move(move.Name);

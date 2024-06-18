@@ -1,5 +1,5 @@
 project(LocalTracer LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.15)
 
 set(MODULE_NAME ${NAMESPACE}LocalTracer)
 
@@ -15,14 +15,14 @@ target_link_libraries(${MODULE_NAME} INTERFACE
 
 target_include_directories(${MODULE_NAME} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-    $<INSTALL_INTERFACE:include/${NAMESPACE}>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>)
 
 target_compile_features(${MODULE_NAME} INTERFACE cxx_std_11)
 
 install(TARGETS ${MODULE_NAME} EXPORT ${MODULE_NAME}Targets)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/localtracer/localtracer.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/localtracer)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/localtracer/localtracer.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/localtracer COMPONENT ${NAMESPACE}_Development)
 
 include(HeaderOnlyInstall)
 

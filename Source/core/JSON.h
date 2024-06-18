@@ -506,7 +506,7 @@ namespace Core {
             }
             ~NumberType() override = default;
 
-            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
@@ -528,6 +528,15 @@ namespace Core {
             {
                 _value = RHS;
                 _set = SET;
+
+                return (*this);
+            }
+
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -1054,6 +1063,15 @@ namespace Core {
                 return (*this);
             }
 
+            FloatType<TYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline TYPE Default() const
             {
                 return _default;
@@ -1347,6 +1365,15 @@ namespace Core {
                 return (*this);
             }
 
+            Boolean& operator=(const Core::OptionalType<bool>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline bool Value() const
             {
                 return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
@@ -1578,6 +1605,15 @@ namespace Core {
             {
                 Core::ToString(RHS.c_str(), _value);
                 _flagsAndCounters |= SetBit;
+
+                return (*this);
+            }
+
+            String& operator=(const Core::OptionalType<string>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -1937,7 +1973,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 2] != '\\'))) {
+                            if ((current == '\"') && ((_value.empty() == true) || IsEscaped(_value))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -2135,6 +2171,19 @@ namespace Core {
             }
 
         private:
+            bool IsEscaped(const string& value) const {
+                // This code determines if a lot of back slashes to esscape the backslash
+                // Is odd or even, so does it escape the last character..
+                // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
+                //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
+                //      'Test \" and \" and than \\\"' are all escaped quotes 
+                uint32_t index = static_cast<uint32_t>(value.length() - 1);
+                uint32_t start = index;
+                while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
+                    index--;
+                }
+                return (((start - index) % 2) == 0);
+            }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
                 uint8_t depth = (_flagsAndCounters & 0x1F);
@@ -2601,7 +2650,7 @@ namespace Core {
 
             ~EnumType() override = default;
 
-            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
+            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
@@ -2626,6 +2675,15 @@ namespace Core {
             {
                 _value = RHS;
                 _state = SET;
+
+                return (*this);
+            }
+
+            EnumType<ENUMERATE>& operator=(const Core::OptionalType<ENUMERATE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -3077,7 +3135,7 @@ namespace Core {
 
             ~ArrayType() override = default;
 
-            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move)
+            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move) noexcept
             {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
@@ -3238,6 +3296,16 @@ namespace Core {
                     }
 
                     bit <<= 1;
+                }
+
+                return (*this);
+            }
+
+            template<typename ENUM>
+            ArrayType<ELEMENT>& operator=(const Core::OptionalType<ENUM>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
                 }
 
                 return (*this);
@@ -4588,7 +4656,7 @@ namespace Core {
                 return (*this);
             }
 
-            VariantContainer& operator=(VariantContainer&& move)
+            VariantContainer& operator=(VariantContainer&& move) noexcept
             {
                 if (this != &move) {
                     _elements = std::move(move._elements);

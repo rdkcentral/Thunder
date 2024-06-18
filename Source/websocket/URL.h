@@ -72,7 +72,7 @@ namespace Core {
                 return (*this);
             }
 
-            KeyValue& operator=(KeyValue&& move) {
+            KeyValue& operator=(KeyValue&& move) noexcept {
                 if (this != &move) {
                     _data = std::move(move._data);
                 }
@@ -245,7 +245,7 @@ namespace Core {
             , _ref(copy._ref)
         {
         }
-        URL(URL&& move)
+        URL(URL&& move) noexcept
             : _scheme(std::move(move._scheme))
             , _username(std::move(move._username))
             , _password(std::move(move._password))
@@ -290,7 +290,7 @@ namespace Core {
 
             return (*this);
         }
-        inline URL& operator=(URL&& move)
+        inline URL& operator=(URL&& move) noexcept
         {
             if (this != &move) {
                 _scheme = std::move(move._scheme);
