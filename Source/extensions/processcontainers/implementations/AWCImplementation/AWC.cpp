@@ -43,7 +43,7 @@ AWCListener::AWCListener(AWCStateChangeNotifier * notifier)
     : _notifier(notifier)
 {}
 
-void AWCListener::notifyWindowChange(int window_id, awc::AWCClient::awc_window_state_t window_state, unsigned int pid)
+void AWCListener::notifyWindowChange(int window_id VARIABLE_IS_NOT_USED, awc::AWCClient::awc_window_state_t window_state VARIABLE_IS_NOT_USED, unsigned int pid VARIABLE_IS_NOT_USED)
 {
     // intentionally left empty
 }

@@ -22,10 +22,6 @@
 #include <limits>
 #include <memory>
 
-#ifdef PROCESSCONTAINERS_ENABLED
-#include "ProcessInfo.h"
-#endif
-
 namespace WPEFramework {
 namespace RPC {
 

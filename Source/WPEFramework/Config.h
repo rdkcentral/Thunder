@@ -303,6 +303,13 @@ namespace PluginHost {
                     Logging = RHS.Logging;
                     return (*this);
                 }
+                ProcessContainerConfig& operator=(ProcessContainerConfig&& move) noexcept
+                {
+                    if (this != &move) {
+                        Logging = std::move(move.Logging);
+                    }
+                    return (*this);
+                }
 
                 Core::JSON::String Logging;
             };
