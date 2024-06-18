@@ -3,7 +3,7 @@ The architecture of Thunder is designed to provide a modular, scalable, and effi
 Thunder leverages robust communication mechanisms, including JSON-RPC and COM-RPC protocols, to facilitate seamless interaction between plugins and external clients. The framework also emphasizes secure service management, with mechanisms for authentication, authorization, and secure communication.
 
 !!! note
-    Overall, Thunder's architecture is geared towards providing a high-performance, reliable platform that can adapt to various use cases and deployment environments.
+	Overall, Thunder's architecture is geared towards providing a high-performance, reliable platform that can adapt to various use cases and deployment environments.
 
 
 
@@ -18,7 +18,7 @@ This focus on resource constraints drives several key design decisions, includin
 The execution architecture of Thunder is a critical aspect that ensures optimal performance and resource utilization. Execution architecture refers to the structural organization of computational elements and their interactions within a system. In the context of Thunder, this architecture is geared towards maximizing efficiency and maintaining stability in resource-constrained environments.
 
 !!! note
-​    A core component of Thunder’s execution architecture is the `ResourceMonitor`, and a more detailed documentation about it can be found [here](https://rdkcentral.github.io/Thunder/utils/sockets/#resource-monitor).
+	A core component of Thunder’s execution architecture is the `ResourceMonitor`, and a more detailed documentation about it can be found [here](https://rdkcentral.github.io/Thunder/utils/sockets/#resource-monitor).
 
 In the nutshell, the `ResourceMonitor` operates as a separate thread dedicated to the aggregation, allocation, and management of resources. It plays a pivotal role in monitoring system resources, ensuring that each component receives the necessary resources while preventing over-allocation that could lead to system instability. Providing a centralized management system helps in identifying potential issues early and taking corrective actions before they escalate. The `ResourceMonitor`'s responsibilities include:
 
@@ -43,7 +43,7 @@ To sum up, Thunder’s focus on resource constraints and its robust execution ar
 Interface-based development is a software design principle that emphasizes defining clear, stable interfaces between components. This approach decouples the implementation details from the interface, allowing for greater flexibility, maintainability, and scalability.
 
 !!! warning
-​    Interfaces serve as contracts that define the methods and properties a component must implement, enabling different components to interact seamlessly without being tightly coupled to each other's implementations.
+	Interfaces serve as contracts that define the methods and properties a component must implement, enabling different components to interact seamlessly without being tightly coupled to each other's implementations.
 
 ### Benefits of Interface-Based Development
 
@@ -111,7 +111,7 @@ In Thunder, interfaces are typically named with a capital `I` prefix, and the ac
 ```
 
 !!! note
-    A class implementing this interface, for example, `MyPlugin`, must define all the methods declared in `IPlugin`, which allows Thunder to manage plugins uniformly, relying on the interface rather than the specific implementation.
+	A class implementing this interface, for example, `MyPlugin`, must define all the methods declared in `IPlugin`, which allows Thunder to manage plugins uniformly, relying on the interface rather than the specific implementation.
 
 In the end, by adhering to an interface-based architecture, Thunder ensures that its components remain decoupled and maintainable. This approach not only benefits the framework’s development but also encourages developers using Thunder to adopt best practices in their own projects. The clear separation of interface and implementation simplifies upgrades, enhances flexibility, and makes the system easier to understand and extend.
 
@@ -126,14 +126,14 @@ In the development journey, it's crucial for plugin developers to understand the
 One of the core principles guiding the design of Thunder is portability. The framework is engineered to be platform-agnostic, allowing it to seamlessly run across various operating systems and hardware environments. Plugin developers are encouraged to embrace this portability by utilizing Thunder's abstraction layers for interacting with the underlying OS functionalities.
 
 !!! note
-​    By leveraging Thunder's abstraction, developers can write platform-independent code that remains consistent across different environments, eliminating the need to manage OS-specific implementations and dependencies.
+	By leveraging Thunder's abstraction, developers can write platform-independent code that remains consistent across different environments, eliminating the need to manage OS-specific implementations and dependencies.
 
 Thunder can be deployed on numerous platforms, including Linux, Windows, and macOS, with potential support for additional platforms in the future. The key benefit of using the features implemented within the framework rather than developing them locally within your plugin is that you don't have to worry about portability—the framework handles that for you. This is particularly advantageous as it allows developers to focus on the functionality of their plugins rather than the intricacies of different operating systems.
 
 Moreover, if there are changes in the specifications or functionalities of any operating system, maintaining the system becomes much simpler. Instead of modifying each component (plugin) separately, changes need only be made within the framework. This centralized approach significantly reduces the maintenance burden and ensures consistency across all plugins.
 
 !!! warning
-​    As a general rule of thumb, in order to avoid reinventing the wheel, always do the research to make sure that the feature you want to implement is not already available in Thunder.
+	As a general rule of thumb, in order to avoid reinventing the wheel, always do the research to make sure that the feature you want to implement is not already available in Thunder.
 
 ### Scalability and Efficient Resource Management
 
@@ -142,7 +142,7 @@ Thunder is designed to support the concurrent execution of multiple plugins, eac
 A prime example of this is the usage of Thunder's `WorkerPool` to handle specific jobs on separate threads instead of creating threads within individual plugins. More detail information about this feature can be found [here](https://rdkcentral.github.io/Thunder/utils/threading/worker-pool/). The main advantage of this approach is that there are a few threads that wait for a job, execute it, and then return to the waiting state for the next job. This eliminates the overhead associated with creating and destroying threads each time a task needs to be performed.
 
 !!! note
-​	This is particularly beneficial both for smaller tasks where the time taken to create and destroy a thread could exceed the time required to execute the task itself, as well as for avoiding a scenario where each plugin spawns multiple threads which could lead to serious stability issues.
+	This is particularly beneficial both for smaller tasks where the time taken to create and destroy a thread could exceed the time required to execute the task itself, as well as for avoiding a scenario where each plugin spawns multiple threads which could lead to serious stability issues.
 
 Simply put, thanks to the principles of abstraction and portability, Thunder ensures that plugins are robust, maintainable, and scalable. Developers are encouraged to utilize the framework's extensive capabilities, which not only simplifies development but also enhances the overall efficiency and performance of the system.
 
@@ -155,7 +155,7 @@ Besides the fact that in-process plugins in Thunder offer significant advantages
 However, despite these benefits, the use of out-of-process plugins remains crucial for maintaining the overall stability and resilience of the system.
 
 !!! note
-​	By isolating each plugin in its own process, the framework ensures that any failure or crash within a plugin does not impact the core framework or other plugins.
+	By isolating each plugin in its own process, the framework ensures that any failure or crash within a plugin does not impact the core framework or other plugins.
 
 This isolation is vital in preventing a single point of failure from cascading through the system, thereby enhancing the robustness and reliability of the entire environment.
 
@@ -164,7 +164,7 @@ This isolation is vital in preventing a single point of failure from cascading t
 Out-of-process plugins provide an extra layer of security by running in a separate memory space. This separation means that if a plugin encounters a fatal error, the failure is contained within that process, allowing the core system to continue running uninterrupted.
 
 !!! warning
-​	This architectural decision is especially important in complex systems where multiple plugins interact, as it prevents a single faulty plugin from compromising the entire system.
+	This architectural decision is especially important in complex systems where multiple plugins interact, as it prevents a single faulty plugin from compromising the entire system.
 
 ### Strategic Use of In-Process Plugins
 
@@ -177,7 +177,7 @@ However, incorporating in-process plugins requires meticulous attention to detai
 The architecture of Thunder exemplifies a balanced approach to plugin management, leveraging both in-process and out-of-process plugins as needed. 
 
 !!! note
-​	In-process plugins are used sensibly for tasks that benefit from close integration and high efficiency, while out-of-process plugins are employed to safeguard the system’s stability. This strategic use of different plugin architectures ensures that Thunder remains both performant and resilient.
+	In-process plugins are used sensibly for tasks that benefit from close integration and high efficiency, while out-of-process plugins are employed to safeguard the system’s stability. This strategic use of different plugin architectures ensures that Thunder remains both performant and resilient.
 
 In conclusion, Thunder’s hybrid approach to plugin architecture, combining the strengths of both in-process and out-of-process plugins, ensures that the system remains efficient, stable, and resilient. This thoughtful design underscores Thunder's commitment to delivering a robust platform capable of handling the complexities and demands of modern embedded systems. By isolating potentially unstable components while optimizing critical ones, Thunder achieves a balance that maximizes performance without compromising reliability.
 
@@ -190,7 +190,7 @@ In any embedded systems, it's critical to minimize the addition of extra layers 
 However, when plugins operate out-of-process, using proxies and inter-process communication (IPC) becomes unavoidable. In these scenarios, choosing the most efficient communication method is paramount. COM-RPC, for example, offers lower latency and overhead compared to JSON-RPC, making it a preferable choice.
 
 !!! danger
-​	While both in-process and out-of-process plugins have their own set of benefits and trade-offs, it is universally true that introducing unnecessary communication layers is going to degrade performance. Therefore, developers should strive to use the most direct and efficient communication methods available without introducing additional unnecessary steps.
+	While both in-process and out-of-process plugins have their own set of benefits and trade-offs, it is universally true that introducing unnecessary communication layers is going to degrade performance. Therefore, developers should strive to use the most direct and efficient communication methods available without introducing additional unnecessary steps.
 
 ### Advantages of Minimizing Additional Communication Layers
 
@@ -221,14 +221,14 @@ In JSON-RPC, communication typically occurs over HTTP or another transport proto
 On the other hand, COM-RPC is the cornerstone of Thunder's communication strategy, offering superior performance and efficiency, which are crucial for embedded devices where resources are limited.
 
 !!! note
-​	COM-RPC is designed to be much faster and more efficient than JSON-RPC, as it involves less overhead and is optimized for high-speed, low-latency communication. This efficiency is vital for embedded systems, where memory usage and processing power must be carefully managed. The lean and mean nature of COM-RPC allows Thunder to maintain high performance while running on devices with constrained resources. By leveraging COM-RPC, Thunder can ensure that its services are not only reliable but also capable of meeting the stringent demands of embedded environments, making it a robust framework for a wide range of applications.
+	COM-RPC is designed to be much faster and more efficient than JSON-RPC, as it involves less overhead and is optimized for high-speed, low-latency communication. This efficiency is vital for embedded systems, where memory usage and processing power must be carefully managed. The lean and mean nature of COM-RPC allows Thunder to maintain high performance while running on devices with constrained resources. By leveraging COM-RPC, Thunder can ensure that its services are not only reliable but also capable of meeting the stringent demands of embedded environments, making it a robust framework for a wide range of applications.
 
 Despite the clear advantages of COM-RPC in terms of efficiency and performance, many developers working with Thunder still prefer using JSON-RPC due to its simplicity and ease of use. JSON-RPC's straightforward, human-readable format makes it an attractive choice for quick integrations and debugging, especially during the initial stages of development or when interoperability with various clients is required.
 
 However, it's important to emphasize that for production environments, particularly in embedded systems where resources are limited, the performance benefits of COM-RPC cannot be overlooked. COM-RPC's optimized, low-overhead communication significantly enhances the framework's efficiency, leading to lower memory usage and faster response times.
 
 !!! warning
-​	Therefore, we strongly urge developers to invest the effort in utilizing COM-RPC wherever feasible.
+	Therefore, we strongly urge developers to invest the effort in utilizing COM-RPC wherever feasible.
 
 By doing so, they can achieve a much more optimized and performant system, ensuring that Thunder runs at its full potential even on resource-constrained devices. Adopting COM-RPC will ultimately lead to a more robust and scalable application, fully leveraging Thunder's architectural strengths.
 
