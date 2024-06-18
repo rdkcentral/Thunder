@@ -40,7 +40,7 @@ namespace Core {
         MessageException& operator=(MessageException&&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-        inline MessageException(const string& message, bool inclSysMsg) noexcept(true)
+        inline explicit MessageException(const string& message, bool inclSysMsg = false) noexcept(true)
             : m_Message(message)
         {
             if (inclSysMsg) {
