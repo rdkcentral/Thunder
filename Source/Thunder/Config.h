@@ -392,7 +392,7 @@ namespace PluginHost {
                 ProcessContainerConfig& operator=(ProcessContainerConfig&& move) noexcept
                 {
                     if (this != &move) {
-                        Logging = std::move(move.Logging;
+                        Logging = std::move(move.Logging);
                     }
                     return (*this);
                 }
