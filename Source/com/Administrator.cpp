@@ -207,9 +207,9 @@ namespace RPC {
                 _adminLock.Unlock();
 
                 if (result == true) {
-                    TRACE_L3("Validated instance 0x%08" PRIxPTR " by administration", impl);
+                    TRACE_L3("Validated instance 0x%08" PRId64 " by administration", impl);
                 } else {
-                    TRACE_L1("Failed to validate instance 0x%08" PRIxPTR " of interface 0x%08x", impl, id);
+                    TRACE_L1("Failed to validate instance 0x%08" PRId64 " of interface 0x%08x", impl, id);
                 }
             }
         }

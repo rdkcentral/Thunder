@@ -255,16 +255,16 @@ public:
         bool isPoolId = false;
         char id[MaxSize];
 #ifdef __APPLE__
-        sprintf(id, "%x", static_cast<void*>(pthread_self()));
+        snprintf(id, sizeof(id), "%p", static_cast<void*>(pthread_self()));
 #else
-        sprintf(id, "%x", static_cast<uint32_t>(pthread_self()));
+        snprintf(id, sizeof(id), "%x", static_cast<uint32_t>(pthread_self()));
 #endif
         for (uint8_t index = 0; index < _threadsCount + 2; index++) {
         char workerId[MaxSize];
 #ifdef __APPLE__
-        sprintf(workerId, "%x", static_cast<void*>(IWorkerPool::Instance().Id(index)));
+        snprintf(workerId, sizeof(workerId), "%p", static_cast<void*>(IWorkerPool::Instance().Id(index)));
 #else
-        sprintf(workerId, "%x", static_cast<uint32_t>(IWorkerPool::Instance().Id(index)));
+        snprintf(workerId, sizeof(workerId), "%x", static_cast<uint32_t>(IWorkerPool::Instance().Id(index)));
 #endif
             if (strcpy(workerId, id)) {
                 isPoolId = true;

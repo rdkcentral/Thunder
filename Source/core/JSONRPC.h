@@ -96,7 +96,7 @@ namespace Core {
                 }
 
             public:
-                void Clear()
+                void Clear() override
                 {
                     Code.Clear();
                     Text.Clear();
@@ -369,7 +369,7 @@ namespace Core {
 
                 return (val);
             }
-            void Clear()
+            void Clear() override
             {
                 JSONRPC = DefaultVersion;
                 Id.Clear();

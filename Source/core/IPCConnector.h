@@ -449,15 +449,15 @@ POP_WARNING()
         {
             return (_response.Package());
         }
-        virtual uint32_t Label() const
+        uint32_t Label() const override
         {
             return (IDENTIFIER);
         }
-        virtual ProxyType<IMessage> IParameters()
+        ProxyType<IMessage> IParameters() override
         {
             return (ProxyType<IMessage>(_parameters, _parameters));
         }
-        virtual ProxyType<IMessage> IResponse()
+        ProxyType<IMessage> IResponse() override
         {
             return (ProxyType<IMessage>(_response, _response));
         }

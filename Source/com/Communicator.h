@@ -1840,7 +1840,7 @@ POP_WARNING()
             // Lock event until Dispatch() sets it.
             return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
         }
-        virtual void Dispatch(Core::IIPC& element);
+        void Dispatch(Core::IIPC& element) override;
 
     protected:
         void StateChange() override;

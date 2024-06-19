@@ -45,17 +45,17 @@ namespace Tests {
         {
         }
 
-        uint32_t GetValue()
+        uint32_t GetValue() override
         {
             return m_value;
         }
 
-        void Add(uint32_t value)
+        void Add(uint32_t value) override
         {
             m_value += value;
         }
 
-        uint32_t GetPid()
+        uint32_t GetPid() override
         {
             return getpid();
         }

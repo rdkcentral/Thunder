@@ -36,10 +36,6 @@ namespace Tests {
     
     TEST(Core_NumberType, generic)
     {
-        Core::NumberType<uint8_t> numbertype;
-        string buffer = "/Service/testing/numbertype";
-        Core::NumberType<Core::TextFragment> typetextfragment(Core::TextFragment(string(buffer)));
-
         string valdata = "90";
         Core::NumberType<uint8_t> val1 = Tester<Core::NumberType<uint8_t>>(valdata);
         Core::NumberType<int8_t> val2 = Tester<Core::NumberType<int8_t>>(valdata);
