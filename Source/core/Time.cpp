@@ -816,10 +816,10 @@ namespace Core {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+            _stnprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+            _stnprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
 POP_WARNING()
 
         string value(buffer);
@@ -844,12 +844,12 @@ POP_WARNING()
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
            Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
+            _stnprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
+            _stnprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
 POP_WARNING()
 
@@ -871,12 +871,12 @@ POP_WARNING()
 
             Time converted(convertedTime, localTime);
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
+            _stnprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
                 converted.Minutes(), converted.Seconds(), zone);
 POP_WARNING()
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
+            _stnprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
 POP_WARNING()
 
         return (string(buffer));
@@ -1047,12 +1047,12 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
+            _stnprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
                 Day(localTime), MonthName(localTime), Year(localTime),
                 Hours(localTime), Minutes(localTime), Seconds(localTime), zone);
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
+            _stnprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
                 Minutes(utcTime), Seconds(utcTime), zone);
         }
 
@@ -1070,11 +1070,11 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
+            _stnprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
                 Minutes(localTime), Seconds(localTime), zone);
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime),Minutes(utcTime),
+            _stnprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime),Minutes(utcTime),
                 Seconds(utcTime), zone);
         }
 
@@ -1092,10 +1092,10 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
+            _stnprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
+            _stnprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
         }
 
         string value(buffer);

@@ -158,7 +158,7 @@ namespace PluginHost {
             Server();
             ~Server() override = default;
 
-            inline void Clear()
+            inline void Clear() override
             {
                 ThreadPoolRuns.Clear();
                 PendingRequests.Clear();
@@ -184,7 +184,7 @@ namespace PluginHost {
         public:
             void Add(const PluginHost::ISubSystem::subsystem name, const bool available);
 
-            void Clear()
+            void Clear() override
             {
                 SubSystems::iterator index(_subSystems.begin());
                 while (index != _subSystems.end()) {
@@ -230,7 +230,8 @@ namespace PluginHost {
             }
             ~COMRPC() override = default;
 
-            void Clear() {
+            void Clear() override
+            {
                 Remote.Clear();
                 Proxies.Clear();
             }

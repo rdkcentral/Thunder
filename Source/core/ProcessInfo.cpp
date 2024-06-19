@@ -533,7 +533,7 @@ namespace Core {
     std::list<string> ProcessInfo::CommandLine() const
     {
         char procPath[PATH_MAX];
-        sprintf(procPath, "/proc/%u/cmdline", _pid);
+        snprintf(procPath, sizeof(procPath), "/proc/%u/cmdline", _pid);
 
         std::list<string> output;
 

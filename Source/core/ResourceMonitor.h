@@ -214,7 +214,7 @@ namespace Core {
                 info.events  = _descriptorArray[position + 1].revents;
 
                 char procfn[64];
-                sprintf(procfn, "/proc/self/fd/%d", info.descriptor);
+                snprintf(procfn, sizeof(procfn), "/proc/self/fd/%d", info.descriptor);
 
                 size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
                 info.filename[len] = '\0';

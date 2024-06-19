@@ -474,6 +474,7 @@ uint64_t ntohll(const uint64_t& value);
 #define _tcsrchr wcsrchr
 #define _tcsftime wcsftime
 #define _stprintf swprintf
+#define _stnprintf swprintf
 #define _tcscpy wcscpy
 #define _tcsncpy wcsncpy
 
@@ -503,6 +504,7 @@ uint64_t ntohll(const uint64_t& value);
 #define _tcsrchr strrchr
 #define _tcsftime strftime
 #define _stprintf sprintf
+#define _stnprintf snprintf
 #define _tcscpy strcpy
 #define _tcsncpy strncpy
 

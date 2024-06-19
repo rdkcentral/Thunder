@@ -442,6 +442,7 @@ namespace PluginHost {
         }
 
     private:
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
         // Handle the WebRequest coming in.
         virtual void LinkBody(Core::ProxyType<Request>& request) = 0;
         virtual void Received(Core::ProxyType<Request>& request) = 0;
@@ -464,8 +465,9 @@ namespace PluginHost {
 
         // Whenever there is a state change on the link, it is reported here.
         virtual void StateChange() = 0;
+POP_WARNING()
 
-        virtual bool IsIdle() const
+        bool IsIdle() const override
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
