@@ -3178,7 +3178,7 @@ namespace PluginHost {
             {
                 _adminLock.Lock();
                 Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
-                if (index != .end()) {
+                if (index != _opened.end()) {
                     _opened.erase(index);
                 }
                 else {
