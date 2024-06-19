@@ -858,24 +858,6 @@ namespace RPC {
 
 #endif
 
-    protected:
-        virtual RemoteConnection* CreateStarter(const Config& config, const Object& instance)
-        {
-            RemoteConnection* result = nullptr;
-
-            if (instance.Type() == Object::HostType::LOCAL) {
-                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance, _connectionMap);
-            } else if (instance.Type() == Object::HostType::CONTAINER) {
-#ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance, _reporter);
-#else
-                SYSLOG(Logging::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
-#endif
-            }
-
-            return result;
-        }
-
     private:
         class EXTERNAL RemoteConnectionMap {
         private:
@@ -1533,9 +1515,6 @@ POP_WARNING()
             _connectionMap.Destroy();
         }
         void Destroy(const uint32_t id);
-
-    protected:
-        void LoadProxyStubs(const string& pathName);
 
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
