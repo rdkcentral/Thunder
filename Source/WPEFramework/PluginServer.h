@@ -3335,9 +3335,9 @@ POP_WARNING()
             void Closed(const uint32_t id)
             {
                 _adminLock.Lock();
-                Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
-                if (index != _opened.end()) {
-                    _opened.erase(index);
+                Channels::iterator index(std::find(.begin(), .end(), id));
+                if (index != .end()) {
+                    .erase(index);
                 }
                 else {
                     _closed.push_back(id);
