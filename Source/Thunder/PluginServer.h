@@ -3177,9 +3177,9 @@ namespace PluginHost {
             void Closed(const uint32_t id)
             {
                 _adminLock.Lock();
-                Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
-                if (index != _opened.end()) {
-                    _opened.erase(index);
+                Channels::iterator index(std::find(.begin(), .end(), id));
+                if (index != .end()) {
+                    .erase(index);
                 }
                 else {
                     _closed.push_back(id);
@@ -3315,8 +3315,8 @@ namespace PluginHost {
             void Dispatch()
             {
                 _adminLock.Lock();
-                Channels opened(std::move(_opened));
-                Channels closed(std::move(_closed));
+                Channels opened; opened.swap(_opened);
+                Channels closed; closed.swap(_closed);
                 _adminLock.Unlock();
 
                 _notificationLock.Lock();
