@@ -235,7 +235,6 @@ namespace Thunder {
                     cmsg = CMSG_NXTHDR(&mh, cmsg))
                 {
                     if ((cmsg->cmsg_level == IPPROTO_IP) && (cmsg->cmsg_type == IP_PKTINFO) && (remote->sa_family == AF_INET)) {
-
                         const struct in_pktinfo* info = reinterpret_cast<const struct in_pktinfo*>CMSG_DATA(cmsg);
                         interfaceId = info->ipi_ifindex;
                         break;
@@ -843,8 +842,9 @@ namespace Thunder {
                 if (::setsockopt(l_Result, IPPROTO_IP, IP_BOUND_IF, (const char*)&index, sizeof(index)) < 0) {
 #else
                 strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
+
                 if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
-#endif            
+#endif
                     TRACE_L1("Error binding socket to an interface. Error %d", __ERRORRESULT__);
 
                     ::close(l_Result);
@@ -1330,7 +1330,7 @@ namespace Thunder {
 #if defined(__WINDOWS__) || defined(__APPLE__)
             if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
 #else
-            if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
+            if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {
 #endif
                 // Align the buffer to what is requested
                 BufferAlignment(result);
