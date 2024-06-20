@@ -224,7 +224,8 @@ namespace Core {
 
     void CyclicBuffer::Close()
     {
-        _buffer.Destroy();
+        VARIABLE_IS_NOT_USED bool result = _buffer.Destroy();
+        ASSERT(result);
         _realBuffer = nullptr;
         _administration = nullptr;
     }
