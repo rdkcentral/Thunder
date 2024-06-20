@@ -283,11 +283,8 @@ namespace Tests {
         EXPECT_EQ(buffer.Open(), true);
 
         EXPECT_EQ(buffer.Storage().IsOpen(), true);
-        buffer.Storage().Close();
-        EXPECT_EQ(buffer.Storage().IsOpen(), false);
-        // Remove after usage before destruction
         buffer.Close();
-
+        EXPECT_EQ(buffer.Storage().IsOpen(), false);
     }
     TEST(Core_CyclicBuffer, Create_WithDifferentPermissions)
     {
