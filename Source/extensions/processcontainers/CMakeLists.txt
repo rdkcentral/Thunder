@@ -24,8 +24,6 @@ option(PROCESSCONTAINERS_RUNC
         "Use RunC backend." OFF)
 option(PROCESSCONTAINERS_CRUN
         "Use CRun backend." OFF)
-option(PROCESSCONTAINERS_CLIB
-        "Use c-library backend." OFF)
 option(PROCESSCONTAINERS_DOBBY
         "Use Dobby backend." OFF)
 option(PROCESSCONTAINERS_AWC
@@ -45,8 +43,6 @@ elseif(PROCESSCONTAINERS_RUNC)
 elseif(PROCESSCONTAINERS_CRUN)
         target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp
         )
-elseif(PROCESSCONTAINERS_CLIB)
-        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 elseif(PROCESSCONTAINERS_DOBBY)
         target_sources(${TARGET} PRIVATE implementations/DobbyImplementation/DobbyImplementation.cpp)
 elseif(PROCESSCONTAINERS_AWC)
