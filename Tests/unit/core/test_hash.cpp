@@ -99,7 +99,6 @@ namespace Core {
     private:
         static int16_t constexpr BlockSize = 1024;
     public:
-        using HashType = HASHALGORITHM;
 
         SignedFileType(const SignedFileType<HASHALGORITHM>&) = delete;
         SignedFileType<HASHALGORITHM>& operator=(const SignedFileType<HASHALGORITHM>&) = delete;
@@ -141,11 +140,11 @@ namespace Core {
                 ::Thunder::Core::File::Close();
             }
         }
-        inline HashType& Hash()
+        inline HASHALGORITHM& Hash()
         {
             return (_hash);
         }
-        inline const HashType& Hash() const
+        inline const HASHALGORITHM& Hash() const
         {
             return (_hash);
         }
@@ -192,7 +191,7 @@ namespace Core {
         uint32_t CalculateHash(const uint32_t start, const uint32_t end)
         {
             uint32_t status = ::Thunder::Core::ERROR_NONE;
-            HashType& hash = _hash;
+            HASHALGORITHM& hash = _hash;
 
             uint8_t   buffer[64];
             if (::Thunder::Core::File::IsOpen() != true) {
@@ -266,7 +265,7 @@ namespace Core {
         }
 
     private:
-        HashType _hash;
+        HASHALGORITHM _hash;
         int64_t _startPosition;
         ::Thunder::Core::File _hashFileStorage;
     };
