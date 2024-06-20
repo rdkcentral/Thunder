@@ -22,6 +22,8 @@ project(Thunder
         DESCRIPTION "Thunder framework"
         HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
+include(GNUInstallDirs)
+
 set(VERSION       ${${PROJECT_NAME}_VERSION})
 set(VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
 set(VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
@@ -42,7 +44,6 @@ option(HUMAN_VERSIONED_BINARIES
     "Create binaries with a human readeable version suffix" ON)
 option(VERSIONED_LIBRARY_LOADING
     "Uses the major version (*.so.<major>) to load libraries rather then *.so" OFF)
-    
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
@@ -56,16 +57,15 @@ list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
-    "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
+    "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/Modules")
 
 if (TOOLS_SYSROOT)
     list(APPEND CMAKE_MODULE_PATH
-        "${TOOLS_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
+        "${TOOLS_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/Modules")
 endif()
 
 include(platform)
 include(CmakeHelperFunctions)
-include(GNUInstallDirs)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
@@ -78,7 +78,7 @@ find_package(ConfigGenerator REQUIRED)
 
 if(NOT DEFINED BUILD_SHARED_LIBS)
     set(BUILD_SHARED_LIBS ON CACHE INTERNAL "Enable shared objects by default") 
-    message(STATUS "BUILD_SHARED_LIBS was not set, assuming ${BUILD_SHARED_LIBS}")
+    message(VERBOSE "Building shared libs")
 endif()
 
 #
@@ -89,7 +89,7 @@ if(NOT CMAKE_BUILD_TYPE)
     message(AUTHOR_WARNING "CMAKE_BUILD_TYPE not set, assuming '${CMAKE_BUILD_TYPE}'")
 endif()
 
-message(STATUS "CMake build type: '${CMAKE_BUILD_TYPE}'")
+message(VERBOSE "CMake build type: '${CMAKE_BUILD_TYPE}'")
 
 # Remove optimization flags added by the build system
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -110,18 +110,21 @@ configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake.in"
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+        COMPONENT ${NAMESPACE}_Development)
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 install(DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+    COMPONENT ${NAMESPACE}_Development)
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
 install(DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+        COMPONENT ${NAMESPACE}_Development)
 
 if(APPLE)
     # Mac needed variables
