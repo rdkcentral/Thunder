@@ -245,6 +245,7 @@ namespace Controller {
 
             struct Proxy {
                 uint32_t Interface /* @brief Interface ID */;
+                string Name /* @brief The fully qualified name of the interface */;
                 Core::instance_id Instance /* @brief Instance ID */;
                 uint32_t Count /* @brief Reference count */;
             };

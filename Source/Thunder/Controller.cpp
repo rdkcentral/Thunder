@@ -727,6 +727,7 @@ namespace Plugin {
                     PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
                     info.Instance = proxy->Implementation();
                     info.Interface = proxy->InterfaceId();
+                    info.Name = Core::ClassName(proxy->Name()).Text();
                     info.Count = proxy->ReferenceCount();
                 }
             }
