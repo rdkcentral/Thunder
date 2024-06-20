@@ -219,7 +219,7 @@ namespace ProcessContainers {
                 } else {
 
                     char data[1024];
-                    process.Output((uint8_t*)data, 2048);
+                    process.Output((uint8_t*)data, sizeof(data));
 
                     RunCStatus info;
                     info.FromString(string(data));
