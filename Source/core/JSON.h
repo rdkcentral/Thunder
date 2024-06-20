@@ -3121,7 +3121,7 @@ namespace Core {
                 : _state(std::move(move._state))
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
-                , _iterator(std::move(move._iterator))
+                , _iterator(_data)
             {
             }
 
@@ -3139,8 +3139,8 @@ namespace Core {
             {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
-                _iterator = IteratorType<ELEMENT>(_data);
                 _count = std::move(move._count);
+                _iterator.Reset();
 
                 return (*this);
             }
@@ -3149,8 +3149,8 @@ namespace Core {
             {
                 _state = RHS._state;
                 _data = RHS._data;
-                _iterator = IteratorType<ELEMENT>(_data);
                 _count = RHS._count;
+                _iterator.Reset();
 
                 return (*this);
             }
