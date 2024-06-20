@@ -54,16 +54,16 @@ namespace Core {
             uint32_t bufferSize = 8 * 1024;
             uint32_t result;
 
-            Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
-                Thunder::Core::File::USER_READ    |
-                Thunder::Core::File::USER_WRITE   |
-                Thunder::Core::File::USER_EXECUTE |
-                Thunder::Core::File::GROUP_READ   |
-                Thunder::Core::File::GROUP_WRITE  ,
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
+                ::Thunder::Core::File::USER_READ    |
+                ::Thunder::Core::File::USER_WRITE   |
+                ::Thunder::Core::File::USER_EXECUTE |
+                ::Thunder::Core::File::GROUP_READ   |
+                ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
-            result = buff01.RequestProduce(Thunder::Core::infinite);
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            result = buff01.RequestProduce(::Thunder::Core::infinite);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup producer");
 
@@ -77,7 +77,7 @@ namespace Core {
             buffer[2] = 44;
 
             result = buff01.Produced();
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("consumer done");
         };
@@ -94,12 +94,12 @@ namespace Core {
 
             uint32_t bufferSize = 8 * 1024;
             uint32_t result;
-            Thunder::Core::SharedBuffer buff01(bufferName.c_str());
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
             testAdmin.Sync("setup consumer");
 
-            result = buff01.RequestConsume(Thunder::Core::infinite);
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            result = buff01.RequestConsume(::Thunder::Core::infinite);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             uint8_t * buffer = buff01.Buffer();
             EXPECT_EQ(buff01.Size(), bufferSize);
@@ -109,12 +109,12 @@ namespace Core {
             EXPECT_EQ(buffer[2], 44);
 
             buff01.Consumed();
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
         }
 
         testAdmin.Sync("consumer done");
 
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST(Core_SharedBuffer, simpleSetReversed)
@@ -127,12 +127,12 @@ namespace Core {
 
             uint32_t bufferSize = 8 * 1024;
             uint32_t result;
-            Thunder::Core::SharedBuffer buff01(bufferName.c_str());
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
             testAdmin.Sync("setup producer");
 
-            result = buff01.RequestConsume(Thunder::Core::infinite);
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            result = buff01.RequestConsume(::Thunder::Core::infinite);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             uint8_t * buffer = buff01.Buffer();
             EXPECT_EQ(buff01.Size(), bufferSize);
@@ -142,7 +142,7 @@ namespace Core {
             EXPECT_EQ(buffer[2], 44);
 
             buff01.Consumed();
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("producer done");
         };
@@ -160,16 +160,16 @@ namespace Core {
             uint32_t bufferSize = 8 * 1024;
             uint32_t result;
 
-            Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
-                Thunder::Core::File::USER_READ    |
-                Thunder::Core::File::USER_WRITE   |
-                Thunder::Core::File::USER_EXECUTE |
-                Thunder::Core::File::GROUP_READ   |
-                Thunder::Core::File::GROUP_WRITE  ,
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
+                ::Thunder::Core::File::USER_READ    |
+                ::Thunder::Core::File::USER_WRITE   |
+                ::Thunder::Core::File::USER_EXECUTE |
+                ::Thunder::Core::File::GROUP_READ   |
+                ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
-            result = buff01.RequestProduce(Thunder::Core::infinite);
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            result = buff01.RequestProduce(::Thunder::Core::infinite);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup consumer");
 
@@ -183,13 +183,13 @@ namespace Core {
             buffer[2] = 44;
 
             result = buff01.Produced();
-            EXPECT_EQ(result, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_NONE);
         }
 
         testAdmin.Sync("producer done");
 
         CleanUpBuffer(bufferName);
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

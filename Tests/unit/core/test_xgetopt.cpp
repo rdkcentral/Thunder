@@ -32,12 +32,12 @@ namespace Core {
     int argumentCount = 3;
     char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
 
-    class ConsoleOptions : public Thunder::Core::Options {
+    class ConsoleOptions : public ::Thunder::Core::Options {
         public:
             ConsoleOptions() = delete;
 
             ConsoleOptions(int argumentCount, TCHAR* arguments[])
-                : Thunder::Core::Options(argumentCount, arguments, _T("chb"))
+                : ::Thunder::Core::Options(argumentCount, arguments, _T("chb"))
             {
                 Parse();
             }

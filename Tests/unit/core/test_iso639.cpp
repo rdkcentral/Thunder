@@ -31,12 +31,12 @@ namespace Core {
 
     TEST(test_ISO639, simple_ISO639)
     {
-        Thunder::Core::Language();
-        Thunder::Core::Language lang("eng");
-        Thunder::Core::Language(12);
-        Thunder::Core::Language lang1(" ");
-        Thunder::Core::Language lang2("en");
-        Thunder::Core::Language lang3("aaaaaa");
+        ::Thunder::Core::Language();
+        ::Thunder::Core::Language lang("eng");
+        ::Thunder::Core::Language(12);
+        ::Thunder::Core::Language lang1(" ");
+        ::Thunder::Core::Language lang2("en");
+        ::Thunder::Core::Language lang3("aaaaaa");
          
         EXPECT_TRUE(lang.IsValid());
         EXPECT_STREQ(lang.LetterCode3(),"eng");

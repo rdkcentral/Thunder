@@ -32,10 +32,10 @@ namespace Core {
     TEST(test_textfragment, simple_textfragement)
     {
         string buffer = "/Service/testing/test";
-        Thunder::Core::TextFragment result;
-        result = Thunder::Core::TextFragment(string(buffer));
-        Thunder::Core::TextFragment(string(buffer));
-        Thunder::Core::TextSegmentIterator index(Thunder::Core::TextFragment(string(buffer), 16, 5), false,'/');
+        ::Thunder::Core::TextFragment result;
+        result = ::Thunder::Core::TextFragment(string(buffer));
+        ::Thunder::Core::TextFragment(string(buffer));
+        ::Thunder::Core::TextSegmentIterator index(::Thunder::Core::TextFragment(string(buffer), 16, 5), false,'/');
         index.Next();
         index.Next();
 
@@ -45,11 +45,11 @@ namespace Core {
         EXPECT_EQ(index.Remainder().Length(), 4u) << "The length of the string is not 4.";
         EXPECT_FALSE(index.Remainder().IsEmpty());
         
-        Thunder::Core::TextFragment textFragment;
+        ::Thunder::Core::TextFragment textFragment;
         const TCHAR buffer_new[] = "/Service/testing/test";
-        Thunder::Core::TextFragment textFragment1(buffer_new);
-        Thunder::Core::TextFragment textFragment2(buffer_new,21);
-        Thunder::Core::TextFragment textFragment3(buffer_new,16,5);
+        ::Thunder::Core::TextFragment textFragment1(buffer_new);
+        ::Thunder::Core::TextFragment textFragment2(buffer_new,21);
+        ::Thunder::Core::TextFragment textFragment3(buffer_new,16,5);
 
         char delimiter[] = {'/'};
         EXPECT_EQ(textFragment1.ForwardFind(delimiter),0u);
@@ -73,11 +73,11 @@ namespace Core {
         EXPECT_EQ(textFragment2.ReverseSkip(middle),16u);
 
         const TCHAR splitters[] ={'/',','};
-        Thunder::Core::TextSegmentIterator iterator1(Thunder::Core::TextFragment(string(buffer), 16, 5), false,splitters);
-        Thunder::Core::TextSegmentIterator iterator2(iterator1);
+        ::Thunder::Core::TextSegmentIterator iterator1(::Thunder::Core::TextFragment(string(buffer), 16, 5), false,splitters);
+        ::Thunder::Core::TextSegmentIterator iterator2(iterator1);
         index = iterator2;
         iterator2.Reset();
-        Thunder::Core::TextSegmentIterator iterator3;
+        ::Thunder::Core::TextSegmentIterator iterator3;
     }
 
 } // Core

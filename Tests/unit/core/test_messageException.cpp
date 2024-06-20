@@ -34,12 +34,12 @@ namespace Core {
         const std::string msg = "Testing the message exception.";
 
         // No 'error' concatenated
-        Thunder::Core::MessageException exception(msg, false);
+        ::Thunder::Core::MessageException exception(msg, false);
 
         EXPECT_STREQ(exception.Message(), msg.c_str());
 
         // 'error' concatenated
-        Thunder::Core::MessageException exception1(msg, true);
+        ::Thunder::Core::MessageException exception1(msg, true);
 
         const string result = msg + ": No such file or directory";
 

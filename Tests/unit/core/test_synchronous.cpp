@@ -37,7 +37,7 @@ namespace Core {
         const uint16_t bufferSize = 1024;
     }
 
-    class Message : public Thunder::Core::IOutbound {
+    class Message : public ::Thunder::Core::IOutbound {
     protected:
         Message(uint8_t buffer[])
         : _buffer(buffer)
@@ -83,7 +83,7 @@ namespace Core {
         mutable uint16_t _offset;
     };
 
-    class InMessage : public Thunder::Core::IInbound {
+    class InMessage : public ::Thunder::Core::IInbound {
     protected:
         InMessage(uint8_t buffer[])
            : _buffer(buffer)
@@ -112,7 +112,7 @@ namespace Core {
             uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_buffer)-_offset), length);
             ::memcpy(reinterpret_cast<uint8_t*>(&stream), &(_buffer[_offset]), toCopy);
 
-            _error = Thunder::Core::ERROR_NONE;
+            _error = ::Thunder::Core::ERROR_NONE;
             result = length;
             return (result);
         }
@@ -128,21 +128,30 @@ namespace Core {
         mutable uint16_t _offset;
     };
 
-    class SynchronousSocket : public Thunder::Core::SynchronousChannelType<Thunder::Core::SocketPort> {
+    class SynchronousSocket : public ::Thunder::Core::SynchronousChannelType<::Thunder::Core::SocketPort> {
     public:
         SynchronousSocket(const SynchronousSocket&) = delete;
         SynchronousSocket& operator=(const SynchronousSocket&) = delete;
         SynchronousSocket() = delete;
 
         SynchronousSocket(bool listening)
-            :SynchronousChannelType<SocketPort>((listening ? SocketPort::LISTEN : SocketPort::STREAM),listening ? Thunder::Core::NodeId(_T(localhost.c_str()),(portNumber), Thunder::Core::NodeId::TYPE_IPV4):Thunder::Core::NodeId(_T(localhost.c_str()),(portNumber), Thunder::Core::NodeId::TYPE_DOMAIN),listening ? Thunder::Core::NodeId(_T(localhost.c_str()),(portNumber), Thunder::Core::NodeId::TYPE_DOMAIN): Thunder::Core::NodeId(_T(localhost.c_str()),(portNumber), Thunder::Core::NodeId::TYPE_IPV4), bufferSize, bufferSize)
+            : SynchronousChannelType<::Thunder::Core::SocketPort>(
+                (listening ? ::Thunder::Core::SocketPort::LISTEN : ::Thunder::Core::SocketPort::STREAM)
+              , (listening ? ::Thunder::Core::NodeId(_T(localhost.c_str()), (portNumber), ::Thunder::Core::NodeId::TYPE_IPV4)
+                           : ::Thunder::Core::NodeId(_T(localhost.c_str()), (portNumber), ::Thunder::Core::NodeId::TYPE_DOMAIN)
+                )
+              , (listening ? ::Thunder::Core::NodeId(_T(localhost.c_str()), (portNumber), ::Thunder::Core::NodeId::TYPE_DOMAIN)
+                           : ::Thunder::Core::NodeId(_T(localhost.c_str()), (portNumber), ::Thunder::Core::NodeId::TYPE_IPV4)
+                )
+              , bufferSize, bufferSize
+              )
         {
-            EXPECT_FALSE(Thunder::Core::SynchronousChannelType<Thunder::Core::SocketPort>::Open(Thunder::Core::infinite) != Thunder::Core::ERROR_NONE);
+            EXPECT_FALSE(::Thunder::Core::SynchronousChannelType<::Thunder::Core::SocketPort>::Open(::Thunder::Core::infinite) != ::Thunder::Core::ERROR_NONE);
         }
 
         virtual ~SynchronousSocket()
         {
-            Thunder::Core::SynchronousChannelType<Thunder::Core::SocketPort>::Close(Thunder::Core::infinite);
+            ::Thunder::Core::SynchronousChannelType<::Thunder::Core::SocketPort>::Close(::Thunder::Core::infinite);
         }
 
         virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
@@ -181,7 +190,7 @@ namespace Core {
             synchronousClientSocket.Revoke(message);
             testAdmin.Sync("client revokemsg");
         }
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

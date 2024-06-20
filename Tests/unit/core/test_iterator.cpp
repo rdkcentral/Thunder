@@ -51,10 +51,10 @@ namespace Core {
     };
 
     template <typename CONTAINER, typename ELEMENT>
-    class IteratorClass : public Thunder::Core::IteratorType<CONTAINER, ELEMENT>
+    class IteratorClass : public ::Thunder::Core::IteratorType<CONTAINER, ELEMENT>
     {
     private:
-        typedef Thunder::Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
+        typedef ::Thunder::Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
     public:
         IteratorClass() =delete;
 
@@ -70,10 +70,10 @@ namespace Core {
     };
 
     template <typename CONTAINER, typename ELEMENT, typename KEY>
-    class IteratorMapClass : public Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY>
+    class IteratorMapClass : public ::Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY>
     {
     private:
-        typedef Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
+        typedef ::Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
 
     public:
         IteratorMapClass() = delete;

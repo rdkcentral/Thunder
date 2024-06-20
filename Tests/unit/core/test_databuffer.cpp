@@ -33,7 +33,7 @@ namespace Core {
     {
         constexpr uint32_t blocksize = 10;
 
-        Thunder::Core::ScopedStorage<blocksize> storage;
+        ::Thunder::Core::ScopedStorage<blocksize> storage;
 
         EXPECT_EQ(storage.Size(), blocksize);
 

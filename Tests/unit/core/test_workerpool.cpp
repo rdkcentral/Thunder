@@ -59,11 +59,11 @@ namespace Core {
         }
 
     private:
-    Thunder::Core::Event _event;
+    ::Thunder::Core::Event _event;
     };
 
     template<typename IMPLEMENTATION>
-    class TestJob : public Thunder::Core::IDispatch, public EventControl {
+    class TestJob : public ::Thunder::Core::IDispatch, public EventControl {
     public:
         enum Status {
              INITIATED,
@@ -92,7 +92,7 @@ namespace Core {
         }
         void Dispatch() override
         {
-            Thunder::Core::Time invokedTime = Thunder::Core::Time::Now();
+            ::Thunder::Core::Time invokedTime = ::Thunder::Core::Time::Now();
             _status = COMPLETED;
             usleep(_waitTime);
             Notify();
@@ -118,17 +118,17 @@ namespace Core {
 
     struct JobData {
         EventControl* Event;
-        Thunder::Core::Time CurrentTime;
+        ::Thunder::Core::Time CurrentTime;
         uint16_t ScheduledTime;
     };
 
     template<typename IMPLEMENTATION>
     class JobControl {
     private:
-        typedef std::map<Thunder::Core::IDispatch*, JobData> JobMap;
+        typedef std::map<::Thunder::Core::IDispatch*, JobData> JobMap;
     private:
         template<typename PARENTIMPL = IMPLEMENTATION>
-        class ExternalWorker : public Thunder::Core::Thread {
+        class ExternalWorker : public ::Thunder::Core::Thread {
         public:
             ExternalWorker() = delete;
             ExternalWorker& operator=(const ExternalWorker&) = delete;
@@ -151,25 +151,25 @@ namespace Core {
         public:
             void Stop()
             {
-                Thunder::Core::Thread::Stop();
-                Thunder::Core::Thread::Wait(Thunder::Core::Thread::STOPPED|Thunder::Core::Thread::BLOCKED, Thunder::Core::infinite);
+                ::Thunder::Core::Thread::Stop();
+                ::Thunder::Core::Thread::Wait(::Thunder::Core::Thread::STOPPED|::Thunder::Core::Thread::BLOCKED, ::Thunder::Core::infinite);
             }
             virtual uint32_t Worker() override
             {
                 if (IsRunning()) {
                     _parent.SubmitJob(*_job);
                 }
-                Thunder::Core::Thread::Block();
-                return (Thunder::Core::infinite);
+                ::Thunder::Core::Thread::Block();
+                return (::Thunder::Core::infinite);
             }
 
-            void Submit(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+            void Submit(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
             {
                 _job = &job;
-                Thunder::Core::Thread::Run();
+                ::Thunder::Core::Thread::Run();
             }
         private:
-            Thunder::Core::ProxyType<Thunder::Core::IDispatch>* _job;
+            ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>* _job;
             IMPLEMENTATION& _parent;
         };
 
@@ -198,11 +198,11 @@ namespace Core {
             }
             _external.clear();
 
-            Thunder::Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
 
     public:
-        static void CheckScheduledTime(Thunder::Core::Time current, Thunder::Core::Time invokedTime,  uint16_t scheduledTime)
+        static void CheckScheduledTime(::Thunder::Core::Time current, ::Thunder::Core::Time invokedTime,  uint16_t scheduledTime)
         {
             uint8_t currentSecond = current.Seconds();
             uint8_t scheduledSecond = scheduledTime; // From milliseconds to seconds, integer division!
@@ -217,43 +217,43 @@ namespace Core {
 
             EXPECT_LE(invokedSecond, expectedAddedTime);
         }
-        uint32_t WaitForReady(Thunder::Core::IDispatch* job, const uint32_t waitTime = 0)
+        uint32_t WaitForReady(::Thunder::Core::IDispatch* job, const uint32_t waitTime = 0)
         {
-            uint32_t result = Thunder::Core::ERROR_NONE;
+            uint32_t result = ::Thunder::Core::ERROR_NONE;
             JobMap::iterator index = _jobs.find(job);
             if (index != _jobs.end()) {
                 result = index->second.Event->WaitForEvent(waitTime);
             }
             return result;
         }
-        void NotifyReady(const Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+        void NotifyReady(const ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
         {
             JobMap::iterator index = _jobs.find(job.operator->());
             if (index != _jobs.end()) {
                 index->second.Event->Notify();
             }
         }
-        void SubmitUsingSelfWorker(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+        void SubmitUsingSelfWorker(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
         {
             InsertJobData(job, 0);
             _parent.Submit(job);
         }
-        void SubmitUsingExternalWorker(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+        void SubmitUsingExternalWorker(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
         {
             if (_index < MaxAdditionalWorker) {
                 InsertJobData(job, 0);
                 _external[_index++]->Submit(job);
             }
         }
-        void ScheduleJobs(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job, const uint16_t scheduledTime)
+        void ScheduleJobs(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, const uint16_t scheduledTime)
         {
             InsertJobData(job, scheduledTime);
-            _parent.Schedule(Thunder::Core::Time::Now().Add(scheduledTime), job);
+            _parent.Schedule(::Thunder::Core::Time::Now().Add(scheduledTime), job);
         }
-        void RescheduleJobs(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job, const uint16_t scheduledTime)
+        void RescheduleJobs(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, const uint16_t scheduledTime)
         {
             InsertJobData(job, scheduledTime);
-            _parent.Reschedule(Thunder::Core::Time::Now().Add(scheduledTime), job);
+            _parent.Reschedule(::Thunder::Core::Time::Now().Add(scheduledTime), job);
         }
         void ValidateId()
         {
@@ -263,7 +263,7 @@ namespace Core {
             sprintf(id, "%x", static_cast<uint32_t>(pthread_self()));
             for (uint8_t index = 0; index < _threadsCount + 2; index++) {
             char workerId[MaxSize];
-            sprintf(workerId, "%x", static_cast<uint32_t>(Thunder::Core::IWorkerPool::Instance().Id(index)));
+            sprintf(workerId, "%x", static_cast<uint32_t>(::Thunder::Core::IWorkerPool::Instance().Id(index)));
 
                 if (strcpy(workerId, id)) {
                     isPoolId = true;
@@ -272,14 +272,14 @@ namespace Core {
             }
             EXPECT_EQ(isPoolId, true);
         }
-        void InvokedTime(Thunder::Core::IDispatch* job, const Thunder::Core::Time& invokedTime)
+        void InvokedTime(::Thunder::Core::IDispatch* job, const ::Thunder::Core::Time& invokedTime)
         {
             JobMap::iterator index = _jobs.find(job);
             if (index != _jobs.end()) {
                 CheckScheduledTime(index->second.CurrentTime, invokedTime, index->second.ScheduledTime);
             }
         }
-        void RemoveJobData(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+        void RemoveJobData(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
         {
             JobMap::iterator index = _jobs.find(job.operator->());
             if (index != _jobs.end()) {
@@ -289,17 +289,17 @@ namespace Core {
         }
 
     private:
-        void InsertJobData(Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job, uint16_t scheduledTime)
+        void InsertJobData(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, uint16_t scheduledTime)
         {
             JobData jobData;
             jobData.Event = new EventControl();
             jobData.ScheduledTime = scheduledTime;
-            jobData.CurrentTime = Thunder::Core::Time::Now();
+            jobData.CurrentTime = ::Thunder::Core::Time::Now();
             JobMap::iterator index = _jobs.find(job.operator->());
             if (index == _jobs.end()) {
                 _jobs.emplace(std::piecewise_construct, std::forward_as_tuple(job.operator->()), std::forward_as_tuple(jobData));
             } else {
-                index->second.CurrentTime = Thunder::Core::Time::Now();
+                index->second.CurrentTime = ::Thunder::Core::Time::Now();
                 index->second.ScheduledTime = scheduledTime;
             }
         }
@@ -312,7 +312,7 @@ namespace Core {
         std::vector<ExternalWorker<IMPLEMENTATION>*> _external;
     };
 
-    class WorkerPoolTester : public Thunder::Core::WorkerPool, public JobControl<WorkerPoolTester>, public Thunder::Core::Thread {
+    class WorkerPoolTester : public ::Thunder::Core::WorkerPool, public JobControl<WorkerPoolTester>, public ::Thunder::Core::Thread {
     public:
         WorkerPoolTester() = delete;
         WorkerPoolTester(const WorkerPoolTester&) = delete;
@@ -328,21 +328,21 @@ namespace Core {
         {
             // Diable the queue so the minions can stop, even if they are processing and waiting for work..
             Stop();
-            Thunder::Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
 
     public:
         void Stop()
         {
-            Thunder::Core::WorkerPool::Stop();
-            Thunder::Core::Thread::Wait(Thunder::Core::Thread::STOPPED|Thunder::Core::Thread::BLOCKED, Thunder::Core::infinite);
+            ::Thunder::Core::WorkerPool::Stop();
+            ::Thunder::Core::Thread::Wait(::Thunder::Core::Thread::STOPPED|::Thunder::Core::Thread::BLOCKED, ::Thunder::Core::infinite);
         }
 
-        uint32_t WaitForJobEvent(const Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job, const uint32_t waitTime = 0)
+        uint32_t WaitForJobEvent(const ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, const uint32_t waitTime = 0)
         {
             return static_cast<TestJob<WorkerPoolTester>&>(*job).WaitForEvent(waitTime);
         }
-        void SubmitJob(const Thunder::Core::ProxyType<Thunder::Core::IDispatch>& job)
+        void SubmitJob(const ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job)
         {
             Submit(job);
         }
@@ -351,12 +351,12 @@ namespace Core {
             if (IsRunning()) {
                 Join();
             }
-            Thunder::Core::Thread::Block();
-            return (Thunder::Core::infinite);
+            ::Thunder::Core::Thread::Block();
+            return (::Thunder::Core::infinite);
         }
         void RunExternal()
         {
-            Thunder::Core::Thread::Run();
+            ::Thunder::Core::Thread::Run();
         }
         void RunThreadPool()
         {
@@ -364,7 +364,7 @@ namespace Core {
         }
 
     private:
-        class Dispatcher : public Thunder::Core::ThreadPool::IDispatcher {
+        class Dispatcher : public ::Thunder::Core::ThreadPool::IDispatcher {
         public:
           Dispatcher(const Dispatcher&) = delete;
           Dispatcher& operator=(const Dispatcher&) = delete;
@@ -375,7 +375,7 @@ namespace Core {
         private:
           void Initialize() override { }
           void Deinitialize() override { }
-          void Dispatch(Thunder::Core::IDispatch* job) override
+          void Dispatch(::Thunder::Core::IDispatch* job) override
             { job->Dispatch(); }
         };
 
@@ -387,31 +387,31 @@ namespace Core {
         uint8_t threadCount = 1;
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
 
-        EXPECT_EQ(Thunder::Core::WorkerPool::IsAvailable(), false);
+        EXPECT_EQ(::Thunder::Core::WorkerPool::IsAvailable(), false);
 
-        Thunder::Core::WorkerPool::Assign(&workerPool);
-        EXPECT_EQ(&Thunder::Core::WorkerPool::Instance(), &workerPool);
-        EXPECT_EQ(Thunder::Core::WorkerPool::IsAvailable(), true);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
+        EXPECT_EQ(&::Thunder::Core::WorkerPool::Instance(), &workerPool);
+        EXPECT_EQ(::Thunder::Core::WorkerPool::IsAvailable(), true);
 
-        Thunder::Core::WorkerPool::Assign(nullptr);
-        EXPECT_EQ(Thunder::Core::WorkerPool::IsAvailable(), false);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
+        EXPECT_EQ(::Thunder::Core::WorkerPool::IsAvailable(), false);
     }
     TEST(Core_WorkerPool, Check_WithSingleJob)
     {
         uint8_t queueSize = 5;
         uint8_t threadCount = 1;
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        Thunder::Core::ProxyType<Thunder::Core::IDispatch> job = Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500));
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
         workerPool.Submit(job);
         workerPool.RunThreadPool();
-        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
         workerPool.Stop();
 
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::COMPLETED);
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
         job.Release();
     }
     TEST(Core_WorkerPool, Check_WithSingleJob_CancelJob_BeforeProcessing)
@@ -419,18 +419,18 @@ namespace Core {
         uint8_t queueSize = 5;
         uint8_t threadCount = 1;
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        Thunder::Core::ProxyType<Thunder::Core::IDispatch> job = Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED));
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
         workerPool.Submit(job);
         workerPool.Revoke(job);
         workerPool.RunThreadPool();
-        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), Thunder::Core::ERROR_TIMEDOUT);
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_TIMEDOUT);
         workerPool.Stop();
 
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
         job.Release();
     }
     TEST(Core_WorkerPool, Check_WithSingleJob_CancelJob_WhileProcessing)
@@ -438,30 +438,30 @@ namespace Core {
         uint8_t queueSize = 5;
         uint8_t threadCount = 1;
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        Thunder::Core::ProxyType<Thunder::Core::IDispatch> job = Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 1000));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 1000));
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
         workerPool.Submit(job);
         workerPool.RunThreadPool();
         usleep(100);
         workerPool.Revoke(job);
-        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
         workerPool.Stop();
 
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::COMPLETED);
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
         job.Release();
     }
     void CheckWorkerPool_MultipleJobs(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const bool runExternal = false)
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
         if (runExternal == true) {
@@ -480,7 +480,7 @@ namespace Core {
         workerPool.RunThreadPool();
         usleep(MaxJobWaitTime);
         for (auto& job: jobs) {
-            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         }
 
         for (auto& job: jobs) {
@@ -493,7 +493,7 @@ namespace Core {
             job.Release();
         }
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_SinglePool_WithSinglJob)
     {
@@ -524,12 +524,12 @@ namespace Core {
     void CheckWorkerPool_MultipleJobs_CancelJobs_InBetween(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t cancelJobsId[])
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 1000)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 1000)));
         }
 
         for (uint8_t i = 0; i < queueSize; ++i) {
@@ -559,9 +559,9 @@ namespace Core {
                 }
             }
             if (isCanceledJob == true) {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), Thunder::Core::ERROR_TIMEDOUT);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), ::Thunder::Core::ERROR_TIMEDOUT);
             } else {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
             }
         }
 
@@ -587,7 +587,7 @@ namespace Core {
             job.Release();
         }
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_SinglePool_WithMultipleJobs_CancelJobs_InBetween)
     {
@@ -608,13 +608,13 @@ namespace Core {
     void CheckWorkerPool_ScheduleJobs(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId, const uint16_t scheduledTimes[])
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
         for (uint8_t i = 0; i < queueSize; ++i) {
@@ -640,9 +640,9 @@ namespace Core {
                 }
             }
             if (isCanceledJob == true) {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), Thunder::Core::ERROR_TIMEDOUT);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), ::Thunder::Core::ERROR_TIMEDOUT);
             } else {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 15), Thunder::Core::ERROR_NONE);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 15), ::Thunder::Core::ERROR_NONE);
             }
         }
 
@@ -668,7 +668,7 @@ namespace Core {
             job.Release();
         }
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_SingleJob)
     {
@@ -761,13 +761,13 @@ namespace Core {
     void CheckWorkerPool_RescheduleJobs(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId, const uint16_t scheduledTimes[], const uint16_t rescheduledTimes[])
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 500, false, true)));
         }
 
         for (uint8_t i = 0; i < queueSize; ++i) {
@@ -796,9 +796,9 @@ namespace Core {
                 }
             }
             if (isCanceledJob == true) {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), Thunder::Core::ERROR_TIMEDOUT);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 3), ::Thunder::Core::ERROR_TIMEDOUT);
             } else {
-                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 15), Thunder::Core::ERROR_NONE);
+                EXPECT_EQ(workerPool.WaitForJobEvent(jobs[index], MaxJobWaitTime * 15), ::Thunder::Core::ERROR_NONE);
             }
         }
 
@@ -821,7 +821,7 @@ namespace Core {
         workerPool.Stop();
 
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_RescheduleJobs_SinglePool_SingleJob)
     {
@@ -931,7 +931,7 @@ namespace Core {
     }
     void CheckMetaData(const uint8_t pending, const uint8_t occupation, const uint8_t expectedRuns)
     {
-        const Thunder::Core::IWorkerPool::Metadata& metaData = Thunder::Core::IWorkerPool::Instance().Snapshot();
+        const ::Thunder::Core::IWorkerPool::Metadata& metaData = ::Thunder::Core::IWorkerPool::Instance().Snapshot();
 
         EXPECT_EQ(metaData.Pending.size(), pending); // Whatever is in the ThreadPool::_queue is considered pending
 
@@ -946,12 +946,12 @@ namespace Core {
     void CheckWorkerPool_MetaData(uint8_t threadCount, uint8_t queueSize, uint8_t additionalJobs)
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100)));
         }
 
         for (uint8_t i = 0; i < queueSize; ++i) {
@@ -968,7 +968,7 @@ namespace Core {
 
         usleep(MaxJobWaitTime);
         for (auto& job: jobs) {
-            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         }
 
         for (auto& job: jobs) {
@@ -981,7 +981,7 @@ namespace Core {
             job.Release();
         }
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_MetaData_SinglePool_SingleJob)
     {
@@ -1010,13 +1010,13 @@ namespace Core {
     void CheckWorkerPool_Ids(uint8_t threadCount, uint8_t queueSize, uint8_t additionalJobs)
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
 
-        std::vector<Thunder::Core::ProxyType<Thunder::Core::IDispatch>> jobs;
+        std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(Thunder::Core::ProxyType<Thunder::Core::IDispatch>(Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100, false, false, true)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 100, false, false, true)));
         }
 
         for (uint8_t i = 0; i < queueSize; ++i) {
@@ -1029,7 +1029,7 @@ namespace Core {
         }
 
         for (auto& job: jobs) {
-            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         }
 
         for (auto& job: jobs) {
@@ -1041,7 +1041,7 @@ namespace Core {
             job.Release();
         }
         jobs.clear();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_Ids_SinglePool_SingleJob)
     {
@@ -1086,15 +1086,15 @@ namespace Core {
 
         bool Submit()
         {
-            _expectedTime = Thunder::Core::Time::Now();
+            _expectedTime = ::Thunder::Core::Time::Now();
             return _job.Submit();
         }
-        bool Schedule(const Thunder::Core::Time& time)
+        bool Schedule(const ::Thunder::Core::Time& time)
         {
             _expectedTime = time;
             return _job.Reschedule(time);
         }
-        bool Reschedule(const Thunder::Core::Time& time)
+        bool Reschedule(const ::Thunder::Core::Time& time)
         {
             _expectedTime = time;
             return _job.Reschedule(time);
@@ -1111,7 +1111,7 @@ namespace Core {
     public:
         void Dispatch()
         {
-            Thunder::Core::Time invokedTime = Thunder::Core::Time::Now();
+            ::Thunder::Core::Time invokedTime = ::Thunder::Core::Time::Now();
             WorkerPoolTester::CheckScheduledTime(_expectedTime, invokedTime, 0);
             Notify();
             usleep(_waitTime * 2);
@@ -1123,80 +1123,80 @@ namespace Core {
 
     private:
         uint32_t _waitTime;
-        Thunder::Core::Time _expectedTime;
+        ::Thunder::Core::Time _expectedTime;
         bool _waitForCaller;
-        Thunder::Core::WorkerPool::JobType<WorkerJobTester&> _job;
+        ::Thunder::Core::WorkerPool::JobType<WorkerJobTester&> _job;
     };
 
     TEST(Core_WorkerPool, Check_JobType_Submit)
     {
         WorkerPoolTester workerPool(1, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(0);
             EXPECT_EQ(jobTester.Submit(), true);
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_JobType_Submit_Revoke)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         {
             WorkerJobTester jobTester(0);
             EXPECT_EQ(jobTester.Submit(), true);
             jobTester.Revoke();
             workerPool.RunThreadPool();
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), Thunder::Core::ERROR_TIMEDOUT);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), ::Thunder::Core::ERROR_TIMEDOUT);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_JobType_Schedule)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(0);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(2000));
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), Thunder::Core::ERROR_NONE);
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(2000));
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_JobType_Schedule_Revoke)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(0);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(2000));
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(2000));
             usleep(500);
             jobTester.Revoke();
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), Thunder::Core::ERROR_TIMEDOUT);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), ::Thunder::Core::ERROR_TIMEDOUT);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     void CheckJobType_Reschedule(const uint16_t scheduleTime, const uint16_t rescheduleTime)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(0);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(scheduleTime));
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(scheduleTime));
             usleep(500);
-            EXPECT_EQ(jobTester.Reschedule(Thunder::Core::Time::Now().Add(rescheduleTime)), true);
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(jobTester.Reschedule(::Thunder::Core::Time::Now().Add(rescheduleTime)), true);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), ::Thunder::Core::ERROR_NONE);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_JobType_Reschedule)
     {
@@ -1206,41 +1206,41 @@ namespace Core {
     TEST(Core_WorkerPool, Check_JobType_Reschedule_Revoke)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(0);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(2000));
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(2000));
             usleep(500);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(3000));
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(3000));
             usleep(500);
             jobTester.Revoke();
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), Thunder::Core::ERROR_TIMEDOUT);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 4), ::Thunder::Core::ERROR_TIMEDOUT);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     void CheckJobType_RescheduleJobs(const uint8_t threadCount, const uint8_t queueSize, const uint8_t additionalJobs, const uint8_t cancelJobsCount, const uint8_t* cancelJobsId, const uint16_t scheduledTimes[], const uint16_t rescheduledTimes[])
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
-            std::vector<Thunder::Core::ProxyType<WorkerJobTester>> jobs;
+            std::vector<::Thunder::Core::ProxyType<WorkerJobTester>> jobs;
             // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
             for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-                jobs.push_back(Thunder::Core::ProxyType<WorkerJobTester>(Thunder::Core::ProxyType<WorkerJobTester>::Create(0)));
+                jobs.push_back(::Thunder::Core::ProxyType<WorkerJobTester>(::Thunder::Core::ProxyType<WorkerJobTester>::Create(0)));
             }
             for (uint8_t i = 0; i < jobs.size(); ++i) {
                 EXPECT_EQ(jobs[i]->IsIdle(), true);
             }
 
             for (uint8_t i = 0; i < jobs.size(); ++i) {
-                jobs[i]->Schedule(Thunder::Core::Time::Now().Add(scheduledTimes[i]));
+                jobs[i]->Schedule(::Thunder::Core::Time::Now().Add(scheduledTimes[i]));
             }
 
             for (uint8_t i = 0; i < jobs.size(); ++i) {
-                EXPECT_EQ(jobs[i]->Reschedule(Thunder::Core::Time::Now().Add(rescheduledTimes[i])), true);
+                EXPECT_EQ(jobs[i]->Reschedule(::Thunder::Core::Time::Now().Add(rescheduledTimes[i])), true);
             }
             for (uint8_t i = 0; i < jobs.size(); ++i) {
                 EXPECT_EQ(jobs[i]->IsIdle(), false);
@@ -1261,9 +1261,9 @@ namespace Core {
                     }
                 }
                 if (isCanceledJob == true) {
-                    EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 3), Thunder::Core::ERROR_TIMEDOUT);
+                    EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 3), ::Thunder::Core::ERROR_TIMEDOUT);
                 } else {
-                    EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 15), Thunder::Core::ERROR_NONE);
+                    EXPECT_EQ(jobs[index]->WaitForEvent(MaxJobWaitTime * 15), ::Thunder::Core::ERROR_NONE);
                     usleep(200);
                 }
 
@@ -1277,7 +1277,7 @@ namespace Core {
         }
 
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_JobType_Reschedule_MultipleJobs)
     {
@@ -1297,19 +1297,19 @@ namespace Core {
     TEST(Core_WorkerPool, Check_JobType_Reschedule_WhileRunning)
     {
         WorkerPoolTester workerPool(4, 0, 1);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             WorkerJobTester jobTester(1000);
-            jobTester.Schedule(Thunder::Core::Time::Now().Add(0));
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 2), Thunder::Core::ERROR_NONE);
+            jobTester.Schedule(::Thunder::Core::Time::Now().Add(0));
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 2), ::Thunder::Core::ERROR_NONE);
             jobTester.Reset();
-            EXPECT_EQ(jobTester.Reschedule(Thunder::Core::Time::Now().Add(1000)), false);
+            EXPECT_EQ(jobTester.Reschedule(::Thunder::Core::Time::Now().Add(1000)), false);
             jobTester.Notify();
-            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 2), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(jobTester.WaitForEvent(MaxJobWaitTime * 2), ::Thunder::Core::ERROR_NONE);
         }
         workerPool.Stop();
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
 
     class Job {
@@ -1359,7 +1359,7 @@ namespace Core {
     public:
         void Start(const uint8_t cycles) {
             _cycles = cycles;
-            _triggerJob.Reschedule(Thunder::Core::Time::Now().Add(_intervalInMilliSeconds));
+            _triggerJob.Reschedule(::Thunder::Core::Time::Now().Add(_intervalInMilliSeconds));
         }
 
         uint8_t Pending()
@@ -1376,7 +1376,7 @@ namespace Core {
             // to submit this job again after it the _intervalInMilliSeconds has elepased again from
             // now!
 
-            // The _decoupledJob is of type Thunder::Core::WorkerPool::JobType<Job>, which, according to the
+            // The _decoupledJob is of type ::Thunder::Core::WorkerPool::JobType<Job>, which, according to the
             // design will be decoupled from this thread and run the dispatch (of Job) on another
             // thread. To avoid starvation, the Job will obnnly be ran once. If it is already
             // running (Active) it will be scheduled (state changed) to be scheduled for rerun after
@@ -1386,7 +1386,7 @@ namespace Core {
             // Reschedule our selves to submit another run for the Job in _intervalInMilliSeconds
             // from now..
             if (--_cycles != 0) {
-                _triggerJob.Reschedule(Thunder::Core::Time::Now().Add(_intervalInMilliSeconds));
+                _triggerJob.Reschedule(::Thunder::Core::Time::Now().Add(_intervalInMilliSeconds));
             } else {
                 Notify();
             }
@@ -1395,13 +1395,13 @@ namespace Core {
     private:
         uint8_t _cycles;
         uint32_t _intervalInMilliSeconds;
-        Thunder::Core::WorkerPool::JobType<Trigger&> _triggerJob;
-        Thunder::Core::WorkerPool::JobType<Job>     _decoupledJob;
+        ::Thunder::Core::WorkerPool::JobType<Trigger&> _triggerJob;
+        ::Thunder::Core::WorkerPool::JobType<Job>     _decoupledJob;
     };
     void CheckWorkerPool_ReschduledTimedJob(const uint8_t threadCount, const uint8_t queueSize, const uint16_t timedWait, const uint16_t jobWait, const uint8_t times)
     {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
-        Thunder::Core::WorkerPool::Assign(&workerPool);
+        ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
         {
             // Schedule the Job every timedWait (eg: 10 Seconds) to run once..
@@ -1423,14 +1423,14 @@ namespace Core {
             // if the thread count >= 2 the line "Ooopsie daisy, that is unexpected, it seems there are multiples of me running, thats not according to the spec !!!!\n" will be observed
             // which indicates the flas in the current workerpool setup.
 
-            EXPECT_EQ(triggerJob.WaitForEvent((timedWait + (times * jobWait)) * 1000), Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(triggerJob.WaitForEvent((timedWait + (times * jobWait)) * 1000), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(triggerJob.Pending(), 0u);
             // In the new code the Job will never be running with more than one instance so the line: "Ooopsie daisy, that is unexpected, it seems there are multiples of me running, thats
             // not according to the spec !!!!\n" should never be observed.
             // However the job will not be ran 5 times as there are 3 schedule overruns due to the fact that the Job is still running when the next submit ocures. SO the job wll only run
             // 3 times and it will take 10 + 3* 40 seconds to complete.
         }
-        Thunder::Core::WorkerPool::Assign(nullptr);
+        ::Thunder::Core::WorkerPool::Assign(nullptr);
     }
     TEST(Core_WorkerPool, Check_ReschduledTimedJob_SinglePool)
     {

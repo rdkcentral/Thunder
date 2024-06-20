@@ -32,34 +32,34 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    class WebServer : public Web::WebLinkType<Thunder::Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request> > {
+    class WebServer : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > {
     private:
-        typedef Web::WebLinkType<Thunder::Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request> > BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > BaseClass;
 
     public:
         WebServer() = delete;
         WebServer(const WebServer& copy) = delete;
         WebServer& operator=(const WebServer&) = delete;
 
-        WebServer(const SOCKET& connector, const Thunder::Core::NodeId& remoteId, Thunder::Core::SocketServerType<WebServer>*)
+        WebServer(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<WebServer>*)
             : BaseClass(5, false, connector, remoteId, 2048, 2048)
         {
         }
 
         virtual ~WebServer()
         {
-            Close(Thunder::Core::infinite);
+            Close(::Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Thunder::Core::ProxyType<Thunder::Web::Request>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Request>& element)
         {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
 
-        virtual void Received(Thunder::Core::ProxyType<Thunder::Web::Request>& request)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_EQ(request->MajorVersion, 1);
@@ -67,13 +67,13 @@ namespace Core {
             EXPECT_TRUE(request->HasBody());
             EXPECT_EQ(request->ContentLength.Value(), 19u);
 
-            Thunder::Core::ProxyType<Web::Response> response(Thunder::Core::ProxyType<Web::Response>::Create());
+            ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<Web::TextBody>(request->Body<Web::TextBody>());
             Submit(response);
         }
 
-        virtual void Send(const Thunder::Core::ProxyType<Thunder::Web::Response>& response)
+        virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
@@ -84,21 +84,21 @@ namespace Core {
         }
 
     private:
-        static Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
 
-    Thunder::Core::ProxyPoolType<Web::TextBody> WebServer::_textBodyFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::TextBody> WebServer::_textBodyFactory(5);
 
-    class WebClient : public Web::WebLinkType<Thunder::Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> {
+    class WebClient : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> {
     private:
-        typedef Web::WebLinkType<Thunder::Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
     public:
         WebClient() = delete;
         WebClient(const WebClient& copy) = delete;
         WebClient& operator=(const WebClient&) = delete;
 
-        WebClient(const Thunder::Core::NodeId& remoteNode)
+        WebClient(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(5,_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
         {
@@ -106,18 +106,18 @@ namespace Core {
 
         virtual ~WebClient()
         {
-            Close(Thunder::Core::infinite);
+            Close(::Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Thunder::Core::ProxyType<Thunder::Web::Response>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Response>& element)
         {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
 
-        virtual void Received(Thunder::Core::ProxyType<Thunder::Web::Response>& response)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_STREQ(response->Message.c_str(), "OK");
@@ -130,7 +130,7 @@ namespace Core {
             _dataPending.Unlock();
         }
 
-        virtual void Send(const Thunder::Core::ProxyType<Thunder::Web::Request>& request)
+        virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
@@ -152,21 +152,21 @@ namespace Core {
         }
 
     private:
-        mutable Thunder::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         string _dataReceived;
-        static Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
-        static Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
 
-    Thunder::Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
-    Thunder::Core::ProxyPoolType<Web::TextBody> WebClient::_textBodyFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::TextBody> WebClient::_textBodyFactory(5);
 
     TEST(WebLink, Text)
     {
         std::string connector {"127.0.0.1"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Thunder::Core::SocketServerType<WebServer> _webServer(Thunder::Core::NodeId(connector.c_str(), 12343));
-            _webServer.Open(Thunder::Core::infinite);
+            ::Thunder::Core::SocketServerType<WebServer> _webServer(::Thunder::Core::NodeId(connector.c_str(), 12343));
+            _webServer.Open(::Thunder::Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
         };
@@ -178,11 +178,11 @@ namespace Core {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            WebClient webConnector(Thunder::Core::NodeId(connector.c_str(), 12343));
-            Thunder::Core::ProxyType<Web::Request> webRequest(Thunder::Core::ProxyType<Web::Request>::Create());
-            Thunder::Core::ProxyType<Web::TextBody> webRequestBody(Thunder::Core::ProxyType<Web::TextBody>::Create());
+            WebClient webConnector(::Thunder::Core::NodeId(connector.c_str(), 12343));
+            ::Thunder::Core::ProxyType<Web::Request> webRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
+            ::Thunder::Core::ProxyType<Web::TextBody> webRequestBody(::Thunder::Core::ProxyType<Web::TextBody>::Create());
             webRequest->Body<Web::TextBody>(webRequestBody);
-            webConnector.Open(Thunder::Core::infinite);
+            webConnector.Open(::Thunder::Core::infinite);
             while (!webConnector.IsOpen());
             webRequest->Verb = Web::Request::HTTP_GET;
             string sent = "Just a body to send";
@@ -195,7 +195,7 @@ namespace Core {
             EXPECT_STREQ(received.c_str(), sent.c_str());
             testAdmin.Sync("client done");
         }
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

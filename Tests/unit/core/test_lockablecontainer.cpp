@@ -49,9 +49,9 @@ namespace Core {
 
     TEST(test_lockableContainer, lockContainer_test)
     {
-        Thunder::Core::LockableContainerType<Container> containerObj1;
-        Thunder::Core::LockableContainerType<Container> containerObj2(containerObj1);
-        Thunder::Core::LockableContainerType<Container> containerObj3;
+        ::Thunder::Core::LockableContainerType<Container> containerObj1;
+        ::Thunder::Core::LockableContainerType<Container> containerObj2(containerObj1);
+        ::Thunder::Core::LockableContainerType<Container> containerObj3;
         containerObj3 = containerObj2;
 
         EXPECT_TRUE(containerObj1.ReadLock());

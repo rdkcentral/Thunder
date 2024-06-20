@@ -91,7 +91,7 @@ namespace Core {
                 EXPECT_TRUE(IsValid());
 
                 uint32_t time = 20;
-                Thunder::Core::Time curTime = Thunder::Core::Time::Now();
+                ::Thunder::Core::Time curTime = ::Thunder::Core::Time::Now();
                 curTime.Add(time);
                 uint32_t index = Store(curTime.Ticks(), 1);
                 

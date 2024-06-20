@@ -80,13 +80,13 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test1, hasTest1);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest1<TYPE, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest1<TYPE, string>::value, string>::type
     __TestWithMember(TYPE& t)
     {
         return t.Test1();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest1<TYPE, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest1<TYPE, string>::value, string>::type
     __TestWithMember(TYPE&)
     {
         return "method not available";
@@ -94,13 +94,13 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test1, hasTest1Args);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest1Args<TYPE, string, int>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest1Args<TYPE, string, int>::value, string>::type
     __Test1WithMemberHasArg(TYPE& t, int value)
     {
         return t.Test1(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest1Args<TYPE, string, int>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest1Args<TYPE, string, int>::value, string>::type
     __Test1WithMemberHasArg(TYPE&, int)
     {
         return "method not available";
@@ -108,26 +108,26 @@ namespace Core {
 
     IS_STATIC_MEMBER_AVAILABLE(Test1, hasStaticTest1);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasStaticTest1<TYPE, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasStaticTest1<TYPE, string>::value, string>::type
     __Test1WithStaticMember()
     {
          return TYPE::Test1();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasStaticTest1<TYPE, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasStaticTest1<TYPE, string>::value, string>::type
     __Test1WithStaticMember()
     {
         return "method not available";
     }
     IS_STATIC_MEMBER_AVAILABLE(Test1, hasStaticTest1Args);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasStaticTest1Args<TYPE, string, int>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasStaticTest1Args<TYPE, string, int>::value, string>::type
     __Test1WithStaticMemberHasArg(int value)
     {
         return TYPE::Test1(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasStaticTest1Args<TYPE, string, int>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasStaticTest1Args<TYPE, string, int>::value, string>::type
     __Test1WithStaticMemberHasArg(int)
     {
         return "method not available";
@@ -180,38 +180,38 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test2, hasTest2ArgBool);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest2ArgBool<TYPE, void, bool&>::value, void>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest2ArgBool<TYPE, void, bool&>::value, void>::type
     __Test2WithMemberHasArgBool(TYPE& t, bool& value)
     {
         t.Test2(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest2ArgBool<TYPE, void, bool&>::value, void>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest2ArgBool<TYPE, void, bool&>::value, void>::type
     __Test2WithMemberHasArgBool(TYPE&, bool&)
     {
     }
     IS_MEMBER_AVAILABLE(Test2, hasTest2ArgString);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest2ArgString<TYPE, string, string&>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest2ArgString<TYPE, string, string&>::value, string>::type
     __Test2WithMemberHasArgString(TYPE& t, string& str)
     {
         return t.Test2(str);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest2ArgString<TYPE, string, string&>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest2ArgString<TYPE, string, string&>::value, string>::type
     __Test2WithMemberHasArgString(TYPE&, string&)
     {
     }
 
     IS_STATIC_MEMBER_AVAILABLE(Test2, hasTest2NoArg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest2NoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest2NoArg<TYPE, bool>::value, bool>::type
     __Test2WithStaticMember()
     {
         return TYPE::Test2();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest2NoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest2NoArg<TYPE, bool>::value, bool>::type
     __Test2WithStaticMember()
     {
         return false;
@@ -219,26 +219,26 @@ namespace Core {
 
     IS_STATIC_MEMBER_AVAILABLE(Test2, hasTest2StaticArgBool);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest2StaticArgBool<TYPE, void, bool>::value, void>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest2StaticArgBool<TYPE, void, bool>::value, void>::type
     __Test2WithStaticMemberArgBool(bool value)
     {
         TYPE::Test2(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest2StaticArgBool<TYPE, void, bool>::value, void>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest2StaticArgBool<TYPE, void, bool>::value, void>::type
     __Test2WithStaticMemberArgBool(bool)
     {
     }
 
     IS_STATIC_MEMBER_AVAILABLE(Test2, hasTest2ArgInt);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest2ArgInt<TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest2ArgInt<TYPE, int, int>::value, int>::type
     __Test2WithStaticMemberArgInt(int value)
     {
         return TYPE::Test2(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest2ArgInt<TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest2ArgInt<TYPE, int, int>::value, int>::type
     __Test2WithStaticMemberArgInt(int)
     {
         return 0;
@@ -278,13 +278,13 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test3, hasTest3ConstNoArg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3ConstNoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3ConstNoArg<TYPE, bool>::value, bool>::type
     __Test3WithConstMemberNonConstType(TYPE& t)
     {
         return t.Test3();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3ConstNoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3ConstNoArg<TYPE, bool>::value, bool>::type
     __Test3WithConstMemberNonConstType(TYPE&)
     {
         return false;
@@ -292,26 +292,26 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test3, hasTest3ConstTypeNoArg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3ConstTypeNoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3ConstTypeNoArg<TYPE, bool>::value, bool>::type
     __Test3WithConstMember(const TYPE& t)
     {
         return t.Test3();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3ConstTypeNoArg<TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3ConstTypeNoArg<TYPE, bool>::value, bool>::type
     __Test3WithConstMember(const TYPE&)
     {
         return false;
     }
     IS_MEMBER_AVAILABLE(Test3, hasTest3NonConstArgString);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3NonConstArgString<TYPE, string, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3NonConstArgString<TYPE, string, string>::value, string>::type
     __Test3WithNonConstMember(TYPE& t, string str)
     {
         return t.Test3(str);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3NonConstArgString<TYPE, string, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3NonConstArgString<TYPE, string, string>::value, string>::type
     __Test3WithNonConstMember(TYPE&, string)
     {
         return "method not available";
@@ -319,13 +319,13 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test3, hasTest3ConstArgString);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3ConstArgString<TYPE, string, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3ConstArgString<TYPE, string, string>::value, string>::type
     __Test3WithNonConstMember(const TYPE& t, string str)
     {
         return t.Test3(str);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3ConstArgString<TYPE, string, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3ConstArgString<TYPE, string, string>::value, string>::type
     __Test3WithNonConstMember(const TYPE&, string)
     {
         return "method not available";
@@ -333,39 +333,39 @@ namespace Core {
 
     IS_MEMBER_AVAILABLE(Test3, hasTest3ConstArg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3ConstArg<TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3ConstArg<TYPE, int, int>::value, int>::type
     __Test3WithConstMember(const TYPE& t, const int value)
     {
         return t.Test3(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3ConstArg<TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3ConstArg<TYPE, int, int>::value, int>::type
     __Test3WithConstMember(const TYPE&, const int)
     {
         return 0;
     }
     IS_MEMBER_AVAILABLE(Test3, hasTest3NoArg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3NoArg<const TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3NoArg<const TYPE, bool>::value, bool>::type
     __Test3WithConstType(const TYPE& t)
     {
         return t.Test3();
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3NoArg<const TYPE, bool>::value, bool>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3NoArg<const TYPE, bool>::value, bool>::type
     __Test3WithConstType(const TYPE&)
     {
         return false;
     }
     IS_MEMBER_AVAILABLE(Test3, hasTest3Arg);
     template <typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest3Arg<const TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest3Arg<const TYPE, int, int>::value, int>::type
     __Test3WithConstTypeArgInt(const TYPE& t, int value)
     {
         return t.Test3(value);
     }
     template < typename TYPE>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest3Arg<const TYPE, int, int>::value, int>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest3Arg<const TYPE, int, int>::value, int>::type
     __Test3WithConstTypeArgInt(const TYPE&, int)
     {
         return 0;
@@ -422,104 +422,104 @@ namespace Core {
 
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test4, hasTest4TypeArgDouble);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest4TypeArgDouble<TYPE, bool, double>::value, bool>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest4TypeArgDouble<TYPE, bool, double>::value, bool>::type
         __Test4WithMemberArgDouble(double d)
         {
             return TYPE::Test4(d);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest4TypeArgDouble<TYPE, bool, double>::value, bool>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest4TypeArgDouble<TYPE, bool, double>::value, bool>::type
         __Test4WithMemberArgDouble(double)
         {
             return false;
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test4, hasTest4ConstTypeArgString);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest4ConstTypeArgString<const TYPE, bool, string>::value, bool>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest4ConstTypeArgString<const TYPE, bool, string>::value, bool>::type
         __Test4WithConstMemberArgString(string str) const
         {
             return TYPE::Test4(str);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest4ConstTypeArgString<const TYPE, bool, string>::value, bool>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest4ConstTypeArgString<const TYPE, bool, string>::value, bool>::type
         __Test4WithConstMemberArgString(string) const
         {
             return false;
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test4, hasTest4ArgInt);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest4ArgInt<TYPE, string, int>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest4ArgInt<TYPE, string, int>::value, string>::type
         __Test4WithMemberArgInt(int value)
         {
             return TYPE::Test4(value);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest4ArgInt<TYPE, string, int>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest4ArgInt<TYPE, string, int>::value, string>::type
         __Test4WithMemberArgInt(int)
         {
             return 0;
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test4, hasTest4ConstArgInt);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest4ConstArgInt<const TYPE, string, int>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest4ConstArgInt<const TYPE, string, int>::value, string>::type
         __Test4WithMemberArgInt(int value) const
         {
             return TYPE::Test4(value);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest4ConstArgInt<const TYPE, string, int>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest4ConstArgInt<const TYPE, string, int>::value, string>::type
         __Test4WithMemberArgInt(int) const
         {
             return 0;
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test4, hasTest4ConstArgString);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest4ConstArgString<const TYPE, string, string, bool>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest4ConstArgString<const TYPE, string, string, bool>::value, string>::type
         __Test4WithConstMemberArgStringAndBool(string str, bool b) const
         {
             return TYPE::Test4(str, b);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest4ConstArgString<const TYPE, string, string, bool>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest4ConstArgString<const TYPE, string, string, bool>::value, string>::type
         __Test4WithConstMemberArgStringAndBool(string, bool) const
         {
             return "method not available";
         }
         IS_MEMBER_AVAILABLE(Test5, hasTest5ConstArgString);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest5ConstArgString<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest5ConstArgString<TYPE, string, string>::value, string>::type
         __Test5WithConstMemberArgString(string str)
         {
             return TYPE::Test5(str);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest5ConstArgString<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest5ConstArgString<TYPE, string, string>::value, string>::type
         __Test5WithConstMemberArgString(string)
         {
             return "method not available";
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test5, hasTest5ConstArgStringOnBase);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest5ConstArgStringOnBase<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest5ConstArgStringOnBase<TYPE, string, string>::value, string>::type
         __Test5WithConstMemberArgStringOnBase(string str)
         {
             return TYPE::Test5(str);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest5ConstArgStringOnBase<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest5ConstArgStringOnBase<TYPE, string, string>::value, string>::type
         __Test5WithConstMemberArgStringOnBase(string)
         {
             return "method not available";
         }
         IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Test6, hasTest6ConstArgStringOnBoth);
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<hasTest6ConstArgStringOnBoth<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest6ConstArgStringOnBoth<TYPE, string, string>::value, string>::type
         __Test6WithConstMemberArgStringOnBoth(string str)
         {
             return TYPE::Test6(str);
         }
         template <typename TYPE = MIX>
-        inline typename Thunder::Core::TypeTraits::enable_if<!hasTest6ConstArgStringOnBoth<TYPE, string, string>::value, string>::type
+        inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest6ConstArgStringOnBoth<TYPE, string, string>::value, string>::type
         __Test6WithConstMemberArgStringOnBoth(string)
         {
             return "method not available";
@@ -545,13 +545,13 @@ namespace Core {
     IS_TEMPLATE_MEMBER_AVAILABLE(Test7, hasTest7Template);
 
     template <typename TYPE, typename T>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest7Template<TYPE, T, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest7Template<TYPE, T, string>::value, string>::type
     __Test7Template(TYPE& t)
     {
         return t.template Test7<T>();
     }
     template <typename TYPE, typename T>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest7Template<TYPE, T, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest7Template<TYPE, T, string>::value, string>::type
     __Test7Template(TYPE&)
     {
         return "method not available";
@@ -568,13 +568,13 @@ namespace Core {
 
     IS_TEMPLATE_MEMBER_AVAILABLE(Test8, hasTest8WithoutTemplate);
     template <typename TYPE, typename T>
-    inline typename Thunder::Core::TypeTraits::enable_if<hasTest8WithoutTemplate<TYPE, T, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<hasTest8WithoutTemplate<TYPE, T, string>::value, string>::type
     __Test8WithoutTemplate(TYPE& t)
     {
         return t.Test8();
     }
     template <typename TYPE, typename T>
-    inline typename Thunder::Core::TypeTraits::enable_if<!hasTest8WithoutTemplate<TYPE, T, string>::value, string>::type
+    inline typename ::Thunder::Core::TypeTraits::enable_if<!hasTest8WithoutTemplate<TYPE, T, string>::value, string>::type
     __Test8WithoutTemplate(TYPE&)
     {
         return "method not available";

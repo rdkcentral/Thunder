@@ -266,19 +266,19 @@ namespace Core {
     const uint8_t* RawDeviceId()
     {
         static uint8_t* MACAddress = nullptr;
-        static uint8_t MACAddressBuffer[Thunder::Core::AdapterIterator::MacSize + 1];
+        static uint8_t MACAddressBuffer[::Thunder::Core::AdapterIterator::MacSize + 1];
 
         if (MACAddress == nullptr) {
-            memset(MACAddressBuffer, 0, Thunder::Core::AdapterIterator::MacSize + 1);
+            memset(MACAddressBuffer, 0, ::Thunder::Core::AdapterIterator::MacSize + 1);
 
-            Thunder::Core::AdapterIterator adapters;
+            ::Thunder::Core::AdapterIterator adapters;
             while ((adapters.Next() == true)) {
                 if (adapters.HasMAC() == true) {
-                    adapters.MACAddress(&MACAddressBuffer[1], Thunder::Core::AdapterIterator::MacSize);
+                    adapters.MACAddress(&MACAddressBuffer[1], ::Thunder::Core::AdapterIterator::MacSize);
                     break;
                 }
             }
-            MACAddressBuffer[0] = Thunder::Core::AdapterIterator::MacSize;
+            MACAddressBuffer[0] = ::Thunder::Core::AdapterIterator::MacSize;
             MACAddress = &MACAddressBuffer[0];
         }
 
@@ -292,16 +292,16 @@ namespace Core {
         EXPECT_EQ((rawDeviceId != nullptr), true);
 
         // Call to dispose Network adapter instance created with RawDeviceId sequence
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_SystemInfo, RawDeviceId_To_ID)
     {
         const uint8_t* rawDeviceId = RawDeviceId();
-        string id1 (Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
+        string id1 (::Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
         uint8_t readPaddedSize = 0x11;
-        string id2 (Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, readPaddedSize));
+        string id2 (::Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, readPaddedSize));
         uint8_t readSize = 0xc;
-        string id3 (Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, readSize));
+        string id3 (::Thunder::Core::SystemInfo::Instance().Id(rawDeviceId, readSize));
 
         EXPECT_GE(id1.size(), static_cast<size_t>(0));
         EXPECT_EQ(id2.size(), readPaddedSize);
@@ -312,7 +312,7 @@ namespace Core {
         EXPECT_EQ((id3.size() == readSize), true);
 
         // Call to dispose Network adapter instance created with RawDeviceId sequence
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 #ifdef __POSIX__
@@ -322,7 +322,7 @@ namespace Core {
         string valueSet = "HelloTest";
         ::setenv(env.c_str(), valueSet.c_str(), 1);
         string valueGet;
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
         ::unsetenv(env.c_str());
     }
@@ -332,28 +332,28 @@ namespace Core {
         string env = "TEST_GETENVIRONMENT_WITH_SETENVIRONMENT";
         string valueSet = "HaiTest";
         // Call forced with default value
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet);
         string valueGet;
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
 
         valueSet = "ForcedTest";
         // Call forced with true
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, true);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, true);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
 
         valueSet = "NotForcedTest";
         // Call forced with false
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
 
 #ifdef __POSIX__
         ::unsetenv(env.c_str());
         // Call forced with false after unset/clear environement variable
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet.c_str());
         ::unsetenv(env.c_str());
 #endif
@@ -363,29 +363,29 @@ namespace Core {
         string env = "TEST_GETENVIRONMENT_WITH_SETENVIRONMENT";
         TCHAR valueSet[25] = "HaiTest";
         // Call forced with default value
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet);
         string valueGet;
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet);
 
         strcpy(valueSet, "ForcedTest");
         // Call forced with true
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, true);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, true);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet);
 
         strcpy(valueSet, "NotForcedTest");
         // Call forced with false
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), "ForcedTest");
 
 #ifdef __POSIX__
         ::unsetenv(env.c_str());
 
         // Call forced with false after unset/clear environement variable
-        Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
-        Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
+        ::Thunder::Core::SystemInfo::SetEnvironment(env, valueSet, false);
+        ::Thunder::Core::SystemInfo::GetEnvironment(env, valueGet);
         EXPECT_STREQ(valueGet.c_str(), valueSet);
         ::unsetenv(env.c_str());
 #endif
@@ -396,17 +396,17 @@ namespace Core {
         std::string cmd = "hostname";
         string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Function::NONE).c_str();
         hostname.erase(std::remove(hostname.begin(), hostname.end(), '\n'), hostname.end());
-        EXPECT_STREQ(Thunder::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
+        EXPECT_STREQ(::Thunder::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
     }
     TEST(Core_SystemInfo, HardwareInfo)
     {
-        EXPECT_STREQ(Thunder::Core::SystemInfo::Instance().Architecture().c_str(), Architecture().c_str());
+        EXPECT_STREQ(::Thunder::Core::SystemInfo::Instance().Architecture().c_str(), Architecture().c_str());
         std::string cmd = "cat /proc/cpuinfo | grep model | grep name";
-        EXPECT_STREQ(Thunder::Core::SystemInfo::Instance().Chipset().c_str(), ExecuteCmd(cmd.c_str(), Purpose::CHIPSET, Function::NONE).c_str());
+        EXPECT_STREQ(::Thunder::Core::SystemInfo::Instance().Chipset().c_str(), ExecuteCmd(cmd.c_str(), Purpose::CHIPSET, Function::NONE).c_str());
     }
     TEST(Core_SystemInfo, FirmwareInfo)
     {
-        EXPECT_STREQ(Thunder::Core::SystemInfo::Instance().FirmwareVersion().c_str(), FirmwareVersion().c_str()); 
+        EXPECT_STREQ(::Thunder::Core::SystemInfo::Instance().FirmwareVersion().c_str(), FirmwareVersion().c_str()); 
     }
 
     static constexpr uint32_t MegaBytesPerBytes = 1024 * 1024;
@@ -417,20 +417,20 @@ namespace Core {
         long pageSize= sysconf(_SC_PAGESIZE);
 
         EXPECT_NE(pageSize, -1);
-        EXPECT_EQ(Thunder::Core::SystemInfo::Instance().GetPageSize(), static_cast<uint32_t>(pageSize));
+        EXPECT_EQ(::Thunder::Core::SystemInfo::Instance().GetPageSize(), static_cast<uint32_t>(pageSize));
 
         std::string cmd = "cat /proc/meminfo | grep MemTotal";
         string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
         if (result.empty() != true) {
             uint64_t totalRam = std::stoul(result) * 1024;
-            EXPECT_EQ(Thunder::Core::SystemInfo::Instance().GetTotalRam(), totalRam);
-            EXPECT_EQ(Thunder::Core::SystemInfo::Instance().GetPhysicalPageCount(), static_cast<uint64_t>(totalRam / pageSize));
+            EXPECT_EQ(::Thunder::Core::SystemInfo::Instance().GetTotalRam(), totalRam);
+            EXPECT_EQ(::Thunder::Core::SystemInfo::Instance().GetPhysicalPageCount(), static_cast<uint64_t>(totalRam / pageSize));
         }
         cmd = "cat /proc/meminfo | grep SwapTotal:";
         result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::TOTAL);
         if (result.empty() != true) {
             uint64_t totalSwap = std::stoul(result) * 1024;
-            EXPECT_EQ(Thunder::Core::SystemInfo::Instance().GetTotalSwap(), static_cast<uint64_t>(totalSwap));
+            EXPECT_EQ(::Thunder::Core::SystemInfo::Instance().GetTotalSwap(), static_cast<uint64_t>(totalSwap));
         }
 
 #if 0 // Disabling this since this can be varied time to time and endup different value
@@ -442,18 +442,18 @@ namespace Core {
         result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::FREE);
         if (result.empty() != true) {
             // Ignore last digit to ignore difference
-            EXPECT_EQ((Thunder::Core::SystemInfo::Instance().GetFreeRam() / (MegaBytesPerBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
+            EXPECT_EQ((::Thunder::Core::SystemInfo::Instance().GetFreeRam() / (MegaBytesPerBytes * 10)), (stol(result) / (MegaBytesPerKBytes * 10)));
         }
         cmd = "cat /proc/meminfo | grep SwapFree:";
         result = ExecuteCmd(cmd.c_str(), Purpose::SWAP, Function::FREE);
         if (result.empty() != true) {
-            EXPECT_EQ(Thunder::Core::SystemInfo::Instance().GetFreeSwap() / 10, (stol(result) * 1024) / 10);
+            EXPECT_EQ(::Thunder::Core::SystemInfo::Instance().GetFreeSwap() / 10, (stol(result) * 1024) / 10);
         }
 #endif
     }
     TEST(Core_SystemInfo, memorySnapShot)
     {
-        Thunder::Core::SystemInfo::MemorySnapshot snapshot = Thunder::Core::SystemInfo::Instance().TakeMemorySnapshot();
+        ::Thunder::Core::SystemInfo::MemorySnapshot snapshot = ::Thunder::Core::SystemInfo::Instance().TakeMemorySnapshot();
         snapshot.AsJSON();
         std::string cmd = "cat /proc/meminfo | grep MemTotal:";
         string result = ExecuteCmd(cmd.c_str(), Purpose::MEM, Function::TOTAL);
@@ -509,7 +509,7 @@ namespace Core {
     }
     TEST(Core_SystemInfo, DISABLED_UPTime)
     {
-        EXPECT_FLOAT_EQ(static_cast<float>(Thunder::Core::SystemInfo::Instance().GetUpTime()), GetUpTime());
+        EXPECT_FLOAT_EQ(static_cast<float>(::Thunder::Core::SystemInfo::Instance().GetUpTime()), GetUpTime());
     }
     TEST(Core_SystemInfo, DISABLED_CPUInfo)
     {
@@ -520,7 +520,7 @@ namespace Core {
             /* CPULoad values showing big differences sometimes
          * Load can be vary in between the time, hence this test will be disabling
             uint8_t cpuLoad = stoi(result);
-            uint8_t difference = std::abs(cpuLoad - static_cast<uint8_t>(Thunder::Core::SystemInfo::Instance().GetCpuLoad()));
+            uint8_t difference = std::abs(cpuLoad - static_cast<uint8_t>(::Thunder::Core::SystemInfo::Instance().GetCpuLoad()));
             // Checking nearly equal value, since the cpu load calculation is average in the test app code
             EXPECT_EQ((difference <= 2), true);
             */
@@ -535,7 +535,7 @@ namespace Core {
             loadFromSystem[1] = Round(loadFromSystem[1], 2);
             loadFromSystem[2] = Round(loadFromSystem[2], 2);
 
-            uint64_t* cpuLoadAvg = Thunder::Core::SystemInfo::Instance().GetCpuLoadAvg();
+            uint64_t* cpuLoadAvg = ::Thunder::Core::SystemInfo::Instance().GetCpuLoadAvg();
             double loadFromThunder[3];
             // Fixed point arithmetic
             EXPECT_DOUBLE_EQ(loadFromSystem[0], cpuLoadAvg[0] / (1 << SI_LOAD_SHIFT));
@@ -546,17 +546,17 @@ namespace Core {
 #endif
     TEST(Core_SystemInfo, Ticks_withoutDelay)
     {
-        uint64_t tick1 = Thunder::Core::SystemInfo::Instance().Ticks();
-        uint64_t tick2 = Thunder::Core::SystemInfo::Instance().Ticks();
+        uint64_t tick1 = ::Thunder::Core::SystemInfo::Instance().Ticks();
+        uint64_t tick2 = ::Thunder::Core::SystemInfo::Instance().Ticks();
         // Difference depends on the clock time resolution
         EXPECT_LE(tick1, tick2);
     }
     TEST(Core_SystemInfo, Ticks_withDelay)
     {
         uint8_t seconds = 1;
-        uint64_t tick1 = Thunder::Core::SystemInfo::Instance().Ticks();
+        uint64_t tick1 = ::Thunder::Core::SystemInfo::Instance().Ticks();
         sleep(seconds);
-        uint64_t tick2 = Thunder::Core::SystemInfo::Instance().Ticks();
+        uint64_t tick2 = ::Thunder::Core::SystemInfo::Instance().Ticks();
         std::chrono::duration<uint8_t, std::micro> elapsed(tick2 - tick1);
         EXPECT_GE(elapsed.count(), seconds);
     }

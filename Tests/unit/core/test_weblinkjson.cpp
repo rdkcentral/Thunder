@@ -39,13 +39,13 @@ namespace Core {
         PLAYERCONTROL
     };
 
-    class Parameters : public Thunder::Core::JSON::Container {
+    class Parameters : public ::Thunder::Core::JSON::Container {
     public:
         Parameters(const Parameters&) = delete;
         Parameters& operator=(const Parameters&) = delete;
 
         Parameters()
-            : Thunder::Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Speed(0)
             , Duration(0)
             , Command()
@@ -62,19 +62,19 @@ namespace Core {
         }
 
     public:
-        Thunder::Core::JSON::OctSInt16 Speed;
-        Thunder::Core::JSON::DecUInt16 Duration;
-        Thunder::Core::JSON::EnumType<CommandTypeWeblinkJSON> Command;
-        Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::DecUInt16> Settings;
+        ::Thunder::Core::JSON::OctSInt16 Speed;
+        ::Thunder::Core::JSON::DecUInt16 Duration;
+        ::Thunder::Core::JSON::EnumType<CommandTypeWeblinkJSON> Command;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16> Settings;
     };
 
-    class Command : public Thunder::Core::JSON::Container {
+    class Command : public ::Thunder::Core::JSON::Container {
     public:
         Command(const Command&) = delete;
         Command& operator=(const Command&) = delete;
 
         Command()
-            : Thunder::Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Identifier(0)
             , Name()
             , BaseAddress(0)
@@ -93,25 +93,25 @@ namespace Core {
         }
 
     public:
-        Thunder::Core::JSON::DecUInt32 Identifier;
-        Thunder::Core::JSON::String Name;
-        Thunder::Core::JSON::HexUInt32 BaseAddress;
-        Thunder::Core::JSON::Boolean TrickFlag;
+        ::Thunder::Core::JSON::DecUInt32 Identifier;
+        ::Thunder::Core::JSON::String Name;
+        ::Thunder::Core::JSON::HexUInt32 BaseAddress;
+        ::Thunder::Core::JSON::Boolean TrickFlag;
         Parameters Params;
     };
 
     typedef Web::JSONBodyType<Command> CommandBody;
 
-    class JSONWebServer : public Web::WebLinkType<Thunder::Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request>&> {
+    class JSONWebServer : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request>&> {
     private:
-        typedef Web::WebLinkType<Thunder::Core::SocketStream, Web::Request, Web::Response, Thunder::Core::ProxyPoolType<Web::Request>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request>&> BaseClass;
 
     public:
         JSONWebServer() = delete;
         JSONWebServer(const JSONWebServer& copy) = delete;
         JSONWebServer& operator=(const JSONWebServer&) = delete;
 
-        JSONWebServer(const SOCKET& connector, const Thunder::Core::NodeId& remoteId, Thunder::Core::SocketServerType<JSONWebServer>*)
+        JSONWebServer(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<JSONWebServer>*)
             : BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
             , _requestFactory(5)
             , _commandBodyFactory(5)
@@ -120,18 +120,18 @@ namespace Core {
 
         virtual ~JSONWebServer()
         {
-            Close(Thunder::Core::infinite);
+            Close(::Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Thunder::Core::ProxyType<Thunder::Web::Request>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Request>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
         }
 
-        virtual void Received(Thunder::Core::ProxyType<Web::Request>& request)
+        virtual void Received(::Thunder::Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_EQ(request->MajorVersion, 1);
@@ -139,13 +139,13 @@ namespace Core {
             EXPECT_TRUE(request->HasBody());
             EXPECT_EQ(request->ContentLength.Value(), 60u);
 
-            Thunder::Core::ProxyType<Web::Response> response(Thunder::Core::ProxyType<Web::Response>::Create());
+            ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<CommandBody>(request->Body<CommandBody>());
             Submit(response);
         }
 
-        virtual void Send(const Thunder::Core::ProxyType<Web::Response>& response)
+        virtual void Send(const ::Thunder::Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
@@ -156,20 +156,20 @@ namespace Core {
         }
 
     private:
-        Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
-        Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
+        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
+        ::Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
-    class JSONWebClient : public Web::WebLinkType<Thunder::Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> {
+    class JSONWebClient : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> {
     private:
-        typedef Web::WebLinkType<Thunder::Core::SocketStream, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
     public:
         JSONWebClient() = delete;
         JSONWebClient(const JSONWebClient& copy) = delete;
         JSONWebClient& operator=(const JSONWebClient&) = delete;
 
-        JSONWebClient(const Thunder::Core::NodeId& remoteNode)
+        JSONWebClient(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
             , _responseFactory(5)
@@ -179,18 +179,18 @@ namespace Core {
 
         virtual ~JSONWebClient()
         {
-            Close(Thunder::Core::infinite);
+            Close(::Thunder::Core::infinite);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Thunder::Core::ProxyType<Thunder::Web::Response>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Response>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
         }
 
-        virtual void Received(Thunder::Core::ProxyType<Web::Response>& response)
+        virtual void Received(::Thunder::Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_STREQ(response->Message.c_str(), "OK");
@@ -203,7 +203,7 @@ namespace Core {
             _dataPending.Unlock();
         }
 
-        virtual void Send(const Thunder::Core::ProxyType<Web::Request>& request)
+        virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
@@ -225,18 +225,18 @@ namespace Core {
         }
 
     private:
-        mutable Thunder::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         string _dataReceived;
-        Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
-        Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
+        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        ::Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
     TEST(WebLink, Json)
     {
         std::string connector {"0.0.0.0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Thunder::Core::SocketServerType<JSONWebServer> webServer(Thunder::Core::NodeId(connector.c_str(), 12341));
-            webServer.Open(Thunder::Core::infinite);
+            ::Thunder::Core::SocketServerType<JSONWebServer> webServer(::Thunder::Core::NodeId(connector.c_str(), 12341));
+            webServer.Open(::Thunder::Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
         };
@@ -248,11 +248,11 @@ namespace Core {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            JSONWebClient jsonWebConnector(Thunder::Core::NodeId(connector.c_str(), 12341));
-            Thunder::Core::ProxyType<Web::Request> jsonRequest(Thunder::Core::ProxyType<Web::Request>::Create());
-            Thunder::Core::ProxyType<CommandBody> jsonRequestBody(Thunder::Core::ProxyType<CommandBody>::Create());
+            JSONWebClient jsonWebConnector(::Thunder::Core::NodeId(connector.c_str(), 12341));
+            ::Thunder::Core::ProxyType<Web::Request> jsonRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
+            ::Thunder::Core::ProxyType<CommandBody> jsonRequestBody(::Thunder::Core::ProxyType<CommandBody>::Create());
             jsonRequest->Body<CommandBody>(jsonRequestBody);
-            jsonWebConnector.Open(Thunder::Core::infinite);
+            jsonWebConnector.Open(::Thunder::Core::infinite);
             while (!jsonWebConnector.IsOpen());
             jsonRequest->Verb = Web::Request::HTTP_GET;
             jsonRequestBody->Identifier = 123;
@@ -268,7 +268,7 @@ namespace Core {
             EXPECT_STREQ(received.c_str(), sent.c_str());
             testAdmin.Sync("client done");
        }
-       Thunder::Core::Singleton::Dispose();
+       ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

@@ -31,16 +31,16 @@ namespace Core {
 
     TEST (test_file, file)
     {
-        Thunder::Core::File file;
-        Thunder::Core::File fileObj1("Sample.txt");
+        ::Thunder::Core::File file;
+        ::Thunder::Core::File fileObj1("Sample.txt");
         fileObj1.Create(true);
-        Thunder::Core::File fileObj2(fileObj1);
+        ::Thunder::Core::File fileObj2(fileObj1);
         fileObj2.SetSize(150);
 
         EXPECT_TRUE(fileObj1.Open());
         EXPECT_TRUE(fileObj1.Append());
         EXPECT_TRUE(fileObj1.Create());
-        EXPECT_TRUE(fileObj1.Create(Thunder::Core::File::USER_WRITE));
+        EXPECT_TRUE(fileObj1.Create(::Thunder::Core::File::USER_WRITE));
         EXPECT_TRUE(fileObj1.Open(true));
 
         char buffer[] = "New  Line is added to the File.";
@@ -64,7 +64,7 @@ namespace Core {
 
     TEST (test_file, file_functions)
     {
-        Thunder::Core::File fileObj1("Sample2.txt");
+        ::Thunder::Core::File fileObj1("Sample2.txt");
         fileObj1.Create(true);
         char buffer[] = "Sample2.txt is moved to newFile.txt";
         fileObj1.Write(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
@@ -88,9 +88,9 @@ namespace Core {
     TEST (test_file, directory)
     {
         string path = "home/file";
-        Thunder::Core::Directory dirOne(path.c_str());
-        Thunder::Core::Directory dirTwo(path.c_str(), _T("*"));
-        Thunder::Core::Directory dirThree = dirOne ;
+        ::Thunder::Core::Directory dirOne(path.c_str());
+        ::Thunder::Core::Directory dirTwo(path.c_str(), _T("*"));
+        ::Thunder::Core::Directory dirThree = dirOne ;
 
         EXPECT_TRUE(dirOne.CreatePath());
         EXPECT_FALSE(dirOne.Create());

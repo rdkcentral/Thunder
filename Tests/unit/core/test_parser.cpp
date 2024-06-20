@@ -31,7 +31,7 @@ namespace Core {
 
     class Deserializer {
     private:
-        typedef Thunder::Core::ParserType<Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer> Parser;
+        typedef ::Thunder::Core::ParserType<::Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer> Parser;
 
     public :
         Deserializer()
@@ -44,10 +44,10 @@ namespace Core {
             _parser.Reset();
             _parser.CollectWord();
             _parser.CollectWord('/');
-            _parser.CollectWord(Thunder::Core::ParserType<Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
-            _parser.CollectWord('/',Thunder::Core::ParserType<Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+            _parser.CollectWord(::Thunder::Core::ParserType<::Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+            _parser.CollectWord('/',::Thunder::Core::ParserType<::Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
             _parser.CollectLine();
-            _parser.CollectLine(Thunder::Core::ParserType<Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+            _parser.CollectLine(::Thunder::Core::ParserType<::Thunder::Core::TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
             _parser.FlushLine();
             _parser.PassThrough(5);
         }
@@ -68,21 +68,21 @@ namespace Core {
 
     TEST(test_text_parser, simple_text_parser)
     {
-        Thunder::Core::TextFragment inputLine("/Service/testing/parsertest");
-        Thunder::Core::TextParser textparser(inputLine);
+        ::Thunder::Core::TextFragment inputLine("/Service/testing/parsertest");
+        ::Thunder::Core::TextParser textparser(inputLine);
         textparser.Skip(2);
         textparser.Skip('S');
         textparser.Find(_T("e"));
         textparser.SkipWhiteSpace();
         textparser.SkipLine();
-        Thunder::Core::OptionalType<Thunder::Core::TextFragment> token;
+        ::Thunder::Core::OptionalType<::Thunder::Core::TextFragment> token;
         textparser.ReadText(token, _T("/"));
     }
 
     TEST(test_path_parser, simple_path_parser)
     {
-        Thunder::Core::TextFragment inputFile("C://Service/testing/pathparsertest.txt");
-        Thunder::Core::PathParser pathparser(inputFile);
+        ::Thunder::Core::TextFragment inputFile("C://Service/testing/pathparsertest.txt");
+        ::Thunder::Core::PathParser pathparser(inputFile);
         
         EXPECT_EQ(pathparser.Drive().Value(),'C');
         EXPECT_STREQ(pathparser.Path().Value().Text().c_str(),_T("//Service/testing"));

@@ -33,14 +33,14 @@ namespace Core {
 
     static int g_shared = 2; // Change it back to 1 after fixing and enabling simple_criticalsection test
 
-    class ThreadClass : public Thunder::Core::Thread {
+    class ThreadClass : public ::Thunder::Core::Thread {
     public:
         ThreadClass() = delete;
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-        ThreadClass(Thunder::Core::CriticalSection& lock,std::thread::id parentId)
-            : Thunder::Core::Thread(Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
+        ThreadClass(::Thunder::Core::CriticalSection& lock,std::thread::id parentId)
+            : ::Thunder::Core::Thread(::Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
             , _lock(lock)
             , _parentId(parentId)
             , _done(false)
@@ -61,18 +61,18 @@ namespace Core {
                 _lock.Unlock();
                 ::SleepMs(50);
             }
-            return (Thunder::Core::infinite);
+            return (::Thunder::Core::infinite);
         }
 
     private:
-        Thunder::Core::CriticalSection& _lock;
+        ::Thunder::Core::CriticalSection& _lock;
         std::thread::id _parentId;
         volatile bool _done;
     };
 
     TEST(test_criticalsection, DISABLED_simple_criticalsection)
     {
-        Thunder::Core::CriticalSection lock;
+        ::Thunder::Core::CriticalSection lock;
 
         ThreadClass object(lock, std::this_thread::get_id());
         object.Run();
@@ -80,18 +80,18 @@ namespace Core {
         g_shared++;
         lock.Unlock();
         object.Stop();
-        object.Wait(Thunder::Core::Thread::STOPPED, Thunder::Core::infinite);
+        object.Wait(::Thunder::Core::Thread::STOPPED, ::Thunder::Core::infinite);
         EXPECT_EQ(g_shared,2);
     }
 
     TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
     {
-        Thunder::Core::BinairySemaphore bsem(true);
-        uint64_t timeOut(Thunder::Core::Time::Now().Add(3).Ticks());
-        uint64_t now(Thunder::Core::Time::Now().Ticks());
+        ::Thunder::Core::BinairySemaphore bsem(true);
+        uint64_t timeOut(::Thunder::Core::Time::Now().Add(3).Ticks());
+        uint64_t now(::Thunder::Core::Time::Now().Ticks());
 
         if (now < timeOut) {
-            bsem.Lock(static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+            bsem.Lock(static_cast<uint32_t>((timeOut - now) / ::Thunder::Core::Time::TicksPerMillisecond));
             g_shared++;
         }
         EXPECT_EQ(g_shared,3);
@@ -99,7 +99,7 @@ namespace Core {
 
     TEST(test_binairysemaphore, simple_binairysemaphore)
     {
-        Thunder::Core::BinairySemaphore bsem(1,5);
+        ::Thunder::Core::BinairySemaphore bsem(1,5);
         bsem.Lock();
         g_shared++;
         bsem.Unlock();
@@ -108,33 +108,33 @@ namespace Core {
 
     TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
     {
-        Thunder::Core::CountingSemaphore csem(1,5);
-        uint64_t timeOut(Thunder::Core::Time::Now().Add(3).Ticks());
-        uint64_t now(Thunder::Core::Time::Now().Ticks());
+        ::Thunder::Core::CountingSemaphore csem(1,5);
+        uint64_t timeOut(::Thunder::Core::Time::Now().Add(3).Ticks());
+        uint64_t now(::Thunder::Core::Time::Now().Ticks());
         do
         {
             if (now < timeOut) {
-                csem.Lock(static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+                csem.Lock(static_cast<uint32_t>((timeOut - now) / ::Thunder::Core::Time::TicksPerMillisecond));
                 g_shared++;
             }
-        } while (timeOut < Thunder::Core::Time::Now().Ticks());
+        } while (timeOut < ::Thunder::Core::Time::Now().Ticks());
         EXPECT_EQ(g_shared,5);
        
-        timeOut = Thunder::Core::Time::Now().Add(3).Ticks();
-        now = Thunder::Core::Time::Now().Ticks();
+        timeOut = ::Thunder::Core::Time::Now().Add(3).Ticks();
+        now = ::Thunder::Core::Time::Now().Ticks();
         do
         {
             if (now < timeOut) {
-                csem.TryUnlock(static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+                csem.TryUnlock(static_cast<uint32_t>((timeOut - now) / ::Thunder::Core::Time::TicksPerMillisecond));
                 g_shared++;
             }
-        } while (timeOut < Thunder::Core::Time::Now().Ticks());
+        } while (timeOut < ::Thunder::Core::Time::Now().Ticks());
         EXPECT_EQ(g_shared,6);
     }
 
     TEST(test_countingsemaphore, simple_countingsemaphore)
     {
-        Thunder::Core::CountingSemaphore csem(1,5);
+        ::Thunder::Core::CountingSemaphore csem(1,5);
         csem.Lock();
         g_shared++;
         csem.Unlock(1);

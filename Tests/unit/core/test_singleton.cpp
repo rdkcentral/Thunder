@@ -60,16 +60,16 @@ namespace Core {
 
     TEST(test_singleton, simple_singleton)
     {
-        static SingletonTypeOne& object1 = Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
-        static SingletonTypeOne& object_sample = Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
+        static SingletonTypeOne& object1 = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
+        static SingletonTypeOne& object_sample = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
         EXPECT_EQ(&object1,&object_sample);
-        static SingletonTypeTwo& object2 = Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
-        static SingletonTypeThree& object3 = Thunder::Core::SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
-        Thunder::Core::SingletonType<SingletonTypeTwo>* x = (Thunder::Core::SingletonType<SingletonTypeTwo>*)&object2;
+        static SingletonTypeTwo& object2 = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
+        static SingletonTypeThree& object3 = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
+        ::Thunder::Core::SingletonType<SingletonTypeTwo>* x = (::Thunder::Core::SingletonType<SingletonTypeTwo>*)&object2;
         EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
-        Thunder::Core::SingletonType<SingletonTypeThree>* y = (Thunder::Core::SingletonType<SingletonTypeThree>*)&object3;
+        ::Thunder::Core::SingletonType<SingletonTypeThree>* y = (::Thunder::Core::SingletonType<SingletonTypeThree>*)&object3;
         EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

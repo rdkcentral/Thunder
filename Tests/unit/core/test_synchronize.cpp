@@ -58,8 +58,8 @@ namespace Core {
     {
         string MESSAGE = "SynchronizeType request";
         SynchronizeClass syncObject1;
-        Thunder::Core::SynchronizeType<string> syncObject2;
-        Thunder::Core::SynchronizeType<SynchronizeClass> syncObject3;
+        ::Thunder::Core::SynchronizeType<string> syncObject2;
+        ::Thunder::Core::SynchronizeType<SynchronizeClass> syncObject3;
 
         syncObject2.Load();
         syncObject2.Evaluate();

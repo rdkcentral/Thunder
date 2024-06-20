@@ -31,7 +31,7 @@ namespace Core {
 
     TEST(Core_MeasurementType, simpleSet)
     {
-        Thunder::Core::MeasurementType<uint8_t> data;
+        ::Thunder::Core::MeasurementType<uint8_t> data;
         data.Set(100);
         data.Set(200);
         data.Set(120);

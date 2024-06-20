@@ -27,6 +27,7 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     template <typename T, bool BOUNDARY_INCLUSIVE = true>
     void RangeTest(T data)
@@ -47,23 +48,25 @@ namespace Tests {
 
     TEST(Core_RangeType, BoundaryExclusive)
     {
-        Thunder::Core::RangeType<uint8_t, false, false> data(1u, 100u);
-        RangeTest<Thunder::Core::RangeType<uint8_t, false, false>, false>(data);
+        ::Thunder::Core::RangeType<uint8_t, false, false> data(1u, 100u);
+        RangeTest<::Thunder::Core::RangeType<uint8_t, false, false>, false>(data);
     }
 
     TEST(Core_RangeType, BoundaryInclusive)
     {
-        Thunder::Core::RangeType<uint8_t, true, true> data(1u, 100u);
-        RangeTest<Thunder::Core::RangeType<uint8_t, true, true>>(data);
+        ::Thunder::Core::RangeType<uint8_t, true, true> data(1u, 100u);
+        RangeTest<::Thunder::Core::RangeType<uint8_t, true, true>>(data);
     }
 
     TEST(Core_RangeType, EqualBoundary)
     {
-        Thunder::Core::RangeType<uint8_t, true, true> withBoundary(2u, 2u);
+        ::Thunder::Core::RangeType<uint8_t, true, true> withBoundary(2u, 2u);
         EXPECT_EQ(withBoundary.Range(), 1u);
 
-        Thunder::Core::RangeType<uint8_t, false, false> withoutBoundary(2u, 2u);
+        ::Thunder::Core::RangeType<uint8_t, false, false> withoutBoundary(2u, 2u);
         EXPECT_EQ(withoutBoundary.Range(), 0u);
     }
+
+} // Core
 } // Tests
 } // Thunder

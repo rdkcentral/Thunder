@@ -31,9 +31,9 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    class Control : public Thunder::Core::Messaging::IControl {
+    class Control : public ::Thunder::Core::Messaging::IControl {
     public:
-        Control(const Thunder::Core::Messaging::MetaData& metaData)
+        Control(const ::Thunder::Core::Messaging::MetaData& metaData)
             : _metaData(metaData)
         {
         }
@@ -53,72 +53,72 @@ namespace Core {
         {
             _isEnabled = false;
         }
-        const Thunder::Core::Messaging::MetaData& MessageMetaData() const override
+        const ::Thunder::Core::Messaging::MetaData& MessageMetaData() const override
         {
             return _metaData;
         }
 
     private:
         bool _isEnabled;
-        Thunder::Core::Messaging::MetaData _metaData;
+        ::Thunder::Core::Messaging::MetaData _metaData;
     };
 
     class Core_Messaging_MessageUnit : public testing::Test {
     protected:
         Core_Messaging_MessageUnit()
         {
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
-            _controls.emplace_back(new Control({ Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
         }
         ~Core_Messaging_MessageUnit() = default;
 
         static void SetUpTestSuite()
         {
-            Thunder::Core::Messaging::MessageUnit::Instance().IsBackground(_background);
-            Thunder::Core::Messaging::MessageUnit::Instance().Open(_basePath);
+            ::Thunder::Core::Messaging::MessageUnit::Instance().IsBackground(_background);
+            ::Thunder::Core::Messaging::MessageUnit::Instance().Open(_basePath);
         }
 
         static void TearDownTestSuite()
         {
-            Thunder::Core::Messaging::MessageUnit::Instance().Close();
-            Thunder::Core::Singleton::Dispose();
+            ::Thunder::Core::Messaging::MessageUnit::Instance().Close();
+            ::Thunder::Core::Singleton::Dispose();
         }
         void SetUp() override
         {
             for (const auto& control : _controls) {
-                Thunder::Core::Messaging::MessageUnit::Instance().Announce(control.get());
+                ::Thunder::Core::Messaging::MessageUnit::Instance().Announce(control.get());
             }
         }
 
         void TearDown() override
         {
-            Thunder::Core::Messaging::MessageUnit::Instance().Defaults(_T(""));
+            ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(_T(""));
             for (const auto& control : _controls) {
-                Thunder::Core::Messaging::MessageUnit::Instance().Revoke(control.get());
+                ::Thunder::Core::Messaging::MessageUnit::Instance().Revoke(control.get());
             }
         }
 
         string DispatcherIdentifier()
         {
             string result;
-            Thunder::Core::SystemInfo::GetEnvironment(Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPACTHER_IDENTIFIER_ENV, result);
+            ::Thunder::Core::SystemInfo::GetEnvironment(::Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPACTHER_IDENTIFIER_ENV, result);
             return result;
         }
 
         string DispatcherBasePath()
         {
             string result;
-            Thunder::Core::SystemInfo::GetEnvironment(Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPATCHER_PATH_ENV, result);
+            ::Thunder::Core::SystemInfo::GetEnvironment(::Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPATCHER_PATH_ENV, result);
             return result;
         }
 
         static bool _background;
         static string _basePath;
-        std::list<std::unique_ptr<Thunder::Core::Messaging::IControl>> _controls;
+        std::list<std::unique_ptr<::Thunder::Core::Messaging::IControl>> _controls;
     };
 
     bool Core_Messaging_MessageUnit::_background = false;
@@ -128,49 +128,49 @@ namespace Core {
     {
         const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":true}]}})";
 
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessageIsDisabledByDefaultWhenConfigFullySpecified)
     {
         const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":false}]}})";
 
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreEnabledWhenModuleNotSpecified)
     {
         const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":true}]}})";
 
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreDisabledWhenModuleNotSpecified)
     {
         const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":false}]}})";
 
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
     }
 
     TEST_F(Core_Messaging_MessageUnit, LoggingMessageIsEnabledIfNotConfigured)
     {
         //logging messages are enabled by default (if not specified otherwise in the config)
         const string config = R"({"logging":{"messages":[{"category":"Startup","module":"SysLog","enabled":false}]}})";
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Startup"), _T("SysLog") }));
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Notification"), _T("SysLog") }));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Startup"), _T("SysLog") }));
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Notification"), _T("SysLog") }));
     }
 
     TEST_F(Core_Messaging_MessageUnit, MessageClientWillReturnListOfControls)
@@ -197,30 +197,30 @@ namespace Core {
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldUpdateExistingDefaultConfig)
     {
         const string config = R"({"tracing":{"messages":[{"category":"ExampleCategory","module":"ExampleModule","enabled":false}]}})";
-        Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        const Thunder::Core::Messaging::MetaData toBeUpdated(Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
+        const ::Thunder::Core::Messaging::MetaData toBeUpdated(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
 
         Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
         client.AddInstance(0); //we are in framework
         client.Enable(toBeUpdated, true);
 
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
-        const Thunder::Core::Messaging::MetaData toBeAdded(Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+        const ::Thunder::Core::Messaging::MetaData toBeAdded(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
 
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
 
         Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
         client.AddInstance(0); //we are in framework
         client.Enable(toBeAdded, true);
 
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
-        auto defaultsString = Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
-        Thunder::Core::Messaging::Settings settings;
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
+        auto defaultsString = ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
+        ::Thunder::Core::Messaging::Settings settings;
         settings.FromString(defaultsString);
 
         ASSERT_EQ(settings.Tracing.Entries.Length(), 1);
@@ -240,18 +240,18 @@ namespace Core {
         int matches = 0;
         while (itBeforeUpdate.Next()) {
             auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
                 ++matches;
             }
         }
         ASSERT_EQ(matches, 0);
 
         matches = 0;
-        client.Enable({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), _T("") }, true);
+        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), _T("") }, true);
         auto itAfterUpdate = client.Enabled();
         while (itAfterUpdate.Next()) {
             auto info = itAfterUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
                 ++matches;
             }
         }
@@ -263,7 +263,7 @@ namespace Core {
         Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
         client.AddInstance(0); //we are in framework
         auto itBeforeUpdate = client.Enabled();
-        Thunder::Core::Messaging::MetaData messageToToggle(Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+        ::Thunder::Core::Messaging::MetaData messageToToggle(::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
 
         int matches = 0;
         while (itBeforeUpdate.Next()) {
@@ -288,16 +288,16 @@ namespace Core {
 
     TEST_F(Core_Messaging_MessageUnit, LogEnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
-        const Thunder::Core::Messaging::MetaData tobeAdded(Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
-        ASSERT_TRUE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
+        const ::Thunder::Core::Messaging::MetaData tobeAdded(::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
 
         Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
         client.AddInstance(0); //we are in framework
         client.Enable(tobeAdded, false);
 
-        ASSERT_FALSE(Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
-        auto defaultsString = Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
-        Thunder::Core::Messaging::Settings settings;
+        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
+        auto defaultsString = ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
+        ::Thunder::Core::Messaging::Settings settings;
         settings.FromString(defaultsString);
 
         ASSERT_EQ(settings.Logging.Entries.Length(), 1);
@@ -313,7 +313,7 @@ namespace Core {
         Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
         client.AddInstance(0); //we are in framework
         auto itBeforeUpdate = client.Enabled();
-        Thunder::Core::Messaging::MetaData message(Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
+        ::Thunder::Core::Messaging::MetaData message(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
 
         int matches = 0;
         while (itBeforeUpdate.Next()) {
@@ -345,7 +345,7 @@ namespace Core {
         int enabled = 0;
         while (itBeforeUpdate.Next()) {
             auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
                 if (info.second == true) {
                     ++enabled;
                 }
@@ -354,11 +354,11 @@ namespace Core {
         ASSERT_EQ(enabled, 0);
 
         enabled = 0;
-        client.Enable({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME) }, true);
+        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME) }, true);
         auto itAfterUpdate = client.Enabled();
         while (itAfterUpdate.Next()) {
             auto info = itAfterUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
                 if (info.second == true) {
                     ++enabled;
                 }
@@ -377,7 +377,7 @@ namespace Core {
         int enabled = 0;
         while (itBeforeUpdate.Next()) {
             auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
                 if (info.second == true) {
                     ++enabled;
                 }
@@ -386,11 +386,11 @@ namespace Core {
         ASSERT_EQ(enabled, 0);
 
         enabled = 0;
-        client.Enable({ Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("") }, true);
+        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("") }, true);
         auto itAfterUpdate = client.Enabled();
         while (itAfterUpdate.Next()) {
             auto info = itAfterUpdate.Current();
-            if (info.first.Type() == Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
+            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
                 if (info.second == true) {
                     ++enabled;
                 }
@@ -439,7 +439,7 @@ namespace Core {
     {
         uint8_t buffer[1 * 1024];
 
-        Thunder::Core::Messaging::ControlList cl;
+        ::Thunder::Core::Messaging::ControlList cl;
         for (const auto& control : _controls) {
             cl.Announce(control.get());
         }
@@ -474,7 +474,7 @@ namespace Core {
         std::vector<uint8_t> buffer;
         buffer.resize(maxBufferSize + 1);
 
-        Thunder::Core::Messaging::ControlList cl;
+        ::Thunder::Core::Messaging::ControlList cl;
         for (const auto& control : _controls) {
             cl.Announce(control.get());
         }
@@ -502,23 +502,23 @@ namespace Core {
 
         //factory should be added before attempting to pop data
         Messaging::TraceFactory factory;
-        client.AddFactory(Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
+        client.AddFactory(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
 
         Messaging::TextMessage tm(traceMessage);
-        Thunder::Core::Messaging::Information info(Thunder::Core::Messaging::MetaData::MessageType::TRACING,
+        ::Thunder::Core::Messaging::Information info(::Thunder::Core::Messaging::MetaData::MessageType::TRACING,
             _T("some_category"),
             EXPAND_AND_QUOTE(MODULE_NAME),
             _T("some_file.cpp"),
             1337,
-            Thunder::Core::Time::Now().Ticks());
+            ::Thunder::Core::Time::Now().Ticks());
 
-        Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
+        ::Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
 
         auto messages = client.PopMessagesAsList();
         ASSERT_EQ(messages.size(), 1);
         auto message = messages.front();
 
-        ASSERT_NE(message.first.MessageMetaData().Type(), Thunder::Core::Messaging::MetaData::MessageType::INVALID);
+        ASSERT_NE(message.first.MessageMetaData().Type(), ::Thunder::Core::Messaging::MetaData::MessageType::INVALID);
         ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
 
         string result;
@@ -533,18 +533,18 @@ namespace Core {
     {
         const string traceMessage = _T("some trace");
         Messaging::TextMessage tm(traceMessage);
-        Thunder::Core::Messaging::Information info(Thunder::Core::Messaging::MetaData::MessageType::TRACING,
+        ::Thunder::Core::Messaging::Information info(::Thunder::Core::Messaging::MetaData::MessageType::TRACING,
             _T("some_category"),
             EXPAND_AND_QUOTE(MODULE_NAME),
             _T("some_file.cpp"),
             1337,
-            Thunder::Core::Time::Now().Ticks());
+            ::Thunder::Core::Time::Now().Ticks());
 
         auto lambdaFunc = [&](IPTestAdministrator& testAdmin) {
             Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
             client.AddInstance(0);
             Messaging::TraceFactory factory;
-            client.AddFactory(Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
+            client.AddFactory(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
             testAdmin.Sync("setup");
             testAdmin.Sync("writer wrote");
             auto messages = client.PopMessagesAsList();
@@ -552,7 +552,7 @@ namespace Core {
             ASSERT_EQ(messages.size(), 1);
             auto message = messages.front();
 
-            ASSERT_NE(message.first.MessageMetaData().Type(), Thunder::Core::Messaging::MetaData::MessageType::INVALID);
+            ASSERT_NE(message.first.MessageMetaData().Type(), ::Thunder::Core::Messaging::MetaData::MessageType::INVALID);
             ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
 
             string result;
@@ -573,7 +573,7 @@ namespace Core {
         {
             testAdmin.Sync("setup");
             testAdmin.Sync("writer wrote");
-            Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
+            ::Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
             testAdmin.Sync("reader read");
         }
         testAdmin.Sync("done");

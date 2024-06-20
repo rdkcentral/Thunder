@@ -35,16 +35,16 @@ namespace Core {
     {
         std::string fileName {"/tmp/doorbell01"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
-            Thunder::Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-            EXPECT_EQ(doorBell.Wait(Thunder::Core::infinite), Thunder::Core::ERROR_NONE);
-            if (doorBell.Wait(Thunder::Core::infinite) == Thunder::Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
-            EXPECT_EQ(doorBell.Wait(Thunder::Core::infinite), Thunder::Core::ERROR_NONE);
-            if (doorBell.Wait(Thunder::Core::infinite) == Thunder::Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
             }
@@ -57,21 +57,21 @@ namespace Core {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Thunder::Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
             ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
             doorBell.Ring();
             testAdmin.Sync("Second ring");
         }
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST(Core_DoorBell, simpleSetReversed)
     {
         std::string fileName {"/tmp/doorbell02"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
-            Thunder::Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
             ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
@@ -85,21 +85,21 @@ namespace Core {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Thunder::Core::DoorBell doorBell(fileName.c_str());
-            EXPECT_EQ(doorBell.Wait(Thunder::Core::infinite), Thunder::Core::ERROR_NONE);
-            if (doorBell.Wait(Thunder::Core::infinite) == Thunder::Core::ERROR_NONE) {
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
-            EXPECT_EQ(doorBell.Wait(Thunder::Core::infinite), Thunder::Core::ERROR_NONE);
-            if (doorBell.Wait(Thunder::Core::infinite) == Thunder::Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
             }
             doorBell.Relinquish();
         }
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

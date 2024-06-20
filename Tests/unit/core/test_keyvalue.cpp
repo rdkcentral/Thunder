@@ -35,12 +35,12 @@ namespace Core {
         string value = "Adam";
         string key1 = "Age";
        
-        Thunder::Core::KeyValueType<string,string> keyvalue(key);
-        Thunder::Core::KeyValueType<string,string> keyvalue1(key,value);
-        Thunder::Core::KeyValueType<string,string> keyvalue2(keyvalue1);
-        Thunder::Core::KeyValueType<string,string> keyvalue3(key);
+        ::Thunder::Core::KeyValueType<string,string> keyvalue(key);
+        ::Thunder::Core::KeyValueType<string,string> keyvalue1(key,value);
+        ::Thunder::Core::KeyValueType<string,string> keyvalue2(keyvalue1);
+        ::Thunder::Core::KeyValueType<string,string> keyvalue3(key);
         keyvalue3 = keyvalue1;
-        Thunder::Core::KeyValueType<string,string> keyvalue4(key1);
+        ::Thunder::Core::KeyValueType<string,string> keyvalue4(key1);
 
         EXPECT_TRUE(keyvalue3 == keyvalue1);
         EXPECT_TRUE(keyvalue3 != keyvalue4);
@@ -53,13 +53,13 @@ namespace Core {
     TEST(test_textkeyvaluetype, simple_textkeyvaluetype)
     {
        string buffer = "/Service/testing/test";
-       Thunder::Core::TextFragment key;
-       key = Thunder::Core::TextFragment(string(buffer));
-       Thunder::Core::OptionalType<Thunder::Core::TextFragment> value = Thunder::Core::TextFragment(string(buffer));
+       ::Thunder::Core::TextFragment key;
+       key = ::Thunder::Core::TextFragment(string(buffer));
+       ::Thunder::Core::OptionalType<::Thunder::Core::TextFragment> value = ::Thunder::Core::TextFragment(string(buffer));
        const bool CASESENSITIVE = true;
 
-       Thunder::Core::TextKeyValueType<CASESENSITIVE, Thunder::Core::TextFragment> textkeyvaluetype;
-       Thunder::Core::TextKeyValueType<CASESENSITIVE, Thunder::Core::TextFragment> textkeyvaluetype1(key, value);
+       ::Thunder::Core::TextKeyValueType<CASESENSITIVE, ::Thunder::Core::TextFragment> textkeyvaluetype;
+       ::Thunder::Core::TextKeyValueType<CASESENSITIVE, ::Thunder::Core::TextFragment> textkeyvaluetype1(key, value);
     }
 
 } // Core

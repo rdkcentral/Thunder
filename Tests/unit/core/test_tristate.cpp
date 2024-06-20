@@ -31,20 +31,20 @@ namespace Core {
 
     TEST(test_TriState, simple_TriState)
     {
-        Thunder::Core::TriState();
-        Thunder::Core::TriState tristate1("F");
-        Thunder::Core::TriState tristate2("T");
-        Thunder::Core::TriState tristate3("True");
-        Thunder::Core::TriState tristate4("False");
-        Thunder::Core::TriState tristate5(tristate1);
-        Thunder::Core::TriState tristate6 =tristate1;
-        Thunder::Core::TriState tristate7(Thunder::Core::TriState::EnumState::True);
+        ::Thunder::Core::TriState();
+        ::Thunder::Core::TriState tristate1("F");
+        ::Thunder::Core::TriState tristate2("T");
+        ::Thunder::Core::TriState tristate3("True");
+        ::Thunder::Core::TriState tristate4("False");
+        ::Thunder::Core::TriState tristate5(tristate1);
+        ::Thunder::Core::TriState tristate6 =tristate1;
+        ::Thunder::Core::TriState tristate7(::Thunder::Core::TriState::EnumState::True);
 
-        EXPECT_EQ(tristate3.Get(),Thunder::Core::TriState::EnumState::True);
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::True);
         tristate3.Set(false);
-        EXPECT_EQ(tristate3.Get(),Thunder::Core::TriState::EnumState::False);
-        tristate3.Set(Thunder::Core::TriState::EnumState::Unknown);
-        EXPECT_EQ(tristate3.Get(),Thunder::Core::TriState::EnumState::Unknown);
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::False);
+        tristate3.Set(::Thunder::Core::TriState::EnumState::Unknown);
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::Unknown);
     }
 
 } // Core

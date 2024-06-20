@@ -95,7 +95,7 @@ namespace Core {
         return hash;
     }
     template <typename HASHALGORITHM>
-    class SignedFileType : public Thunder::Core::File {
+    class SignedFileType : public ::Thunder::Core::File {
     private:
         static int16_t constexpr BlockSize = 1024;
     public:
@@ -105,14 +105,14 @@ namespace Core {
         SignedFileType<HASHALGORITHM>& operator=(const SignedFileType<HASHALGORITHM>&) = delete;
 
         SignedFileType()
-            : Thunder::Core::File()
+            : ::Thunder::Core::File()
             , _hash()
             , _startPosition(0)
         {
             _hash.Reset();
         }
         SignedFileType(const string& path)
-            : Thunder::Core::File(path)
+            : ::Thunder::Core::File(path)
             , _hash()
             , _startPosition(0)
         {
@@ -127,18 +127,18 @@ namespace Core {
         void Open()
         {
             // Are we opening the file ?
-            if (Thunder::Core::File::IsOpen() == false) {
-                if (Thunder::Core::File::Open() == true) {
+            if (::Thunder::Core::File::IsOpen() == false) {
+                if (::Thunder::Core::File::Open() == true) {
                     _startPosition = 0;
-                    Thunder::Core::File::LoadFileInfo();
-                    Thunder::Core::File::Position(false, _startPosition);
+                    ::Thunder::Core::File::LoadFileInfo();
+                    ::Thunder::Core::File::Position(false, _startPosition);
                 }
             }
         }
         void Close()
         {
-            if (Thunder::Core::File::IsOpen() == true) {
-                Thunder::Core::File::Close();
+            if (::Thunder::Core::File::IsOpen() == true) {
+                ::Thunder::Core::File::Close();
             }
         }
         inline HashType& Hash()
@@ -151,71 +151,71 @@ namespace Core {
         }
         void CreateFileData(const uint8_t data, const uint32_t length)
         {
-            if (Thunder::Core::File::Create() == true) {
+            if (::Thunder::Core::File::Create() == true) {
                 Write(data, length);
             }
         }
         void AppendFileData(const uint8_t data, const uint32_t length)
         {
-            Thunder::Core::File::Append();
+            ::Thunder::Core::File::Append();
             Write(data, length);
         }
         void AppendFileData(const uint8_t data[], const uint32_t length)
         {
-            Thunder::Core::File::Append();
+            ::Thunder::Core::File::Append();
             Write(data, length);
         }
         void ReadFileData(const int64_t position, uint8_t data[], uint32_t& length)
         {
-            if (Thunder::Core::File::IsOpen() != true) {
+            if (::Thunder::Core::File::IsOpen() != true) {
                 Open();
             }
-            if (Thunder::Core::File::IsOpen() == true) {
-                int64_t currentPosition = Thunder::Core::File::Position();
-                Thunder::Core::File::Position(false, position);
-                length = Thunder::Core::File::Read(data, length);
-                Thunder::Core::File::Position(false, currentPosition);
+            if (::Thunder::Core::File::IsOpen() == true) {
+                int64_t currentPosition = ::Thunder::Core::File::Position();
+                ::Thunder::Core::File::Position(false, position);
+                length = ::Thunder::Core::File::Read(data, length);
+                ::Thunder::Core::File::Position(false, currentPosition);
             }
         }
         void DestroyFile()
         {
-            if (Thunder::Core::File::IsOpen() == true) {
+            if (::Thunder::Core::File::IsOpen() == true) {
                 Close();
             }
-            Thunder::Core::File::Destroy();
+            ::Thunder::Core::File::Destroy();
         }
         int64_t FileSize()
         {
-            Thunder::Core::File::LoadFileInfo();
-            return Thunder::Core::File::Size();
+            ::Thunder::Core::File::LoadFileInfo();
+            return ::Thunder::Core::File::Size();
         }
         uint32_t CalculateHash(const uint32_t start, const uint32_t end)
         {
-            uint32_t status = Thunder::Core::ERROR_NONE;
+            uint32_t status = ::Thunder::Core::ERROR_NONE;
             HashType& hash = _hash;
 
             uint8_t   buffer[64];
-            if (Thunder::Core::File::IsOpen() != true) {
+            if (::Thunder::Core::File::IsOpen() != true) {
                 Open();
             }
-            if (Thunder::Core::File::IsOpen() == true) {
-                if ((start < Thunder::Core::File::Size()) && (end <= Thunder::Core::File::Size())) {
-                    uint32_t pos = Thunder::Core::File::Position();
+            if (::Thunder::Core::File::IsOpen() == true) {
+                if ((start < ::Thunder::Core::File::Size()) && (end <= ::Thunder::Core::File::Size())) {
+                    uint32_t pos = ::Thunder::Core::File::Position();
                     uint32_t size = end;
 
-                    Thunder::Core::File::Position(false, start);
+                    ::Thunder::Core::File::Position(false, start);
                     // Read all Data to calculate the HASH/HMAC
                     while (size > 0) {
                         uint16_t chunk = std::min(static_cast<uint16_t>(sizeof(buffer)), static_cast<uint16_t>(size));
-                        Thunder::Core::File::Read(buffer, chunk);
+                        ::Thunder::Core::File::Read(buffer, chunk);
                         hash.Input(buffer, chunk);
                         size -= chunk;
                     }
 
-                    Thunder::Core::File::Position(false, pos);
+                    ::Thunder::Core::File::Position(false, pos);
 
                 } else {
-                    status = Thunder::Core::ERROR_GENERAL;
+                    status = ::Thunder::Core::ERROR_GENERAL;
                     printf("Wrong file position given start = %u end = %u, cross check\n", start, end);
                 }
             }
@@ -259,7 +259,7 @@ namespace Core {
             uint32_t position = 0;
             while (size > 0) {
                 uint16_t chunk = std::min(static_cast<uint16_t>(64), static_cast<uint16_t>(size));
-                Thunder::Core::File::Write(buffer + position, chunk);
+                ::Thunder::Core::File::Write(buffer + position, chunk);
                 size -= chunk;
                 position += chunk;
             }
@@ -268,7 +268,7 @@ namespace Core {
     private:
         HashType _hash;
         int64_t _startPosition;
-        Thunder::Core::File _hashFileStorage;
+        ::Thunder::Core::File _hashFileStorage;
     };
 
     // MD5 Tests
@@ -276,7 +276,7 @@ namespace Core {
     {
         SignedFileType<Crypto::MD5> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::MD5& md5 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_MD5];
@@ -293,7 +293,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_MD5];
         memcpy(thunderHMAC, md5.Result(), Crypto::HASH_MD5);
@@ -308,7 +308,7 @@ namespace Core {
         Crypto::MD5& md5 = signedFile.Hash();
         md5.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from MD5 handle
         Crypto::MD5::Context context = md5.CurrentContext();
@@ -329,7 +329,7 @@ namespace Core {
         Crypto::MD5& md5 = signedFile.Hash();
         md5.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from MD5 handle
         Crypto::MD5::Context context = md5.CurrentContext();
@@ -341,7 +341,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_MD5];
         memcpy(thunderHMAC, md5.Result(), Crypto::HASH_MD5);
@@ -356,7 +356,7 @@ namespace Core {
         Crypto::MD5& md5 = signedFile.Hash();
         md5.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from MD5 handle
         Crypto::MD5::Context context = md5.CurrentContext();
@@ -381,7 +381,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_MD5];
         memcpy(thunderHMAC, md5.Result(), Crypto::HASH_MD5);
@@ -396,7 +396,7 @@ namespace Core {
     {
         SignedFileType<Crypto::SHA1> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::SHA1& sha1 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_SHA1];
@@ -413,7 +413,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA1];
         memcpy(thunderHMAC, sha1.Result(), Crypto::HASH_SHA1);
@@ -428,7 +428,7 @@ namespace Core {
         Crypto::SHA1& sha1 = signedFile.Hash();
         sha1.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA1 handle
         Crypto::SHA1::Context context = sha1.CurrentContext();
@@ -449,7 +449,7 @@ namespace Core {
         Crypto::SHA1& sha1 = signedFile.Hash();
         sha1.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA1 handle
         Crypto::SHA1::Context context = sha1.CurrentContext();
@@ -461,7 +461,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA1];
         memcpy(thunderHMAC, sha1.Result(), Crypto::HASH_SHA1);
@@ -476,7 +476,7 @@ namespace Core {
         Crypto::SHA1& sha1 = signedFile.Hash();
         sha1.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA1 handle
         Crypto::SHA1::Context context = sha1.CurrentContext();
@@ -501,7 +501,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA1];
         memcpy(thunderHMAC, sha1.Result(), Crypto::HASH_SHA1);
@@ -516,7 +516,7 @@ namespace Core {
     {
         SignedFileType<Crypto::SHA224> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::SHA224& sha224 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_SHA224];
@@ -533,7 +533,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA224];
         memcpy(thunderHMAC, sha224.Result(), Crypto::HASH_SHA224);
@@ -548,7 +548,7 @@ namespace Core {
         Crypto::SHA224& sha224 = signedFile.Hash();
         sha224.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
         Crypto::SHA1::Context context = sha224.CurrentContext();
@@ -569,7 +569,7 @@ namespace Core {
         Crypto::SHA224& sha224 = signedFile.Hash();
         sha224.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
         Crypto::SHA224::Context context = sha224.CurrentContext();
@@ -581,7 +581,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA224];
         memcpy(thunderHMAC, sha224.Result(), Crypto::HASH_SHA224);
@@ -596,7 +596,7 @@ namespace Core {
         Crypto::SHA224& sha224 = signedFile.Hash();
         sha224.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA224 handle
         Crypto::SHA224::Context context = sha224.CurrentContext();
@@ -621,7 +621,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA224];
         memcpy(thunderHMAC, sha224.Result(), Crypto::HASH_SHA224);
@@ -636,7 +636,7 @@ namespace Core {
     {
         SignedFileType<Crypto::SHA256> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::SHA256& sha256 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_SHA256];
@@ -652,7 +652,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA256];
         memcpy(thunderHMAC, sha256.Result(), Crypto::HASH_SHA256);
@@ -667,7 +667,7 @@ namespace Core {
         Crypto::SHA256& sha256 = signedFile.Hash();
         sha256.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA256 handle
         Crypto::SHA256::Context context = sha256.CurrentContext();
@@ -688,7 +688,7 @@ namespace Core {
         Crypto::SHA256& sha256 = signedFile.Hash();
         sha256.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA256 handle
         Crypto::SHA256::Context context = sha256.CurrentContext();
@@ -700,7 +700,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA256];
         memcpy(thunderHMAC, sha256.Result(), Crypto::HASH_SHA256);
@@ -716,7 +716,7 @@ namespace Core {
         Crypto::SHA256& sha256 = signedFile.Hash();
         sha256.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA256 handle
         Crypto::SHA256::Context context = sha256.CurrentContext();
@@ -741,7 +741,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA256];
         memcpy(thunderHMAC, sha256.Result(), Crypto::HASH_SHA256);
@@ -756,7 +756,7 @@ namespace Core {
     {
         SignedFileType<Crypto::SHA384> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::SHA384& sha384 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_SHA384];
@@ -773,7 +773,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA384];
         memcpy(thunderHMAC, sha384.Result(), Crypto::HASH_SHA384);
@@ -788,7 +788,7 @@ namespace Core {
         Crypto::SHA384& sha384 = signedFile.Hash();
         sha384.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
         Crypto::SHA384::Context context = sha384.CurrentContext();
@@ -809,7 +809,7 @@ namespace Core {
         Crypto::SHA384& sha384 = signedFile.Hash();
         sha384.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
         Crypto::SHA384::Context context = sha384.CurrentContext();
@@ -821,7 +821,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA384];
         memcpy(thunderHMAC, sha384.Result(), Crypto::HASH_SHA384);
@@ -836,7 +836,7 @@ namespace Core {
         Crypto::SHA384& sha384 = signedFile.Hash();
         sha384.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA384 handle
         Crypto::SHA384::Context context = sha384.CurrentContext();
@@ -861,7 +861,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA384];
         memcpy(thunderHMAC, sha384.Result(), Crypto::HASH_SHA384);
@@ -876,7 +876,7 @@ namespace Core {
     {
         SignedFileType<Crypto::SHA512> signedFile("test.txt");
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
         Crypto::SHA512& sha512 = signedFile.Hash();
 
         uint8_t thunderHMAC[Crypto::HASH_SHA512];
@@ -893,7 +893,7 @@ namespace Core {
 
         signedFile.CreateFileData('B', 25);
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA512];
         memcpy(thunderHMAC, sha512.Result(), Crypto::HASH_SHA512);
@@ -908,7 +908,7 @@ namespace Core {
         Crypto::SHA512& sha512 = signedFile.Hash();
         sha512.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         Crypto::SHA512::Context context = sha512.CurrentContext();
 
@@ -928,7 +928,7 @@ namespace Core {
         Crypto::SHA512& sha512 = signedFile.Hash();
         sha512.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA512 handle
         Crypto::SHA512::Context context = sha512.CurrentContext();
@@ -940,7 +940,7 @@ namespace Core {
         // Append some more data to file
         int64_t start = signedFile.FileSize();
         signedFile.AppendFileData('C', 30);
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA512];
         memcpy(thunderHMAC, sha512.Result(), Crypto::HASH_SHA512);
@@ -955,7 +955,7 @@ namespace Core {
         Crypto::SHA512& sha512 = signedFile.Hash();
         sha512.Reset();
         signedFile.CreateFileData('B', 25);
-        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(0, signedFile.FileSize()), ::Thunder::Core::ERROR_NONE);
 
         // Read current context from SHA512 handle
         Crypto::SHA512::Context context = sha512.CurrentContext();
@@ -980,7 +980,7 @@ namespace Core {
         signedFile.AppendFileData(data, sizeof(data));
 
         // Calculate final hash
-        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(signedFile.CalculateHash(start, signedFile.FileSize() - start), ::Thunder::Core::ERROR_NONE);
 
         uint8_t thunderHMAC[Crypto::HASH_SHA512];
         memcpy(thunderHMAC, sha512.Result(), Crypto::HASH_SHA512);

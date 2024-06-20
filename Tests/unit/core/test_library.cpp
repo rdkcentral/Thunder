@@ -31,7 +31,7 @@ namespace Core {
 
     TEST(Core_Library, simpleSet)
     {
-        Thunder::Core::Library libObj;
+        ::Thunder::Core::Library libObj;
 #ifdef BUILD_ARM
         const string file = _T("/usr/lib/testdata/libhelloworld.so"); // For QEMU
 #else
@@ -39,12 +39,12 @@ namespace Core {
         //const string file =  _T("/usr/lib/libwpe-0.2.so"); //For box.
 #endif
         const TCHAR* function = _T("Test::HelloWorld()");
-        const string file1 = _T("libThunder.so");
-        Thunder::Core::Library LibObj1(file.c_str());
+        const string file1 = _T("lib::Thunder.so");
+        ::Thunder::Core::Library LibObj1(file.c_str());
         LibObj1.LoadFunction(function);
-        Thunder::Core::Library LibObjTest(file1.c_str());
-        Thunder::Core::Library LibObj2(LibObj1);
-        Thunder::Core::Library LibObj3;
+        ::Thunder::Core::Library LibObjTest(file1.c_str());
+        ::Thunder::Core::Library LibObj2(LibObj1);
+        ::Thunder::Core::Library LibObj3;
         LibObj3 = LibObj2;
 
         EXPECT_TRUE(LibObj1.IsLoaded());

@@ -29,18 +29,18 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    class DataFile: public Thunder::Core::DataElementFile
+    class DataFile: public ::Thunder::Core::DataElementFile
     {
     public:
         DataFile() = delete;
 
-        DataFile(Thunder::Core::File& file)
-            : Thunder::Core::DataElementFile(file, Thunder::Core::File::USER_READ)
+        DataFile(::Thunder::Core::File& file)
+            : ::Thunder::Core::DataElementFile(file, ::Thunder::Core::File::USER_READ)
         {
         }
 
         DataFile(string fileName, uint32_t type, uint32_t size)
-            : Thunder::Core::DataElementFile(fileName, type, size)
+            : ::Thunder::Core::DataElementFile(fileName, type, size)
         {
         }
 
@@ -61,7 +61,7 @@ namespace Core {
         errno = 0;
 #endif
 
-        Thunder::Core::File file(fileName);
+        ::Thunder::Core::File file(fileName);
 
         ASSERT_FALSE(file.Exists());
 
@@ -100,7 +100,7 @@ namespace Core {
         EXPECT_EQ(name.c_str(), fileName);
         EXPECT_EQ(obj2.IsValid(), true);
 
-        const Thunder::Core::File& obj1File = obj1.Storage();
+        const ::Thunder::Core::File& obj1File = obj1.Storage();
         EXPECT_STREQ(obj1File.FileName().c_str(), file.FileName().c_str());
 
         obj1.ReloadFileInfo();

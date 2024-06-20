@@ -31,7 +31,7 @@ namespace Core {
 
     TEST(Core_NodeId, simpleSet)
     {
-        Thunder::Core::NodeId nodeId("localhost:80");
+        ::Thunder::Core::NodeId nodeId("localhost:80");
 
         std::cout << "Hostname:           " << nodeId.HostName() << std::endl;
         std::cout << "Type:               " << nodeId.Type() << std::endl;

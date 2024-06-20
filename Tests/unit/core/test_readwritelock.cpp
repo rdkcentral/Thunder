@@ -31,11 +31,11 @@ namespace Core {
 
     TEST(test_ReadWritelock, simpleSet)
     {
-        Thunder::Core::ReadWriteLock readObj;
+        ::Thunder::Core::ReadWriteLock readObj;
         EXPECT_TRUE(readObj.ReadLock());
 
         readObj.ReadUnlock();
-        Thunder::Core::ReadWriteLock writeObj;
+        ::Thunder::Core::ReadWriteLock writeObj;
         EXPECT_TRUE(writeObj.WriteLock());
 
         writeObj.WriteUnlock();

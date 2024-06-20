@@ -38,7 +38,7 @@ namespace Core {
 
     TEST(test_statetrigger, simple_statetrigger)
     {
-        Thunder::Core::StateTrigger<TestState> state(TestState::TEST_READY);
+        ::Thunder::Core::StateTrigger<TestState> state(TestState::TEST_READY);
 
         EXPECT_EQ(state.GetState(),TestState::TEST_READY) << "State not equal to TEST_READY.";
         state.SetState(TestState::TEST_MESSAGE);
@@ -47,15 +47,15 @@ namespace Core {
         EXPECT_FALSE(state.GetState() != TestState::TEST_MESSAGE) << "State is TEST_MESSAGE";
         state = TestState::TEST_READY;
 
-        uint64_t timeOut(Thunder::Core::Time::Now().Add(5).Ticks());
-        uint64_t now(Thunder::Core::Time::Now().Ticks());
+        uint64_t timeOut(::Thunder::Core::Time::Now().Add(5).Ticks());
+        uint64_t now(::Thunder::Core::Time::Now().Ticks());
 
-        state.WaitState(static_cast<uint32_t>(TestState::TEST_INIT),static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+        state.WaitState(static_cast<uint32_t>(TestState::TEST_INIT),static_cast<uint32_t>((timeOut - now) / ::Thunder::Core::Time::TicksPerMillisecond));
 
-        timeOut = Thunder::Core::Time::Now().Add(3).Ticks();
-        now = Thunder::Core::Time::Now().Ticks();
+        timeOut = ::Thunder::Core::Time::Now().Add(3).Ticks();
+        now = ::Thunder::Core::Time::Now().Ticks();
 
-        state.WaitStateClear(static_cast<uint32_t>(TestState::TEST_READY),static_cast<uint32_t>((timeOut - now) / Thunder::Core::Time::TicksPerMillisecond));
+        state.WaitStateClear(static_cast<uint32_t>(TestState::TEST_READY),static_cast<uint32_t>((timeOut - now) / ::Thunder::Core::Time::TicksPerMillisecond));
     }
 
 } // Core

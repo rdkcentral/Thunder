@@ -37,7 +37,7 @@ namespace Core {
 
     TEST(Core_Enumerate, CheckEntries)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum;
         EXPECT_FALSE(testEnum.IsSet());
         for (int i = 0; i < 3; i++) {
             EXPECT_EQ(testEnum.Entry(i)->value, (i == 0 ? TestEnum::ONE : (i == 1 ? TestEnum::TWO : TestEnum::THREE)));
@@ -47,7 +47,7 @@ namespace Core {
 
     TEST(Core_Enumerate, Assignment)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum;
         testEnum.Assignment(true, "three");
         EXPECT_FALSE(testEnum.IsSet());
 
@@ -66,14 +66,14 @@ namespace Core {
         testEnum.Clear();
         EXPECT_FALSE(testEnum.IsSet());
 
-        Thunder::Core::EnumerateType<TestEnum> testEnum1;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum1;
         testEnum.Assignment(true, "three");
 
         EXPECT_FALSE(testEnum != testEnum1);
         EXPECT_TRUE(testEnum != testEnum1.Value());
 
-        Thunder::Core::EnumerateType<TestEnum> testEnum2(testEnum1);
-        Thunder::Core::EnumerateType<TestEnum> testEnum3;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum2(testEnum1);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum3;
         testEnum3 = testEnum1;
         EXPECT_TRUE(testEnum3 == testEnum1);
         testEnum3 = testEnum1.Value(); 
@@ -82,7 +82,7 @@ namespace Core {
     TEST(Core_Enumerate, FromEnumType)
     {
         TestEnum e = TestEnum::TWO;
-        Thunder::Core::EnumerateType<TestEnum> testEnum(e);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(e);
         EXPECT_EQ(testEnum, e);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::TWO);
@@ -91,7 +91,7 @@ namespace Core {
 
     TEST(Core_Enumerate, FromValue)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum(1);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(1);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::TWO);
         EXPECT_STREQ(testEnum.Data(), "TWO");
@@ -102,7 +102,7 @@ namespace Core {
 
     TEST(Core_Enumerate, FromStringCaseSensitiveTrue)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum("THREE");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("THREE");
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -110,13 +110,13 @@ namespace Core {
 
     TEST(Core_Enumerate, FromStringCaseSensitiveFalse)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("three");
         EXPECT_FALSE(testEnum.IsSet());
     }
 
     TEST(Core_Enumerate, FromStringCaseInsensitive)
     {
-        Thunder::Core::EnumerateType<TestEnum> testEnum("three", false);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("three", false);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -124,8 +124,8 @@ namespace Core {
 
     TEST(Core_Enumerate, FromTextFragmentCaseSensitiveTrue)
     {
-        Thunder::Core::TextFragment testFragment("THREE");
-        Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
+        ::Thunder::Core::TextFragment testFragment("THREE");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -133,15 +133,15 @@ namespace Core {
 
     TEST(Core_Enumerate, FromTextFragmentCaseSensitiveFalse)
     {
-        Thunder::Core::TextFragment testFragment("three");
-        Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
+        ::Thunder::Core::TextFragment testFragment("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
         EXPECT_FALSE(testEnum.IsSet());
     }
 
     TEST(Core_Enumerate, FromTextFragmentCaseInsensitive)
     {
-        Thunder::Core::TextFragment testFragment("three");
-        Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment, false);
+        ::Thunder::Core::TextFragment testFragment("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment, false);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");

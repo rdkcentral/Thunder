@@ -31,17 +31,17 @@ namespace Core {
 
     TEST(test_TextReader, simple_TextReader)
     {
-        Thunder::Core::TextReader();
+        ::Thunder::Core::TextReader();
 
         uint8_t* val = (uint8_t*) "Checking the fragment";
-        Thunder::Core::DataElement element(21,val);
+        ::Thunder::Core::DataElement element(21,val);
 
-        Thunder::Core::TextReader Reader(element);
-        Thunder::Core::TextReader Reader1(Reader);
+        ::Thunder::Core::TextReader Reader(element);
+        ::Thunder::Core::TextReader Reader1(Reader);
 
         Reader.Reset();
         EXPECT_FALSE(Reader.EndOfText());
-        Thunder::Core::TextFragment fragment = Reader.ReadLine();
+        ::Thunder::Core::TextFragment fragment = Reader.ReadLine();
         EXPECT_STREQ(fragment.Data(),"Checking the fragment");
     }
 

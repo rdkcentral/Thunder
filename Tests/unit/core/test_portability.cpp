@@ -31,14 +31,14 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    class ThreadClass : public Thunder::Core::Thread {
+    class ThreadClass : public ::Thunder::Core::Thread {
     public:
         ThreadClass() = delete;
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
         ThreadClass(std::thread::id parentId)
-            : Thunder::Core::Thread(Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
+            : ::Thunder::Core::Thread(::Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
             , _threadDone(false)
             , _parentId(parentId)
         {
@@ -55,7 +55,7 @@ namespace Core {
                 _threadDone = true;
                 ::SleepMs(50);
             }
-            return (Thunder::Core::infinite);
+            return (::Thunder::Core::infinite);
         }
 
     private:
@@ -67,10 +67,10 @@ namespace Core {
     {
         std::string input = "hello";
         std::string output;
-        Thunder::Core::ToUpper(input,output);
+        ::Thunder::Core::ToUpper(input,output);
         EXPECT_STREQ(output.c_str(),_T("HELLO"));
 
-        Thunder::Core::ToUpper(input);
+        ::Thunder::Core::ToUpper(input);
         EXPECT_STREQ(input.c_str(),_T("HELLO"));
     }
 
@@ -78,10 +78,10 @@ namespace Core {
     {
         std::string input = "HELLO";
         std::string output;
-        Thunder::Core::ToLower(input,output);
+        ::Thunder::Core::ToLower(input,output);
         EXPECT_STREQ(output.c_str(),_T("hello"));
         
-        Thunder::Core::ToLower(input);
+        ::Thunder::Core::ToLower(input);
         EXPECT_STREQ(input.c_str(),_T("hello"));
     }
 
@@ -110,13 +110,13 @@ namespace Core {
 
     TEST(test_error, simple_error)
     {
-        EXPECT_STREQ(ErrorToString(Thunder::Core::ERROR_NONE),"ERROR_NONE");
+        EXPECT_STREQ(ErrorToString(::Thunder::Core::ERROR_NONE),"ERROR_NONE");
     }
 
     TEST(test_void, simple_void)
     {
-        Thunder::Core::Void v;
-        Thunder::Core::Void v2 = v;
+        ::Thunder::Core::Void v;
+        ::Thunder::Core::Void v2 = v;
     }
 
 } // Core

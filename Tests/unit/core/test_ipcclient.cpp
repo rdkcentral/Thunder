@@ -36,21 +36,21 @@ namespace Core {
         std::string connector = _T("/tmp/testserver");
 
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Thunder::Core::NodeId serverNode(connector.c_str());
+            ::Thunder::Core::NodeId serverNode(connector.c_str());
 
             uint32_t error;
 
-            Thunder::Core::ProxyType<Thunder::Core::FactoryType<Thunder::Core::IIPC, uint32_t> > factory(Thunder::Core::ProxyType<Thunder::Core::FactoryType<Thunder::Core::IIPC, uint32_t> >::Create());
-            Thunder::Core::IPCChannelServerType<Thunder::Core::Void, false> serverChannel(serverNode, 512, factory);
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::IPCChannelServerType<::Thunder::Core::Void, false> serverChannel(serverNode, 512, factory);
             error = serverChannel.Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
             testAdmin.Sync("done testing");
 
             error = serverChannel.Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             serverChannel.Cleanup();
 
@@ -63,21 +63,21 @@ namespace Core {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Thunder::Core::NodeId clientNode(connector.c_str());
+            ::Thunder::Core::NodeId clientNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
 
-            Thunder::Core::ProxyType<Thunder::Core::FactoryType<Thunder::Core::IIPC, uint32_t> > factory(Thunder::Core::ProxyType<Thunder::Core::FactoryType<Thunder::Core::IIPC, uint32_t> >::Create());
-            Thunder::Core::IPCChannelClientType<Thunder::Core::Void, false, false> clientChannel(clientNode, 512, factory);
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> clientChannel(clientNode, 512, factory);
             error = clientChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             testAdmin.Sync("setup client");
 
             error = clientChannel.Close(1000);
-            EXPECT_EQ(error, Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             factory->DestroyFactories();
-            Thunder::Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
     }

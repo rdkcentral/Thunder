@@ -184,7 +184,7 @@ namespace Core {
     {
         // Call dispose to ensure there is no any resource handler registered to
         // avoid hang on the poll
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
 
         std::string tracePath = "/tmp/tracebuffer01";
         auto lambdaFunc = [tracePath](IPTestAdministrator & testAdmin) {

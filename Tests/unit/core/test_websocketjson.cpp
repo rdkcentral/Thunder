@@ -35,13 +35,13 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    class Message : public Thunder::Core::JSON::Container {
+    class Message : public ::Thunder::Core::JSON::Container {
     public:
         Message(const Message&) = delete;
 	    Message& operator= (const Message&) = delete;
 
 	    Message()
-            : Thunder::Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , EventType()
             , Event()
         {
@@ -54,17 +54,17 @@ namespace Core {
         }
 
     public:
-	    Thunder::Core::JSON::String EventType;
-	    Thunder::Core::JSON::String Event;
+	    ::Thunder::Core::JSON::String EventType;
+	    ::Thunder::Core::JSON::String Event;
     };
 
-    class Factory : public Thunder::Core::ProxyPoolType<Message> {
+    class Factory : public ::Thunder::Core::ProxyPoolType<Message> {
     public:
 	    Factory() = delete;
 	    Factory(const Factory&) = delete;
 	    Factory& operator= (const Factory&) = delete;
 
-	    Factory(const uint32_t number) : Thunder::Core::ProxyPoolType<Message>(number)
+	    Factory(const uint32_t number) : ::Thunder::Core::ProxyPoolType<Message>(number)
         {
 	    }
 
@@ -73,23 +73,23 @@ namespace Core {
 	    }
 
     public:
-	    Thunder::Core::ProxyType<Thunder::Core::JSON::IElement> Element(const string&)
+	    ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement> Element(const string&)
         {
-		    return (Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>(Thunder::Core::ProxyPoolType<Message>::Element()));
+		    return (::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(::Thunder::Core::ProxyPoolType<Message>::Element()));
 	    }
     };
 
     template<typename INTERFACE>
-    class JsonSocketServer : public Thunder::Core::StreamJSONType< Web::WebSocketServerType<Thunder::Core::SocketStream>, Factory&, INTERFACE> {
+    class JsonSocketServer : public ::Thunder::Core::StreamJSONType< Web::WebSocketServerType<::Thunder::Core::SocketStream>, Factory&, INTERFACE> {
     private:
-	    typedef Thunder::Core::StreamJSONType< Web::WebSocketServerType<Thunder::Core::SocketStream>, Factory&, INTERFACE> BaseClass;
+	    typedef ::Thunder::Core::StreamJSONType< Web::WebSocketServerType<::Thunder::Core::SocketStream>, Factory&, INTERFACE> BaseClass;
 
     public:
         JsonSocketServer() = delete;
         JsonSocketServer(const JsonSocketServer&) = delete;
 	    JsonSocketServer& operator=(const JsonSocketServer&) = delete;
 
-        JsonSocketServer(const SOCKET& socket, const Thunder::Core::NodeId& remoteNode, Thunder::Core::SocketServerType<JsonSocketServer<INTERFACE>>*)
+        JsonSocketServer(const SOCKET& socket, const ::Thunder::Core::NodeId& remoteNode, ::Thunder::Core::SocketServerType<JsonSocketServer<INTERFACE>>*)
             : BaseClass(2, _objectFactory, false, false, false, socket, remoteNode, 512, 512)
 		    , _objectFactory(1)
         {
@@ -119,12 +119,12 @@ namespace Core {
             return (this->IsOpen());
         }
 
-        virtual void Received(Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>& jsonObject)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
         {
             this->Submit(jsonObject);
         }
 
-        virtual void Send(Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>& jsonObject)
+        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
         {
 	    }
 
@@ -150,16 +150,16 @@ namespace Core {
     bool JsonSocketServer<INTERFACE>::_done = false;
 
     template<typename INTERFACE>
-    class JsonSocketClient : public Thunder::Core::StreamJSONType<Web::WebSocketClientType<Thunder::Core::SocketStream>, Factory&, INTERFACE> {
+    class JsonSocketClient : public ::Thunder::Core::StreamJSONType<Web::WebSocketClientType<::Thunder::Core::SocketStream>, Factory&, INTERFACE> {
     private:
-		typedef Thunder::Core::StreamJSONType<Web::WebSocketClientType<Thunder::Core::SocketStream>, Factory&, INTERFACE> BaseClass;
+		typedef ::Thunder::Core::StreamJSONType<Web::WebSocketClientType<::Thunder::Core::SocketStream>, Factory&, INTERFACE> BaseClass;
 
     public:
         JsonSocketClient() = delete;
         JsonSocketClient(const JsonSocketClient&) = delete;
         JsonSocketClient& operator=(const JsonSocketClient&) = delete;
 
-        JsonSocketClient(const Thunder::Core::NodeId& remoteNode)
+        JsonSocketClient(const ::Thunder::Core::NodeId& remoteNode)
 		    : BaseClass(5, _objectFactory, _T(""), _T(""), _T(""), _T(""), false, true, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
             , _objectFactory(2)
             , _dataPending(false, false)
@@ -171,7 +171,7 @@ namespace Core {
         }
 
     public:
-	    virtual void Received(Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>& jsonObject)
+	    virtual void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
 	    {
 		    string textElement;
 		    jsonObject->ToString(textElement);
@@ -179,7 +179,7 @@ namespace Core {
             _dataPending.Unlock();
         }
 
-        virtual void Send(Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>& jsonObject)
+        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
 	    {
         }
 
@@ -192,7 +192,7 @@ namespace Core {
 		    return (true);
         }
 
-        Thunder::Core::ProxyType<Thunder::Core::JSON::IElement> Element()
+        ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement> Element()
         {
             return _objectFactory.Element("");
         }
@@ -211,20 +211,20 @@ namespace Core {
     private:
         Factory _objectFactory;
         string _dataReceived;
-        mutable Thunder::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
     };
 
     TEST(WebSocket, DISABLED_Json)
     {
         std::string connector {"/tmp/wpewebsocketjson0"};
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Thunder::Core::SocketServerType<JsonSocketServer<Thunder::Core::JSON::IElement>> jsonWebSocketServer(Thunder::Core::NodeId(connector.c_str()));
-            jsonWebSocketServer.Open(Thunder::Core::infinite);
+            ::Thunder::Core::SocketServerType<JsonSocketServer<::Thunder::Core::JSON::IElement>> jsonWebSocketServer(::Thunder::Core::NodeId(connector.c_str()));
+            jsonWebSocketServer.Open(::Thunder::Core::infinite);
             testAdmin.Sync("setup server");
 
-            std::unique_lock<std::mutex> lk(JsonSocketServer<Thunder::Core::JSON::IElement>::_mutex);
-            while (!JsonSocketServer<Thunder::Core::JSON::IElement>::GetState()) {
-                JsonSocketServer<Thunder::Core::JSON::IElement>::_cv.wait(lk);
+            std::unique_lock<std::mutex> lk(JsonSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
+            while (!JsonSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
+                JsonSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
             }
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");
@@ -237,24 +237,24 @@ namespace Core {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            Thunder::Core::ProxyType<Message> sendObject = Thunder::Core::ProxyType<Message>::Create();
+            ::Thunder::Core::ProxyType<Message> sendObject = ::Thunder::Core::ProxyType<Message>::Create();
             sendObject->EventType = _T("Test");
             sendObject->Event = _T("TestSend");
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JsonSocketClient<Thunder::Core::JSON::IElement> jsonWebSocketClient(Thunder::Core::NodeId(connector.c_str()));
-            jsonWebSocketClient.Open(Thunder::Core::infinite);
+            JsonSocketClient<::Thunder::Core::JSON::IElement> jsonWebSocketClient(::Thunder::Core::NodeId(connector.c_str()));
+            jsonWebSocketClient.Open(::Thunder::Core::infinite);
             testAdmin.Sync("server open");
-            jsonWebSocketClient.Submit(Thunder::Core::ProxyType<Thunder::Core::JSON::IElement>(sendObject));
+            jsonWebSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
             jsonWebSocketClient.Wait();
             string received;
             jsonWebSocketClient.Retrieve(received);
             EXPECT_STREQ(sendString.c_str(), received.c_str());
-            jsonWebSocketClient.Close(Thunder::Core::infinite);
+            jsonWebSocketClient.Close(::Thunder::Core::infinite);
             testAdmin.Sync("client done");
         }
-        Thunder::Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

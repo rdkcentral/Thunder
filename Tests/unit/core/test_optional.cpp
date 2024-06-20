@@ -31,22 +31,22 @@ namespace Core {
 
     TEST(test_optional, simple_test)
     {
-        Thunder::Core::OptionalType<int> obj;
+        ::Thunder::Core::OptionalType<int> obj;
         int type = obj;
         EXPECT_EQ(type, 0);
         obj.Clear();
         EXPECT_FALSE(obj.IsSet());
-        Thunder::Core::OptionalType<string> obj1("request");
-        Thunder::Core::OptionalType<string> obj2(obj1);
+        ::Thunder::Core::OptionalType<string> obj1("request");
+        ::Thunder::Core::OptionalType<string> obj2(obj1);
         EXPECT_TRUE(obj2 == obj1);
         EXPECT_TRUE(obj2.Value() == obj1.Value());
         EXPECT_TRUE(obj1.IsSet());
-        const Thunder::Core::OptionalType<string> obj3;
-        Thunder::Core::OptionalType<string> obj4;
+        const ::Thunder::Core::OptionalType<string> obj3;
+        ::Thunder::Core::OptionalType<string> obj4;
         obj4 = obj3;
-        const Thunder::Core::OptionalType<int> obj5;
-        const Thunder::Core::OptionalType<int> objSample = 40;
-        Thunder::Core::OptionalType<int> object;
+        const ::Thunder::Core::OptionalType<int> obj5;
+        const ::Thunder::Core::OptionalType<int> objSample = 40;
+        ::Thunder::Core::OptionalType<int> object;
         object = 20;
         EXPECT_TRUE(objSample != object.Value());
         EXPECT_TRUE(objSample != obj5);

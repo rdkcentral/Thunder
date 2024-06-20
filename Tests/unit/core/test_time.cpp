@@ -79,7 +79,7 @@ namespace Core {
 #ifdef __POSIX__
         struct timespec ts;
         timespec_get(&ts, TIME_UTC);
-        Thunder::Core::Time time(ts);
+        ::Thunder::Core::Time time(ts);
 
         string local;
         time.ToString(local, true);
@@ -99,12 +99,12 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time1;
-        Thunder::Core::Time orig(1969,11, 1, 9, 10, 11, 500, true);
+        ::Thunder::Core::Time time1;
+        ::Thunder::Core::Time orig(1969,11, 1, 9, 10, 11, 500, true);
         EXPECT_EQ(orig.IsValid(), true);
         time1 = orig;
         EXPECT_EQ(time1.IsValid(), true);
-        Thunder::Core::Time time2(orig);
+        ::Thunder::Core::Time time2(orig);
         EXPECT_EQ(time2.IsValid(), true);
 
         string timeString;
@@ -137,16 +137,16 @@ namespace Core {
     }
     TEST(Core_Time, MilliSeconds)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-        time = Thunder::Core::Time(2004, 2, 29, 11, 30, 23, 100, false);
+        time = ::Thunder::Core::Time(2004, 2, 29, 11, 30, 23, 100, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
-        time = Thunder::Core::Time(2000, 11, 2, 11, 30, 23, 823, false);
+        time = ::Thunder::Core::Time(2000, 11, 2, 11, 30, 23, 823, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(823));
-        time = Thunder::Core::Time(2000, 12, 2, 11, 30, 23, 999, false);
+        time = ::Thunder::Core::Time(2000, 12, 2, 11, 30, 23, 999, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
     }
@@ -156,16 +156,16 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-        time = Thunder::Core::Time(2000, 2, 28, 11, 30, 23, 100, true);
+        time = ::Thunder::Core::Time(2000, 2, 28, 11, 30, 23, 100, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(100));
-        time = Thunder::Core::Time(2000, 3, 2, 11, 30, 23, 923, true);
+        time = ::Thunder::Core::Time(2000, 3, 2, 11, 30, 23, 923, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(923));
-        time = Thunder::Core::Time(2000, 5, 2, 11, 30, 23, 999, true);
+        time = ::Thunder::Core::Time(2000, 5, 2, 11, 30, 23, 999, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(999));
 
@@ -174,19 +174,19 @@ namespace Core {
     }
     TEST(Core_Time, Seconds)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 23);
-        time =  Thunder::Core::Time(1970, 2, 24, 12, 45, 58, 21, false);
+        time =  ::Thunder::Core::Time(1970, 2, 24, 12, 45, 58, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 58);
-        time =  Thunder::Core::Time(2000, 1, 24, 14, 1, 59, 21, false);
+        time =  ::Thunder::Core::Time(2000, 1, 24, 14, 1, 59, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 59);
-        time =  Thunder::Core::Time(2021, 2, 28, 23, 15, 0, 21, false);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 23, 15, 0, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 0);
-        time =  Thunder::Core::Time(2021, 3, 31, 0, 6, 39, 21, false);
+        time =  ::Thunder::Core::Time(2021, 3, 31, 0, 6, 39, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 39);
     }
@@ -196,25 +196,25 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 2, 11, 46, 6, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 46, 6, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 6);
-        time =  Thunder::Core::Time(1970, 2, 13, 12, 1, 23, 21, true);
+        time =  ::Thunder::Core::Time(1970, 2, 13, 12, 1, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 23);
-        time =  Thunder::Core::Time(2000, 1, 2, 15, 59, 0, 21, true);
+        time =  ::Thunder::Core::Time(2000, 1, 2, 15, 59, 0, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 0);
-        time =  Thunder::Core::Time(2021, 4, 30, 1, 30, 59, 21, true);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 1, 30, 59, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 59);
-        time =  Thunder::Core::Time(2021, 6, 3, 22, 59, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 6, 3, 22, 59, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 23);
-        time =  Thunder::Core::Time(2021, 11, 30, 23, 33, 18, 21, true);
+        time =  ::Thunder::Core::Time(2021, 11, 30, 23, 33, 18, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 18);
-        time =  Thunder::Core::Time(2021, 7, 3, 22, 59, 0, 21, true);
+        time =  ::Thunder::Core::Time(2021, 7, 3, 22, 59, 0, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Seconds(), 0);
 
@@ -223,25 +223,25 @@ namespace Core {
     }
     TEST(Core_Time, Minutes)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 30);
-        time =  Thunder::Core::Time(1971, 12, 31, 12, 45, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 12, 31, 12, 45, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 45);
-        time =  Thunder::Core::Time(2021, 4, 30, 1, 30, 56, 21, false);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 1, 30, 56, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 30);
-        time =  Thunder::Core::Time(2021, 2, 6, 23, 1, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 2, 6, 23, 1, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 1);
-        time =  Thunder::Core::Time(2021, 2, 26, 22, 45, 45, 21, false);
+        time =  ::Thunder::Core::Time(2021, 2, 26, 22, 45, 45, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 45);
-        time =  Thunder::Core::Time(1981, 1, 30, 23, 0, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 1, 30, 23, 0, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 0);
-        time =  Thunder::Core::Time(1981, 1, 30, 23, 0, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 1, 30, 23, 0, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 0);
     }
@@ -251,28 +251,28 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 30, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 30, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 30);
-        time =  Thunder::Core::Time(1971, 11, 1, 12, 0, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 11, 1, 12, 0, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 0);
-        time =  Thunder::Core::Time(2000, 1, 20, 15, 10, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 1, 20, 15, 10, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 10);
-        time =  Thunder::Core::Time(2021, 4, 30, 2, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 2, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 30);
-        time =  Thunder::Core::Time(2021, 2, 28, 22, 0, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 22, 0, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 0);
-        time =  Thunder::Core::Time(2021, 2, 28, 22, 0, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 22, 0, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 0);
-        time =  Thunder::Core::Time(2021, 2, 3, 23, 34, 18, 21, true);
+        time =  ::Thunder::Core::Time(2021, 2, 3, 23, 34, 18, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 34);
-        time =  Thunder::Core::Time(1981, 1, 31, 23, 59, 59, 21, true);
+        time =  ::Thunder::Core::Time(1981, 1, 31, 23, 59, 59, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Minutes(), 59);
 
@@ -281,25 +281,25 @@ namespace Core {
     }
     TEST(Core_Time, Hours)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 11);
-        time =  Thunder::Core::Time(1972, 2, 29, 12, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1972, 2, 29, 12, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 12);
-        time =  Thunder::Core::Time(2000, 1, 26, 14, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 1, 26, 14, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 14);
-        time =  Thunder::Core::Time(2021, 4, 30, 0, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 0, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 0);
-        time =  Thunder::Core::Time(2021, 5, 31, 23, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 5, 31, 23, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 23);
-        time =  Thunder::Core::Time(2021, 6, 30, 0, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 6, 30, 0, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 0);
-        time =  Thunder::Core::Time(1981, 1, 17, 0, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 1, 17, 0, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 0);
     }
@@ -309,25 +309,25 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 2, 11, 56, 46, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 56, 46, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 10);
-        time =  Thunder::Core::Time(1971, 9, 12, 12, 10, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 9, 12, 12, 10, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 11);
-        time =  Thunder::Core::Time(2000, 2, 29, 15, 10, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 2, 29, 15, 10, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 14);
-        time =  Thunder::Core::Time(2021, 5, 28, 23, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 5, 28, 23, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 21);
-        time =  Thunder::Core::Time(2021, 5, 28, 0, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 5, 28, 0, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 22);
-        time =  Thunder::Core::Time(2021, 1, 10, 22, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 1, 10, 22, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 21);
-        time =  Thunder::Core::Time(2021, 7, 31, 1, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 7, 31, 1, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Hours(), 23);
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -335,22 +335,22 @@ namespace Core {
     }
     TEST(Core_Time, Day)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 2);
-        time =  Thunder::Core::Time(1971, 2, 25, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 2, 25, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 25);
-        time =  Thunder::Core::Time(2000, 4, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 4, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 30);
-        time =  Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 28);
-        time =  Thunder::Core::Time(2021, 5, 31, 20, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 5, 31, 20, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 31);
-        time =  Thunder::Core::Time(1981, 1, 31, 23, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 1, 31, 23, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 31);
     }
@@ -360,22 +360,22 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 4, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 4, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 4);
-        time =  Thunder::Core::Time(1976, 2, 29, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1976, 2, 29, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 29);
-        time =  Thunder::Core::Time(2000, 1, 31, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 1, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 31);
-        time =  Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 30);
-        time =  Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 28);
-        time =  Thunder::Core::Time(1981, 6, 24, 23, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1981, 6, 24, 23, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Day(), 24);
 
@@ -384,22 +384,22 @@ namespace Core {
     }
     TEST(Core_Time, WeekDayName)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Sun");
-        time =  Thunder::Core::Time(1971, 2, 1, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 2, 1, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Mon");
-        time =  Thunder::Core::Time(2000, 3, 25, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 3, 25, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Sat");
-        time =  Thunder::Core::Time(2021, 4, 28, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 4, 28, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Wed");
-        time =  Thunder::Core::Time(2024, 2, 29, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2024, 2, 29, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Thu");
-        time =  Thunder::Core::Time(1981, 7, 13, 1, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 7, 13, 1, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Mon");
     }
@@ -409,22 +409,22 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 3, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 3, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Mon");
-        time =  Thunder::Core::Time(1971, 2, 2, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 2, 2, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Tue");
-        time =  Thunder::Core::Time(2000, 3, 31, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 3, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Fri");
-        time =  Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Fri");
-        time =  Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 2, 28, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Sun");
-        time =  Thunder::Core::Time(1981, 1, 31, 23, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1981, 1, 31, 23, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.WeekDayName(), "Sat");
 
@@ -433,22 +433,22 @@ namespace Core {
     }
     TEST(Core_Time, Month)
     {
-        Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 1);
-        time =  Thunder::Core::Time(1971, 2, 2, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 2, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 2);
-        time =  Thunder::Core::Time(2000, 3, 31, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 3, 31, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 3);
-        time =  Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 4);
-        time =  Thunder::Core::Time(2021, 7, 28, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 7, 28, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 7);
-        time =  Thunder::Core::Time(1981, 11, 30, 23, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 11, 30, 23, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 11);
     }
@@ -458,22 +458,22 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 9, 1, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 9, 1, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 9);
-        time =  Thunder::Core::Time(1971, 1, 2, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 1, 2, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 1);
-        time =  Thunder::Core::Time(2000, 8, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 8, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 8);
-        time =  Thunder::Core::Time(2021, 11, 28, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 11, 28, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 11);
-        time =  Thunder::Core::Time(2021, 6, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 6, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 6);
-        time =  Thunder::Core::Time(1981, 12, 31, 23, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1981, 12, 31, 23, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Month(), 12);
 
@@ -482,25 +482,25 @@ namespace Core {
     }
     TEST(Core_Time, MonthName)
     {
-        Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Jan");
-        time =  Thunder::Core::Time(1971, 3, 2, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 3, 2, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Mar");
-        time =  Thunder::Core::Time(2000, 5, 31, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 5, 31, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "May");
-        time =  Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 4, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Apr");
-        time =  Thunder::Core::Time(2021, 1, 12, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 1, 12, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Jan");
-        time =  Thunder::Core::Time(1983, 6, 30, 22, 59, 23, 21, false);
+        time =  ::Thunder::Core::Time(1983, 6, 30, 22, 59, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Jun");
-        time =  Thunder::Core::Time(1981, 7, 27, 23, 59, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 7, 27, 23, 59, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Jul");
     }
@@ -510,25 +510,25 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 1, 31, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 1, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Jan");
-        time =  Thunder::Core::Time(1971, 2, 28, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 2, 28, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Feb");
-        time =  Thunder::Core::Time(2000, 8, 10, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 8, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Aug");
-        time =  Thunder::Core::Time(2021, 9, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 9, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Sep");
-        time =  Thunder::Core::Time(2021, 10, 31, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 10, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Oct");
-        time =  Thunder::Core::Time(1981, 11, 26, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1981, 11, 26, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Nov");
-        time =  Thunder::Core::Time(1990, 12, 31, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1990, 12, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_STREQ(time.MonthName(), "Dec");
 
@@ -537,22 +537,22 @@ namespace Core {
     }
     TEST(Core_Time, Year)
     {
-        Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-        time =  Thunder::Core::Time(1971, 2, 28, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1971, 2, 28, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
-        time =  Thunder::Core::Time(2000, 4, 10, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 4, 10, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-        time =  Thunder::Core::Time(2021, 6, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2021, 6, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
-        time =  Thunder::Core::Time(2022, 12, 31, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2022, 12, 31, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2022));
-        time =  Thunder::Core::Time(1981, 9, 14, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1981, 9, 14, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(1981));
     }
@@ -562,22 +562,22 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2000, 3, 1, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 3, 1, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2000));
-        time =  Thunder::Core::Time(1971, 5, 25, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1971, 5, 25, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(1971));
-        time =  Thunder::Core::Time(2002, 7, 20, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2002, 7, 20, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2002));
-        time =  Thunder::Core::Time(2021, 8, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2021, 8, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2021));
-        time =  Thunder::Core::Time(2025, 12, 31, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2025, 12, 31, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(2025));
-        time =  Thunder::Core::Time(1981, 10, 10, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(1981, 10, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.Year(), static_cast<uint32_t>(1981));
 
@@ -586,22 +586,22 @@ namespace Core {
     }
     TEST(Core_Time, DayOfYear)
     {
-        Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2000, 1, 1, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 0);
-        time =  Thunder::Core::Time(2000, 2, 28, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 2, 28, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 58);
-        time =  Thunder::Core::Time(2000, 3, 25, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 3, 25, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 84);
-        time =  Thunder::Core::Time(2000, 4, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 4, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 120);
-        time =  Thunder::Core::Time(2000, 5, 31, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 5, 31, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 151);
-        time =  Thunder::Core::Time(2000, 6, 30, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2000, 6, 30, 11, 30, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 181);
     }
@@ -611,22 +611,22 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time time(2002, 7, 1, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2002, 7, 1, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 181);
-        time =  Thunder::Core::Time(2000, 8, 10, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 8, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 222);
-        time =  Thunder::Core::Time(2000, 9, 25, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 9, 25, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 268);
-        time =  Thunder::Core::Time(2000, 10, 29, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 10, 29, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 302);
-        time =  Thunder::Core::Time(2000, 11, 30, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 11, 30, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 334);
-        time =  Thunder::Core::Time(2000, 12, 6, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 12, 6, 11, 30, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfYear(), 340);
 
@@ -636,27 +636,27 @@ namespace Core {
     TEST(Core_Time, DayOfWeek)
     {
         // Thu Jan  1 01:01:01 2004
-        Thunder::Core::Time time(2004, 1, 1, 1, 1, 1, 21, false);
+        ::Thunder::Core::Time time(2004, 1, 1, 1, 1, 1, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 4);
         // Thu Jan  1 11:30:24 2004
-        time = Thunder::Core::Time(2004, 1, 1, 11, 30, 24, 21, false);
+        time = ::Thunder::Core::Time(2004, 1, 1, 11, 30, 24, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 4);
         // Thu Jun 20 20:20:22 2019
-        time =  Thunder::Core::Time(2019, 6, 20, 20, 20, 22, 21, false);
+        time =  ::Thunder::Core::Time(2019, 6, 20, 20, 20, 22, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 4);
         // Mon Jul  1 13:40:33 2019
-        time =  Thunder::Core::Time(2019, 5, 31, 13, 40, 33, 21, false);
+        time =  ::Thunder::Core::Time(2019, 5, 31, 13, 40, 33, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 5);
         // Mon Aug 31 11:50:31 2015
-        time =  Thunder::Core::Time(2015, 8, 31, 11, 50, 31, 21, false);
+        time =  ::Thunder::Core::Time(2015, 8, 31, 11, 50, 31, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 1);
         // Tue Sep  1 11:50:23 2015
-        time =  Thunder::Core::Time(2015, 8, 31, 11, 50, 23, 21, false);
+        time =  ::Thunder::Core::Time(2015, 8, 31, 11, 50, 23, 21, false);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 1);
     }
@@ -667,27 +667,27 @@ namespace Core {
         tzset();
 
         // Thu Jan  1 01:01:01 2004
-        Thunder::Core::Time time(2004, 1, 1, 1, 1, 1, 21, true);
+        ::Thunder::Core::Time time(2004, 1, 1, 1, 1, 1, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 4);
         // Thu Jan  1 11:30:24 2004
-        time = Thunder::Core::Time(2004, 5, 1, 11, 30, 24, 21, true);
+        time = ::Thunder::Core::Time(2004, 5, 1, 11, 30, 24, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 6);
         // Thu Jun 20 20:20:22 2019
-        time =  Thunder::Core::Time(2019, 6, 20, 20, 20, 22, 21, true);
+        time =  ::Thunder::Core::Time(2019, 6, 20, 20, 20, 22, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 4);
         // Mon Jul  1 13:40:33 2019
-        time =  Thunder::Core::Time(2019, 7, 31, 13, 40, 33, 21, true);
+        time =  ::Thunder::Core::Time(2019, 7, 31, 13, 40, 33, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 3);
         // Mon Aug 31 11:50:31 2015
-        time =  Thunder::Core::Time(2015, 8, 31, 11, 50, 31, 21, true);
+        time =  ::Thunder::Core::Time(2015, 8, 31, 11, 50, 31, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 1);
         // Tue Sep  1 11:50:23 2015
-        time =  Thunder::Core::Time(2015, 9, 30, 11, 50, 23, 21, true);
+        time =  ::Thunder::Core::Time(2015, 9, 30, 11, 50, 23, 21, true);
         EXPECT_EQ(time.IsValid(), true);
         EXPECT_EQ(time.DayOfWeek(), 3);
 
@@ -696,63 +696,63 @@ namespace Core {
     }
     TEST(Core_Time, Ctor_TimeValues_InvalidValues)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 1000, false);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 1000, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 30, 67, 21, false);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 30, 67, 21, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 100, 23, 21, false);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 100, 23, 21, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 25, 30, 23, 10, false);
+        time = ::Thunder::Core::Time(2000, 1, 2, 25, 30, 23, 10, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 32, 11, 30, 6, 21, false);
+        time = ::Thunder::Core::Time(2000, 1, 32, 11, 30, 6, 21, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 0, 11, 30, 23, 100, false);
+        time = ::Thunder::Core::Time(2000, 1, 0, 11, 30, 23, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2001, 2, 29, 11, 30, 23, 100, false);
+        time = ::Thunder::Core::Time(2001, 2, 29, 11, 30, 23, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2004, 2, 30, 11, 30, 23, 100, false);
+        time = ::Thunder::Core::Time(2004, 2, 30, 11, 30, 23, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2003, 6, 31, 11, 30, 23, 100, false);
+        time = ::Thunder::Core::Time(2003, 6, 31, 11, 30, 23, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 15, 2, 11, 1, 23, 21, false);
+        time = ::Thunder::Core::Time(2000, 15, 2, 11, 1, 23, 21, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 0, 2, 11, 1, 23, 21, false);
+        time = ::Thunder::Core::Time(2000, 0, 2, 11, 1, 23, 21, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1821, 1, 2, 11, 60, 23, 100, false);
+        time = ::Thunder::Core::Time(1821, 1, 2, 11, 60, 23, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1871, 1, 2, 11, 0, 60, 100, false);
+        time = ::Thunder::Core::Time(1871, 1, 2, 11, 0, 60, 100, false);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1871, 1, 2, 24, 0, 35, 100, false);
+        time = ::Thunder::Core::Time(1871, 1, 2, 24, 0, 35, 100, false);
         EXPECT_EQ(time.IsValid(), false);
 
     }
     TEST(Core_Time, Ctor_TimeValues_LocalTimeEnabled_InvalidValues)
     {
-        Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 1000, true);
+        ::Thunder::Core::Time time(2000, 1, 2, 11, 30, 23, 1000, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 30, 60, 21, true);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 30, 60, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 30, 67, 21, true);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 30, 67, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 60, 23, 21, true);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 60, 23, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 11, 100, 23, 21, true);
+        time = ::Thunder::Core::Time(2000, 1, 2, 11, 100, 23, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 2, 24, 30, 23, 10, true);
+        time = ::Thunder::Core::Time(2000, 1, 2, 24, 30, 23, 10, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 1, 32, 11, 30, 6, 21, true);
+        time = ::Thunder::Core::Time(2000, 1, 32, 11, 30, 6, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1921, 1, 0, 11, 30, 23, 100, true);
+        time = ::Thunder::Core::Time(1921, 1, 0, 11, 30, 23, 100, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1923, 2, 29, 11, 30, 23, 100, true);
+        time = ::Thunder::Core::Time(1923, 2, 29, 11, 30, 23, 100, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 15, 2, 11, 1, 23, 21, true);
+        time = ::Thunder::Core::Time(2000, 15, 2, 11, 1, 23, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 0, 2, 11, 1, 23, 21, true);
+        time = ::Thunder::Core::Time(2000, 0, 2, 11, 1, 23, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(2000, 9, 31, 11, 1, 23, 21, true);
+        time = ::Thunder::Core::Time(2000, 9, 31, 11, 1, 23, 21, true);
         EXPECT_EQ(time.IsValid(), false);
-        time = Thunder::Core::Time(1821, 1, 2, 24, 30, 23, 100, true);
+        time = ::Thunder::Core::Time(1821, 1, 2, 24, 30, 23, 100, true);
         EXPECT_EQ(time.IsValid(), false);
     }
     TEST(Core_Time, FromString_CurrentTime)
@@ -761,7 +761,7 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         time.ToString(timeString1);
 
@@ -790,15 +790,15 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time orig(1969,10, 3, 10, 11, 12, 666, true);
+        ::Thunder::Core::Time orig(1969,10, 3, 10, 11, 12, 666, true);
         string timeString;
         orig.ToString(timeString, true);
 
-        Thunder::Core::Time time1;
+        ::Thunder::Core::Time time1;
         time1.FromString(timeString, true);
         orig.ToString(timeString, false);
 
-        Thunder::Core::Time time2;
+        ::Thunder::Core::Time time2;
         time2.FromString(timeString, false);
 
         EXPECT_EQ(orig.MilliSeconds(), 666u);
@@ -828,7 +828,7 @@ namespace Core {
     }
     TEST(Core_Time, FromString_ANSI)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -855,7 +855,7 @@ namespace Core {
     }
     TEST(Core_Time, FromString_ISO8601)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -888,7 +888,7 @@ namespace Core {
     }
     TEST(Core_Time, FromString_RFC1036)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -908,7 +908,7 @@ namespace Core {
     }
     TEST(Core_Time, FromString_RFC1123)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -941,7 +941,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_ANSI_ValidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         EXPECT_EQ(time.FromANSI("Thu Aug11 23:47:20 2010", true), true);
         EXPECT_EQ(time.FromANSI("Sun Sep 02 23:47:20 2012", false), true);
         EXPECT_EQ(time.FromANSI("Sat Jul 13 23:47:20 2012", true), true);
@@ -958,7 +958,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_ANSI_InvalidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString;
         time.ToString(timeString);
         // ToString is in RFC1123 format, hence it should fail
@@ -981,7 +981,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_ISO8601_ValidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37"), true);
         EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37Z"), true);
         EXPECT_EQ(time.FromISO8601("1994-11-06T08:49:37+01"), true);
@@ -1001,7 +1001,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_ISO8601_InvalidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString;
         // ToString is in RFC1123 format, hence it should fail
         EXPECT_EQ(time.FromISO8601(timeString), false);
@@ -1026,7 +1026,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1036_ValidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
 
         EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-94 08:49:37 GMT"), true);
         EXPECT_EQ(time.FromRFC1036("Sunday, 06-Nov-1994 08:49:37 GMT"), true);
@@ -1047,7 +1047,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1036_InvalidFormat)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString;
         time.ToString(timeString, true);
 
@@ -1077,7 +1077,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_ValidFormat)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 08:49:37 GMT"), true);
         EXPECT_EQ(time.FromRFC1123("Sun,06Nov199408:49:37GMT"), true);
         EXPECT_EQ(time.FromRFC1123("Sun,06Nov199408:49:37"), true);
@@ -1088,7 +1088,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_InvalidFormat)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994 ff 08:49:37 GMT"), false);
         EXPECT_EQ(time.FromRFC1123("Sun, 06 Nov 1994ff 08:49:37 GMT"), false);
         EXPECT_EQ(time.FromRFC1123("1994Jan06T08:49:37.123+06:45"), false);
@@ -1113,99 +1113,99 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedFromTime)
     {
-        Thunder::Core::Time time =  Thunder::Core::Time(2018, 1, 23, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time =  ::Thunder::Core::Time(2018, 1, 23, 11, 30, 23, 21, false);
         std::string timeString;
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Tue, 23 Jan 2018 11:30:23 GMT"));
      
-        time =  Thunder::Core::Time(2018, 2, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 2, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Fri, 23 Feb 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 3, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 3, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Fri, 23 Mar 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 4, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 4, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Mon, 23 Apr 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 5, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 5, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Wed, 23 May 2018 11:30:23 GMT"));
          
-        time =  Thunder::Core::Time(2018, 6, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 6, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Sat, 23 Jun 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 7, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 7, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Mon, 23 Jul 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 8, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 8, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Thu, 23 Aug 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 9, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 9, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Sun, 23 Sep 2018 11:30:23 GMT"));
         
-        time =  Thunder::Core::Time(2018, 10, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 10, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Tue, 23 Oct 2018 11:30:23 GMT"));
         
-        time =  Thunder::Core::Time(2018, 11, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 11, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         time.FromRFC1123(timeString);
         EXPECT_STREQ(timeString.c_str(), _T("Fri, 23 Nov 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(2018, 12, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2018, 12, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         EXPECT_EQ(time.FromRFC1123(timeString), true);
         EXPECT_STREQ(timeString.c_str(), _T("Sun, 23 Dec 2018 11:30:23 GMT"));
 
-        time =  Thunder::Core::Time(1970, 12, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1970, 12, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         EXPECT_EQ(time.FromRFC1123(timeString), true);
 
-        time =  Thunder::Core::Time(1980, 12, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(1980, 12, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         EXPECT_EQ(time.FromRFC1123(timeString), true);
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedFromTime_InvalidCase)
     {
-        Thunder::Core::Time time =  Thunder::Core::Time(2018, 1, 23, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time =  ::Thunder::Core::Time(2018, 1, 23, 11, 30, 23, 21, false);
         std::string timeString;
         time.ToString(timeString, false);
         EXPECT_STREQ(timeString.c_str(), "Tue, 23 Jan 2018 11:30:23 GMT");
         EXPECT_EQ(time.FromRFC1123(timeString), true);
 
-        time =  Thunder::Core::Time(2080, 12, 23, 11, 30, 23, 21, false);
+        time =  ::Thunder::Core::Time(2080, 12, 23, 11, 30, 23, 21, false);
         time.ToString(timeString, false);
         EXPECT_STREQ(timeString.c_str(), "Mon, 23 Dec 2080 11:30:23 GMT");
         EXPECT_EQ(time.FromRFC1123(timeString), true);
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeStringCreatedWithLocalTimeEnabled)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
-        time =  Thunder::Core::Time(2000, 12, 23, 11, 30, 23, 21, true);
+        time =  ::Thunder::Core::Time(2000, 12, 23, 11, 30, 23, 21, true);
         time.ToString(timeString, false);
         EXPECT_EQ(time.FromRFC1123(timeString), true);
     }
     TEST(Core_Time, FromStandard_RFC1123_LocalTimeDisabled)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -1219,7 +1219,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_LocalTimeEnabled)
     {
-        Thunder::Core::Time time;
+        ::Thunder::Core::Time time;
         std::string timeString;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -1244,7 +1244,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeDisabled)
     {
-        Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
         std::string timeString1, timeString2;
         time.ToString(timeString1, false);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1253,7 +1253,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithCurrentTime_And_LocalTimeDisabled)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -1269,7 +1269,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeEnabled)
     {
-        Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
         std::string timeString1, timeString2;
         time.ToString(timeString1, true);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1278,7 +1278,7 @@ namespace Core {
     }
     TEST(Core_Time, FromStandard_RFC1123_TimeConversion_WithLocalTimeEnabled_And_LocalTimeDisabled)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         char* currentZone = getenv("TZ");
         setenv("TZ", "", 1);
@@ -1297,7 +1297,7 @@ namespace Core {
     }
     TEST(Core_Time, ToStandard_ISO8601)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         string timeString;
         string timeISOString;
         char* currentZone = getenv("TZ");
@@ -1329,15 +1329,15 @@ namespace Core {
         EXPECT_STREQ((time.ToISO8601(false)).c_str(), "1994-11-06T08:49:37Z");
 
         // Time with empty value return null string
-        EXPECT_STREQ((Thunder::Core::Time().ToISO8601(true)).c_str(), "");
-        EXPECT_STREQ((Thunder::Core::Time().ToISO8601(false)).c_str(), "");
+        EXPECT_STREQ((::Thunder::Core::Time().ToISO8601(true)).c_str(), "");
+        EXPECT_STREQ((::Thunder::Core::Time().ToISO8601(false)).c_str(), "");
 
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
         tzset();
     }
     TEST(Core_Time, ToStandard_RFC1123_WithLocalTimeDisabled)
     {
-        Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(1980, 12, 23, 11, 30, 23, 21, true);
         std::string timeString1, timeString2;
         timeString1 = time.ToRFC1123(false);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1346,7 +1346,7 @@ namespace Core {
     }
     TEST(Core_Time, ToStandard_RFC1123_WithCurrentTime_And_LocalTimeDisabled)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         timeString1 = time.ToRFC1123(false);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1355,7 +1355,7 @@ namespace Core {
     }
     TEST(Core_Time, ToStandard_RFC1123_WithLocalTimeEnabled)
     {
-        Thunder::Core::Time time(2000, 12, 23, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time(2000, 12, 23, 11, 30, 23, 21, true);
         std::string timeString1, timeString2;
         timeString1 = time.ToRFC1123(true);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1369,7 +1369,7 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         timeString1 = time.ToRFC1123(true);
         EXPECT_EQ(time.FromRFC1123(timeString1), true);
@@ -1383,10 +1383,10 @@ namespace Core {
     }
     TEST(Core_Time, Ticks_withoutInterval)
     {
-        Thunder::Core::Time time1 = Thunder::Core::Time::Now();
-        Thunder::Core::Time time2 = Thunder::Core::Time::Now();
+        ::Thunder::Core::Time time1 = ::Thunder::Core::Time::Now();
+        ::Thunder::Core::Time time2 = ::Thunder::Core::Time::Now();
         uint64_t diff = time2.Ticks() - time1.Ticks();
-        uint32_t intervalInSeconds = diff / Thunder::Core::Time::MicroSecondsPerSecond;
+        uint32_t intervalInSeconds = diff / ::Thunder::Core::Time::MicroSecondsPerSecond;
         EXPECT_EQ(intervalInSeconds, static_cast<uint32_t>(0));
     }
     TEST(Core_Time, Ticks_TimeCtor)
@@ -1398,11 +1398,11 @@ namespace Core {
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
 
-        Thunder::Core::Time orig(2016,10, 3, 10, 11, 12, 666, true);
-        Thunder::Core::Time::microsecondsfromepoch flattime = orig.Ticks();
+        ::Thunder::Core::Time orig(2016,10, 3, 10, 11, 12, 666, true);
+        ::Thunder::Core::Time::microsecondsfromepoch flattime = orig.Ticks();
 
         std::cout << " Ticks for local 2016-10-03 10:11:12 666 (so UTC ticks) : " << flattime << std::endl;
-        Thunder::Core::Time copyutc(flattime);
+        ::Thunder::Core::Time copyutc(flattime);
         string timeString;
         copyutc.ToString(timeString, true);
         std::cout << "Localtime 2016-10-03 10:11:12 666 : " << timeString << " ms: " << copyutc.MilliSeconds() << std::endl;
@@ -1419,16 +1419,16 @@ namespace Core {
     TEST(Core_Time, Ticks_withInterval)
     {
         uint32_t givenIntervalInSeconds = 2;
-        Thunder::Core::Time time1 = Thunder::Core::Time::Now();
+        ::Thunder::Core::Time time1 = ::Thunder::Core::Time::Now();
         sleep(givenIntervalInSeconds);
-        Thunder::Core::Time time2 = Thunder::Core::Time::Now();
+        ::Thunder::Core::Time time2 = ::Thunder::Core::Time::Now();
         uint64_t diff = time2.Ticks() - time1.Ticks();
-        uint32_t intervalInSeconds = diff / Thunder::Core::Time::MicroSecondsPerSecond;
+        uint32_t intervalInSeconds = diff / ::Thunder::Core::Time::MicroSecondsPerSecond;
         EXPECT_EQ(intervalInSeconds, givenIntervalInSeconds);
     }
     TEST(Core_Time, AddTime)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         time.ToString(timeString1);
         uint32_t currentTime = time.MilliSeconds();
@@ -1454,7 +1454,7 @@ namespace Core {
     }
     TEST(Core_Time, DISABLED_SubTime)
     {
-        Thunder::Core::Time time(Thunder::Core::Time::Now());
+        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;
         time.ToString(timeString1);
         uint32_t currentTime = time.MilliSeconds();
@@ -1480,25 +1480,25 @@ namespace Core {
     }
     TEST(Core_Time, NTPTime)
     {
-        Thunder::Core::Time time(1970, 1, 1, 0, 0, 0, 1, true);
+        ::Thunder::Core::Time time(1970, 1, 1, 0, 0, 0, 1, true);
         const uint64_t ntpTime = time.NTPTime();
-        EXPECT_GE(ntpTime/Thunder::Core::Time::MicroSecondsPerSecond, static_cast<uint32_t>(0));
+        EXPECT_GE(ntpTime/::Thunder::Core::Time::MicroSecondsPerSecond, static_cast<uint32_t>(0));
         uint32_t timeTobeAdded = 4;
         time.Add(timeTobeAdded);
 
-        EXPECT_GE(time.NTPTime()/Thunder::Core::Time::MicroSecondsPerSecond, ntpTime/Thunder::Core::Time::MicroSecondsPerSecond + (timeTobeAdded * 4));
+        EXPECT_GE(time.NTPTime()/::Thunder::Core::Time::MicroSecondsPerSecond, ntpTime/::Thunder::Core::Time::MicroSecondsPerSecond + (timeTobeAdded * 4));
     }
     TEST(Core_Time, Format)
     {
-        Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "2002-05-10");
         EXPECT_STREQ(time.Format("%d-%m-%Y").c_str(), "10-05-2002");
-        time = Thunder::Core::Time(1970, 5, 31, 11, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "1970-05-31");
         EXPECT_STREQ(time.Format("%Y %m %d").c_str(), "1970 05 31");
         EXPECT_STREQ(time.Format("%Y:%m:%d").c_str(), "1970:05:31");
 
-        time = Thunder::Core::Time(1969, 5, 31, 11, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(1969, 5, 31, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.Format("%Y-%m-%d").c_str(), "1969-05-31");
     }
     TEST(Core_Time, ToTimeOnly)
@@ -1507,12 +1507,12 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
-        time = Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
-        time = Thunder::Core::Time(1970, 5, 31, 23, 0, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 23, 0, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "23:00:23GMT");
 
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1524,7 +1524,7 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
@@ -1533,32 +1533,32 @@ namespace Core {
         tzset();
 
         // Check time after unset time zone
-        time = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "11:30:23");
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
         setenv("TZ", "Africa/Algiers", 1);
         tzset();
-        time = Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "00:30:23");
 
         setenv("TZ", "Asia/Kolkata", 1);
         tzset();
-        time = Thunder::Core::Time(1970, 5, 31, 22, 0, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 22, 0, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "03:30:23");
 
         setenv("TZ", "GST", 1);
         tzset();
         setenv("TZ", "America/Los_Angeles", 1);
         tzset();
-        time = Thunder::Core::Time(80, 12, 23, 11, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(80, 12, 23, 11, 30, 23, 21, false);
         //EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "03:30:23");
 
         setenv("TZ", "GST", 1);
         tzset();
         setenv("TZ", "Europe/Amsterdam", 1);
         tzset();
-        time = Thunder::Core::Time(80, 12, 23, 11, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(80, 12, 23, 11, 30, 23, 21, false);
         //EXPECT_STREQ(time.ToTimeOnly(true).c_str(), "12:30:23");
 
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1570,18 +1570,18 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
+        ::Thunder::Core::Time time(2002, 5, 10, 11, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "11:30:23GMT");
         EXPECT_EQ(time.MilliSeconds(), static_cast<uint32_t>(21));
 
         setenv("TZ", "Africa/Algiers", 1);
         tzset();
-        time = Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 0, 30, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:30:23GMT");
 
         setenv("TZ", "Asia/Kolkata", 1);
         tzset();
-        time = Thunder::Core::Time(1970, 5, 31, 0, 0, 23, 21, false);
+        time = ::Thunder::Core::Time(1970, 5, 31, 0, 0, 23, 21, false);
         EXPECT_STREQ(time.ToTimeOnly(false).c_str(), "00:00:23GMT");
 
         (currentZone == nullptr) ? unsetenv("TZ") : setenv("TZ", currentZone, 1);
@@ -1597,7 +1597,7 @@ namespace Core {
         tzset();
 
         string timeString;
-        Thunder::Core::Time time = Thunder::Core::Time(2021, 07, 05, 22, 10, 5, 999, true);
+        ::Thunder::Core::Time time = ::Thunder::Core::Time(2021, 07, 05, 22, 10, 5, 999, true);
         EXPECT_EQ(time.MilliSeconds(), 999u);
         time.ToString(timeString, true);
         std::cout << "LocalTime 2021-07-05 22:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
@@ -1606,7 +1606,7 @@ namespace Core {
         std::cout << "UTC 2021-07-05 20:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
         EXPECT_STREQ(timeString.c_str(), "Mon, 05 Jul 2021 20:10:05 GMT");
 
-        time = Thunder::Core::Time(2021,12, 26, 23, 59, 59, 1, true);
+        time = ::Thunder::Core::Time(2021,12, 26, 23, 59, 59, 1, true);
         EXPECT_EQ(time.MilliSeconds(), 1u);
         time.ToString(timeString, true);
         std::cout << "LocalTime 2021-12-26 23:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
@@ -1628,7 +1628,7 @@ namespace Core {
         tzset();
 
         string timeString;
-        Thunder::Core::Time time = Thunder::Core::Time(2021, 07, 05, 22, 10, 5, 999, false);
+        ::Thunder::Core::Time time = ::Thunder::Core::Time(2021, 07, 05, 22, 10, 5, 999, false);
         EXPECT_EQ(time.MilliSeconds(), 999u);
         time.ToString(timeString, true);
         std::cout << "LocalTime 2021-07-06 00:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
@@ -1637,7 +1637,7 @@ namespace Core {
         std::cout << "UTC 2021-07-05 22:10:05.999 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
         EXPECT_STREQ(timeString.c_str(), "Mon, 05 Jul 2021 22:10:05 GMT");
 
-        time = Thunder::Core::Time(2021,12, 26, 23, 59, 59, 1, false);
+        time = ::Thunder::Core::Time(2021,12, 26, 23, 59, 59, 1, false);
         EXPECT_EQ(time.MilliSeconds(), 1u);
         time.ToString(timeString, true);
         std::cout << "LocalTime 2021-12-27 00:59:59.001 : " << timeString << " ms: " << time.MilliSeconds() << std::endl;
@@ -1655,7 +1655,7 @@ namespace Core {
         setenv("TZ", "Asia/Kolkata", 1);
         tzset();
 
-        Thunder::Core::Time orig(2004, 12, 26, 8, 30, 45, 737, true);
+        ::Thunder::Core::Time orig(2004, 12, 26, 8, 30, 45, 737, true);
 
         string timeString;
         orig.ToString(timeString, true);
@@ -1663,8 +1663,8 @@ namespace Core {
         EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45");
         EXPECT_EQ(orig.MilliSeconds(), 737u);
 
-        Thunder::Core::TimeAsLocal l1(orig);
-        Thunder::Core::TimeAsLocal l2;
+        ::Thunder::Core::TimeAsLocal l1(orig);
+        ::Thunder::Core::TimeAsLocal l2;
         l2 = orig;
 
         l1.ToString(timeString);
@@ -1709,7 +1709,7 @@ namespace Core {
         EXPECT_EQ(l1.MilliSeconds(), 737u);
         std::cout << "AsLocal - 3 hr and 500 ms  : " << timeString << " ms: " << l1.MilliSeconds() << std::endl;
 
-        Thunder::Core::Time t1 = l1.ToUTC();
+        ::Thunder::Core::Time t1 = l1.ToUTC();
         orig.ToString(timeString, true);
         EXPECT_STREQ(timeString.c_str(), "Sun, 26 Dec 2004 08:30:45");
         EXPECT_EQ(t1.MilliSeconds(), 737u);
@@ -1727,8 +1727,8 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 24, 22, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 24, 22, true);
         // Doing simple comparison based on time difference
         EXPECT_GE(time2.JulianDate(), time1.JulianDate());
 
@@ -1737,266 +1737,266 @@ namespace Core {
     }
     TEST(Core_Time, OperatorOverloadingEqual)
     {
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
         EXPECT_EQ(time1 == time2, true);
-        time1 = Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
-        time2 = Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
+        time1 = ::Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
+        time2 = ::Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
         EXPECT_EQ(time1 == time2, true);
     }
     TEST(Core_Time, OperatorOverloadingEqual_CheckNotEqualValues)
     {
-        Thunder::Core::Time time1(2002, 5, 10, 11, 35, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 35, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
         EXPECT_EQ(time1 == time2, false);
-        time1 = Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
-        time2 = Thunder::Core::Time(1971, 5, 11, 11, 4, 24, 21, true);
+        time1 = ::Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
+        time2 = ::Thunder::Core::Time(1971, 5, 11, 11, 4, 24, 21, true);
         EXPECT_EQ(time1 == time2, false);
     }
     TEST(Core_Time, OperatorOverloadingNotEqual)
     {
-        Thunder::Core::Time time1(2001, 5, 10, 11, 30, 23, 20, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time1(2001, 5, 10, 11, 30, 23, 20, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
         EXPECT_EQ(time1 != time2, true);
-        time1 = Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
-        time2 = Thunder::Core::Time(1970, 5, 10, 11, 4, 24, 26, true);
+        time1 = ::Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
+        time2 = ::Thunder::Core::Time(1970, 5, 10, 11, 4, 24, 26, true);
         EXPECT_EQ(time1 != time2, true);
     }
     TEST(Core_Time, OperatorOverloadingNotEqual_CheckEqualValues)
     {
-        Thunder::Core::Time time1(2015, 12, 10, 11, 30, 23, 55, true);
-        Thunder::Core::Time time2(2015, 12, 10, 11, 30, 23, 55, true);
+        ::Thunder::Core::Time time1(2015, 12, 10, 11, 30, 23, 55, true);
+        ::Thunder::Core::Time time2(2015, 12, 10, 11, 30, 23, 55, true);
         EXPECT_EQ(time1 != time2, false);
-        time1 = Thunder::Core::Time(1971, 8, 11, 11, 4, 24, 21, true);
-        time2 = Thunder::Core::Time(1971, 8, 11, 11, 4, 24, 21, true);
+        time1 = ::Thunder::Core::Time(1971, 8, 11, 11, 4, 24, 21, true);
+        time2 = ::Thunder::Core::Time(1971, 8, 11, 11, 4, 24, 21, true);
         EXPECT_EQ(time1 != time2, false);
     }
     TEST(Core_Time, OperatorOverloadingLessThan)
     {
         // Difference in milliseconds
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in Seconds
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in minutes
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in hours
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in days
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in months
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 < time2, true);
 
         // Difference in years
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 < time2, true);
     }
     TEST(Core_Time, OperatorOverlessGreaterThan_CheckNotLessThanValues)
     {
         // Check with equals
-        Thunder::Core::Time time1(2020, 2, 1, 14, 30, 35, 41, true);
-        Thunder::Core::Time time2(2020, 2, 1, 14, 30, 35, 41, true);
+        ::Thunder::Core::Time time1(2020, 2, 1, 14, 30, 35, 41, true);
+        ::Thunder::Core::Time time2(2020, 2, 1, 14, 30, 35, 41, true);
         EXPECT_EQ(time1 > time2, false);
 
         // Check with greater values
-        time1 = Thunder::Core::Time(2008, 5, 10, 11, 30, 25, 21, true);
-        time2 = Thunder::Core::Time(2006, 5, 10, 11, 30, 26, 21, true);
+        time1 = ::Thunder::Core::Time(2008, 5, 10, 11, 30, 25, 21, true);
+        time2 = ::Thunder::Core::Time(2006, 5, 10, 11, 30, 26, 21, true);
         EXPECT_EQ(time1 < time2, false);
-        time1 = Thunder::Core::Time(2002, 5, 10, 13, 40, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 13, 40, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
         EXPECT_EQ(time1 < time2, false);
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 26, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 24, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 26, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 24, true);
         EXPECT_EQ(time1 < time2, false);
     }
     TEST(Core_Time, OperatorOverloadingLessThanEqual)
     {
         // Difference in milliseconds
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 22, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in Seconds
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in minutes
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in hours
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in days
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in months
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Difference in years
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, true);
 
         // Using equal time
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, true);
     }
     TEST(Core_Time, OperatorOverloadingLessThanEqual_CheckNotLessThanEqualValues)
     {
         // Check with greater values
-        Thunder::Core::Time time1(2004, 5, 10, 11, 30, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 24, 21, true);
+        ::Thunder::Core::Time time1(2004, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 24, 21, true);
         EXPECT_EQ(time1 <= time2, false);
-        time1 = Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
         EXPECT_EQ(time1 <= time2, false);
-        time1 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 22, true);
-        time2 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 22, true);
+        time2 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 <= time2, false);
     }
     TEST(Core_Time, OperatorOverloadingGreaterThan)
     {
         // Difference in milliseconds
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 23, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 23, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in Seconds
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 25, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 25, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in minutes
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 40, 23, 22, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 40, 23, 22, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in hours
-        time1 = Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in days
-        time1 = Thunder::Core::Time(2002, 5, 24, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 24, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in months
-        time1 = Thunder::Core::Time(2002, 7, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 7, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, true);
 
         // Difference in years
-        time1 = Thunder::Core::Time(2010, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2010, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, true);
     }
     TEST(Core_Time, OperatorOverloadingGreaterThan_CheckNotGreaterThanValues)
     {
         // Check with equals
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 > time2, false);
 
         // Check with lesser values
-        time1 = Thunder::Core::Time(2004, 5, 10, 11, 30, 25, 21, true);
-        time2 = Thunder::Core::Time(2006, 5, 10, 11, 30, 26, 21, true);
+        time1 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 25, 21, true);
+        time2 = ::Thunder::Core::Time(2006, 5, 10, 11, 30, 26, 21, true);
         EXPECT_EQ(time1 > time2, false);
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
         EXPECT_EQ(time1 > time2, false);
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 22, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 24, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 22, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 23, 24, true);
         EXPECT_EQ(time1 > time2, false);
     }
     TEST(Core_Time, OperatorOverloadingGreaterThanEqual)
     {
         // Difference in milliseconds
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 23, true);
-        Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 23, true);
+        ::Thunder::Core::Time time2(2002, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in Seconds
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 30, 25, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 25, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 30, 24, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in minutes
-        time1 = Thunder::Core::Time(2002, 5, 10, 11, 40, 23, 22, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 11, 40, 23, 22, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 11, 35, 23, 22, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in hours
-        time1 = Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 10, 14, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 13, 30, 23, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in days
-        time1 = Thunder::Core::Time(2002, 5, 24, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 5, 24, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 12, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in months
-        time1 = Thunder::Core::Time(2002, 7, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2002, 7, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 6, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Difference in years
-        time1 = Thunder::Core::Time(2010, 5, 10, 11, 30, 23, 21, true);
-        time2 = Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
+        time1 = ::Thunder::Core::Time(2010, 5, 10, 11, 30, 23, 21, true);
+        time2 = ::Thunder::Core::Time(2004, 5, 10, 11, 30, 23, 21, true);
         EXPECT_EQ(time1 >= time2, true);
 
         // Using equal time
-        time1 = Thunder::Core::Time(2012, 10, 1, 3, 45, 34, 10, true);
-        time2 = Thunder::Core::Time(2012, 10, 1, 3, 45, 34, 10, true);
+        time1 = ::Thunder::Core::Time(2012, 10, 1, 3, 45, 34, 10, true);
+        time2 = ::Thunder::Core::Time(2012, 10, 1, 3, 45, 34, 10, true);
         EXPECT_EQ(time1 >= time2, true);
     }
     TEST(Core_Time, OperatorOverloadingGreaterThan_CheckNotGreaterThanEqualValues)
     {
         // Check with lesser values
-        Thunder::Core::Time time1(2004, 5, 10, 11, 30, 25, 21, true);
-        Thunder::Core::Time time2(2006, 5, 10, 11, 30, 26, 21, true);
+        ::Thunder::Core::Time time1(2004, 5, 10, 11, 30, 25, 21, true);
+        ::Thunder::Core::Time time2(2006, 5, 10, 11, 30, 26, 21, true);
         EXPECT_EQ(time1 >= time2, false);
-        time1 = Thunder::Core::Time(2000, 5, 9, 11, 30, 2, 21, true);
-        time2 = Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
+        time1 = ::Thunder::Core::Time(2000, 5, 9, 11, 30, 2, 21, true);
+        time2 = ::Thunder::Core::Time(2002, 5, 10, 12, 35, 23, 22, true);
         EXPECT_EQ(time1 >= time2, false);
-        time1 = Thunder::Core::Time(1980, 5, 10, 11, 30, 23, 22, true);
-        time2 = Thunder::Core::Time(1980, 5, 10, 11, 30, 23, 24, true);
+        time1 = ::Thunder::Core::Time(1980, 5, 10, 11, 30, 23, 22, true);
+        time2 = ::Thunder::Core::Time(1980, 5, 10, 11, 30, 23, 24, true);
         EXPECT_EQ(time1 >= time2, false);
     }
     TEST(Core_Time, OperatorOverloadingAssignment)
     {
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2 = time1;
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2 = time1;
         EXPECT_EQ(time1 == time2, true);
-        time2 = Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
+        time2 = ::Thunder::Core::Time(1971, 5, 10, 11, 4, 24, 21, true);
         time1 = time2;
         EXPECT_EQ(time1 == time2, true);
     }
@@ -2006,13 +2006,13 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2;
-        Thunder::Core::Time time3 = time1 + time2;
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2;
+        ::Thunder::Core::Time time3 = time1 + time2;
         EXPECT_EQ(time1 == time3, true);
 
-        Thunder::Core::Time time4(2000, 5, 10, 11, 30, 23, 22, true);
-        Thunder::Core::Time time5 = time3 + time4;
+        ::Thunder::Core::Time time4(2000, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time5 = time3 + time4;
         string timeString;
         time5.ToString(timeString);
 
@@ -2031,10 +2031,10 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time1(2002, 8, 8, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2(2000, 3, 1, 8, 25, 22, 1, true);
+        ::Thunder::Core::Time time1(2002, 8, 8, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2(2000, 3, 1, 8, 25, 22, 1, true);
 
-        Thunder::Core::Time time3 = time1 - time2;
+        ::Thunder::Core::Time time3 = time1 - time2;
         string timeString;
         time3.ToString(timeString);
 
@@ -2053,12 +2053,12 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2;
+        ::Thunder::Core::Time time1(2002, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2;
         time2 += time1;
         EXPECT_EQ(time1 == time2, true);
 
-        Thunder::Core::Time time3(2000, 5, 10, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time3(2000, 5, 10, 11, 30, 23, 22, true);
         time3 += time2;
         string timeString;
         time3.ToString(timeString);
@@ -2078,8 +2078,8 @@ namespace Core {
         setenv("TZ", "", 1);
         tzset();
 
-        Thunder::Core::Time time1(2002, 8, 8, 11, 30, 23, 22, true);
-        Thunder::Core::Time time2(2000, 3, 1, 8, 25, 22, 1, true);;
+        ::Thunder::Core::Time time1(2002, 8, 8, 11, 30, 23, 22, true);
+        ::Thunder::Core::Time time2(2000, 3, 1, 8, 25, 22, 1, true);;
         time1 -= time2;
 
         string timeString;
@@ -2095,7 +2095,7 @@ namespace Core {
 #if 0
     TEST(Core_Time, TimeHandle)
     {
-        Thunder::Core::Time time(2021,1, 1, 12, 00, 00, 333, true);
+        ::Thunder::Core::Time time(2021,1, 1, 12, 00, 00, 333, true);
 
         string timeString;
         time.ToString(timeString, true);
