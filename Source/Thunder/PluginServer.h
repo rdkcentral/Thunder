@@ -1435,10 +1435,7 @@ namespace PluginHost {
                         else {
                             uint32_t pid;
                             Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
-
-                            // Time to fire up the remote process to instantiate the IPlugin
-                            const Plugin::Config::RootConfig& rootConfig = PluginHost::Service::Configuration().Root;
-
+                            
                             RPC::Object definition(locator,
                                 classNameString,
                                 Callsign(),
