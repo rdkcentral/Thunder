@@ -376,7 +376,7 @@ function(InstallCMakeConfig)
             VERSION ${_version}
             COMPATIBILITY SameMajorVersion)
 
-        message(STATUS "${_target} added support for cmake consumers via '${_name}Config.cmake'")
+        message(VERBOSE "${_target} added support for cmake consumers via '${_name}Config.cmake'")
 
         if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY")
             # The alias is used by local targets project
@@ -608,7 +608,7 @@ function(InstallPackageConfig)
             endif()
         endforeach()
 
-        message(STATUS "${_target} added support for generic consumers via ${_pc_filename}")
+        message(VERBOSE "${_target} added support for generic consumers via ${_pc_filename}")
 
         configure_file( "${_pc_template}"
                         "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"

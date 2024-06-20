@@ -23,7 +23,7 @@ find_package(ExecInfo)
 find_package(LIBRT)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
-message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
+message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
 
 add_library(${TARGET}
         Module.cpp
