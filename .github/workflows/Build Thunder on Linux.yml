@@ -17,7 +17,7 @@ on:
 
 jobs:
   Thunder:
-    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@master
+    uses: rdkcentral/Thunder/.github/workflows/Linux build template.yml@development/actions-containers
 
   ThunderInterfaces:
     needs: Thunder
