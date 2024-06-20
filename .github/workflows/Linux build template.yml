@@ -113,6 +113,8 @@ jobs:
         -DVOLATILE_PATH="tmp" \
         -DLOCALTRACER=ON \
         -DWARNING_REPORTING=ON \
+        -DPROCESSCONTAINERS=ON \
+        -DPROCESSCONTAINERS_RUNC=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
