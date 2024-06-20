@@ -18,15 +18,15 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>Linux Build - Thunder (WPEFramework)</title>
+        <title>Linux Build - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6543a935.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -175,7 +175,7 @@
       
     </form>
     <div class="md-search__output">
-      <div class="md-search__scrollwrap" data-md-scrollfix>
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
             Initializing search
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -2329,12 +2329,12 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<s
 -DBINDING<span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_BUILD_TYPE<span class="o">=</span><span class="s2">&quot;Debug&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
--DDATA_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/share/WPEFramework&quot;</span><span class="w"> </span><span class="se">\</span>
--DPERSISTENT_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/var/wpeframework&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DDATA_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/share/Thunder&quot;</span><span class="w"> </span><span class="se">\</span>
+-DPERSISTENT_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/var/thunder&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPORT<span class="o">=</span><span class="s2">&quot;55555&quot;</span><span class="w"> </span><span class="se">\</span>
--DPROXYSTUB_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/wpeframework/proxystubs&quot;</span><span class="w"> </span><span class="se">\</span>
--DSYSTEM_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/wpeframework/plugins&quot;</span><span class="w"> </span><span class="se">\</span>
+-DPROXYSTUB_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/thunder/proxystubs&quot;</span><span class="w"> </span><span class="se">\</span>
+-DSYSTEM_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/thunder/plugins&quot;</span><span class="w"> </span><span class="se">\</span>
 -DVOLATILE_PATH<span class="o">=</span><span class="s2">&quot;tmp&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install
@@ -2350,7 +2350,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>Run the following commands to build and then install ThunderInterfaces:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderInterfaces<span class="w"> </span>-B<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -2364,7 +2364,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfa
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServices<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_COMMANDER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DHCPSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DIALSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2392,7 +2392,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServicesRDK<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DEVICEIDENTIFICATION<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_LOCATIONSYNC<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2413,7 +2413,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple  fashion.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderClientLibraries<span class="w"> </span>-B<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
 -DBLUETOOTHAUDIOSINK<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDISPLAYINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2435,7 +2435,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderClientL
 <p>Run the following commands to build and then install ThunderUI:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderUI<span class="w"> </span>-B<span class="w"> </span>build/ThunderUI<span class="w"> </span><span class="se">\</span>
 -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/WPEFramework/Modules&quot;</span>
+-DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -2445,22 +2445,22 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span
 <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
 
-WPEFramework<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/WPEFramework/config.json
+$<span class="w"> </span>Thunder<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/Thunder/config.json
 </code></pre></div>
-<p>The following arguments should be specified to the WPEFramework binary:</p>
+<p>The following arguments should be specified to the Thunder binary:</p>
 <ul>
 <li><code>-f</code>: Flush plugin messages/logs directly to the console - useful for debugging. In production, you should use the <code>MessageControl</code> plugin to forward messages to a suitable sink. </li>
-<li><code>-c</code>: Path to WPEFramework config file</li>
+<li><code>-c</code>: Path to Thunder config file</li>
 </ul>
 <p>All being well, you should see Thunder start up:</p>
-<div class="highlight"><pre><span></span><code>[Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:584]:[main]:[Startup]: WPEFramework
+<div class="highlight"><pre><span></span><code>[Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:584]:[main]:[Startup]: Thunder
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:585]:[main]:[Startup]: Starting time: Tue, 06 Jun 2023 09:04:31 GMT
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:586]:[main]:[Startup]: Process Id:    25382
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:587]:[main]:[Startup]: Tree ref:      engineering_build_for_debug_purpose_only
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:588]:[main]:[Startup]: Build ref:     engineering_build_for_debug_purpose_only
 [Tue, 06 Jun 2023 10:04:31]:[PluginHost.cpp:589]:[main]:[Startup]: Version:       4:0:0
 ...
-[Tue, 06 Jun 2023 10:04:32]:[PluginHost.cpp:609]:[main]:[Startup]: WPEFramework actively listening
+[Tue, 06 Jun 2023 10:04:32]:[PluginHost.cpp:609]:[main]:[Startup]: Thunder actively listening
 </code></pre></div>
 <p>If you followed these instructions, Thunder will be listening for web requests on <code>localhost:55555</code></p>
 <p>To exit the framework, press <code>q</code> and then <code>enter</code>.</p>
@@ -2559,7 +2559,7 @@ WPEFramework<span class="w"> </span>-f<span class="w"> </span>-c<span class="w">
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.a7c05c9e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>

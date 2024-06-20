@@ -18,15 +18,15 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>Singletons - Thunder (WPEFramework)</title>
+        <title>Singletons - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6543a935.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -175,7 +175,7 @@
       
     </form>
     <div class="md-search__output">
-      <div class="md-search__scrollwrap" data-md-scrollfix>
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
             Initializing search
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -1467,18 +1467,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#differences-between-singleton-and-singletontype" class="md-nav__link">
+  <a href="#singleton-and-singletontype" class="md-nav__link">
     <span class="md-ellipsis">
-      Differences between Singleton and SingletonType
+      Singleton and SingletonType
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-and-disposing-singletons" class="md-nav__link">
+  <a href="#disposing-singletons" class="md-nav__link">
     <span class="md-ellipsis">
-      Using and disposing singletons
+      disposing singletons
     </span>
   </a>
   
@@ -2085,18 +2085,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#differences-between-singleton-and-singletontype" class="md-nav__link">
+  <a href="#singleton-and-singletontype" class="md-nav__link">
     <span class="md-ellipsis">
-      Differences between Singleton and SingletonType
+      Singleton and SingletonType
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-and-disposing-singletons" class="md-nav__link">
+  <a href="#disposing-singletons" class="md-nav__link">
     <span class="md-ellipsis">
-      Using and disposing singletons
+      disposing singletons
     </span>
   </a>
   
@@ -2124,12 +2124,20 @@
 
 <h2 id="what-is-singleton-and-why-it-is-used">What is singleton and why it is used</h2>
 <p>The Singleton pattern is a design pattern that restricts the instantiation of a class to a single instance. It ensures that only one instance of the class exists throughout the runtime of the program and provides a global point of access to that instance. In addition, they allow for lazy allocation and initialization, whereas global variables will always consume resources. Examples of using singletons can be found in ThunderClientLibraries repository.</p>
-<h2 id="differences-between-singleton-and-singletontype">Differences between Singleton and SingletonType</h2>
-<p>The <code>Singleton</code> class serves as a base for implementing singleton objects, featuring a templated constructor to handle instance initialization and a virtual method for retrieving the implementing class name. It internally manages singleton instances through a <code>SingletonList</code>.
-<code>SingletonType</code> is a templated class designed to streamline the implementation of singleton objects in Thunder. It is intended to be used as a base class for concrete singleton classes and implements constructors and destructors to handle registration and unregistration of singleton instances within the <code>SingletonList</code>.
-In summary, while both classes facilitate the implementation of singleton objects, Singleton provides basic functionality, while SingletonType extends this functionality to offer more robust management and control over singleton instances.</p>
-<h2 id="using-and-disposing-singletons">Using and disposing singletons</h2>
-<p>When creating and using singletons, there are a few things to bear in mind. If they are handled incorrectly, problems with memory, the creation of overmapped copies of them and also the incorrect order of their destruction can occur.</p>
+<h2 id="singleton-and-singletontype">Singleton and SingletonType</h2>
+<p>The <code>SingletonType</code> class can be used to make a class a singleton get access to an instance (which creates one if that was not done before):
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">SingletonType</span><span class="o">&lt;</span><span class="n">MessageUnit</span><span class="o">&gt;::</span><span class="n">Instance</span><span class="p">()</span>
+</code></pre></div>
+If a parameter is required for the construction of the class that should be a singleton, Create can be used (and after that access to the singleton instance can be done using the Instance method):
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">SingletonType</span><span class="o">&lt;</span><span class="n">OpenCDMAccessor</span><span class="o">&gt;::</span><span class="n">Create</span><span class="p">(</span><span class="n">connector</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+</code></pre></div>
+<code>SingletonType</code> is a templated class designed to streamline the implementation of singleton objects in Thunder. It is intended to be used as a base class for concrete singleton classes and implements constructors and destructors to handle registration and unregistration of singleton instances within a <code>SingletonList</code>.</p>
+<h2 id="disposing-singletons">disposing singletons</h2>
+<p>In general a singleton can be disposed using the Dispose method. Please note was will be highlighted below that calling Instance after Dispose might create a new instance of the Singleton.
+All created Singletons cann be disposed at once with:
+<div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+</code></pre></div>
+This should typically done at the end of an application fully based on the Thunder framework to cleanup all Singletons. As will be highlighted below if it is in a Library based on the Thunder framework you need to be more careful and not call the general Dispose but only cleanup what you created.</p>
 <p>Singletons that use sockets should connect to them before they are registered in the singletons list. This is therefore best done in their constructor. If the connection occurs too late, the singleton may not be cleaned up before the Resource Monitor destructor is called.
 Here is an example of making sure a socket connection is opened in the OpenCDMAccessor singleton constructor.
 <div class="highlight"><pre><span></span><code><span class="n">OpenCDMAccessor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TCHAR</span><span class="w"> </span><span class="n">domainName</span><span class="p">[])</span>
@@ -2259,7 +2267,7 @@ And here an example of the RIGHT way to dispose of a singleton.
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.a7c05c9e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>

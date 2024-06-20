@@ -18,15 +18,15 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>Interface-Driven Development - Thunder (WPEFramework)</title>
+        <title>Interface-Driven Development - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.6543a935.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -175,7 +175,7 @@
       
     </form>
     <div class="md-search__output">
-      <div class="md-search__scrollwrap" data-md-scrollfix>
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
             Initializing search
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -2432,13 +2432,13 @@
 <p>The resulting generated code is then compiled into 2 libraries:</p>
 <ul>
 <li>
-<p><code>/usr/lib/wpeframework/proxystubs/libWPEFrameworkMarshalling.so</code></p>
+<p><code>/usr/lib/thunder/proxystubs/libThunderMarshalling.so</code></p>
 <ul>
 <li>This contains all the generated proxy stub code responsible for handling COM-RPC serialisation/deserialisation</li>
 </ul>
 </li>
 <li>
-<p><code>/usr/lib/wpeframework/libWPEFrameworkDefinitions.so</code></p>
+<p><code>/usr/lib/thunder/libThunderDefinitions.so</code></p>
 <ul>
 <li>This contains all generated data types (e.g. json enums and conversions) that can be used by plugins</li>
 </ul>
@@ -2446,9 +2446,9 @@
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>There will also be a library called <code>libWPEFrameworkProxyStubs.so</code> installed in the <code>proxystubs</code> directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal WPEFramework interfaces (such as Controller and Dispatcher).</p>
+<p>There will also be a library called <code>libThunderProxyStubs.so</code> installed in the <code>proxystubs</code> directory as part of the main Thunder build - this contains the generated ProxyStubs for the internal Thunder interfaces (such as Controller and Dispatcher).</p>
 </div>
-<p>The installation path can be changed providing the <code>proxystubpath</code> option in the WPEFramework config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the <code>proxystubpath</code> directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.</p>
+<p>The installation path can be changed providing the <code>proxystubpath</code> option in the Thunder config.json file is updated accordingly so Thunder can find the libraries. When Thunder starts, it will load all available libraries in the <code>proxystubpath</code> directory. If an observable proxystubpath is set in the config, then Thunder will monitor that directory and automatically load any new libraries in that directory. This makes it possible to load new interfaces at runtime.</p>
 <p>If you are building the interface as part of a standalone repository instead of ThunderInterfaces, it is possible to manually invoke the code generation tools from that repository's CMake file. The CMake commands drive the following Python scripts:</p>
 <ul>
 <li>ThunderTools/ProxyStubGenerator/StubGenerator.py</li>
@@ -2538,7 +2538,7 @@
 <span class="normal">81</span>
 <span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nb">project</span><span class="p">(</span><span class="s">SampleInterface</span><span class="p">)</span>
 
-<span class="nb">find_package</span><span class="p">(</span><span class="s">WPEFramework</span><span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span><span class="s">Thunder</span><span class="p">)</span>
 <span class="nb">find_package</span><span class="p">(</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Core</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
 <span class="nb">find_package</span><span class="p">(</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">COM</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
 <span class="nb">find_package</span><span class="p">(</span><span class="s">CompileSettingsDebug</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
@@ -2600,23 +2600,23 @@
 <span class="c"># Install libs &amp; headers</span>
 <span class="nb">string</span><span class="p">(</span><span class="s">TOLOWER</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="w"> </span><span class="s">NAMESPACE_LIB</span><span class="p">)</span>
 <span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleProxyStubs</span>
-<span class="w">    </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleProxyStubsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">    </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleProxyStubsTargets</span>
+<span class="w">    </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE_LIB</span><span class="o">}</span><span class="s">/proxystubs</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">_Runtime</span>
 <span class="p">)</span>
 
 <span class="nb">if</span><span class="p">(</span><span class="s">JSON_ENUM_SOURCES</span><span class="p">)</span>
 <span class="w">    </span><span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">ExampleDefinitions</span>
-<span class="w">        </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleDefinitionsTargets</span><span class="w"> </span><span class="c"># for downstream dependencies</span>
-<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="s">libs</span><span class="w"> </span><span class="c"># shared lib</span>
+<span class="w">        </span><span class="s">EXPORT</span><span class="w"> </span><span class="s">ExampleDefinitionsTargets</span>
+<span class="w">        </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_LIBDIR</span><span class="o">}</span><span class="s">/</span><span class="w"> </span><span class="s">COMPONENT</span><span class="w"> </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">_Runtime</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="nb">endif</span><span class="p">()</span>
 
 <span class="nb">install</span><span class="p">(</span><span class="s">FILES</span><span class="w"> </span><span class="o">${</span><span class="nv">INTERFACES_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">include/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces</span>
+<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_INCLUDEDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces</span>
 <span class="p">)</span>
 
 <span class="nb">install</span><span class="p">(</span><span class="s">FILES</span><span class="w"> </span><span class="o">${</span><span class="nv">JSON_HEADERS</span><span class="o">}</span>
-<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">include/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces/json</span>
+<span class="w">    </span><span class="s">DESTINATION</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_INSTALL_INCLUDEDIR</span><span class="o">}</span><span class="s">/</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">/interfaces/json</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="worked-example">Worked Example</h2>
@@ -2732,7 +2732,7 @@
 
 <span class="c1">// @stubgen:include &lt;com/IIteratorType.h&gt; // (1)</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">Thunder</span><span class="w"> </span><span class="p">{</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">Exchange</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IWiFi</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span>
@@ -2820,7 +2820,7 @@
 
 <span class="c1">// @stubgen:include &lt;com/IIteratorType.h&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">Thunder</span><span class="w"> </span><span class="p">{</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">Exchange</span><span class="w"> </span><span class="p">{</span>
 <span class="hll"><span class="w">    </span><span class="c1">// @json 1.0.0</span>
 </span><span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IWiFi</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
@@ -2954,7 +2954,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;JsonData_WiFi.h&quot;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;interfaces/IWiFi.h&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">Thunder</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">Exchange</span><span class="w"> </span><span class="p">{</span>
 
@@ -3057,7 +3057,7 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace Exchange</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace WPEFramework</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace Thunder</span>
 </code></pre></div></td></tr></table></div>
 </details>
 <p>The auto-generated <code>JsonData_WiFi.h</code> file contains code that can convert from the parameters object in the incoming JSON-RPC request to a C++ object. This is used by both the plugin and client apps to read incoming parameters and build responses.</p>
@@ -3198,7 +3198,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/JSON.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;interfaces/IWiFi.h&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">WPEFramework</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">Thunder</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">JsonData</span><span class="w"> </span><span class="p">{</span>
 
@@ -3412,7 +3412,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.a7c05c9e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>
