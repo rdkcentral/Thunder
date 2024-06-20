@@ -18,7 +18,7 @@
  */
 
 #include "RunCImplementation.h"
-#include "JSON.h"
+#include <core/JSON.h>
 #include <thread>
 
 namespace Thunder {
@@ -108,7 +108,7 @@ namespace ProcessContainers {
         return runCContainerAdministrator;
     }
 
-    IContainer* RunCContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration)
+    IContainer* RunCContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& /* configuration */)
     {
         searchpaths.Reset(0);
         while (searchpaths.Next()) {
@@ -142,7 +142,7 @@ namespace ProcessContainers {
     {
     }
 
-    void RunCContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
+    void RunCContainerAdministrator::Logging(const string& /* logPath */, const string& /* loggingOptions */)
     {
         // Only container-scope logging
     }
@@ -219,7 +219,7 @@ namespace ProcessContainers {
                 } else {
 
                     char data[1024];
-                    process.Output((uint8_t*)data, 2048);
+                    process.Output((uint8_t*)data, sizeof(data));
 
                     RunCStatus info;
                     info.FromString(string(data));
