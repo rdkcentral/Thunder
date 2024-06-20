@@ -231,7 +231,7 @@ namespace Tests {
             EXPECT_EQ(FileSize(bufferName.c_str()), (cyclicBufferSize + sizeof(CyclicBuffer::control)));
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
 
             // Check File Exist
             EXPECT_EQ(IsFileExist(bufferName.c_str()), false);
@@ -260,7 +260,7 @@ namespace Tests {
             EXPECT_EQ(buffer2.Open(), true);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer2.Storage()).Destroy();
+            buffer2.Close();
             EXPECT_EQ(IsFileExist(bufferName.c_str()), false);
         }
     }
@@ -286,7 +286,7 @@ namespace Tests {
         buffer.Storage().Close();
         EXPECT_EQ(buffer.Storage().IsOpen(), false);
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
 
     }
     TEST(Core_CyclicBuffer, Create_WithDifferentPermissions)
@@ -308,7 +308,7 @@ namespace Tests {
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
             RestoreFileMask(mask);
         }
         {
@@ -329,7 +329,7 @@ namespace Tests {
             EXPECT_EQ(CheckBufferIsSharable(&buffer), true);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
             RestoreFileMask(mask);
         }
         {
@@ -349,7 +349,7 @@ namespace Tests {
             EXPECT_EQ(IsValidFilePermissions(bufferName.c_str(), mode), true);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
             RestoreFileMask(mask);
         }
         {
@@ -371,7 +371,7 @@ namespace Tests {
 
             EXPECT_EQ(buffer.Used(), sizeof(SampleData));
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
             RestoreFileMask(mask);
         }
     }
@@ -396,7 +396,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), cyclicBufferSize - (sizeof(SampleData) * 3));
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Write_BasedOnFreeSpaceAvailable)
     {
@@ -437,7 +437,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - previousFreeSpace));
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
 
     TEST(Core_CyclicBuffer, Read)
@@ -483,7 +483,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Used(), 0u);
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Peek)
     {
@@ -535,7 +535,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Used(), sizeof(test1) + sizeof(test2) + sizeof(test3));
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Flush)
     {
@@ -567,7 +567,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), cyclicBufferSize);
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Reserve)
     {
@@ -589,7 +589,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Reserve(0), 0u);
         EXPECT_EQ(buffer.Reserve(51), Core::ERROR_INVALID_INPUT_LENGTH);
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Using_DataElementFile)
     {
@@ -615,7 +615,7 @@ namespace Tests {
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
 
             // Check File Exist
             EXPECT_EQ(IsFileExist(fileName.c_str()), false);
@@ -646,7 +646,7 @@ namespace Tests {
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
 
             // Check File Exist
             EXPECT_EQ(IsFileExist(fileName.c_str()), false);
@@ -675,7 +675,7 @@ namespace Tests {
             EXPECT_EQ(FileSize(fileName.c_str()), cyclicBufferWithControlDataSize + offset);
 
             // Remove after usage before destruction
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
 
             // Check File Exist
             EXPECT_EQ(IsFileExist(fileName.c_str()), false);
@@ -722,7 +722,7 @@ namespace Tests {
         }
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, Write_Overflow_WithOverWrite)
     {
@@ -824,7 +824,7 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Remove after usage before destruction
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     static int ClonedProcessFunc(void* arg) {
         Data* data = static_cast<Data*>(arg);
@@ -892,7 +892,7 @@ namespace Tests {
             EXPECT_EQ(buffer.Size(), 0u);
         }
 
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, CheckSharePermissionsFromClonedProcess)
     {
@@ -1032,7 +1032,7 @@ namespace Tests {
                 testAdmin.Sync("server read");
                 EXPECT_EQ(buffer->Used(), 0u);
             }
-            const_cast<File&>(buffer->Storage()).Destroy();
+            buffer->Close();
             delete buffer;
             if (dataElementFile) {
                 delete dataElementFile;
@@ -1146,7 +1146,7 @@ namespace Tests {
             EXPECT_EQ(buffer.Used(), 0u);
             testAdmin.Sync("client read");
 
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
@@ -1229,7 +1229,7 @@ namespace Tests {
             testAdmin.Sync("server peek");
 
             testAdmin.Sync("server read");
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
@@ -1343,7 +1343,7 @@ namespace Tests {
             testAdmin.Sync("client flush");
             EXPECT_EQ(buffer.Free(), cyclicBufferSize);
 
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
@@ -1361,7 +1361,7 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), true);
         buffer.Unlock();
         EXPECT_EQ(buffer.IsLocked(), false);
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, LockAlert_WithoutDataPresent)
     {
@@ -1379,7 +1379,7 @@ namespace Tests {
         EXPECT_EQ(buffer.IsLocked(), true);
         buffer.Unlock();
         EXPECT_EQ(buffer.IsLocked(), false);
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     
     TEST(Core_CyclicBuffer, DISABLED_LockUnLock_FromParentAndForks)
@@ -1483,7 +1483,7 @@ namespace Tests {
 
             testAdmin.Sync("client read");
 
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
@@ -1644,7 +1644,7 @@ namespace Tests {
             buffer.Unlock();
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client exit");
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
@@ -1678,7 +1678,7 @@ namespace Tests {
         event.ResetEvent();
         EXPECT_EQ(buffer.IsLocked(), false);
         threadLock.Stop();
-        const_cast<File&>(buffer.Storage()).Destroy();
+        buffer.Close();
     }
     TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_UsingAlert)
     {
@@ -1773,7 +1773,7 @@ namespace Tests {
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client alerted");
 
-            const_cast<File&>(buffer.Storage()).Destroy();
+            buffer.Close();
         }
         Singleton::Dispose();
     }
