@@ -24,7 +24,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
 
     class ThreadClass : public Core::Thread {
@@ -123,4 +123,4 @@ namespace Tests {
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
     }
 } // Tests
-} // WPEFramework
+} // Thunder

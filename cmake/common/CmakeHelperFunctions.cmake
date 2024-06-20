@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include (CMakePackageConfigHelpers)
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 macro(add_element list element)
     list(APPEND ${list} ${element})
@@ -29,7 +30,7 @@ function(_get_default_link_name lib name location)
     get_filename_component(_location "${_rel_location}" DIRECTORY)
     
     if(NOT "${_location}" STREQUAL "")   
-    	string(REGEX REPLACE "^${CMAKE_INSTALL_PREFIX}/lib" "" _location ${_location})
+    	string(REGEX REPLACE "^${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" "" _location ${_location})
         get_filename_component(_location "${_rel_location}" DIRECTORY)
     endif()
 
@@ -307,7 +308,7 @@ function(InstallCMakeConfig)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
     endif()
 
-    set(_install_path "lib/cmake") # default path
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/cmake") # default path
     
     if(Agument_LOCATION)
         set(_install_path "${Agument_LOCATION}" FORCE)
@@ -316,7 +317,7 @@ function(InstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates"
+            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -326,7 +327,7 @@ function(InstallCMakeConfig)
 
         find_file(_config_template  
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates" )
+            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
             
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
@@ -479,7 +480,7 @@ function(InstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates"
+                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -489,7 +490,7 @@ function(InstallPackageConfig)
 
         find_file(_pc_template  
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates")
+                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")
@@ -542,7 +543,7 @@ function(InstallPackageConfig)
         endif()
 
         # Default path on UNIX, if you want Windows or Apple support add the path here. ;-) 
-        set(_install_path "lib/pkgconfig")
+        set(_install_path "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
         if (${Argument_OUTPUT_NAME})
             set(_pc_filename  ${Argument_OUTPUT_NAME})
@@ -587,7 +588,7 @@ function(InstallPackageConfig)
         get_if_link_libraries(libraries link_dirs ${_target})
 
         if(NOT Argument_NO_DEFAULT_LIB_DIR_FILTER)
-            # remove the default library dir e.g /usr/lib
+            # remove the default library dir e.g /usr/${CMAKE_INSTALL_LIBDIR}
             list(LENGTH link_dirs _link_dirs_count)
             if (_link_dirs_count GREATER 0)
                 list(REMOVE_ITEM link_dirs "${CMAKE_INSTALL_PREFIX}/${TARGET_LIBRARY_DIR}")
@@ -625,7 +626,7 @@ function(InstallFindModule)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    set(DESTINATION lib/cmake/${NAMESPACE}/modules) 
+    set(DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules) 
 
     if(Argument_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
@@ -637,11 +638,11 @@ function(InstallFindModule)
         else()
             file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
         endif(Argument_RECURSE)
-        install(FILES "${extra_files}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
     endif()
 
     if (Argument_FILES)
-        install(FILES "${Argument_FILES}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
     endif()
 
 endfunction(InstallFindModule)
@@ -690,7 +691,7 @@ function(InstallCompatibleCMakeConfig)
 
     cmake_parse_arguments(Arg "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    if(Argument_UNPARSED_ARGUMENTS)
+    if(Arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Arg_UNPARSED_ARGUMENTS}\".")
     endif()
 
@@ -732,8 +733,8 @@ function(InstallCompatibleCMakeConfig)
     install(
             TARGETS ${Arg_LEGACY_TARGET}
             EXPORT ${Arg_LEGACY_TARGET}Targets
-            PUBLIC_HEADER DESTINATION ${Arg_LEGACY_PUBLIC_HEADER_LOCATION} COMPONENT devel
-            INCLUDES DESTINATION  ${Arg_LEGACY_INCLUDE_DIR} # default include path
+            PUBLIC_HEADER DESTINATION ${Arg_LEGACY_PUBLIC_HEADER_LOCATION} COMPONENT ${NAMESPACE}_Development
+            INCLUDES DESTINATION  ${Arg_LEGACY_INCLUDE_DIR}
     )
 
     installcmakeconfig(TARGETS ${Arg_LEGACY_TARGET} EXTRA_DEPENDENCIES  ${Arg_TARGET})

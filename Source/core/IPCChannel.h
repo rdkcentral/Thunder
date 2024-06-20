@@ -30,7 +30,7 @@
 #include "Trace.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     template <typename EXTENSION, const bool LISTENING, const bool INTERNALFACTORY>

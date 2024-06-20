@@ -27,13 +27,13 @@
 
 namespace {
 
-class WarningReportingBoundsCategoryConfig : public WPEFramework::Core::JSON::Container {
+class WarningReportingBoundsCategoryConfig : public Thunder::Core::JSON::Container {
 public:
     WarningReportingBoundsCategoryConfig(const WarningReportingBoundsCategoryConfig&) = delete;
     WarningReportingBoundsCategoryConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
 
     WarningReportingBoundsCategoryConfig()
-        : WPEFramework::Core::JSON::Container()
+        : Thunder::Core::JSON::Container()
         , ReportBound()
         , WarningBound()
         , CategoryConfig(false)
@@ -46,18 +46,18 @@ public:
     ~WarningReportingBoundsCategoryConfig() override = default;
 
 public:
-    WPEFramework::Core::JSON::DecUInt64 ReportBound;
-    WPEFramework::Core::JSON::DecUInt64 WarningBound;
-    WPEFramework::Core::JSON::String CategoryConfig;
+    Thunder::Core::JSON::DecUInt64 ReportBound;
+    Thunder::Core::JSON::DecUInt64 WarningBound;
+    Thunder::Core::JSON::String CategoryConfig;
 };
 
-class ExcludedCategoriesValuesConfig : public WPEFramework::Core::JSON::Container {
+class ExcludedCategoriesValuesConfig : public Thunder::Core::JSON::Container {
 public:
     ExcludedCategoriesValuesConfig(const WarningReportingBoundsCategoryConfig&) = delete;
     ExcludedCategoriesValuesConfig& operator=(const WarningReportingBoundsCategoryConfig&) = delete;
 
     ExcludedCategoriesValuesConfig()
-        : WPEFramework::Core::JSON::Container()
+        : Thunder::Core::JSON::Container()
         , ExcludedCallsigns()
         , ExcludedModules()
     {
@@ -68,12 +68,12 @@ public:
     ~ExcludedCategoriesValuesConfig() override = default;
 
 public:
-    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedCallsigns;
-    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::String> ExcludedModules;
+    Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> ExcludedCallsigns;
+    Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> ExcludedModules;
 };
 }
 
-namespace WPEFramework {
+namespace Thunder {
 namespace WarningReporting {
 
     WarningReportingUnitProxy::WarningReportingUnitProxy()

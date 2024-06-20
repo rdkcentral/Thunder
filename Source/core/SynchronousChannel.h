@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -414,4 +414,4 @@ namespace Core {
 
 } // namespace Core
 
-} // namespace WPEFramework
+} // namespace Thunder

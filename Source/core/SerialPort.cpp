@@ -49,7 +49,7 @@
 #define ERROR_AGAIN ERROR_IO_PENDING
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 //////////////////////////////////////////////////////////////////////

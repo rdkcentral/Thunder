@@ -19,7 +19,7 @@
 
 #include "DataElement.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // CRC32 lookup table for polynomial 0x04c11db7 
@@ -79,6 +79,7 @@ namespace Core {
     /// <returns>Calculated CRC value</returns>
     uint32_t DataElement::CRC32(const uint64_t offset, const uint64_t size) const
     {
+        ASSERT(IsValid());
         ASSERT(offset + size <= m_Size);
         uint32_t crc = 0xffffffff;
 
@@ -91,10 +92,13 @@ namespace Core {
 
     void LinkedDataElement::GetBuffer(uint64_t offset, uint32_t size, uint8_t* buffer) const
     {
+        ASSERT(IsValid());
+        ASSERT(buffer != nullptr);
+
         // Check if we cross a boundary for the read..
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
-            ::memcpy(buffer, &(Buffer()[offset]), size);
+            ::memmove(buffer, &(Buffer()[offset]), size);
         } else {
             // If we want to read more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
@@ -113,10 +117,13 @@ namespace Core {
 
     void LinkedDataElement::SetBuffer(uint64_t offset, uint32_t size, const uint8_t* buffer)
     {
+        ASSERT(IsValid());
+        ASSERT(buffer != nullptr);
+
         // Check if we cross a boundary for the write..
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
-            ::memcpy(&(Buffer()[offset]), buffer, size);
+            ::memmove(&(Buffer()[offset]), buffer, size);
         } else {
             // If we want to write more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
@@ -135,6 +142,9 @@ namespace Core {
 
     uint64_t LinkedDataElement::Copy(const uint64_t offset, const LinkedDataElement& copy)
     {
+        ASSERT(IsValid());
+        ASSERT(copy.IsValid());
+
         const LinkedDataElement* source = &copy;
         LinkedDataElement* destination = this;
         uint64_t sourceOffset = 0;
@@ -144,7 +154,7 @@ namespace Core {
         do {
             if ((source->Size() - sourceOffset) > (destination->Size() - destinationOffset)) {
                 // The destination is the limiting factor, fill the destination up..
-                ::memcpy(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(destination->Size() - destinationOffset));
+                ::memmove(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(destination->Size() - destinationOffset));
 
                 sourceOffset += (destination->Size() - destinationOffset);
                 copiedSize += (destination->Size() - destinationOffset);
@@ -159,8 +169,10 @@ namespace Core {
                 source = source->m_Next;
                 sourceOffset = 0;
             }
-
-        } while ((destination != nullptr) && (source != nullptr));
+        } while (   (destination != nullptr)
+                 && (source != nullptr)
+                 && !((copiedSize >= destination->Size()) && (destination->m_Next == nullptr))
+        );
 
         return (copiedSize);
     }

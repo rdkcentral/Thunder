@@ -26,7 +26,7 @@
 #include "WebSerializer.h"
 #include "WebTransform.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     template <typename LINK, typename INBOUND, typename OUTBOUND, typename ALLOCATOR, typename TRANSFORM = NoTransform>
     class WebLinkType {

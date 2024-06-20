@@ -37,7 +37,8 @@ typedef enum {
 typedef enum {
     MEMCR_OK = 0,
     MEMCR_ERROR = -1,
-    MEMCR_INVALID_PID = -2
+    MEMCR_INVALID_PID = -2,
+    MEMCR_SOCKET_READ_ERROR = -3
 } ServerResponseCode;
 
 typedef struct {
@@ -135,14 +136,15 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
     ret = write(cd, cmd, sizeof(ServerRequest));
     if (ret != sizeof(ServerRequest)) {
-        LOGERR("Socket write failed: ret %d", ret);
+        LOGERR("Socket write failed: ret %d, %m", ret);
         close(cd);
         return false;
     }
 
     ret = read(cd, resp, sizeof(ServerResponse));
     if (ret != sizeof(ServerResponse)) {
-        LOGERR("Socket read failed: ret %d", ret);
+        LOGERR("Socket read failed: ret %d, %m", ret);
+        resp->respCode = MEMCR_SOCKET_READ_ERROR;
         close(cd);
         return false;
     }
@@ -163,6 +165,9 @@ uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char da
     if (SendRcvCmd(&req, &resp, timeout, data_dir)) {
         LOGINFO("Hibernate process PID %d success", pid);
         return HIBERNATE_ERROR_NONE;
+    } else if (resp.respCode == MEMCR_SOCKET_READ_ERROR) {
+        LOGERR("Error Hibernate timeout process PID %d ret %d", pid, resp.respCode);
+        return HIBERNATE_ERROR_TIMEOUT;
     } else {
         LOGERR("Error Hibernate process PID %d ret %d", pid, resp.respCode);
         return HIBERNATE_ERROR_GENERAL;

@@ -31,7 +31,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     extern EXTERNAL void Reseed();
     extern EXTERNAL void Random(uint8_t& value);

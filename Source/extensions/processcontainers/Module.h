@@ -24,6 +24,7 @@
 #endif
 
 #include <core/core.h>
+#include <messaging/messaging.h>
 
 #if defined(__WINDOWS__) && defined(CONTAINERS_EXPORTS)
 #undef EXTERNAL

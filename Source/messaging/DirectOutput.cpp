@@ -19,7 +19,7 @@
 
 #include "DirectOutput.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace Messaging {
 
@@ -31,17 +31,15 @@ namespace WPEFramework {
             ASSERT(message != nullptr);
             ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-            string result = messageInfo.ToString(_abbreviate).c_str() + message->Data();
-
 #ifndef __WINDOWS__
             if (_isSyslog == true) {
                 //use longer messages for syslog
-                syslog(LOG_NOTICE, "%s\n", result.c_str());
+                syslog(LOG_NOTICE, "%s%s\n", messageInfo.ToString(_abbreviate).c_str(), message->Data().c_str());
             }
             else
 #endif
             {
-                std::cout << result << std::endl;
+                std::cout << messageInfo.ToString(_abbreviate).c_str() << message->Data() << std::endl;
             }
         }
     } // namespace Messaging

@@ -20,7 +20,7 @@
 #include "Administrator.h"
 #include "IUnknown.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     Administrator::Administrator()
@@ -37,11 +37,11 @@ namespace RPC {
 
     /* virtual */ Administrator::~Administrator()
     {
-        for (std::pair<uint32_t, IMetadata*> proxy : _proxy) {
+        for (auto& proxy : _proxy) {
             delete proxy.second;
         }
 
-        for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
+        for (auto& stub : _stubs) {
             delete stub.second;
         }
 
@@ -59,10 +59,10 @@ namespace RPC {
         return (systemAdministrator);
     }
 
-    void Administrator::AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
+    void Administrator::AddRef(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
-        std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
+        Stubs::iterator index(_stubs.find(interfaceId));
 
         if (index != _stubs.end()) {
             Core::IUnknown* implementation(index->second->Convert(impl));
@@ -70,8 +70,12 @@ namespace RPC {
             ASSERT(implementation != nullptr);
 
             if (implementation != nullptr) {
-                implementation->AddRef();
-                RegisterUnknownInterface(channel, implementation, interfaceId);
+                _adminLock.Lock();
+                if (channel.IsValid() == true) {
+                    implementation->AddRef();
+                    RegisterUnknown(channel, implementation, interfaceId);
+                }
+                _adminLock.Unlock();
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
@@ -79,10 +83,10 @@ namespace RPC {
         }
     }
 
-    void Administrator::Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount)
+    void Administrator::Release(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId, const uint32_t dropCount)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
-        std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
+        Stubs::iterator index(_stubs.find(interfaceId));
 
         if (index != _stubs.end()) {
             Core::IUnknown* implementation(index->second->Convert(impl));
@@ -90,8 +94,12 @@ namespace RPC {
             ASSERT(implementation != nullptr);
 
             if (implementation != nullptr) {
-                UnregisterInterface(channel, implementation, interfaceId, dropCount);
-                implementation->Release();
+                _adminLock.Lock();
+                if (channel.IsValid() == true) {
+                    UnregisterInterface(channel, implementation, interfaceId, dropCount);
+                    implementation->Release();
+                }
+                _adminLock.Unlock();
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
@@ -150,7 +158,7 @@ namespace RPC {
         uint32_t interfaceId(message->Parameters().InterfaceId());
 
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
-        std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
+        Stubs::iterator index(_stubs.find(interfaceId));
 
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
@@ -245,43 +253,47 @@ namespace RPC {
 
             _adminLock.Lock();
 
-            ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
+            if (channel.IsValid() == true) {
 
-            if (index != _channelProxyMap.end()) {
-                Proxies::iterator entry(index->second.begin());
-                while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
-                    entry++;
-                }
-                if (entry != index->second.end()) {
-                    interface = (*entry)->Acquire(outbound, id);
+                uintptr_t channelId(channel->LinkId());
+                ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
-                    // The implementation could be found, but the current implemented proxy is not
-                    // for the given interface. If that cae, the interface == nullptr and we still
-                    // need to create a proxy for this specific interface.
-                    if (interface != nullptr) {
-                        result = (*entry);
+                if (index != _channelProxyMap.end()) {
+                    Proxies::iterator entry(index->second.begin());
+                    while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
+                        entry++;
+                    }
+                    if (entry != index->second.end()) {
+                        interface = (*entry)->Acquire(outbound, id);
+
+                        // The implementation could be found, but the current implemented proxy is not
+                        // for the given interface. If that cae, the interface == nullptr and we still
+                        // need to create a proxy for this specific interface.
+                        if (interface != nullptr) {
+                            result = (*entry);
+                        }
                     }
                 }
-            }
 
-            if (result == nullptr) {
-                std::map<uint32_t, IMetadata*>::iterator factory(_proxy.find(id));
+                if (result == nullptr) {
+                    Factories::iterator factory(_proxy.find(id));
 
-                if (factory != _proxy.end()) {
+                    if (factory != _proxy.end()) {
 
-                    result = factory->second->CreateProxy(channel, impl, outbound);
+                        result = factory->second->CreateProxy(channel, impl, outbound);
 
-                    ASSERT(result != nullptr);
+                        ASSERT(result != nullptr);
 
-                    // Register it as it is remotely registered :-)
-                    _channelProxyMap[channel->LinkId()].push_back(result);
+                        // Register it as it is remotely registered :-)
+                        _channelProxyMap[channelId].push_back(result);
 
-                    // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
-                    interface = result->QueryInterface(id);
-                    ASSERT(interface != nullptr);
+                        // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
+                        interface = result->QueryInterface(id);
+                        ASSERT(interface != nullptr);
 
-                } else {
-                    TRACE_L1("Failed to find a Proxy for %d.", id);
+                    } else {
+                        TRACE_L1("Failed to find a Proxy for %d.", id);
+                    }
                 }
             }
 
@@ -291,17 +303,18 @@ namespace RPC {
         return (result);
     }
 
-    void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
+    // Locked by the Callee and the channel has been checked that it exists.. (IsValid)
+    void Administrator::RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
         ASSERT(reference != nullptr);
+        ASSERT(channel.IsValid() == true);
 
-        _adminLock.Lock();
-
-        ReferenceMap::iterator index = _channelReferenceMap.find(channel->LinkId());
+        uintptr_t channelId(channel->LinkId());
+        ReferenceMap::iterator index = _channelReferenceMap.find(channelId);
 
         if (index == _channelReferenceMap.end()) {
             auto result = _channelReferenceMap.emplace(std::piecewise_construct,
-                std::forward_as_tuple(channel->LinkId()),
+                std::forward_as_tuple(channelId),
                 std::forward_as_tuple());
             result.first->second.emplace_back(id, reference);
             TRACE_L3("Registered interface %p(0x%08x).", reference, id);
@@ -337,19 +350,49 @@ namespace RPC {
                 element->Increment();
             }
         }
+    }
 
-        _adminLock.Unlock();
+    // Locked by the Callee and the channel has been checked that it exists.. (IsValid)
+    void Administrator::UnregisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount) {
+        ASSERT(source != nullptr);
+        ASSERT(channel.IsValid() == true);
+
+        ReferenceMap::iterator index(_channelReferenceMap.find(channel->LinkId()));
+
+        if (index != _channelReferenceMap.end()) {
+            std::list< RecoverySet >::iterator element(index->second.begin());
+
+            while ( (element != index->second.end()) && ((element->Id() != interfaceId) || (element->Unknown() != source)) ) {
+                element++;
+            }
+
+            ASSERT(element != index->second.end());
+
+            if (element != index->second.end()) {
+                if (element->Decrement(dropCount) == false) {
+                    index->second.erase(element);
+                    if (index->second.size() == 0) {
+                        _channelReferenceMap.erase(index);
+                        TRACE_L3("Unregistered interface %p(%u).", source, interfaceId);
+                    }
+                }
+            } else {
+                printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+            }
+        } else {
+            printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+        }
     }
 
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id)
     {
-        std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
+        Stubs::const_iterator index (_stubs.find(id));
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
     const Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id) const
     {
-        std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
+        Stubs::const_iterator index (_stubs.find(id));
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
@@ -357,7 +400,8 @@ namespace RPC {
     {
         _adminLock.Lock();
 
-        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel->LinkId()));
+        uintptr_t channelId(channel->LinkId());
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channelId));
 
         if (remotes != _channelReferenceMap.end()) {
             std::list<RecoverySet>::iterator loop(remotes->second.begin());
@@ -382,7 +426,7 @@ namespace RPC {
             _channelReferenceMap.erase(remotes);
         }
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
+        ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
         if (index != _channelProxyMap.end()) {
             for (auto entry : index->second) {

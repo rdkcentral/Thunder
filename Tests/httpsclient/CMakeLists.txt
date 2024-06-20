@@ -16,4 +16,4 @@ target_link_libraries(httpsclient_test
         ${NAMESPACE}WebSocket
 )
 
-install(TARGETS httpsclient_test DESTINATION bin)
+install(TARGETS httpsclient_test DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

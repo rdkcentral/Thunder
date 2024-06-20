@@ -1,13 +1,13 @@
 # What is Thunder?
 !!! note
-	The terms "**Thunder**" and "**WPEFramework**" may be used interchangeably throughout this documentation. The project was originally known as WPEFramework (since it was developed by the Web Platform for Embedded, or WPE, team).	The name was changed to Thunder when it was incorporated into RDK, but the code still uses the name WPEFramework internally.
+	The terms "**Thunder**" and "**Thunder**" may be used interchangeably throughout this documentation. The project was originally known as Thunder (since it was developed by the Web Platform for Embedded, or WPE, team).	The name was changed to Thunder when it was incorporated into RDK, but the code still uses the name Thunder internally.
 
 ## Introduction
 
-Thunder (aka WPEFramework) is developed by [Metrological](https://www.metrological.com/) (a Comcast company), and provides a way for STB operators to implement business-logic in a modular way using plugins, and a consistent way for applications to control and query those plugins. By using a plugin-based architecture, it is possible to build a device with only the specific features that are required for that particular device.
+Thunder (aka Thunder) is developed by [Metrological](https://www.metrological.com/) (a Comcast company), and provides a way for STB operators to implement business-logic in a modular way using plugins, and a consistent way for applications to control and query those plugins. By using a plugin-based architecture, it is possible to build a device with only the specific features that are required for that particular device.
 
 !!! tip
-	Do not confuse WPEFramework and [WPEWebKit](https://github.com/WebPlatformForEmbedded/WPEWebKit/). Whilst both are maintained by the Metrological/WPE team, they are not related. [WPEWebKit](https://github.com/WebPlatformForEmbedded/WPEWebKit/) is a fork of the WebKit browser for embedded devices, and shares no code with WPEFramework
+	Do not confuse Thunder and [WPEWebKit](https://github.com/WebPlatformForEmbedded/WPEWebKit/). Whilst both are maintained by the Metrological/WPE team, they are not related. [WPEWebKit](https://github.com/WebPlatformForEmbedded/WPEWebKit/) is a fork of the WebKit browser for embedded devices, and shares no code with Thunder
 
 To communicate with plugins, Thunder provides multiple RPC mechanisms which can be chosen depending on which is more appropriate for the client app and the IPC channel. However, a plugin author will simply develop their plugin against an interface and the exact RPC mechanism can be chosen at runtime.
 

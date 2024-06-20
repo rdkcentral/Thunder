@@ -25,7 +25,7 @@
 #include "IPlugin.h"
 #include "IDispatcher.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 
@@ -38,6 +38,9 @@ namespace PluginHost {
     };
 
     class EXTERNAL JSONRPC : public ILocalDispatcher {
+    public:
+        using SendIfMethod = std::function<bool(const string&)>;
+
     private:
         class Notification : public IShell::IConnectionServer::INotification {
         public:
@@ -261,7 +264,7 @@ namespace PluginHost {
                     }
                 }
             }
-            void Event(JSONRPC& parent, const string event, const string& parameter, const std::function<bool(const string&)>& sendifmethod) {
+            void Event(JSONRPC& parent, const string event, const string& parameter, const SendIfMethod& sendifmethod) {
                 for (Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
@@ -302,7 +305,7 @@ namespace PluginHost {
             {
                 Init();
             }
-            VersionInfo(VersionInfo&& move)
+            VersionInfo(VersionInfo&& move) noexcept
                 : Core::JSON::Container()
                 , Name(std::move(move.Name))
                 , Major(std::move(move.Major))
@@ -327,7 +330,7 @@ namespace PluginHost {
                 Patch = rhs.Patch;
                 return (*this);
             }
-            VersionInfo& operator=(VersionInfo&& move)
+            VersionInfo& operator=(VersionInfo&& move) noexcept
             {
                 if (this != &move) {
                     Name = std::move(move.Name);
@@ -564,12 +567,17 @@ namespace PluginHost {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
+        }
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value, int>::type = 0>
+        uint32_t Notify(const string& event, SENDIFMETHOD method) const
+        {
+            return InternalNotify(event, _T(""), std::move(method));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
@@ -861,7 +869,7 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t InternalNotify(const string& event, const string& parameters, const std::function<bool(const string&)>& sendifmethod = std::function<bool(const string&)>()) const
+        uint32_t InternalNotify(const string& event, const string& parameters, const SendIfMethod& sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -1007,5 +1015,5 @@ namespace PluginHost {
         StatusCallbackMap _observers;
     };
 
-} // namespace WPEFramework::PluginHost
+} // namespace Thunder::PluginHost
 }

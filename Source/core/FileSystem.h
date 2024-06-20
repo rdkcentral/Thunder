@@ -34,7 +34,7 @@
 #endif
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     PUSH_WARNING(DISABLE_WARNING_UNUSED_FUNCTIONS)
@@ -173,7 +173,7 @@ namespace Core {
             return (*this);
         }
 
-        File& operator=(File&& move)
+        File& operator=(File&& move) noexcept
         {
             if (this != &move) {
                 _name = std::move(move._name);
@@ -803,7 +803,7 @@ POP_WARNING()
             return (*this);
         }
 
-        Directory& operator=(Directory&& move)
+        Directory& operator=(Directory&& move) noexcept
         {
             if (this != &move) {
                 _name = std::move(move._name);

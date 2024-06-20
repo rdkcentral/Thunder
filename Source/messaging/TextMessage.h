@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 
@@ -32,28 +32,22 @@ namespace Messaging {
             : _text(text)
         {
         }
+        TextMessage(const uint16_t length, const TCHAR buffer[])
+            : _text(buffer, length)
+        {
+        }
 
         TextMessage(const TextMessage&) = delete;
         TextMessage& operator=(const TextMessage&) = delete;
 
         uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override
         {
-            uint16_t length = 0;
             Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
             Core::FrameType<0>::Writer writer(frame, 0);
 
-            if (bufferSize < _text.size() + 1) {
-                string cutString(_text, 0, bufferSize - 1);
-                writer.NullTerminatedText(cutString);
-                length = bufferSize;
+            writer.NullTerminatedText(_text, bufferSize);
 
-            }
-            else {
-                writer.NullTerminatedText(_text);
-                length = static_cast<uint16_t>(_text.size() + 1);
-            }
-
-            return (length);
+            return (std::min(bufferSize, static_cast<uint16_t>(_text.size() + 1)));
         }
 
         uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override

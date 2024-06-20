@@ -26,7 +26,7 @@
 #include "Portability.h"
 #include "Proxy.h"
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
         // ---- Referenced classes and types ----
 
@@ -57,6 +57,6 @@ namespace WPEFramework {
             uint8_t m_Buffer[BLOCKSIZE];
         };
     } // namespace Core
-} //namespace WPEFramework
+} //namespace Thunder
 
 #endif // __DATABUFFER_H

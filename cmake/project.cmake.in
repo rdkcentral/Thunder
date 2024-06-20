@@ -20,6 +20,8 @@
 ## https://github.com/toeb/cmakepp
 ##
 
+include(GNUInstallDirs)
+
 macro(project_version)
     string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" _VERSION_MAJOR "${ARGV0}")
     string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" _VERSION_MINOR "${ARGV0}")
@@ -32,6 +34,11 @@ macro(project_version)
     set(PROJECT_VERSION ${_VERSION_MAJOR}.${_VERSION_MINOR}.${_VERSION_PATCH})
     set(VERSION ${PROJECT_VERSION})
 endmacro()
+
+set(Thunder_VERSION_MAJOR @Thunder_VERSION_MAJOR@)
+set(Thunder_VERSION_MINOR @Thunder_VERSION_MINOR@)
+set(Thunder_VERSION_PATCH @Thunder_VERSION_PATCH@)
+set(Thunder_VERSION @Thunder_VERSION@)
 
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
@@ -74,6 +81,18 @@ endif()
 
 if(NOT DEFINED LEGACY_CONFIG_GENERATOR)
     set(LEGACY_CONFIG_GENERATOR @LEGACY_CONFIG_GENERATOR@ CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT DEFINED HUMAN_VERSIONED_BINARIES)
+    set(HUMAN_VERSIONED_BINARIES @HUMAN_VERSIONED_BINARIES@ CACHE INTERNAL "Create binaries with a human readable version suffix" FORCE)
+endif()
+
+if(NOT DEFINED VERSIONED_LIBRARY_LOADING)
+    set(VERSIONED_LIBRARY_LOADING @VERSIONED_LIBRARY_LOADING@ CACHE INTERNAL "Uses the major version (*.so.<major>) to load libraries rather then *.so" FORCE)
+endif()
+
+if(VERSIONED_LIBRARY_LOADING)
+    add_definitions(-DVERSIONED_LIBRARY_LOADING)
 endif()
 
 set(CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@ CACHE INTERNAL "" FORCE)
