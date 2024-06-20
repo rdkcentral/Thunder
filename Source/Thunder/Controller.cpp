@@ -728,7 +728,9 @@ namespace Plugin {
                     info.Instance = proxy->Implementation();
                     info.Interface = proxy->InterfaceId();
                     info.Name = Core::ClassName(proxy->Name()).Text();
-                    info.Count = proxy->ReferenceCount();
+                    // Subtract one for the Thunder syatem that keeps track of this
+                    //proxy for leakage reporting!
+                    info.Count = proxy->ReferenceCount() - 1;
                 }
             }
         );
