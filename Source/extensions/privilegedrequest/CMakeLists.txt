@@ -15,7 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(PrivilegedRequest LANGUAGES CXX)
+project(PrivilegedRequest
+        VERSION 1.0.0
+        DESCRIPTION "With PrivilegedRequest you can make a file descriptor available to other processes."
+        LANGUAGES CXX)
 
 cmake_minimum_required(VERSION 3.15)
 
