@@ -263,7 +263,6 @@ namespace Core {
     private:
         uint16_t Checksum() const {
             ip* ipHeader = const_cast<ip*>(reinterpret_cast<const ip*>(Base::Frame()));
-
             uint16_t  original = ipHeader->ip_sum;
             ipHeader->ip_sum = 0;
             uint32_t result = Checksum(0, reinterpret_cast<const uint16_t*>(ipHeader), HeaderSize);

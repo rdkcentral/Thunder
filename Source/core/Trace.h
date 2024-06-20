@@ -51,14 +51,6 @@ namespace Thunder {
 #include <sys/syscall.h>
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
-#ifdef __APPLE__
-#include <pthread.h>
-uint64_t gettid()
-{
-    uint64_t tid;
-    pthread_threadid_np(NULL, &tid);
-    return tid;
-}
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else

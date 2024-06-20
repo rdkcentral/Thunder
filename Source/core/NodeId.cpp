@@ -280,7 +280,6 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
             m_hostName = RawName(m_structInfo);
         }
     }
-
     NodeId::NodeId(const char interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address)
         : NodeId(::if_nametoindex(interfaceName), protocol, pkgType, haType, length, address)
     {

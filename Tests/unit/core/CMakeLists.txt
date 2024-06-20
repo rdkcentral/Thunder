@@ -72,7 +72,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
-   # test_valuerecorder.cpp
+   #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
