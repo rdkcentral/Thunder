@@ -287,9 +287,6 @@
     <ClCompile Include="Library.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MessageException.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NetworkInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
