@@ -2315,7 +2315,7 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/rdkcentral/ThunderTools.git
 </code></pre></div>
 Next, we need to run the following commands to build and then install the code generators inside ThunderTools:
-<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span>
+<div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderTools<span class="w"> </span>-B<span class="w"> </span>build/ThunderTools<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div></p>
@@ -2325,17 +2325,12 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderTools<s
 </code></pre></div>
 <p>Run the following commands to build and then install Thunder. The available <code>-DCMAKE_BUILD_TYPE</code> options are: <code>[Debug, Release, MinSizeRel]</code>.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>Thunder<span class="w"> </span>-B<span class="w"> </span>build/Thunder<span class="w"> </span><span class="se">\</span>
--DBUILD_SHARED_LIBS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DBINDING<span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="w"> </span><span class="se">\</span>
 -DCMAKE_BUILD_TYPE<span class="o">=</span><span class="s2">&quot;Debug&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
--DDATA_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/share/Thunder&quot;</span><span class="w"> </span><span class="se">\</span>
--DPERSISTENT_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/var/thunder&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPORT<span class="o">=</span><span class="s2">&quot;55555&quot;</span><span class="w"> </span><span class="se">\</span>
--DPROXYSTUB_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/thunder/proxystubs&quot;</span><span class="w"> </span><span class="se">\</span>
--DSYSTEM_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/lib/thunder/plugins&quot;</span><span class="w"> </span><span class="se">\</span>
--DVOLATILE_PATH<span class="o">=</span><span class="s2">&quot;tmp&quot;</span>
+-DTOOLS_SYSROOT<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+-DINITV_SCRIPT<span class="o">=</span>OFF<span class="w"> </span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -2349,8 +2344,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderInterfaces:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderInterfaces<span class="w"> </span>-B<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfaces<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -2363,24 +2357,18 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderInterfa
 <p>Run the following commands to build and then install ThunderNanoServices. </p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServices<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_COMMANDER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_DHCPSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DIALSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DICTIONARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_FILETRANSFER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_IOCONNECTOR<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_INPUTSWITCH<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_NETWORKCONTROL<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_PROCESSMONITOR<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_RESOURCEMONITOR<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_SYSTEMCOMMANDS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_SWITCHBOARD<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_WEBPROXY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_WEBSERVER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_WEBSHELL<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_WIFICONTROL<span class="o">=</span>ON
+-DPLUGIN_WEBSHELL<span class="o">=</span>ON<span class="w"> </span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoServices<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
@@ -2391,11 +2379,8 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>Run the following commands to build and then install ThunderNanoServicesRDK.</p>
 <p>In the command below, there is a complete list of plugins that do not require any outside software/hardware dependencies. However, you should customise this to include the plugins you require for your platform.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderNanoServicesRDK<span class="w"> </span>-B<span class="w"> </span>build/ThunderNanoServicesRDK<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
--DPLUGIN_DEVICEIDENTIFICATION<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
 -DPLUGIN_DEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DPLUGIN_LOCATIONSYNC<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_MESSAGECONTROL<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_MESSENGER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLUGIN_MONITOR<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2412,12 +2397,10 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderNanoSer
 <p>Run the following commands to build and then install ThunderClientLibraries:</p>
 <p>In the command below, there is a complete list of client libraries that do not require any outside dependencies; therefore, each of them can be successfully built in this simple  fashion.</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderClientLibraries<span class="w"> </span>-B<span class="w"> </span>build/ThunderClientLibraries<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span><span class="w"> </span><span class="se">\</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span><span class="w"> </span><span class="se">\</span>
 -DBLUETOOTHAUDIOSINK<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDEVICEINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DDISPLAYINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
--DLOCALTRACER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DSECURITYAGENT<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPLAYERINFO<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
 -DPROTOCOLS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
@@ -2434,18 +2417,17 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderClientL
 </code></pre></div>
 <p>Run the following commands to build and then install ThunderUI:</p>
 <div class="highlight"><pre><span></span><code>cmake<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span>-S<span class="w"> </span>ThunderUI<span class="w"> </span>-B<span class="w"> </span>build/ThunderUI<span class="w"> </span><span class="se">\</span>
--DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install/usr&quot;</span><span class="w"> </span><span class="se">\</span>
--DCMAKE_MODULE_PATH<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/install/usr/include/Thunder/Modules&quot;</span>
+-DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="s2">&quot;install&quot;</span>
 
 cmake<span class="w"> </span>--build<span class="w"> </span>build/ThunderUI<span class="w"> </span>--target<span class="w"> </span>install
 </code></pre></div>
 <h2 id="run-thunder">Run Thunder</h2>
 <p>After everything has been built and installed correctly, we can run Thunder.</p>
 <p>Since we installed Thunder in a custom installation directory, we need to provide an <code>LD_LIBRARY_PATH</code> to that location and set <code>PATH</code> to include the <code>bin</code> directory. If the libraries are installed in system-wide locations (e.g. <code>/usr/lib</code> and <code>/usr/bin</code>) then those environment variables are not required</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/usr/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/lib:<span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
 
-$<span class="w"> </span>Thunder<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/Thunder/config.json
+Thunder<span class="w"> </span>-f<span class="w"> </span>-c<span class="w"> </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>/install/etc/Thunder/config.json
 </code></pre></div>
 <p>The following arguments should be specified to the Thunder binary:</p>
 <ul>
