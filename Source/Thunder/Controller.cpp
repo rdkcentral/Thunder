@@ -727,7 +727,10 @@ namespace Plugin {
                     PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
                     info.Instance = proxy->Implementation();
                     info.Interface = proxy->InterfaceId();
-                    info.Count = proxy->ReferenceCount();
+                    info.Name = Core::ClassName(proxy->Name()).Text();
+                    // Subtract one for the Thunder syatem that keeps track of this
+                    //proxy for leakage reporting!
+                    info.Count = proxy->ReferenceCount() - 1;
                 }
             }
         );
@@ -1252,7 +1255,7 @@ namespace Plugin {
                     while (it2.Next() == true) {
                         auto const& entry = it2.Current();
 
-                        proxies.push_back({ entry.Interface.Value(), entry.Instance.Value(), entry.Count.Value() });
+                        proxies.push_back({ entry.Interface.Value(), entry.Name.Value(), entry.Instance.Value(), entry.Count.Value() });
                     }
 
                     break;
