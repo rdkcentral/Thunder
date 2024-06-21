@@ -899,7 +899,11 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
+#ifdef __APPLE__
                            printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
+#else
+                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+#endif
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
