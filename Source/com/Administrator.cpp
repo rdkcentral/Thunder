@@ -126,26 +126,27 @@ namespace RPC {
             while ((entry != index->second.end()) && ((*entry) != &proxy)) {
                 entry++;
             }
+
+            ASSERT(entry != index->second.end());
+
             if (entry != index->second.end()) {
                 index->second.erase(entry);
                 removed = true;
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-                else {
-                    // If it is not found, check the dangling map
-                    Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
-
-                    if (index != _danglingProxies.end()) {
-                        _danglingProxies.erase(index);
-                    }
-                    else {
-                        TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
-		    }
-		}
             }
         } else {
-            TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+            // If the channel nolonger exists, check the dangling map
+            Proxies::iterator index = std::find(_danglingProxies.begin(), _danglingProxies.end(), &proxy);
+
+            if (index != _danglingProxies.end()) {
+                _danglingProxies.erase(index);
+                removed = true;
+            }
+            else {
+                TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
+            }
         }
 
         _adminLock.Unlock();
@@ -432,6 +433,10 @@ namespace RPC {
             for (auto entry : index->second) {
                 entry->Invalidate();
                 _danglingProxies.emplace_back(entry);
+
+                // This is actually for the pendingProxies to be reported 
+                // dangling!!
+                entry->AddRef();
             }
             // The _channelProxyMap does have a reference for each Proxy it 
             // holds, so it is safe to just move the vector from the map to
