@@ -23,7 +23,7 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    std::string HelloWorld() {
+    extern "C" std::string HelloWorld(){
         return "Hello World!";
     }
 

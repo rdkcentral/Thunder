@@ -180,6 +180,8 @@ namespace Core {
 
         ASSERT(_refCountedHandle != nullptr);
 
+        _error.clear();
+
 #ifdef __LINUX__
         ASSERT(_refCountedHandle->_handle != nullptr);
 

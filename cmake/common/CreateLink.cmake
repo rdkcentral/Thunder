@@ -13,7 +13,7 @@ function(CreateLink)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    message(STATUS "Creating symlink ${Argument_LINK} -> ${Argument_TARGET}")
+    message(VERBOSE "Creating symlink ${Argument_LINK} -> ${Argument_TARGET}")
 
     get_filename_component(LINK_DIR ${Argument_LINK} DIRECTORY)
     file(MAKE_DIRECTORY "${LINK_DIR}")

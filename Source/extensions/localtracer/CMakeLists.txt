@@ -1,4 +1,8 @@
-project(LocalTracer LANGUAGES CXX)
+project(LocalTracer
+        VERSION 0.0.1
+        DESCRIPTION "Library to get tracing locally from e.g. your test code on the stdout."
+        LANGUAGES CXX)
+
 cmake_minimum_required(VERSION 3.15)
 
 set(MODULE_NAME ${NAMESPACE}LocalTracer)
