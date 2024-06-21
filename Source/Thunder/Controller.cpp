@@ -1255,7 +1255,7 @@ namespace Plugin {
                     while (it2.Next() == true) {
                         auto const& entry = it2.Current();
 
-                        proxies.push_back({ entry.Interface.Value(), entry.Instance.Value(), entry.Count.Value() });
+                        proxies.push_back({ entry.Interface.Value(), entry.Name.Value(), entry.Instance.Value(), entry.Count.Value() });
                     }
 
                     break;
