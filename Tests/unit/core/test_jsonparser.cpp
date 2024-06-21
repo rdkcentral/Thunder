@@ -19,15 +19,13 @@
 
 #include <functional>
 #include <sstream>
-#include <string>
 
 #include <gtest/gtest.h>
 
-#ifndef MODULE_NAME
-#include "../Module.h"
-#endif
-
+#include "../IPTestAdministrator.h"
 #include <core/core.h>
+
+#include <string>
 
 namespace Thunder {
 namespace Tests {

@@ -19,10 +19,12 @@
 
 #pragma once
 
+#define MODULE_NAME ThunderUnitTests
+
 #include <string>
 #include <time.h>
 
-#include "Module.h"
+class IPTestAdministrator;
 
 class IPTestAdministrator
 {

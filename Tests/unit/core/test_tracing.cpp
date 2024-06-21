@@ -17,19 +17,19 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
-#ifndef MODULE_NAME
-#include "../Module.h"
-#endif
-
-#include <core/core.h>
-
 #include "../IPTestAdministrator.h"
+
+#include <gtest/gtest.h>
+#include <tracing/tracing.h>
+#include <tracing/TraceUnit.h>
+#include <core/Time.h>
 
 namespace Thunder {
 namespace Tests {
 namespace Core {
+
+    
+    
 
 #pragma pack(push)
 #pragma pack(1)
