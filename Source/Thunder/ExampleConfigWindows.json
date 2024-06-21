@@ -400,7 +400,8 @@
         "url": "http://netflix.com/tv",
         "sleep": "5",
         "single": false,
-        "crash": false,
+        "crash": true,
+        "leak":  true,
         "root": {
           "mode": "Local"
         }
