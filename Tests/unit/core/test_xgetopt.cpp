@@ -20,10 +20,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/XGetopt.h>
-
-int argumentCount = 3;
-char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
+#include <core/core.h>
 
 using namespace Thunder;
 using namespace Thunder::Core;
@@ -32,7 +29,7 @@ class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions() = delete;
 
-        ConsoleOptions(int argumentCount, TCHAR* arguments[])
+        ConsoleOptions(int argumentCount, const TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T("chb"))
         {
             Parse();
@@ -66,5 +63,8 @@ class ConsoleOptions : public Core::Options {
 
 TEST(test_xgetopt, simple_xgetopt)
 {
-    ConsoleOptions consoleOptions(argumentCount,arguments);
+    constexpr int argumentCount = 4;
+    const TCHAR* arguments[argumentCount] = {"-c", "-h", "-d", "-b"};
+
+    ConsoleOptions consoleOptions(argumentCount, arguments);
 }
