@@ -1439,10 +1439,8 @@ namespace PluginHost {
                     _textSocket = newIF->QueryInterface<ITextSocket>();
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
-                    IDispatcher* jsonrpc = newIF->QueryInterface<IDispatcher>();
-                    if (jsonrpc != nullptr) {
-                        _jsonrpc = jsonrpc->Local();
-                    }
+                    _jsonrpc = newIF->QueryInterface<IDispatcher>();
+
                     _composit.AquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
@@ -1540,7 +1538,7 @@ namespace PluginHost {
             ITextSocket* _textSocket;
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
-            ILocalDispatcher* _jsonrpc;
+            IDispatcher* _jsonrpc;
             reason _reason;
             Condition _precondition;
             Condition _termination;
