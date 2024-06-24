@@ -51,7 +51,7 @@ namespace Core {
             _arguments = new TCHAR*[argumentCount];
             ASSERT(_arguments != nullptr);
 
-            for(::size_t i = 0; i < argumentCount; i++) {
+            for(int i = 0; i < argumentCount; i++) {
                 _arguments[i] = new TCHAR[count];
                 ASSERT(_arguments[i] != nullptr);
                 ::strncpy(_arguments[i], arguments[i], count);
@@ -67,7 +67,7 @@ namespace Core {
         }
         virtual ~Options()
         {
-            for(::size_t i = 0; i < _argumentCount; i++) {
+            for(int i = 0; i < _argumentCount; i++) {
                 delete [] _arguments[i];
             }
             delete [] _arguments;
