@@ -811,7 +811,6 @@ namespace PluginHost {
                 return (_rawSocket != nullptr);
             }
             inline bool Attach(PluginHost::Channel& channel) {
-
                 bool attached = true;
 
                 if (_extended != nullptr) {
