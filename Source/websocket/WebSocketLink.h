@@ -24,7 +24,7 @@
 #include "WebRequest.h"
 #include "WebResponse.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     namespace WebSocket {
         class EXTERNAL Protocol {
@@ -646,7 +646,9 @@ POP_WARNING()
                                 result += static_cast<uint16_t>(headerSize + payloadSizeInControlFrame); // actualDataSize
 
                             } else {
-                                _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                if (actualDataSize != 0) {
+                                   _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
+                                }
 
                                 result += (headerSize + actualDataSize);
                             }
@@ -1435,4 +1437,4 @@ POP_WARNING()
         Handler<LINK> _channel;
     };
 }
-} // namespace WPEFramework.Web
+} // namespace Thunder.Web

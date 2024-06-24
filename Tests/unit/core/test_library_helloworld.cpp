@@ -1,8 +1,8 @@
 #include <string>
 
-namespace WPEFramework{
+namespace Thunder{
     namespace Test{
-        std::string HelloWorld(){
+        extern "C" std::string HelloWorld(){
             return "Hello World!";
         }
     }

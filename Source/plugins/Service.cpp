@@ -20,7 +20,7 @@
 #include "Service.h"
 #include "Channel.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 
@@ -67,24 +67,19 @@ namespace PluginHost {
         return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
-#if THUNDER_RESTFULL_API
     void Service::Notification(const string& message)
     {
         _notifierLock.Lock();
 
         ASSERT(message.empty() != true);
         {
-            std::list<Channel*>::iterator index(_notifiers.begin());
-
-            while (index != _notifiers.end()) {
-                (*index)->Submit(message);
-                index++;
+            for (auto entry : _notifiers) {
+                entry->Submit(message);
             }
         }
 
         _notifierLock.Unlock();
     }
-#endif
 
     void Service::FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath)
     {

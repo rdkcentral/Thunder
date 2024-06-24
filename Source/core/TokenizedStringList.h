@@ -20,7 +20,7 @@
 #pragma once
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     template <TCHAR SEPARATOR, bool REMOVE_WHITESPACES>

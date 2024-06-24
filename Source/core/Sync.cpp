@@ -47,7 +47,6 @@
 #include <time.h>
 #include <unistd.h>
 #endif
-
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 // GLOBAL INTERLOCKED METHODS
@@ -63,7 +62,7 @@ __gnu_cxx::recursive_init_error::~recursive_init_error()
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifdef __WINDOWS__
@@ -174,9 +173,9 @@ namespace Core {
     {
         // Wait time in seconds.
         const int nTimeSecs = 5;
-        timespec structTime;
+        timespec structTime = {0,0};
 
-        clock_gettime(CLOCK_REALTIME, &structTime);
+        clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_sec += nTimeSecs;
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
@@ -434,12 +433,14 @@ namespace Core {
             if (m_blLocked == true) {
                 struct timespec structTime;
 
-#ifdef __LINUX__
+#ifdef __APPLE__
+                clock_gettime(CLOCK_REALTIME, &structTime);
+#elif defined(__LINUX__)
                 clock_gettime(CLOCK_MONOTONIC, &structTime);
+#endif
                 structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
                 structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 structTime.tv_nsec = structTime.tv_nsec % 1000000000;
-#endif
 
                 do {
                     // Oops it seems that we are not allowed to pass.
@@ -909,26 +910,39 @@ namespace Core {
             if (m_blCondition == false) {
                 struct timespec structTime;
 
+#ifdef __APPLE__
+                clock_gettime(CLOCK_REALTIME, &structTime);
+#elif defined(__LINUX__)
                 clock_gettime(CLOCK_MONOTONIC, &structTime);
+#endif
                 structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
                 structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
                 do {
                     // Oops it seems that we are not allowed to pass.
-                    nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
+                    nResult = pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime);
+
+                    if (nResult == ETIMEDOUT) {
+                        // Something went wrong, so assume...
+                        TRACE_L5("Timed out waiting for event <%d>.", nTime);
+                        nResult = Core::ERROR_TIMEDOUT;
+                    } else if (nResult != 0) {
+                        // Something went wrong, so assume...
+                        TRACE_L5("Waiting on semaphore failed. Error code <%d>", nResult);
+                        nResult = Core::ERROR_GENERAL;
+                    }
 
                     // For some reason the documentation says that we have to double check on
                     // the condition variable to see if we are allowed to fall through, so we
                     // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
                 } while ((m_blCondition == false) && (nResult == Core::ERROR_NONE));
 
-                if (nResult != 0) {
+               if (nResult != 0) {
                     // Something went wrong, so assume...
                     TRACE_L5("Timed out waiting for event <%d>!", nResult);
                 }
             }
-
             // Seems that the event is triggered, lets continue. but
             // do not forget to give back the flag..
             pthread_mutex_unlock(&m_syncAdminLock);

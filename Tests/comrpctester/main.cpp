@@ -9,7 +9,7 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 constexpr char installPath[] = "/home/bram/Projects/metrological/Thunder/install/";
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 class Message : public Core::FrameType<UINT32_MAX, true, uint32_t> {
 private:
@@ -354,12 +354,12 @@ public:
     ThunderWrapper(const string& installPath, const ICallback& callback)
         : Core::Thread(Thread::DefaultStackSize(), "ThunderWrapper")
         , _thunder(true)
-        , _options(installPath + string("/usr/bin/WPEFramework"))
+        , _options(installPath + string("/usr/bin/Thunder"))
         , _callback(callback)
     {
         FixLDLibraryPaths(installPath + string("/usr/lib"));
 
-        _options.Add("-c").Add(installPath + string("/etc/WPEFramework/config.json"));
+        _options.Add("-c").Add(installPath + string("/etc/Thunder/config.json"));
 
         struct sigaction sa;
 
@@ -690,4 +690,4 @@ int main(int argc, char** argv)
     }
 
     return (result);
-}
+}

@@ -64,7 +64,7 @@
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
 #ifdef __DEBUG__

@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include <functional>
 
-namespace WPEFramework {
+namespace Thunder {
 
 template <bool PARAMETER>
 using EnableIfParameter = typename std::enable_if<PARAMETER, int>::type;

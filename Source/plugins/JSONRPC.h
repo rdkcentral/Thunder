@@ -25,19 +25,14 @@
 #include "IPlugin.h"
 #include "IDispatcher.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 
-    struct EXTERNAL ILocalDispatcher : public IDispatcher {
-        virtual ~ILocalDispatcher() = default;
+    class EXTERNAL JSONRPC : public IDispatcher {
+    public:
+        using SendIfMethod = std::function<bool(const string&)>;
 
-        virtual void Activate(IShell* service) = 0;
-        virtual void Deactivate() = 0;
-        virtual void Dropped(const IDispatcher::ICallback* callback) = 0;
-    };
-
-    class EXTERNAL JSONRPC : public ILocalDispatcher {
     private:
         class Notification : public IShell::IConnectionServer::INotification {
         public:
@@ -261,7 +256,7 @@ namespace PluginHost {
                     }
                 }
             }
-            void Event(JSONRPC& parent, const string event, const string& parameter, const std::function<bool(const string&)>& sendifmethod) {
+            void Event(JSONRPC& parent, const string event, const string& parameter, const SendIfMethod& sendifmethod) {
                 for (Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
@@ -302,7 +297,7 @@ namespace PluginHost {
             {
                 Init();
             }
-            VersionInfo(VersionInfo&& move)
+            VersionInfo(VersionInfo&& move) noexcept
                 : Core::JSON::Container()
                 , Name(std::move(move.Name))
                 , Major(std::move(move.Major))
@@ -327,7 +322,7 @@ namespace PluginHost {
                 Patch = rhs.Patch;
                 return (*this);
             }
-            VersionInfo& operator=(VersionInfo&& move)
+            VersionInfo& operator=(VersionInfo&& move) noexcept
             {
                 if (this != &move) {
                     Name = std::move(move.Name);
@@ -564,12 +559,17 @@ namespace PluginHost {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
+        }
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value, int>::type = 0>
+        uint32_t Notify(const string& event, SENDIFMETHOD method) const
+        {
+            return InternalNotify(event, _T(""), std::move(method));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
@@ -702,13 +702,8 @@ namespace PluginHost {
 
             return (result);
         }
-        ILocalDispatcher* Local() override {
-            return (this);
-        }
 
-        // Inherited via ILocalDispatcher
-        // ---------------------------------------------------------------------------------
-        void Activate(IShell* service) override
+        Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) override
         {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
@@ -719,25 +714,26 @@ namespace PluginHost {
             _service->AddRef();
             _callsign = _service->Callsign();
 
+            sink = &_notification;
+            sink->AddRef();
+
             _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
         }
-        void Deactivate() override
+        Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) override
         {
             _adminLock.Lock();
 
-            if (_service != nullptr) {
-                if (_observers.empty() == false) {
-                    _service->Unregister(&_notification);
-                }
-
-                _service->Release();
-                _service = nullptr;
-            }
+            sink = &_notification;
+            sink->AddRef();
 
             _callsign.clear();
             _observers.clear();
 
             _adminLock.Unlock();
+
+            return (Core::ERROR_NONE);
         }
 
         // Inherited via IDispatcher::ICallback
@@ -807,12 +803,6 @@ namespace PluginHost {
             ObserverMap::iterator index = _observers.find(eventId);
 
             if (index == _observers.end()) {
-
-                if (_observers.empty() == true) {
-                    ASSERT(_service != nullptr);
-                    _service->Register(&_notification);
-                }
-
                 index = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(eventId),
                     std::forward_as_tuple()).first;
@@ -837,9 +827,6 @@ namespace PluginHost {
 
                 if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
                     _observers.erase(index);
-
-                    ASSERT(_service != nullptr);
-                    _service->Unregister(&_notification);
                 }
             }
 
@@ -861,12 +848,6 @@ namespace PluginHost {
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
-
-                    if (_observers.empty() == true) {
-                        ASSERT(_service != nullptr);
-
-                        _service->Unregister(&_notification);
-                    }
                 }
                 else {
                     index++;
@@ -877,7 +858,7 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t InternalNotify(const string& event, const string& parameters, const std::function<bool(const string&)>& sendifmethod = std::function<bool(const string&)>()) const
+        uint32_t InternalNotify(const string& event, const string& parameters, const SendIfMethod& sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -1023,5 +1004,5 @@ namespace PluginHost {
         StatusCallbackMap _observers;
     };
 
-} // namespace WPEFramework::PluginHost
+} // namespace Thunder::PluginHost
 }

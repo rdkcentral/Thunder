@@ -32,7 +32,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -129,7 +129,7 @@ namespace Core {
 
                 realObject.Clear();
 
-                while (handled < size) {
+                while ( (handled < size) && (error.IsSet() == false) ) {
 
                     uint16_t payload = static_cast<uint16_t>(std::min((size - handled) + 1, static_cast<uint32_t>(0xFFFF)));
 
@@ -506,7 +506,7 @@ namespace Core {
             }
             ~NumberType() override = default;
 
-            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move)
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(NumberType<TYPE, SIGNED, BASETYPE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _set = std::move(move._set);
@@ -528,6 +528,15 @@ namespace Core {
             {
                 _value = RHS;
                 _set = SET;
+
+                return (*this);
+            }
+
+            NumberType<TYPE, SIGNED, BASETYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -746,7 +755,7 @@ namespace Core {
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
-                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
+                    } else if (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
@@ -1054,6 +1063,15 @@ namespace Core {
                 return (*this);
             }
 
+            FloatType<TYPE>& operator=(const Core::OptionalType<TYPE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             inline TYPE Default() const
             {
                 return _default;
@@ -1144,7 +1162,7 @@ namespace Core {
                         loaded++;
                         offset++;
                         _set &= ~QUOTED;
-                    } else if ( (((_set & QUOTED) == 0) && (::isspace(stream[loaded]))) || (stream[loaded] == '\0') ||
+                    } else if ( (((_set & QUOTED) == 0) && (::isspace(static_cast<uint8_t>(stream[loaded])))) || (stream[loaded] == '\0') ||
                                (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']') ) {
                         completed = true;
                     } else {
@@ -1343,6 +1361,15 @@ namespace Core {
             {
                 // Do not overwrite the default
                 _value = (RHS ? (SetBit | ValueBit) : SetBit) | (_value & DefaultBit);
+
+                return (*this);
+            }
+
+            Boolean& operator=(const Core::OptionalType<bool>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -1582,6 +1609,15 @@ namespace Core {
                 return (*this);
             }
 
+            String& operator=(const Core::OptionalType<string>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
@@ -1687,7 +1723,7 @@ namespace Core {
                 return (_default);
             }
 
-            inline operator const string() const
+            inline operator string() const
             {
                 return (Value());
             }
@@ -1760,7 +1796,7 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(current)) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1907,7 +1943,7 @@ namespace Core {
                             }
                             else if ((_flagsAndCounters & 0x1F) == 0) {
                                 // We are not in a nested area, see what 
-                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(current)));
+                                finished = ((current == ',') || (current == '}') || (current == ']') || (current == '\0') || (!_value.empty() && ::isspace(static_cast<uint8_t>(current))));
                             }
                             else if (current == '}') {
                                 if (OutScope(ScopeBracket::CURLY_BRACKET) == false) {
@@ -1926,7 +1962,7 @@ namespace Core {
                                 // Write the amount we possibly can..
                                 _value += current;
                             }
-                            else if (::isspace(current) == false) {
+                            else if (::isspace(static_cast<uint8_t>(current)) == false) {
                                 // If we are creating an opaque string, drop all whitespaces if possible.
                                 _value += current;
 
@@ -1937,7 +1973,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || (_value[_value.length() - 1] != '\\'))) {
+                            if ((current == '\"') && ((_value.empty() == true) || IsEscaped(_value))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -1991,11 +2027,11 @@ namespace Core {
                         // If we end up here, we are actually gathering unicode values to be decoded.
                         _flagsAndCounters--;
 
-                        if (::isxdigit(current) == false) {
+                        if (::isxdigit(static_cast<uint8_t>(current)) == false) {
                             error = Error{ "the unescaping of the u requires hexadecimal characters" };
                         }
                         else {
-                            _storage = (_storage << 4) | ((::isdigit(current) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
+                            _storage = (_storage << 4) | ((::isdigit(static_cast<uint8_t>(current)) ? current - '0' : 10 + (::toupper(current) - 'A')) & 0xF);
                             result++;
                             if ((_flagsAndCounters & 0xFF) == 0x00) {
                                 _flagsAndCounters ^= SpecialSequenceBit;
@@ -2033,7 +2069,7 @@ namespace Core {
 
                     if ((_flagsAndCounters & QuoteFoundBit) == 0) {
                         // Right-trim the non-string value, it's always left-trimmed already
-                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(ch)); }).base(), _value.end());
+                        _value.erase(std::find_if(_value.rbegin(), _value.rend(), [](const unsigned char ch) { return (!std::isspace(static_cast<uint8_t>(ch))); }).base(), _value.end());
                     }
                 }
 
@@ -2135,6 +2171,19 @@ namespace Core {
             }
 
         private:
+            bool IsEscaped(const string& value) const {
+                // This code determines if a lot of back slashes to esscape the backslash
+                // Is odd or even, so does it escape the last character..
+                // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
+                //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
+                //      'Test \" and \" and than \\\"' are all escaped quotes 
+                uint32_t index = static_cast<uint32_t>(value.length() - 1);
+                uint32_t start = index;
+                while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
+                    index--;
+                }
+                return (((start - index) % 2) == 0);
+            }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
                 uint8_t depth = (_flagsAndCounters & 0x1F);
@@ -2399,7 +2448,7 @@ namespace Core {
                                 converted = 62;
                             } else if (current == '/') {
                                 converted = 63;
-                            } else if (::isspace(current)) {
+                            } else if (::isspace(static_cast<uint8_t>(current))) {
                                 continue;
                             } else if (current == '\"') {
                                 _state |= SET;
@@ -2601,7 +2650,7 @@ namespace Core {
 
             ~EnumType() override = default;
 
-            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move)
+            EnumType<ENUMERATE>& operator=(EnumType<ENUMERATE>&& move) noexcept
             {
                 _value = std::move(move._value);
                 _state = std::move(move._state);
@@ -2626,6 +2675,15 @@ namespace Core {
             {
                 _value = RHS;
                 _state = SET;
+
+                return (*this);
+            }
+
+            EnumType<ENUMERATE>& operator=(const Core::OptionalType<ENUMERATE>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
 
                 return (*this);
             }
@@ -3063,7 +3121,7 @@ namespace Core {
                 : _state(std::move(move._state))
                 , _count(std::move(move._count))
                 , _data(std::move(move._data))
-                , _iterator(std::move(move._iterator))
+                , _iterator(_data)
             {
             }
 
@@ -3077,12 +3135,12 @@ namespace Core {
 
             ~ArrayType() override = default;
 
-            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move)
+            ArrayType<ELEMENT>& operator=(ArrayType<ELEMENT>&& move) noexcept
             {
                 _state = std::move(move._state);
                 _data = std::move(move._data);
-                _iterator = IteratorType<ELEMENT>(_data);
                 _count = std::move(move._count);
+                _iterator.Reset();
 
                 return (*this);
             }
@@ -3091,8 +3149,8 @@ namespace Core {
             {
                 _state = RHS._state;
                 _data = RHS._data;
-                _iterator = IteratorType<ELEMENT>(_data);
                 _count = RHS._count;
+                _iterator.Reset();
 
                 return (*this);
             }
@@ -3243,6 +3301,16 @@ namespace Core {
                 return (*this);
             }
 
+            template<typename ENUM>
+            ArrayType<ELEMENT>& operator=(const Core::OptionalType<ENUM>& RHS)
+            {
+                if (RHS.IsSet() == true) {
+                    operator=(RHS.Value());
+                }
+
+                return (*this);
+            }
+
             template<typename ENUM, typename std::enable_if<std::is_same<ELEMENT, EnumType<ENUM>>::value, int>::type = 0>
             inline operator const ENUM() const
             {
@@ -3304,7 +3372,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
+                    while ((loaded < maxLength) && ::isspace(static_cast<uint8_t>(stream[loaded]))) {
                         loaded++;
                     }
                 }
@@ -3335,7 +3403,7 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
@@ -3701,7 +3769,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
                 if (offset == FIND_MARKER) {
-                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                    while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                         loaded++;
                     }
                 }
@@ -3733,7 +3801,7 @@ namespace Core {
                 while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
-                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                        while ((loaded < maxLength) && (::isspace(static_cast<uint8_t>(stream[loaded])))) {
                             loaded++;
                         }
 
@@ -3829,9 +3897,11 @@ namespace Core {
                             skip = SKIP_AFTER_KEY;
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                            // It could be that the field name was used, as we are not interested in this field, if so,
-                            // do not forget to reset the field name..
-                            _fieldName.Clear();
+                            if (offset == FIND_MARKER) {
+                                // It could be that the field name was used, as we are not interested in this field, if so,
+                                // do not forget to reset the field name..
+                                _fieldName.Clear();
+                            }
                         }
                         offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
@@ -4150,7 +4220,6 @@ namespace Core {
             {
             }
 
-
             Variant(const VariantContainer& object);
 
             ~Variant() override = default;
@@ -4170,6 +4239,8 @@ namespace Core {
             }
 
         public:
+            inline bool IsValid() const;
+
             type Content() const
             {
                 return _type;
@@ -4379,7 +4450,7 @@ namespace Core {
 
         class EXTERNAL VariantContainer : public Container {
         private:
-            using Elements = std::unordered_map<string, WPEFramework::Core::JSON::Variant>;
+            using Elements = std::unordered_map<string, Thunder::Core::JSON::Variant>;
 
         public:
             class Iterator {
@@ -4585,7 +4656,7 @@ namespace Core {
                 return (*this);
             }
 
-            VariantContainer& operator=(VariantContainer&& move)
+            VariantContainer& operator=(VariantContainer&& move) noexcept
             {
                 if (this != &move) {
                     _elements = std::move(move._elements);
@@ -4640,7 +4711,14 @@ namespace Core {
 
                 return (index->second);
             }
+            bool IsValid() const {
+                Elements::const_iterator index(_elements.begin());
 
+                while ((index != _elements.end()) && (index->second.IsValid() == true)) {
+                    index++;
+                }
+                return (index == _elements.end());
+            }
             const JSON::Variant& operator[](const TCHAR fieldName[]) const
             {
                 static const JSON::Variant emptyVariant;
@@ -4720,41 +4798,94 @@ namespace Core {
             return (result);
         }
 
-        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
-        {
-            uint16_t result = 0;
-            if (stream[0] == '{' || stream[0] == '[') {
-                uint16_t endIndex = FindEndOfScope(stream, maxLength);
-                if (endIndex > 0 && endIndex < maxLength) {
-                    result = endIndex + 1;
-                    SetQuoted(false);
-                    string str(stream, endIndex + 1);
-                    if (stream[0] == '{') {
-                        _type = type::OBJECT;
-                        String::operator=(str);
-                    } else {
-                        _type = type::ARRAY;
-                        String::operator=(str);
+        inline bool Variant::IsValid() const {
+            bool result = false;
+            switch (_type)
+            {
+            case type::EMPTY:
+            case type::STRING: {
+                result = true;
+                break;
+            }
+            case type::BOOLEAN: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::Boolean stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::NUMBER: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::DecUInt64 stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::DOUBLE:
+            case type::FLOAT: {
+                Core::OptionalType<JSON::Error> error;
+                JSON::Double stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                break;
+            }
+            case type::ARRAY: {
+                Core::OptionalType<JSON::Error> error;
+                Core::JSON::ArrayType<JSON::Variant> stacked;
+                stacked.FromString(Value(), error);
+                result = (error.IsSet() == false);
+                Core::JSON::ArrayType<JSON::Variant>::ConstIterator index = static_cast<const Core::JSON::ArrayType<JSON::Variant>&>(stacked).Elements();
+                if ((result == true) && (index.Next() == true) && index.Current().IsValid()) {
+                    Variant::type type = index.Current().Content();
+                    while ((index.Next() == true) && (index.Current().Content() == type) && (index.Current().IsValid())) {
+                        // Intentionally left empty
                     }
                 }
+                result = result && (index.IsValid() == false);
+                break;
             }
-            if (result == 0) {
-                result = String::Deserialize(stream, maxLength, offset, error);
+            case type::OBJECT: {
+                Core::OptionalType<JSON::Error> error;
+                VariantContainer stacked;
+                stacked.FromString(Value(), error);
+                result = ((error.IsSet() == false) && (stacked.IsValid() == true));
+                break;
+            }
+            default:
+                break;
+            }
+            return (result);
+        }
 
-                _type = type::STRING;
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error)
+        {
+            uint16_t result = String::Deserialize(stream, maxLength, offset, error);
 
-                // If we are complete, try to guess what it was that we received...
-                if (offset == 0) {
-                    bool quoted = IsQuoted();
-                    SetQuoted(quoted);
-                    // If it is not quoted, it can be a boolean or a number...
-                    if (quoted == false) {
-                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
-                            _type = type::BOOLEAN;
-                        } else if (IsNull() == false) {
-                            _type = type::NUMBER;
-                        }
+            // If we are complete, try to guess what it was that we received...
+            if (offset == 0) {
+                if (IsQuoted() == false) {
+                    const string base = JSON::String::Value();
+                    if (IsNull() == true) {
+                        _type = type::EMPTY;
                     }
+                    else if (base[0] == '{') {
+                        _type = type::OBJECT;
+                    }
+                    else if (base[0] == '[') {
+                        _type = type::ARRAY;
+                    }
+                    else if ((base == _T("true")) || (base == _T("false"))) {
+                        _type = type::BOOLEAN;
+                    }
+                    else if (base.find('.') != std::string::npos) {
+                        _type = type::DOUBLE;
+                    }
+                    else {
+                        _type = type::NUMBER;
+                    }
+                }
+                else {
+                    _type = type::STRING;
                 }
             }
             return (result);
@@ -4887,10 +5018,10 @@ namespace Core {
 
     } // namespace JSON
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
-using JsonObject = WPEFramework::Core::JSON::VariantContainer;
-using JsonValue = WPEFramework::Core::JSON::Variant;
-using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+using JsonObject = Thunder::Core::JSON::VariantContainer;
+using JsonValue = Thunder::Core::JSON::Variant;
+using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
 
 #endif // __JSON_H

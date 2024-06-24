@@ -25,7 +25,7 @@
 #include <fstream>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     static const TCHAR* GlobalSymbols = "Global Symbols";
@@ -179,6 +179,8 @@ namespace Core {
         void* function = nullptr;
 
         ASSERT(_refCountedHandle != nullptr);
+
+        _error.clear();
 
 #ifdef __LINUX__
         ASSERT(_refCountedHandle->_handle != nullptr);

@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+using namespace Thunder;
+using namespace Thunder::Core;
 
 class DataFile: public Core::DataElementFile
 {
@@ -49,33 +49,58 @@ public:
 
 TEST(test_datafile, simple_test)
 {
-    char buffer[100];
     const string fileName = "dataFile.txt";
-    string message = ">echo 'DataElement file checking......'";
-    snprintf(buffer,(message.size() + fileName.size()+1), "%s%s",message.c_str(),fileName.c_str());
+    const string message = ">echo 'DataElement file checking......'";
+    string buffer = message + fileName;
+
+#ifdef __POSIX__
+    errno = 0;
+#endif
+
     File file(fileName);
 
-    // Clear error no since it will be already set internally from
-    // the LoadInfo sequence with non existing file
-    EXPECT_EQ(file.ErrorCode(), unsigned(2));
-    errno = 0;
+    ASSERT_FALSE(file.Exists());
 
-    file.Create(true);
+     // Always for a non-existing file
+#ifdef __WINDOWS__
+    EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ERROR_FILE_NOT_FOUND));
+#endif
+#ifdef __POSIX__
+    EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ENOENT));
+#endif
+
+    ASSERT_TRUE(file.Create(true));
     EXPECT_EQ(file.IsOpen(), true);
     EXPECT_EQ(file.Name(), fileName);
-    DataFile obj1(file);
 
-    EXPECT_EQ(obj1.ErrorCode(), unsigned(0));
+#ifdef __POSIX__
+    errno = 0;
+#endif
+
+    DataFile obj1(file);
+#ifdef __WINDOWS__
+    EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(ERROR_SUCCESS));
+#endif
+#ifdef __POSIX__
+    EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(0));
+#endif
+
     DataFile object(fileName, 1, 10);
     DataFile obj2(fileName, 1, 50);
+
     obj1.Sync();
     obj2.MemoryMap();
 
     const string& name = obj1.Name();
+
     EXPECT_EQ(name.c_str(), fileName);
     EXPECT_EQ(obj2.IsValid(), true);
-    obj1.Storage();
+
+    const File& obj1File = obj1.Storage();
+    EXPECT_STREQ(obj1File.FileName().c_str(), file.FileName().c_str());
+
     obj1.ReloadFileInfo();
     obj1.MemoryMap();
-    file.Destroy();
+
+    EXPECT_TRUE(file.Destroy());
 }

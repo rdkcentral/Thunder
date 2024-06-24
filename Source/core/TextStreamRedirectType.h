@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template<typename STREAMTYPE>
     class TextStreamRedirectType {

@@ -73,7 +73,7 @@ IDeviceInfo.h [includes](https://github.com/rdkcentral/ThunderInterfaces/blob/ma
 To avoid proxy implementation for a function, mark it with this tag.
 
 ##### Example
-In [IShell](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IShell.h#L232) Submit function is marked as stub as it does not want that function to be called beyond WPEFramework process
+In [IShell](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IShell.h#L232) Submit function is marked as stub as it does not want that function to be called beyond Thunder process
 
 <hr/>
 

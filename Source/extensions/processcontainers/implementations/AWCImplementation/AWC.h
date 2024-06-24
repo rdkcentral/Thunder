@@ -4,7 +4,7 @@
 
 #include <AWCClient.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
 
@@ -37,4 +37,4 @@ private:
 };
 
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */

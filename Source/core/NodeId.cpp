@@ -43,7 +43,7 @@
 
 #include "NodeId.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 static bool IsIPv4Address(const TCHAR hostname[]) {
@@ -100,12 +100,13 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
     return (result);
 }
 
-#ifndef __WINDOWS__
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
     static string NetlinkName(const NodeId::SocketInfo& input)
     {
 
         return (_T("Netlink:") + Core::NumberType<uint32_t>(input.NetlinkSocket.nl_destination).Text() + ':' + Core::NumberType<pid_t>(input.NetlinkSocket.nl_pid).Text() + ':' + Core::NumberType<pid_t>(input.NetlinkSocket.nl_groups).Text());
     }
+
     static string RawName(const NodeId::SocketInfo& input)
     {
         return (_T("Rawlink:") + Core::NumberType<int32_t>(input.RawSocket.sll_family).Text() + ':' + Core::NumberType<uint16_t>(input.RawSocket.sll_protocol).Text() + ':' + Core::NumberType<uint16_t>(input.RawSocket.sll_hatype).Text());
@@ -235,6 +236,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
 
         ASSERT(m_structInfo.DomainSocket.sun_family == AF_UNIX);
     }
+#ifndef __APPLE__
     NodeId::NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups)
         : m_group()
     {
@@ -246,6 +248,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
 
         m_hostName = NetlinkName(m_structInfo);
     }
+
 
     NodeId::NodeId(const struct sockaddr_ll& rInfo)
         : m_group()
@@ -281,7 +284,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         : NodeId(::if_nametoindex(interfaceName), protocol, pkgType, haType, length, address)
     {
     }
-
+#endif
 #endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
@@ -487,9 +490,12 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
 #ifndef __WINDOWS__
             else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
                 return (strcmp(m_structInfo.DomainSocket.sun_path, rInfo.m_structInfo.DomainSocket.sun_path) == 0);
-            } else if (m_structInfo.DomainSocket.sun_family == AF_NETLINK) {
+            }
+#ifndef __APPLE__
+            else if (m_structInfo.DomainSocket.sun_family == AF_NETLINK) {
                 return ((m_structInfo.NetlinkSocket.nl_destination == rInfo.m_structInfo.NetlinkSocket.nl_destination) && (m_structInfo.NetlinkSocket.nl_pid == rInfo.m_structInfo.NetlinkSocket.nl_pid) && (m_structInfo.NetlinkSocket.nl_groups == rInfo.m_structInfo.NetlinkSocket.nl_groups));
             }
+#endif
 #endif
 #ifdef __CORE_BLUETOOTH_SUPPORT__
             else if (m_structInfo.DomainSocket.sun_family == AF_BLUETOOTH) {
@@ -574,7 +580,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         // Give back our-selves.
         return (*this);
     }
-
+#ifndef __APPLE__
     NodeId&
     NodeId::operator=(const struct sockaddr_nl& rInfo)
     {
@@ -599,6 +605,7 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         // Give back our-selves.
         return (*this);
     }
+#endif
 #endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
@@ -637,9 +644,12 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
         memcpy(&m_structInfo, &rInfo, sizeof(m_structInfo));
 
 #ifndef __WINDOWS__
+#ifndef __APPLE__
         if (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK) {
             m_hostName = NetlinkName(m_structInfo);
-        } else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
+        } else
+#endif
+        if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             m_hostName = m_structInfo.DomainSocket.sun_path;
         }
 #ifdef __CORE_BLUETOOTH_SUPPORT__
@@ -781,12 +791,14 @@ POP_WARNING()
             result.m_structInfo.DomainSocket.sun_family = AF_UNIX;
             result.m_structInfo.DomainSocket.sun_path[0] = '\0';
             break;
+#ifndef __APPLE__
         case TYPE_NETLINK:
             result.m_structInfo.NetlinkSocket.nl_family = AF_NETLINK;
             result.m_structInfo.NetlinkSocket.nl_destination = 0;
             result.m_structInfo.NetlinkSocket.nl_pid = 0;
             result.m_structInfo.NetlinkSocket.nl_groups = 0;
             break;
+#endif
 #endif
 
         default:
@@ -813,9 +825,12 @@ POP_WARNING()
 #ifndef __WINDOWS__
         else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             return (m_structInfo.DomainSocket.sun_path[0] == '\0');
-        } else if (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK) {
+        }
+#ifndef __APPLE__
+        else if (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK) {
             return ((m_structInfo.NetlinkSocket.nl_destination == 0) && (m_structInfo.NetlinkSocket.nl_pid == 0) && (m_structInfo.NetlinkSocket.nl_groups == 0));
         }
+#endif
 #endif
 
         return (false);
@@ -841,7 +856,11 @@ POP_WARNING()
             return (index == 0);
         }
 #ifndef __WINDOWS__
-        else if ((m_structInfo.DomainSocket.sun_family == AF_UNIX) || (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK)) {
+        else if ((m_structInfo.DomainSocket.sun_family == AF_UNIX)
+#ifndef __APPLE__
+         || (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK)
+#endif
+         ) {
             return (true);
         }
 #endif
@@ -872,13 +891,16 @@ POP_WARNING()
             memset(&info, 0x00, sizeof(info));
             info.sun_family = AF_UNIX;
             response = info;
-        } else {
+        }
+#ifndef __APPLE__
+        else {
             struct sockaddr_nl info;
             info.nl_family = AF_NETLINK;
             info.nl_pid = 0;
             info.nl_groups = 0;
             response = info;
         }
+#endif
 #endif
 
         return (response);

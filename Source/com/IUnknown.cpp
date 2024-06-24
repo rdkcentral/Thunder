@@ -21,7 +21,7 @@
 #include "Administrator.h"
 #include "Communicator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB
@@ -76,11 +76,15 @@ namespace ProxyStub {
                 uint32_t newInterfaceId(reader.Number<uint32_t>());
 
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
-                response.Number<Core::instance_id>(RPC::instance_cast<void*>(newInterface));
 
                 if (newInterface != nullptr) {
-                    RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                    if (RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId) == false) {
+                        Convert(newInterface)->Release();
+                        newInterface = nullptr;
+                    }
                 }
+
+                response.Number<Core::instance_id>(RPC::instance_cast<void*>(newInterface));
 
                 break;
             }

@@ -32,7 +32,7 @@
 
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
+#include <processcontainers/ProcessContainer.h>
 #endif
 
 
@@ -40,7 +40,7 @@
 #include "../warningreporting/WarningReportingUnit.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     class EXTERNAL Object {
@@ -83,7 +83,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(Object&& move)
+        Object(Object&& move) noexcept
             : _locator(std::move(move._locator))
             , _className(std::move(move._className))
             , _callsign(std::move(move._callsign))
@@ -151,7 +151,7 @@ namespace RPC {
         }
 
 
-        Object& operator=(Object&& move)
+        Object& operator=(Object&& move) noexcept
         {
             if (this != &move) {
                 _locator = std::move(move._locator);
@@ -297,7 +297,7 @@ namespace RPC {
             , _postMortem(copy._postMortem)
         {
         }
-	Config(Config&& move)
+	Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -1679,7 +1679,7 @@ POP_WARNING()
             return (result);
         }
 
-        // Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient)
+        // Open and offer the requested interface (Applicable if the ThunderPlugin starts the RPCClient)
         uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
 
         template <typename INTERFACE>

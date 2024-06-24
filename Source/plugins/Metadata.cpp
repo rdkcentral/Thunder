@@ -22,7 +22,7 @@
 #include "IStateControl.h"
 #include "ISubSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
 
@@ -112,9 +112,7 @@ namespace PluginHost
         , ProcessedRequests(0)
         , ProcessedObjects(0)
 #endif
-#if THUNDER_RESTFULL_API
         , Observers(0)
-#endif
         , ServiceVersion()
         , Module()
         , InterfaceVersion()
@@ -124,9 +122,7 @@ namespace PluginHost
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#if THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
-#endif
         Add(_T("module"), &Module);
         Add(_T("version"), &ServiceVersion);
         Add(_T("interface"), &InterfaceVersion);
@@ -138,9 +134,7 @@ namespace PluginHost
         , ProcessedRequests(std::move(move.ProcessedRequests))
         , ProcessedObjects(std::move(move.ProcessedObjects))
 #endif
-#if THUNDER_RESTFULL_API
         , Observers(std::move(move.Observers))
-#endif
         , ServiceVersion(std::move(move.ServiceVersion))
         , Module(std::move(move.Module))
         , InterfaceVersion(std::move(move.InterfaceVersion))

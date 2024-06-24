@@ -49,7 +49,7 @@
 #include <net/if_dl.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -1074,6 +1074,7 @@ namespace Core {
         ~IPNetworks()
         {
             _linkSocket.Close();
+            _networks.clear();
         }
 
         static IPNetworks& Instance()

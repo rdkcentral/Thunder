@@ -21,11 +21,11 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 
-    class MessageDataBufferType {
+    class EXTERNAL MessageDataBuffer {
     private:
         /**
         * @brief Metdata Callback. First two arguments are for data in. Two later for data out (responded to the other side).
@@ -103,8 +103,8 @@ namespace Messaging {
         };
 
     public:
-        MessageDataBufferType(const MessageDataBufferType&) = delete;
-        MessageDataBufferType& operator=(const MessageDataBufferType&) = delete;
+        MessageDataBuffer(const MessageDataBuffer&) = delete;
+        MessageDataBuffer& operator=(const MessageDataBuffer&) = delete;
 
         /**
          * @brief Construct a new Message Dispatcher object
@@ -114,7 +114,7 @@ namespace Messaging {
          * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
          * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
          */
-        MessageDataBufferType(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
+        MessageDataBuffer(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t dataSize, const uint16_t socketPort = 0, const bool initialize = false)
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
             , _initialize(initialize)
@@ -145,7 +145,7 @@ namespace Messaging {
                 }
             }
         }
-        ~MessageDataBufferType()
+        ~MessageDataBuffer()
         {
             _dataBuffer.Relinquish();
 
