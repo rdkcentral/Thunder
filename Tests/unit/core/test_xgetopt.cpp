@@ -29,7 +29,7 @@ class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions() = delete;
 
-        ConsoleOptions(int argumentCount, const TCHAR* arguments[])
+        ConsoleOptions(int argumentCount, const TCHAR* const arguments[])
             : Core::Options(argumentCount, arguments, _T("chb"))
         {
             Parse();

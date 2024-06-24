@@ -221,21 +221,39 @@ static int getopt(int argc, TCHAR* argv[], TCHAR* optstring)
 
 namespace Thunder {
 namespace Core {
+
+    // Stop at the first non-option argument
     void Options::Parse()
     {
         int n = 0;
 
-        while (n >= 0) {
-            n = getopt(_argumentCount, _arguments, const_cast<TCHAR*>(_options));
+        if (_argumentCount > 0) {
+            while (n >= 0) {
+                opterr = 0;
 
-            if (n < 0) {
-                continue;
+                n = getopt(_argumentCount, _arguments, static_cast<const TCHAR*>(_options));
+
+                if (n == '?') {
+                    TRACE_L1(_T("Found non-option %c"), static_cast<TCHAR>(optopt));
+                    break;
+                }
+
+                if (n < 0) { // No more options available
+                    continue;
+                }
+
+                Option(static_cast<TCHAR>(n), optarg /* option argument */);
             }
 
-            Option(n, optarg);
-        }
+            // (First) non-option argument(s) start here
 
-        _command = _arguments[optind];
+            if (optind < _argumentCount) {
+                // Currently looking at in argv ...
+                _command = _arguments[optind - 1];
+
+                _valid = false;
+            }
+        }
     }
 }
 }

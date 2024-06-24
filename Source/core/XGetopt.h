@@ -17,11 +17,12 @@
  * limitations under the License.
  */
  
-#ifndef XGETOPT_H
-#define XGETOPT_H
+#pragma once
+
+#include <cstring>
 
 #include "Module.h"
-#include "Portability.h"
+#include "core.h"
 
 namespace Thunder {
 namespace Core {
@@ -30,17 +31,49 @@ namespace Core {
         Options() = delete;
         Options(const Options&) = delete;
         Options& operator=(const Options&) = delete;
+        Options(Options&&) = delete;
+        Options& operator=(Options&&) = delete;
 
-        Options(int argumentCount, TCHAR* arguments[], const TCHAR options[])
-            : _argumentCount(argumentCount)
-            , _arguments(arguments)
-            , _options(options)
+        Options(int argumentCount, const TCHAR* const arguments[], const TCHAR options[])
+            : _argumentCount{argumentCount}
+            , _arguments{nullptr}
+            , _options{nullptr}
             , _command(nullptr)
-            , _valid(false)
-            , _requestUsage(false)
+            , _valid{false}
+            , _requestUsage{false}
         {
+            ASSERT(argumentCount > 0);
+            ASSERT(options != nullptr);
+
+            ::size_t count = ::strlen(arguments[0]) + 1;
+            ASSERT(count > 1);
+
+            _arguments = new TCHAR*[argumentCount];
+            ASSERT(_arguments != nullptr);
+
+            for(::size_t i = 0; i < argumentCount; i++) {
+                _arguments[i] = new TCHAR[count];
+                ASSERT(_arguments[i] != nullptr);
+                ::strncpy(_arguments[i], arguments[i], count);
+            }
+
+            count = ::strlen(options) + 1;
+            ASSERT(count > 1);
+
+            _options =  new TCHAR[count];
+            ASSERT(_options != nullptr);
+            ::strncpy(_options, options, count); 
+
         }
-        virtual ~Options() = default;
+        virtual ~Options()
+        {
+            for(::size_t i = 0; i < _argumentCount; i++) {
+                delete [] _arguments[i];
+            }
+            delete [] _arguments;
+
+            delete [] _options;
+        }
 
     public:
         inline bool HasErrors() const
@@ -68,7 +101,7 @@ namespace Core {
     private:
         int _argumentCount;
         TCHAR** _arguments;
-        const TCHAR* _options;
+        TCHAR* _options;
         TCHAR* _command;
         bool _valid;
         bool _requestUsage;
@@ -76,4 +109,3 @@ namespace Core {
 }
 } // namespace Core
 
-#endif //XGETOPT_H
