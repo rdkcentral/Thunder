@@ -229,8 +229,6 @@ namespace Core {
 
         if (_argumentCount > 0) {
             while (n >= 0) {
-                opterr = 0;
-
                 n = getopt(_argumentCount, _arguments, static_cast<const TCHAR*>(_options));
 
                 if (n == '?') {
