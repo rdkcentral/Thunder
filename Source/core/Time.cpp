@@ -844,13 +844,13 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         if (localTime == true) {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-           Time converted(convertedTime, localTime);
+            Time converted(convertedTime, localTime);
             std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-        std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
+            std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
 POP_WARNING()
 
@@ -877,7 +877,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 POP_WARNING()
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-        std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(), Minutes(), Seconds(), zone);
+            std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(), Minutes(), Seconds(), zone);
         POP_WARNING()
 
         return (string(buffer));
