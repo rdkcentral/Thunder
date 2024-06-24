@@ -113,7 +113,7 @@ namespace Core {
         m_ThreadId = m_hThreadInstance;
 #endif
 
-#ifndef __APPLE__
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
             if (threadName != nullptr) {
                 ThreadName(convertedName.c_str());
             }

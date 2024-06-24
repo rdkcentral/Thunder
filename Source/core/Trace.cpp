@@ -22,8 +22,9 @@
 #include "Sync.h"
 #include "TextFragment.h"
 #include "Trace.h"
+#if defined(__APPLE__)
 #include <pthread.h>
-
+#endif
 
 namespace Thunder {
 namespace Core {
