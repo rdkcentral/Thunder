@@ -22,11 +22,7 @@
 #include <com/ICOM.h>
 #include "IShell.h"
 
-<<<<<<< development/OutOfProcess
- // @stubgen:include <plugins/IShell.h>
-=======
 // @stubgen:include <plugins/IShell.h>
->>>>>>> master
 
 namespace Thunder {
 
