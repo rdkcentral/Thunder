@@ -32,6 +32,8 @@ namespace PluginHost {
 
     class EXTERNAL Service : public IShell {
     private:
+        using Channels = std::vector<Channel*>;
+
         class EXTERNAL Config {
         public:
             Config() = delete;
@@ -162,9 +164,7 @@ namespace PluginHost {
             #endif
             , _state(DEACTIVATED)
             , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
-            #if THUNDER_RESTFULL_API
             , _notifiers()
-            #endif
         {
             if ( (plugin.StartMode.IsSet() == true) && (plugin.StartMode.Value() == PluginHost::IShell::startmode::UNAVAILABLE) ) {
                 _state = UNAVAILABLE;
@@ -325,9 +325,7 @@ namespace PluginHost {
         inline void GetMetadata(Metadata::Service& metaData) const
         {
             metaData = _config.Configuration();
-            #if THUNDER_RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
-            #endif
 
             // When we do this, we need to make sure that the Service does not change state, otherwise it might
             // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
@@ -346,9 +344,7 @@ namespace PluginHost {
 
         bool IsWebServerRequest(const string& segment) const;
 
-        #if THUNDER_RESTFULL_API
         void Notification(const string& message);
-        #endif
  
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) = 0;
 
@@ -369,7 +365,6 @@ namespace PluginHost {
         {
             _errorMessage = message;
         }
-        #if THUNDER_RESTFULL_API
         inline bool Subscribe(Channel& channel)
         {
             _notifierLock.Lock();
@@ -379,6 +374,9 @@ namespace PluginHost {
             if (result == true) {
                 if (channel.IsNotified() == true) {
                     _notifiers.push_back(&channel);
+                }
+                else {
+                    result = false;
                 }
             }
 
@@ -391,7 +389,7 @@ namespace PluginHost {
 
             _notifierLock.Lock();
 
-            std::list<Channel*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), &channel));
+            Channels::iterator index(std::find(_notifiers.begin(), _notifiers.end(), &channel));
 
             if (index != _notifiers.end()) {
                 _notifiers.erase(index);
@@ -399,7 +397,6 @@ namespace PluginHost {
 
             _notifierLock.Unlock();
         }
-        #endif
         #if THUNDER_RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
         {
@@ -416,9 +413,7 @@ namespace PluginHost {
     private:
         mutable Core::CriticalSection _adminLock;
 
-        #if THUNDER_RESTFULL_API
         Core::CriticalSection _notifierLock;
-        #endif
 
         #if THUNDER_RUNTIME_STATISTICS
         uint32_t _processedRequests;
@@ -434,10 +429,8 @@ namespace PluginHost {
         string _webURLPath;
         string _webServerFilePath;
 
-        #if THUNDER_RESTFULL_API
         // Keep track of people who want to be notified of changes.
-        std::list<Channel*> _notifiers;
-        #endif
+        Channels _notifiers;
     };
 }
 }
