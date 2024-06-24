@@ -348,23 +348,6 @@ namespace PluginHost {
  
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) = 0;
 
-    protected:
-        inline void Lock() const
-        {
-            _adminLock.Lock();
-        }
-        inline void Unlock() const
-        {
-            _adminLock.Unlock();
-        }
-        inline void State(const state value)
-        {
-            _state = value;
-        }
-        inline void ErrorMessage(const string& message)
-        {
-            _errorMessage = message;
-        }
         inline bool Subscribe(Channel& channel)
         {
             _notifierLock.Lock();
@@ -396,6 +379,24 @@ namespace PluginHost {
             }
 
             _notifierLock.Unlock();
+        }
+
+    protected:
+        inline void Lock() const
+        {
+            _adminLock.Lock();
+        }
+        inline void Unlock() const
+        {
+            _adminLock.Unlock();
+        }
+        inline void State(const state value)
+        {
+            _state = value;
+        }
+        inline void ErrorMessage(const string& message)
+        {
+            _errorMessage = message;
         }
         #if THUNDER_RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
