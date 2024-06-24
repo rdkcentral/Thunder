@@ -210,23 +210,6 @@ namespace Plugin {
             }
         }
 
-        void Notification(const string& callsign, const string& message)
-        {
-            ASSERT(callsign.empty() == false);
-            ASSERT(message.empty() == false);
-
-            Exchange::Controller::JEvents::Event::ForwardMessage(*this, callsign, message);
-        }
-
-        void Notification(const string& callsign, const string& event, const string& params)
-        {
-            ASSERT(callsign.empty() == false);
-            ASSERT(event.empty() == false);
-
-            Exchange::Controller::IEvents::INotification::Event data{event, params};
-            Exchange::Controller::JEvents::Event::ForwardEvent(*this, callsign, data);
-        }
-
         inline void SetServer(PluginHost::Server* pluginServer, const std::vector<PluginHost::ISubSystem::subsystem>& externalSubsystems)
         {
             ASSERT((_pluginServer == nullptr) && (pluginServer != nullptr));

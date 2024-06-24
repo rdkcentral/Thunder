@@ -298,6 +298,14 @@ namespace PluginHost {
             AddRef();
             result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
         }
+        else if (id == PluginHost::IDispatcher::ID) {
+            _pluginHandling.Lock();
+            if (_jsonrpc != nullptr) {
+                _jsonrpc->AddRef();
+                result = _jsonrpc;
+            }
+            _pluginHandling.Unlock();
+        }
         else {
             _pluginHandling.Lock();
 
@@ -456,18 +464,14 @@ namespace PluginHost {
                     State(ACTIVATED);
                     _administrator.Activated(callSign, this);
 
-#if THUNDER_RESTFULL_API
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
-
-                    _administrator.Notification(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
 
                         stateControl->Request(PluginHost::IStateControl::RESUME);
                         stateControl->Release();
                     }
+
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 
                     Unlock();
                 }
@@ -600,12 +604,7 @@ namespace PluginHost {
                 if (currentState != IShell::state::ACTIVATION) {
                     SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-    #if THUNDER_RESTFULL_API
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-    #endif
-
-                    _administrator.Notification(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
 
@@ -691,11 +690,7 @@ namespace PluginHost {
             State(UNAVAILABLE);
             _administrator.Unavailable(callSign, this);
 
-#if THUNDER_RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
-
-            _administrator.Notification(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -899,19 +894,15 @@ namespace PluginHost {
         return (_administrator.SubSystemsInterface(this));
     }
 
-    void Server::Service::Notify(const string& message) /* override */
+    void Server::Service::Notify(const string& jsonrpcEvent, const string& message) /* override */
     {
-#if THUNDER_RESTFULL_API
-        // Notify the base class and the subscribers
-        PluginHost::Service::Notification(message);
-#endif
+        // JSONRPC has been send by now, lets send it to the "notification"
+        // observers..
+        if (jsonrpcEvent.empty() == true) {
+            BaseClass::Notification(message);
+        }
 
-        _administrator.Notification(PluginHost::Service::Callsign(), message);
-    }
-
-    void Server::Service::Notify(const string& event, const string& parameters) /* override */
-    {
-        _administrator.Notification(PluginHost::Service::Callsign(), event, parameters);
+        _administrator.Notification(PluginHost::Service::Callsign(), jsonrpcEvent, message);
     }
 
     //
@@ -1193,46 +1184,27 @@ namespace PluginHost {
         IFactories::Assign(nullptr);
     }
 
-    void Server::Notification(const string& callsign, const string& data)
+    void Server::Notification(const string& callsign, const string& jsonrpc_event, const string& parameters)
     {
-        Plugin::Controller* controller;
-        if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
+        ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
 
-            controller->Notification(callsign, data);
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
 
-#if THUNDER_RESTFULL_API
-            JsonData::Events::ForwardMessageParamsData message;
-            message.Callsign = callsign;
-            message.Data = data;
-            string messageString;
-            message.ToString(messageString);
-            _controller->Notification(messageString);
-#endif
-        }
-    }
+        // Break a recursive loop, if it tries to arise ;-)
+        if ( (controller != nullptr) && (callsign != controller->Callsign()) ) {
 
-    void Server::Notification(const string& callsign, const string& event, const string& parameters)
-    {
-        if (_controller.IsValid() == true) {
-            Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+            ASSERT(callsign.empty() == false);
 
-            if (controller != nullptr) {
-                static const TCHAR allEvent[] = _T("all");
+            if (jsonrpc_event.empty() == false) {
+                JsonData::Events::ForwardEventParamsData message;
+                message.Data = Exchange::Controller::IEvents::INotification::Event({ jsonrpc_event, parameters });
+                message.Callsign = callsign;
+                Exchange::Controller::JEvents::Event::ForwardEvent(*controller, message);
+            }
+            else {
+                string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":\"") + parameters + _T("\"}}");
 
-                if ((callsign != controller->Callsign()) || (event != allEvent)) {
-
-                    controller->Notification(callsign, event, parameters);
-
-#if THUNDER_RESTFULL_API
-                    JsonData::Events::ForwardEventParamsData message;
-                    message.Callsign = callsign;
-                    message.Data.Event = event;
-                    message.Data.Params = parameters;
-                    string messageString;
-                    message.ToString(messageString);
-                    _controller->Notification(messageString);
-#endif
-                }
+                _controller->Notify(EMPTY_STRING, messageString);
             }
         }
     }

@@ -774,10 +774,7 @@ POP_WARNING()
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                             printf("StartMode:  %s\n", index.Current().StartMode.Data());
-#if THUNDER_RESTFULL_API
-
                             printf("Observers:  %d\n", index.Current().Observers.Value());
-#endif
 
 #if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
