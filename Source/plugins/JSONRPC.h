@@ -702,6 +702,7 @@ namespace PluginHost {
 
             return (result);
         }
+
         Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) override
         {
             ASSERT(_service == nullptr);
