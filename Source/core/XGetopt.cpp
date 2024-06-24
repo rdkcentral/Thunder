@@ -157,7 +157,7 @@ extern "C" {
 TCHAR* optarg; // global argument pointer
 int optind = 0; // global argv index
 
-static int getopt(int argc, TCHAR* argv[], TCHAR* optstring)
+static int getopt(int argc, TCHAR* argv[], const TCHAR* optstring)
 {
     static TCHAR* next = nullptr;
     if (optind == 0) {
