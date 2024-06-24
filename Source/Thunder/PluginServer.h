@@ -320,6 +320,7 @@ namespace PluginHost {
             };
 
         private:
+            using BaseClass = PluginHost::Service;
             class Composit : public PluginHost::ICompositPlugin::ICallback {
             public:
                 Composit() = delete;
@@ -812,7 +813,6 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
-                #if THUNDER_RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -820,19 +820,10 @@ namespace PluginHost {
                 }
 
                 return (result);
-                #else
-                if (_extended != nullptr) {
-                    _extended->Attach(channel);
-                }
-
-                return (_extended != nullptr);
-                #endif
             }
             inline void Unsubscribe(Channel& channel)
             {
-                #if THUNDER_RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
-                #endif
 
                 if (_extended != nullptr) {
                     _extended->Detach(channel);
@@ -1157,8 +1148,7 @@ namespace PluginHost {
  
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
-            void Notify(const string& message) override;
-            void Notify(const string& event, const string& parameters) override;
+            void Notify(const string& event, const string& message) override;
             void* QueryInterface(const uint32_t id) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
@@ -3012,20 +3002,10 @@ namespace PluginHost {
 
                 return (Iterator(std::move(workingList)));
             }
-            inline void Notification(const string& callsign, const string& message)
+            inline void Notification(const string& callsign, const string& jsonrpc_event, const string& message)
             {
-                _server.Notification(callsign, message);
+                _server.Notification(callsign, jsonrpc_event, message);
             }
-            inline void Notification(const string& callsign, const string& event, const string& message)
-            {
-                _server.Notification(callsign, event, message);
-            }
-            #if THUNDER_RESTFULL_API
-            inline void Notification(const string& message)
-            {
-                _server.Controller()->Notification(message);
-            }
-            #endif
             void GetMetadata(Core::JSON::ArrayType<Metadata::Service>& metaData) const
             {
                 std::vector<Core::ProxyType<Service>> workingList;
@@ -4512,8 +4492,7 @@ namespace PluginHost {
             return (_config);
         }
 
-        void Notification(const string& callsign, const string& message);
-        void Notification(const string& callsign, const string& event, const string& message);
+        void Notification(const string& callsign, const string& jsonrpc_event, const string& message);
         void Open();
         void Close();
 
