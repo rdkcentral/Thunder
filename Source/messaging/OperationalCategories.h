@@ -23,10 +23,20 @@
 #include "BaseCategory.h"
 #include "Control.h"
 
+namespace Thunder {
+namespace OperationalStream {
+template<typename CATEGORY>
+class BaseOperationalType;
+}
+}
+
 #ifdef __WINDOWS__
 
 #define DEFINE_OPERATIONAL_CATEGORY(CATEGORY)                                                           \
     DEFINE_MESSAGING_CATEGORY(Thunder::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY)
+    template<>                                                                                          \
+    EXTERNAL typename Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Control           \
+                      Thunder::OperationalStream::BaseOperationalType<CATEGORY>::_control;
 
 #else
 
