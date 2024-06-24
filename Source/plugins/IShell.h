@@ -252,10 +252,12 @@ namespace PluginHost {
         virtual ISubSystem* SubSystems() = 0;
 
         // Notify all subscribers of this service with the given string.
-        // It is expected to be JSON formatted strings as it is assumed that this is for reaching websockets clients living in
-        // the web world that have build in functionality to parse JSON structs.
-        virtual void Notify(const string& message) = 0;
-        virtual void Notify(const string& event, const string& parameters) = 0;
+        // It is expected to be JSON formatted strings (message) as it is assumed that this is for reaching websockets clients 
+        // living in the web world that have build in functionality to parse JSON structs.
+        void Notify(const string& message) {
+            Notify(EMPTY_STRING, message);
+        }
+        virtual void Notify(const string& event, const string& message) = 0;
 
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
