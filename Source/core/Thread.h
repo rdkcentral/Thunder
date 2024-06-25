@@ -242,6 +242,12 @@ namespace Core {
         virtual uint32_t Worker() = 0;
         void Terminate();
         bool State(thread_state enumState);
+#ifdef __POSIX__
+        inline string ThreadName() const
+        {
+            return m_threadName;
+        }
+#endif
         void ThreadName(const char* threadName);
 
         inline void SignalTermination()
@@ -284,7 +290,7 @@ namespace Core {
 
         ::ThreadId m_ThreadId;
         static uint32_t _defaultStackSize;
-#ifdef __APPLE__
+#ifdef __POSIX__
         string m_threadName;
 #endif
 

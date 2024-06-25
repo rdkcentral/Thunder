@@ -429,6 +429,7 @@ typedef std::string string;
 #define POLLRDHUP 0x2000
 #endif
 
+#define SOCK_CLOEXEC 0
 #define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);

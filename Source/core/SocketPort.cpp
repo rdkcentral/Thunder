@@ -63,6 +63,13 @@
 #define __ERROR_CONNRESET__ WSAECONNRESET
 #define __ERROR_NETWORK_UNREACHABLE__ WSAENETUNREACH
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+#else
+
+#ifdef __APPLE__
+#define IPV6_PACKAGE_TYPE IPV6_RECVPKTINFO
+#else
+#define IPV6_PACKAGE_TYPE IPV6_PKTINFO
+#endif
 #endif
 
 namespace Thunder {
@@ -239,11 +246,7 @@ namespace Thunder {
                         interfaceId = info->ipi_ifindex;
                         break;
                     }
-#ifdef __APPLE__
-                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_RECVPKTINFO) && (remote->sa_family == AF_INET6)) {
-#else
-                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6)) {
-#endif
+                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PACKAGE_TYPE) && (remote->sa_family == AF_INET6)) {
                         const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
                         interfaceId = info->ipi6_ifindex;
                         break;
@@ -775,11 +778,7 @@ namespace Thunder {
             }
 #endif
 
-#ifdef __APPLE__ 
-            if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
-#else
             if ((l_Result = ::socket(localNode.Type(), SocketMode() | SOCK_CLOEXEC, localNode.Extension())) == INVALID_SOCKET) {
-#endif
                 TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
             }
             else if (SetNonBlocking(l_Result) == false) {
@@ -863,11 +862,7 @@ namespace Thunder {
                         }
                     }
                     else if (localNode.Type() == NodeId::TYPE_IPV6) {
-#ifdef __APPLE__
-                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_RECVPKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
-#else
-                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
-#endif
+                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PACKAGE_TYPE, (const char*)&optval, sizeof(optval)) != 0) {
                             TRACE_L1("Error getting additional info on received packages. Error %d", __ERRORRESULT__);
                         }
                     }
