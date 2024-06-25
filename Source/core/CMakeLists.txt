@@ -245,7 +245,7 @@ if (NOT BUILD_SHARED_LIBS)
 endif()
 
 if (APPLE)
-    add_definitions(-D__APPLE_USE_RFC_3542)
+    target_compile_definitions( ${TARGET} PRIVATE __APPLE_USE_RFC_3542)
 endif()
 
 target_include_directories( ${TARGET}

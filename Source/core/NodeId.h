@@ -96,17 +96,15 @@ namespace Core {
         };
 
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__)
     using address_family_t = ADDRESS_FAMILY;
-#else
+#elif !defined(__APPLE__)
     using address_family_t = sa_family_t;
 #endif
 
 
         union SocketInfo {
-#ifdef __WINDOWS__
-            address_family_t Family;
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
             struct sockaddr saddr_hdr;
 #else
             address_family_t Family;
