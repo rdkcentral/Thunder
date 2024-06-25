@@ -476,7 +476,7 @@ namespace PluginHost {
                     #ifdef THUNDER_RESTFULL_API
                     Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                     #endif
-                    Notify(_T("statechange"), string(_T("{\"state\":\"Activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
         } else {
@@ -610,7 +610,7 @@ namespace PluginHost {
                     #ifdef THUNDER_RESTFULL_API
                     Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                     #endif
-                    Notify(_T("statechange"), string(_T("{\"state\":\"Deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
 
@@ -701,7 +701,7 @@ namespace PluginHost {
             #ifdef THUNDER_RESTFULL_API
             Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
             #endif
-            Notify(_T("statechange"), string(_T("{\"state\":\"Unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
