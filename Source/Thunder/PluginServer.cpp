@@ -471,9 +471,12 @@ namespace PluginHost {
                         stateControl->Release();
                     }
 
-                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
                     Unlock();
+
+                    #ifdef THUNDER_RESTFULL_API
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"Activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
         } else {
@@ -604,7 +607,10 @@ namespace PluginHost {
                 if (currentState != IShell::state::ACTIVATION) {
                     SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                    #ifdef THUNDER_RESTFULL_API
                     Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"Deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
 
@@ -690,7 +696,12 @@ namespace PluginHost {
             State(UNAVAILABLE);
             _administrator.Unavailable(callSign, this);
 
+            Unlock();
+
+            #ifdef THUNDER_RESTFULL_API
             Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            #endif
+            Notify(_T("statechange"), string(_T("{\"state\":\"Unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -1200,10 +1211,8 @@ namespace PluginHost {
             ASSERT(callsign.empty() == false);
 
             if (jsonrpc_event.empty() == false) {
-                JsonData::Events::ForwardEventParamsData message;
-                message.Data = Exchange::Controller::IEvents::INotification::Event({ jsonrpc_event, parameters });
-                message.Callsign = callsign;
-                Exchange::Controller::JEvents::Event::ForwardEvent(*controller, message);
+                JsonData::Events::ForwardMessageParamsData::EventData message({ jsonrpc_event, parameters, callsign });
+                controller->Notify(_T("all"), message);
             }
             else {
                 string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":\"") + parameters + _T("\"}}");
