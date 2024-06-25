@@ -18,6 +18,7 @@
  */
 
 #include "PluginServer.h"
+#include "../core/Library.h"
 #include <fstream>
 
 #ifndef __WINDOWS__
@@ -161,6 +162,29 @@ POP_WARNING()
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
+        static void DumpCallStackData()
+        {
+            _adminLock.Lock();
+            std::list<WPEFramework::Core::callstack_info> stackList;
+            uint32_t threadId = WPEFramework::Core::Thread::ThreadId();
+            // Get the call stack for the current thread
+            ::DumpCallStack(threadId, stackList);
+            for(const WPEFramework::Core::callstack_info& entry : stackList)
+            {
+				std::string symbol = entry.function.empty() ? "Unknown symbol" : entry.function;
+                if (_background)
+                {
+                    syslog(LOG_NOTICE, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.c_str(),entry.line,entry.address);
+                }
+                else
+                {
+                    fprintf(stderr, "[%s]:[%s]:[%d]:[%p]\n",entry.module.c_str(), symbol.c_str(),entry.line,entry.address);
+                    fflush(stderr);
+                }
+            }
+	        _adminLock.Unlock();
+	    }
+
         static void StartShutdown() {
             _adminLock.Lock();
             if ((_dispatcher != nullptr) && (_instance == nullptr)) {
@@ -298,9 +322,13 @@ POP_WARNING()
     extern "C" {
 
 #ifndef __WINDOWS__
+    static struct sigaction _originalSegmentationHandler;
+    static struct sigaction _originalAbortHandler;
+    static Core::CriticalSection _adminLock;
 
     void ExitDaemonHandler(int signo)
     {
+        const char* segname = "";
         if (_background) {
             syslog(LOG_NOTICE, "Signal received %d. in process [%d]", signo, getpid());
         } else {
@@ -309,10 +337,15 @@ POP_WARNING()
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
 
+            sigaction(SIGSEGV, &_originalSegmentationHandler, nullptr);
+            sigaction(SIGABRT, &_originalAbortHandler, nullptr);
+            ExitHandler::DumpCallStackData();
+            segname = (signo == SIGSEGV) ? "a segmentation fault" : (signo == SIGABRT) ? "an abort" : "";
+
             if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. Regular shutdown");
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to %s signal. All relevant data dumped", segname);
             } else {
-                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a SIGTERM or SIGQUIT signal. No regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
+                fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to %s signal. All relevant data dumped\n", segname);
                 fflush(stderr);
             }
 
@@ -320,6 +353,51 @@ POP_WARNING()
         }
     }
 
+namespace {
+
+    void SetupCrashHandler(void)
+    {
+        _adminLock.Lock();
+        struct sigaction sa, current_sa;
+
+        memset(&current_sa, 0, sizeof(struct sigaction));
+        sigaction(SIGSEGV, nullptr, &current_sa);
+        if (ExitDaemonHandler  != current_sa.sa_handler)
+        {
+            _originalSegmentationHandler = current_sa;
+             memset(&sa, 0, sizeof(struct sigaction));
+             sigemptyset(&sa.sa_mask);
+             sa.sa_handler = ExitDaemonHandler;
+             sa.sa_flags = 0;
+             if (_background) {
+                 syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGSEGV");
+             } else {
+                 fprintf(stdout, "Registering ExitDaemonHandler for SIGSEGV \n");
+                 fflush(stdout);
+             }
+             sigaction(SIGSEGV, &sa, nullptr);
+        }
+
+        memset(&current_sa, 0, sizeof(struct sigaction));
+        sigaction(SIGABRT, nullptr, &current_sa);
+        if (ExitDaemonHandler  != current_sa.sa_handler)
+        {
+            _originalAbortHandler = current_sa;
+             memset(&sa, 0, sizeof(struct sigaction));
+             sigemptyset(&sa.sa_mask);
+             sa.sa_handler = ExitDaemonHandler;
+             sa.sa_flags = 0;
+             if (_background) {
+                 syslog(LOG_NOTICE, "Registering ExitDaemonHandler for SIGABRT");
+             } else {
+                 fprintf(stdout, "Registering ExitDaemonHandler for SIGABRT \n");
+                 fflush(stdout);
+             }
+             sigaction(SIGABRT, &sa, nullptr);
+        }
+        _adminLock.Unlock();
+    }
+}
 #endif
 
     void LoadPlugins(const string& name, PluginHost::Config& config)
@@ -422,6 +500,7 @@ POP_WARNING()
 #endif
 
         ConsoleOptions options(argc, argv);
+        WPEFramework::Core::Library::RegisterLibraryLoadCallback(SetupCrashHandler);
 
         if (options.RequestUsage()) {
 #ifndef __WINDOWS__
@@ -449,6 +528,8 @@ POP_WARNING()
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
+            sigaction(SIGABRT, &sa, &_originalAbortHandler);
         }
 
         if (atexit(ForcedExit) != 0) {

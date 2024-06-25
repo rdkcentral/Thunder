@@ -28,6 +28,15 @@
 namespace WPEFramework {
 namespace Core {
 
+    Library::LibraryLoadCallback Library::g_loadCallback = nullptr;
+
+    void Library::RegisterLibraryLoadCallback(LibraryLoadCallback callback)
+    {
+       assert(callback != nullptr);
+       assert(g_loadCallback == nullptr);
+       g_loadCallback = callback;
+    }
+
     Library::Library()
         : _refCountedHandle(nullptr)
         , _error()
@@ -89,6 +98,11 @@ namespace Core {
             _refCountedHandle->_handle = handle;
             _refCountedHandle->_name = fileName;
             TRACE_L1("Loaded library: %s", fileName);
+            // Trigger the callback to notify that a library has been loaded
+            if (g_loadCallback)
+            {
+               g_loadCallback();
+            }
         } else {
 #ifdef __LINUX__
             _error = dlerror();
