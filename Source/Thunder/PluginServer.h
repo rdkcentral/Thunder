@@ -811,20 +811,15 @@ namespace PluginHost {
             {
                 return (_rawSocket != nullptr);
             }
-            inline bool Subscribe(Channel& channel)
-            {
-                bool result = PluginHost::Service::Subscribe(channel);
+            inline bool Attach(PluginHost::Channel& channel) {
+                bool attached = true;
 
-                if ((result == true) && (_extended != nullptr)) {
-                    _extended->Attach(channel);
+                if (_extended != nullptr) {
+                    attached = _extended->Attach(channel);
                 }
-
-                return (result);
+                return (attached);
             }
-            inline void Unsubscribe(Channel& channel)
-            {
-                PluginHost::Service::Unsubscribe(channel);
-
+            inline void Detach(PluginHost::Channel& channel) {
                 if (_extended != nullptr) {
                     _extended->Detach(channel);
                 }
@@ -3136,7 +3131,7 @@ namespace PluginHost {
                 RecursiveNotification(index);
             }
 
-            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
+            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, PluginHost::Request::mode& callType);
 
             void Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled);
             void Startup();
@@ -3904,11 +3899,11 @@ namespace PluginHost {
 
                 // Remember the path and options..
                 Core::ProxyType<Service> service;
-                bool serviceCall;
+                PluginHost::Request::mode callType;
 
-                uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+                uint32_t status = _parent.Services().FromLocator(request->Path, service, callType);
 
-                request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
+                request->Set(status, Core::ProxyType<PluginHost::Service>(service), callType);
 
                 ASSERT(request->State() != Request::INCOMPLETE);
 
@@ -3916,9 +3911,9 @@ namespace PluginHost {
 
                     ASSERT(service.IsValid() == true);
 
-                    if (serviceCall == true) {
+                    if (callType == PluginHost::Request::mode::RESTFULL) {
                         service->Inbound(*request);
-                    } else {
+                    } else if (callType == PluginHost::Request::mode::JSONRPC) {
                         request->Body(IFactories::Instance().JSONRPC());
                     }
                 }
@@ -3962,10 +3957,10 @@ namespace PluginHost {
                     if (request->State() == Request::INCOMPLETE) {
 
                         Core::ProxyType<Service> service;
-                        bool serviceCall;
-                        uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+                        PluginHost::Request::mode callType;
+                        uint32_t status = _parent.Services().FromLocator(request->Path, service, callType);
 
-                        request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
+                        request->Set(status, Core::ProxyType<PluginHost::Service>(service), callType);
                     } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
                         Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
                         if (message.IsValid() == true) {
@@ -4021,7 +4016,7 @@ namespace PluginHost {
 
                     Core::ProxyType<Web::Response> response;
 
-                    if (request->ServiceCall() == true) {
+                    if (request->RestfulCall() == true) {
                         response = service->Evaluate(*request);
                     }
 
@@ -4037,7 +4032,7 @@ namespace PluginHost {
 
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(request);
-                            job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->ServiceCall());
+                            job->Set(Id(), &_parent, service, baseRequest, _security->Token(), !request->RestfulCall());
                             Push(Core::ProxyType<Core::IDispatch>(job));
                         }
                     }
@@ -4172,7 +4167,7 @@ namespace PluginHost {
                 // If we are closing (or closed) do the clean up
                 if (IsOpen() == false) {
                     if (_service.IsValid() == true) {
-                        _service->Unsubscribe(*this);
+                        _service->Detach(*this);
 
                         _service.Release();
                     }
@@ -4184,38 +4179,55 @@ namespace PluginHost {
                 } else if (IsUpgrading() == true) {
 
                     ASSERT(_service.IsValid() == false);
-                    bool serviceCall;
+                    PluginHost::Request::mode callType;
                     // see if we need to subscribe...
-                    _parent.Services().FromLocator(Path(), _service, serviceCall);
+                    _parent.Services().FromLocator(Path(), _service, callType);
 
                     if (_service.IsValid() == false) {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     } else if (Allowed(Path(), Query()) == false) {
                         AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
                     } else {
-                        //select supported protocol and let know which one was choosen
-                        auto protocol = SelectSupportedProtocol(Protocols());
-                        if (protocol.empty() == false) {
+                        bool notification = false;
+                        Channel::ChannelState mode = Channel::ChannelState::JSONRPC;
+
+                        const Web::ProtocolsArray& protocols(Protocols());
+
+                        if (protocols.Empty() == true) {
                             // if protocol header is not set sending an empty protocol header is not allowed (at least by chrome)
-                            Protocols(Web::ProtocolsArray(protocol));
+                            Protocols(Web::ProtocolsArray(protocols));
+                        }
+                        else for (const auto& protocol : protocols) {
+                            if (protocol == _T("notification")) {
+                                notification = true;
+                            }
+                            else if ( (protocol == _T("json")) || (protocol == _T("jsonrpc"))) {
+                                mode = Channel::ChannelState::JSON;
+                                break;
+                            }
+                            else if (protocol == _T("text")) {
+                                mode = Channel::ChannelState::TEXT;
+                            }
+                            else if (protocol == _T("raw")) {
+                                mode = Channel::ChannelState::RAW;
+                            }
                         }
 
-                        if (serviceCall == false) {
-                            const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
-                            if (Name().length() > (JSONRPCHeader.length() + 1)) {
-                                Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
-                            }
-                            State(JSONRPC, false);
-                        } else {
-                            const string& serviceHeader(_parent._config.WebPrefix());
-                            if (Name().length() > (serviceHeader.length() + 1)) {
-                                Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
+                        if (callType == PluginHost::Request::JSONRPC) {
+                            Properties(static_cast<uint32_t>(_parent._config.JSONRPCPrefix().length()) + 1);
+                            State(static_cast<Channel::ChannelState>(mode | ChannelState::JSONRPC), notification);
+                            if (_service->Attach(*this) == false) {
+                                AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }
                         }
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+                        else if (callType == PluginHost::Request::RESTFULL) {
+                            Properties(static_cast<uint32_t>(_parent._config.WebPrefix().length()) + 1);
+                            State(static_cast<Channel::ChannelState>(mode | ChannelState::WEB), notification);
+                            if (((IsNotified() == true) && (_service->Subscribe(*this) == false)) || (_service->Attach(*this) == false)) {
+                                AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+                            }
                         }
+
                     }
                 }
                 else if ((IsOpen() == true) && (IsWebSocket() == false)) {
@@ -4228,31 +4240,6 @@ namespace PluginHost {
             inline void Id(const uint32_t id)
             {
                 SetId(id);
-            }
-
-            inline string SelectSupportedProtocol(const Web::ProtocolsArray& protocols)
-            {
-                for (const auto& protocol : protocols) {
-                    if (protocol == _T("notification")) {
-                        State(TEXT, true);
-                        return protocol;
-                    } else if (protocol == _T("json")) {
-                        State(JSON, false);
-                        return protocol;
-                    } else if (protocol == _T("text")) {
-                        State(TEXT, false);
-                        return protocol;
-                    } else if (protocol == _T("jsonrpc")) {
-                        State(JSONRPC, false);
-                        return protocol;
-                    } else if (protocol == _T("raw")) {
-                        State(RAW, false);
-                        return protocol;
-                    }
-                }
-
-                State(RAW, false);
-                return _T("");
             }
 
             Server& _parent;
