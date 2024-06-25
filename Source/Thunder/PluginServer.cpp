@@ -972,16 +972,17 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
+    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, PluginHost::Request::mode& callType)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         const string& serviceHeader(Configuration().WebPrefix());
         const string& JSONRPCHeader(Configuration().JSONRPCPrefix());
 
+
         // Check the header (prefix part)
         if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
 
-            serviceCall = true;
+            callType = PluginHost::Request::mode::RESTFULL;
 
             if (identifier.length() <= (serviceHeader.length() + 1)) {
                 service = _server.Controller();
@@ -1002,7 +1003,7 @@ namespace PluginHost {
             }
         } else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
 
-            serviceCall = false;
+            callType = PluginHost::Request::mode::JSONRPC;
 
             if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
                 service = _server.Controller();
@@ -1021,6 +1022,9 @@ namespace PluginHost {
                     }
                 }
             }
+        }
+        else {
+            callType = PluginHost::Request::mode::PROPRIETARY;
         }
 
         return (result);
