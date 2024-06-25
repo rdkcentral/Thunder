@@ -4,6 +4,7 @@ option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
+option(WORKERPOOLSCHEDULING_TEST "Example of scheduling jobs with WorkerPool" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -31,4 +32,8 @@ endif()
 
 if(MESSAGEBUFFER_TEST)
     add_subdirectory(message-buffer)
+endif()
+
+if(WORKERPOOLSCHEDULING_TEST)
+    add_subdirectory(workerpool-scheduling)
 endif()
