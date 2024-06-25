@@ -738,9 +738,7 @@ namespace Plugin {
 
     void Controller::SubSystems()
     {
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
         PluginHost::Metadata response;
-#endif
         Core::JSON::ArrayType<JsonData::Subsystems::SubsystemInfo> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
@@ -763,10 +761,7 @@ namespace Plugin {
                     status.Subsystem = current;
                     status.Active = ((reportMask & bit) != 0);
                     responseJsonRpc.Add(status);
-
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
-#endif
 
                     sendReport = true;
                 }
@@ -781,15 +776,11 @@ namespace Plugin {
 
         if (sendReport == true) {
 
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
             string message;
             response.ToString(message);
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
-#endif
 
-#if THUNDER_RESTFULL_API
-            _pluginServer->_controller->Notification(message);
-#endif
+            _service->Notify(EMPTY_STRING, message);
 
             Exchange::Controller::JSubsystems::Event::SubsystemChange(*this, responseJsonRpc);
         }
@@ -1110,10 +1101,7 @@ namespace Plugin {
                 service.Configuration = meta.Configuration;
                 service.Precondition = meta.Precondition;
                 service.Termination = meta.Termination;
-
-                #if THUNDER_RESTFULL_API
                 service.Observers = meta.Observers;
-                #endif
 
                 #if THUNDER_RUNTIME_STATISTICS
                 service.ProcessedRequests = meta.ProcessedRequests;

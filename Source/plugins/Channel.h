@@ -192,13 +192,14 @@ namespace PluginHost {
 
     public:
         enum ChannelState : uint16_t {
-            CLOSED = 0x01,
-            WEB = 0x02,
-            JSON = 0x04,
-            RAW = 0x08,
-            TEXT = 0x10,
-            JSONRPC = 0x20,
-            PINGED = 0x4000,
+            CLOSED   = 0x01,
+            WEB      = 0x02,
+            JSON     = 0x04,
+            RAW      = 0x08,
+            TEXT     = 0x10,
+            JSONRPC  = 0x20,
+
+            PINGED   = 0x4000,
             NOTIFIED = 0x8000
         };
 
