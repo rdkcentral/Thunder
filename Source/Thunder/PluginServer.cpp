@@ -471,6 +471,8 @@ namespace PluginHost {
                         stateControl->Release();
                     }
 
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+
                     Unlock();
 
                     #ifdef THUNDER_RESTFULL_API
