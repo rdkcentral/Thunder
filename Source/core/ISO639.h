@@ -57,7 +57,7 @@ namespace Core {
             , m_Index(copy.m_Index)
         {
         }
-        Language(Language&& move)
+        Language(Language&& move) noexcept
             : m_SelectedLanguage(std::move(move.m_SelectedLanguage))
             , m_Index(std::move(move.m_Index))
         {
@@ -74,7 +74,7 @@ namespace Core {
 
             return (*this);
         }
-        Language& operator=(Language&& move)
+        Language& operator=(Language&& move) noexcept
         {
             if (this != &move) {
                 m_SelectedLanguage = std::move(move.m_SelectedLanguage);

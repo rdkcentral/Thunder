@@ -46,7 +46,7 @@ namespace PluginHost {
                     : Core::JSON::EnumType<state>()
                 {
                 }
-                State(State&& move)
+                State(State&& move) noexcept
                     : Core::JSON::EnumType<state>(move)
                 {
                 }
@@ -95,7 +95,7 @@ namespace PluginHost {
             class EXTERNAL State : public Core::JSON::EnumType<state> {
             public:
                 inline State() = default;
-                inline State(State&& move)
+                inline State(State&& move) noexcept
                     : Core::JSON::EnumType<state>(move)
                 {
                 }
@@ -214,7 +214,7 @@ namespace PluginHost {
                 Add(_T("link"), &Remote);
                 Add(_T("proxies"), &Proxies);
             }
-            COMRPC(COMRPC&& move)
+            COMRPC(COMRPC&& move) noexcept
                 : Core::JSON::Container()
                 , Remote(std::move(move.Remote))
                 , Proxies(std::move(move.Proxies)) {

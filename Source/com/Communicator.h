@@ -32,7 +32,7 @@
 
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
+#include <processcontainers/ProcessContainer.h>
 #endif
 
 
@@ -83,7 +83,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(Object&& move)
+        Object(Object&& move) noexcept
             : _locator(std::move(move._locator))
             , _className(std::move(move._className))
             , _callsign(std::move(move._callsign))
@@ -151,7 +151,7 @@ namespace RPC {
         }
 
 
-        Object& operator=(Object&& move)
+        Object& operator=(Object&& move) noexcept
         {
             if (this != &move) {
                 _locator = std::move(move._locator);
@@ -297,7 +297,7 @@ namespace RPC {
             , _postMortem(copy._postMortem)
         {
         }
-	Config(Config&& move)
+	Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))

@@ -37,7 +37,7 @@ git clone https://github.com/rdkcentral/ThunderTools.git
 ```
 Next, we need to run the following commands to build and then install the code generators inside ThunderTools:
 ```shell
-cmake -G Ninja -S ThunderTools -B build/ThunderTools -DCMAKE_INSTALL_PREFIX="install/usr"
+cmake -G Ninja -S ThunderTools -B build/ThunderTools -DCMAKE_INSTALL_PREFIX="install"
 
 cmake --build build/ThunderTools --target install
 ```
@@ -54,17 +54,12 @@ Run the following commands to build and then install Thunder. The available `-DC
 
 ```shell
 cmake -G Ninja -S Thunder -B build/Thunder \
--DBUILD_SHARED_LIBS=ON \
 -DBINDING="127.0.0.1" \
 -DCMAKE_BUILD_TYPE="Debug" \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
--DDATA_PATH="${PWD}/install/usr/share/Thunder" \
--DPERSISTENT_PATH="${PWD}/install/var/thunder" \
+-DCMAKE_INSTALL_PREFIX="install" \
 -DPORT="55555" \
--DPROXYSTUB_PATH="${PWD}/install/usr/lib/thunder/proxystubs" \
--DSYSTEM_PATH="${PWD}/install/usr/lib/thunder/plugins" \
--DVOLATILE_PATH="tmp"
+-DTOOLS_SYSROOT="${PWD}" \
+-DINITV_SCRIPT=OFF 
 
 cmake --build build/Thunder --target install
 ```
@@ -84,8 +79,7 @@ Run the following commands to build and then install ThunderInterfaces:
 
 ```shell
 cmake -G Ninja -S ThunderInterfaces -B build/ThunderInterfaces \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules"
+-DCMAKE_INSTALL_PREFIX="install"
 
 cmake --build build/ThunderInterfaces --target install
 ```
@@ -107,24 +101,18 @@ In the command below, there is a complete list of plugins that do not require an
 
 ```shell
 cmake -G Ninja -S ThunderNanoServices -B build/ThunderNanoServices \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
+-DCMAKE_INSTALL_PREFIX="install" \
 -DPLUGIN_COMMANDER=ON \
--DPLUGIN_DHCPSERVER=ON \
 -DPLUGIN_DIALSERVER=ON \
 -DPLUGIN_DICTIONARY=ON \
 -DPLUGIN_FILETRANSFER=ON \
--DPLUGIN_IOCONNECTOR=ON \
 -DPLUGIN_INPUTSWITCH=ON \
--DPLUGIN_NETWORKCONTROL=ON \
 -DPLUGIN_PROCESSMONITOR=ON \
 -DPLUGIN_RESOURCEMONITOR=ON \
 -DPLUGIN_SYSTEMCOMMANDS=ON \
 -DPLUGIN_SWITCHBOARD=ON \
 -DPLUGIN_WEBPROXY=ON \
--DPLUGIN_WEBSERVER=ON \
--DPLUGIN_WEBSHELL=ON \
--DPLUGIN_WIFICONTROL=ON
+-DPLUGIN_WEBSHELL=ON 
 
 cmake --build build/ThunderNanoServices --target install
 ```
@@ -143,11 +131,8 @@ In the command below, there is a complete list of plugins that do not require an
 
 ```shell
 cmake -G Ninja -S ThunderNanoServicesRDK -B build/ThunderNanoServicesRDK \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
--DPLUGIN_DEVICEIDENTIFICATION=ON \
+-DCMAKE_INSTALL_PREFIX="install" \
 -DPLUGIN_DEVICEINFO=ON \
--DPLUGIN_LOCATIONSYNC=ON \
 -DPLUGIN_MESSAGECONTROL=ON \
 -DPLUGIN_MESSENGER=ON \
 -DPLUGIN_MONITOR=ON \
@@ -173,12 +158,10 @@ In the command below, there is a complete list of client libraries that do not r
 
 ```shell
 cmake -G Ninja -S ThunderClientLibraries -B build/ThunderClientLibraries \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules" \
+-DCMAKE_INSTALL_PREFIX="install" \
 -DBLUETOOTHAUDIOSINK=ON \
 -DDEVICEINFO=ON \
 -DDISPLAYINFO=ON \
--DLOCALTRACER=ON \
 -DSECURITYAGENT=ON \
 -DPLAYERINFO=ON \
 -DPROTOCOLS=ON \
@@ -205,8 +188,7 @@ Run the following commands to build and then install ThunderUI:
 
 ```shell
 cmake -G Ninja -S ThunderUI -B build/ThunderUI \
--DCMAKE_INSTALL_PREFIX="install/usr" \
--DCMAKE_MODULE_PATH="${PWD}/install/usr/include/Thunder/Modules"
+-DCMAKE_INSTALL_PREFIX="install"
 
 cmake --build build/ThunderUI --target install
 ```
@@ -219,10 +201,10 @@ After everything has been built and installed correctly, we can run Thunder.
 Since we installed Thunder in a custom installation directory, we need to provide an `LD_LIBRARY_PATH` to that location and set `PATH` to include the `bin` directory. If the libraries are installed in system-wide locations (e.g. `/usr/lib` and `/usr/bin`) then those environment variables are not required
 
 ```shell
-export LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH}
-export PATH=${PWD}/install/usr/bin:${PATH}
+export LD_LIBRARY_PATH=${PWD}/install/lib:${LD_LIBRARY_PATH}
+export PATH=${PWD}/install/bin:${PATH}
 
-$ Thunder -f -c ${PWD}/install/etc/Thunder/config.json
+Thunder -f -c ${PWD}/install/etc/Thunder/config.json
 ```
 
 The following arguments should be specified to the Thunder binary:

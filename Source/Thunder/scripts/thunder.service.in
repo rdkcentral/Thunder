@@ -1,14 +1,14 @@
 [Unit]
 Description=thunder
 Wants=multi-user.target
-After=multi-user.target EXTRA_DEPENDS
+After=multi-user.target @EXTRA_DEPENDS@
 
 [Service]
-PIDFile=/var/run/Thunder.pid
-EnvironmentFile=-/etc/thunder/Thunder.env
+PIDFile=@CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/Thunder/Thunder.env
 Environment="WAYLAND_DISPLAY=wayland-0"
-Environment="XDG_RUNTIME_DIR=/run"
-ExecStart=-/usr/bin/Thunder -b
+Environment="XDG_RUNTIME_DIR=@CMAKE_INSTALL_FULL_RUNSTATEDIR@"
+ExecStart=-@CMAKE_INSTALL_FULL_BINDIR@/Thunder -b
 ExecStop=/bin/kill $MAINPID
 
 [Install]

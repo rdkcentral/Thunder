@@ -17,11 +17,16 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
-#include <messaging/messaging.h>
 
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+
+#include "../IPTestAdministrator.h"
+ 
 using namespace Thunder;
 
 class Control : public Core::Messaging::IControl {

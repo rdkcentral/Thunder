@@ -309,11 +309,21 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            result = service->ConfigLine(configuration);
+            Core::JSON::Variant config;
+            Core::OptionalType<Core::JSON::Error> error;
+            config.FromString(configuration, error);
+            result = Core::ERROR_INCOMPLETE_CONFIG;
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            } else if (config.IsValid() != true) {
+                SYSLOG(Logging::ParsingError, (_T("Given configuration is not valid")));
+            } else {
+                result = service->ConfigLine(configuration);
 
-            // Normalise return code
-            if (result != Core::ERROR_NONE) {
-                result = Core::ERROR_GENERAL;
+                // Normalise return code
+                if (result != Core::ERROR_NONE) {
+                    result = Core::ERROR_GENERAL;
+                }
             }
         }
 
@@ -717,7 +727,10 @@ namespace Plugin {
                     PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
                     info.Instance = proxy->Implementation();
                     info.Interface = proxy->InterfaceId();
-                    info.Count = proxy->ReferenceCount();
+                    info.Name = Core::ClassName(proxy->Name()).Text();
+                    // Subtract one for the Thunder syatem that keeps track of this
+                    //proxy for leakage reporting!
+                    info.Count = proxy->ReferenceCount() - 1;
                 }
             }
         );
@@ -725,9 +738,7 @@ namespace Plugin {
 
     void Controller::SubSystems()
     {
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
         PluginHost::Metadata response;
-#endif
         Core::JSON::ArrayType<JsonData::Subsystems::SubsystemInfo> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
@@ -750,10 +761,7 @@ namespace Plugin {
                     status.Subsystem = current;
                     status.Active = ((reportMask & bit) != 0);
                     responseJsonRpc.Add(status);
-
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
-#endif
 
                     sendReport = true;
                 }
@@ -768,15 +776,11 @@ namespace Plugin {
 
         if (sendReport == true) {
 
-#if THUNDER_RESTFULL_API || defined(__DEBUG__)
             string message;
             response.ToString(message);
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
-#endif
 
-#if THUNDER_RESTFULL_API
-            _pluginServer->_controller->Notification(message);
-#endif
+            _service->Notify(EMPTY_STRING, message);
 
             Exchange::Controller::JSubsystems::Event::SubsystemChange(*this, responseJsonRpc);
         }
@@ -1097,10 +1101,7 @@ namespace Plugin {
                 service.Configuration = meta.Configuration;
                 service.Precondition = meta.Precondition;
                 service.Termination = meta.Termination;
-
-                #if THUNDER_RESTFULL_API
                 service.Observers = meta.Observers;
-                #endif
 
                 #if THUNDER_RUNTIME_STATISTICS
                 service.ProcessedRequests = meta.ProcessedRequests;
@@ -1242,7 +1243,7 @@ namespace Plugin {
                     while (it2.Next() == true) {
                         auto const& entry = it2.Current();
 
-                        proxies.push_back({ entry.Interface.Value(), entry.Instance.Value(), entry.Count.Value() });
+                        proxies.push_back({ entry.Interface.Value(), entry.Name.Value(), entry.Instance.Value(), entry.Count.Value() });
                     }
 
                     break;

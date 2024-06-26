@@ -113,7 +113,6 @@
     <ClCompile Include="JSON.cpp" />
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
-    <ClCompile Include="MessageException.cpp" />
     <ClCompile Include="MessageStore.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
