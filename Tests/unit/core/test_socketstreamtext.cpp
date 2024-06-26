@@ -32,24 +32,25 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
-    class TextConnector : public Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> {
+    class TextConnector : public ::Thunder::Core::StreamTextType<::Thunder::Core::SocketStream, ::Thunder::Core::TerminatorCarriageReturn> {
     private:
-        typedef Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> BaseClass;
+        typedef ::Thunder::Core::StreamTextType<::Thunder::Core::SocketStream, ::Thunder::Core::TerminatorCarriageReturn> BaseClass;
 
     public:
         TextConnector() = delete;
         TextConnector(const TextConnector& copy) = delete;
         TextConnector& operator=(const TextConnector&) = delete;
 
-        TextConnector(const Thunder::Core::NodeId& remoteNode)
+        TextConnector(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _serverSocket(false)
             , _dataPending(false, false)
         {
         }
 
-        TextConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<TextConnector>*)
+        TextConnector(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<TextConnector>*)
             : BaseClass(false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
             , _dataPending(false, false)
@@ -105,7 +106,7 @@ namespace Tests {
     private:
         bool _serverSocket;
         string _dataReceived;
-        mutable Thunder::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         static bool _done;
 
     public:
@@ -122,8 +123,8 @@ namespace Tests {
         std::string connector {"/tmp/wpestreamtext0"};
 
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(connector.c_str()));
-            textSocketServer.Open(Core::infinite);
+            ::Thunder::Core::SocketServerType<TextConnector> textSocketServer(::Thunder::Core::NodeId(connector.c_str()));
+            textSocketServer.Open(::Thunder::Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(TextConnector::_mutex);
             while (!TextConnector::GetState()) {
@@ -140,8 +141,8 @@ namespace Tests {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            TextConnector textSocketClient(Core::NodeId(connector.c_str()));
-            textSocketClient.Open(Core::infinite);
+            TextConnector textSocketClient(::Thunder::Core::NodeId(connector.c_str()));
+            textSocketClient.Open(::Thunder::Core::infinite);
             testAdmin.Sync("server open");
             string message = "hello";
             textSocketClient.Submit(message);
@@ -149,10 +150,12 @@ namespace Tests {
             string received;
             textSocketClient.Retrieve(received);
             EXPECT_STREQ(message.c_str(), received.c_str());
-            textSocketClient.Close(Core::infinite);
+            textSocketClient.Close(::Thunder::Core::infinite);
             testAdmin.Sync("client done");
         }
-        Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
+
+} // Core
 } // Tests
 } // Thunder

@@ -28,8 +28,8 @@
 #include "../IPTestAdministrator.h"
 
 namespace Thunder {
-namespace Core {
 namespace Tests {
+namespace Core {
 
     struct Data {
         bool shareable;
@@ -57,31 +57,31 @@ namespace Tests {
         struct stat st;
         if (lstat(fileName, &st) == 0) {
 
-            if ((mode & Core::File::USER_READ) != (st.st_mode & S_IRUSR)) {
+            if ((mode & ::Thunder::Core::File::Mode::USER_READ) != (st.st_mode & S_IRUSR)) {
                 valid = false;
             }
-            else if ((mode & Core::File::USER_WRITE) != (st.st_mode & S_IWUSR)) {
+            else if ((mode & ::Thunder::Core::File::Mode::USER_WRITE) != (st.st_mode & S_IWUSR)) {
                 valid = false;
             }
-            else if ((mode & Core::File::USER_EXECUTE) != (st.st_mode & S_IXUSR)) {
+            else if ((mode & ::Thunder::Core::File::Mode::USER_EXECUTE) != (st.st_mode & S_IXUSR)) {
                 valid = false;
             }
-            else if ((mode & Core::File::GROUP_READ) != (st.st_mode & S_IRGRP)) {
+            else if ((mode & ::Thunder::Core::File::Mode::GROUP_READ) != (st.st_mode & S_IRGRP)) {
                 valid = false;
             }
-            else if((mode & Core::File::GROUP_WRITE) != (st.st_mode & S_IWGRP)) {
+            else if((mode & ::Thunder::Core::File::Mode::GROUP_WRITE) != (st.st_mode & S_IWGRP)) {
                 valid = false;
             }
-            else if ((mode & Core::File::GROUP_EXECUTE) != (st.st_mode & S_IXGRP)) {
+            else if ((mode & ::Thunder::Core::File::GROUP_EXECUTE) != (st.st_mode & S_IXGRP)) {
                 valid = false;
             }
-            else if ((mode & Core::File::OTHERS_READ) != (st.st_mode & S_IROTH)) {
+            else if ((mode & ::Thunder::Core::File::OTHERS_READ) != (st.st_mode & S_IROTH)) {
                 valid = false;
             }
-            else if((mode & Core::File::OTHERS_WRITE) != (st.st_mode & S_IWOTH)) {
+            else if((mode & ::Thunder::Core::File::OTHERS_WRITE) != (st.st_mode & S_IWOTH)) {
                 valid = false;
             }
-            else if ((mode & Core::File::OTHERS_EXECUTE) != (st.st_mode & S_IXOTH)) {
+            else if ((mode & ::Thunder::Core::File::OTHERS_EXECUTE) != (st.st_mode & S_IXOTH)) {
                 valid = false;
             } else {
                 valid = true;
@@ -134,13 +134,13 @@ namespace Tests {
     const uint32_t MaxSignalWaitTime = 1000; // In milliseconds
     static void* ThreadToCheckBufferIsSharable(void* data)
     {
-        CyclicBuffer* buffer = static_cast<CyclicBuffer*>(data);
+        ::Thunder::Core::CyclicBuffer* buffer = static_cast<::Thunder::Core::CyclicBuffer*>(data);
 
         uint32_t written = buffer->Write(reinterpret_cast<const uint8_t*>(SampleData), sizeof(SampleData));
         static bool shareable = (written == sizeof(SampleData));
         pthread_exit(&shareable);
     }
-    bool CheckBufferIsSharable(CyclicBuffer* buffer)
+    bool CheckBufferIsSharable(::Thunder::Core::CyclicBuffer* buffer)
     {
         void *status = nullptr;
         pthread_t threadID;
@@ -149,14 +149,14 @@ namespace Tests {
 
         return ((status != nullptr) ? *(static_cast<bool *>(status)) : false);
     }
-    class ThreadLock : public Thread {
+    class ThreadLock : public ::Thunder::Core::Thread {
     public:
         ThreadLock() = delete;
         ThreadLock(const ThreadLock&) = delete;
         ThreadLock& operator=(const ThreadLock&) = delete;
 
-        ThreadLock(CyclicBuffer& cyclicBuffer, uint32_t waitTime, Event& event)
-            : Thread(Thread::DefaultStackSize(), _T("Test2"))
+        ThreadLock(::Thunder::Core::CyclicBuffer& cyclicBuffer, uint32_t waitTime, ::Thunder::Core::Event& event)
+            : ::Thunder::Core::Thread(::Thunder::Core::Thread::DefaultStackSize(), _T("Test2"))
             , _event(event)
             , _waitTime(waitTime)
             , _cyclicBuffer(cyclicBuffer)
@@ -174,32 +174,32 @@ namespace Tests {
                 _event.SetEvent();
                 Block();
             }
-            return (infinite);
+            return (::Thunder::Core::infinite);
         }
     private:
-        Event& _event;
+        ::Thunder::Core::Event& _event;
         uint32_t _waitTime;
-        CyclicBuffer& _cyclicBuffer;
+        ::Thunder::Core::CyclicBuffer& _cyclicBuffer;
     };
 
-    class CyclicBufferTest : public CyclicBuffer {
+    class CyclicBufferTest : public ::Thunder::Core::CyclicBuffer {
     public:
-        CyclicBufferTest() = delete;
-        CyclicBufferTest(const CyclicBufferTest&) = delete;
+       CyclicBufferTest() = delete;
+       CyclicBufferTest(const CyclicBufferTest&) = delete;
         CyclicBufferTest& operator=(const CyclicBufferTest&) = delete;
 
-        CyclicBufferTest(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
-            : CyclicBuffer(fileName, mode, bufferSize, overwrite)
+       CyclicBufferTest(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
+            : ::Thunder::Core::CyclicBuffer(fileName, mode, bufferSize, overwrite)
         {
         }
-        CyclicBufferTest(DataElementFile& dataElementFile, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite)
-            : CyclicBuffer(dataElementFile, initiator, offset, bufferSize, overwrite)
+       CyclicBufferTest(::Thunder::Core::DataElementFile& dataElementFile, const bool initiator, const uint32_t offset, const uint32_t bufferSize, const bool overwrite)
+            : ::Thunder::Core::CyclicBuffer(dataElementFile, initiator, offset, bufferSize, overwrite)
         {
         }
 
         ~CyclicBufferTest() = default;
 
-        /* virtual */ uint32_t GetOverwriteSize(Cursor& cursor) override
+        /* virtual */ uint32_t GetOverwriteSize(::Thunder::Core::CyclicBuffer::Cursor& cursor) override
         {
             while (cursor.Offset() < cursor.Size()) {
                 uint16_t chunkSize = 0;
@@ -214,15 +214,15 @@ namespace Tests {
     TEST(Core_CyclicBuffer, Create)
     {
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
-            Core::File::CREATE | Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
+            ::Thunder::Core::File::Mode::CREATE | ::Thunder::Core::File::Mode::SHAREABLE;
 
         {
             std::string bufferName {"cyclicbuffer01"};
             uint8_t cyclicBufferSize = 50;
-            // Create CyclicBuffer with Size 50
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            // Create::Thunder::Core::CyclicBuffer with Size 50
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -230,7 +230,7 @@ namespace Tests {
             EXPECT_EQ(buffer.Open(), true);
 
             // Check File Size
-            EXPECT_EQ(FileSize(bufferName.c_str()), (cyclicBufferSize + sizeof(CyclicBuffer::control)));
+            EXPECT_EQ(FileSize(bufferName.c_str()), (cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control)));
 
             // Remove after usage before destruction
             buffer.Close();
@@ -242,7 +242,7 @@ namespace Tests {
             // Overwrite Buffer with Create
             uint8_t cyclicBufferSize = 100;
             std::string bufferName {"cyclicbuffer02"};
-            CyclicBuffer buffer1(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer1(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer1.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer1.Size(), cyclicBufferSize);
@@ -254,7 +254,7 @@ namespace Tests {
 
             // Create cyclic buffer with same name to check overwritting or not
             cyclicBufferSize = 20;
-            CyclicBuffer buffer2(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer2(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer2.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer2.Size(), cyclicBufferSize);
@@ -269,14 +269,14 @@ namespace Tests {
     TEST(Core_CyclicBuffer, CheckAccessOnStorageFile)
     {
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
-            Core::File::CREATE | Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
+            ::Thunder::Core::File::Mode::CREATE | ::Thunder::Core::File::Mode::SHAREABLE;
 
         std::string bufferName {"cyclicbuffer01"};
         uint8_t cyclicBufferSize = 50;
-        // Create CyclicBuffer with Size 50
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+        // Create::Thunder::Core::CyclicBuffer with Size 50
+        ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
@@ -295,11 +295,11 @@ namespace Tests {
             std::string bufferName {"cyclicbuffer01"};
             const uint8_t cyclicBufferSize = 50;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::OTHERS_READ | ::Thunder::Core::File::Mode::OTHERS_WRITE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -315,10 +315,10 @@ namespace Tests {
             std::string bufferName {"cyclicbuffer01"};
             const uint8_t cyclicBufferSize = 50;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -336,10 +336,10 @@ namespace Tests {
             std::string bufferName {"cyclicbuffer01"};
             const uint8_t cyclicBufferSize = 50;
             const uint32_t mode =
-                Core::File::USER_WRITE |
-                Core::File::OTHERS_READ | Core::File::OTHERS_WRITE;
+                ::Thunder::Core::File::Mode::USER_WRITE |
+                ::Thunder::Core::File::Mode::OTHERS_READ | ::Thunder::Core::File::Mode::OTHERS_WRITE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -356,10 +356,10 @@ namespace Tests {
             std::string bufferName {"cyclicbuffer01"};
             const uint8_t cyclicBufferSize = 50;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -379,9 +379,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
+        ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -402,9 +402,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 20;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+            ::Thunder::Core::File::Mode::SHAREABLE;
 
         CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
@@ -444,9 +444,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
+        ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -489,9 +489,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -541,9 +541,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 10;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -573,9 +573,9 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 50;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -586,24 +586,24 @@ namespace Tests {
         EXPECT_EQ(buffer.Free(), cyclicBufferSize - (sizeof(SampleData)));
 
         EXPECT_EQ(buffer.Reserve(0), 0u);
-        EXPECT_EQ(buffer.Reserve(51), Core::ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(buffer.Reserve(51), ::Thunder::Core::ERROR_INVALID_INPUT_LENGTH);
         // Remove after usage before destruction
         buffer.Close();
     }
     TEST(Core_CyclicBuffer, Using_DataElementFile)
     {
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
-            Core::File::CREATE | Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
+            ::Thunder::Core::File::CREATE | ::Thunder::Core::File::Mode::SHAREABLE;
 
         {
             std::string fileName {"cyclicbuffer01"};
             uint8_t cyclicBufferSize = 50;
-            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
-            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize);
-            // Create CyclicBuffer with Size 50
-            CyclicBuffer buffer(dataElementFile, true, 0, cyclicBufferWithControlDataSize, false);
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
+            ::Thunder::Core::DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize);
+            // Create::Thunder::Core::CyclicBuffer with Size 50
+           ::Thunder::Core::CyclicBuffer buffer(dataElementFile, true, 0, cyclicBufferWithControlDataSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -623,18 +623,18 @@ namespace Tests {
     TEST(Core_CyclicBuffer, Using_DataElementFile_WithOffset)
     {
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
-            Core::File::CREATE | Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
+            ::Thunder::Core::File::CREATE | ::Thunder::Core::File::Mode::SHAREABLE;
 
         {
             std::string fileName {"cyclicbuffer01"};
             uint8_t cyclicBufferSize = 50;
             uint32_t offset = 56;
-            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
-            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
-            // Create CyclicBuffer with Size 50
-            CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
+            ::Thunder::Core::DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
+            // Create::Thunder::Core::CyclicBuffer with Size 50
+           ::Thunder::Core::CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -654,18 +654,18 @@ namespace Tests {
     TEST(Core_CyclicBuffer, Using_DataElementFile_WithInvalidOffset)
     {
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
-            Core::File::CREATE | Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
+            ::Thunder::Core::File::CREATE | ::Thunder::Core::File::Mode::SHAREABLE;
 
         {
             std::string fileName {"cyclicbuffer01"};
             uint8_t cyclicBufferSize = 50;
             uint32_t offset = 50;
-            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
-            DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
-            // Create CyclicBuffer with Size 50
-            CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
+            uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
+            ::Thunder::Core::DataElementFile dataElementFile(fileName, mode, cyclicBufferWithControlDataSize + offset);
+            // Create::Thunder::Core::CyclicBuffer with Size 50
+           ::Thunder::Core::CyclicBuffer buffer(dataElementFile, true, offset, cyclicBufferWithControlDataSize, false);
 
             EXPECT_STREQ(buffer.Name().c_str(), fileName.c_str());
             EXPECT_EQ(buffer.IsValid(), false);
@@ -686,10 +686,10 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 10;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  ;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  ;
 
-        CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
         EXPECT_EQ(buffer.IsOverwrite(), false);
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
@@ -728,11 +728,11 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint8_t cyclicBufferSize = 100;
         const uint32_t mode =
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::SHAREABLE;
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+            ::Thunder::Core::File::Mode::SHAREABLE;
 
-        CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+       CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
         EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
         EXPECT_EQ(buffer.Size(), cyclicBufferSize);
         EXPECT_EQ(buffer.IsValid(), true);
@@ -828,11 +828,11 @@ namespace Tests {
     static int ClonedProcessFunc(void* arg) {
         Data* data = static_cast<Data*>(arg);
         uint32_t cyclicBufferSize = 10;
-        uint32_t shareableFlag = (data->shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (data->shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
 
-        CyclicBuffer buffer(data->bufferName.c_str(),
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  | shareableFlag,
+       ::Thunder::Core::CyclicBuffer buffer(data->bufferName.c_str(),
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  | shareableFlag,
             cyclicBufferSize, false);
 
         buffer.Write(reinterpret_cast<const uint8_t*>(SampleData), sizeof(SampleData));
@@ -870,11 +870,11 @@ namespace Tests {
         SetSharePermissionsFromClonedProcess(bufferName, shareable);
 
         uint32_t cyclicBufferSize = 0;
-        uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
 
-        CyclicBuffer buffer(bufferName.c_str(),
-            Core::File::USER_READ | Core::File::USER_WRITE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE   |
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(),
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE   |
             shareableFlag, cyclicBufferSize, false);
 
         EXPECT_EQ(buffer.Used(), ((shareable == true) ? sizeof(SampleData) : 0));
@@ -906,10 +906,10 @@ namespace Tests {
         std::string bufferName {"cyclicbuffer01"};
         const uint32_t CyclicBufferSize = 10;
 
-        uint32_t shareableFlag = (shareable == true) ? Core::File::SHAREABLE : 0;
+        uint32_t shareableFlag = (shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
         const uint32_t mode =
-            (Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
+            (::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
             shareableFlag);
 
         struct Data data;
@@ -925,11 +925,11 @@ namespace Tests {
             uint32_t cyclicBufferSize = CyclicBufferSize;
             uint8_t loadBuffer[cyclicBufferSize + 1];
 
-            CyclicBufferTest* buffer = nullptr;
-            DataElementFile* dataElementFile = nullptr;
+           CyclicBufferTest* buffer = nullptr;
+            ::Thunder::Core::DataElementFile* dataElementFile = nullptr;
             if (data->usingDataElementFile == true) {
-                uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(CyclicBuffer::control);
-                dataElementFile = new DataElementFile(bufferName, data->mode | Core::File::CREATE, cyclicBufferWithControlDataSize + data->offset);
+                uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
+                dataElementFile = new ::Thunder::Core::DataElementFile(bufferName, data->mode | ::Thunder::Core::File::CREATE, cyclicBufferWithControlDataSize + data->offset);
                 buffer = new CyclicBufferTest(*dataElementFile, true, data->offset, cyclicBufferWithControlDataSize, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, data->mode, cyclicBufferSize, false);
@@ -992,16 +992,16 @@ namespace Tests {
             uint32_t cyclicBufferSize = CyclicBufferSize;
             uint8_t loadBuffer[cyclicBufferSize];
 
-            CyclicBufferTest* buffer;
-            DataElementFile* dataElementFile = nullptr;
+           CyclicBufferTest* buffer;
+            ::Thunder::Core::DataElementFile* dataElementFile = nullptr;
             if (usingDataElementFile == true) {
-                dataElementFile = new DataElementFile(bufferName, mode, 0);
+                dataElementFile = new ::Thunder::Core::DataElementFile(bufferName, mode, 0);
                 buffer = new CyclicBufferTest(*dataElementFile, false, offset, 0, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, mode, 0, false);
             }
 
-            EXPECT_EQ(buffer->Size(), static_cast<uint32_t>(((shareable == true) ? CyclicBufferSize : 0)));
+            EXPECT_EQ(buffer->Size(), static_cast<uint32_t>(((shareable == true) ?CyclicBufferSize : 0)));
             testAdmin.Sync("setup client");
 
             if (shareable == true) {
@@ -1038,7 +1038,7 @@ namespace Tests {
             }
 
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, CheckSharePermissionsFromForkedProcessWithoutOverwrite)
     {
@@ -1063,11 +1063,11 @@ namespace Tests {
 
             uint32_t cyclicBufferSize = 0;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("client wrote");
@@ -1080,7 +1080,7 @@ namespace Tests {
             testAdmin.Sync("server read");
             string data = "klmnopq";
             result = buffer.Reserve(data.size());
-            EXPECT_EQ(result, ERROR_INVALID_INPUT_LENGTH);
+            EXPECT_EQ(result, ::Thunder::Core::ERROR_INVALID_INPUT_LENGTH);
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, 0u);
 
@@ -1111,11 +1111,11 @@ namespace Tests {
             uint32_t cyclicBufferSize = 10;
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("setup server");
@@ -1147,7 +1147,7 @@ namespace Tests {
 
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, WithOverWriteUsingFork)
     {
@@ -1157,11 +1157,11 @@ namespace Tests {
             uint32_t cyclicBufferSize = 10;
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
  
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
@@ -1202,11 +1202,11 @@ namespace Tests {
 
             uint32_t cyclicBufferSize = 0;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("server wrote");
@@ -1230,7 +1230,7 @@ namespace Tests {
             testAdmin.Sync("server read");
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, WithOverwriteUsingForksReversed)
     {
@@ -1241,11 +1241,11 @@ namespace Tests {
             testAdmin.Sync("setup server");
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             EXPECT_TRUE(buffer.IsOverwrite());
 
             testAdmin.Sync("setup client");
@@ -1293,11 +1293,11 @@ namespace Tests {
         {
             uint32_t cyclicBufferSize = 10;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             EXPECT_TRUE(buffer.IsOverwrite());
             EXPECT_TRUE(buffer.IsValid());
 
@@ -1344,17 +1344,17 @@ namespace Tests {
 
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, LockUnlock_WithoutDataPresent)
     {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
 
-        CyclicBuffer buffer(bufferName.c_str(),
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::SHAREABLE, cyclicBufferSize, false);
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(),
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+            ::Thunder::Core::File::Mode::SHAREABLE, cyclicBufferSize, false);
 
         buffer.Lock();
         EXPECT_EQ(buffer.IsLocked(), true);
@@ -1367,10 +1367,10 @@ namespace Tests {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
 
-        CyclicBuffer buffer(bufferName.c_str(),
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::SHAREABLE, cyclicBufferSize, false);
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(),
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+            ::Thunder::Core::File::Mode::SHAREABLE, cyclicBufferSize, false);
 
         buffer.Lock();
         EXPECT_EQ(buffer.IsLocked(), true);
@@ -1389,11 +1389,11 @@ namespace Tests {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
@@ -1441,11 +1441,11 @@ namespace Tests {
 
             uint32_t cyclicBufferSize = 0;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("setup client");
@@ -1484,7 +1484,7 @@ namespace Tests {
 
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 //TODO: revisit these test cases after fixing the issues with cyclicbuffer lock/unlock sequence
     TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_WithDataPresent)
@@ -1495,11 +1495,11 @@ namespace Tests {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
@@ -1517,12 +1517,12 @@ namespace Tests {
                 EXPECT_EQ(buffer.IsLocked(), false);
                 EXPECT_NE(buffer.Used(), 0u);
 
-                Event event(false, false);
-                ThreadLock threadLock(buffer, Core::infinite, event);
+                ::Thunder::Core::Event event(false, false);
+                ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
                 threadLock.Run();
 
                 // Lock before requesting cyclic buffer lock
-                if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+                if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
                     // Seems thread is not active so re-request lock
                     event.ResetEvent();
                     event.Lock(MaxSignalWaitTime);
@@ -1541,13 +1541,13 @@ namespace Tests {
             EXPECT_EQ(buffer.Used(), 0u);
 
             EXPECT_EQ(buffer.IsLocked(), false);
-            Event event(false, false);
-            ThreadLock threadLock(buffer, Core::infinite, event);
+            ::Thunder::Core::Event event(false, false);
+            ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
             threadLock.Run();
             EXPECT_EQ(buffer.IsLocked(), false);
 
             // Lock before requesting cyclic buffer lock
-            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+            if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
                 // Seems thread is not active so re-request lock
                 event.ResetEvent();
                 event.Lock(MaxSignalWaitTime);
@@ -1591,11 +1591,11 @@ namespace Tests {
 
             uint32_t cyclicBufferSize = 0;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             testAdmin.Sync("setup client");
 
             testAdmin.Sync("server timedLock");
@@ -1617,12 +1617,12 @@ namespace Tests {
             EXPECT_EQ(CheckTimeOutIsExpired(timeOutTime, waitTime), true);
             EXPECT_EQ(buffer.IsLocked(), false);
 
-            Event event(false, false);
-            ThreadLock threadLock(buffer, Core::infinite, event);
+            ::Thunder::Core::Event event(false, false);
+            ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
             threadLock.Run();
 
             // Lock before requesting cyclic buffer lock
-            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+            if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
                 // Seems thread is not active so re-request lock
                 event.ResetEvent();
                 event.Lock(MaxSignalWaitTime);
@@ -1645,24 +1645,24 @@ namespace Tests {
             testAdmin.Sync("client exit");
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
     TEST(Core_CyclicBuffer, DISABLED_LockUnlock_UsingAlert)
     {
         string bufferName = "cyclicbuffer01";
         uint32_t cyclicBufferSize = 10;
 
-        CyclicBuffer buffer(bufferName.c_str(),
-            Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-            Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-            Core::File::SHAREABLE, cyclicBufferSize, false);
+       ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(),
+            ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+            ::Thunder::Core::File::Mode::SHAREABLE, cyclicBufferSize, false);
 
-        Event event(false, false);
-        ThreadLock threadLock(buffer, Core::infinite, event);
+        ::Thunder::Core::Event event(false, false);
+        ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
         threadLock.Run();
 
         // Lock before requesting cyclic buffer lock
-        if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+        if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
             // Seems thread is not active so re-request lock
             event.ResetEvent();
             event.Lock(MaxSignalWaitTime);
@@ -1687,24 +1687,24 @@ namespace Tests {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
 
             EXPECT_EQ(buffer.LockPid(), 0u);
-            Event event(false, false);
-            ThreadLock threadLock(buffer, Core::infinite, event);
+            ::Thunder::Core::Event event(false, false);
+            ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
             threadLock.Run();
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("server locked");
 
             // Lock before requesting cyclic buffer lock
-            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+            if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
                 // Seems thread is not active so re-request lock
                 event.ResetEvent();
                 event.Lock(MaxSignalWaitTime);
@@ -1735,11 +1735,11 @@ namespace Tests {
 
             uint32_t cyclicBufferSize = 0;
             const uint32_t mode =
-                Core::File::USER_READ | Core::File::USER_WRITE | Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ | Core::File::GROUP_WRITE  |
-                Core::File::SHAREABLE;
+                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
+                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
+                ::Thunder::Core::File::Mode::SHAREABLE;
 
-            CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("server locked");
@@ -1749,14 +1749,14 @@ namespace Tests {
             testAdmin.Sync("server alerted");
             EXPECT_EQ(buffer.LockPid(), 0u);
 
-            Event event(false, false);
-            ThreadLock threadLock(buffer, Core::infinite, event);
+            ::Thunder::Core::Event event(false, false);
+            ThreadLock threadLock(buffer, ::Thunder::Core::infinite, event);
             threadLock.Run();
             EXPECT_EQ(buffer.LockPid(), 0u);
             testAdmin.Sync("client locked");
 
             // Lock before requesting cyclic buffer lock
-            if (event.Lock(MaxSignalWaitTime * 2) == Core::ERROR_NONE) {
+            if (event.Lock(MaxSignalWaitTime * 2) == ::Thunder::Core::ERROR_NONE) {
                 // Seems thread is not active so re-request lock
                 event.ResetEvent();
                 event.Lock(MaxSignalWaitTime);
@@ -1774,8 +1774,9 @@ namespace Tests {
 
             buffer.Close();
         }
-        Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
-} // Tests
+
 } // Core
+} // Tests
 } // Thunder

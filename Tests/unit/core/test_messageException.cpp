@@ -25,22 +25,27 @@
  
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_messageException, simple_messageException)
-{
-    const std::string msg = "Testing the message exception.";
+    TEST(test_messageException, simple_messageException)
+    {
+        const std::string msg = "Testing the message exception.";
 
-    // No 'error' concatenated
-    MessageException exception(msg, false);
+        // No 'error' concatenated
+        ::Thunder::Core::MessageException exception(msg, false);
 
-    EXPECT_STREQ(exception.Message(), msg.c_str());
+        EXPECT_STREQ(exception.Message(), msg.c_str());
 
-    // 'error' concatenated
-    MessageException exception1(msg, true);
+        // 'error' concatenated
+        ::Thunder::Core::MessageException exception1(msg, true);
 
-    const string result = msg + ": No such file or directory";
+        const string result = msg + ": No such file or directory";
 
-    EXPECT_STREQ(exception1.Message(), result.c_str());
-}
+        EXPECT_STREQ(exception1.Message(), result.c_str());
+    }
+
+} // Core
+} // Tests
+} // Thunder
