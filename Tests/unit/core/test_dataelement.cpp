@@ -38,7 +38,7 @@ namespace Core {
         obj1.Copy(arr,len,off);
         uint32_t size = 1024;
         EXPECT_EQ(obj1.Size(),size);
-        ASSERT_EQ(obj1.Size(), 1025);
+        ASSERT_EQ(obj1.Size(), 1024);
         EXPECT_EQ(*obj1.Buffer(),10);
 
         uint8_t arr1[] = {10,20,30,40,50,60,70,80,90,100};
