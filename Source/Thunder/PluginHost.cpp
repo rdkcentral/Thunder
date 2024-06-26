@@ -651,7 +651,7 @@ POP_WARNING()
             SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
             SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
             SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Minor));
+            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
             if (_config->MessagingCategoriesFile() == false) {
                 SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
             }
@@ -774,10 +774,7 @@ POP_WARNING()
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                             printf("StartMode:  %s\n", index.Current().StartMode.Data());
-#if THUNDER_RESTFULL_API
-
                             printf("Observers:  %d\n", index.Current().Observers.Value());
-#endif
 
 #if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());

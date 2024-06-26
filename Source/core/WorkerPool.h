@@ -126,7 +126,7 @@ namespace Core {
                 , _pool(copy._pool)
             {
             }
-            Timer(Timer&& move)
+            Timer(Timer&& move) noexcept
                 : _job(std::move(move._job))
                 , _pool(move._pool)
             {
@@ -137,9 +137,7 @@ namespace Core {
                 , _pool(pool)
             {
             }
-            ~Timer()
-            {
-            }
+            ~Timer() = default;
 
         public:
             bool operator==(const Timer& RHS) const

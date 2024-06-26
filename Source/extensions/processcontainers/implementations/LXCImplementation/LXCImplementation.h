@@ -69,12 +69,40 @@ namespace ProcessContainers {
                 ConfigItem& operator=(ConfigItem&&) = delete;
                 ConfigItem& operator=(const ConfigItem&) = delete;
 
-                ConfigItem(ConfigItem&& move);
-                ConfigItem(const ConfigItem& copy);
-                ConfigItem();
-
                 ~ConfigItem() override = default;
 
+                ConfigItem()
+                    : Core::JSON::Container()
+                    , Key()
+                    , Value()
+                {
+                    Init();
+                }
+
+                ConfigItem(const ConfigItem& copy)
+                    : Core::JSON::Container()
+                    , Key(copy.Key)
+                    , Value(copy.Value)
+                {
+                    Init();
+                }
+
+                ConfigItem(ConfigItem&& move)
+                    : Core::JSON::Container()
+                    , Key(std::move(move.Key))
+                    , Value(std::move(move.Value))
+                {
+                    Init();
+                }
+
+            private:
+                void Init()
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value);
+                }
+
+            public:
                 Core::JSON::String Key;
                 Core::JSON::String Value;
             };

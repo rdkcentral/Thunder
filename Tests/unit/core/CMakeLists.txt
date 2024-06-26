@@ -36,7 +36,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
-   #test_jsonparser.cpp
+   test_jsonparser.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
@@ -72,7 +72,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
-   #test_valuerecorder.cpp
+   # test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
@@ -116,14 +116,14 @@ target_link_libraries(${TEST_RUNNER_NAME}
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 
 
 add_library(helloworld SHARED test_library_helloworld.cpp)
 
 install(
     TARGETS helloworld
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata COMPONENT ${NAMESPACE}_Test)
 
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})
