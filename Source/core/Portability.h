@@ -960,6 +960,13 @@ namespace WPEFramework {
     using namespace Thunder;
 }
 
+#define WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(NESTED_NAMESPACE) \
+namespace WPEFramework { \
+namespace NESTED_NAMESPACE { \
+    using namespace Thunder::NESTED_NAMESPACE; \
+} \
+}
+
 extern "C" {
 
 #ifdef __WINDOWS__
