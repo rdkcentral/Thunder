@@ -25,100 +25,105 @@
 
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_ipv4addressiterator, simple_ipv4addressiterator)
-{
-    AdapterIterator adapters;
-    AdapterIterator adapters2;
+    TEST(test_ipv4addressiterator, simple_ipv4addressiterator)
+    {
+        ::Thunder::Core::AdapterIterator adapters;
+        ::Thunder::Core::AdapterIterator adapters2;
 
-    AdapterIterator adapter("eth0");
-    IPV4AddressIterator result;
+        ::Thunder::Core::AdapterIterator adapter("eth0");
+        ::Thunder::Core::IPV4AddressIterator result;
 
-    result.Next();
-    //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
-    while (adapters.Next() == true) {
-       if (adapters.IsValid() == true) {
-           IPV4AddressIterator index(adapters.IPV4Addresses());
-           EXPECT_EQ(index.Count(),index.Count());
-           EXPECT_STREQ(adapters.Name().c_str(),adapters.Name().c_str());
-           while (index.Next() == true) {
-               NodeId current(index.Address());
-               IPNode currentNode(index.Address());
-               EXPECT_EQ(adapter.Add(currentNode),ERROR_NONE);
-               EXPECT_EQ(adapter.Gateway(currentNode,current),ERROR_NONE);
-               EXPECT_EQ(adapter.Delete(currentNode),ERROR_NONE);
-               EXPECT_EQ(adapter.Broadcast(current),ERROR_NONE);
-               if ((current.IsMulticast() == false) && (current.IsLocalInterface() == false)) {
-                   result = index;
-                   EXPECT_STREQ(current.HostName().c_str(),current.HostName().c_str());
-                   EXPECT_STREQ(current.HostAddress().c_str(),current.HostAddress().c_str());
+        result.Next();
+        //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
+        while (adapters.Next() == true) {
+           if (adapters.IsValid() == true) {
+               ::Thunder::Core::IPV4AddressIterator index(adapters.IPV4Addresses());
+               EXPECT_EQ(index.Count(),index.Count());
+               EXPECT_STREQ(adapters.Name().c_str(),adapters.Name().c_str());
+               while (index.Next() == true) {
+                   ::Thunder::Core::NodeId current(index.Address());
+                   ::Thunder::Core::IPNode currentNode(index.Address());
+                   EXPECT_EQ(adapter.Add(currentNode),::Thunder::Core::ERROR_NONE);
+                   EXPECT_EQ(adapter.Gateway(currentNode,current),::Thunder::Core::ERROR_NONE);
+                   EXPECT_EQ(adapter.Delete(currentNode),::Thunder::Core::ERROR_NONE);
+                   EXPECT_EQ(adapter.Broadcast(current),::Thunder::Core::ERROR_NONE);
+                   if ((current.IsMulticast() == false) && (current.IsLocalInterface() == false)) {
+                       result = index;
+                       EXPECT_STREQ(current.HostName().c_str(),current.HostName().c_str());
+                       EXPECT_STREQ(current.HostAddress().c_str(),current.HostAddress().c_str());
+                   }
                }
            }
-       }
+        }
+
+        ::Thunder::Core::IPV4AddressIterator ipv4addressiterator1;
+        ipv4addressiterator1 = result;
+        ::Thunder::Core::IPV4AddressIterator ipv4addressiterator2(result);
+        ipv4addressiterator1.Reset();
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
-    IPV4AddressIterator ipv4addressiterator1;
-    ipv4addressiterator1 = result;
-    IPV4AddressIterator ipv4addressiterator2(result);
-    ipv4addressiterator1.Reset();
-
-    Core::Singleton::Dispose();
-}
-
-TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
-{
-    AdapterIterator adapters;
-    IPV6AddressIterator result;
-    result.Next();
-    while (adapters.Next() == true) {
-        IPV6AddressIterator index(adapters.IPV6Addresses());
-        EXPECT_EQ(index.Count(),index.Count());
-        EXPECT_STREQ(adapters.Name().c_str(),adapters.Name().c_str());
-        while (index.Next() == true) {
-            NodeId current(index.Address());
-            if ((current.IsMulticast() == false) && (current.IsLocalInterface() == false)) {
-                result = index;
-                EXPECT_STREQ(current.HostName().c_str(),current.HostName().c_str());
-                EXPECT_STREQ(current.HostAddress().c_str(),current.HostAddress().c_str());
+    TEST(test_ipv6addressiterator, simple_ipv6addressiterator)
+    {
+        ::Thunder::Core::AdapterIterator adapters;
+        ::Thunder::Core::IPV6AddressIterator result;
+        result.Next();
+        while (adapters.Next() == true) {
+            ::Thunder::Core::IPV6AddressIterator index(adapters.IPV6Addresses());
+            EXPECT_EQ(index.Count(),index.Count());
+            EXPECT_STREQ(adapters.Name().c_str(),adapters.Name().c_str());
+            while (index.Next() == true) {
+                ::Thunder::Core::NodeId current(index.Address());
+                if ((current.IsMulticast() == false) && (current.IsLocalInterface() == false)) {
+                    result = index;
+                    EXPECT_STREQ(current.HostName().c_str(),current.HostName().c_str());
+                    EXPECT_STREQ(current.HostAddress().c_str(),current.HostAddress().c_str());
+                }
             }
         }
+        ::Thunder::Core::IPV6AddressIterator ipv6addressiterator1;
+        ipv6addressiterator1 = result;
+        ::Thunder::Core::IPV6AddressIterator ipv6addressiterator2(result);
+        ipv6addressiterator1.Reset();
+
+        ::Thunder::Core::Singleton::Dispose();
     }
-    IPV6AddressIterator ipv6addressiterator1;
-    ipv6addressiterator1 = result;
-    IPV6AddressIterator ipv6addressiterator2(result);
-    ipv6addressiterator1.Reset();
 
-    Core::Singleton::Dispose();
-}
+    TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
+    {
+        ::Thunder::Core::AdapterIterator adapter("eth0");
+        ::Thunder::Core::AdapterIterator adapter1 = adapter;
+        ::Thunder::Core::AdapterIterator adapter2(adapter);
+        ::Thunder::Core::AdapterIterator adapter3("test0");
 
-TEST(DISABLED_test_adapteriterator, simple_adapteriterator)
-{
-    AdapterIterator adapter("eth0");
-    AdapterIterator adapter1 = adapter;
-    AdapterIterator adapter2(adapter);
-    AdapterIterator adapter3("test0");
+        EXPECT_TRUE(adapter.IsUp());
+        EXPECT_TRUE(adapter.IsRunning());
+        adapter.Up(true);
+        adapter.Up(false);
 
-    EXPECT_TRUE(adapter.IsUp());
-    EXPECT_TRUE(adapter.IsRunning());
-    adapter.Up(true);
-    adapter.Up(false);
+        EXPECT_EQ(adapter.Count(),adapter.Count());
+        EXPECT_STREQ(adapter.Name().c_str(),adapter.Name().c_str());
 
-    EXPECT_EQ(adapter.Count(),adapter.Count());
-    EXPECT_STREQ(adapter.Name().c_str(),adapter.Name().c_str());
+        EXPECT_STREQ(adapter.MACAddress(':').c_str(),adapter.MACAddress(':').c_str());
+        uint8_t buffer[32];
+        adapter.MACAddress(buffer,32);
 
-    EXPECT_STREQ(adapter.MACAddress(':').c_str(),adapter.MACAddress(':').c_str());
-    uint8_t buffer[32];
-    adapter.MACAddress(buffer,32);
+        ::Thunder::Core::Singleton::Dispose();
+    }
 
-    Core::Singleton::Dispose();
-}
+    TEST(DISABLED_test_adapterobserver, simple_adapterobserver)
+    {
+        ::Thunder::Core::AdapterObserver::INotification* callback;
+        ::Thunder::Core::AdapterObserver observer(callback);
 
-TEST(DISABLED_test_adapterobserver, simple_adapterobserver)
-{
-    AdapterObserver::INotification* callback;
-    AdapterObserver observer(callback);
+        ::Thunder::Core::Singleton::Dispose();
+    }
 
-    Core::Singleton::Dispose();
-}
+} // Core
+} // Tests
+} // Thunder
