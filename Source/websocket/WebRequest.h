@@ -118,7 +118,7 @@ namespace Web {
             ASSERT(_type <= sizeof(_hashValue));
             ::memcpy(_hashValue, copy._hashValue, _type);
         }
-        Signature(Signature&& move)
+        Signature(Signature&& move) noexcept
             : _type(std::move(move._type))
         {
             ASSERT(_type <= sizeof(_hashValue));
@@ -137,7 +137,7 @@ namespace Web {
             return (*this);
         }
 
-        Signature& operator=(Signature&& move)
+        Signature& operator=(Signature&& move) noexcept
         {
             if (this != &move) {
                 _type = std::move(move._type);
@@ -198,7 +198,7 @@ namespace Web {
             , _token(copy._token)
         {
         }
-        Authorization(Authorization&& move)
+        Authorization(Authorization&& move) noexcept
             : _type(std::move(move._type))
             , _token(std::move(move._token))
         {
@@ -215,7 +215,7 @@ namespace Web {
             return (*this);
         }
 
-        Authorization& operator=(Authorization&& move)
+        Authorization& operator=(Authorization&& move) noexcept
         {
             if (this != &move) {
                 _type = std::move(move._type);

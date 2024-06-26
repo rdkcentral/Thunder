@@ -418,7 +418,7 @@ namespace Core {
             , _mask(copy._mask)
         {
         }
-        IPNode(IPNode&& move)
+        IPNode(IPNode&& move) noexcept
             : Core::NodeId(move)
             , _mask(move._mask)
         {

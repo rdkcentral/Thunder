@@ -17,16 +17,21 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
+#include <fstream>
 
-#include <core/core.h>
 #include <gtest/gtest.h>
 
-#include <core/FileObserver.h>
-#include <fstream>
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     class Core_MessageDispatcher : public testing::Test {
     protected:
@@ -39,25 +44,25 @@ namespace Tests {
             , _basePath(_T("/tmp/TestMessageDispatcher"))
         {
             //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
-            if (Core::File(_basePath).IsDirectory()) {
-                Core::Directory(_basePath.c_str()).Destroy();
+            if (::Thunder::Core::File(_basePath).IsDirectory()) {
+                ::Thunder::Core::Directory(_basePath.c_str()).Destroy();
             }
             //create directory
-            if (!Core::Directory(_basePath.c_str()).CreatePath()) {
+            if (!::Thunder::Core::Directory(_basePath.c_str()).CreatePath()) {
                 std::cerr << "Unable to create MessageDispatcher directory" << std::endl;
             }
         }
 
         ~Core_MessageDispatcher()
         {
-            if (Core::File(_basePath).IsDirectory()) {
-                Core::Directory(_basePath.c_str()).Destroy();
+            if (::Thunder::Core::File(_basePath).IsDirectory()) {
+                ::Thunder::Core::Directory(_basePath.c_str()).Destroy();
             }
         }
 
         void SetUp() override
         {
-            _dispatcher.reset(new Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true, _basePath));
+            _dispatcher.reset(new ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>(_identifier, _instanceId, true, _basePath));
         }
         void TearDown() override
         {
@@ -65,10 +70,10 @@ namespace Tests {
 
             ++_instanceId;
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
 
-        std::unique_ptr<Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>> _dispatcher;
+        std::unique_ptr<::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE>> _dispatcher;
         string _identifier;
         string _basePath;
 
@@ -86,8 +91,8 @@ namespace Tests {
         uint16_t readLength = sizeof(readData);
 
         //act
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
         //assert
         ASSERT_EQ(readLength, sizeof(testData));
@@ -104,8 +109,8 @@ namespace Tests {
         uint16_t readLength = sizeof(readData);
 
         //act
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_GENERAL);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_GENERAL);
 
         //assert
         ASSERT_EQ(readLength, 2);
@@ -114,16 +119,16 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, CreateAndOpenOperatesOnSameValidFile)
     {
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
+        ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
+        ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
 
         uint8_t testData[2] = { 13, 37 };
 
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -132,24 +137,24 @@ namespace Tests {
 
     TEST_F(Core_MessageDispatcher, MessageDispatcherCanBeOpenedAndClosed)
     {
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
+        ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> writerDispatcher(_T("test_md"), 0, true, this->_basePath);
 
         {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
+            ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, false, this->_basePath);
 
             //destructor is called
         }
 
         //reopen
-        Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, true, this->_basePath);
+        ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> readerDispatcher(_T("test_md"), 0, true, this->_basePath);
 
         uint8_t testData[2] = { 13, 37 };
 
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -164,8 +169,8 @@ namespace Tests {
         uint16_t readLength = sizeof(readData);
 
         //first read, write, assert
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 13);
@@ -174,8 +179,8 @@ namespace Tests {
         //second read, write, assert
         testData[0] = 40;
         readLength = sizeof(readData);
-        ASSERT_EQ(_dispatcher->PushData(1, testData), Core::ERROR_NONE);
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(1, testData), ::Thunder::Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
         ASSERT_EQ(readLength, 1);
         ASSERT_EQ(readData[0], 40);
     }
@@ -183,7 +188,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
+            ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -191,7 +196,7 @@ namespace Tests {
             testAdmin.Sync("setup reader");
             testAdmin.Sync("writer wrote");
 
-            ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
+            ASSERT_EQ(dispatcher.PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(readLength, 2);
             ASSERT_EQ(readData[0], 13);
@@ -210,7 +215,7 @@ namespace Tests {
             testAdmin.Sync("setup reader");
 
             uint8_t testData[2] = { 13, 37 };
-            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("writer wrote");
             testAdmin.Sync("reader read");
@@ -221,14 +226,14 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, PushDataShouldNotFitWhenExcedingDataBufferSize)
     {
         uint8_t fullBufferSimulation[DATA_SIZE + 1
-            + sizeof(Core::CyclicBuffer::control)];
+            + sizeof(::Thunder::Core::CyclicBuffer::control)];
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_WRITE_ERROR);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), ::Thunder::Core::ERROR_WRITE_ERROR);
     }
 
     TEST_F(Core_MessageDispatcher, PushDataShouldFlushOldDataIfDoesNotFit)
     {
-        uint8_t fullBufferSimulation[DATA_SIZE - 1 + sizeof(Core::CyclicBuffer::control) //almost full buffer
+        uint8_t fullBufferSimulation[DATA_SIZE - 1 + sizeof(::Thunder::Core::CyclicBuffer::control) //almost full buffer
             - sizeof(uint8_t) //size of type (part of message header)
             - sizeof(uint16_t)]; //size of length (part of message header)
 
@@ -237,14 +242,14 @@ namespace Tests {
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(fullBufferSimulation), fullBufferSimulation), ::Thunder::Core::ERROR_NONE);
         //buffer is full, but trying to write new data
 
-        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
         //new data written, so the oldest data should be replaced
         //this is first entry and should be first popped (FIFO)
 
-        ASSERT_EQ(_dispatcher->PopData(readLength, readData), Core::ERROR_NONE);
+        ASSERT_EQ(_dispatcher->PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
         ASSERT_EQ(readLength, sizeof(testData));
         ASSERT_EQ(readData[0], 12);
         ASSERT_EQ(readData[1], 21);
@@ -254,7 +259,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_ReaderShouldWaitUntillRingBells)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
+            ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
@@ -263,8 +268,8 @@ namespace Tests {
             dispatcher.Wait(0); //initialize socket
             testAdmin.Sync("init");
 
-            if (dispatcher.Wait(Core::infinite) == Core::ERROR_NONE) {
-                ASSERT_EQ(dispatcher.PopData(readLength, readData), Core::ERROR_NONE);
+            if (dispatcher.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
+                ASSERT_EQ(dispatcher.PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
                 ASSERT_EQ(readLength, 2);
                 ASSERT_EQ(readData[0], 13);
@@ -285,7 +290,7 @@ namespace Tests {
             uint8_t testData[2] = { 13, 37 };
             testAdmin.Sync("init");
 
-            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), Core::ERROR_NONE);
+            ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
         }
         testAdmin.Sync("done");
     }
@@ -357,7 +362,7 @@ namespace Tests {
     TEST_F(Core_MessageDispatcher, DISABLED_WriteAndReadMetaDataAreEqualInDiffrentProcesses)
     {
         auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
-            Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
+            ::Thunder::Core::MessageDispatcherType<METADATA_SIZE, DATA_SIZE> dispatcher(this->_identifier, this->_instanceId, false, this->_basePath);
             uint8_t testData[2] = { 13, 37 };
             //testAdmin.Sync("setup");
 
@@ -395,5 +400,6 @@ namespace Tests {
         ASSERT_EQ(result, 0);
     }
 
+} // Core
 } // Tests
 } // Thunder

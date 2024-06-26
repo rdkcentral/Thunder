@@ -17,17 +17,21 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     TEST(Core_MeasurementType, simpleSet)
     {
-        Core::MeasurementType<uint8_t> data;
+        ::Thunder::Core::MeasurementType<uint8_t> data;
         data.Set(100);
         data.Set(200);
         data.Set(120);
@@ -44,5 +48,7 @@ namespace Tests {
         EXPECT_EQ(data.Average(), 0u);
         EXPECT_EQ(data.Measurements(), 0u);
     }
+
+} // Core
 } // Tests
 } // Thunder

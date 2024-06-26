@@ -17,28 +17,36 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {    
 
-TEST(test_TriState, simple_TriState)
-{
-    TriState();
-    TriState tristate1("F");
-    TriState tristate2("T");
-    TriState tristate3("True");
-    TriState tristate4("False");
-    TriState tristate5(tristate1);
-    TriState tristate6 =tristate1;
-    TriState tristate7(TriState::EnumState::True);
+    TEST(test_TriState, simple_TriState)
+    {
+        ::Thunder::Core::TriState();
+        ::Thunder::Core::TriState tristate1("F");
+        ::Thunder::Core::TriState tristate2("T");
+        ::Thunder::Core::TriState tristate3("True");
+        ::Thunder::Core::TriState tristate4("False");
+        ::Thunder::Core::TriState tristate5(tristate1);
+        ::Thunder::Core::TriState tristate6 =tristate1;
+        ::Thunder::Core::TriState tristate7(::Thunder::Core::TriState::EnumState::True);
 
-    EXPECT_EQ(tristate3.Get(),TriState::EnumState::True);
-    tristate3.Set(false);
-    EXPECT_EQ(tristate3.Get(),TriState::EnumState::False);
-    tristate3.Set(TriState::EnumState::Unknown);
-    EXPECT_EQ(tristate3.Get(),TriState::EnumState::Unknown);
-}
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::True);
+        tristate3.Set(false);
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::False);
+        tristate3.Set(::Thunder::Core::TriState::EnumState::Unknown);
+        EXPECT_EQ(tristate3.Get(),::Thunder::Core::TriState::EnumState::Unknown);
+    }
+
+} // Core
+} // Tests
+} // Thunder
