@@ -18,7 +18,7 @@
  */
 
 #include "PluginServer.h"
-#include "../core/Library.h"
+#include "core/Library.h"
 
 #include <fstream>
 
@@ -347,9 +347,7 @@ POP_WARNING()
         }
     }
     
-namespace {
-
-    void SetupCrashHandler(void)
+    static void SetupCrashHandler(void)
     {
         _adminLock.Lock();
         struct sigaction sa, current_sa;
@@ -391,7 +389,6 @@ namespace {
         }
         _adminLock.Unlock();
     }
-}
 #endif
 
     void LoadPlugins(const string& name, PluginHost::Config& config)
