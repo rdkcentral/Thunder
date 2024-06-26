@@ -15,17 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.15)
 
-project(Thunder)
+project(Thunder
+        VERSION 5.0.0
+        DESCRIPTION "Thunder framework"
+        HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 0)
+include(GNUInstallDirs)
 
-set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+set(VERSION       ${${PROJECT_NAME}_VERSION})
+set(VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
+set(VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
+set(VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
 
-message(STATUS "Setting up ${PROJECT_NAME} v${VERSION}")
+string(TIMESTAMP BUILD_TIMESTAMP UTC)
+
+message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
 
 option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
@@ -33,26 +39,33 @@ option(ENABLE_STRICT_COMPILER_SETTINGS
     "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
-     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF) 
+     If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
+option(HUMAN_VERSIONED_BINARIES
+    "Create binaries with a human readeable version suffix" ON)
+option(VERSIONED_LIBRARY_LOADING
+    "Uses the major version (*.so.<major>) to load libraries rather then *.so" OFF)
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})
+endif()
+
+if(VERSIONED_LIBRARY_LOADING)
+    add_definitions(-DVERSIONED_LIBRARY_LOADING)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
-    "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
+    "${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/Modules")
 
 if (TOOLS_SYSROOT)
     list(APPEND CMAKE_MODULE_PATH
-        "${TOOLS_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/Modules")
+        "${TOOLS_SYSROOT}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/Modules")
 endif()
 
 include(platform)
 include(CmakeHelperFunctions)
-include(GNUInstallDirs)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
@@ -65,7 +78,7 @@ find_package(ConfigGenerator REQUIRED)
 
 if(NOT DEFINED BUILD_SHARED_LIBS)
     set(BUILD_SHARED_LIBS ON CACHE INTERNAL "Enable shared objects by default") 
-    message(STATUS "BUILD_SHARED_LIBS was not set, assuming ${BUILD_SHARED_LIBS}")
+    message(VERBOSE "Building shared libs")
 endif()
 
 #
@@ -76,7 +89,7 @@ if(NOT CMAKE_BUILD_TYPE)
     message(AUTHOR_WARNING "CMAKE_BUILD_TYPE not set, assuming '${CMAKE_BUILD_TYPE}'")
 endif()
 
-message(STATUS "CMake build type: '${CMAKE_BUILD_TYPE}'")
+message(VERBOSE "CMake build type: '${CMAKE_BUILD_TYPE}'")
 
 # Remove optimization flags added by the build system
 string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -97,18 +110,21 @@ configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake.in"
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+        COMPONENT ${NAMESPACE}_Development)
 
 if(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 install(DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+    COMPONENT ${NAMESPACE}_Development)
 endif(CMAKE_VERSION VERSION_LESS 3.20.0 AND LEGACY_CONFIG_GENERATOR)
 
 install(DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/common"
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/templates"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}
+        COMPONENT ${NAMESPACE}_Development)
 
 if(APPLE)
     # Mac needed variables
@@ -116,7 +132,7 @@ if(APPLE)
     set(CMAKE_MACOSX_RPATH ON)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
@@ -138,4 +154,3 @@ endif()
 add_subdirectory(Source)
 
 add_subdirectory(Tests)
-

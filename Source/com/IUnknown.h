@@ -138,7 +138,7 @@ namespace ProxyStub {
         UnknownProxy& operator=(UnknownProxy&&) = delete;
         UnknownProxy& operator=(const UnknownProxy&) = delete;
 
-        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
+        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent, const char* name)
             : _adminLock()
             , _refCount(1)
             , _mode(outbound ? 0 : CACHING_ADDREF)
@@ -147,6 +147,7 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
+            , _name(name)
         {
         }
         virtual ~UnknownProxy() = default;
@@ -395,6 +396,9 @@ namespace ProxyStub {
 
             return (result);
         }
+        inline const char* Name() const {
+            return (_name);
+        }
  
     private:
         friend RPC::Administrator;
@@ -442,6 +446,7 @@ namespace ProxyStub {
         Core::IUnknown& _parent;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
         uint32_t _remoteReferences;
+        const char* _name;
     };
 
     template <typename INTERFACE>
@@ -451,12 +456,14 @@ namespace ProxyStub {
         using IPCMessage = Core::ProxyType<RPC::InvokeMessage>;
 
     public:
+        UnknownProxyType(UnknownProxyType<INTERFACE>&&) = delete;
         UnknownProxyType(const UnknownProxyType<INTERFACE>&) = delete;
+        UnknownProxyType<INTERFACE>& operator=(UnknownProxyType<INTERFACE>&&) = delete;
         UnknownProxyType<INTERFACE>& operator=(const UnknownProxyType<INTERFACE>&) = delete;
 
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool outbound)
-            : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
+            : _unknown(channel, implementation, INTERFACE::ID, outbound, *this, typeid(INTERFACE).name())
         {
         }
         POP_WARNING()

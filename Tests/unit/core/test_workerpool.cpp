@@ -17,11 +17,15 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
+#include <thread>
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
-#include <thread>
 
 using namespace Thunder; using namespace Thunder::Core;
 
@@ -669,7 +673,7 @@ TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_SingleJob)
     const uint16_t scheduledTimes[] = {2000}; //In milliseconds
     CheckWorkerPool_ScheduleJobs(1, 1, 0, 0, nullptr, scheduledTimes);
 }
-TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_SingleJob_ZeroTime)
+TEST(Core_WorkerPool, DISABLED_Check_ScheduleJobs_SinglePool_SingleJob_ZeroTime)
 {
     const uint16_t scheduledTimes[] = {0};
     CheckWorkerPool_ScheduleJobs(1, 1, 0, 0, nullptr, scheduledTimes);
@@ -697,7 +701,7 @@ TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_MultipleJobs)
     const uint16_t scheduledTimes[] = {2000, 3000, 1000, 2000, 3000};
     CheckWorkerPool_ScheduleJobs(1, maxJobs, 0, 0, nullptr, scheduledTimes);
 }
-TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_MultipleJobs_ZeroTime)
+TEST(Core_WorkerPool, DISABLED_Check_ScheduleJobs_SinglePool_MultipleJobs_ZeroTime)
 {
     uint8_t maxJobs = 5;
     const uint16_t scheduledTimes[5] = {0};

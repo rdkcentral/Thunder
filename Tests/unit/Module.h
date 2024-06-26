@@ -17,32 +17,8 @@
  * limitations under the License.
  */
 
-#include <errno.h>
+#pragma once
 
-#include "MessageException.h"
-#include "Serialization.h"
-
-namespace Thunder {
-namespace Core {
-
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-    MessageException::MessageException(const string& message, bool inclSysMsg) throw()
-        : m_Message(message)
-    {
-        if (inclSysMsg) {
-            m_Message.append(_T(": "));
-            m_Message.append(Core::ToString(strerror(errno)));
-        }
-    }
-POP_WARNING()
-
-    MessageException::~MessageException() throw()
-    {
-    }
-
-    const TCHAR* MessageException::Message() const throw()
-    {
-        return m_Message.c_str();
-    }
-}
-} // namespace Solution::Core
+#ifndef MODULE_NAME
+#define MODULE_NAME ThunderUnitTests
+#endif

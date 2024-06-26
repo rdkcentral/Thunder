@@ -151,7 +151,7 @@ bool AWCProxyContainer::Start(const string &command, IStringIterator &params)
 
 /* provided timeout is not used. Thunder provides 0ms timeout by default
  * and if this function returns false next Stop() will be retried after 10s */
-bool AWCProxyContainer::Stop(const uint32_t timeout /*ms*/)
+bool AWCProxyContainer::Stop(const uint32_t timeout /*ms*/ VARIABLE_IS_NOT_USED)
 {
     if(!IsRunning())
     {

@@ -118,7 +118,7 @@ public:
         {
         }
 
-        Time(Time&& move)
+        Time(Time&& move) noexcept
             : _time(std::move(move._time))
         {
         }
@@ -132,7 +132,7 @@ public:
             return (*this);
         }
 
-        Time& operator=(Time&& move)
+        Time& operator=(Time&& move) noexcept
         {
             if (this != &move) {
                 _time = std::move(move._time);

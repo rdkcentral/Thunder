@@ -4,27 +4,27 @@ start() {
     # Core dumps
     #echo 1 > /proc/sys/kernel/core_uses_pid
     #echo 2 > /proc/sys/fs/suid_dumpable
-    #echo "/ROOT_PATH/cores/core-pid_%p--process%E" > /proc/sys/kernel/core_pattern
-    #mkdir -p /ROOT_PATH/cores
+    #echo "@ROOT_PATH@/cores/core-pid_%p--process%E" > /proc/sys/kernel/core_pattern
+    #mkdir -p @ROOT_PATH@/cores
     #ulimit -c unlimited
 
-    if [ ! -d /ROOT_PATH/Netflix/dpi ]; then
-        mkdir -p /ROOT_PATH/Netflix/dpi
-        ln -sfn /etc/playready /ROOT_PATH/Netflix/dpi/playready
+    if [ ! -d @ROOT_PATH@/Netflix/dpi ]; then
+        mkdir -p @ROOT_PATH@/Netflix/dpi
+        ln -sfn @CMAKE_INSTALL_FULL_SYSCONFDIR@/playready @ROOT_PATH@/Netflix/dpi/playready
     fi
 
-    # needed for wayland/westeros/weston
-    export XDG_RUNTIME_DIR=/tmp
+# needed for wayland/westeros/weston
+    export XDG_RUNTIME_DIR=@CMAKE_INSTALL_FULL_RUNSTATEDIR@
 
     echo -n "Starting Thunder: "
-    start-stop-daemon -S -q -b -m -p /var/run/Thunder.pid --exec /usr/bin/Thunder -- -b </dev/null >/dev/null 2>&1
+    start-stop-daemon -S -q -b -m -p @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid --exec @CMAKE_INSTALL_FULL_BINDIR@/Thunder -- -b </dev/null >/dev/null 2>&1
     [ $? == 0 ] && echo "OK" || echo "FAIL"
 }
 stop() {
     echo -n "Stopping Thunder: "
-    start-stop-daemon -K -q -p /var/run/Thunder.pid
+    start-stop-daemon -K -q -p @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid
     [ $? == 0 ] && echo "OK" || echo "FAIL"
-    rm -rf /var/run/Thunder.pid
+    rm -rf @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid
 }
 restart() {
     stop
