@@ -17,26 +17,8 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
+#pragma once
 
 #ifndef MODULE_NAME
-#include "../Module.h"
+#define MODULE_NAME ThunderUnitTests
 #endif
- 
-#include <core/core.h>
-
-using namespace Thunder;
-using namespace Thunder::Core;
-
-TEST(test_ReadWritelock, simpleSet)
-{
-    ReadWriteLock readObj;
-    EXPECT_TRUE(readObj.ReadLock());
-
-    readObj.ReadUnlock();
-    ReadWriteLock writeObj;
-    EXPECT_TRUE(writeObj.WriteLock());
-
-    writeObj.WriteUnlock();
-}
-

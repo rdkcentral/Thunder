@@ -17,10 +17,16 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
+
+int argumentCount = 3;
+char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
 
 using namespace Thunder;
 using namespace Thunder::Core;

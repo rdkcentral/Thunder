@@ -19,13 +19,15 @@
 
 #include <functional>
 #include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
-#include "../IPTestAdministrator.h"
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
-
-#include <string>
 
 namespace Thunder {
     enum class JSONTestEnum {
