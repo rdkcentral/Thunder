@@ -95,6 +95,8 @@ namespace Core {
         ASSERT(IsValid());
         ASSERT(buffer != nullptr);
 
+        ASSERT(std::numeric_limits<uint64_t>::max() - size >= offset);
+
         // Check if we cross a boundary for the read..
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
@@ -102,6 +104,8 @@ namespace Core {
         } else {
             // If we want to read more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
+
+            ASSERT(Size() >= offset);
 
             // oops partial read untill we got it all
             uint32_t bytesToRead = static_cast<uint32_t>(Size() - offset);
@@ -120,6 +124,8 @@ namespace Core {
         ASSERT(IsValid());
         ASSERT(buffer != nullptr);
 
+        ASSERT(std::numeric_limits<uint64_t>::max() - size >= offset);
+
         // Check if we cross a boundary for the write..
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
@@ -127,6 +133,8 @@ namespace Core {
         } else {
             // If we want to write more than 4Gb ASSERT !!
             ASSERT(Size() - offset < 0xFFFFFFFF);
+
+            ASSERT(Size() >= offset);
 
             // oops partial read untill we got it all
             uint32_t bytesToWrite = static_cast<uint32_t>(Size() - offset);

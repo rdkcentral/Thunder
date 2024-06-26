@@ -55,14 +55,12 @@ namespace Core {
                 , _options(copy._options)
             {
             }
-            Options(Options&& move)
+            Options(Options&& move) noexcept
                 : _command(std::move(move._command))
                 , _options(std::move(move._options))
             {
             }
-            ~Options()
-            {
-            }
+            ~Options() = default;
 
         public:
             inline const string& Command() const
@@ -212,7 +210,7 @@ namespace Core {
             }
 
         private:
-            const string _command;
+            string _command;
             std::vector<string> _options;
         };
 

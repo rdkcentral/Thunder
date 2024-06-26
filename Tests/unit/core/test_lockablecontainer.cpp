@@ -17,41 +17,49 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class Container
-{
-    public:
-        Container()
-            : _length(0)
-            , _data(nullptr)
-        {
-        }
+    class Container
+    {
+        public:
+            Container()
+                : _length(0)
+                , _data(nullptr)
+            {
+            }
 
-        ~Container()
-        {
-        }
+            ~Container()
+            {
+            }
 
-    private:
-        int _length;
-        int* _data;
-};
+        private:
+            int _length;
+            int* _data;
+    };
 
-TEST(test_lockableContainer, lockContainer_test)
-{
-    LockableContainerType<Container> containerObj1;
-    LockableContainerType<Container> containerObj2(containerObj1);
-    LockableContainerType<Container> containerObj3;
-    containerObj3 = containerObj2;
+    TEST(test_lockableContainer, lockContainer_test)
+    {
+        ::Thunder::Core::LockableContainerType<Container> containerObj1;
+        ::Thunder::Core::LockableContainerType<Container> containerObj2(containerObj1);
+        ::Thunder::Core::LockableContainerType<Container> containerObj3;
+        containerObj3 = containerObj2;
 
-    EXPECT_TRUE(containerObj1.ReadLock());
-    containerObj1.ReadUnlock();
-    EXPECT_TRUE(containerObj2.WriteLock());
-    containerObj2.WriteUnlock();
-}
+        EXPECT_TRUE(containerObj1.ReadLock());
+        containerObj1.ReadUnlock();
+        EXPECT_TRUE(containerObj2.WriteLock());
+        containerObj2.WriteUnlock();
+    }
+
+} // Core
+} // Tests
+} // Thunder

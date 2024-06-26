@@ -155,6 +155,7 @@ namespace Core {
             , m_Size(size)
             , m_MaxSize(size)
         {
+            ASSERT(buffer != nullptr);
         }
         inline DataElement(const ProxyType<DataStore>& buffer)
             : m_Storage(buffer)
@@ -167,12 +168,13 @@ namespace Core {
         }
         inline DataElement(const ProxyType<DataStore>& buffer, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(buffer)
-            , m_Buffer(&(buffer->Buffer())[offset])
+            , m_Buffer(buffer->Size() > offset ? &(buffer->Buffer())[offset] : nullptr)
             , m_Offset(offset)
-            , m_Size(buffer->Size() - offset)
+            , m_Size(buffer->Size() > offset ? buffer->Size() - offset : 0)
             , m_MaxSize(buffer->Size())
         {
             ASSERT(buffer.IsValid());
+            ASSERT(buffer->Size() > offset);
 
             // We only allow a smaller size...
             if (size != 0) {
@@ -189,7 +191,7 @@ namespace Core {
             , m_MaxSize(RHS.m_MaxSize)
         {
         }
-        inline DataElement(DataElement&& move)
+        inline DataElement(DataElement&& move) noexcept
             : m_Storage(std::move(move.m_Storage))
             , m_Buffer(move.m_Buffer)
             , m_Offset(move.m_Offset)
@@ -206,30 +208,37 @@ namespace Core {
 
         inline DataElement(const DataElement& RHS, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(RHS.m_Storage)
-            , m_Buffer(&(RHS.m_Buffer[offset]))
+            , m_Buffer(RHS.Size() > offset ? &(RHS.m_Buffer[offset]) : nullptr)
             , m_Offset(RHS.m_Offset + offset)
             , m_Size(RHS.m_Size - offset)
             , m_MaxSize(RHS.m_MaxSize)
         {
+            ASSERT(RHS.IsValid());
+            ASSERT(RHS.Size() > offset);
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 >= offset
+                   && std::numeric_limits<uint64_t>::max() / 2 >= RHS.m_Offset
+            );
+
             if (size != 0) {
                 m_Size = size;
             }
-
-            ASSERT(offset + size <= RHS.m_Size);
         }
         inline DataElement(DataElement&& move, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(std::move(move.m_Storage))
-            , m_Buffer(&(move.m_Buffer[offset]))
+            , m_Buffer(move.m_Size > offset ? &(move.m_Buffer[offset]) : nullptr)
             , m_Offset(move.m_Offset + offset)
             , m_Size(move.m_Size - offset)
             , m_MaxSize(move.m_MaxSize)
         {
             ASSERT(this != &move);
+            ASSERT(move.m_Size > offset);
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 >= offset
+                   && std::numeric_limits<uint64_t>::max() / 2 >= move.m_Offset
+            );
 
             if (size != 0) {
                 m_Size = size;
             }
-            ASSERT(offset + size <= move.m_Size);
 
             move.m_Buffer = nullptr;
             move.m_Offset = 0;
@@ -248,7 +257,7 @@ namespace Core {
 
             return (*this);
         }
-        inline DataElement& operator=(DataElement&& move)
+        inline DataElement& operator=(DataElement&& move) noexcept
         {
             if (this != &move) {
                 m_Size = move.m_Size;
@@ -354,8 +363,12 @@ namespace Core {
         void Set(const uint8_t value, const uint64_t offset = 0, const uint64_t size = NUMBER_MAX_UNSIGNED(uint64_t))
         {
             ASSERT(IsValid());
-
-            ASSERT((size == NUMBER_MAX_UNSIGNED(uint64_t)) || ((offset + size) < m_Size));
+            ASSERT(    (size == NUMBER_MAX_UNSIGNED(uint64_t))
+                    || (   std::numeric_limits<uint64_t>::max() / 2 >= offset
+                        && std::numeric_limits<uint64_t>::max() / 2 >= size
+                        && ((offset + size) < m_Size)
+                       )
+                  );
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(m_Size - offset));
             } else {
@@ -814,14 +827,14 @@ namespace Core {
             , m_Next(RHS.m_Next)
         {
             // Don't set the size bigger than the cummulated one!!!
-            ASSERT(offset + size < RHS.LinkedSize());
+            ASSERT((offset + size) < RHS.LinkedSize());
         }
-        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0)
+        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0) noexcept
             : DataElement(move, offset, (offset + size > move.Size() ? 0 : size))
             , m_Next(move.m_Next)
         {
             // Don't set the size bigger than the cummulated one!!!
-            ASSERT(offset + size < move.LinkedSize());
+            ASSERT((offset + size) < move.LinkedSize());
             move.m_Next = nullptr;
         }
         inline LinkedDataElement(const uint64_t Size, uint8_t* Buffer, LinkedDataElement* Enclosure)
@@ -840,7 +853,7 @@ namespace Core {
 
             return (*this);
         }
-        inline LinkedDataElement& operator=(LinkedDataElement&& move)
+        inline LinkedDataElement& operator=(LinkedDataElement&& move) noexcept
         {
             if (this != &move) {
                 DataElement::operator=(move);
@@ -972,6 +985,8 @@ namespace Core {
 
         inline void SkipBytes(const unsigned int bytes)
         {
+            ASSERT((std::numeric_limits<uint64_t>::max() - bytes) >= m_Offset);
+
             m_Offset += bytes;
         }
 

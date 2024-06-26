@@ -120,7 +120,7 @@ namespace Core {
                 , _index(copy._index)
             {
             }
-            Iterator(Iterator&& move)
+            Iterator(Iterator&& move) noexcept
                 : _pids(std::move(move._pids))
                 , _current(std::move(move._current))
                 , _index(move._index)
@@ -140,7 +140,7 @@ namespace Core {
                 return (*this);
             }
 
-            Iterator& operator=(Iterator&& move)
+            Iterator& operator=(Iterator&& move) noexcept
             {
                 if (this != &move) {
                     _pids = std::move(move._pids);
