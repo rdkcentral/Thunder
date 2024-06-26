@@ -991,6 +991,6 @@ namespace std {
 #endif
 #endif
 
-#define THUNDER_VERSION 5
+#include "Version.h"
 
 #endif // __PORTABILITY_H

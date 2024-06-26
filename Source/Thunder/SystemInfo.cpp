@@ -271,7 +271,7 @@ POP_WARNING()
 
     string SystemInfo::Version() const /* override */
     {
-        return (Core::Format(_T("%d.%d.%d"), PluginHost::Major, PluginHost::Minor, PluginHost::Patch));
+        return (Core::Format(_T("%d.%d.%d"), Versioning::Major, Versioning::Minor, Versioning::Patch));
     }
 
 } //namspace Plugin

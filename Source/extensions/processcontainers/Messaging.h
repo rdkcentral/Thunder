@@ -21,7 +21,6 @@
 
 #include "Module.h"
 
-#include "../messaging/messaging.h"
 
 namespace Thunder {
 namespace ProcessContainers {
