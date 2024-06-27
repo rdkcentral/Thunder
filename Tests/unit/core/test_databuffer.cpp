@@ -17,26 +17,29 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
-namespace Core {
 namespace Tests {
+namespace Core {
 
-TEST(Core_DataBuffer, simple)
-{
-    constexpr uint32_t blocksize = 10;
+    TEST(Core_DataBuffer, simple)
+    {
+        constexpr uint32_t blocksize = 10;
 
-    Thunder::Core::ScopedStorage<blocksize> storage;
+        ::Thunder::Core::ScopedStorage<blocksize> storage;
 
-    EXPECT_EQ(storage.Size(), blocksize);
+        EXPECT_EQ(storage.Size(), blocksize);
 
-    EXPECT_NE(storage.Buffer(), nullptr);
-}
+        EXPECT_NE(storage.Buffer(), nullptr);
+    }
 
-} // Tests
 } // Core
+} // Tests
 } // Thunder
