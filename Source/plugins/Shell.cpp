@@ -61,9 +61,6 @@ namespace PluginHost
         } else {
             ICOMLink* handler(QueryInterface<ICOMLink>());
 
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
-
             if (handler != nullptr) {
                 string locator(rootConfig.Locator.Value());
                 if (locator.empty() == true) {
