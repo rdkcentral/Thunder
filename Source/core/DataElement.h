@@ -383,7 +383,8 @@ namespace Core {
             bool expanded = false;
 
             // Make sure we are not expanding beyond the size boundary
-            ASSERT((offset + size) <= m_MaxSize);
+            ASSERT(size <= m_MaxSize);
+            ASSERT(offset <= (m_MaxSize - size));
 
             const uint32_t oldSize = m_Size;
 
