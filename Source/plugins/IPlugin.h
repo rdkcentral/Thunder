@@ -100,7 +100,7 @@ namespace PluginHost {
     /* @stubgen:omit */
     struct IPluginExtended : public IPlugin {
 
-        enum { ID = RPC::ID_PLUGINEXTENDED };
+        enum { ID = RPC::ID_PLUGIN_EXTENDED };
 
         ~IPluginExtended() override = default;
 

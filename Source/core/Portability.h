@@ -323,6 +323,7 @@ typedef std::string string;
 #define KEY_LEFTCTRL VK_LCONTROL
 #define KEY_RIGHTCTRL VK_RCONTROL
 #undef INPUT_MOUSE
+#undef ERROR_INVALID_PARAMETER
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -488,7 +489,6 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-#define SLEEPSLOT_POLLING_TIME 100
 extern void EXTERNAL SleepMs(const unsigned int a_Time);
 extern void EXTERNAL SleepUs(const unsigned int a_Time);
 inline void EXTERNAL SleepS(unsigned int a_Time)
@@ -506,6 +506,7 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
 
 #endif
 
+#define SLEEPSLOT_POLLING_TIME 100
 
 #ifdef __GNUC__
 #define DEPRECATED __attribute__((deprecated))
@@ -876,9 +877,14 @@ namespace Core {
         ERROR_CODE(ERROR_INPROC, 47) \
         ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
         ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) \
+        ERROR_CODE(ERROR_PARSE_FAILURE, 50) \
         ERROR_CODE(ERROR_PRIVILIGED_DEFERRED, 51) \
+        ERROR_CODE(ERROR_INVALID_ENVELOPPE, 52) \
         ERROR_CODE(ERROR_UNKNOWN_METHOD, 53) \
-        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57)\
+        ERROR_CODE(ERROR_INVALID_PARAMETER, 54) \
+        ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
+        ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
+        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
         ERROR_CODE(ERROR_ABORTED, 58)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,

@@ -29,26 +29,22 @@ namespace WPEFramework {
     namespace PluginHost {
 
         struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
-            virtual ~IDispatcher() override = default;
+            ~IDispatcher() override = default;
 
             enum { ID = RPC::ID_DISPATCHER };
 
             struct EXTERNAL ICallback : public virtual Core::IUnknown {
-                virtual ~ICallback() override = default;
+                ~ICallback() override = default;
 
                 enum { ID = RPC::ID_DISPATCHER_CALLBACK };
 
-                virtual Core::hresult Event(const string& event, const string& parameters /* @restrict:(4M-1) */) = 0;
-                virtual Core::hresult Error(const uint32_t channel, const uint32_t id, const uint32_t code, const string& message) = 0;
-                virtual Core::hresult Response(const uint32_t channel, const uint32_t id, const string& response /* @restrict:(4M-1) */) = 0;
-
-                virtual Core::hresult Subscribe(const uint32_t channel, const string& event, const string& designator) = 0;
-                virtual Core::hresult Unsubscribe(const uint32_t channel, const string& event, const string& designator) = 0;
+                virtual Core::hresult Event(const string& event, const string& designator, const string& parameters /* @restrict:(4M-1) */) = 0;
             };
 
-            virtual Core::hresult Validate(const string& token, const string& method, const string& paramaters /* @restrict:(4M-1) */) const = 0;
-            virtual Core::hresult Invoke(ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters /* @restrict:(4M-1) */, string& response /* @restrict:(4M-1) @out */) = 0;
-            virtual Core::hresult Revoke(ICallback* callback) = 0;
+            virtual uint32_t Invoke(const uint32_t channelid, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) = 0;
+
+            virtual Core::hresult Subscribe(ICallback* callback, const string& event, const string& designator) = 0;
+            virtual Core::hresult Unsubscribe(ICallback* callback, const string& event, const string& designator) = 0;
 
             // Lifetime managment of the IDispatcher.
             // Attach is to be called prior to receiving JSONRPC requests!
@@ -56,7 +52,7 @@ namespace WPEFramework {
             virtual Core::hresult Attach(IShell::IConnectionServer::INotification*& sink /* @out */, IShell* service) = 0;
             virtual Core::hresult Detach(IShell::IConnectionServer::INotification*& sink /* @out */) = 0;
 
-            // If a callback is unexpectedly dropepd (non-happy day scenarios) it is reported through this 
+            // If a callback is unexpectedly dropepd (non-happy day scenarios) it is reported through this
             // method that all subscribtions for a certain callback can be dropped..
             virtual void Dropped(const ICallback* callback) = 0;
         };

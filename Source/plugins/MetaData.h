@@ -126,9 +126,7 @@ namespace PluginHost {
             Core::JSON::DecUInt32 ProcessedRequests;
             Core::JSON::DecUInt32 ProcessedObjects;
 #endif
-#if THUNDER_RESTFULL_API
             Core::JSON::DecUInt32 Observers;
-#endif
             Version ServiceVersion;
             Core::JSON::String Module;
             Core::JSON::ArrayType<Core::JSON::String> InterfaceVersion;
