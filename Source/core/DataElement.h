@@ -77,11 +77,13 @@ namespace Core {
         {
             ASSERT(_buffer != nullptr);
 
-            ASSERT(offset < _size);
-            if (offset < _size) {
-                ASSERT(static_cast<uint32_t>(offset + length) <= _size);
+            ASSERT(offset <= _size);
+            ASSERT(length <= _size);
 
-                uint32_t count(static_cast<uint32_t>(offset + length) <= _size ? length : _size - offset);
+            if (offset < _size) {
+                ASSERT(static_cast<uint32_t>(offset <= (_size - length)));
+
+                uint32_t count(static_cast<uint32_t>(offset <= (_size - length) ? length : _size - offset));
 
                 ::memcpy(&(_buffer[offset]), data, count);
             }
@@ -382,15 +384,25 @@ namespace Core {
 
             bool expanded = false;
 
-            // Make sure we are not shrinking beyond the size boundary
-            ASSERT(offset <= m_Size);
+            // Make sure we are not expanding beyond the size boundary
+            ASSERT(size <= m_MaxSize);
+            ASSERT(offset <= (m_MaxSize - size));
 
-            if (Size(size) == true) {
-                // Shift all data back the beginning in..
-                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+            const uint32_t oldSize = m_Size;
 
-                // Now the total size is smaller, adjust
-                m_Size += size;
+            if (size >= m_Size && Size(size) == true) {
+                // Shift all data to the new offset
+                ASSERT(m_Size <= m_MaxSize);
+                ASSERT(m_Offset <= (m_MaxSize - m_Size));
+                ASSERT(m_Offset <= m_Size);
+                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
+
+                expanded =    oldSize != size
+                           || offset != m_Offset;
+
+                // Now the total size is bigger, adjust
+                m_Size = size;
+                m_Offset = offset;
             }
 
             return (expanded);
@@ -400,22 +412,38 @@ namespace Core {
        {
             ASSERT(IsValid());
 
+            bool shrunken = false;
+
             // Make sure we are not shrinking beyond the size boundary
-            ASSERT(m_Size >= (offset + size));
+            ASSERT(size <= m_MaxSize);
+            ASSERT(offset <= (m_MaxSize - size));
 
-            // Now the toal size is smaller, adjust
-            m_Size -= size;
+            const uint32_t oldSize = m_Size;
 
-            // Shift all data back the beginning in..
-            ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+            if (size <= m_Size) {
+                // Shift all data to the new offset
+                ASSERT(m_Size <= m_MaxSize);
+                ASSERT(m_Offset <= (m_MaxSize - m_Size));
+                ASSERT(m_Offset <= m_Size);
+                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
 
-            return (true);
+                shrunken =    oldSize != size
+                           || offset != m_Offset;
+
+                // Now the total size is smaller, adjust
+                m_Size = size;
+                m_Offset = offset;
+            }
+
+            return (shrunken);
         }
 
         bool Copy(const DataElement& RHS, const uint64_t offset = 0)
         {
             ASSERT(IsValid());
             ASSERT(RHS.IsValid());
+            ASSERT(RHS.m_Size <= m_MaxSize);
+            ASSERT(RHS.m_Size <= (m_MaxSize - offset));
 
             bool copied = false;
 
@@ -625,7 +653,8 @@ namespace Core {
             ASSERT(buffer != nullptr);
 
             // Check if we cross a boundary for the read..
-            ASSERT((offset + size) <= m_Size);
+            ASSERT(offset <= (m_MaxSize - size));
+            ASSERT(offset <= (m_Size - size));
 
             // Nope, one plain copy !!!
             ::memmove(buffer, &m_Buffer[offset], size);
@@ -745,7 +774,8 @@ namespace Core {
             ASSERT(buffer != nullptr);
 
             // Check if we cross a boundary for the write..
-            ASSERT((offset + size) <= m_Size);
+            ASSERT(offset <= (m_MaxSize - size));
+            ASSERT(offset <= (m_Size - size));
 
             // Nope, one plain copy !!!
             ::memmove(&m_Buffer[offset], buffer, size);
@@ -756,7 +786,7 @@ namespace Core {
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 // Reset the size to the maxSize...
                 m_Size = m_MaxSize - m_Offset;
-            } else if ((size + m_Offset) < m_MaxSize) {
+            } else if ((size + m_Offset) <= m_MaxSize) {
                 // It fits the allocated buffer, accept and reduce..
                 m_Size = size;
             } else {
