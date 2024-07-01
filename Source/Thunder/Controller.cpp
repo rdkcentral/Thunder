@@ -83,7 +83,7 @@ namespace Plugin {
             Core::NodeId node (config.Probe.Node.Value().c_str());
 
             if (node.IsValid() == false) {
-                SYSLOG(Logging::Startup, (_T("Probing requested but invalid IP address [%s]"), config.Probe.Node.Value().c_str()));
+                SYSLOG(Logging::Activate, (_T("Probing requested but invalid IP address [%s]"), config.Probe.Node.Value().c_str()));
             }
             else {
                 _probe = new Probe(node, _service, config.Probe.TTL.Value(), service->Model());
@@ -98,7 +98,7 @@ namespace Plugin {
 
             if (current >= PluginHost::ISubSystem::END_LIST) {
                 Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(current);
-                SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in controller config!!!"), name.Data())));
+                SYSLOG(Logging::Activate, (Core::Format(_T("Subsystem [%s] can not be used as a control value in controller config!!!"), name.Data())));
             }
             else {
                 _externalSubsystems.emplace_back(current);

@@ -299,7 +299,7 @@ private:
 Logging, on the other hand, is the process of recording events that occur during the execution of an application. These events could be error messages, warnings, or informational messages that provide details about the application’s behavior. Logging is typically used for debugging and troubleshooting purposes. The primary goal of logging is to provide a historical record of events that can be used to analyze and diagnose problems. This means that in theory, we want to save the logs for later use.
 
 ```c++
-SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+SYSLOG(Logging::Activate, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
 ```
 
 This relates to the main difference between the `TRACE` and `SYSLOG` macros in Thunder, which is that `SYSLOG` is present in any build, and `TRACE` is dropped in production, the same way as, for example, an `ASSERT` macro. It concludes the main distinction between these two message categories in Thunder: tracing should be used when we want to indicate a vital information during the development, and we should use logging to record any important data that could be useful in the future.
@@ -531,6 +531,9 @@ Similarly, logging includes several categories, such as:
 
 -   Startup
 -   Shutdown
+-   Activate
+-   Deactivate
+-   Hibernate
 -   Notification
 -   Error
 -   ParsingError
