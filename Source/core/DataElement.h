@@ -77,13 +77,15 @@ namespace Core {
         {
             ASSERT(_buffer != nullptr);
 
-            ASSERT(offset <= _size);
-            ASSERT(length <= _size);
+            ASSERT(   !offset
+                   || offset < _size
+                  );
+            ASSERT(length < _size);
 
             if (offset < _size) {
-                ASSERT(static_cast<uint32_t>(offset <= (_size - length)));
+                ASSERT(static_cast<uint32_t>(offset < (_size - length)));
 
-                uint32_t count(static_cast<uint32_t>(offset <= (_size - length) ? length : _size - offset));
+                uint32_t count(static_cast<uint32_t>(offset < (_size - length) ? length : _size - offset));
 
                 ::memcpy(&(_buffer[offset]), data, count);
             }
@@ -121,6 +123,10 @@ namespace Core {
         void UpdateCache(const uint64_t offset, uint8_t* buffer, const uint64_t size, const uint64_t maxSize)
         {
             ASSERT(buffer != nullptr);
+            ASSERT(   !offset
+                   || offset < maxSize
+                  );
+            ASSERT(size <= maxSize);
 
             // Update the cache...
             m_Offset = offset;
@@ -131,7 +137,16 @@ namespace Core {
         void UpdateCache(const Core::DataElement& data, const uint64_t offset, const uint64_t size)
         {
             ASSERT(data.IsValid());
-            ASSERT((offset + size) <= data.Size());
+            ASSERT(   !offset
+                   || offset < data.m_MaxSize
+                  );
+            ASSERT(size <= data.m_MaxSize);
+            ASSERT(   !offset
+                   || offset < (data.Size() - size)
+                  );
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > data.m_Offset
+            );
 
             // Update the cache...
             m_Offset = data.m_Offset + offset;
@@ -176,7 +191,16 @@ namespace Core {
             , m_MaxSize(buffer->Size())
         {
             ASSERT(buffer.IsValid());
-            ASSERT(buffer->Size() > offset);
+            ASSERT(m_Buffer != nullptr);
+            ASSERT(   !offset
+                   || offset < buffer->Size()
+                  );
+            ASSERT(   !offset
+                   || offset < size
+                  );
+            ASSERT(   !offset
+                   || offset < (m_MaxSize - size)
+                  );
 
             // We only allow a smaller size...
             if (size != 0) {
@@ -216,10 +240,22 @@ namespace Core {
             , m_MaxSize(RHS.m_MaxSize)
         {
             ASSERT(RHS.IsValid());
-            ASSERT(RHS.Size() > offset);
-            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 >= offset
-                   && std::numeric_limits<uint64_t>::max() / 2 >= RHS.m_Offset
-            );
+            ASSERT(m_Buffer != nullptr);
+            ASSERT(RHS.m_MaxSize <= m_MaxSize);
+            ASSERT(   !offset
+                   || offset < size
+                  );
+            ASSERT(   !offset
+                   || offset < RHS.Size()
+                  );
+            ASSERT(m_Size <= m_MaxSize);
+            ASSERT(   !m_Offset
+                   || m_Offset < m_Size
+                  );
+            ASSERT(m_Size <= m_MaxSize);
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > RHS.m_Offset
+             );
 
             if (size != 0) {
                 m_Size = size;
@@ -233,9 +269,19 @@ namespace Core {
             , m_MaxSize(move.m_MaxSize)
         {
             ASSERT(this != &move);
-            ASSERT(move.m_Size > offset);
-            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 >= offset
-                   && std::numeric_limits<uint64_t>::max() / 2 >= move.m_Offset
+            ASSERT(move.m_MaxSize <= m_MaxSize);
+            ASSERT(   !offset
+                   || offset < move.m_Size
+                  );
+            ASSERT(   !offset
+                   || offset < size
+                  );
+            ASSERT(   !m_Offset
+                   || m_Offset < m_Size
+                  );
+            ASSERT(m_Size <= m_MaxSize);
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > move.m_Offset
             );
 
             if (size != 0) {
@@ -290,6 +336,7 @@ namespace Core {
         {
             if (m_Buffer != nullptr) {
                 uint8_t* newPointer = reinterpret_cast<uint8_t*>(Alignment(sizeof(TYPE), m_Buffer));
+                ASSERT(newPointer >= m_Buffer);
                 uint8_t adjust(static_cast<uint8_t>(newPointer - m_Buffer));
                 m_Buffer = newPointer;
                 m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
@@ -365,15 +412,19 @@ namespace Core {
         void Set(const uint8_t value, const uint64_t offset = 0, const uint64_t size = NUMBER_MAX_UNSIGNED(uint64_t))
         {
             ASSERT(IsValid());
-            ASSERT(    (size == NUMBER_MAX_UNSIGNED(uint64_t))
-                    || (   std::numeric_limits<uint64_t>::max() / 2 >= offset
-                        && std::numeric_limits<uint64_t>::max() / 2 >= size
-                        && ((offset + size) < m_Size)
-                       )
-                  );
+
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
+                ASSERT(   !offset
+                       || offset < m_Size
+                      );
+                ASSERT(m_Size <= m_MaxSize);
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(m_Size - offset));
             } else {
+                ASSERT(size < m_Size);
+                ASSERT(   !offset
+                       || offset < size
+                      );
+                ASSERT(size <= m_MaxSize);
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(size));
             }
         }
@@ -386,15 +437,21 @@ namespace Core {
 
             // Make sure we are not expanding beyond the size boundary
             ASSERT(size <= m_MaxSize);
-            ASSERT(offset <= (m_MaxSize - size));
+            ASSERT(   !offset
+                   || offset < (m_MaxSize - size)
+                  );
 
             const uint32_t oldSize = m_Size;
 
             if (size >= m_Size && Size(size) == true) {
                 // Shift all data to the new offset
                 ASSERT(m_Size <= m_MaxSize);
-                ASSERT(m_Offset <= (m_MaxSize - m_Size));
-                ASSERT(m_Offset <= m_Size);
+                ASSERT(   !offset
+                       || offset < m_Size
+                      );
+                ASSERT(   !m_Offset
+                       || m_Offset < m_Size
+                      );
                 ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
 
                 expanded =    oldSize != size
@@ -416,15 +473,21 @@ namespace Core {
 
             // Make sure we are not shrinking beyond the size boundary
             ASSERT(size <= m_MaxSize);
-            ASSERT(offset <= (m_MaxSize - size));
+            ASSERT(   !offset
+                   || offset < size
+                  );
 
             const uint32_t oldSize = m_Size;
 
             if (size <= m_Size) {
                 // Shift all data to the new offset
                 ASSERT(m_Size <= m_MaxSize);
-                ASSERT(m_Offset <= (m_MaxSize - m_Size));
-                ASSERT(m_Offset <= m_Size);
+                ASSERT(   !offset
+                       || offset < m_Size
+                      );
+                ASSERT(   !m_Offset
+                       || m_Offset < m_Size
+                      );
                 ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
 
                 shrunken =    oldSize != size
@@ -443,12 +506,17 @@ namespace Core {
             ASSERT(IsValid());
             ASSERT(RHS.IsValid());
             ASSERT(RHS.m_Size <= m_MaxSize);
-            ASSERT(RHS.m_Size <= (m_MaxSize - offset));
+            ASSERT(   !offset
+                   || offset < m_Size
+                  );
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > RHS.m_Size
+            );
 
             bool copied = false;
 
             // see if we need to resize
-            if ((RHS.Size() + offset) > m_Size) {
+            if (RHS.Size() > (m_Size - offset)) {
                 if ((this != &RHS) && (Size(offset + RHS.m_Size) == true)) {
                     ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
                     m_Size = offset + RHS.m_Size;
@@ -475,7 +543,11 @@ namespace Core {
             uint64_t index = offset;
 
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT(offset < m_Size);
+            ASSERT(size <= m_Size);
+            ASSERT(size >= 1);
+            ASSERT(   !offset
+                   || offset < m_Size
+                  );
 
             // If the search object is larger than the buffer, we will not find it ;-)
             while ((found == false) && ((index + size) < m_Size)) {
@@ -551,7 +623,9 @@ namespace Core {
         inline TYPENAME GetNumber(const uint64_t offset) const
         {
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT((offset + sizeof(TYPENAME)) <= m_Size);
+            ASSERT(   !offset
+                   || offset <= (m_Size - sizeof(TYPENAME))
+                  );
 
             TYPENAME result;
 
@@ -616,7 +690,7 @@ namespace Core {
         {
             // Bit numbers are not allowed over package boundaries. Make sure it fits in
             // this element.
-            ASSERT((offset + ((bitIndex + count) / 8)) <= m_Size);
+            ASSERT(offset  < (m_Size - ((bitIndex + count) / 8)));
 
             // Make sure that no more bits are requetsed than fit...
             ASSERT(count <= (sizeof(TYPENAME) << 3));
@@ -653,8 +727,10 @@ namespace Core {
             ASSERT(buffer != nullptr);
 
             // Check if we cross a boundary for the read..
-            ASSERT(offset <= (m_MaxSize - size));
-            ASSERT(offset <= (m_Size - size));
+            ASSERT(size <= m_Size);
+            ASSERT(   !offset
+                   || offset < size
+                  );
 
             // Nope, one plain copy !!!
             ::memmove(buffer, &m_Buffer[offset], size);
@@ -664,7 +740,9 @@ namespace Core {
         void SetNumber(const uint64_t offset, const TYPENAME number)
         {
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT((offset + sizeof(TYPENAME)) <= m_Size);
+            ASSERT(   !offset
+                   || offset <= (m_Size - sizeof(TYPENAME))
+                  );
 
             if (sizeof(TYPENAME) == 1) {
                 m_Buffer[offset] = static_cast<const uint8_t>(number);
@@ -725,7 +803,7 @@ namespace Core {
         {
             // Bit numbers are not allowed over package boundaries. Make sure it fits in
             // this element.
-            ASSERT((offset + ((bitIndex + count) / 8)) <= m_Size);
+            ASSERT(offset < (m_Size - ((bitIndex + count) / 8)));
 
             // Make sure that no more bits are requetsed than fit...
             ASSERT(count <= (sizeof(TYPENAME) << 3));
@@ -774,8 +852,10 @@ namespace Core {
             ASSERT(buffer != nullptr);
 
             // Check if we cross a boundary for the write..
-            ASSERT(offset <= (m_MaxSize - size));
-            ASSERT(offset <= (m_Size - size));
+            ASSERT(size <= m_Size);
+            ASSERT(   !offset
+                   || offset < size
+                  );
 
             // Nope, one plain copy !!!
             ::memmove(&m_Buffer[offset], buffer, size);
@@ -786,10 +866,15 @@ namespace Core {
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 // Reset the size to the maxSize...
                 m_Size = m_MaxSize - m_Offset;
-            } else if ((size + m_Offset) <= m_MaxSize) {
+            } else if (m_Offset < (m_MaxSize - size)) {
+                ASSERT(size <= m_MaxSize);
                 // It fits the allocated buffer, accept and reduce..
                 m_Size = size;
             } else {
+                ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > size
+                       && std::numeric_limits<uint64_t>::max() / 2 > m_Offset
+                );
+
                 Reallocation(size + m_Offset);
             }
 
@@ -841,14 +926,26 @@ namespace Core {
             , m_Next(RHS.m_Next)
         {
             // Don't set the size bigger than the cummulated one!!!
-            ASSERT((offset + size) < RHS.LinkedSize());
+            ASSERT(size <= RHS.LinkedSize());
+            ASSERT(   !offset
+                   || offset < (RHS.LinkedSize() - size)
+                  );
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > size
+            );
         }
         inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0) noexcept
             : DataElement(move, offset, (offset + size > move.Size() ? 0 : size))
             , m_Next(move.m_Next)
         {
             // Don't set the size bigger than the cummulated one!!!
-            ASSERT((offset + size) < move.LinkedSize());
+            ASSERT(size <= move.LinkedSize());
+            ASSERT(   !offset
+                   || offset < (move.LinkedSize() - size)
+                  );
+            ASSERT(   std::numeric_limits<uint64_t>::max() / 2 > offset
+                   && std::numeric_limits<uint64_t>::max() / 2 > size
+            );
             move.m_Next = nullptr;
         }
         inline LinkedDataElement(const uint64_t Size, uint8_t* Buffer, LinkedDataElement* Enclosure)
@@ -917,6 +1014,7 @@ namespace Core {
 
             if ((result == NUMBER_MAX_UNSIGNED(uint64_t)) && (m_Next != nullptr)) {
                 bool found = false;
+                ASSERT(sizeof(TYPENAME) <= m_Size);
                 result = m_Size - sizeof(TYPENAME) + 1;
                 uint64_t index = offset;
 
@@ -933,7 +1031,10 @@ namespace Core {
         inline TYPENAME GetNumber(const uint64_t offset) const
         {
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT(offset + sizeof(TYPENAME) < m_Size);
+            ASSERT(sizeof(TYPENAME) <= m_Size);
+            ASSERT(   !offset
+                   || offset < m_Size
+                  );
 
             TYPENAME result;
 
@@ -952,7 +1053,10 @@ namespace Core {
         inline void SetNumber(const uint64_t offset, const TYPENAME number)
         {
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT(offset + sizeof(TYPENAME) < m_Size);
+            ASSERT(sizeof(TYPENAME) <= m_Size);
+            ASSERT(   !offset
+                   || offset < m_Size
+                  );
 
             if (sizeof(TYPENAME) == 1) {
                 m_Buffer[offset] = number;
@@ -994,6 +1098,7 @@ namespace Core {
 
         inline uint64_t Size() const
         {
+            ASSERT(m_Offset < m_Buffer.Size());
             return (m_Offset - m_Buffer.Size());
         }
 
@@ -1017,10 +1122,12 @@ namespace Core {
         inline TYPENAME GetNumber() const
         {
             // Only on element level allowed to extract !!
-            ASSERT((m_Offset + sizeof(TYPENAME)) < m_Buffer.Size());
+            ASSERT(sizeof(TYPENAME) <= m_Buffer.Size());
+            ASSERT(m_Offset < (m_Buffer.Size() - sizeof(TYPENAME)));
 
             TYPENAME result = m_Buffer.GetNumber<TYPENAME>(m_Offset);
 
+            ASSERT((std::numeric_limits<uint64_t>::max() - sizeof(TYPENAME)) >= m_Offset);
             m_Offset += sizeof(TYPENAME);
 
             return (result);
@@ -1029,10 +1136,12 @@ namespace Core {
         void GetBuffer(const unsigned int size, uint8_t* buffer) const
         {
             // Only on element level allowed to extract !!
-            ASSERT((m_Offset + size) < m_Buffer.Size());
+            ASSERT(size <= m_Buffer.Size());
+            ASSERT(m_Offset < (m_Buffer.Size() - size));
 
             m_Buffer.GetBuffer(m_Offset, size, buffer);
 
+            ASSERT((std::numeric_limits<uint64_t>::max() - size) >= m_Offset);
             m_Offset += size;
         }
 
@@ -1040,7 +1149,8 @@ namespace Core {
         inline void SetNumber(const TYPENAME number)
         {
             // Only on element level allowed to set !!
-            ASSERT((m_Offset + sizeof(TYPENAME)) < m_Buffer.Size());
+            ASSERT(sizeof(TYPENAME) <= m_Buffer.Size());
+            ASSERT(m_Offset < (m_Buffer.Size() - sizeof(TYPENAME)));
 
             m_Buffer.SetNumber<TYPENAME>(m_Offset, number);
             m_Offset += sizeof(TYPENAME);
@@ -1049,7 +1159,8 @@ namespace Core {
         void SetBuffer(const unsigned int size, const uint8_t* buffer)
         {
             // Only on element level allowed to set !!
-            ASSERT((m_Offset + size) < m_Buffer.Size());
+            ASSERT(size <= m_Buffer.Size());
+            ASSERT(m_Offset < (m_Buffer.Size() - size));
 
             m_Buffer.SetBuffer(m_Offset, size, buffer);
 
