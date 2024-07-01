@@ -11,7 +11,7 @@ function(HeaderOnlyInstallCMakeConfig)
         message(FATAL_ERROR "Unknown keywords given to HeaderOnlyInstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
     endif()
 
-    set(_install_path "lib/cmake") # default path
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/cmake") # default path
 
     set(TARGET ${Argument_TARGET})
     set(NAME ${Argument_NAME})
@@ -161,12 +161,14 @@ function(HeaderOnlyInstallCMakeConfig)
         EXPORT "${TARGET}Targets"
         FILE "${_name}Targets.cmake"
         NAMESPACE  "${_name}::"
-        DESTINATION "${_install_path}/${_name}")
+        DESTINATION "${_install_path}/${_name}"
+        COMPONENT ${NAMESPACE}_Development)
 
     install(FILES
             "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
-        DESTINATION "${_install_path}/${_name}")
+        DESTINATION "${_install_path}/${_name}"
+        COMPONENT ${NAMESPACE}_Development)
 
 endfunction(HeaderOnlyInstallCMakeConfig)
 
@@ -247,7 +249,7 @@ function(HeaderOnlyInstallPackageConfig)
     endif()
 
     # Default path on UNIX, if you want Windows or Apple support add the path here. ;-)
-    set(_install_path "lib/pkgconfig")
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
     if (${Argument_OUTPUT_NAME})
         set(_pc_filename  ${Argument_OUTPUT_NAME})
@@ -319,5 +321,6 @@ function(HeaderOnlyInstallPackageConfig)
                     @ONLY)
 
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"
-            DESTINATION "${_install_path}")
+            DESTINATION "${_install_path}"
+            COMPONENT ${NAMESPACE}_Development)
 endfunction(HeaderOnlyInstallPackageConfig)

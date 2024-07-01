@@ -467,12 +467,14 @@ function(InstallCMakeConfig)
         install(EXPORT "${_target}Targets"
             FILE "${_name}Targets.cmake"
             NAMESPACE  "${_name}::"
-            DESTINATION "${_install_path}/${_name}")
+            DESTINATION "${_install_path}/${_name}"
+            COMPONENT ${NAMESPACE}_Development)
 
         install(FILES 
                 "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
                 "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
-            DESTINATION "${_install_path}/${_name}")
+            DESTINATION "${_install_path}/${_name}"
+            COMPONENT ${NAMESPACE}_Development)
     endforeach()
 endfunction(InstallCMakeConfig)
 
@@ -633,7 +635,8 @@ function(InstallPackageConfig)
                         @ONLY)
 
         install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"
-                DESTINATION "${_install_path}")
+                DESTINATION "${_install_path}"
+                COMPONENT ${NAMESPACE}_Development)
     endforeach()
 endfunction(InstallPackageConfig)
 
@@ -656,11 +659,11 @@ function(InstallFindModule)
         else()
             file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
         endif(Argument_RECURSE)
-        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
+        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules COMPONENT ${NAMESPACE}_Development)
     endif()
 
     if (Argument_FILES)
-        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
+        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules COMPONENT ${NAMESPACE}_Development)
     endif()
 
 endfunction(InstallFindModule)
