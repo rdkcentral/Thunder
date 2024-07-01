@@ -4215,14 +4215,14 @@ namespace PluginHost {
 
                         if (callType == PluginHost::Request::JSONRPC) {
                             Properties(static_cast<uint32_t>(_parent._config.JSONRPCPrefix().length()) + 1);
-                            State(static_cast<Channel::ChannelState>(mode | ChannelState::JSONRPC), notification);
+                            State(static_cast<Channel::ChannelState>(mode), notification);
                             if (_service->Attach(*this) == false) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }
                         }
                         else if (callType == PluginHost::Request::RESTFULL) {
                             Properties(static_cast<uint32_t>(_parent._config.WebPrefix().length()) + 1);
-                            State(static_cast<Channel::ChannelState>(mode | ChannelState::WEB), notification);
+                            State(static_cast<Channel::ChannelState>(mode), notification);
                             if (((IsNotified() == true) && (_service->Subscribe(*this) == false)) || (_service->Attach(*this) == false)) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }

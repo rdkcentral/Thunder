@@ -333,7 +333,7 @@ namespace PluginHost {
         {
             uint16_t size = 0;
 
-            switch (State()) {
+            switch (static_cast<ChannelState>(State() & 0xFF)) {
             case JSON:
             case JSONRPC: {
                 // Seems we are sending JSON structs
