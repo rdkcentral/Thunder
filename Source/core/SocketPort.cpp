@@ -419,7 +419,7 @@ namespace Thunder {
             ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
 
             if (m_Socket != INVALID_SOCKET) {
-                DestroySocket(m_Socket);
+                Closed();
             }
 
             ::free(m_SendBuffer);
