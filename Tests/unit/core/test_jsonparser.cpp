@@ -2020,7 +2020,7 @@ namespace Core {
         ~SmallTest() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }

@@ -95,13 +95,11 @@ namespace Core {
             TYPE_EMPTY = 0xFF
         };
 
-
 #if defined(__WINDOWS__)
     using address_family_t = ADDRESS_FAMILY;
-#elif !defined(__APPLE__)
+#else
     using address_family_t = sa_family_t;
 #endif
-
 
         union SocketInfo {
 #if defined(__APPLE__)
