@@ -1,3 +1,5 @@
+set(TEMPLATES_LOCATION_RELATIVE_FROM_ME "${CMAKE_CURRENT_LIST_DIR}/../templates/" CACHE INTERNAL "relative location to the templates from this file")
+
 function(HeaderOnlyInstallCMakeConfig)
     set(optionsArgs NO_SKIP_INTERFACE_LIBRARIES, TREAT_AS_NORMAL)
     set(oneValueArgs LOCATION TEMPLATE TARGET)
@@ -21,7 +23,11 @@ function(HeaderOnlyInstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -31,7 +37,11 @@ function(HeaderOnlyInstallCMakeConfig)
 
         find_file(_config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
 
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
@@ -174,7 +184,11 @@ function(HeaderOnlyInstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -184,7 +198,11 @@ function(HeaderOnlyInstallPackageConfig)
 
         find_file(_pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")
