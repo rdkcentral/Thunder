@@ -82,7 +82,7 @@ namespace Core {
         EXPECT_EQ(obj3.Size(),ob_size);
         ASSERT_TRUE(obj3.Shrink(obj3.AllocatedSize()-obj3.Size()+1,obj3.Size()-1));
         ASSERT_FALSE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size()+1)); // No internal storage, not the owner of the buffer
-        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size()));
+        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size())); // No internal storage, but also no actual change in size
         ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.AllocatedSize()));
         EXPECT_TRUE(obj3.Copy(obj2));
     }
