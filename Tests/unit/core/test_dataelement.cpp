@@ -80,9 +80,11 @@ namespace Core {
 
         uint32_t ob_size = 10;
         EXPECT_EQ(obj3.Size(),ob_size);
-        EXPECT_FALSE(obj3.Expand(0,0));
-        EXPECT_TRUE(obj3.Shrink(0,0));
-        EXPECT_FALSE(obj3.Copy(obj2));
+        ASSERT_TRUE(obj3.Shrink(obj3.AllocatedSize()-obj3.Size()+1,obj3.Size()-1));
+        ASSERT_FALSE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size()+1)); // No internal storage, not the owner of the buffer
+        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size())); // No internal storage, but also no actual change in size
+        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.AllocatedSize()));
+        EXPECT_TRUE(obj3.Copy(obj2));
     }
 
     TEST(test_linkeddata, simple_linkeddata)
