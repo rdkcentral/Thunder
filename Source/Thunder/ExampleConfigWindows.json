@@ -411,7 +411,10 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "startmode": "Deactivated"
+      "startmode": "Deactivated",
+      "root": {
+        "mode": "Local"
+      }
     },
     {
       "callsign": "OpenCDMi",
