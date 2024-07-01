@@ -8,28 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/introduction/architecture/rpc/jsonrpc/">
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/utils/singletons/">
       
       
-        <link rel="prev" href="../../overview/">
+        <link rel="prev" href="../sockets/">
       
       
-        <link rel="next" href="../comrpc/">
+        <link rel="next" href="../processes/">
       
       
-      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>JSON-RPC - Thunder</title>
+        <title>Singletons - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6543a935.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#what-is-singleton-and-why-it-is-used" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -107,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              JSON-RPC
+              Singletons
             
           </span>
         </div>
@@ -220,7 +225,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -250,7 +255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -267,8 +272,6 @@
       
   
   
-    
-  
   
   
     
@@ -280,11 +283,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -298,7 +301,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Introduction
@@ -312,7 +315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../intro/" class="md-nav__link">
+      <a href="../../introduction/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -370,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../repos/" class="md-nav__link">
+      <a href="../../introduction/repos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -391,7 +394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../build_linux/" class="md-nav__link">
+      <a href="../../introduction/build_linux/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -412,7 +415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../build_windows/" class="md-nav__link">
+      <a href="../../introduction/build_windows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -433,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../config/" class="md-nav__link">
+      <a href="../../introduction/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -454,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/" class="md-nav__link">
+      <a href="../../introduction/usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -480,8 +483,6 @@
                 
   
   
-    
-  
   
   
     
@@ -490,11 +491,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
           <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
@@ -508,7 +509,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -522,7 +523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../overview/" class="md-nav__link">
+      <a href="../../introduction/architecture/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -540,8 +541,6 @@
                 
   
   
-    
-  
   
   
     
@@ -550,11 +549,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" >
         
           
           <label class="md-nav__link" for="__nav_2_3_2" id="__nav_2_3_2_label" tabindex="0">
@@ -568,7 +567,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3_2">
             <span class="md-nav__icon md-icon"></span>
             RPC Protocols
@@ -579,17 +578,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -598,7 +590,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -611,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../comrpc/" class="md-nav__link">
+      <a href="../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -695,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/intro/" class="md-nav__link">
+      <a href="../../plugin/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -716,7 +707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -737,7 +728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/lifecycle/" class="md-nav__link">
+      <a href="../../plugin/lifecycle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -758,7 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/principles/" class="md-nav__link">
+      <a href="../../plugin/principles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -816,7 +807,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/interfaces/" class="md-nav__link">
+      <a href="../../plugin/interfaces/interfaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -837,7 +828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/docs/" class="md-nav__link">
+      <a href="../../plugin/interfaces/docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -858,7 +849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/tags/" class="md-nav__link">
+      <a href="../../plugin/interfaces/tags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -887,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/config/" class="md-nav__link">
+      <a href="../../plugin/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -908,7 +899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/errors/" class="md-nav__link">
+      <a href="../../plugin/errors/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -929,7 +920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/versioning/" class="md-nav__link">
+      <a href="../../plugin/versioning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -950,7 +941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/messaging/" class="md-nav__link">
+      <a href="../../plugin/messaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -971,7 +962,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/subsystems/" class="md-nav__link">
+      <a href="../../plugin/subsystems/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -992,7 +983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/proxypool/" class="md-nav__link">
+      <a href="../../plugin/proxypool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1013,7 +1004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/private-comrpc/" class="md-nav__link">
+      <a href="../../plugin/private-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1034,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/split-implementation.md" class="md-nav__link">
+      <a href="../../plugin/split-implementation.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1055,7 +1046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/composite/" class="md-nav__link">
+      <a href="../../plugin/composite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1080,8 +1071,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -1091,11 +1084,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -1109,7 +1102,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Common Utilities
@@ -1123,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/strings/" class="md-nav__link">
+      <a href="../strings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1181,7 +1174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/files/files/" class="md-nav__link">
+      <a href="../files/files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1202,7 +1195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/files/observer/" class="md-nav__link">
+      <a href="../files/observer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1231,7 +1224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/json/" class="md-nav__link">
+      <a href="../json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1289,7 +1282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/threading/worker-pool/" class="md-nav__link">
+      <a href="../threading/worker-pool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1310,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/threading/mutex/" class="md-nav__link">
+      <a href="../threading/mutex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1339,7 +1332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/time/" class="md-nav__link">
+      <a href="../time/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1360,7 +1353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/timers/" class="md-nav__link">
+      <a href="../timers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1381,7 +1374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/web/" class="md-nav__link">
+      <a href="../web/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1402,7 +1395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/sockets/" class="md-nav__link">
+      <a href="../sockets/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1420,10 +1413,28 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../utils/singletons/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Singletons
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1432,6 +1443,51 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-singleton-and-why-it-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is singleton and why it is used
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#singleton-and-singletontype" class="md-nav__link">
+    <span class="md-ellipsis">
+      Singleton and SingletonType
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disposing-singletons" class="md-nav__link">
+    <span class="md-ellipsis">
+      disposing singletons
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1444,7 +1500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/processes/" class="md-nav__link">
+      <a href="../processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1512,7 +1568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/intro/" class="md-nav__link">
+      <a href="../../client/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1533,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/json-rpc/" class="md-nav__link">
+      <a href="../../client/json-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1554,7 +1610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/com-rpc/" class="md-nav__link">
+      <a href="../../client/com-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1622,7 +1678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../debugging/debug/" class="md-nav__link">
+      <a href="../../debugging/debug/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1643,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../debugging/thundershark/" class="md-nav__link">
+      <a href="../../debugging/thundershark/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1748,7 +1804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/setup/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1769,7 +1825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/guide/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1827,7 +1883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1848,7 +1904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1932,7 +1988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/" class="md-nav__link">
+      <a href="../../docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1953,7 +2009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../references/references/" class="md-nav__link">
+      <a href="../../references/references/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1974,7 +2030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../issuetemplate/issuetemplate/" class="md-nav__link">
+      <a href="../../issuetemplate/issuetemplate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2013,6 +2069,41 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-singleton-and-why-it-is-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is singleton and why it is used
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#singleton-and-singletontype" class="md-nav__link">
+    <span class="md-ellipsis">
+      Singleton and SingletonType
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disposing-singletons" class="md-nav__link">
+    <span class="md-ellipsis">
+      disposing singletons
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2029,9 +2120,58 @@
   
 
 
-  <h1>JSON-RPC</h1>
+  <h1>Singletons</h1>
 
-
+<h2 id="what-is-singleton-and-why-it-is-used">What is singleton and why it is used</h2>
+<p>The Singleton pattern is a design pattern that restricts the instantiation of a class to a single instance. It ensures that only one instance of the class exists throughout the runtime of the program and provides a global point of access to that instance. In addition, they allow for lazy allocation and initialization, whereas global variables will always consume resources. Examples of using singletons can be found in ThunderClientLibraries repository.</p>
+<h2 id="singleton-and-singletontype">Singleton and SingletonType</h2>
+<p>The <code>SingletonType</code> class can be used to make a class a singleton get access to an instance (which creates one if that was not done before):
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">SingletonType</span><span class="o">&lt;</span><span class="n">MessageUnit</span><span class="o">&gt;::</span><span class="n">Instance</span><span class="p">()</span>
+</code></pre></div>
+If a parameter is required for the construction of the class that should be a singleton, Create can be used (and after that access to the singleton instance can be done using the Instance method):
+<div class="highlight"><pre><span></span><code><span class="n">Core</span><span class="o">::</span><span class="n">SingletonType</span><span class="o">&lt;</span><span class="n">OpenCDMAccessor</span><span class="o">&gt;::</span><span class="n">Create</span><span class="p">(</span><span class="n">connector</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+</code></pre></div>
+<code>SingletonType</code> is a templated class designed to streamline the implementation of singleton objects in Thunder. It is intended to be used as a base class for concrete singleton classes and implements constructors and destructors to handle registration and unregistration of singleton instances within a <code>SingletonList</code>.</p>
+<h2 id="disposing-singletons">disposing singletons</h2>
+<p>In general a singleton can be disposed using the Dispose method. Please note was will be highlighted below that calling Instance after Dispose might create a new instance of the Singleton.
+All created Singletons cann be disposed at once with:
+<div class="highlight"><pre><span></span><code><span class="n">Thunder</span><span class="o">::</span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+</code></pre></div>
+This should typically done at the end of an application fully based on the Thunder framework to cleanup all Singletons. As will be highlighted below if it is in a Library based on the Thunder framework you need to be more careful and not call the general Dispose but only cleanup what you created.</p>
+<p>Singletons that use sockets should connect to them before they are registered in the singletons list. This is therefore best done in their constructor. If the connection occurs too late, the singleton may not be cleaned up before the Resource Monitor destructor is called.
+Here is an example of making sure a socket connection is opened in the OpenCDMAccessor singleton constructor.
+<div class="highlight"><pre><span></span><code><span class="n">OpenCDMAccessor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TCHAR</span><span class="w"> </span><span class="n">domainName</span><span class="p">[])</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">_refCount</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_domain</span><span class="p">(</span><span class="n">domainName</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_engine</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ProxyType</span><span class="o">&lt;</span><span class="n">RPC</span><span class="o">::</span><span class="n">InvokeServerType</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;&gt;::</span><span class="n">Create</span><span class="p">())</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_client</span><span class="p">()</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_remote</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_adminLock</span><span class="p">()</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_signal</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_interested</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">_sessionKeys</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">TRACE_L1</span><span class="p">(</span><span class="s">&quot;Trying to open an OCDM connection @ %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">domainName</span><span class="p">);</span>
+<span class="w">    </span><span class="n">Reconnect</span><span class="p">();</span><span class="w"> </span><span class="c1">// make sure ResourceMonitor singleton is created before OpenCDMAccessor so the destruction order is correct</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When a singleton uses itself (via the instance method) or any other singleton during destruction be very careful to make sure it does not create a new singleton by accident.</p>
+<p>A client library dispose method should not call <code>Core::Singleton::Dispose()</code> but only clean up its own internal singletons. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>Core::Singleton::Dispose()</code> dispose of all singletons in the singletons list.</p>
+</div>
+<p>Calling this method on a particular singleton will dispose of them all. Instead, we should use <code>Core::SingletonType&lt;&gt;::Dispose()</code> with the appropriate type of singleton we want to dispose of specified, or write our own <code>Dispose()</code> which will not dispose of all remaining singletons.</p>
+<p>Below is an example of how you SHOULD NOT dispose of a singleton!
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">opencdm_dispose</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">Singleton</span><span class="o">::</span><span class="n">Dispose</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+And here an example of the RIGHT way to dispose of a singleton.
+<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">opencdm_dispose</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Core</span><span class="o">::</span><span class="n">SingletonType</span><span class="o">&lt;</span><span class="n">OpenCDMAccessor</span><span class="o">&gt;::</span><span class="n">Dispose</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></p>
 
 
 
@@ -2067,7 +2207,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../sockets/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Sockets">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
@@ -2077,20 +2217,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                Sockets
               </div>
             </div>
           </a>
         
         
           
-          <a href="../comrpc/" class="md-footer__link md-footer__link--next" aria-label="Next: COM-RPC">
+          <a href="../processes/" class="md-footer__link md-footer__link--next" aria-label="Next: Processes">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                COM-RPC
+                Processes
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2124,10 +2264,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.ad660dcc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>

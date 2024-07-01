@@ -18,11 +18,11 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>Execution Modes - Thunder (WPEFramework)</title>
+        <title>Execution Modes - Thunder</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -175,7 +175,7 @@
       
     </form>
     <div class="md-search__output">
-      <div class="md-search__scrollwrap" data-md-scrollfix>
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
             Initializing search
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -1497,6 +1497,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../utils/singletons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Singletons
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../utils/processes/" class="md-nav__link">
         
   
@@ -2137,7 +2158,7 @@
 
   <h1>Execution Modes</h1>
 
-<p>A Thunder plugin can be configured to run in multiple different "execution modes". Each mode defines how the plugin code is executed, however it does not affect how a client will interact with the plugin. Clients will not know (and shouldn't care!) which mode a plugin is running in, and will continue to connect/communicate through the main WPEFramework process.</p>
+<p>A Thunder plugin can be configured to run in multiple different "execution modes". Each mode defines how the plugin code is executed, however it does not affect how a client will interact with the plugin. Clients will not know (and shouldn't care!) which mode a plugin is running in, and will continue to connect/communicate through the main Thunder process.</p>
 <p>Providing a plugin correctly implements a COM-RPC interface, there should be no additional development work in the plugin to support running in different execution modes, so the decision on which mode each plugin runs in can be an architecture decision based on platform, performance and security requirements.</p>
 <p><img alt="Diagram showing plugins running in and out of process, and a client connecting to Thunder over JSON-RPC" src="../../assets/simple_execution_modes.drawio.svg" /></p>
 <h2 id="setting-the-execution-mode">Setting the execution mode</h2>
@@ -2151,7 +2172,7 @@
 </ul>
 <p>As with other config options, this can be changed via the Controller plugin at runtime. The below example config sets the plugin mode to <code>Local</code> in order to run the plugin out-of-process</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libWPEFrameworkSamplePlugin.so&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;locator&quot;</span><span class="p">:</span><span class="s2">&quot;libThunderSamplePlugin.so&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;classname&quot;</span><span class="p">:</span><span class="s2">&quot;SamplePlugin&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;startmode&quot;</span><span class="p">:</span><span class="s2">&quot;Activated&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;configuration&quot;</span><span class="p">:{</span>
@@ -2166,35 +2187,35 @@
 <p><strong>Advantages</strong></p>
 <ul>
 <li>Simple - there is no additional overhead or complexity from running additional processes</li>
-<li>Highest performance - no additional RPC hops are required to communicate with the plugin. All calls to the plugin from the WPEFramework process are just local virtual function calls.<ul>
+<li>Highest performance - no additional RPC hops are required to communicate with the plugin. All calls to the plugin from the Thunder process are just local virtual function calls.<ul>
 <li>If an in-process plugin needs to communicate with another in-process plugin, Thunder will resolve any COM-RPC interface calls to local function calls. This removes the need to serialise/deserialise any data or cross any IPC boundary and results in the fastest performance possible</li>
 </ul>
 </li>
 </ul>
 <p><strong>Disadvantages</strong></p>
 <ul>
-<li>Stability - if a plugin is unstable or buggy and causes a crash then it will bring down the entire WPEFramework process</li>
-<li>Resource monitoring - since the plugin runs inside the WPEFramework process, it is much harder to accurately monitor the CPU/memory usage from that specific plugin</li>
-<li>Security - the plugin runs with the same permissions and privileges as the main WPEFramework process</li>
+<li>Stability - if a plugin is unstable or buggy and causes a crash then it will bring down the entire Thunder process</li>
+<li>Resource monitoring - since the plugin runs inside the Thunder process, it is much harder to accurately monitor the CPU/memory usage from that specific plugin</li>
+<li>Security - the plugin runs with the same permissions and privileges as the main Thunder process</li>
 </ul>
 <h2 id="out-of-process-oop-plugins">Out-Of-Process (OOP) Plugins</h2>
-<p>If a plugin is configured to run out-of-process, it will run in its own individual hosting process called <code>WPEProcess</code> instead of in the main WPEFramework process. Each out-of-process plugin will run in a separate WPEProcess instance.</p>
-<p>When the plugin is activated, Thunder will automatically spawn a WPEProcess instance as a child process. The WPEProcess host will load the plugin library and establish a COM-RPC connection between itself and the main WPEFramework process. This COM-RPC connection is how clients communicating with the main Thunder process are still able to invoke methods on out-of-process plugins. The WPEProcess process will be stopped when the plugin is deactivated.</p>
+<p>If a plugin is configured to run out-of-process, it will run in its own individual hosting process called <code>ThunderPlugin</code> instead of in the main Thunder process. Each out-of-process plugin will run in a separate ThunderPlugin instance.</p>
+<p>When the plugin is activated, Thunder will automatically spawn a ThunderPlugin instance as a child process. The ThunderPlugin host will load the plugin library and establish a COM-RPC connection between itself and the main Thunder process. This COM-RPC connection is how clients communicating with the main Thunder process are still able to invoke methods on out-of-process plugins. The ThunderPlugin process will be stopped when the plugin is deactivated.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>For larger, more complex out-of-process plugins, it is often useful to split a plugin into two separate libraries - see <a href="../split-implementation">here</a> for more details.</p>
 </div>
 <p><strong>Advantages</strong></p>
 <ul>
-<li>Reliability - if a plugin crashes, it will only bring down the WPEProcess instance and therefore not affect any other plugin. It can then be restarted as necessary</li>
+<li>Reliability - if a plugin crashes, it will only bring down the ThunderPlugin instance and therefore not affect any other plugin. It can then be restarted as necessary</li>
 <li>Monitoring - by running a plugin in its own process, it becomes easier to monitor the resource usage (memory, CPU etc) of that plugin</li>
-<li>Security - out of process plugins can be run in a different user/group to the main WPEFramework process (which might be running as root) to reduce the privileges of the plugin and increase security</li>
-<li>Resource control - the size of the thread pool and process priority can be set for the WPEProcess host, allowing more custom tuning for specific plugin requirements</li>
+<li>Security - out of process plugins can be run in a different user/group to the main Thunder process (which might be running as root) to reduce the privileges of the plugin and increase security</li>
+<li>Resource control - the size of the thread pool and process priority can be set for the ThunderPlugin host, allowing more custom tuning for specific plugin requirements</li>
 </ul>
 <p><strong>Disadvantages</strong></p>
 <ul>
 <li>Performance - since there is now an additional RPC hop over COM-RPC to invoke methods on the plugin, this can introduce some latency (although COM-RPC is efficient so this is very minimal)<ul>
-<li>It may also take slightly longer to activate the plugin due to the overhead of starting the WPEProcess host</li>
+<li>It may also take slightly longer to activate the plugin due to the overhead of starting the ThunderPlugin host</li>
 </ul>
 </li>
 <li>Resource usage - potentially increased resource usage from spawning and running a new process</li>
@@ -2205,7 +2226,7 @@
 <p>Support for containers is not enabled by default.</p>
 <p>To enable, build Thunder with the <code>-DPROCESSCONTAINERS=ON</code> cmake option and select a backend with <code>-DPROCESSCONTAINERS_XXX=ON</code> where <code>XXX</code> is the backend you wish to use.</p>
 </div>
-<p>An extension to the out-of-process mode, container mode will run the WPEProcess host instead a containerised environment.  Thunder supports various container integrations using the <code>ProcessContainer</code> abstraction mechanism in Thunder core:</p>
+<p>An extension to the out-of-process mode, container mode will run the ThunderPlugin host instead a containerised environment.  Thunder supports various container integrations using the <code>ProcessContainer</code> abstraction mechanism in Thunder core:</p>
 <ul>
 <li><a href="https://linuxcontainers.org/">LXC </a></li>
 <li><a href="https://github.com/opencontainers/runc">runc</a></li>
@@ -2219,7 +2240,7 @@
 <li><code>&lt;persistent path&gt;/&lt;callsign&gt;/Container</code></li>
 <li><code>&lt;data path&gt;/&lt;classname&gt;/Container</code></li>
 </ol>
-<p>For example, the config for a plugin will callsign SamplePlugin might be stored in <code>/opt/wpeframework/SamplePlugin/Container</code> if the persistent path is set to <code>/opt/wpeframework</code> in the Thunder configuration.</p>
+<p>For example, the config for a plugin will callsign SamplePlugin might be stored in <code>/opt/thunder/SamplePlugin/Container</code> if the persistent path is set to <code>/opt/thunder</code> in the Thunder configuration.</p>
 <p><strong>Advantages</strong></p>
 <ul>
 <li>All the previous advantages of OOP plugins</li>
@@ -2236,7 +2257,7 @@
 <p class="admonition-title">Danger</p>
 <p>Distributed mode is considered experimental</p>
 </div>
-<p>Distributed mode takes the out-of-process mode one step further by allowing plugins to run on an entirely different device than the main WPEFramework process. This device could even be running a different CPU with a different architecture. A COM-RPC channel is established over a TCP socket between the two devices to allow communication.</p>
+<p>Distributed mode takes the out-of-process mode one step further by allowing plugins to run on an entirely different device than the main Thunder process. This device could even be running a different CPU with a different architecture. A COM-RPC channel is established over a TCP socket between the two devices to allow communication.</p>
 <p>An example use case for this could be a dual-SoC platform or for communicating with peripheral devices such as cameras.</p>
 <p>Note the COM-RPC protocol is not designed for untrusted channels (e.g. public internet), so this should be used with caution. Enabling tamer-resistant stubs can increase security &amp; robustness but this should still not be considered completely secure.</p>
 
@@ -2334,7 +2355,7 @@
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>

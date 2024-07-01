@@ -18,11 +18,11 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.25">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
-        <title>Error Handling - Thunder (WPEFramework)</title>
+        <title>Error Handling - Thunder</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-header__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Thunder (WPEFramework)
+            Thunder
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -175,7 +175,7 @@
       
     </form>
     <div class="md-search__output">
-      <div class="md-search__scrollwrap" data-md-scrollfix>
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
             Initializing search
@@ -225,13 +225,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder (WPEFramework)" class="md-nav__button md-logo" aria-label="Thunder (WPEFramework)" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    Thunder (WPEFramework)
+    Thunder
   </label>
   
     <div class="md-nav__source">
@@ -1542,6 +1542,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../utils/singletons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Singletons
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../utils/processes/" class="md-nav__link">
         
   
@@ -2230,24 +2251,24 @@
 <p>As with all code, it is important that Thunder plugins handle errors gracefully and consistently. </p>
 <h2 id="exceptions">Exceptions</h2>
 <p>By default, Thunder is compiled with <code>-fno-exceptions</code> to disable exception support in the framework. This can be changed by enabling the <code>EXCEPTIONS_ENABLE</code> CMake option. As a result, plugins should <strong>never</strong> be designed to throw exceptions.</p>
-<p>If an exception does occur, the WPEFramework process will immediately shut down with an error to prevent any further issues and log the following message:</p>
-<div class="highlight"><pre><span></span><code>WPEFramework shutting down due to an uncaught exception.
+<p>If an exception does occur, the Thunder process will immediately shut down with an error to prevent any further issues and log the following message:</p>
+<div class="highlight"><pre><span></span><code>Thunder shutting down due to an uncaught exception.
 </code></pre></div>
 <p>If the <code>Crash</code> logging category is enabled, then more information about the faulting callstack will be available (only on debug builds). Thunder will attempt to resolve the callsign of the faulting plugin but this is not always possible.</p>
 <div class="highlight"><pre><span></span><code>[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: -== Unhandled exception in: NoTLSCallsign [General] ==-
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [000] [0x7ffff7d22cba] /Thunder/install/usr/lib/libWPEFrameworkCore.so.1 DumpCallStack [74]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [001] [0x7ffff7e02b84] /Thunder/install/usr/lib/libWPEFrameworkMessaging.so.1 WPEFramework::Logging::DumpException(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) [88]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [002] [0x555555641b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [000] [0x7ffff7d22cba] /Thunder/install/usr/lib/libThunderCore.so.1 DumpCallStack [74]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [001] [0x7ffff7e02b84] /Thunder/install/usr/lib/libThunderMessaging.so.1 Thunder::Logging::DumpException(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) [88]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [002] [0x555555641b35] /Thunder/install/usr/bin/Thunder
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [003] [0x7ffff7aae24c] /lib/x86_64-linux-gnu/libstdc++.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [004] [0x7ffff7aae2b7] /lib/x86_64-linux-gnu/libstdc++.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [005] [0x7ffff7aae518] /lib/x86_64-linux-gnu/libstdc++.so.6 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [006] [0x7ffff49820ff] /Thunder/install/usr/lib/wpeframework/plugins/libWPEFrameworkTestPlugin.so 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [007] [0x555555664a61] /Thunder/install/usr/bin/WPEFramework 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [008] [0x55555566b47e] /Thunder/install/usr/bin/WPEFramework 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [009] [0x555555643b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [006] [0x7ffff49820ff] /Thunder/install/usr/lib/thunder/plugins/libThunderTestPlugin.so
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [007] [0x555555664a61] /Thunder/install/usr/bin/Thunder
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [008] [0x55555566b47e] /Thunder/install/usr/bin/Thunder
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [009] [0x555555643b35] /Thunder/install/usr/bin/Thunder
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [010] [0x7ffff7629d90] /lib/x86_64-linux-gnu/libc.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [011] [0x7ffff7629e40] /lib/x86_64-linux-gnu/libc.so.6 __libc_start_main [128]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [012] [0x555555596055] /Thunder/install/usr/bin/WPEFramework _start [37]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [012] [0x555555596055] /Thunder/install/usr/bin/Thunder _start [37]
 </code></pre></div>
 <h3 id="exception-catching">Exception Catching</h3>
 <div class="admonition danger">
@@ -3157,7 +3178,7 @@
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>
