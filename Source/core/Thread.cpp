@@ -53,6 +53,9 @@ namespace Core {
 #else
         , m_hThreadInstance()
         , m_ThreadId(0)
+#ifdef __POSIX__
+        , m_threadName("")
+#endif
 #endif
     {
         TRACE_L5("Constructor Thread <%p>", (this));
@@ -71,6 +74,10 @@ namespace Core {
         // then it is up to us.
         if (m_hThreadInstance == nullptr)
 #endif
+        std::string convertedName;
+        if (threadName != nullptr) {
+            Core::ToString(threadName, convertedName);
+        }
 
 #ifdef __POSIX__
             int err;
@@ -86,8 +93,10 @@ namespace Core {
             ASSERT(err == 0);
         }
 
+        m_threadName = convertedName;
         // If there is no thread, the "new" thread can also not free the destructor,
         // then it is up to us.
+
         if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) != 0))
 #endif
         {
@@ -99,16 +108,13 @@ namespace Core {
 #ifdef __POSIX__
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
-
         m_ThreadId = m_hThreadInstance;
-#endif
-
-        if (threadName != nullptr) {
-            std::string convertedName;
-            Core::ToString(threadName, convertedName);
-
+#else
+        if (convertedName.empty() != true) {
             ThreadName(convertedName.c_str());
         }
+#endif
+
     }
     Thread::~Thread()
     {
@@ -138,13 +144,16 @@ POP_WARNING()
 
 #ifdef __WINDOWS__
     void Thread::StartThread(Thread* cClassPointer)
-#endif
-
-#ifdef __POSIX__
-        void* Thread::StartThread(Thread* cClassPointer)
+#else
+    void* Thread::StartThread(Thread* cClassPointer)
 #endif
     {
+
 #ifdef __POSIX__
+        if (cClassPointer->ThreadName().empty() != true) {
+            cClassPointer->ThreadName(cClassPointer->ThreadName().c_str());
+        }
+
         // It is the responsibility of the main app to make sure all threads created are stopped properly.
         // No jumping and bailing out without a proper closure !!!!
         sigset_t mask;
@@ -439,13 +448,21 @@ POP_WARNING()
         }
 #endif // __DEBUG__
 #else
+#ifdef __APPLE__
+        int rc = pthread_setname_np(threadName);
+#else
         int rc = pthread_setname_np(m_hThreadInstance, threadName);
+#endif
         if (rc == ERANGE) {
             // name too long - max 16 chars allowed
             char truncName[16];
             strncpy(truncName, threadName, sizeof(truncName));
             truncName[15] = '\0';
+#ifdef __APPLE__
+            pthread_setname_np(truncName);
+#else
             pthread_setname_np(m_hThreadInstance, truncName);
+#endif
         }
 #endif // __WINDOWS__
     }
