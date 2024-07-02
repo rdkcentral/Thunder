@@ -1211,7 +1211,7 @@ namespace PluginHost {
             ASSERT(callsign.empty() == false);
 
             if (jsonrpc_event.empty() == false) {
-                JsonData::Events::ForwardMessageParamsData::EventData message({ jsonrpc_event, parameters, callsign });
+                JsonData::Events::ForwardMessageParamsData::EventInfoData message({ jsonrpc_event, parameters, callsign });
                 controller->Notify(_T("all"), message);
             }
             else {

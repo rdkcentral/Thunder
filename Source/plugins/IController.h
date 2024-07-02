@@ -196,7 +196,7 @@ namespace Controller {
     struct EXTERNAL IEvents : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_EVENTS };
 
-        struct Event {
+        struct EventInfo {
             string Event;
             string Params /* @opaque @optional */;
             string CallSign /* @optional */;
@@ -212,7 +212,7 @@ namespace Controller {
             //          All notifications send by any plugin are forwarded over the Controller socket as an event.
             // @param callsign: Origin of the message
             // @param data: Contents of the message
-            virtual void ForwardMessage(const Event& data) = 0;
+            virtual void ForwardMessage(const EventInfo& data) = 0;
         };
     };
 
