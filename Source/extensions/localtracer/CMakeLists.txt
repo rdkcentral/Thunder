@@ -25,7 +25,7 @@ target_compile_features(${MODULE_NAME} INTERFACE cxx_std_11)
 
 install(TARGETS ${MODULE_NAME} EXPORT ${MODULE_NAME}Targets)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/localtracer/localtracer.h
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/localtracer/localtracer.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/localtracer COMPONENT ${NAMESPACE}_Development)
 
 include(HeaderOnlyInstall)

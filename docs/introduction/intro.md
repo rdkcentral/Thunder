@@ -1,6 +1,4 @@
 # What is Thunder?
-!!! note
-	The terms "**Thunder**" and "**Thunder**" may be used interchangeably throughout this documentation. The project was originally known as Thunder (since it was developed by the Web Platform for Embedded, or WPE, team).	The name was changed to Thunder when it was incorporated into RDK, but the code still uses the name Thunder internally.
 
 ## Introduction
 

@@ -18,6 +18,8 @@
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set(TEMPLATES_LOCATION_RELATIVE_FROM_ME "${CMAKE_CURRENT_LIST_DIR}/../templates/" CACHE INTERNAL "relative location to the templates from this file")
+
 macro(add_element list element)
     list(APPEND ${list} ${element})
 endmacro()
@@ -317,7 +319,11 @@ function(InstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -327,7 +333,11 @@ function(InstallCMakeConfig)
 
         find_file(_config_template  
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}"
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
             
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
@@ -457,12 +467,14 @@ function(InstallCMakeConfig)
         install(EXPORT "${_target}Targets"
             FILE "${_name}Targets.cmake"
             NAMESPACE  "${_name}::"
-            DESTINATION "${_install_path}/${_name}")
+            DESTINATION "${_install_path}/${_name}"
+            COMPONENT ${NAMESPACE}_Development)
 
         install(FILES 
                 "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
                 "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
-            DESTINATION "${_install_path}/${_name}")
+            DESTINATION "${_install_path}/${_name}"
+            COMPONENT ${NAMESPACE}_Development)
     endforeach()
 endfunction(InstallCMakeConfig)
 
@@ -480,7 +492,11 @@ function(InstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}"
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -490,7 +506,11 @@ function(InstallPackageConfig)
 
         find_file(_pc_template  
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}"
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")
@@ -615,7 +635,8 @@ function(InstallPackageConfig)
                         @ONLY)
 
         install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"
-                DESTINATION "${_install_path}")
+                DESTINATION "${_install_path}"
+                COMPONENT ${NAMESPACE}_Development)
     endforeach()
 endfunction(InstallPackageConfig)
 
@@ -638,11 +659,11 @@ function(InstallFindModule)
         else()
             file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
         endif(Argument_RECURSE)
-        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
+        install(FILES "${extra_files}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules COMPONENT ${NAMESPACE}_Development)
     endif()
 
     if (Argument_FILES)
-        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules)
+        install(FILES "${Argument_FILES}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/modules COMPONENT ${NAMESPACE}_Development)
     endif()
 
 endfunction(InstallFindModule)

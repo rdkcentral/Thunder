@@ -16,7 +16,7 @@ The following instructions will use the `CMAKE_INSTALL_PREFIX` option to install
 These instructions are based on Ubuntu 22.04 - you may need to change this for your distros package manager
 
 ```
-sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+sudo apt install build-essential pkg-config cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 ```
 
 Thunder also uses Python 3 for code and documentation generation scripts. Ensure you have at least **Python 3.5** installed and install the [**jsonref**](https://pypi.org/project/jsonref/) library with pip:
