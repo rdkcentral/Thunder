@@ -106,7 +106,8 @@ namespace PluginHost {
             ~WorkerPoolImplementation() override = default;
 
         public:
-            void Idle() {
+            void Idle() override
+            {
                 // Could be that we can now drop the dynamic library...
                 Core::ServiceAdministrator::Instance().FlushLibraries();
             }
@@ -867,7 +868,7 @@ namespace PluginHost {
 
                 Unlock();
             }
-            virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier)
+            Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) override
             {
                 Core::ProxyType<Core::JSON::IElement> result;
                 Lock();
@@ -4160,7 +4161,7 @@ namespace PluginHost {
             }
 
             // Whenever there is  a state change on the link, it is reported here.
-            void StateChange()
+            void StateChange() override
             {
                 TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
 
@@ -4417,7 +4418,11 @@ namespace PluginHost {
 
                 std::list<Core::callstack_info> stackList;
 
-                ::DumpCallStack((ThreadId)index.Current().Id.Value(), stackList);
+#ifdef __APPLE__
+                ::DumpCallStack(reinterpret_cast<ThreadId>(index.Current().Id.Value()), stackList);
+#else
+                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+#endif
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();

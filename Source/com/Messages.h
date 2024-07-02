@@ -253,7 +253,7 @@ namespace RPC {
                 if (parentInfo.empty() == false) {
                     const size_t delimiter = std::min(parentInfo.find(','), parentInfo.length());
 
-                    if (exchangeId == ~0UL) {
+                    if (exchangeId == static_cast<uint32_t>(~0UL)) {
                         exchangeId = Core::NumberType<uint32_t>(parentInfo.c_str(), static_cast<uint32_t>(delimiter)).Value();
                     }
 

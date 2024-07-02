@@ -22,17 +22,17 @@
 namespace Thunder {
 namespace Web {
 
-    /* static */ const TCHAR* Request::GET = _T("GET");
-    /* static */ const TCHAR* Request::HEAD = _T("HEAD");
-    /* static */ const TCHAR* Request::POST = _T("POST");
-    /* static */ const TCHAR* Request::PUT = _T("PUT");
-    /* static */ const TCHAR* Request::DELETE = _T("DELETE");
-    /* static */ const TCHAR* Request::OPTIONS = _T("OPTIONS");
-    /* static */ const TCHAR* Request::TRACE = _T("TRACE");
-    /* static */ const TCHAR* Request::CONNECT = _T("CONNECT");
-    /* static */ const TCHAR* Request::PATCH = _T("PATCH");
-    /* static */ const TCHAR* Request::MSEARCH = _T("M-SEARCH");
-    /* static */ const TCHAR* Request::NOTIFY = _T("NOTIFY");
+    /* static */ const TCHAR Request::GET[] = _T("GET");
+    /* static */ const TCHAR Request::HEAD[] = _T("HEAD");
+    /* static */ const TCHAR Request::POST[] = _T("POST");
+    /* static */ const TCHAR Request::PUT[] = _T("PUT");
+    /* static */ const TCHAR Request::DELETE[] = _T("DELETE");
+    /* static */ const TCHAR Request::OPTIONS[] = _T("OPTIONS");
+    /* static */ const TCHAR Request::TRACE[] = _T("TRACE");
+    /* static */ const TCHAR Request::CONNECT[] = _T("CONNECT");
+    /* static */ const TCHAR Request::PATCH[] = _T("PATCH");
+    /* static */ const TCHAR Request::MSEARCH[] = _T("M-SEARCH");
+    /* static */ const TCHAR Request::NOTIFY[] = _T("NOTIFY");
 }
 }
 
