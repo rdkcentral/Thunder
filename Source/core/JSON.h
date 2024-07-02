@@ -1280,7 +1280,7 @@ namespace Core {
 
                 if (_strValue.empty() == true) {
                     char str[16];
-                    std::sprintf(str, "%g", _value);
+                    std::snprintf(str, sizeof(str), "%g", _value);
                     const_cast<FloatType*>(this)->_strValue = str;
                 }
 
@@ -2324,7 +2324,7 @@ namespace Core {
                 return ((_length > 0) && ((_state & SET) != 0));
             }
 
-            bool IsNull() const
+            bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
             }
@@ -4738,7 +4738,7 @@ namespace Core {
                 return (Iterator(_elements));
             }
 
-            void Clear()
+            void Clear() override
             {
                 Reset();
                 _elements.clear();
