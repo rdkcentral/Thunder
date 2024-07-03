@@ -2303,7 +2303,7 @@
 <p>The following instructions will use the <code>CMAKE_INSTALL_PREFIX</code> option to install Thunder in a subdirectory of the current working directory instead of in the system-wide directories. This is recommended for development, but for production use you may need to change/remove this option to install Thunder in standard linux locations.</p>
 <h3 id="1-install-dependencies">1.  Install Dependencies</h3>
 <p>These instructions are based on Ubuntu 22.04 - you may need to change this for your distros package manager</p>
-<div class="highlight"><pre><span></span><code>sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+<div class="highlight"><pre><span></span><code>sudo apt install build-essential pkg-config cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 </code></pre></div>
 <p>Thunder also uses Python 3 for code and documentation generation scripts. Ensure you have at least <strong>Python 3.5</strong> installed and install the <a href="https://pypi.org/project/jsonref/"><strong>jsonref</strong></a> library with pip:</p>
 <div class="highlight"><pre><span></span><code>pip install jsonref
