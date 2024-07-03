@@ -80,15 +80,20 @@ namespace Core {
 
         uint32_t ob_size = 10;
         EXPECT_EQ(obj3.Size(),ob_size);
-//        ASSERT_FALSE(obj3.Expand(0,0));
-//        ASSERT_TRUE(obj3.Shrink(0,0));
-//        EXPECT_FALSE(obj3.Copy(obj2));
 
-        ASSERT_TRUE(obj3.Shrink(0, 1)); // Shrink by one elements
-        ASSERT_TRUE(obj3.Expand(1, 1)); // Expand by one element
-//        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.Size())); // No internal storage, but also no actual change in size
-//        ASSERT_TRUE(obj3.Expand(obj3.AllocatedSize()-obj3.Size()-1,obj3.AllocatedSize()));
-//        EXPECT_TRUE(obj3.Copy(obj2));
+        ASSERT_TRUE(obj3.Shrink(0, 1)); // Shrink by one element
+        EXPECT_EQ(obj3.Size(),ob_size - 1);
+        ASSERT_TRUE(obj3.Expand(0, 1)); // Expand by one element
+        EXPECT_EQ(obj3.Size(),ob_size);
+        ASSERT_TRUE(obj3.Shrink(1, 1));
+        EXPECT_EQ(obj3.Size(),ob_size - 1);
+        ASSERT_FALSE(obj3.Expand(1, 1)); // Not the owner of the underlying storage
+        EXPECT_EQ(obj3.Size(),ob_size - 1);
+        ASSERT_TRUE(obj3.Shrink(0, 0)); // Offset only
+        EXPECT_EQ(obj3.Size(),ob_size - 1);
+        ASSERT_TRUE(obj3.Expand(0, 1));
+        EXPECT_EQ(obj3.Size(),ob_size);
+        EXPECT_TRUE(obj3.Copy(obj2));
     }
 
     TEST(test_linkeddata, simple_linkeddata)
