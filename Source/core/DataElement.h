@@ -372,9 +372,9 @@ namespace Core {
             // Make sure we are not expanding beyond the size boundary
             ASSERT(size <= (m_MaxSize - m_Size));
 
-            if ((expanded = Size(size)) == true) {
+            if ((expanded = Size(m_Size + size)) == true) {
                 ASSERT(m_Offset < m_Size);
-                ASSERT((offset - m_Offset) < (m_MaxSize - m_Size));
+                ASSERT((offset - m_Offset) <= (m_MaxSize - m_Size));
 
                 // Shift all data back the beginning in..
                 ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
@@ -404,6 +404,7 @@ namespace Core {
             // Now the toal size is smaller, adjust
             shrunken = (size != m_Size) || (offset != m_Offset);
             m_Size -= size;
+            m_Offset = offset;
 
             return (shrunken);
         }
@@ -752,7 +753,7 @@ namespace Core {
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 // Reset the size to the maxSize...
                 m_Size = m_MaxSize - m_Offset;
-            } else if ((size + m_Offset) < m_MaxSize) {
+            } else if ((size + m_Offset) <= m_MaxSize) {
                 // It fits the allocated buffer, accept and reduce..
                 m_Size = size;
             } else {
