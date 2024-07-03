@@ -74,10 +74,6 @@ namespace Core {
         // then it is up to us.
         if (m_hThreadInstance == nullptr)
 #endif
-        std::string convertedName;
-        if (threadName != nullptr) {
-            Core::ToString(threadName, convertedName);
-        }
 
 #ifdef __POSIX__
             int err;
@@ -93,7 +89,6 @@ namespace Core {
             ASSERT(err == 0);
         }
 
-        m_threadName = convertedName;
         // If there is no thread, the "new" thread can also not free the destructor,
         // then it is up to us.
 
@@ -105,10 +100,16 @@ namespace Core {
             m_sigExit.SetEvent();
         }
 
+        std::string convertedName;
+        if (threadName != nullptr) {
+            Core::ToString(threadName, convertedName);
+        }
+
 #ifdef __POSIX__
         err = pthread_attr_destroy(&attr);
         ASSERT(err == 0);
         m_ThreadId = m_hThreadInstance;
+        m_threadName = convertedName;
 #else
         if (convertedName.empty() != true) {
             ThreadName(convertedName.c_str());
