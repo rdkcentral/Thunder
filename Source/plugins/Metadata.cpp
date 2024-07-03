@@ -144,9 +144,7 @@ namespace PluginHost
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#if THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
-#endif
         Add(_T("module"), &Module);
         Add(_T("version"), &ServiceVersion);
 
@@ -159,9 +157,7 @@ namespace PluginHost
         , ProcessedRequests(copy.ProcessedRequests)
         , ProcessedObjects(copy.ProcessedObjects)
 #endif
-#if THUNDER_RESTFULL_API
         , Observers(copy.Observers)
-#endif
         , ServiceVersion(copy.ServiceVersion)
         , Module(copy.Module)
         , InterfaceVersion(copy.InterfaceVersion)
@@ -171,9 +167,7 @@ namespace PluginHost
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#if THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
-#endif
         Add(_T("module"), &Module);
         Add(_T("version"), &ServiceVersion);
 

@@ -109,4 +109,5 @@
 #pragma comment(lib, "core.lib")
 #endif
 
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Core)
 #endif

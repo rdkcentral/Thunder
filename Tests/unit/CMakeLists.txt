@@ -23,9 +23,12 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs")
 
-include_directories(${GTEST_INCLUDE_DIR})
+if(NOT APPLE)
+    include_directories(${GTEST_INCLUDE_DIR})
+endif()
 
 SET(BASEPATH "${CMAKE_SOURCE_DIR}")
+
 include_directories(${BASEPATH}/Source)
 
 set(CMAKE_CXX_STANDARD 11)

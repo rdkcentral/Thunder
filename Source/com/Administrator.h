@@ -189,7 +189,9 @@ namespace RPC {
 
             Stubs::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
             if (stub != _stubs.end()) {
+PUSH_WARNING(DISABLE_WARNING_DELETE_INCOMPLETE)
                 delete stub->second;
+POP_WARNING()
                 _stubs.erase(ACTUALINTERFACE::ID);
             } else {
                 TRACE_L1("Failed to find a Stub for %d.", ACTUALINTERFACE::ID);

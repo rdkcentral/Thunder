@@ -121,7 +121,7 @@ namespace Web {
             ~DeserializerImpl() override = default;
 
         public:
-            void Deserialized(typename INBOUND::BaseElement& element)
+            void Deserialized(typename INBOUND::BaseElement& element) override
             {
                 ASSERT(&element == static_cast<typename INBOUND::BaseElement*>(&(*(_current))));
                 DEBUG_VARIABLE(element);

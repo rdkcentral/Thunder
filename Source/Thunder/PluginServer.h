@@ -106,7 +106,8 @@ namespace PluginHost {
             ~WorkerPoolImplementation() override = default;
 
         public:
-            void Idle() {
+            void Idle() override
+            {
                 // Could be that we can now drop the dynamic library...
                 Core::ServiceAdministrator::Instance().FlushLibraries();
             }
@@ -691,6 +692,7 @@ namespace PluginHost {
                 std::vector<PluginHost::ISubSystem::subsystem> _control;
                 string _versionHash;
             };
+
             static Core::NodeId PluginNodeId(const PluginHost::Config& config, const Plugin::Config& plugin) {
                 Core::NodeId result;
                 if (plugin.Communicator.IsSet() == true) {
@@ -866,7 +868,7 @@ namespace PluginHost {
 
                 Unlock();
             }
-            virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier)
+            Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) override
             {
                 Core::ProxyType<Core::JSON::IElement> result;
                 Lock();
@@ -1207,7 +1209,9 @@ namespace PluginHost {
 
                 void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
 
-                _connection = _administrator.RemoteConnection(sessionId);
+                if (result != nullptr) {
+                    _connection = _administrator.RemoteConnection(sessionId);
+                }
 
                 return (result);
             }
@@ -1378,16 +1382,17 @@ namespace PluginHost {
                     if (progressedState == 0) {
                         ErrorMessage(_T("library does not exist"));
                     }
-                    else if (progressedState == 2) {
+                    else if (progressedState == 1) {
                         ErrorMessage(_T("library could not be loaded"));
                     }
-                    else if (progressedState == 3) {
+                    else if (progressedState == 2) {
                         ErrorMessage(_T("library does not contain the right methods"));
                     }
                 }
 
                 return (result);
             }
+
             void AcquireInterfaces()
             {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
@@ -1406,13 +1411,35 @@ namespace PluginHost {
                     }
                 } else {
                     _library = LoadLibrary(locator);
-                    if (_library.IsLoaded() == false) {
-                        ErrorMessage(_T("Library could not be loaded"));
-                    }
-                    else {
-                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
-                            ErrorMessage(_T("class definitions/version does not exist"));
-                            _library = Core::Library();
+                    if (_library.IsLoaded() == true) { 
+                        if ((PluginHost::Service::Configuration().Root.IsSet() == false) || (PluginHost::Service::Configuration().Root.Mode.Value() == Plugin::Config::RootConfig::ModeType::OFF)) {
+                            if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
+                                ErrorMessage(_T("class definitions/version does not exist"));
+                                Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                            }
+                        }
+                        else {
+                            uint32_t pid;
+                            Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
+                            
+                            RPC::Object definition(locator,
+                                classNameString,
+                                Callsign(),
+                                IPlugin::ID,
+                                version,
+                                PluginHost::Service::Configuration().Root.User.Value(),
+                                PluginHost::Service::Configuration().Root.Group.Value(),
+                                PluginHost::Service::Configuration().Root.Threads.Value(),
+                                PluginHost::Service::Configuration().Root.Priority.Value(),
+                                PluginHost::Service::Configuration().Root.HostType(),
+                                SystemRootPath(),
+                                PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
+                                PluginHost::Service::Configuration().Root.Configuration.Value());
+
+                                newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
+                            if (newIF == nullptr) {
+                                ErrorMessage(_T("could not start the plugin in a detached mode"));
+                            }
                         }
                     }
                 }
@@ -1859,7 +1886,7 @@ namespace PluginHost {
             }; 
 
         private:
-           class CommunicatorServer : public RPC::Communicator {
+            class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
@@ -2518,6 +2545,8 @@ namespace PluginHost {
                 string _observerPath;
             };
 
+            using Channels = std::vector<uint32_t>;
+
         public:
             ServiceMap() = delete;
             ServiceMap(ServiceMap&&) = delete;
@@ -2553,6 +2582,9 @@ namespace PluginHost {
                 , _configObserver(*this, server._config.PluginConfigPath())
                 , _shellObservers()
                 , _channelObservers()
+                , _opened()
+                , _closed()
+                , _job(*this)
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
@@ -3109,23 +3141,25 @@ namespace PluginHost {
 
             void Opened(const uint32_t id)
             {
-                _notificationLock.Lock();
+                _adminLock.Lock();
+                _opened.push_back(id);
+                _adminLock.Unlock();
 
-                for (auto& sink : _channelObservers) {
-                    sink->Opened(id);
-                }
-
-                _notificationLock.Unlock();
+                _job.Submit();
             }
             void Closed(const uint32_t id)
             {
-                _notificationLock.Lock();
-
-                for (auto& sink : _channelObservers) {
-                    sink->Closed(id);
+                _adminLock.Lock();
+                Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
+                if (index != _opened.end()) {
+                    _opened.erase(index);
                 }
+                else {
+                    _closed.push_back(id);
+                }
+                _adminLock.Unlock();
 
-                _notificationLock.Unlock();
+                _job.Submit();
             }
 
         private:
@@ -3250,6 +3284,31 @@ namespace PluginHost {
                 return (_server.WorkerPool());
             }
 
+            friend class Core::ThreadPool::JobType<ServiceMap&>;
+            void Dispatch()
+            {
+                _adminLock.Lock();
+                Channels opened; opened.swap(_opened);
+                Channels closed; closed.swap(_closed);
+                _adminLock.Unlock();
+
+                _notificationLock.Lock();
+
+                for (uint32_t id : opened) {
+                    for (auto& sink : _channelObservers) {
+                        sink->Opened(id);
+                    }
+                }
+
+                for (uint32_t id : closed) {
+                    for (auto& sink : _channelObservers) {
+                        sink->Closed(id);
+                    }
+                }
+
+                _notificationLock.Unlock();
+            }
+
         private:
             Server& _server;
             mutable Core::CriticalSection _adminLock;
@@ -3264,6 +3323,9 @@ namespace PluginHost {
             ConfigObserver _configObserver;
             ShellNotifiers _shellObservers;
             ChannelObservers _channelObservers;
+            Channels _opened;
+            Channels _closed;
+            Core::ThreadPool::JobType<ServiceMap&> _job;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4099,7 +4161,7 @@ namespace PluginHost {
             }
 
             // Whenever there is  a state change on the link, it is reported here.
-            void StateChange()
+            void StateChange() override
             {
                 TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
 
@@ -4154,14 +4216,14 @@ namespace PluginHost {
 
                         if (callType == PluginHost::Request::JSONRPC) {
                             Properties(static_cast<uint32_t>(_parent._config.JSONRPCPrefix().length()) + 1);
-                            State(static_cast<Channel::ChannelState>(mode | ChannelState::JSONRPC), notification);
+                            State(static_cast<Channel::ChannelState>(mode), notification);
                             if (_service->Attach(*this) == false) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }
                         }
                         else if (callType == PluginHost::Request::RESTFULL) {
                             Properties(static_cast<uint32_t>(_parent._config.WebPrefix().length()) + 1);
-                            State(static_cast<Channel::ChannelState>(mode | ChannelState::WEB), notification);
+                            State(static_cast<Channel::ChannelState>(mode), notification);
                             if (((IsNotified() == true) && (_service->Subscribe(*this) == false)) || (_service->Attach(*this) == false)) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }
@@ -4356,7 +4418,11 @@ namespace PluginHost {
 
                 std::list<Core::callstack_info> stackList;
 
-                ::DumpCallStack((ThreadId)index.Current().Id.Value(), stackList);
+#ifdef __APPLE__
+                ::DumpCallStack(reinterpret_cast<ThreadId>(index.Current().Id.Value()), stackList);
+#else
+                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
+#endif
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();

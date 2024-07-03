@@ -2020,7 +2020,7 @@ namespace Core {
         ~SmallTest() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }
@@ -2049,7 +2049,7 @@ namespace Core {
         ~SmallTest2() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }
@@ -2152,7 +2152,7 @@ namespace Core {
 
         ~CommandRequest() override = default;
 
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }
