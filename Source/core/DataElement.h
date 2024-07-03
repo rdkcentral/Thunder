@@ -369,15 +369,19 @@ namespace Core {
 
             bool expanded = false;
 
-            // Make sure we are not shrinking beyond the size boundary
-            ASSERT(offset <= m_Size);
+            // Make sure we are not expanding beyond the size boundary
+            ASSERT(size <= (m_MaxSize - m_Size));
 
-            if (Size(size) == true) {
+            if ((expanded = Size(size)) == true) {
+                ASSERT(m_Offset < m_Size);
+                ASSERT((offset - m_Offset) < (m_MaxSize - m_Size));
+
                 // Shift all data back the beginning in..
-                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+                ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - m_Offset));
 
-                // Now the total size is smaller, adjust
-                m_Size += size;
+                // Now the total size is larger, adjust
+                expanded = (size != m_Size) || (offset != m_Offset);
+                m_Offset = offset;
             }
 
             return (expanded);
@@ -387,16 +391,21 @@ namespace Core {
        {
             ASSERT(IsValid());
 
-            // Make sure we are not shrinking beyond the size boundary
-            ASSERT(m_Size >= (offset + size));
+            bool shrunken = false;
 
-            // Now the toal size is smaller, adjust
-            m_Size -= size;
+            // Make sure we are not shrinking beyond the size boundary
+            ASSERT(size <= m_Size);
+            ASSERT(offset < (m_Size - size));
+            ASSERT(m_Offset < (m_Size - size));
 
             // Shift all data back the beginning in..
-            ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(offset) + size], static_cast<size_t>(m_Size - offset));
+            ::memmove(&m_Buffer[static_cast<size_t>(offset)], &m_Buffer[static_cast<size_t>(m_Offset)], static_cast<size_t>(m_Size - offset));
 
-            return (true);
+            // Now the toal size is smaller, adjust
+            shrunken = (size != m_Size) || (offset != m_Offset);
+            m_Size -= size;
+
+            return (shrunken);
         }
 
         bool Copy(const DataElement& RHS, const uint64_t offset = 0)
