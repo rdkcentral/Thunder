@@ -1083,6 +1083,8 @@ namespace PluginHost {
             }
             inline void GetMetadata(Metadata::Service& metaData) const
             {
+                PluginHost::Service::GetMetadata(metaData);
+
                 _pluginHandling.Lock();
 
                 if (_metadata.Major() != static_cast<uint8_t>(~0)) {
@@ -1100,10 +1102,17 @@ namespace PluginHost {
                 if (_metadata.IsValid() == true) {
                     metaData.Module = string(_metadata.Module());
                 }
+                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Precondition()) {
+                    metaData.Precondition.Add() = entry;
+                }
+                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Termination()) {
+                    metaData.Termination.Add() = entry;
+                }
+                for (const PluginHost::ISubSystem::subsystem& entry : _metadata.Control()) {
+                    metaData.Control.Add() = entry;
+                }
 
                 _pluginHandling.Unlock();
-
-                PluginHost::Service::GetMetadata(metaData);
             }
             inline void Evaluate()
             {
