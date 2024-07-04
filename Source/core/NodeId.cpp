@@ -224,6 +224,7 @@ namespace Core {
         const uint16_t nPortNumber,
         const enumType defaultType)
         : m_hostName()
+        , m_remoteHostName(strHostName)
     {
 
         m_structInfo.IPV4Socket.sin_family = TYPE_UNSPECIFIED;
@@ -241,6 +242,7 @@ namespace Core {
         const TCHAR strHostName[],
         const enumType defaultType)
         : m_hostName()
+        , m_remoteHostName(strHostName)
     {
 
         m_structInfo.IPV4Socket.sin_family = TYPE_UNSPECIFIED;
@@ -368,6 +370,7 @@ namespace Core {
         memcpy(&m_structInfo, &rInfo.m_structInfo, sizeof(m_structInfo));
 
         m_hostName = rInfo.m_hostName;
+        m_remoteHostName = rInfo.m_remoteHostName;
 
         // Give back our-selves.
         return (*this);
@@ -554,6 +557,12 @@ namespace Core {
         }
 
         return (m_hostName);
+    }
+
+    string
+    NodeId::RemoteHostName() const
+    {
+        return (m_remoteHostName);
     }
 
     void NodeId::HostName(const TCHAR strHostName[])
