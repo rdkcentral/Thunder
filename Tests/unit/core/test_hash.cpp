@@ -89,7 +89,7 @@ namespace Core {
 
         for (const unsigned char *ptr = buffer; ptr < buffer + length; ++ptr) {
             char buf[3];
-            sprintf(buf, "%02x", (*ptr)&0xff);
+            snprintf(buf, sizeof(buf), "%02x", (*ptr)&0xff);
             hash += buf;
         }
         return hash;

@@ -85,8 +85,10 @@ namespace RPC {
         }
 
     public:
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
         virtual uint32_t AddRef() const = 0;
         virtual uint32_t Release() const = 0;
+POP_WARNING()
 
         virtual bool IsValid() const override
         {

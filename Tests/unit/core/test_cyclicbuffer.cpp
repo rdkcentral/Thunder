@@ -27,6 +27,10 @@
 
 #include "../IPTestAdministrator.h"
 
+#ifdef __APPLE__
+#include <time.h>
+#endif
+
 namespace Thunder {
 namespace Tests {
 namespace Core {
