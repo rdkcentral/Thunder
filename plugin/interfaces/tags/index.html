@@ -3276,11 +3276,11 @@ When the function returns, the parameter will have the modified length value. Th
 </tr>
 <tr>
 <td><a href="#text">@text</a></td>
-<td>Renames identifier METHOD, PARAM, POD MEMBER, enum</td>
+<td>Renames identifier Method, Parameter, PoD Member, Enum, Interface</td>
 <td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">enum, Method paramters, Method names, PoD member</td>
+<td style="text-align: center;">Enum, Method parameter, Method name, PoD member, Interface</td>
 </tr>
 </tbody>
 </table>
@@ -3421,15 +3421,40 @@ The helper functions are defined in IIteratorType.h. </p>
 <hr/>
 
 <h4 id="text">@text</h4>
-<p>This tag is applicable to enums, function names and function parameters. </p>
+<p>This tag is applicable to enums, method names, method parameters, PoD members and whole interfaces. </p>
 <ul>
-<li>When used with enum, it will associate the enum values to the given text in the JSON code.</li>
-<li>When used in function names, it will replace the actual function name with the text that is given.</li>
-<li>When used in function parameter, it will replace the parameter name with the text that is given in the tag.</li>
+<li>When used for an enum value, it will associate the enum values to the given text in the JSON code while keeping the case of the given text as is.</li>
+<li>When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.</li>
+<li>When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.</li>
+<li>When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).</li>
+<li>When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.</li>
 </ul>
 <h5 id="example_21">Example</h5>
+<hr>
+
 <p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61">IBrowser.h</a> uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. </p>
 <p>Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.</p>
+</hr>
+<hr>
+
+<p><a href="https://github.com/rdkcentral/ThunderInterfaces/blob/ac6cd5e8fe6b1735d811ec85633d145e1c1d4945/interfaces/IDolby.h#L62">IDolby.h</a> uses this tag for method names. The generated code for this header will map the text for this method to the name 'soundmodechanged'. As can be seen @text can be combined with @alt if needed so in this case in the JSON-RPC interface this method can be called with both 'soundmodechanged' as well as 'dolby_audiomodechanged'</p>
+</hr>
+<hr>
+
+<p>In this example the names for PoD member 'One' will be mapped to 'First' and 'Two' will be mapped to 'Second' in the generated code. So in the JSON-RPC interface the JSON container names will be 'First' and 'Second' for these PoD members.
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">Example</span><span class="w"> </span><span class="p">{</span>
+</span><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">One</span><span class="w"> </span><span class="cm">/* @text First */</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">Two</span><span class="w"> </span><span class="cm">/* @text Second */</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+</code></pre></div>
+</hr></p>
+<hr>
+
+<p>In this example now for all enums, method names, method parameters and PoD member names the exact name as in the IExample interface will be used in the JSON generated code.</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="w">  </span><span class="cm">/* @json 1.0.0 @text:keep */</span>
+</span><span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IExample</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+</code></pre></div>
+</hr>
 <h3 id="json-rpc-documentation-related-tags">JSON-RPC Documentation Related Tags</h3>
 <table>
 <thead>
