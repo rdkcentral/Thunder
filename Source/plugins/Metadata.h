@@ -76,6 +76,22 @@ namespace PluginHost {
         public:
             Service& operator=(const Plugin::Config& RHS);
 
+            explicit operator Exchange::Controller::IMetadata::Data::Service() const {
+                Exchange::Controller::IMetadata::Data::Service result (Plugin::Config::operator Thunder::Exchange::Controller::IMetadata::Data::Service());
+
+                result.Module = Module;
+                result.State = JSONState;
+                result.Version = ServiceVersion;
+                result.Observers = Observers;
+
+#if THUNDER_RUNTIME_STATISTICS
+                result.ProcessedRequests = meta.ProcessedRequests;
+                result.ProcessedObjects = meta.ProcessedObjects;
+#endif
+
+                return result;
+            }
+
             State JSONState;
 #if THUNDER_RUNTIME_STATISTICS
             Core::JSON::DecUInt32 ProcessedRequests;

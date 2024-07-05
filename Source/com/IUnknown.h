@@ -155,7 +155,8 @@ namespace ProxyStub {
 
     public:
         uint32_t ReferenceCount() const {
-            return(_refCount);
+            // Subtract 1, as that is for the holding in the administration system here of the created Proxies
+            return(_refCount - 1);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls

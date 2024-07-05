@@ -728,9 +728,7 @@ namespace Plugin {
                     info.Instance = proxy->Implementation();
                     info.Interface = proxy->InterfaceId();
                     info.Name = Core::ClassName(proxy->Name()).Text();
-                    // Subtract one for the Thunder syatem that keeps track of this
-                    //proxy for leakage reporting!
-                    info.Count = proxy->ReferenceCount() - 1;
+                    info.Count = proxy->ReferenceCount();
                 }
             }
         );
@@ -1077,58 +1075,36 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
         std::list<IMetadata::Data::Service> services;
 
-        auto _Populate = [&services, this](const string& callsign, PluginHost::IShell* shell) -> void {
-
-            string info;
-            IMetadata::Data::Service service{};
-
-            if (shell->Metadata(info) == Core::ERROR_NONE) {
-                PluginHost::Metadata::Service meta;
-                meta.FromString(info);
-
-
-                service.Callsign = meta.Callsign;
-                service.Locator = meta.Locator;
-                service.ClassName = meta.ClassName;
-                service.Module = meta.Module;
-                service.StartMode = meta.StartMode;
-                service.State = meta.JSONState;
-                service.Version = meta.ServiceVersion;
-                service.Communicator = meta.Communicator;
-                service.PersistentPathPostfix = meta.PersistentPathPostfix;
-                service.VolatilePathPostfix = meta.VolatilePathPostfix;
-                service.SystemRootPath = meta.SystemRootPath;
-                service.Configuration = meta.Configuration;
-                service.Precondition = meta.Precondition;
-                service.Termination = meta.Termination;
-                service.Observers = meta.Observers;
-
-                #if THUNDER_RUNTIME_STATISTICS
-                service.ProcessedRequests = meta.ProcessedRequests;
-                service.ProcessedObjects = meta.ProcessedObjects;
-                #endif
-
-                // Make sure the list is sorted..
-                std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                while ((index != services.end()) && (index->Callsign < callsign)) {
-                    index++;
-                }
-                services.insert(index, service);
-            }
-        };
-
         if (callsign.empty() == true) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
-                _Populate(it.Current()->Callsign(), it.Current().operator->());
+                string info;
+                const string& callsign(it.Current()->Callsign());
+
+                if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
+                    PluginHost::Metadata::Service meta;
+                    meta.FromString(info);
+                    IMetadata::Data::Service service(meta);
+
+                    // Make sure the list is sorted..
+                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
+                    while ((index != services.end()) && (index->Callsign < callsign)) {
+                        index++;
+                    }
+                    services.insert(index, service);
+                }
             }
         }
         else {
             PluginHost::IShell* shell = _service->QueryInterfaceByCallsign<PluginHost::IShell>(callsign);
             if (shell != nullptr) {
-                _Populate(callsign, shell);
-                shell->Release();
+                string info;
+                if (shell->Metadata(info) == Core::ERROR_NONE) {
+                    PluginHost::Metadata::Service meta;
+                    meta.FromString(info);
+                    services.push_back(IMetadata::Data::Service(meta));
+                }
             }
         }
 
