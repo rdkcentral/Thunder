@@ -196,14 +196,15 @@ namespace Controller {
     struct EXTERNAL IEvents : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_EVENTS };
 
+        struct Event {
+            string Event;
+            string Params /* @opaque @optional */;
+            string CallSign /* @optional */;
+        };
+
         // @event
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_EVENTS_NOTIFICATION };
-
-            struct Event {
-                string event;
-                string params /* @opaque @optional */;
-            };
 
             // @text all
             // @brief Notifies all events forwarded by the framework
@@ -211,10 +212,7 @@ namespace Controller {
             //          All notifications send by any plugin are forwarded over the Controller socket as an event.
             // @param callsign: Origin of the message
             // @param data: Contents of the message
-            virtual void ForwardMessage(const string& callsign, const string& data /* @opaque */) = 0;
-
-            // @text all
-            virtual void ForwardEvent(const string& callsign, const Event& data) = 0;
+            virtual void ForwardMessage(const Event& data) = 0;
         };
     };
 
@@ -298,6 +296,7 @@ namespace Controller {
 
                 string Precondition /* @opaque @optional @brief Activation conditons */;
                 string Termination /* @opaque @optional @brief Deactivation conditions */;
+                string Control /* @opaque @optional @brief Conditions controlled by this service */;
 
                 string Configuration /* @opaque @optional @brief Plugin configuration */;
 
@@ -317,7 +316,7 @@ namespace Controller {
         // @property @alt:deprecated status
         // @brief Services metadata
         // @details If callsign is omitted, metadata of all services is returned.
-        virtual Core::hresult Services(const string& callsign /* @index @optional */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
+        virtual Core::hresult Services(const string& callsign /* @optional @index */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 
         // @property
         // @brief Connections list

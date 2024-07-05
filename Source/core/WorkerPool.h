@@ -398,7 +398,7 @@ POP_WARNING()
 
             return (result);
         }
-        const Metadata& Snapshot() const
+        const Metadata& Snapshot() const override
         {
             _metadata.Slot[0].WorkerId = _timer.ThreadId();
             _metadata.Slot[0].Runs = _timer.Pending();

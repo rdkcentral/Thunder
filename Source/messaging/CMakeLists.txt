@@ -72,7 +72,7 @@ target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
 
 install(
@@ -95,8 +95,8 @@ include(CreateLink)
 InstallCompatibleCMakeConfig( 
         TARGET ${TARGET}
         LEGACY_TARGET ${NAMESPACE}Tracing
-        LEGACY_INCLUDE_DIR  "include/${NAMESPACE}"
-        LEGACY_PUBLIC_HEADER_LOCATION "include/${NAMESPACE}/tracing") 
+        LEGACY_INCLUDE_DIR  "${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}"
+        LEGACY_PUBLIC_HEADER_LOCATION "${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/tracing") 
 
 createlink(
         LINK ${CMAKE_CURRENT_BINARY_DIR}/tracing.h

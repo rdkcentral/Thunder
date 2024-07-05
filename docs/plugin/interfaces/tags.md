@@ -225,7 +225,7 @@ In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166b
 |[@index](#index)|Marks an index parameter to a property or notification | | No| Yes|Method paramter|
 |[@opaque](#opaque)| Indicates that a string parameter is an opaque JSON object | | No | Yes |Method parameter|
 |[@alt](#alt)| Provides an alternative name a method can by called by | | No | Yes |Method|
-|[@text](#text)| Renames identifier METHOD, PARAM, POD MEMBER, enum | | No | Yes |enum, Method paramters, Method names, PoD member|
+|[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -403,17 +403,47 @@ Provide an alternative name for the method. JSON-RPC methods will be generated f
 <hr/>
 
 #### @text
-This tag is applicable to enums, function names and function parameters. 
+This tag is applicable to enums, method names, method parameters, PoD members and whole interfaces. 
 
-* When used with enum, it will associate the enum values to the given text in the JSON code.
-* When used in function names, it will replace the actual function name with the text that is given.
-* When used in function parameter, it will replace the parameter name with the text that is given in the tag.
+* When used for an enum value, it will associate the enum values to the given text in the JSON code while keeping the case of the given text as is.
+* When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.
+* When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.
+* When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).
+* When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.
 
 ##### Example
+<hr>
 
 [IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61) uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. 
 
 Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.
+
+</hr>
+<hr>
+
+[IDolby.h](https://github.com/rdkcentral/ThunderInterfaces/blob/ac6cd5e8fe6b1735d811ec85633d145e1c1d4945/interfaces/IDolby.h#L62) uses this tag for method names. The generated code for this header will map the text for this method to the name 'soundmodechanged'. As can be seen @text can be combined with @alt if needed so in this case in the JSON-RPC interface this method can be called with both 'soundmodechanged' as well as 'dolby_audiomodechanged'
+
+</hr>
+<hr>
+
+In this example the names for PoD member 'One' will be mapped to 'First' and 'Two' will be mapped to 'Second' in the generated code. So in the JSON-RPC interface the JSON container names will be 'First' and 'Second' for these PoD members.
+```cpp hl_lines="1"
+	struct EXTERNAL Example {
+		uint32_t One /* @text First */;
+		uint32_t Two /* @text Second */;
+	};
+```
+</hr>
+<hr>
+
+In this example now for all enums, method names, method parameters and PoD member names the exact name as in the IExample interface will be used in the JSON generated code.
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:keep */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+
+</hr>
 
 
 
