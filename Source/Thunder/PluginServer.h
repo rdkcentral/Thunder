@@ -55,8 +55,6 @@ namespace Plugin {
 
 namespace PluginHost {
 
-    EXTERNAL string ChannelIdentifier (const Core::SocketPort& input);
-
     class Server {
     public:
         static const TCHAR* ConfigFile;
@@ -3062,14 +3060,9 @@ namespace PluginHost {
                         entry.ID = element.Extension().Id();
 
                         entry.Activity = element.Source().IsOpen();
-                        entry.JSONState = Metadata::Channel::state::COMRPC;
+                        entry.State = Metadata::Channel::state::COMRPC;
                         entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
-
-                        string identifier = ChannelIdentifier(element.Source());
-
-                        if (identifier.empty() == false) {
-                            entry.Remote = identifier;
-                        }
+                        entry.Remote = element.Source().RemoteId();
                     });
                     _adminLock.Unlock();
             }
@@ -4224,14 +4217,12 @@ namespace PluginHost {
                         }
 
                         if (callType == PluginHost::Request::JSONRPC) {
-                            Properties(static_cast<uint32_t>(_parent._config.JSONRPCPrefix().length()) + 1);
                             State(static_cast<Channel::ChannelState>(mode), notification);
                             if (_service->Attach(*this) == false) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
                             }
                         }
                         else if (callType == PluginHost::Request::RESTFULL) {
-                            Properties(static_cast<uint32_t>(_parent._config.WebPrefix().length()) + 1);
                             State(static_cast<Channel::ChannelState>(mode), notification);
                             if (((IsNotified() == true) && (_service->Subscribe(*this) == false)) || (_service->Attach(*this) == false)) {
                                 AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));

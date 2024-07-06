@@ -714,24 +714,24 @@ namespace Plugin {
     }
 
     void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
-        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
-            {
-                PluginHost::Metadata::COMRPC& entry(response.Add());
-                const Core::SocketPort* connection = proxies.front()->Socket();
+        //RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
+        //    {
+        //        PluginHost::Metadata::COMRPC& entry(response.Add());
+        //        const Core::SocketPort* connection = proxies.front()->Socket();
 
-                if (connection != nullptr) {
-                    entry.Remote = PluginHost::ChannelIdentifier(*connection);
-                }
+        //        if (connection != nullptr) {
+        //            entry.Remote = PluginHost::ChannelIdentifier(*connection);
+        //        }
 
-                for (const auto& proxy : proxies) {
-                    PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-                    info.Instance = proxy->Implementation();
-                    info.Interface = proxy->InterfaceId();
-                    info.Name = Core::ClassName(proxy->Name()).Text();
-                    info.Count = proxy->ReferenceCount();
-                }
-            }
-        );
+        //        for (const auto& proxy : proxies) {
+        //            PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
+        //            info.Instance = proxy->Implementation();
+        //            info.Interface = proxy->InterfaceId();
+        //            info.Name = Core::ClassName(proxy->Name()).Text();
+        //            info.Count = proxy->ReferenceCount();
+        //        }
+        //    }
+        //);
     }
 
     void Controller::SubSystems()
@@ -1170,7 +1170,7 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 auto const& entry = it.Current();
-                links.push_back({ entry.Remote.Value(), entry.JSONState.Value(), entry.Name.Value(), entry.ID.Value(), entry.Activity.Value() });
+                links.push_back({ entry.Remote.Value(), entry.State.Value(), entry.Name.Value(), entry.ID.Value(), entry.Activity.Value() });
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
@@ -1189,54 +1189,17 @@ namespace Plugin {
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        Core::JSON::ArrayType<PluginHost::Metadata::Channel> meta;
-       _pluginServer->Services().GetMetadata(meta);
+        using Iterator = IMetadata::Data::IProxiesIterator;
 
-        Core::JSON::ArrayType<PluginHost::Metadata::COMRPC> comrpc;
-        Proxies(comrpc);
+        RPC::Administrator::Proxies collection;
 
-        string link;
-        std::list<IMetadata::Data::Proxy> proxies;
+        // Search for the Dangling proxies
+        if (RPC::Administrator::Instance().Allocations(linkId, collection) == true) {
 
-        auto it = meta.Elements();
-
-        while (it.Next() == true) {
-
-            if (it.Current().ID.Value() == linkId) {
-                link = it.Current().Remote.Value();
-                break;
-            }
-        }
-
-        if (link.empty() == false) {
-            auto it = comrpc.Elements();
-
-            while (it.Next() == true) {
-
-                if (it.Current().Remote.Value() == link) {
-                    auto it2 = it.Current().Proxies.Elements();
-
-                    while (it2.Next() == true) {
-                        auto const& entry = it2.Current();
-
-                        proxies.push_back({ entry.Interface.Value(), entry.Name.Value(), entry.Instance.Value(), entry.Count.Value() });
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        if (proxies.empty() == false) {
-            using Iterator = IMetadata::Data::IProxiesIterator;
-
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(proxies);
+ //           outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(collection);
             ASSERT(outProxies != nullptr);
 
             result = Core::ERROR_NONE;
-        }
-        else {
-            outProxies = nullptr;
         }
 
         return (result);

@@ -119,7 +119,7 @@ namespace RPC {
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.LinkId()));
+        ChannelMap::iterator index(_channelProxyMap.find(proxy.Id()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -197,7 +197,7 @@ namespace RPC {
             if (result == false) {
                 _adminLock.Lock();
 
-                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel->LinkId()));
+                ReferenceMap::const_iterator index(_channelReferenceMap.find(channel->Id()));
                 const Core::IUnknown* unknown = Convert(reinterpret_cast<void*>(impl), id);
 
                 result = ((index != _channelReferenceMap.end()) &&
@@ -224,7 +224,7 @@ namespace RPC {
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(channel->LinkId()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel->Id()));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.begin());
@@ -256,7 +256,7 @@ namespace RPC {
 
             if (channel.IsValid() == true) {
 
-                uintptr_t channelId(channel->LinkId());
+                uint32_t channelId(channel->Id());
                 ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
                 if (index != _channelProxyMap.end()) {
@@ -310,7 +310,7 @@ namespace RPC {
         ASSERT(reference != nullptr);
         ASSERT(channel.IsValid() == true);
 
-        uintptr_t channelId(channel->LinkId());
+        uint32_t channelId(channel->Id());
         ReferenceMap::iterator index = _channelReferenceMap.find(channelId);
 
         if (index == _channelReferenceMap.end()) {
@@ -358,7 +358,7 @@ namespace RPC {
         ASSERT(source != nullptr);
         ASSERT(channel.IsValid() == true);
 
-        ReferenceMap::iterator index(_channelReferenceMap.find(channel->LinkId()));
+        ReferenceMap::iterator index(_channelReferenceMap.find(channel->Id()));
 
         if (index != _channelReferenceMap.end()) {
             std::list< RecoverySet >::iterator element(index->second.begin());
@@ -401,7 +401,7 @@ namespace RPC {
     {
         _adminLock.Lock();
 
-        uintptr_t channelId(channel->LinkId());
+        uint32_t channelId(channel->Id());
         ReferenceMap::iterator remotes(_channelReferenceMap.find(channelId));
 
         if (remotes != _channelReferenceMap.end()) {

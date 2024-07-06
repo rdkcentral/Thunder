@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "Thread.h"
 #include "Timer.h"
+#include "Number.h"
 
 #ifdef __POSIX__
 #include <arpa/inet.h>
@@ -666,6 +667,16 @@ namespace Thunder {
         //////////////////////////////////////////////////////////////////////
         // PRIVATE SocketPort interface
         //////////////////////////////////////////////////////////////////////
+        string SocketPort::Identifier(const NodeId& node) const {
+            string result;
+            if (node.Type() == Core::NodeId::enumType::TYPE_DOMAIN) {
+                result = node.HostName() + '@' + Core::NumberType<uint32_t>(static_cast<uint32_t>(Descriptor())).Text();
+            }
+            else {
+                result = node.HostName() + '@' + Core::NumberType<uint16_t>(static_cast<uint32_t>(node.PortNumber())).Text();
+            }
+            return (result);
+        }
 
         void SocketPort::BufferAlignment(SOCKET socket)
         {
