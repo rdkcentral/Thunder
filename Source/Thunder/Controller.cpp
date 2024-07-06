@@ -714,24 +714,8 @@ namespace Plugin {
     }
 
     void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
-        //RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
-        //    {
-        //        PluginHost::Metadata::COMRPC& entry(response.Add());
-        //        const Core::SocketPort* connection = proxies.front()->Socket();
-
-        //        if (connection != nullptr) {
-        //            entry.Remote = PluginHost::ChannelIdentifier(*connection);
-        //        }
-
-        //        for (const auto& proxy : proxies) {
-        //            PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-        //            info.Instance = proxy->Implementation();
-        //            info.Interface = proxy->InterfaceId();
-        //            info.Name = Core::ClassName(proxy->Name()).Text();
-        //            info.Count = proxy->ReferenceCount();
-        //        }
-        //    }
-        //);
+        // Create a RESTFul implementation
+        ASSERT(false);
     }
 
     void Controller::SubSystems()
@@ -1188,8 +1172,6 @@ namespace Plugin {
     Core::hresult Controller::Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-
-        using Iterator = IMetadata::Data::IProxiesIterator;
 
         RPC::Administrator::Proxies collection;
 

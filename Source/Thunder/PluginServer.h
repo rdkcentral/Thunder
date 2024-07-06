@@ -3061,7 +3061,7 @@ namespace PluginHost {
 
                         entry.Activity = element.Source().IsOpen();
                         entry.State = Metadata::Channel::state::COMRPC;
-                        entry.Name = string(EXPAND_AND_QUOTE(APPLICATION_NAME) "::Communicator");
+                        entry.Name = string("/" EXPAND_AND_QUOTE(APPLICATION_NAME) "/Communicator");
                         entry.Remote = element.Source().RemoteId();
                     });
                     _adminLock.Unlock();
