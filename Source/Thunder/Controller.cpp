@@ -506,11 +506,6 @@ namespace Plugin {
             _pluginServer->Metadata(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
         }
-        else if (index.Current() == _T("Proxies")) {
-            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>>> response(jsonBodyProxiesFactory.Element());
-            Proxies(*response);
-            result->Body(Core::ProxyType<Web::IBody>(response));
-        }
 
         return (result);
     }
@@ -711,11 +706,6 @@ namespace Plugin {
                 _resumes.erase(index);
             }
         }
-    }
-
-    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>&) const {
-        // Create a RESTFul implementation
-        ASSERT(false);
     }
 
     void Controller::SubSystems()
@@ -1178,7 +1168,21 @@ namespace Plugin {
         // Search for the Dangling proxies
         if (RPC::Administrator::Instance().Allocations(linkId, collection) == true) {
 
- //           outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(collection);
+            using Iterator = IMetadata::Data::IProxiesIterator;
+
+            std::list< IMetadata::Data::Proxy> elements;
+
+            for (const ProxyStub::UnknownProxy* proxy : collection) {
+                IMetadata::Data::Proxy data;
+                data.Instance = proxy->Implementation();
+                data.Interface = proxy->InterfaceId();
+                data.Count = proxy->ReferenceCount();
+                data.Name = proxy->Name();
+
+                elements.emplace_back(std::move(data));
+            }
+
+            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(elements));
             ASSERT(outProxies != nullptr);
 
             result = Core::ERROR_NONE;
