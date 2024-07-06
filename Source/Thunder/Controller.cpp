@@ -713,7 +713,7 @@ namespace Plugin {
         }
     }
 
-    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
+    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>&) const {
         // Create a RESTFul implementation
         ASSERT(false);
     }
