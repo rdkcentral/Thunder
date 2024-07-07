@@ -620,10 +620,12 @@ namespace RPC {
             uint32_t Launch() override {
                 return (Core::ERROR_UNAVAILABLE);
             }
-
             inline bool IsOperational() const
             {
                 return (_channel.IsValid() == true);
+            }
+            const Core::NodeId& RemoteNode() const {
+                return(_channel->Source().RemoteNode());
             }
             inline Core::ProxyType<Core::IPCChannel> Channel()
             {
@@ -1545,7 +1547,6 @@ POP_WARNING()
         {
             return _hardKillCheckWaitTime;
         }
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
