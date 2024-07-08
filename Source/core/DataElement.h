@@ -184,9 +184,9 @@ namespace Core {
         }
         inline DataElement(const ProxyType<DataStore>& buffer, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(buffer)
-            , m_Buffer(buffer->Size() > offset ? &(buffer->Buffer())[offset] : nullptr)
+            , m_Buffer(&(buffer->Buffer())[offset])
             , m_Offset(offset)
-            , m_Size(buffer->Size() > offset ? buffer->Size() - offset : 0)
+            , m_Size(buffer->Size() - offset)
             , m_MaxSize(buffer->Size())
         {
             ASSERT(buffer.IsValid());
@@ -233,7 +233,7 @@ namespace Core {
 
         inline DataElement(const DataElement& RHS, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(RHS.m_Storage)
-            , m_Buffer(RHS.Size() > offset ? &(RHS.m_Buffer[offset]) : nullptr)
+            , m_Buffer(&(RHS.m_Buffer[offset]))
             , m_Offset(RHS.m_Offset + offset)
             , m_Size(RHS.m_Size - offset)
             , m_MaxSize(RHS.m_MaxSize)
@@ -262,7 +262,7 @@ namespace Core {
         }
         inline DataElement(DataElement&& move, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(std::move(move.m_Storage))
-            , m_Buffer(move.m_Size > offset ? &(move.m_Buffer[offset]) : nullptr)
+            , m_Buffer(&(move.m_Buffer[offset]))
             , m_Offset(move.m_Offset + offset)
             , m_Size(move.m_Size - offset)
             , m_MaxSize(move.m_MaxSize)
