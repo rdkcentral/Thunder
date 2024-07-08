@@ -121,21 +121,16 @@ namespace Core {
         {
             static CriticalSection g_AdminLock;
 
-            // Hmm Double Lock syndrom :-)
+            g_AdminLock.Lock();
+
             if (g_TypedSingleton == nullptr) {
-                g_AdminLock.Lock();
-
-                if (g_TypedSingleton == nullptr) {
-                    // Create a singleton
-                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
-                }
-
-                g_AdminLock.Unlock();
+                // Create a singleton
+                SingletonType<SINGLETON>::Create(std::forward<Args>(args)...);
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            g_AdminLock.Unlock();
 
-            return *(g_TypedSingleton);
+            return (GetObject(TemplateIntToType<false>()));
         }
 
         inline static SINGLETON& Instance() {
@@ -155,13 +150,18 @@ namespace Core {
         template <typename... Args>
         inline static void Create(Args&&... args)
         {
+            static CriticalSection g_AdminLock;
+
+            g_AdminLock.Lock();
+
             ASSERT(g_TypedSingleton == nullptr);
 
             if (g_TypedSingleton == nullptr) {
-
                 // Create a singleton
                 g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
             }
+
+            g_AdminLock.Unlock();
 
             ASSERT(g_TypedSingleton != nullptr);
         }
