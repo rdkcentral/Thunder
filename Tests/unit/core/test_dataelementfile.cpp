@@ -17,90 +17,98 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class DataFile: public Core::DataElementFile
-{
-public:
-    DataFile() = delete;
-
-    DataFile(File& file)
-        : DataElementFile(file, File::USER_READ)
+    class DataFile: public ::Thunder::Core::DataElementFile
     {
-    }
+    public:
+        DataFile() = delete;
 
-    DataFile(string fileName, uint32_t type, uint32_t size)
-        :DataElementFile(fileName, type, size)
+        DataFile(::Thunder::Core::File& file)
+            : ::Thunder::Core::DataElementFile(file, ::Thunder::Core::File::USER_READ)
+        {
+        }
+
+        DataFile(string fileName, uint32_t type, uint32_t size)
+            : ::Thunder::Core::DataElementFile(fileName, type, size)
+        {
+        }
+
+        void MemoryMap()
+        {
+            Reallocation(54);
+            ReopenMemoryMappedFile();
+        }
+    };
+
+    TEST(test_datafile, simple_test)
     {
-    }
-
-    void MemoryMap()
-    {
-        Reallocation(54);
-        ReopenMemoryMappedFile();
-    }
-};
-
-TEST(test_datafile, simple_test)
-{
-    const string fileName = "dataFile.txt";
-    const string message = ">echo 'DataElement file checking......'";
-    string buffer = message + fileName;
+        const string fileName = "dataFile.txt";
+        const string message = ">echo 'DataElement file checking......'";
+        string buffer = message + fileName;
 
 #ifdef __POSIX__
-    errno = 0;
+        errno = 0;
 #endif
 
-    File file(fileName);
+        ::Thunder::Core::File file(fileName);
 
-    ASSERT_FALSE(file.Exists());
+        ASSERT_FALSE(file.Exists());
 
-     // Always for a non-existing file
+         // Always for a non-existing file
 #ifdef __WINDOWS__
-    EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ERROR_FILE_NOT_FOUND));
+        EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ERROR_FILE_NOT_FOUND));
 #endif
 #ifdef __POSIX__
-    EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ENOENT));
+        EXPECT_EQ(file.ErrorCode(), static_cast<uint32_t>(ENOENT));
 #endif
 
-    ASSERT_TRUE(file.Create(true));
-    EXPECT_EQ(file.IsOpen(), true);
-    EXPECT_EQ(file.Name(), fileName);
+        ASSERT_TRUE(file.Create(true));
+        EXPECT_EQ(file.IsOpen(), true);
+        EXPECT_EQ(file.Name(), fileName);
 
 #ifdef __POSIX__
-    errno = 0;
+        errno = 0;
 #endif
 
-    DataFile obj1(file);
+        DataFile obj1(file);
 #ifdef __WINDOWS__
-    EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(ERROR_SUCCESS));
+        EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(ERROR_SUCCESS));
 #endif
 #ifdef __POSIX__
-    EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(0));
+        EXPECT_EQ(obj1.ErrorCode(), static_cast<uint32_t>(0));
 #endif
 
-    DataFile object(fileName, 1, 10);
-    DataFile obj2(fileName, 1, 50);
+        DataFile object(fileName, 1, 10);
+        DataFile obj2(fileName, 1, 50);
 
-    obj1.Sync();
-    obj2.MemoryMap();
+        obj1.Sync();
+        obj2.MemoryMap();
 
-    const string& name = obj1.Name();
+        const string& name = obj1.Name();
 
-    EXPECT_EQ(name.c_str(), fileName);
-    EXPECT_EQ(obj2.IsValid(), true);
+        EXPECT_EQ(name.c_str(), fileName);
+        EXPECT_EQ(obj2.IsValid(), true);
 
-    const File& obj1File = obj1.Storage();
-    EXPECT_STREQ(obj1File.FileName().c_str(), file.FileName().c_str());
+        const ::Thunder::Core::File& obj1File = obj1.Storage();
+        EXPECT_STREQ(obj1File.FileName().c_str(), file.FileName().c_str());
 
-    obj1.ReloadFileInfo();
-    obj1.MemoryMap();
+        obj1.ReloadFileInfo();
+        obj1.MemoryMap();
 
-    EXPECT_TRUE(file.Destroy());
-}
+        EXPECT_TRUE(file.Destroy());
+    }
+
+} // Core
+} // Tests
+} // Thunder

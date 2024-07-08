@@ -34,9 +34,8 @@ namespace Thunder {
         {
             return (str[i] == '/' || str[i] == '\\') ? i + 1 : (i > 0 ? FileNameOffset(str, i - 1) : 0);
         }
-
         template <typename T>
-        inline constexpr size_t FileNameOffset(T(&str)[1])
+        inline constexpr size_t FileNameOffset(T(&str)[1] VARIABLE_IS_NOT_USED)
         {
             return 0;
         }
@@ -52,11 +51,13 @@ namespace Thunder {
 #include <sys/syscall.h>
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
-#include <unistd.h>
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else
 #define TRACE_THREAD_ID static_cast<uint32_t>(::gettid())
+#endif
+#ifndef __APPLE__
+#include <unistd.h>
 #endif
 #endif
 #endif
@@ -75,9 +76,10 @@ namespace Thunder {
     } while (0)
 #else
 #if INTPTR_MAX == INT64_MAX
+#include <inttypes.h>
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%ld>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%" PRId64 ">" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else

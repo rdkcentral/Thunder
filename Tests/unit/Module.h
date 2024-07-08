@@ -17,4 +17,8 @@
  * limitations under the License.
  */
 
-#include <messaging/messaging.h>
+#pragma once
+
+#ifndef MODULE_NAME
+#define MODULE_NAME ThunderUnitTests
+#endif

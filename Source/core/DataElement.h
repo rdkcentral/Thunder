@@ -189,7 +189,7 @@ namespace Core {
             , m_MaxSize(RHS.m_MaxSize)
         {
         }
-        inline DataElement(DataElement&& move)
+        inline DataElement(DataElement&& move) noexcept
             : m_Storage(std::move(move.m_Storage))
             , m_Buffer(move.m_Buffer)
             , m_Offset(move.m_Offset)
@@ -248,7 +248,7 @@ namespace Core {
 
             return (*this);
         }
-        inline DataElement& operator=(DataElement&& move)
+        inline DataElement& operator=(DataElement&& move) noexcept
         {
             if (this != &move) {
                 m_Size = move.m_Size;
@@ -285,7 +285,9 @@ namespace Core {
                 m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
 
                 if (adjust != 0) {
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
                     TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!", adjust, m_Buffer);
+POP_WARNING()
                 }
             }
         }
@@ -800,7 +802,7 @@ namespace Core {
             // Don't set the size bigger than the cummulated one!!!
             ASSERT(offset + size < RHS.LinkedSize());
         }
-        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0)
+        inline LinkedDataElement(LinkedDataElement&& move, const uint64_t offset = 0, const uint64_t size = 0) noexcept
             : DataElement(move, offset, (offset + size > move.Size() ? 0 : size))
             , m_Next(move.m_Next)
         {
@@ -824,7 +826,7 @@ namespace Core {
 
             return (*this);
         }
-        inline LinkedDataElement& operator=(LinkedDataElement&& move)
+        inline LinkedDataElement& operator=(LinkedDataElement&& move) noexcept
         {
             if (this != &move) {
                 DataElement::operator=(move);

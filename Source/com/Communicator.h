@@ -32,7 +32,7 @@
 
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
+#include <processcontainers/ProcessContainer.h>
 #endif
 
 
@@ -83,7 +83,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(Object&& move)
+        Object(Object&& move) noexcept
             : _locator(std::move(move._locator))
             , _className(std::move(move._className))
             , _callsign(std::move(move._callsign))
@@ -151,7 +151,7 @@ namespace RPC {
         }
 
 
-        Object& operator=(Object&& move)
+        Object& operator=(Object&& move) noexcept
         {
             if (this != &move) {
                 _locator = std::move(move._locator);
@@ -297,7 +297,7 @@ namespace RPC {
             , _postMortem(copy._postMortem)
         {
         }
-	Config(Config&& move)
+	Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -620,10 +620,12 @@ namespace RPC {
             uint32_t Launch() override {
                 return (Core::ERROR_UNAVAILABLE);
             }
-
             inline bool IsOperational() const
             {
                 return (_channel.IsValid() == true);
+            }
+            const Core::NodeId& RemoteNode() const {
+                return(_channel->Source().RemoteNode());
             }
             inline Core::ProxyType<Core::IPCChannel> Channel()
             {
@@ -661,7 +663,6 @@ namespace RPC {
 
     private:
         friend class ProcessShutdown;
-        class RemoteConnectionMap;
 
         class MonitorableProcess : public RemoteConnection, public IMonitorableProcess {
         public:
@@ -1546,7 +1547,6 @@ POP_WARNING()
         {
             return _hardKillCheckWaitTime;
         }
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
@@ -1841,7 +1841,7 @@ POP_WARNING()
             // Lock event until Dispatch() sets it.
             return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
         }
-        virtual void Dispatch(Core::IIPC& element);
+        void Dispatch(Core::IIPC& element) override;
 
     protected:
         void StateChange() override;

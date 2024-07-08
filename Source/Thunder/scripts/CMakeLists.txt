@@ -17,6 +17,7 @@
 
 option(SYSTEMD_SERVICE "Install the systemd service" OFF)
 option(INITV_SCRIPT "Install the initv script" ON)
+option(UDEV_VIDEO_RULE "Install the a thunder tailored udev rule to access the video device" OFF)
 
 if (SYSTEMD_SERVICE)
     set(SYSTEMD_EXTRA_DEPENDS "" CACHE STRING "Adds extra dependecies to the systemd service")
@@ -26,7 +27,7 @@ if (SYSTEMD_SERVICE)
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder.service
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/../${SYSTEMD_INSTALL_PATH}/system/ 
+            DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/systemd/system/ 
             COMPONENT ${NAMESPACE}_Runtime
     )
 
@@ -43,8 +44,33 @@ if (INITV_SCRIPT)
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             RENAME S${SYSV_INIT_LEVEL}thunder
-            DESTINATION ../${CMAKE_INSTALL_SYSCONFDIR}/init.d/ 
+            DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/init.d/ 
             COMPONENT ${NAMESPACE}_Runtime
     )
 endif()
 
+if (UDEV_VIDEO_RULE)
+    set(PLATFORM_UDEV_VIDEO_LEVEL "20" CACHE STRING "Level of the udev rule")
+    set(PLATFORM_VIDEO_SUBSYSTEM "" CACHE STRING "Subsystem to set the video group to be set on")
+    set(PLATFORM_VIDEO_DEVICE_GROUP "" CACHE STRING "Group name that needs access to the video device")
+
+    if(NOT "${PLATFORM_VIDEO_SUBSYSTEM}" STREQUAL "" AND NOT "${PLATFORM_VIDEO_DEVICE_GROUP}" STREQUAL "")
+        set(UDEV_RULE_SUBSYSTEM "${PLATFORM_VIDEO_SUBSYSTEM}")
+        set(UDEV_RULE_GROUP "${PLATFORM_VIDEO_DEVICE_GROUP}")
+
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/set-subsystem-group-udev.rules.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/video-device-udev.rules" @ONLY)
+
+        unset(UDEV_RULE_SUBSYSTEM)
+        unset(UDEV_RULE_GROUP)
+
+        install(
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/video-device-udev.rules
+                PERMISSIONS OWNER_WRITE OWNER_READ
+                RENAME ${PLATFORM_UDEV_VIDEO_LEVEL}-thunder-video-device-udev.rules
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}/udev/rules.d
+                COMPONENT ${NAMESPACE}_Runtime
+        )
+    else()
+        message(SEND_ERROR "Udev video device rule is enabled, but there is missing information.")
+    endif()
+endif()

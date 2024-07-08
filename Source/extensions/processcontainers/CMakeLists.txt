@@ -24,8 +24,6 @@ option(PROCESSCONTAINERS_RUNC
         "Use RunC backend." OFF)
 option(PROCESSCONTAINERS_CRUN
         "Use CRun backend." OFF)
-option(PROCESSCONTAINERS_CLIB
-        "Use c-library backend." OFF)
 option(PROCESSCONTAINERS_DOBBY
         "Use Dobby backend." OFF)
 option(PROCESSCONTAINERS_AWC
@@ -45,8 +43,6 @@ elseif(PROCESSCONTAINERS_RUNC)
 elseif(PROCESSCONTAINERS_CRUN)
         target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp
         )
-elseif(PROCESSCONTAINERS_CLIB)
-        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 elseif(PROCESSCONTAINERS_DOBBY)
         target_sources(${TARGET} PRIVATE implementations/DobbyImplementation/DobbyImplementation.cpp)
 elseif(PROCESSCONTAINERS_AWC)
@@ -76,12 +72,12 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}"
-        SOVERSION ${Thunder_VERSION_MAJOR}
+        SOVERSION ${VERSION_MAJOR}
         )
 
 if(HUMAN_VERSIONED_BINARIES)
 set_target_properties(${TARGET} PROPERTIES
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 endif()
 
@@ -89,7 +85,7 @@ target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-          $<INSTALL_INTERFACE:include>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         )
 
 if (PROCESSCONTAINERS_LXC)

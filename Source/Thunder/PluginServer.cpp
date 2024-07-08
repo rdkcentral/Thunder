@@ -165,21 +165,6 @@ namespace PluginHost {
         const string _controllerName;
     };
 
-    string ChannelIdentifier (const Core::SocketPort& input) {
-        string result;
-        const Core::NodeId& localNode(input.LocalNode());
-
-        if ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV4) || ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV6))) {
-            // It is using TCP/IP (4 or 6) connectivity..
-            result = input.RemoteNode().HostName() + '@' + Core::NumberType<uint16_t>(localNode.PortNumber()).Text();
-        }
-        else {
-            // It's not a network connection, let report to whom it hooked up..
-            result = localNode.HostName() + '@' + Core::NumberType<Core::IResource::handle>(static_cast<const Core::IResource&>(input).Descriptor()).Text();
-        }
-        return (result);
-    }
-
     //
     // class Server::WorkerPoolImplementation
     // -----------------------------------------------------------------------------------------------------------------------------------
@@ -225,8 +210,13 @@ namespace PluginHost {
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
-            string name = client->Name();
+            if (client->IsOpen() == false) {
+                newInfo.State = Metadata::Channel::state::CLOSED;
+            }
+            else {
+                newInfo.State = (client->IsWebSocket() ? ((client->State() == PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
+            }
+            string name = client->Path();
 
             if (name.empty() == false) {
                 newInfo.Name = name;
@@ -297,6 +287,14 @@ namespace PluginHost {
         else if (id == PluginHost::IShell::IConnectionServer::ID) {
             AddRef();
             result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
+        }
+        else if (id == PluginHost::IDispatcher::ID) {
+            _pluginHandling.Lock();
+            if (_jsonrpc != nullptr) {
+                _jsonrpc->AddRef();
+                result = _jsonrpc;
+            }
+            _pluginHandling.Unlock();
         }
         else {
             _pluginHandling.Lock();
@@ -416,16 +414,17 @@ namespace PluginHost {
 
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
 
+                    _reason = reason::INITIALIZATION_FAILED;
+                    _administrator.Deinitialized(callSign, this);
+
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
-                        Deactivate(reason::INITIALIZATION_FAILED);
-                    } else {
-                        _reason = reason::INITIALIZATION_FAILED;
-                        _administrator.Deinitialized(callSign, this);
-                        Lock();
-                        ReleaseInterfaces();
-                        State(DEACTIVATED);
-                        Unlock();
+                        REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
                     }
+
+                    Lock();
+                    ReleaseInterfaces();
+                    State(DEACTIVATED);
+                    Unlock();
 
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
@@ -435,7 +434,12 @@ namespace PluginHost {
                     }
 
                     if (_jsonrpc != nullptr) {
-                        _jsonrpc->Activate(this);
+                        PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+                        _jsonrpc->Attach(sink, this);
+                        if (sink != nullptr) {
+                            Register(sink);
+                            sink->Release();
+                        }
                     }
 
                     if (_external.Connector().empty() == false) {
@@ -450,12 +454,6 @@ namespace PluginHost {
                     State(ACTIVATED);
                     _administrator.Activated(callSign, this);
 
-#if THUNDER_RESTFULL_API
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
-
-                    _administrator.Notification(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
 
@@ -464,6 +462,11 @@ namespace PluginHost {
                     }
 
                     Unlock();
+
+                    #ifdef THUNDER_RESTFULL_API
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
         } else {
@@ -484,7 +487,7 @@ namespace PluginHost {
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::state::DEACTIVATED) ) {
+        } else if (currentState == IShell::state::DEACTIVATED) {
             result = Activate(why);
             currentState = State();
         }
@@ -579,7 +582,12 @@ namespace PluginHost {
                 Lock();
 
                 if (_jsonrpc != nullptr) {
-                    _jsonrpc->Deactivate();
+                    PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
+                    _jsonrpc->Detach(sink);
+                    if (sink != nullptr) {
+                        Unregister(sink);
+                        sink->Release();
+                    }
                 }
 
                 if (_external.Connector().empty() == false) {
@@ -589,12 +597,10 @@ namespace PluginHost {
                 if (currentState != IShell::state::ACTIVATION) {
                     SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-    #if THUNDER_RESTFULL_API
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-    #endif
-
-                    _administrator.Notification(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
+                    #ifdef THUNDER_RESTFULL_API
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
 
@@ -680,11 +686,12 @@ namespace PluginHost {
             State(UNAVAILABLE);
             _administrator.Unavailable(callSign, this);
 
-#if THUNDER_RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"unavailable\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-#endif
+            Unlock();
 
-            _administrator.Notification(callSign, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            #ifdef THUNDER_RESTFULL_API
+            Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            #endif
+            Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -888,19 +895,15 @@ namespace PluginHost {
         return (_administrator.SubSystemsInterface(this));
     }
 
-    void Server::Service::Notify(const string& message) /* override */
+    void Server::Service::Notify(const string& jsonrpcEvent, const string& message) /* override */
     {
-#if THUNDER_RESTFULL_API
-        // Notify the base class and the subscribers
-        PluginHost::Service::Notification(message);
-#endif
+        // JSONRPC has been send by now, lets send it to the "notification"
+        // observers..
+        if (jsonrpcEvent.empty() == true) {
+            BaseClass::Notification(message);
+        }
 
-        _administrator.Notification(PluginHost::Service::Callsign(), message);
-    }
-
-    void Server::Service::Notify(const string& event, const string& parameters) /* override */
-    {
-        _administrator.Notification(PluginHost::Service::Callsign(), event, parameters);
+        _administrator.Notification(PluginHost::Service::Callsign(), jsonrpcEvent, message);
     }
 
     //
@@ -970,16 +973,17 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall)
+    uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<Service>& service, PluginHost::Request::mode& callType)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         const string& serviceHeader(Configuration().WebPrefix());
         const string& JSONRPCHeader(Configuration().JSONRPCPrefix());
 
+
         // Check the header (prefix part)
         if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
 
-            serviceCall = true;
+            callType = PluginHost::Request::mode::RESTFULL;
 
             if (identifier.length() <= (serviceHeader.length() + 1)) {
                 service = _server.Controller();
@@ -1000,7 +1004,7 @@ namespace PluginHost {
             }
         } else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
 
-            serviceCall = false;
+            callType = PluginHost::Request::mode::JSONRPC;
 
             if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
                 service = _server.Controller();
@@ -1019,6 +1023,9 @@ namespace PluginHost {
                     }
                 }
             }
+        }
+        else {
+            callType = PluginHost::Request::mode::PROPRIETARY;
         }
 
         return (result);
@@ -1182,46 +1189,25 @@ namespace PluginHost {
         IFactories::Assign(nullptr);
     }
 
-    void Server::Notification(const string& callsign, const string& data)
+    void Server::Notification(const string& callsign, const string& jsonrpc_event, const string& parameters)
     {
-        Plugin::Controller* controller;
-        if ((_controller.IsValid() == true) && ((controller = (_controller->ClassType<Plugin::Controller>())) != nullptr)) {
+        ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
 
-            controller->Notification(callsign, data);
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
 
-#if THUNDER_RESTFULL_API
-            JsonData::Events::ForwardMessageParamsData message;
-            message.Callsign = callsign;
-            message.Data = data;
-            string messageString;
-            message.ToString(messageString);
-            _controller->Notification(messageString);
-#endif
-        }
-    }
+        // Break a recursive loop, if it tries to arise ;-)
+        if ( (controller != nullptr) && (callsign != controller->Callsign()) ) {
 
-    void Server::Notification(const string& callsign, const string& event, const string& parameters)
-    {
-        if (_controller.IsValid() == true) {
-            Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+            ASSERT(callsign.empty() == false);
 
-            if (controller != nullptr) {
-                static const TCHAR allEvent[] = _T("all");
+            if (jsonrpc_event.empty() == false) {
+                JsonData::Events::ForwardMessageParamsData::EventData message({ jsonrpc_event, parameters, callsign });
+                controller->Notify(_T("all"), message);
+            }
+            else {
+                string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":\"") + parameters + _T("\"}}");
 
-                if ((callsign != controller->Callsign()) || (event != allEvent)) {
-
-                    controller->Notification(callsign, event, parameters);
-
-#if THUNDER_RESTFULL_API
-                    JsonData::Events::ForwardEventParamsData message;
-                    message.Callsign = callsign;
-                    message.Data.Event = event;
-                    message.Data.Params = parameters;
-                    string messageString;
-                    message.ToString(messageString);
-                    _controller->Notification(messageString);
-#endif
-                }
+                _controller->Notify(EMPTY_STRING, messageString);
             }
         }
     }

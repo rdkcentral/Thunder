@@ -126,7 +126,7 @@ namespace Core {
                 , _pool(copy._pool)
             {
             }
-            Timer(Timer&& move)
+            Timer(Timer&& move) noexcept
                 : _job(std::move(move._job))
                 , _pool(move._pool)
             {
@@ -137,9 +137,7 @@ namespace Core {
                 , _pool(pool)
             {
             }
-            ~Timer()
-            {
-            }
+            ~Timer() = default;
 
         public:
             bool operator==(const Timer& RHS) const
@@ -400,7 +398,7 @@ POP_WARNING()
 
             return (result);
         }
-        const Metadata& Snapshot() const
+        const Metadata& Snapshot() const override
         {
             _metadata.Slot[0].WorkerId = _timer.ThreadId();
             _metadata.Slot[0].Runs = _timer.Pending();

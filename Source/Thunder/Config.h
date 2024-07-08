@@ -136,7 +136,7 @@ namespace PluginHost {
                     Add(_T("value"), &Value);
                     Add(_T("override"), &Override);
                 }
-                Environment(Environment&& move)
+                Environment(Environment&& move) noexcept
                     : Core::JSON::Container()
                     , Key(std::move(move.Key))
                     , Value(std::move(move.Value))
@@ -155,7 +155,7 @@ namespace PluginHost {
 
                     return (*this);
                 }
-                Environment& operator=(Environment&& move)
+                Environment& operator=(Environment&& move) noexcept
                 {
                     if (this != &move) {
                         Key = std::move(move.Key);
@@ -210,7 +210,7 @@ namespace PluginHost {
                     Add(_T("stacksize"), &StackSize);
                     Add(_T("umask"), &Umask);
                 }
-                ProcessSet(ProcessSet&& move)
+                ProcessSet(ProcessSet&& move) noexcept
                     : Core::JSON::Container()
                     , User(std::move(move.User))
                     , Group(std::move(move.Group))
@@ -244,7 +244,7 @@ namespace PluginHost {
                     return (*this);
                 }
 
-                ProcessSet& operator=(ProcessSet&& move)
+                ProcessSet& operator=(ProcessSet&& move) noexcept
                 {
                     if (this != &move) {
                         User = std::move(move.User);
@@ -295,7 +295,7 @@ namespace PluginHost {
                     Add(_T("type"), &Type);
                     Add(_T("output"), &OutputEnabled);
                 }
-                InputConfig(InputConfig&& move)
+                InputConfig(InputConfig&& move) noexcept
                     : Core::JSON::Container()
                     , Locator(std::move(move.Locator))
                     , Type(std::move(move.Type))
@@ -316,7 +316,7 @@ namespace PluginHost {
                     return (*this);
                 }
 
-                InputConfig& operator=(InputConfig&& move)
+                InputConfig& operator=(InputConfig&& move) noexcept
                 {
                     if (this != &move) {
                         Locator = std::move(move.Locator);
@@ -349,7 +349,7 @@ namespace PluginHost {
                     Add(_T("proxystubpath"), &ProxyStubPath);
                     Add(_T("configpath"), &PluginConfigPath);
                 }
-                Observables(Observables&& move)
+                Observables(Observables&& move) noexcept
                     : Core::JSON::Container()
                     , ProxyStubPath(std::move(move.ProxyStubPath))
                     , PluginConfigPath(std::move(move.PluginConfigPath)) {
@@ -377,7 +377,7 @@ namespace PluginHost {
                 {
                     Add(_T("logging"), &Logging);
                 }
-                ProcessContainerConfig(ProcessContainerConfig&& move)
+                ProcessContainerConfig(ProcessContainerConfig&& move) noexcept
                     : Logging(std::move(move.Logging))
                 {
                     Add(_T("logging"), &Logging);
@@ -389,10 +389,10 @@ namespace PluginHost {
                     Logging = RHS.Logging;
                     return (*this);
                 }
-                ProcessContainerConfig& operator=(ProcessContainerConfig&& move)
+                ProcessContainerConfig& operator=(ProcessContainerConfig&& move) noexcept
                 {
                     if (this != &move) {
-                        Logging = std::move(move.Logging;
+                        Logging = std::move(move.Logging);
                     }
                     return (*this);
                 }
@@ -416,7 +416,7 @@ namespace PluginHost {
                 {
                     Add(_T("locator"), &Locator);
                 }
-                HibernateConfig(HibernateConfig&& move)
+                HibernateConfig(HibernateConfig&& move) noexcept
                     : Locator(std::move(move.Locator))
                 {
                     Add(_T("locator"), &Locator);
@@ -428,7 +428,7 @@ namespace PluginHost {
                     Locator = RHS.Locator;
                     return (*this);
                 }
-                HibernateConfig& operator=(HibernateConfig&& move)
+                HibernateConfig& operator=(HibernateConfig&& move) noexcept
                 {
                     if (this != &move) {
                         Locator = std::move(move.Locator);
@@ -472,6 +472,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , SoftKillCheckWaitTime(10)
                 , HardKillCheckWaitTime(4)
+                , OutOfProcessWaitTime(3)
                 , IPV6(false)
                 , LegacyInitialize(false)
                 , DefaultMessagingCategories(false)
@@ -510,6 +511,7 @@ namespace PluginHost {
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("softkillcheckwaittime"), &SoftKillCheckWaitTime);
                 Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
+                Add(_T("outofprocesswaittime"), &OutOfProcessWaitTime);
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("legacyinitialize"), &LegacyInitialize);
                 Add(_T("messaging"), &DefaultMessagingCategories);
@@ -555,6 +557,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::DecUInt8 SoftKillCheckWaitTime;
             Core::JSON::DecUInt8 HardKillCheckWaitTime;
+            Core::JSON::DecUInt8 OutOfProcessWaitTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::Boolean LegacyInitialize;
             Core::JSON::String DefaultMessagingCategories; 
@@ -725,6 +728,7 @@ namespace PluginHost {
             , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
+            , _outOfProcessWaitTime(3000)
             , _stackSize(0)
             , _inputInfo()
             , _processInfo()
@@ -773,6 +777,7 @@ namespace PluginHost {
                 _idleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
+                _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
                 _IPV6 = config.IPV6.Value();
                 _legacyInitialize = config.LegacyInitialize.Value();
                 _binding = config.Binding.Value();
@@ -975,6 +980,9 @@ POP_WARNING()
         inline uint8_t HardKillCheckWaitTime() const {
             return _hardKillCheckWaitTime;
         }
+        inline uint16_t OutOfProcessWaitTime() const {
+            return _outOfProcessWaitTime;
+        }
         inline const string& URL() const {
             return (_URL);
         }
@@ -1156,6 +1164,7 @@ POP_WARNING()
         uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
+        uint16_t _outOfProcessWaitTime;
         uint32_t _stackSize;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;

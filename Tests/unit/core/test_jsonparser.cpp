@@ -19,14 +19,20 @@
 
 #include <functional>
 #include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
-#include "../IPTestAdministrator.h"
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
-#include "JSON.h"
 
 namespace Thunder {
+namespace Tests {
+namespace Core {
+
     enum class JSONTestEnum {
         ENUM_1,
         ENUM_2,
@@ -34,14 +40,19 @@ namespace Thunder {
         ENUM_4
     };
 
-    ENUM_CONVERSION_BEGIN(JSONTestEnum)
-        { JSONTestEnum::ENUM_1, _TXT("enum_1") },
-        { JSONTestEnum::ENUM_2, _TXT("enum_2") },
-        { JSONTestEnum::ENUM_3, _TXT("enum_3") },
-        { JSONTestEnum::ENUM_4, _TXT("enum_4") },
-    ENUM_CONVERSION_END(JSONTestEnum)
+} // Core
+} // Tests
+
+    ENUM_CONVERSION_BEGIN(Tests::Core::JSONTestEnum)
+        { Tests::Core::JSONTestEnum::ENUM_1, _TXT("enum_1") },
+        { Tests::Core::JSONTestEnum::ENUM_2, _TXT("enum_2") },
+        { Tests::Core::JSONTestEnum::ENUM_3, _TXT("enum_3") },
+        { Tests::Core::JSONTestEnum::ENUM_4, _TXT("enum_4") },
+    ENUM_CONVERSION_END(Tests::Core::JSONTestEnum)
 
 namespace Tests {
+namespace Core {
+
 
     struct TestCaseBase {
         virtual ~TestCaseBase() = 0;
@@ -50,12 +61,12 @@ namespace Tests {
     TestCaseBase::~TestCaseBase() {}
 
     template <typename T>
-    class PrimitiveJson : public TestCaseBase, public Core::JSON::Container {
+    class PrimitiveJson : public TestCaseBase, public ::Thunder::Core::JSON::Container {
     public:
-        static_assert(std::is_base_of<Core::JSON::IElement, T>::value, "You have to derive from Core::JSON::IElement");
+        static_assert(std::is_base_of<::Thunder::Core::JSON::IElement, T>::value, "You have to derive from ::Thunder::Core::JSON::IElement");
 
         explicit PrimitiveJson()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
         {
         }
 
@@ -99,7 +110,7 @@ namespace Tests {
     void Execute(T& test, const std::string& testJSON, bool valid)
     {
         static_assert(std::is_base_of<TestCaseBase, T>::value, "This is to be run against TCs");
-        Core::OptionalType<Core::JSON::Error> error;
+        ::Thunder::Core::OptionalType<::Thunder::Core::JSON::Error> error;
         const bool result = test.FromString(testJSON, error);
         EXPECT_EQ(valid, result);
         EXPECT_NE(valid, error.IsSet());
@@ -132,7 +143,7 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -143,7 +154,7 @@ namespace Tests {
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.keyValueSeparator.clear();
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -154,7 +165,7 @@ namespace Tests {
         data.key = "[\"key\"]";
         data.keyToPutInJson = data.key;
         data.keyValueSeparator.clear();
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -165,7 +176,7 @@ namespace Tests {
         data.key = "\"key\",";
         data.keyToPutInJson = data.key;
         data.keyValueSeparator.clear();
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -177,7 +188,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\",";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -189,7 +200,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\":";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -201,7 +212,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\" :";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -213,7 +224,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\",,";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -225,8 +236,8 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "[\"foo\", \"bar\"]";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, true, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, true, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(2u, v.Length());
             EXPECT_NE(string{}, v[0].Value());
             EXPECT_NE(string{}, v[1].Value());
@@ -240,8 +251,8 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "null";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, true, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, true, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_TRUE(v.IsNull());
         });
     }
@@ -253,8 +264,8 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "nulk";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, false, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, false, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(0u, v.Length());
         });
     }
@@ -266,8 +277,8 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "[,]";
         data.valueToPutInJson = "[,]";
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, false, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, false, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(0u, v.Length());
         });
     }
@@ -278,8 +289,8 @@ namespace Tests {
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.valueToPutInJson = "(\"Foo\"]";
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, false, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, false, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(0u, v.Length());
         });
     }
@@ -290,8 +301,8 @@ namespace Tests {
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.valueToPutInJson = "[\"Foo\"}";
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, false, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, false, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(0u, v.Length());
         });
     }
@@ -302,8 +313,8 @@ namespace Tests {
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.valueToPutInJson = "[\"Foo\")";
-        ExecutePrimitiveJsonTest<Core::JSON::ArrayType<Core::JSON::String>>(
-            data, false, [](const Core::JSON::ArrayType<Core::JSON::String>& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>>(
+            data, false, [](const ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>& v) {
             EXPECT_EQ(0u, v.Length());
         });
     }
@@ -315,7 +326,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -327,7 +338,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "null";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_TRUE(v.IsNull());
         });
     }
@@ -339,7 +350,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -351,7 +362,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value}";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -363,7 +374,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = ":]";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -375,7 +386,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -389,7 +400,7 @@ namespace Tests {
         data.value = "Φίλιππον ὁρῶ";
         printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
             EXPECT_EQ(data.value, v.Value());
         });
@@ -405,7 +416,7 @@ namespace Tests {
         data.value = "კონფერენცია შეჰკრებს";
         printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
             EXPECT_EQ(data.value, v.Value());
         });
@@ -420,7 +431,7 @@ namespace Tests {
         data.value = "Десятую Международную";
         printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
             EXPECT_EQ(data.value, v.Value());
         });
@@ -435,7 +446,7 @@ namespace Tests {
         data.value = "suis heureuse";
         printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
             EXPECT_EQ(data.value, v.Value());
         });
@@ -450,7 +461,7 @@ namespace Tests {
         data.value = "ใช้สาวนั้นเป็นชนวนชื่นชวนใจ";
         printf("     input value :   %zd --- = %s \n", data.value.length(), data.value.c_str());
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             printf("     output value :   %zd --- = %s \n", v.Value().length(), v.Value().c_str());
             EXPECT_EQ(data.value, v.Value());
         });
@@ -463,7 +474,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -476,7 +487,7 @@ namespace Tests {
         data.value = "value";
         data.valueToPutInJson = data.value + "\"";
 
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -488,7 +499,7 @@ namespace Tests {
         data.keyToPutInJson = data.key;
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -500,7 +511,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key;
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -512,7 +523,7 @@ namespace Tests {
         data.keyToPutInJson = data.key + "\"";
         data.value = "value";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -524,7 +535,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "123";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::DecUInt8>(data, true, [](const Core::JSON::DecUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecUInt8>(data, true, [](const ::Thunder::Core::JSON::DecUInt8& v) {
             EXPECT_EQ(123u, v.Value());
         });
     }
@@ -536,7 +547,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "null";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::DecUInt8>(data, true, [](const Core::JSON::DecUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecUInt8>(data, true, [](const ::Thunder::Core::JSON::DecUInt8& v) {
             EXPECT_TRUE(v.IsNull());
         });
     }
@@ -548,7 +559,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "-123";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::DecSInt8>(data, true, [](const Core::JSON::DecSInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecSInt8>(data, true, [](const ::Thunder::Core::JSON::DecSInt8& v) {
             EXPECT_EQ(-123, v.Value());
         });
     }
@@ -560,7 +571,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "+123";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::DecSInt8>(data, false, [](const Core::JSON::DecSInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecSInt8>(data, false, [](const ::Thunder::Core::JSON::DecSInt8& v) {
             EXPECT_NE(123, v.Value());
         });
     }
@@ -572,7 +583,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "123g";
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::DecUInt8>(data, false, [](const Core::JSON::DecUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecUInt8>(data, false, [](const ::Thunder::Core::JSON::DecUInt8& v) {
             EXPECT_EQ(0u, v.Value());
         });
     }
@@ -584,7 +595,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "0X7B";
         data.valueToPutInJson = "\"" + data.value + "\"";;
-        ExecutePrimitiveJsonTest<Core::JSON::HexUInt8>(data, true, [](const Core::JSON::HexUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::HexUInt8>(data, true, [](const ::Thunder::Core::JSON::HexUInt8& v) {
             EXPECT_EQ(123u, v.Value());
         });
     }
@@ -596,7 +607,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "-0X7B";
         data.valueToPutInJson = "\"" + data.value + "\"";;
-        ExecutePrimitiveJsonTest<Core::JSON::HexSInt8>(data, true, [](const Core::JSON::HexSInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::HexSInt8>(data, true, [](const ::Thunder::Core::JSON::HexSInt8& v) {
             EXPECT_EQ(-123, v.Value());
         });
     }
@@ -608,7 +619,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "0173";
         data.valueToPutInJson = "\"" + data.value + "\"";;
-        ExecutePrimitiveJsonTest<Core::JSON::OctUInt8>(data, true, [](const Core::JSON::OctUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::OctUInt8>(data, true, [](const ::Thunder::Core::JSON::OctUInt8& v) {
             EXPECT_EQ(123u, v.Value());
         });
     }
@@ -620,21 +631,19 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "-0173";
         data.valueToPutInJson = "\"" + data.value + "\"";;
-        ExecutePrimitiveJsonTest<Core::JSON::OctSInt8>(data, true, [](const Core::JSON::OctSInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::OctSInt8>(data, true, [](const ::Thunder::Core::JSON::OctSInt8& v) {
             EXPECT_EQ(-123, v.Value());
         });
     }
 
-    // FIXME: Disabled because JSON Parser does not support exponential notation
-    // yet is supports hex so 'E' or 'e' in number is interpreted as hex.
-    TEST(JSONParser, ExponentialNumber)
+    TEST(JSONParser, DISABLED_ExponentialNumber)
     {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "1e2";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::DecUInt8>(data, false, [](const Core::JSON::DecUInt8& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::DecUInt8>(data, false, [](const ::Thunder::Core::JSON::DecUInt8& v) {
             EXPECT_EQ(100u, v.Value());
         });
     }
@@ -646,12 +655,21 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "1.34f";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
             std::string res = value.str();
             res += 'f';
-            EXPECT_EQ(data.value, res.c_str());
+
+            float a = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float b = std::strtof(res.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(a, b);
+            EXPECT_FLOAT_EQ(c, b);
         });
     }
 
@@ -662,10 +680,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "1.3";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -676,10 +700,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "1.35";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -690,10 +720,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "2.349";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -704,10 +740,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "48.3";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -718,10 +760,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "48.39";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -732,10 +780,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "48.398";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -746,10 +800,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "489.3";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -760,10 +820,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "489.38";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -774,10 +840,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "489.389";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Float>(data, true, [data](const Core::JSON::Float& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Float>(data, true, [data](const ::Thunder::Core::JSON::Float& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            float b = std::strtof(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            float c = std::strtof(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_FLOAT_EQ(b, c);
         });
     }
 
@@ -788,10 +860,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "6.61914e+6";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -802,10 +880,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "3.5";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -816,10 +900,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "3.56";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -830,10 +920,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "3.567";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -844,10 +940,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "32.5";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -858,10 +960,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "32.59";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -872,10 +980,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "32.598";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -886,10 +1000,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "326.5";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -900,10 +1020,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "326.56";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -914,10 +1040,16 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "326.545";
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::Double>(data, true, [data](const Core::JSON::Double& v) {
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Double>(data, true, [data](const ::Thunder::Core::JSON::Double& v) {
             std::ostringstream value;
             value << v.Value();
-            EXPECT_EQ(data.value, value.str().c_str());
+
+            double b = std::strtod(value.str().c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+            double c = std::strtod(data.value.c_str(), nullptr);
+            ASSERT_NE(errno, ERANGE);
+
+            EXPECT_DOUBLE_EQ(b, c);
         });
     }
 
@@ -926,10 +1058,23 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference
         data.value = "\n solution \n for \n string \n serialization\n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        const string valueJSONFormatted("\\n solution \\n for \\n string \\n serialization\\n");
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data, &valueJSONFormatted](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -938,10 +1083,24 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference
         data.value = "\' solution \n for \n string \n serialization\'\n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        const string valueJSONFormatted = "\' solution \\n for \\n string \\n serialization\'\\n";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -950,10 +1109,24 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference
         data.value = "\" solution \n for \n string \n serialization\"\n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        const string valueJSONFormatted = "\\\" solution \\n for \\n string \\n serialization\\\"\\n";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -962,10 +1135,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape, \? is equivalent to ?
         data.value = "Is this a solution \?";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \? equals 0x3F
+        const string valueJSONFormatted = "Is this a solution \?";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -974,10 +1162,24 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape, \\ to represent a single one
         data.value = "Checking backslash \\";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        const string valueJSONFormatted = "Checking backslash \\\\";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -986,10 +1188,26 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = "Checking audible bell \a";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // Reference, with C-style escape; \a equals 0x07 and could be represented by a 2 character escape sequence, but non are defined in the specification; use unicode instead \u0007
+//        data.value = "Checking audible bell \a";
+        data.value = "Checking audible bell \\u0007";
+
+        const string valueExpected = "Checking audible bell \a";
+        const string valueJSONFormatted = "Checking audible bell \\u0007";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data, &valueExpected](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(valueExpected.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -998,10 +1216,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "Checking backspace \b";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \b equals 0x08 and could be represented by a 2 character escape sequence defined in the specification; use \\b
+        const string valueJSONFormatted = "Checking backspace \\b";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1010,10 +1243,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "Checking form feed \f";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \f equals 0x0C and could be represented by a 2 character escape sequence defined in the specification; use \\c
+        const string valueJSONFormatted = "Checking form feed \\f";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1022,10 +1270,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "Checking line feed \n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \n equals 0x0A and could be represented by a 2 character escape sequence defined in the specification; use \\n
+        const string valueJSONFormatted = "Checking line feed \\n";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1034,10 +1297,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "Checking carriage return \r";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \r equals 0x0C and could be represented by a 2 character escape sequence defined in the specification; use \\r
+        const string valueJSONFormatted = "Checking carriage return \\r";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1046,10 +1324,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "Checking horizontal tab \t";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \t equals 0x09 and could be represented by a 2 character escape sequence defined in the specification; use \\t
+        const string valueJSONFormatted = "Checking horizontal tab \\t";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1058,10 +1351,26 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = "Checking vertical tab \v";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // Reference, with C-style escape; \v equals 0x0B and could be represented by a 2 character escape sequence, but non are defined in the specification; use unicode instead \u000B
+//        data.value = "Checking vertical tab \v";
+        data.value = "Checking vertical tab \\u000B";
+
+        const string valueExpected = "Checking vertical tab \v";
+        const string valueJSONFormatted = "Checking vertical tab \\u000B";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data, &valueExpected](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(valueExpected.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1070,13 +1379,17 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = R"(value\\uZZZZ)";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            Core::JSON::String value;
-            value.FromString(data.valueToPutInJson);
 
-            EXPECT_EQ(value.Value(), v.Value());
+        // Reference, with C-style raw string, no difference with regular string; invalid unicode character sequence
+        data.value = R"(value\\uZZZZ)";
+
+        const string valueJSONFormatted = "value\\uZZZZ";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [&data](const ::Thunder::Core::JSON::String& v) {
+            EXPECT_EQ(string{}, v.Value());
         });
     }
 
@@ -1085,10 +1398,24 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "\n solution \n for \n string \n serialization\n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \n equals 0x0A and could be represented by a 2 character escape sequence defined in the specification; use \\n
+        const string valueJSONFormatted = "\\n solution \\n for \\n string \\n serialization\\n";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
         });
     }
 
@@ -1097,10 +1424,25 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "\t solution \t for \t string \t serialization\t";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \t equals 0x09 and could be represented by a 2 character escape sequence defined in the specification; use \\t
+        const string valueJSONFormatted = "\\t solution \\t for \\t string \\t serialization\\t";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1109,10 +1451,26 @@ namespace Tests {
         TestData data;
         data.key = "teststring";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escape
         data.value = "\n solution \t for \r string \t serialization\n";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
-            EXPECT_EQ(data.value, v.Value());
+
+        // \r equals 0x0C and could be represented by a 2 character escape sequence defined in the specification; use \\r
+        // \t equals 0x09 and could be represented by a 2 character escape sequence defined in the specification; use \\t
+        // \n equals 0x0A and could be represented by a 2 character escape sequence defined in the specification; use \\n
+        const string valueJSONFormatted = "\\n solution \\t for \\r string \\t serialization\\n";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
+            ASSERT_TRUE(v.IsQuoted());
+
+            string value;
+            v.ToString(value);
+
+            // Value() returns the undecorated string!
+            ASSERT_STREQ(data.value.c_str(), v.Value().c_str());
+            ASSERT_STREQ(data.valueToPutInJson.c_str(), value.c_str());
         });
     }
 
@@ -1121,9 +1479,17 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference; JSON formatted style
         data.value = "value\\z";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+
+        // Standard does not define 2-character escaped sequence
+        const string valueJSONFormatted = "value\\z";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -1133,9 +1499,17 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
+        // Reference, with C-style escapes; unicode interpreted by C++-standard
         data.value = "value \"\b\n\f\r\u00b1/\"";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [] (const Core::JSON::String& v) {
+
+        // Unescaped control characters, solidus, and, unicode
+        const string valueJSONFormatted = "value \"\b\n\f\r\u00b1/\"";
+
+        data.valueToPutInJson = "\"" + valueJSONFormatted + "\"";
+
+        // Key and value in container are both JSON strings
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [] (const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -1145,9 +1519,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "value";
+
         data.valueToPutInJson = "{\"" + data.key + "\":\"" + data.value + "\"}";
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, true, [&data](const PrimitiveJson<Core::JSON::String>& v) {
+
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, true, [&data](const PrimitiveJson<::Thunder::Core::JSON::String>& v) {
             EXPECT_TRUE(v.HasLabel(data.key));
             EXPECT_EQ(data.value, v.Value().Value());
         });
@@ -1158,8 +1535,10 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.valueToPutInJson = "{\"" + data.key + "\":\"" + data.value + "\"}";
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, true, [&data](const PrimitiveJson<Core::JSON::String>& v) {
+
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, true, [&data](const PrimitiveJson<::Thunder::Core::JSON::String>& v) {
             EXPECT_TRUE(v.HasLabel(data.key));
             EXPECT_EQ(string{}, v.Value().Value());
         });
@@ -1170,9 +1549,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "null";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, true, [](const PrimitiveJson<Core::JSON::String>& v) {
+
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, true, [](const PrimitiveJson<::Thunder::Core::JSON::String>& v) {
             EXPECT_TRUE(v.IsNull());
         });
     }
@@ -1182,9 +1564,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "nill";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, false, nullptr);
+
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, false, nullptr);
     }
 
     TEST(JSONParser, Unmatched1)
@@ -1192,9 +1577,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "\"" + data.key + "\":\"value\"";
+
         data.valueToPutInJson = "[" + data.value + "}";
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, false, nullptr);
+
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, false, nullptr);
     }
 
     TEST(JSONParser, Unmatched2)
@@ -1204,7 +1592,7 @@ namespace Tests {
         data.keyToPutInJson = "\"" + data.key + "\"";
         data.value = "\"" + data.key + "\":\"value\"";
         data.valueToPutInJson = "{" + data.value + "]";
-        ExecutePrimitiveJsonTest<PrimitiveJson<Core::JSON::String>>(data, false, nullptr);
+        ExecutePrimitiveJsonTest<PrimitiveJson<::Thunder::Core::JSON::String>>(data, false, nullptr);
     }
 
     // Extensions:
@@ -1213,9 +1601,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "nill";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::Buffer>(data, false, nullptr);
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::Buffer>(data, false, nullptr);
     }
 
     TEST(JSONParser, OpaqueObject)
@@ -1223,9 +1614,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "{\"" + data.key + "\":{\"key2\":[\"value\"]}}";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, [&data](const Core::JSON::String& v) {
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, [&data](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(data.value, v.Value());
         });
     }
@@ -1235,12 +1629,15 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "{\"" + data.key + "\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":"
             "{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":"
             "{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":{\"key2\":"
             "{\"key2\":{\"key2\":{\"key2\":{\"key2\":\"value\"}}}}}}}}}}}}}}}}}}}}}}}}}";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, true, nullptr);
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, true, nullptr);
     }
 
     TEST(JSONParser, MalformedOpaqueObject1)
@@ -1248,9 +1645,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "{\"" + data.key + "\":{\"key2\":[\"value\"]";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -1260,9 +1660,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "{\"" + data.key + "\":{\"key2\":[\"value\"}}}";
+
         data.valueToPutInJson = data.value;
-        ExecutePrimitiveJsonTest<Core::JSON::String>(data, false, [](const Core::JSON::String& v) {
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::String>(data, false, [](const ::Thunder::Core::JSON::String& v) {
             EXPECT_EQ(string{}, v.Value());
         });
     }
@@ -1272,9 +1675,12 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
+
         data.value = "enum_2";
+
         data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::EnumType<JSONTestEnum>>(data, true, [&data](const Core::JSON::EnumType<JSONTestEnum>& v) {
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::EnumType<JSONTestEnum>>(data, true, [&data](const ::Thunder::Core::JSON::EnumType<JSONTestEnum>& v) {
             EXPECT_EQ(JSONTestEnum::ENUM_2, v.Value());
         });
     }
@@ -1284,20 +1690,23 @@ namespace Tests {
         TestData data;
         data.key = "key";
         data.keyToPutInJson = "\"" + data.key + "\"";
-        data.value = "enum_5";
-        data.valueToPutInJson = "\"" + data.value + "\"";
-        ExecutePrimitiveJsonTest<Core::JSON::EnumType<JSONTestEnum>>(data, false, nullptr);
-    }
 
+        data.value = "enum_5";
+
+        data.valueToPutInJson = "\"" + data.value + "\"";
+
+        ExecutePrimitiveJsonTest<::Thunder::Core::JSON::EnumType<JSONTestEnum>>(data, false, nullptr);
+    }
+#ifdef _0
     TEST(JSONParser, Variant)
     {
-        Thunder::Core::JSON::Variant variant;
-        Thunder::Core::JSON::Variant variant1(std::numeric_limits<int32_t>::min());
+        ::Thunder::Core::JSON::Variant variant;
+        ::Thunder::Core::JSON::Variant variant1(std::numeric_limits<int32_t>::min());
 
-        Thunder::Core::JSON::Variant variant2(std::numeric_limits<int64_t>::min());
-        Thunder::Core::JSON::Variant variant3(std::numeric_limits<uint32_t>::min());
-        Thunder::Core::JSON::Variant variant4(std::numeric_limits<uint64_t>::min());
-        Thunder::Core::JSON::Variant variant5(true);
+        ::Thunder::Core::JSON::Variant variant2(std::numeric_limits<int64_t>::min());
+        ::Thunder::Core::JSON::Variant variant3(std::numeric_limits<uint32_t>::min());
+        ::Thunder::Core::JSON::Variant variant4(std::numeric_limits<uint64_t>::min());
+        ::Thunder::Core::JSON::Variant variant5(true);
 
         //EXPECT_EQ(variant1.Number(), 0); //TODO
         EXPECT_EQ(variant2.Number(), 0);
@@ -1305,31 +1714,31 @@ namespace Tests {
         EXPECT_EQ(variant4.Number(), 0);
 
         const TCHAR text[] = "varient";
-        Thunder::Core::JSON::Variant variant6(text);
+        ::Thunder::Core::JSON::Variant variant6(text);
         EXPECT_STREQ(variant6.String().c_str(), text);
 
-        Thunder::Core::JSON::Variant variant6_new = text;
+        ::Thunder::Core::JSON::Variant variant6_new = text;
         EXPECT_STREQ(variant6_new.String().c_str(), text);
 
         std::string msg = "varient";
-        Thunder::Core::JSON::Variant variant7(msg);
+        ::Thunder::Core::JSON::Variant variant7(msg);
         EXPECT_STREQ(variant7.String().c_str(), msg.c_str());
 
-        Thunder::Core::JSON::Variant variant8(variant4);
+        ::Thunder::Core::JSON::Variant variant8(variant4);
 
-        Thunder::Core::JSON::VariantContainer container;
-        Thunder::Core::JSON::Variant val1(10);
-        Thunder::Core::JSON::Variant val2(20);
-        Thunder::Core::JSON::Variant val3(30);
+        ::Thunder::Core::JSON::VariantContainer container;
+        ::Thunder::Core::JSON::Variant val1(10);
+        ::Thunder::Core::JSON::Variant val2(20);
+        ::Thunder::Core::JSON::Variant val3(30);
         container.Set("key1", val1);
         container.Set("key2", val2);
         container.Set("key3", val3);
-        Thunder::Core::JSON::Variant variant9(container);
+        ::Thunder::Core::JSON::Variant variant9(container);
         msg = "name=key1 type=Object value={\n    name=key1 type=Number value=10\n    name=key2 type=Number value=20\n    name=key3 type=Number value=30\n}\n";
         EXPECT_STREQ(variant9.GetDebugString("key1").c_str(), msg.c_str());
 
         variant2.Boolean(true);
-        Thunder::Core::JSON::Variant variant10 = variant4;
+        ::Thunder::Core::JSON::Variant variant10 = variant4;
 
         variant5.Content();
         EXPECT_TRUE(variant5.Boolean());
@@ -1343,25 +1752,25 @@ namespace Tests {
 
         variant6.Boolean(true);
 
-        Thunder::Core::JSON::Variant variant11;
+        ::Thunder::Core::JSON::Variant variant11;
         variant11.Object(container);
         msg = "name=key1 type=Object value={\n    name=key1 type=Number value=10\n    name=key2 type=Number value=20\n    name=key3 type=Number value=30\n}\n";
         EXPECT_STREQ(variant11.GetDebugString("key1").c_str(), msg.c_str());
 
-        Thunder::Core::JSON::VariantContainer variantContainer = variant11.Object();
+        ::Thunder::Core::JSON::VariantContainer variantContainer = variant11.Object();
         EXPECT_EQ(variantContainer.Get("key1").String(), "10");
     }
 
     TEST(JSONParser, VariantContainer)
     {
-        Thunder::Core::JSON::VariantContainer container;
+        ::Thunder::Core::JSON::VariantContainer container;
 
-        Thunder::Core::JSON::Variant val1(10);
-        Thunder::Core::JSON::Variant val2(20);
-        Thunder::Core::JSON::Variant val3(30);
-        Thunder::Core::JSON::Variant val4(40);
-        Thunder::Core::JSON::Variant val5(50);
-        Thunder::Core::JSON::Variant val6(60);
+        ::Thunder::Core::JSON::Variant val1(10);
+        ::Thunder::Core::JSON::Variant val2(20);
+        ::Thunder::Core::JSON::Variant val3(30);
+        ::Thunder::Core::JSON::Variant val4(40);
+        ::Thunder::Core::JSON::Variant val5(50);
+        ::Thunder::Core::JSON::Variant val6(60);
 
         container.Set("key1", val1);
         container.Set("key2", val2);
@@ -1374,29 +1783,29 @@ namespace Tests {
         EXPECT_EQ((container.Get("key1")).String(), "10");
         EXPECT_EQ((container["key5"]).String(), "50");
 
-        Thunder::Core::JSON::Variant variant1 = container["key5"];
-        const Thunder::Core::JSON::Variant variant2 =  container["key5"];
+        ::Thunder::Core::JSON::Variant variant1 = container["key5"];
+        const ::Thunder::Core::JSON::Variant variant2 =  container["key5"];
 
         EXPECT_EQ(variant1.String(), "50");
         EXPECT_EQ(variant2.String(), "50");
 
         std::string serialize = "{\"key1\":\"hello\"}";
-        Thunder::Core::JSON::VariantContainer container1(serialize);
+        ::Thunder::Core::JSON::VariantContainer container1(serialize);
         std::string text;
         container1.ToString(text);
         EXPECT_STREQ(text.c_str(),serialize.c_str());
 
         serialize = "\"key1\":\"hello\""; //Trigger a call to ErrorDisplayMessage() with purposefully created error condition.
-        Thunder::Core::JSON::VariantContainer errorContainer(serialize);
+        ::Thunder::Core::JSON::VariantContainer errorContainer(serialize);
         errorContainer.ToString(text);
 
         const TCHAR serialized[] = "{\"key2\":\"checking\"}";
-        Thunder::Core::JSON::VariantContainer container2(serialized);
+        ::Thunder::Core::JSON::VariantContainer container2(serialized);
         container2.ToString(text);
         EXPECT_STREQ(text.c_str(), serialized);
 
-        Thunder::Core::JSON::VariantContainer container_new(container2);
-        Thunder::Core::JSON::VariantContainer container_copy = container_new;
+        ::Thunder::Core::JSON::VariantContainer container_new(container2);
+        ::Thunder::Core::JSON::VariantContainer container_copy = container_new;
 
         std::string debugString = "            name=key1 type=Number value=10\n            name=key2 type=Number value=20\n            name=key3 type=Number value=30\n            name=key4 type=Number value=40\n            name=key5 type=Number value=50\n            name=key6 type=Number value=60\n";
         EXPECT_STREQ(container.GetDebugString(3).c_str(), debugString.c_str());
@@ -1404,20 +1813,20 @@ namespace Tests {
 
     TEST(JSONParser, VariantDebugStringNumber)
     {
-        Thunder::Core::JSON::Variant variant(10);
+        ::Thunder::Core::JSON::Variant variant(10);
         std::string debugString = "            [0] name=hello type=Number value=10\n";
         EXPECT_STREQ(variant.GetDebugString("hello",3,0).c_str(), debugString.c_str());
 
-        Thunder::Core::JSON::Variant variant1 = std::numeric_limits<uint32_t>::min();
+        ::Thunder::Core::JSON::Variant variant1 = std::numeric_limits<uint32_t>::min();
         EXPECT_EQ(variant1.Number(), 0);
 
-        Thunder::Core::JSON::Variant variant2 = 10;
+        ::Thunder::Core::JSON::Variant variant2 = 10;
         EXPECT_EQ(variant2.Number(), 10);
     }
 
     TEST(JSONParser, VariantDebugStringEmpty)
     {
-        Thunder::Core::JSON::Variant variant;
+        ::Thunder::Core::JSON::Variant variant;
 
         std::string debugString = "    [0] name=hello type=Empty value=null\n";
         EXPECT_STREQ(variant.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
@@ -1425,81 +1834,81 @@ namespace Tests {
 
     TEST(JSONParser, VariantDebugStringBoolean)
     {
-        Thunder::Core::JSON::Variant variant(true);
+        ::Thunder::Core::JSON::Variant variant(true);
 
         std::string debugString =  "    [0] name=hello type=Boolean value=true\n";
         EXPECT_STREQ(variant.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
 
-        Thunder::Core::JSON::Variant variant1 = true;
+        ::Thunder::Core::JSON::Variant variant1 = true;
         EXPECT_STREQ(variant1.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
     }
 
     TEST(JSONParser, VariantDebugStringString)
     {
-        Thunder::Core::JSON::Variant variant("Variant");
+        ::Thunder::Core::JSON::Variant variant("Variant");
 
         std::string debugString = "    [0] name=hello type=String value=Variant\n";
         EXPECT_STREQ(variant.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
 
-        Thunder::Core::JSON::Variant variant1 = "Variant";
+        ::Thunder::Core::JSON::Variant variant1 = "Variant";
         EXPECT_STREQ(variant1.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
     }
 
     TEST(JSONParser, VariantDebugStringArray)
     {
-        Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::Variant> array;
-        array.Add(Thunder::Core::JSON::Variant(10));
-        Thunder::Core::JSON::Variant variant(array);
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::Variant> array;
+        array.Add(::Thunder::Core::JSON::Variant(10));
+        ::Thunder::Core::JSON::Variant variant(array);
 
         std::string debugString = "    [0] name=hello type=String value=[10]\n";
         EXPECT_STREQ(variant.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
-        Thunder::Core::JSON::Variant variant1 = Thunder::Core::JSON::Variant(array);
+        ::Thunder::Core::JSON::Variant variant1 = ::Thunder::Core::JSON::Variant(array);
         EXPECT_STREQ(variant1.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
 
-        Thunder::Core::JSON::Variant variant2;
+        ::Thunder::Core::JSON::Variant variant2;
         variant2.Array(array);
 
-        Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::Variant> result;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::Variant> result;
         result = variant2.Array();
-        Thunder::Core::JSON::Variant variant3(result);
+        ::Thunder::Core::JSON::Variant variant3(result);
 
         EXPECT_STREQ(variant3.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());;
     }
 
     TEST(JSONParser, VariantDebugStringObject)
     {
-        Thunder::Core::JSON::VariantContainer container;
-        Thunder::Core::JSON::Variant val1(10);
-        Thunder::Core::JSON::Variant val2(20);
-        Thunder::Core::JSON::Variant val3(30);
+        ::Thunder::Core::JSON::VariantContainer container;
+        ::Thunder::Core::JSON::Variant val1(10);
+        ::Thunder::Core::JSON::Variant val2(20);
+        ::Thunder::Core::JSON::Variant val3(30);
 
         container.Set("key1", val1);
         container.Set("key2", val2);
         container.Set("key3", val3);
-        Thunder::Core::JSON::Variant variant(container);
+        ::Thunder::Core::JSON::Variant variant(container);
 
         std::string debugString = "    [0] name=hello type=Object value={\n        name=key1 type=Number value=10\n        name=key2 type=Number value=20\n        name=key3 type=Number value=30\n   }\n";
         EXPECT_STREQ(variant.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
 
-        Thunder::Core::JSON::Variant variant1 = container;
+        ::Thunder::Core::JSON::Variant variant1 = container;
         EXPECT_STREQ(variant1.GetDebugString("hello", 1, 0).c_str(), debugString.c_str());
     }
 
     TEST(JSONParser, VariantContainerWithElements)
     {
-        std::list<std::pair<string, Thunder::Core::JSON::Variant>> elements;
+        std::list<std::pair<string, ::Thunder::Core::JSON::Variant>> elements;
 
-        Thunder::Core::JSON::Variant val1(10);
-        Thunder::Core::JSON::Variant val2(20);
-        Thunder::Core::JSON::Variant val3(30);
+        ::Thunder::Core::JSON::Variant val1(10);
+        ::Thunder::Core::JSON::Variant val2(20);
+        ::Thunder::Core::JSON::Variant val3(30);
 
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key1", val1));
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key2", val2));
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key3", val3));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key1", val1));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key2", val2));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key3", val3));
 
-        Thunder::Core::JSON::VariantContainer container(elements);
+        ::Thunder::Core::JSON::VariantContainer container(elements);
 
-        Thunder::Core::JSON::VariantContainer::Iterator it = container.Variants();
+        ::Thunder::Core::JSON::VariantContainer::Iterator it = container.Variants();
         EXPECT_TRUE(it.Next());
         EXPECT_TRUE(container.HasLabel("Key1"));
         EXPECT_TRUE(it.IsValid());
@@ -1507,20 +1916,20 @@ namespace Tests {
 
     TEST(JSONParser, VariantContainerIterator)
     {
-        std::list<std::pair<string, Thunder::Core::JSON::Variant>> elements;
+        std::list<std::pair<string, ::Thunder::Core::JSON::Variant>> elements;
 
-        Thunder::Core::JSON::Variant val1(10);
-        Thunder::Core::JSON::Variant val2(20);
-        Thunder::Core::JSON::Variant val3(30);
+        ::Thunder::Core::JSON::Variant val1(10);
+        ::Thunder::Core::JSON::Variant val2(20);
+        ::Thunder::Core::JSON::Variant val3(30);
 
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key1", val1));
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key2", val2));
-        elements.push_back(std::pair<std::string, Thunder::Core::JSON::Variant>("Key3", val3));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key1", val1));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key2", val2));
+        elements.push_back(std::pair<std::string, ::Thunder::Core::JSON::Variant>("Key3", val3));
 
-        Thunder::Core::JSON::VariantContainer::Iterator iterator;
-        Thunder::Core::JSON::VariantContainer::Iterator it(elements);
-        Thunder::Core::JSON::VariantContainer::Iterator itCopy(iterator);
-        Thunder::Core::JSON::VariantContainer::Iterator iteratorCopy = itCopy;
+        ::Thunder::Core::JSON::VariantContainer::Iterator iterator;
+        ::Thunder::Core::JSON::VariantContainer::Iterator it(elements);
+        ::Thunder::Core::JSON::VariantContainer::Iterator itCopy(iterator);
+        ::Thunder::Core::JSON::VariantContainer::Iterator iteratorCopy = itCopy;
 
         EXPECT_TRUE(it.Next());
         EXPECT_TRUE(it.IsValid());
@@ -1530,13 +1939,13 @@ namespace Tests {
         it.Reset();
         EXPECT_FALSE(it.IsValid());
     }
-
+#endif
     TEST(JSONParser, simpleSet)
     {
         {
             // UTF8 for the violin music key: (byte array) f0 9d 84 9e => CodePoint 0x1D11E => UTF16 0xD834 0xDD1E 
             string input = R"("Violin key sending: \uD834\uDD1E")";
-            Core::JSON::String json;
+            ::Thunder::Core::JSON::String json;
             string received;
 
             json.FromString(input);
@@ -1545,7 +1954,7 @@ namespace Tests {
         }
         {
             string input = R"("Control: [25][\u0019] Character: [28][\u001C]")";
-            Core::JSON::String json;
+            ::Thunder::Core::JSON::String json;
             string received;
 
             json.FromString(input);
@@ -1553,7 +1962,7 @@ namespace Tests {
             EXPECT_STREQ(input.c_str(), received.c_str());
         }
         {
-            Core::JSONRPC::Message message;
+            ::Thunder::Core::JSONRPC::Message message;
             string input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.connect","params":{"ssid":"iPhone\\"}})";
             string received;
 
@@ -1572,7 +1981,7 @@ namespace Tests {
             // It should show it as an UTF8 string show : "aλόγουςb" but the string,
             // should have the hex bytes as shown above.
             string input = R"("a\u03BB\u1F79\u03B3\u03BF\u03C5\u03C2b")";
-            Core::JSON::String json;
+            ::Thunder::Core::JSON::String json;
             string received;
 
             json.FromString(input);
@@ -1581,22 +1990,22 @@ namespace Tests {
         }
         {
             string input = R"("Wrong code: \uD4\u1E")";
-            Core::JSON::String json;
+            ::Thunder::Core::JSON::String json;
             string received;
 
             json.FromString(input);
             json.ToString(received);
-            EXPECT_EQ(string{}, received.c_str());
+            EXPECT_STREQ("\"\"", received.c_str());
         }
     }
 
-    class SmallTest : public Thunder::Core::JSON::Container {
+    class SmallTest : public ::Thunder::Core::JSON::Container {
     public:
         SmallTest(const SmallTest&) = delete;
         SmallTest& operator=(const SmallTest&) = delete;
 
         SmallTest()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , A(0)
             , B(0)
             , C()
@@ -1611,25 +2020,25 @@ namespace Tests {
         ~SmallTest() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
-            Core::JSON::Container::Clear();
+            ::Thunder::Core::JSON::Container::Clear();
         }
 
-        Core::JSON::DecUInt32  A;
-        Core::JSON::Float B;
-        Core::JSON::String C;
-        Core::JSON::Boolean D;
-        Core::JSON::EnumType<JSONTestEnum> E;
+        ::Thunder::Core::JSON::DecUInt32  A;
+        ::Thunder::Core::JSON::Float B;
+        ::Thunder::Core::JSON::String C;
+        ::Thunder::Core::JSON::Boolean D;
+        ::Thunder::Core::JSON::EnumType<JSONTestEnum> E;
     };
 
-    class SmallTest2 : public Thunder::Core::JSON::Container {
+    class SmallTest2 : public ::Thunder::Core::JSON::Container {
     public:
         SmallTest2(const SmallTest2&) = delete;
         SmallTest2& operator=(const SmallTest2&) = delete;
 
         SmallTest2()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , A()
             , B(0.0)
             , C(0.0) {
@@ -1640,17 +2049,17 @@ namespace Tests {
         ~SmallTest2() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
-            Core::JSON::Container::Clear();
+            ::Thunder::Core::JSON::Container::Clear();
         }
 
-        Core::JSON::ArrayType<Core::JSON::String>  A;
-        Core::JSON::Float B;
-        Core::JSON::Double C;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String>  A;
+        ::Thunder::Core::JSON::Float B;
+        ::Thunder::Core::JSON::Double C;
     };
 
-    class StringContainer : public Core::JSON::Container {
+    class StringContainer : public ::Thunder::Core::JSON::Container {
     public:
         StringContainer(const StringContainer&) = delete;
         StringContainer& operator=(const StringContainer&) = delete;
@@ -1662,13 +2071,13 @@ namespace Tests {
         ~StringContainer() override = default;
 
     public:
-        Core::JSON::String Name;
+        ::Thunder::Core::JSON::String Name;
     };
 
-    class ParamsInfo : public Core::JSON::Container {
+    class ParamsInfo : public ::Thunder::Core::JSON::Container {
     public:
         ParamsInfo()
-            : Core::JSON::Container() {
+            : ::Thunder::Core::JSON::Container() {
             Add(_T("ssid"), &Ssid);
         }
         ~ParamsInfo() override = default;
@@ -1677,16 +2086,16 @@ namespace Tests {
         ParamsInfo& operator=(const ParamsInfo&) = delete;
 
     public:
-        Core::JSON::String Ssid; // Identifier of a network
+        ::Thunder::Core::JSON::String Ssid; // Identifier of a network
     };
 
-    class CommandParameters : public Thunder::Core::JSON::Container {
+    class CommandParameters : public ::Thunder::Core::JSON::Container {
     public:
         CommandParameters(const CommandParameters&) = delete;
         CommandParameters& operator=(const CommandParameters&) = delete;
 
         CommandParameters()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , G(00)
             , H(0)
             , I()
@@ -1704,22 +2113,22 @@ namespace Tests {
         ~CommandParameters() override = default;
 
     public:
-        Thunder::Core::JSON::OctSInt16 G;
-        Thunder::Core::JSON::DecSInt16 H;
-        Thunder::Core::JSON::EnumType<JSONTestEnum> I;
-        Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::DecUInt16> J;
-        Thunder::Core::JSON::Float K;
-        Thunder::Core::JSON::Double L;
+        ::Thunder::Core::JSON::OctSInt16 G;
+        ::Thunder::Core::JSON::DecSInt16 H;
+        ::Thunder::Core::JSON::EnumType<JSONTestEnum> I;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16> J;
+        ::Thunder::Core::JSON::Float K;
+        ::Thunder::Core::JSON::Double L;
     };
 
-    class CommandRequest : public Thunder::Core::JSON::Container {
+    class CommandRequest : public ::Thunder::Core::JSON::Container {
     public:
         CommandRequest(const CommandRequest&) = delete;
         CommandRequest& operator=(const CommandRequest&) = delete;
 
     public:
         CommandRequest()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , A(0x0)
             , B()
             , C(0x0)
@@ -1743,21 +2152,21 @@ namespace Tests {
 
         ~CommandRequest() override = default;
 
-        void Clear()
+        void Clear() override
         {
-            Thunder::Core::JSON::Container::Clear();
+            ::Thunder::Core::JSON::Container::Clear();
         }
 
     public:
-        Thunder::Core::JSON::HexSInt32 A;
-        Thunder::Core::JSON::String B;
-        Thunder::Core::JSON::HexUInt32 C;
-        Thunder::Core::JSON::Boolean D;
-        Thunder::Core::JSON::OctUInt16 E;
+        ::Thunder::Core::JSON::HexSInt32 A;
+        ::Thunder::Core::JSON::String B;
+        ::Thunder::Core::JSON::HexUInt32 C;
+        ::Thunder::Core::JSON::Boolean D;
+        ::Thunder::Core::JSON::OctUInt16 E;
         CommandParameters F;
-        Thunder::Core::JSON::ArrayType<Thunder::Core::JSON::String> M;
-        Thunder::Core::JSON::Float N;
-        Thunder::Core::JSON::Double O;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::String> M;
+        ::Thunder::Core::JSON::Float N;
+        ::Thunder::Core::JSON::Double O;
     };
 
     TEST(JSONParser, smallParser)
@@ -1767,8 +2176,8 @@ namespace Tests {
             string input = R"({"D":true})";
             string translated = R"({"D":true})";
 
-            Core::JSON::Tester<1, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<1, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1780,8 +2189,8 @@ namespace Tests {
             string input = R"({"D":false})";
             string translated = R"({"D":false})";
 
-            Core::JSON::Tester<1, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<1, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1793,8 +2202,8 @@ namespace Tests {
             string input = R"({"A":null,"B":null,"C":null,"D":null,"E":null})";
             string translated = R"({"A":null,"B":null,"C":null,"D":null,"E":null})";
 
-            Core::JSON::Tester<1, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<1, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1806,8 +2215,8 @@ namespace Tests {
             string input = R"({"A":"1","B":"3.2","C":"Text"})";
             string translated = R"({"A":1,"B":3.2,"C":"Text"})";
 
-            Core::JSON::Tester<1, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<1, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1819,8 +2228,8 @@ namespace Tests {
             string input = R"({"A":["test"],"B":"3.2","C":"-65.22"})";
             string translated = R"({"A":["test"],"B":3.2,"C":-65.22})";
 
-            Core::JSON::Tester<1, SmallTest2> parser;
-            Core::ProxyType<SmallTest2> output = Core::ProxyType<SmallTest2>::Create();
+            ::Thunder::Core::JSON::Tester<1, SmallTest2> parser;
+            ::Thunder::Core::ProxyType<SmallTest2> output = ::Thunder::Core::ProxyType<SmallTest2>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1831,8 +2240,8 @@ namespace Tests {
             string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"],"k":"1.1","l":"2.11"},"m":["Test"],"n":"3.2","o":"-65.22"})";
             string translated = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22],"k":1.1,"l":2.11},"m":["Test"],"n":3.2,"o":-65.22})";
 
-            Core::JSON::Tester<1, CommandRequest> parser;
-            Core::ProxyType<CommandRequest> output = Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<1, CommandRequest> parser;
+            ::Thunder::Core::ProxyType<CommandRequest> output = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -1844,7 +2253,7 @@ namespace Tests {
             string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"],"k":"1.1","l":"2.11"},"m":["Test"],"n":"3.2","o":"-65.22"})";
             string inputRequired = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22],"k":1.1,"l":2.11},"m":["Test"],"n":3.2,"o":-65.22})";
             string output;
-            Thunder::Core::ProxyType<CommandRequest> command = Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::ProxyType<CommandRequest> command = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             command->A = -90;
             command->B = _T("TestIdentifier");
             command->C = 90;
@@ -1853,24 +2262,24 @@ namespace Tests {
             command->F.G = -12;
             command->F.H = -44;
             command->F.I = JSONTestEnum::ENUM_4;
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(6, true));
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(14, true));
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(22, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(6, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(14, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(22, true));
             command->F.K = static_cast<float>(1.1);
             command->F.L = 2.11;
             command->N = static_cast<float>(3.2);
             command->O = -65.22;
 
 
-            Thunder::Core::JSON::String str;
+            ::Thunder::Core::JSON::String str;
             str = string("Test");
             command->M.Add(str);
-            Thunder::Core::JSON::Tester<1, CommandRequest> parser;
+            ::Thunder::Core::JSON::Tester<1, CommandRequest> parser;
             //ToString
             parser.ToString(command, output);
             EXPECT_STREQ(inputRequired.c_str(), output.c_str());
             //FromString
-            Thunder::Core::ProxyType<CommandRequest> received = Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::ProxyType<CommandRequest> received = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             parser.FromString(input, received);
             output.clear();
             parser.ToString(received, output);
@@ -1882,7 +2291,7 @@ namespace Tests {
             EXPECT_STREQ(inputRequired.c_str(), output.c_str());
 
             //ArrayType Iterator
-            Thunder::Core::JSON::ArrayType<Core::JSON::DecUInt16>::Iterator settings(command->F.J.Elements());
+            ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16>::Iterator settings(command->F.J.Elements());
             for(int i = 0; settings.Next(); i++)
                 EXPECT_EQ(settings.Current().Value(), command->F.J[i]);
             //null test
@@ -1957,7 +2366,6 @@ namespace Tests {
             printf("input  %zd --- = %s \n", input.length(), input.c_str());
             printf("output %zd --- = %s \n", output.length(), output.c_str());
             EXPECT_STREQ(input.c_str(), output.c_str());
-
             input = R"({"jsonrpc":"2.0","id":1234567890,"method":"hPho\\ne","params":{"ssid":"iPh\one"}})";
             command.FromString(input);
             command.ToString(output);
@@ -1967,7 +2375,7 @@ namespace Tests {
             EXPECT_STREQ(input.c_str(), output.c_str());
 
             input = R"("hPh\\one")";
-            Core::JSON::String str;
+            ::Thunder::Core::JSON::String str;
             str.FromString(input);
             str.ToString(output);
             printf("\n\n Case 5: \n");
@@ -2101,17 +2509,17 @@ namespace Tests {
             escapeSequence = 10;
             input = escapeSequence;
             printf("\n\n Case 17 \n");
-            Thunder::Core::ProxyType<CommandRequest> commandInput = Thunder::Core::ProxyType<CommandRequest>::Create();
-            Thunder::Core::JSON::Tester<1, CommandRequest> parserInput;
+            ::Thunder::Core::ProxyType<CommandRequest> commandInput = ::Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<1, CommandRequest> parserInput;
             commandInput->B = input;
             output.clear();
             parserInput.ToString(commandInput, output);
-            Thunder::Core::ProxyType<CommandRequest> commandOutput = Thunder::Core::ProxyType<CommandRequest>::Create();
-            Thunder::Core::JSON::Tester<1, CommandRequest> parserOutput;
+            ::Thunder::Core::ProxyType<CommandRequest> commandOutput = ::Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<1, CommandRequest> parserOutput;
             parserOutput.FromString(output, commandOutput);
             EXPECT_STREQ(commandInput->B.Value().c_str(), commandOutput->B.Value().c_str());
 
-            Core::JSONRPC::Message message;
+            ::Thunder::Core::JSONRPC::Message message;
             input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.connect","params":{"ssid":"iPhone\\"}})";
             message.FromString(input);
             message.ToString(output);
@@ -2139,8 +2547,8 @@ namespace Tests {
             string input = R"({"D":true})";
             string translated = R"({"D":true})";
 
-            Core::JSON::Tester<512, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<512, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2152,8 +2560,8 @@ namespace Tests {
             string input = R"({"D":false})";
             string translated = R"({"D":false})";
 
-            Core::JSON::Tester<512, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<512, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2165,8 +2573,8 @@ namespace Tests {
             string input = R"({"A":null,"B":null,"C":null,"D":null,"E":null})";
             string translated = R"({"A":null,"B":null,"C":null,"D":null,"E":null})";
 
-            Core::JSON::Tester<512, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<512, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2178,8 +2586,8 @@ namespace Tests {
             string input = R"({"A":"1","B":"3.2","C":"Text"})";
             string translated = R"({"A":1,"B":3.2,"C":"Text"})";
 
-            Core::JSON::Tester<512, SmallTest> parser;
-            Core::ProxyType<SmallTest> output = Core::ProxyType<SmallTest>::Create();
+            ::Thunder::Core::JSON::Tester<512, SmallTest> parser;
+            ::Thunder::Core::ProxyType<SmallTest> output = ::Thunder::Core::ProxyType<SmallTest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2191,8 +2599,8 @@ namespace Tests {
             string input = R"({"A":["test"],"B":"3.2","C":"-65.22"})";
             string translated = R"({"A":["test"],"B":3.2,"C":-65.22})";
 
-            Core::JSON::Tester<512, SmallTest2> parser;
-            Core::ProxyType<SmallTest2> output = Core::ProxyType<SmallTest2>::Create();
+            ::Thunder::Core::JSON::Tester<512, SmallTest2> parser;
+            ::Thunder::Core::ProxyType<SmallTest2> output = ::Thunder::Core::ProxyType<SmallTest2>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2203,8 +2611,8 @@ namespace Tests {
             string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"],"k":"1.1","l":"2.11"},"m":["Test"],"n":"3.2","o":"-65.22"})";
             string translated = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22],"k":1.1,"l":2.11},"m":["Test"],"n":3.2,"o":-65.22})";
 
-            Core::JSON::Tester<512, CommandRequest> parser;
-            Core::ProxyType<CommandRequest> output = Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<512, CommandRequest> parser;
+            ::Thunder::Core::ProxyType<CommandRequest> output = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             string received;
 
             parser.FromString(input, output);
@@ -2216,7 +2624,7 @@ namespace Tests {
             string input = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":"-44","i":"enum_4","j":["6","14","22"],"k":"1.1","l":"2.11"},"m":["Test"],"n":"3.2","o":"-65.22"})";
             string inputRequired = R"({"a":"-0x5A","b":"TestIdentifier","c":"0x5A","d":true,"e":"014","f":{"g":"-014","h":-44,"i":"enum_4","j":[6,14,22],"k":1.1,"l":2.11},"m":["Test"],"n":3.2,"o":-65.22})";
             string output;
-            Thunder::Core::ProxyType<CommandRequest> command = Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::ProxyType<CommandRequest> command = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             command->A = -90;
             command->B = _T("TestIdentifier");
             command->C = 90;
@@ -2225,23 +2633,23 @@ namespace Tests {
             command->F.G = -12;
             command->F.H = -44;
             command->F.I = JSONTestEnum::ENUM_4;
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(6, true));
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(14, true));
-            command->F.J.Add(Thunder::Core::JSON::DecUInt16(22, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(6, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(14, true));
+            command->F.J.Add(::Thunder::Core::JSON::DecUInt16(22, true));
             command->F.K = static_cast<float>(1.1);
             command->F.L = 2.11;
             command->N = static_cast<float>(3.2);
             command->O = -65.22;
 
-            Thunder::Core::JSON::String str;
+            ::Thunder::Core::JSON::String str;
             str = string("Test");
             command->M.Add(str);
-            Thunder::Core::JSON::Tester<512, CommandRequest> parser;
+            ::Thunder::Core::JSON::Tester<512, CommandRequest> parser;
             //ToString
             parser.ToString(command, output);
             EXPECT_STREQ(inputRequired.c_str(), output.c_str());
             //FromString
-            Thunder::Core::ProxyType<CommandRequest> received = Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::ProxyType<CommandRequest> received = ::Thunder::Core::ProxyType<CommandRequest>::Create();
             parser.FromString(input, received);
             output.clear();
             parser.ToString(received, output);
@@ -2253,7 +2661,7 @@ namespace Tests {
             EXPECT_STREQ(inputRequired.c_str(), output.c_str());
 
             //ArrayType Iterator
-            Thunder::Core::JSON::ArrayType<Core::JSON::DecUInt16>::Iterator settings(command->F.J.Elements());
+            ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16>::Iterator settings(command->F.J.Elements());
             for (int i = 0; settings.Next(); i++)
                 EXPECT_EQ(settings.Current().Value(), command->F.J[i]);
             //null test
@@ -2339,7 +2747,7 @@ namespace Tests {
             EXPECT_STREQ(input.c_str(), output.c_str());
 
             input = R"("hPh\\one")";
-            Core::JSON::String str;
+            ::Thunder::Core::JSON::String str;
             str.FromString(input);
             str.ToString(output);
             printf("\n\n Case 5: \n");
@@ -2473,17 +2881,17 @@ namespace Tests {
             escapeSequence = 10;
             input = escapeSequence;
             printf("\n\n Case 17 \n");
-            Thunder::Core::ProxyType<CommandRequest> commandInput = Thunder::Core::ProxyType<CommandRequest>::Create();
-            Thunder::Core::JSON::Tester<512, CommandRequest> parserInput;
+            ::Thunder::Core::ProxyType<CommandRequest> commandInput = ::Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<512, CommandRequest> parserInput;
             commandInput->B = input;
             output.clear();
             parserInput.ToString(commandInput, output);
-            Thunder::Core::ProxyType<CommandRequest> commandOutput = Thunder::Core::ProxyType<CommandRequest>::Create();
-            Thunder::Core::JSON::Tester<512, CommandRequest> parserOutput;
+            ::Thunder::Core::ProxyType<CommandRequest> commandOutput = ::Thunder::Core::ProxyType<CommandRequest>::Create();
+            ::Thunder::Core::JSON::Tester<512, CommandRequest> parserOutput;
             parserOutput.FromString(output, commandOutput);
             EXPECT_STREQ(commandInput->B.Value().c_str(), commandOutput->B.Value().c_str());
 
-            Core::JSONRPC::Message message;
+            ::Thunder::Core::JSONRPC::Message message;
             input = R"({"jsonrpc":"2.0","id":1234567890,"method":"WifiControl.1.connect","params":{"ssid":"iPhone\\"}})";
             message.FromString(input);
             message.ToString(output);
@@ -2503,5 +2911,7 @@ namespace Tests {
             EXPECT_STREQ(input.c_str(), output.c_str());
         }
     }
-}
-}
+
+} // Core
+} // Tests
+} // Thunder

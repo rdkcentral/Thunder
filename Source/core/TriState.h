@@ -82,13 +82,11 @@ namespace Core {
             : m_State(copy.m_State)
         {
         }
-        TriState(TriState&& move)
+        TriState(TriState&& move) noexcept
             : m_State(std::move(move.m_State))
         {
         }
-        ~TriState()
-        {
-        }
+        ~TriState() = default;
 
         TriState& operator=(const TriState& rhs)
         {
@@ -96,7 +94,7 @@ namespace Core {
             return (*this);
         }
 
-        TriState& operator=(TriState&& move)
+        TriState& operator=(TriState&& move) noexcept
         {
             if (this != &move) {
                 m_State = std::move(move.m_State);

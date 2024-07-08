@@ -22,10 +22,6 @@
 #include <limits>
 #include <memory>
 
-#ifdef PROCESSCONTAINERS_ENABLED
-#include "ProcessInfo.h"
-#endif
-
 namespace Thunder {
 namespace RPC {
 
@@ -254,7 +250,7 @@ namespace RPC {
 #ifdef VERSIONED_LIBRARY_LOADING
         static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
 #else
-        static const std::string suffixFilter = ".so";
+        static const std::string suffixFilter = "*.so";
 #endif
 
         while (places.Next() == true) {

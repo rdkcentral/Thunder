@@ -17,27 +17,34 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_ISO639, simple_ISO639)
-{
-    Language();
-    Language lang("eng");
-    Language(12);
-    Language lang1(" ");
-    Language lang2("en");
-    Language lang3("aaaaaa");
-     
-    EXPECT_TRUE(lang.IsValid());
-    EXPECT_STREQ(lang.LetterCode3(),"eng");
-    EXPECT_STREQ(lang.LetterCode2(),"en");
-    EXPECT_STREQ(lang.Description(),"Engels");
-    EXPECT_EQ(lang.Id(),127);
-}
+    TEST(test_ISO639, simple_ISO639)
+    {
+        ::Thunder::Core::Language();
+        ::Thunder::Core::Language lang("eng");
+        ::Thunder::Core::Language(12);
+        ::Thunder::Core::Language lang1(" ");
+        ::Thunder::Core::Language lang2("en");
+        ::Thunder::Core::Language lang3("aaaaaa");
+         
+        EXPECT_TRUE(lang.IsValid());
+        EXPECT_STREQ(lang.LetterCode3(),"eng");
+        EXPECT_STREQ(lang.LetterCode2(),"en");
+        EXPECT_STREQ(lang.Description(),"Engels");
+        EXPECT_EQ(lang.Id(),127);
+    }
 
+} // Core
+} // Tests
+} // Thunder

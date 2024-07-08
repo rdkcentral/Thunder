@@ -55,14 +55,12 @@ namespace Core {
                 , _options(copy._options)
             {
             }
-            Options(Options&& move)
+            Options(Options&& move) noexcept
                 : _command(std::move(move._command))
                 , _options(std::move(move._options))
             {
             }
-            ~Options()
-            {
-            }
+            ~Options() = default;
 
         public:
             inline const string& Command() const
@@ -212,7 +210,7 @@ namespace Core {
             }
 
         private:
-            const string _command;
+            string _command;
             std::vector<string> _options;
         };
 
@@ -461,7 +459,7 @@ namespace Core {
                 }
 #endif
 
-#ifdef __LINUX__
+#ifdef __POSIX__
                 uint16_t size = parameters.BlockSize();
                 _parameters = ::malloc(size);
                 _argc = parameters.Block(_parameters, size);
@@ -475,10 +473,10 @@ namespace Core {
                 stderrfd[1] = -1;
 
                 /* Create the pipe and set non-blocking on the readable end. */
-                if ((_stdin == -1) && (pipe2(stdinfd, O_CLOEXEC) == 0) && (pipe2(stdoutfd, O_CLOEXEC) == 0) && (pipe2(stderrfd, O_CLOEXEC) == 0)) {
+                if ((_stdin == -1) && (pipe(stdinfd) == 0) && (pipe(stdoutfd) == 0) && (pipe(stderrfd) == 0)) {
                     // int flags = ( fcntl(p[0], F_GETFL, 0) & (~O_NONBLOCK) );
-                    int input = (fcntl(stdinfd[1], F_GETFL, 0) | O_NONBLOCK);
-                    int output = (fcntl(stdoutfd[0], F_GETFL, 0) | O_NONBLOCK);
+                    int input = (fcntl(stdinfd[1], F_GETFL, 0) | O_NONBLOCK | O_CLOEXEC);
+                    int output = (fcntl(stdoutfd[0], F_GETFL, 0) | O_NONBLOCK | O_CLOEXEC);
 
                     if ((fcntl(stdinfd[1], F_SETFL, input) != 0) || (fcntl(stdoutfd[0], F_SETFL, output) != 0) || (fcntl(stderrfd[0], F_SETFL, output) != 0)) {
                         _stdin = 0;

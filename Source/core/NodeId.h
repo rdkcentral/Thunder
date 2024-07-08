@@ -95,19 +95,15 @@ namespace Core {
             TYPE_EMPTY = 0xFF
         };
 
-
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__)
     using address_family_t = ADDRESS_FAMILY;
 #else
     using address_family_t = sa_family_t;
 #endif
 
-
         union SocketInfo {
-#ifdef __WINDOWS__
-            address_family_t Family;
-#elif defined(__APPLE__)
-            struct __sockaddr_header saddr_hdr;
+#if defined(__APPLE__)
+            struct sockaddr saddr_hdr;
 #else
             address_family_t Family;
 #endif
@@ -208,9 +204,9 @@ namespace Core {
         NodeId(const struct in6_addr& rInfo, const uint32_t protocol = 0);
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
-#ifndef __APPLE__        
+#ifndef __APPLE__
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
-        NodeId(const struct sockaddr_ll& rInfo); 
+        NodeId(const struct sockaddr_ll& rInfo);
         NodeId(const uint16_t interfaceIndex, const uint16_t protocol, const uint8_t pkgtype, const uint8_t haType, const uint8_t length, const uint8_t* address);
         NodeId(const TCHAR interfaceName[], const uint16_t protocol, const uint8_t pkgType, const uint8_t haType, const uint8_t length, const uint8_t* address);
 #endif         
@@ -418,7 +414,7 @@ namespace Core {
             , _mask(copy._mask)
         {
         }
-        IPNode(IPNode&& move)
+        IPNode(IPNode&& move) noexcept
             : Core::NodeId(move)
             , _mask(move._mask)
         {

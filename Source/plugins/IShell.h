@@ -1,5 +1,5 @@
 /*
- * If not stated otherwise in this file or this component's LICENSE file the
+ * If not stated otherwise in this file or this component's LICENSE file the 
  * following copyright and licenses apply:
  *
  * Copyright 2020 Metrological
@@ -252,10 +252,12 @@ namespace PluginHost {
         virtual ISubSystem* SubSystems() = 0;
 
         // Notify all subscribers of this service with the given string.
-        // It is expected to be JSON formatted strings as it is assumed that this is for reaching websockets clients living in
-        // the web world that have build in functionality to parse JSON structs.
-        virtual void Notify(const string& message) = 0;
-        virtual void Notify(const string& event, const string& parameters) = 0;
+        // It is expected to be JSON formatted strings (message) as it is assumed that this is for reaching websockets clients 
+        // living in the web world that have build in functionality to parse JSON structs.
+        void Notify(const string& message) {
+            Notify(EMPTY_STRING, message);
+        }
+        virtual void Notify(const string& event, const string& message) = 0;
 
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
@@ -278,33 +280,43 @@ namespace PluginHost {
         /* @stubgen:stub */
         virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
-        inline void Register(RPC::IRemoteConnection::INotification* sink)
+        inline Core::hresult Register(RPC::IRemoteConnection::INotification* sink)
         {
+            Core::hresult result;
+
             ASSERT(sink != nullptr);
 
             ICOMLink* handler(QueryInterface<ICOMLink>());
 
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
-
-            if (handler != nullptr) {
+            if (handler == nullptr) {
+                result = Core::ERROR_NOT_SUPPORTED;
+            }
+            else {
                 handler->Register(sink);
                 handler->Release();
+                result = Core::ERROR_NONE;
             }
+
+            return (result);
         }
-        inline void Unregister(const RPC::IRemoteConnection::INotification* sink)
+        inline Core::hresult Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
+            Core::hresult result = Core::ERROR_NONE;
+
             ASSERT(sink != nullptr);
 
             ICOMLink* handler(QueryInterface<ICOMLink>());
 
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
-
-            if (handler != nullptr) {
+            if (handler == nullptr) {
+                result = Core::ERROR_NOT_SUPPORTED;
+            }
+            else {
                 handler->Unregister(sink);
                 handler->Release();
+                result = Core::ERROR_NONE;
             }
+
+            return (result);
         }
         inline void Register(ICOMLink::INotification* sink)
         {
@@ -362,9 +374,6 @@ namespace PluginHost {
         {
             RPC::IRemoteConnection* connection(nullptr);
             ICOMLink* handler(QueryInterface<ICOMLink>());
-
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
                 connection = handler->RemoteConnection(connectionId);

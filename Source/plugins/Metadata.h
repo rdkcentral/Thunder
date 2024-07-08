@@ -46,7 +46,7 @@ namespace PluginHost {
                     : Core::JSON::EnumType<state>()
                 {
                 }
-                State(State&& move)
+                State(State&& move) noexcept
                     : Core::JSON::EnumType<state>(move)
                 {
                 }
@@ -76,14 +76,31 @@ namespace PluginHost {
         public:
             Service& operator=(const Plugin::Config& RHS);
 
+            explicit operator Exchange::Controller::IMetadata::Data::Service() const {
+                Exchange::Controller::IMetadata::Data::Service result (Plugin::Config::operator Thunder::Exchange::Controller::IMetadata::Data::Service());
+
+                result.Module = Module;
+                result.State = JSONState;
+                result.Version = ServiceVersion;
+                result.Observers = Observers;
+
+#if THUNDER_RUNTIME_STATISTICS
+                result.ProcessedRequests = meta.ProcessedRequests;
+                result.ProcessedObjects = meta.ProcessedObjects;
+#else
+                result.ProcessedRequests = 0;
+                result.ProcessedObjects = 0;
+#endif
+
+                return result;
+            }
+
             State JSONState;
 #if THUNDER_RUNTIME_STATISTICS
             Core::JSON::DecUInt32 ProcessedRequests;
             Core::JSON::DecUInt32 ProcessedObjects;
 #endif
-#if THUNDER_RESTFULL_API
             Core::JSON::DecUInt32 Observers;
-#endif
             Version ServiceVersion;
             Core::JSON::String Module;
             Core::JSON::ArrayType<Core::JSON::String> InterfaceVersion;
@@ -92,28 +109,6 @@ namespace PluginHost {
         public:
             using state = Exchange::Controller::IMetadata::Data::Link::state;
 
-            class EXTERNAL State : public Core::JSON::EnumType<state> {
-            public:
-                inline State() = default;
-                inline State(State&& move)
-                    : Core::JSON::EnumType<state>(move)
-                {
-                }
-                inline State(const State& copy)
-                    : Core::JSON::EnumType<state>(copy)
-                {
-                }
-                inline ~State() override = default;
-
-            public:
-                State& operator=(const state RHS);
-                State& operator=(State&& move);
-                State& operator=(const State& RHS);
-
-                string Data() const;
-            };
-
-        public:
             Channel();
             Channel(Channel&& move);
             Channel(const Channel& copy);
@@ -124,7 +119,7 @@ namespace PluginHost {
 
         public:
             Core::JSON::String Remote;
-            State JSONState;
+            Core::JSON::EnumType<state> State;
             Core::JSON::Boolean Activity;
             Core::JSON::DecUInt32 ID;
             Core::JSON::String Name;
@@ -158,7 +153,7 @@ namespace PluginHost {
             Server();
             ~Server() override = default;
 
-            inline void Clear()
+            inline void Clear() override
             {
                 ThreadPoolRuns.Clear();
                 PendingRequests.Clear();
@@ -184,7 +179,7 @@ namespace PluginHost {
         public:
             void Add(const PluginHost::ISubSystem::subsystem name, const bool available);
 
-            void Clear()
+            void Clear() override
             {
                 SubSystems::iterator index(_subSystems.begin());
                 while (index != _subSystems.end()) {
@@ -214,7 +209,7 @@ namespace PluginHost {
                 Add(_T("link"), &Remote);
                 Add(_T("proxies"), &Proxies);
             }
-            COMRPC(COMRPC&& move)
+            COMRPC(COMRPC&& move) noexcept
                 : Core::JSON::Container()
                 , Remote(std::move(move.Remote))
                 , Proxies(std::move(move.Proxies)) {
@@ -230,7 +225,8 @@ namespace PluginHost {
             }
             ~COMRPC() override = default;
 
-            void Clear() {
+            void Clear() override
+            {
                 Remote.Clear();
                 Proxies.Clear();
             }

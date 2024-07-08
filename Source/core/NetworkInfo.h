@@ -60,7 +60,7 @@ namespace Core {
                 , _protocol(copy._protocol)
                 , _scope(copy._scope) {
             }
-            Route(Route&& move)
+            Route(Route&& move) noexcept
                 : _source(std::move(move._source))
                 , _destination(std::move(move._destination))
                 , _preferred(std::move(move._preferred))
@@ -104,7 +104,7 @@ namespace Core {
                 return (*this);
             }
  
-            Route& operator=(Route&& move) {
+            Route& operator=(Route&& move) noexcept {
                 if (this != &move) {
                     _source = std::move(move._source);
                     _destination = std::move(move._destination);
@@ -209,7 +209,7 @@ namespace Core {
         INotification* _callback;
     };
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) || defined(__APPLE__)
 
     class EXTERNAL IPV4AddressIterator {
     public:
@@ -230,7 +230,7 @@ namespace Core {
             , _section3(copy._section3)
         {
         }
-        inline IPV4AddressIterator(IPV4AddressIterator&& move)
+        inline IPV4AddressIterator(IPV4AddressIterator&& move) noexcept
             : _adapter(move._adapter)
             , _index(move._index)
             , _section1(move._section1)
@@ -259,7 +259,7 @@ namespace Core {
             return (*this);
         }
 
-        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move)
+        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move) noexcept
         {
             if (this != &move) {
                 _adapter = move._adapter;
@@ -310,6 +310,7 @@ namespace Core {
         uint16_t _section3;
     };
 
+#if defined(__WINDOWS__)
     class EXTERNAL IPV6AddressIterator {
     public:
         inline IPV6AddressIterator()
@@ -329,7 +330,7 @@ namespace Core {
             , _section3(copy._section3)
         {
         }
-        inline IPV6AddressIterator(IPV6AddressIterator&& move)
+        inline IPV6AddressIterator(IPV6AddressIterator&& move) noexcept
             : _adapter(move._adapter)
             , _index(move._index)
             , _section1(move._section1)
@@ -357,7 +358,7 @@ namespace Core {
             return (*this);
         }
 
-        inline IPV6AddressIterator& operator=(IPV6AddressIterator&& move)
+        inline IPV6AddressIterator& operator=(IPV6AddressIterator&& move) noexcept
         {
             if (this != &move) {
                 _adapter = move._adapter;
@@ -408,6 +409,9 @@ namespace Core {
         uint16_t _section3;
     };
 
+#else
+    using IPV6AddressIterator = IPV4AddressIterator;
+#endif
 
     class EXTERNAL AdapterIterator {
     public:
@@ -442,7 +446,7 @@ namespace Core {
             : _index(copy._index)
         {
         }
-        inline AdapterIterator(AdapterIterator&& move)
+        inline AdapterIterator(AdapterIterator&& move) noexcept
             : _index(move._index)
         {
             move._index = (static_cast<uint16_t>(~0));
@@ -457,7 +461,7 @@ namespace Core {
             return (*this);
         }
 
-        inline AdapterIterator& operator=(AdapterIterator&& move)
+        inline AdapterIterator& operator=(AdapterIterator&& move) noexcept
         {
             if (this != &move) {
                 _index = move._index;

@@ -26,7 +26,7 @@ ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE
 ProxyStubGenerator(NAMESPACE "Thunder::Exchange" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 JsonGenerator(CODE NAMESPACE Thunder::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
 
@@ -111,7 +111,7 @@ target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
 
 target_include_directories( ${TARGET_PROXYSTUBS}
@@ -125,12 +125,12 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        SOVERSION ${Thunder_VERSION_MAJOR}
+        SOVERSION ${VERSION_MAJOR}
         )
 
 if(HUMAN_VERSIONED_BINARIES)
 set_target_properties(${TARGET} PROPERTIES
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 endif()
 
@@ -138,12 +138,12 @@ set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        SOVERSION ${Thunder_VERSION_MAJOR}
+        SOVERSION ${VERSION_MAJOR}
         )
 
 if(HUMAN_VERSIONED_BINARIES)
 set_target_properties(${TARGET} PROPERTIES
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 endif()
 

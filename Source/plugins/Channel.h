@@ -192,13 +192,14 @@ namespace PluginHost {
 
     public:
         enum ChannelState : uint16_t {
-            CLOSED = 0x01,
-            WEB = 0x02,
-            JSON = 0x04,
-            RAW = 0x08,
-            TEXT = 0x10,
-            JSONRPC = 0x20,
-            PINGED = 0x4000,
+            CLOSED   = 0x01,
+            WEB      = 0x02,
+            JSON     = 0x04,
+            RAW      = 0x08,
+            TEXT     = 0x10,
+            JSONRPC  = 0x20,
+
+            PINGED   = 0x4000,
             NOTIFIED = 0x8000
         };
 
@@ -235,10 +236,6 @@ namespace PluginHost {
             }
 
             return (result);
-        }
-        string Name() const
-        {
-            return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : BaseClass::Path().c_str());
         }
         uint32_t Id() const
         {
@@ -314,10 +311,6 @@ namespace PluginHost {
 		{
             BaseClass::Unlock();
         }
-        void Properties(const uint32_t offset)
-        {
-            _nameOffset = offset;
-        }
         void State(const ChannelState state, const bool notification)
         {
             BaseClass::Lock();
@@ -332,7 +325,7 @@ namespace PluginHost {
         {
             uint16_t size = 0;
 
-            switch (State()) {
+            switch (static_cast<ChannelState>(State() & 0xFF)) {
             case JSON:
             case JSONRPC: {
                 // Seems we are sending JSON structs
@@ -442,6 +435,7 @@ namespace PluginHost {
         }
 
     private:
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
         // Handle the WebRequest coming in.
         virtual void LinkBody(Core::ProxyType<Request>& request) = 0;
         virtual void Received(Core::ProxyType<Request>& request) = 0;
@@ -464,8 +458,9 @@ namespace PluginHost {
 
         // Whenever there is a state change on the link, it is reported here.
         virtual void StateChange() = 0;
+POP_WARNING()
 
-        virtual bool IsIdle() const
+        bool IsIdle() const override
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
@@ -485,7 +480,6 @@ namespace PluginHost {
 
     private:
         uint32_t _ID;
-        uint32_t _nameOffset;
         mutable uint16_t _state;
         SerializerImpl _serializer;
         DeserializerImpl _deserializer;

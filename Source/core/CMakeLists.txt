@@ -23,11 +23,11 @@ find_package(ExecInfo)
 find_package(LIBRT)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h" @ONLY)
-message(STATUS "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
+message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
 
 add_library(${TARGET}
         Module.cpp
-	    DoorBell.cpp
+        DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -36,7 +36,6 @@ add_library(${TARGET}
         JSON.cpp
         JSONRPC.cpp
         Library.cpp
-        MessageException.cpp
         Netlink.cpp
         NetworkInfo.cpp
         NodeId.cpp
@@ -157,7 +156,7 @@ target_compile_options (${TARGET} PRIVATE -Wno-psabi)
 # All build flags that are applicable to the whole system should be set here in the 
 # core since the core is included everywhere so if they are set here, they are 
 # picked up everywhere!
-if(DISABLE_TRACING)
+if(DISABLE_TRACING OR NOT ENABLED_TRACING_LEVEL)
     target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
 else()
@@ -230,12 +229,12 @@ set_target_properties(${TARGET} PROPERTIES
           CXX_STANDARD_REQUIRED YES
           FRAMEWORK FALSE
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-          SOVERSION ${Thunder_VERSION_MAJOR}
+          SOVERSION ${VERSION_MAJOR}
         )
 
 if(HUMAN_VERSIONED_BINARIES)
 set_target_properties(${TARGET} PROPERTIES
-        VERSION ${Thunder_VERSION}
+        VERSION ${VERSION}
         )
 endif()
 
@@ -245,11 +244,15 @@ if (NOT BUILD_SHARED_LIBS)
     )
 endif()
 
+if (APPLE)
+    target_compile_definitions( ${TARGET} PRIVATE __APPLE_USE_RFC_3542)
+endif()
+
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>)
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>)
 
 if(LIBRT_FOUND)
     target_link_libraries(${TARGET}
