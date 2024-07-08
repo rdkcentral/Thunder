@@ -55,7 +55,7 @@ namespace Core {
     {
         const string fileName = "dataFile.txt";
         const string message = ">echo 'DataElement file checking......'";
-        string buffer = message + fileName;
+        const string buffer = message + fileName;
 
 #ifdef __POSIX__
         errno = 0;
@@ -74,8 +74,8 @@ namespace Core {
 #endif
 
         ASSERT_TRUE(file.Create(true));
-        EXPECT_EQ(file.IsOpen(), true);
-        EXPECT_EQ(file.Name(), fileName);
+        EXPECT_TRUE(file.IsOpen());
+        EXPECT_STREQ(file.Name().c_str(), fileName.c_str());
 
 #ifdef __POSIX__
         errno = 0;
@@ -101,6 +101,7 @@ namespace Core {
         EXPECT_EQ(obj2.IsValid(), true);
 
         const ::Thunder::Core::File& obj1File = obj1.Storage();
+        EXPECT_TRUE(obj1File.IsOpen());
         EXPECT_STREQ(obj1File.FileName().c_str(), file.FileName().c_str());
 
         obj1.ReloadFileInfo();
