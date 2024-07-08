@@ -29,6 +29,7 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     class Response {
     public:
@@ -126,11 +127,11 @@ namespace Tests {
         uint64_t _context;
     };
 
-    typedef Core::IPCMessageType<1, Triplet, Response> TripletResponse;
-    typedef Core::IPCMessageType<2, Core::Void, Triplet> VoidTriplet;
-    typedef Core::IPCMessageType<3, Core::IPC::Text<2048>, Core::IPC::Text<2048>> TextText;
+    typedef ::Thunder::Core::IPCMessageType<1, Triplet, Response> TripletResponse;
+    typedef ::Thunder::Core::IPCMessageType<2, ::Thunder::Core::Void, Triplet> VoidTriplet;
+    typedef ::Thunder::Core::IPCMessageType<3, ::Thunder::Core::IPC::Text<2048>, ::Thunder::Core::IPC::Text<2048>> TextText;
 
-    class HandleTripletResponse : public Core::IIPCServer {
+    class HandleTripletResponse : public ::Thunder::Core::IIPCServer {
     public:
         HandleTripletResponse(const HandleTripletResponse&) = delete;
         HandleTripletResponse& operator=(const HandleTripletResponse&) = delete;
@@ -145,9 +146,9 @@ namespace Tests {
 
     public:
         // Here comes the actual implementation of the RPC...
-        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
+        virtual void Procedure(::Thunder::Core::IPCChannel& source, ::Thunder::Core::ProxyType<::Thunder::Core::IIPC>& data)
         {
-            Core::ProxyType<TripletResponse> message(data);
+            ::Thunder::Core::ProxyType<TripletResponse> message(data);
             uint32_t result = message->Parameters().Display() + message->Parameters().Surface() + static_cast<uint32_t>(message->Parameters().Context());
 
             message->Response() = Response(result);
@@ -155,7 +156,7 @@ namespace Tests {
         }
     };
 
-    class HandleVoidTriplet : public Core::IIPCServer {
+    class HandleVoidTriplet : public ::Thunder::Core::IIPCServer {
     public:
         HandleVoidTriplet(const HandleVoidTriplet&) = delete;
         HandleVoidTriplet& operator=(const HandleVoidTriplet&) = delete;
@@ -169,9 +170,9 @@ namespace Tests {
 
     public:
         // Here comes the actual implementation of the RPC...
-        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
+        virtual void Procedure(::Thunder::Core::IPCChannel& source, ::Thunder::Core::ProxyType<::Thunder::Core::IIPC>& data)
         {
-            Core::ProxyType<VoidTriplet> message(data);
+            ::Thunder::Core::ProxyType<VoidTriplet> message(data);
             Triplet newValue(1, 2, 3);
 
             message->Response() = newValue;
@@ -179,7 +180,7 @@ namespace Tests {
         }
     };
 
-    class HandleTextText : public Core::IIPCServer {
+    class HandleTextText : public ::Thunder::Core::IIPCServer {
     public:
         HandleTextText(const HandleTextText&) = delete;
         HandleTextText& operator=(const HandleTextText&) = delete;
@@ -194,12 +195,12 @@ namespace Tests {
 
     public:
         // Here comes the actual implementation of the RPC...
-        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
+        virtual void Procedure(::Thunder::Core::IPCChannel& source, ::Thunder::Core::ProxyType<::Thunder::Core::IIPC>& data)
         {
-            Core::ProxyType<TextText> message(data);
+            ::Thunder::Core::ProxyType<TextText> message(data);
             string text = message->Parameters().Value();
 
-            message->Response() = Core::IPC::Text<2048>(text);
+            message->Response() = ::Thunder::Core::IPC::Text<2048>(text);
             source.ReportResponse(data);
         }
     };
@@ -208,34 +209,34 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver0");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId continousNode(connector.c_str());
+            ::Thunder::Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, true, false> continousChannel(continousNode, 32, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, true, false> continousChannel(continousNode, 32, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             continousChannel.Register(TripletResponse::Id(), handler1);
             continousChannel.Register(VoidTriplet::Id(), handler2);
             continousChannel.Register(TextText::Id(), handler3);
 
             error = continousChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
             testAdmin.Sync("done testing");
 
             error = continousChannel.Source().Close(1000); // Wait for 1 second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             continousChannel.Unregister(TripletResponse::Id());
             continousChannel.Unregister(VoidTriplet::Id());
             continousChannel.Unregister(TextText::Id());
@@ -249,32 +250,32 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId continousNode(connector.c_str());
+            ::Thunder::Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> continousChannel(continousNode, 32, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> continousChannel(continousNode, 32, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             error = continousChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
@@ -282,25 +283,25 @@ namespace Tests {
             uint32_t result = 6;
 
             error = continousChannel.Invoke(tripletResponseData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
             error = continousChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
 
             error = continousChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
 
             error = continousChannel.Source().Close(1000); // Wait for 1 second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
     }
@@ -309,33 +310,33 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver1");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId continousNode(connector.c_str());
+            ::Thunder::Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> continousChannel(continousNode, 32, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> continousChannel(continousNode, 32, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             error = continousChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
@@ -343,25 +344,25 @@ namespace Tests {
             uint32_t result = 6;
 
             error = continousChannel.Invoke(tripletResponseData, 5000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
             error = continousChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
 
             error = continousChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
 
             error = continousChannel.Source().Close(1000); // Wait for 1 second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
 
             testAdmin.Sync("done testing");
         };
@@ -372,34 +373,34 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId continousNode(connector.c_str());
+            ::Thunder::Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, true, false> continousChannel(continousNode, 32, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, true, false> continousChannel(continousNode, 32, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             continousChannel.Register(TripletResponse::Id(), handler1);
             continousChannel.Register(VoidTriplet::Id(), handler2);
             continousChannel.Register(TextText::Id(), handler3);
 
             error = continousChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("setup server");
             testAdmin.Sync("done testing");
 
             error = continousChannel.Source().Close(1000); // Wait for 1 second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             continousChannel.Unregister(TripletResponse::Id());
             continousChannel.Unregister(VoidTriplet::Id());
@@ -407,7 +408,7 @@ namespace Tests {
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
     }
 
@@ -415,34 +416,34 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver2");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId flashNode(connector.c_str());
+            ::Thunder::Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, true, false> flashChannel(flashNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, true, false> flashChannel(flashNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             flashChannel.Register(TripletResponse::Id(), handler1);
             flashChannel.Register(VoidTriplet::Id(), handler2);
             flashChannel.Register(TextText::Id(), handler3);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
             testAdmin.Sync("done testing");
 
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             flashChannel.Unregister(TripletResponse::Id());
             flashChannel.Unregister(VoidTriplet::Id());
             flashChannel.Unregister(TextText::Id());
@@ -456,29 +457,29 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId flashNode(connector.c_str());
+            ::Thunder::Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> flashChannel(flashNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> flashChannel(flashNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
@@ -486,33 +487,33 @@ namespace Tests {
             uint32_t result = 6;
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(tripletResponseData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
 
         testAdmin.Sync("done testing");
@@ -522,34 +523,34 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver3");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId flashNode(connector.c_str());
+            ::Thunder::Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, true, false> flashChannel(flashNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, true, false> flashChannel(flashNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             flashChannel.Register(TripletResponse::Id(), handler1);
             flashChannel.Register(VoidTriplet::Id(), handler2);
             flashChannel.Register(TextText::Id(), handler3);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
             testAdmin.Sync("done testing");
 
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             flashChannel.Unregister(TripletResponse::Id());
             flashChannel.Unregister(VoidTriplet::Id());
             flashChannel.Unregister(TextText::Id());
@@ -563,29 +564,29 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId flashNode(connector.c_str());
+            ::Thunder::Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> flashChannel(flashNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> flashChannel(flashNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
@@ -593,33 +594,33 @@ namespace Tests {
             uint32_t result = 6;
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(tripletResponseData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             error = flashChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             error = flashChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
             error = flashChannel.Source().Close(1000); // Wait for 1 Second
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
         testAdmin.Sync("done testing");
     }
@@ -628,38 +629,38 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver4");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId multiNode(connector.c_str());
+            ::Thunder::Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelServerType<Core::Void, false> multiChannel(multiNode, 512, factory);
+            ::Thunder::Core::IPCChannelServerType<::Thunder::Core::Void, false> multiChannel(multiNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             multiChannel.Register(TripletResponse::Id(), handler1);
             multiChannel.Register(VoidTriplet::Id(), handler2);
             multiChannel.Register(TextText::Id(), handler3);
 
             error = multiChannel.Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
             testAdmin.Sync("setup client");
             testAdmin.Sync("done testing");
 
             error = multiChannel.Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         };
 
         static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -668,32 +669,32 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId multiNode(connector.c_str());
+            ::Thunder::Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> multiChannel(multiNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> multiChannel(multiNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             error = multiChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
@@ -701,25 +702,25 @@ namespace Tests {
             uint32_t result = 6;
 
             error = multiChannel.Invoke(tripletResponseData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
             error = multiChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
 
             error = multiChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
 
             error = multiChannel.Source().Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
         }
 //        testAdmin.Sync("done testing");
     }
@@ -728,48 +729,48 @@ namespace Tests {
     {
         std::string connector = _T("/tmp/testserver5");
         auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId multiNode(connector.c_str());
+            ::Thunder::Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup client");
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelClientType<Core::Void, false, false> multiChannel(multiNode, 512, factory);
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> multiChannel(multiNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             error = multiChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup server");
 
-            Core::ProxyType<TripletResponse> tripletResponseData(Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
-            Core::ProxyType<VoidTriplet> voidTripletData(Core::ProxyType<VoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<TripletResponse> tripletResponseData(::Thunder::Core::ProxyType<TripletResponse>::Create(Triplet(1, 2, 3)));
+            ::Thunder::Core::ProxyType<VoidTriplet> voidTripletData(::Thunder::Core::ProxyType<VoidTriplet>::Create());
             string text = "test text";
-            Core::ProxyType<TextText> textTextData(Core::ProxyType<TextText>::Create(Core::IPC::Text<2048>(text)));
+            ::Thunder::Core::ProxyType<TextText> textTextData(::Thunder::Core::ProxyType<TextText>::Create(::Thunder::Core::IPC::Text<2048>(text)));
 
             uint16_t display = 1;;
             uint32_t surface = 2;
             uint64_t context = 3;
             uint32_t result = 6;
             error = multiChannel.Invoke(tripletResponseData, 5000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
 
             error = multiChannel.Invoke(voidTripletData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
 
             error = multiChannel.Invoke(textTextData, 2000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
 
             tripletResponseData.Release();
@@ -777,7 +778,7 @@ namespace Tests {
             textTextData.Release();
 
             error = multiChannel.Source().Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             handler1.Release();
             handler2.Release();
@@ -789,7 +790,7 @@ namespace Tests {
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
 
             testAdmin.Sync("done testing");
         };
@@ -800,33 +801,33 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId multiNode(connector.c_str());
+            ::Thunder::Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
             factory->CreateFactory<TripletResponse>(2);
             factory->CreateFactory<VoidTriplet>(2);
             factory->CreateFactory<TextText>(2);
 
-            Core::IPCChannelServerType<Core::Void, false> multiChannel(multiNode, 512, factory);
+            ::Thunder::Core::IPCChannelServerType<::Thunder::Core::Void, false> multiChannel(multiNode, 512, factory);
 
-            Core::ProxyType<Core::IIPCServer> handler1(Core::ProxyType<HandleTripletResponse>::Create());
-            Core::ProxyType<Core::IIPCServer> handler2(Core::ProxyType<HandleVoidTriplet>::Create());
-            Core::ProxyType<Core::IIPCServer> handler3(Core::ProxyType<HandleTextText>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler1(::Thunder::Core::ProxyType<HandleTripletResponse>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler2(::Thunder::Core::ProxyType<HandleVoidTriplet>::Create());
+            ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer> handler3(::Thunder::Core::ProxyType<HandleTextText>::Create());
 
             multiChannel.Register(TripletResponse::Id(), handler1);
             multiChannel.Register(VoidTriplet::Id(), handler2);
             multiChannel.Register(TextText::Id(), handler3);
 
             error = multiChannel.Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             testAdmin.Sync("setup client");
             testAdmin.Sync("setup server");
             testAdmin.Sync("done testing");
 
             error = multiChannel.Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            EXPECT_EQ(error, ::Thunder::Core::ERROR_NONE);
 
             handler1.Release();
             handler2.Release();
@@ -840,10 +841,12 @@ namespace Tests {
 
             factory->DestroyFactories();
 
-            Core::Singleton::Dispose();
+            ::Thunder::Core::Singleton::Dispose();
 
 //            testAdmin.Sync("done testing");
         }
     }
+
+} // Core
 } // Tests
 } // Thunder

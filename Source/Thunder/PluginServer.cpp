@@ -165,21 +165,6 @@ namespace PluginHost {
         const string _controllerName;
     };
 
-    string ChannelIdentifier (const Core::SocketPort& input) {
-        string result;
-        const Core::NodeId& localNode(input.LocalNode());
-
-        if ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV4) || ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV6))) {
-            // It is using TCP/IP (4 or 6) connectivity..
-            result = input.RemoteNode().HostName() + '@' + Core::NumberType<uint16_t>(localNode.PortNumber()).Text();
-        }
-        else {
-            // It's not a network connection, let report to whom it hooked up..
-            result = localNode.HostName() + '@' + Core::NumberType<Core::IResource::handle>(static_cast<const Core::IResource&>(input).Descriptor()).Text();
-        }
-        return (result);
-    }
-
     //
     // class Server::WorkerPoolImplementation
     // -----------------------------------------------------------------------------------------------------------------------------------
@@ -225,8 +210,13 @@ namespace PluginHost {
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
-            string name = client->Name();
+            if (client->IsOpen() == false) {
+                newInfo.State = Metadata::Channel::state::CLOSED;
+            }
+            else {
+                newInfo.State = (client->IsWebSocket() ? ((client->State() == PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
+            }
+            string name = client->Path();
 
             if (name.empty() == false) {
                 newInfo.Name = name;
@@ -471,9 +461,12 @@ namespace PluginHost {
                         stateControl->Release();
                     }
 
-                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-
                     Unlock();
+
+                    #ifdef THUNDER_RESTFULL_API
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
         } else {
@@ -494,7 +487,7 @@ namespace PluginHost {
             result = Core::ERROR_INPROGRESS;
         } else if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::HIBERNATED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( (currentState == IShell::state::DEACTIVATED) ) {
+        } else if (currentState == IShell::state::DEACTIVATED) {
             result = Activate(why);
             currentState = State();
         }
@@ -604,7 +597,10 @@ namespace PluginHost {
                 if (currentState != IShell::state::ACTIVATION) {
                     SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
+                    #ifdef THUNDER_RESTFULL_API
                     Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    #endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
             }
 
@@ -690,7 +686,12 @@ namespace PluginHost {
             State(UNAVAILABLE);
             _administrator.Unavailable(callSign, this);
 
+            Unlock();
+
+            #ifdef THUNDER_RESTFULL_API
             Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            #endif
+            Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
         }
 
         Unlock();
@@ -1200,10 +1201,8 @@ namespace PluginHost {
             ASSERT(callsign.empty() == false);
 
             if (jsonrpc_event.empty() == false) {
-                JsonData::Events::ForwardEventParamsData message;
-                message.Data = Exchange::Controller::IEvents::INotification::Event({ jsonrpc_event, parameters });
-                message.Callsign = callsign;
-                Exchange::Controller::JEvents::Event::ForwardEvent(*controller, message);
+                JsonData::Events::ForwardMessageParamsData::EventData message({ jsonrpc_event, parameters, callsign });
+                controller->Notify(_T("all"), message);
             }
             else {
                 string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":\"") + parameters + _T("\"}}");

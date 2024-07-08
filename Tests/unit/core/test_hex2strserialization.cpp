@@ -30,13 +30,14 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
     TEST(HEX2StrSerialization, serialiation_working) {
         uint8_t object[] = {0xB1, 0x32, 0x01};
         const uint16_t lenght = sizeof(object);
 
         string output;
-        Core::ToHexString(object, lenght, output);
+        ::Thunder::Core::ToHexString(object, lenght, output);
 
         EXPECT_EQ(output, "b13201");
     }
@@ -47,7 +48,7 @@ namespace Tests {
         uint8_t buffer[8] = {0};
 
         string output;
-        uint16_t length = Core::FromHexString(str, buffer, 8);
+        uint16_t length = ::Thunder::Core::FromHexString(str, buffer, 8);
 
         EXPECT_EQ(length, 3);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
@@ -59,7 +60,7 @@ namespace Tests {
         uint8_t buffer[8] = {0};
 
         string output;
-        uint16_t length = Core::FromHexString(str, buffer, 8);
+        uint16_t length = ::Thunder::Core::FromHexString(str, buffer, 8);
 
         EXPECT_EQ(length, 3);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
@@ -71,7 +72,7 @@ namespace Tests {
         uint8_t buffer[8] = {0};
 
         string output;
-        uint16_t length = Core::FromHexString(str, buffer, 8);
+        uint16_t length = ::Thunder::Core::FromHexString(str, buffer, 8);
 
         EXPECT_EQ(length, 3);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
@@ -83,10 +84,12 @@ namespace Tests {
         uint8_t buffer[8]  = {0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF};
 
         string output;
-        uint16_t length = Core::FromHexString(str, buffer, 2);
+        uint16_t length = ::Thunder::Core::FromHexString(str, buffer, 2);
 
         EXPECT_EQ(length, 2);
         EXPECT_EQ(memcmp(expected, buffer, sizeof(expected)), 0);
     }
-}
-}
+
+} // Core
+} // Tests
+} // Thunder

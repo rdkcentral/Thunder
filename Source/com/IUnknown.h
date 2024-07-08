@@ -52,10 +52,10 @@ namespace ProxyStub {
         inline uint16_t Length() const {
             return (3);
         }
-	    virtual Core::IUnknown* Convert(void* incomingData) const {
+        virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
         }
-	    virtual uint32_t InterfaceId() const {
+        virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
@@ -87,14 +87,15 @@ namespace ProxyStub {
         {
             return (_myHandlerCount + UnknownStub::Length());
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const
+        Core::IUnknown* Convert(void* incomingData) const override
         {
             return (reinterpret_cast<INTERFACE*>(incomingData));
         }
-    	virtual uint32_t InterfaceId() const {
+    	uint32_t InterfaceId() const override
+        {
             return (INTERFACE::ID);
         }
-        virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
+        void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) override
         {
             uint16_t baseNumber(UnknownStub::Length());
 
@@ -147,14 +148,15 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
-            , _name(name)
+            , _name(&(name[7])) /* It always starts with "struct ", remove it...*/
         {
         }
         virtual ~UnknownProxy() = default;
 
     public:
         uint32_t ReferenceCount() const {
-            return(_refCount);
+            // Subtract 1, as that is for the holding in the administration system here of the created Proxies
+            return(_refCount - 1);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
@@ -426,9 +428,9 @@ namespace ProxyStub {
         // and the clearing of the _channel is also only called from there,
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
-        uintptr_t LinkId() const
+        uint32_t Id() const
         {
-            return (_channel.IsValid() ? _channel->LinkId() : 0);
+            return (_channel.IsValid() ? _channel->Id() : 0);
         }
         void Invalidate() {
             ASSERT(_refCount > 0);

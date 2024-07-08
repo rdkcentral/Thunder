@@ -54,6 +54,7 @@ After the building process is finished, you still need to make a few adjustments
 ```
 mkdir ..\artifacts\temp
 mkdir ..\artifacts\Persistent
+mkdir ..\artifacts\temp\MessageDispatcher
 ```
 
 

@@ -620,10 +620,12 @@ namespace RPC {
             uint32_t Launch() override {
                 return (Core::ERROR_UNAVAILABLE);
             }
-
             inline bool IsOperational() const
             {
                 return (_channel.IsValid() == true);
+            }
+            const Core::NodeId& RemoteNode() const {
+                return(_channel->Source().RemoteNode());
             }
             inline Core::ProxyType<Core::IPCChannel> Channel()
             {
@@ -661,7 +663,6 @@ namespace RPC {
 
     private:
         friend class ProcessShutdown;
-        class RemoteConnectionMap;
 
         class MonitorableProcess : public RemoteConnection, public IMonitorableProcess {
         public:
@@ -1546,7 +1547,6 @@ POP_WARNING()
         {
             return _hardKillCheckWaitTime;
         }
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
@@ -1841,7 +1841,7 @@ POP_WARNING()
             // Lock event until Dispatch() sets it.
             return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
         }
-        virtual void Dispatch(Core::IIPC& element);
+        void Dispatch(Core::IIPC& element) override;
 
     protected:
         void StateChange() override;

@@ -52,10 +52,12 @@ namespace Core {
             {
                 if (_buffer != nullptr) {
                     _buffer[0] = 1;
+PUSH_WARNING(DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND)
                     _buffer[1] = (length & 0xFF);
                     _buffer[2] = ((length >> 8) && 0xFF);
                     _buffer[3] = (length & 0xFF);
                     _buffer[4] = ((length >> 8) && 0xFF);
+POP_WARNING()
                 }
             }
             Buffer(const Buffer& copy)
@@ -100,7 +102,9 @@ namespace Core {
 
                 if (_buffer != nullptr) {
                     _buffer[1] = (length & 0xFF);
+PUSH_WARNING(DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND)
                     _buffer[2] = ((length >> 8) && 0xFF);
+POP_WARNING()
                 }
             }
             inline uint16_t Size() const
