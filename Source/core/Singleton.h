@@ -117,28 +117,9 @@ namespace Core {
         }
 
         template <typename... Args>
-        DEPRECATED inline static SINGLETON& Instance(Args&&... args)
+        inline static SINGLETON& Instance(Args&&... args)
         {
-            static CriticalSection g_AdminLock;
-
-            g_AdminLock.Lock();
-
-            if (g_TypedSingleton == nullptr) {
-                // Create a singleton
-                SingletonType<SINGLETON>::Create(std::forward<Args>(args)...);
-            }
-
-            g_AdminLock.Unlock();
-
-            return (GetObject(TemplateIntToType<false>()));
-        }
-
-        inline static SINGLETON& Instance() {
-            // As available does not see through friend clas/protected 
-            // declarations, we can not rely on the output of it.
-            // If this Instance method id called, assume it has a
-            // default constructor..
-            return (GetObject(TemplateIntToType<true>()));
+            return (GetObject(TemplateIntToType<sizeof...(Args) == 0>()));
         }
 
         // The Create() and Dispose() methods should only be used if the lifetime of 
