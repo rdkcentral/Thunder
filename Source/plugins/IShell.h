@@ -301,7 +301,7 @@ namespace PluginHost {
         }
         inline Core::hresult Unregister(const RPC::IRemoteConnection::INotification* sink)
         {
-            Core::hresult result;
+            Core::hresult result = Core::ERROR_NONE;
 
             ASSERT(sink != nullptr);
 
@@ -313,6 +313,7 @@ namespace PluginHost {
             else {
                 handler->Unregister(sink);
                 handler->Release();
+                result = Core::ERROR_NONE;
             }
 
             return (result);

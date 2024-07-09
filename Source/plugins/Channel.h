@@ -237,10 +237,6 @@ namespace PluginHost {
 
             return (result);
         }
-        string Name() const
-        {
-            return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : BaseClass::Path().c_str());
-        }
         uint32_t Id() const
         {
             return (_ID);
@@ -314,10 +310,6 @@ namespace PluginHost {
         void Unlock() const 
 		{
             BaseClass::Unlock();
-        }
-        void Properties(const uint32_t offset)
-        {
-            _nameOffset = offset;
         }
         void State(const ChannelState state, const bool notification)
         {
@@ -488,7 +480,6 @@ POP_WARNING()
 
     private:
         uint32_t _ID;
-        uint32_t _nameOffset;
         mutable uint16_t _state;
         SerializerImpl _serializer;
         DeserializerImpl _deserializer;
