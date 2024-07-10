@@ -406,10 +406,13 @@ POP_WARNING()
         {
             ASSERT(_shell == nullptr);
 
-            _shell = shell;
-            _shell->AddRef();
+            if(shell != nullptr) {
 
-            _monitor.Register(_shell, callsign);
+                _shell = shell;
+                _shell->AddRef();
+
+                _monitor.Register(_shell, callsign);
+            }
 
             return (Core::ERROR_NONE);
         }
@@ -417,9 +420,11 @@ POP_WARNING()
         {
             ASSERT(_shell != nullptr);
 
-            _monitor.Unregister(_shell);
-            _shell->Release();
-            _shell = nullptr;
+            if(_shell != nullptr) {
+                _monitor.Unregister(_shell);
+                _shell->Release();
+                _shell = nullptr;
+            }
 
             return (Core::ERROR_NONE);
         }
