@@ -442,7 +442,7 @@ POP_WARNING()
             _shell->AddRef();
             return _shell;
         }
-        const PluginHost::IShell* ControllerInterface() const
+        const PluginHost::IShell* PluginInterface() const
         {
             _shell->AddRef();
             return _shell;
