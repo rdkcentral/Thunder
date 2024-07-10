@@ -37,11 +37,16 @@ namespace Core {
             virtual ~SingletonTypeOne()
             {
             }
+            bool operator==(const SingletonTypeOne&) const
+            {
+                return true;
+            }
     };
 
     class SingletonTypeTwo {
         public:
-            SingletonTypeTwo(string)
+            SingletonTypeTwo() = delete;
+            explicit SingletonTypeTwo(string)
             {
             }
             virtual ~SingletonTypeTwo()
@@ -50,7 +55,8 @@ namespace Core {
     };
     class SingletonTypeThree {
         public:
-            SingletonTypeThree (string, string)
+            SingletonTypeThree() = delete;
+            explicit SingletonTypeThree (string, string)
             {
             }
             virtual ~SingletonTypeThree()
@@ -60,17 +66,36 @@ namespace Core {
 
     TEST(test_singleton, simple_singleton)
     {
-        static SingletonTypeOne& object1 = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
-        static SingletonTypeOne& object_sample = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
-        EXPECT_EQ(&object1,&object_sample);
-#ifndef __APPLE__ // These are already marked as deprecated in core/Singleton.h, so commenting to avoid warning
-        static SingletonTypeTwo& object2 = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
-        static SingletonTypeThree& object3 = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
-        ::Thunder::Core::SingletonType<SingletonTypeTwo>* x = (::Thunder::Core::SingletonType<SingletonTypeTwo>*)&object2;
-        EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
-        ::Thunder::Core::SingletonType<SingletonTypeThree>* y = (::Thunder::Core::SingletonType<SingletonTypeThree>*)&object3;
-        EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
-#endif
+        // 'old' use
+        ::Thunder::Tests::Core::SingletonTypeOne& objectTypeOne = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
+
+        // Multiple inheritance, SingletonType has base SINGLETON, eg, ::Thunder::Tests::Core::SingletonTypeOne, and base Singleton
+        // Internally a ::Thunder::Core::SingletonType<SINGLETON> pointer is contructed and via upcasted version of a base avaiable via Instance
+        // It is safe to downcast it
+        ASSERT_NE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne), nullptr);
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne)->ImplementationName().c_str(), "SingletonTypeOne");
+
+        // Well-known lifetime!
+        ::Thunder::Core::SingletonType<SingletonTypeTwo>::Create("My custom 2-string");
+        // Deprecated use
+        ::Thunder::Tests::Core::SingletonTypeTwo& objectTypeTwo = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("My other custom 2-string");
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().c_str(), "SingletonTypeTwo");
+        EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeTwo>::Dispose());
+
+        // Well-known lifetime!
+        ::Thunder::Core::SingletonType<SingletonTypeThree>::Create("My first custom 3-string", "My second custom 3-string");
+        ::Thunder::Tests::Core::SingletonTypeThree& objectTypeThree = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance("My other first custom 3-string", "My other second custom 3 string");
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().c_str(), "SingletonTypeThree");
+        EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeThree>::Dispose());
+
+        // SingletonTypeOne has not yet been destroyed
+        // Assume equality operator has been defined
+        EXPECT_EQ(::Thunder::Core::SingletonType<SingletonTypeOne>::Instance(), ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance());
+
+        // Keep going with good practise
         ::Thunder::Core::Singleton::Dispose();
     }
 
