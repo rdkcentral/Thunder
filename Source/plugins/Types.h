@@ -59,11 +59,15 @@ namespace PluginHost {
             {
                 return (_designated != nullptr);
             }
-            void Register(IShell* shell, const string& callsign)
+            // set callsign (must be called before Register, cannot be used to change callsign when monitoring active)
+            void Callsign(const string& callsign) 
+            {
+                _callsign = callsign;
+            }
+            void Register(IShell* shell)
             {
                 ASSERT(shell != nullptr);
                 _adminLock.Lock();
-                _callsign = callsign;
                 _state = state::REGISTRING;
                 _adminLock.Unlock();
 
@@ -208,9 +212,19 @@ namespace PluginHost {
         {
             return (_sink.IsOperational());
         }
+        // set callsign (must be called before Register, cannot be used to change callsign when monitoring active)
+        void Callsign(const string& callsign) 
+        {
+            _sink.Callsign(callsign);
+        }
+        void Register(PluginHost::IShell* shell)
+        {
+            _sink.Register(shell);
+        }
         void Register(PluginHost::IShell* shell, const string& callsign)
         {
-            _sink.Register(shell, callsign);
+            _sink.Callsign(callsign);
+            _sink.Register(shell);
         }
         void Unregister(PluginHost::IShell* shell)
         {
@@ -389,13 +403,40 @@ POP_WARNING()
         PluginSmartInterfaceType()
             : _shell(nullptr)
             , _monitor(*this)
+            , _job(*this)
         {
         }
         POP_WARNING()
         virtual ~PluginSmartInterfaceType()
         {
             ASSERT(_shell == nullptr);
+            ASSERT(_job.IsIdle() == true);
         }
+
+        class RegisterJob { 
+        public: 
+            RegisterJob(RegisterJob&&) = delete;
+            RegisterJob(const RegisterJob&) = delete;
+            RegisterJob& operator=(const RegisterJob&) = delete;
+            RegisterJob& operator=(RegisterJob&&) = delete;
+
+            RegisterJob(PluginSmartInterfaceType& parent)
+                : _parent(parent) 
+            {
+            }
+            ~RegisterJob() = default;
+
+        public:
+            void Dispatch()
+            {
+                _parent.Register();
+            }
+
+        private:
+            PluginSmartInterfaceType& _parent;
+        };
+
+         using Job = Core::IWorkerPool::JobType<RegisterJob>;
 
     public:
         bool IsOperational() const
@@ -405,14 +446,35 @@ POP_WARNING()
         uint32_t Open(PluginHost::IShell* shell, const string& callsign)
         {
             ASSERT(_shell == nullptr);
+            ASSERT(_job.IsIdle() == true);
 
             if(shell != nullptr) {
 
                 _shell = shell;
                 _shell->AddRef();
 
-                _monitor.Register(_shell, callsign);
-            }
+                _monitor.Callsign(callsign);
+
+                        const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
+                                                printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
+                        printf("Poolruns:\n");
+                        for (uint8_t index = 0; index < metaData.Slots; index++) {
+#ifdef __APPLE__
+                           printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
+#else
+                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+#endif
+                            if (metaData.Slot[index].Job.IsSet() == false) {
+                                printf("\n");
+                            }
+                            else {
+                                printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
+                            }
+                        }
+
+    printf("before submit\n");
+                _job.Submit();
+    printf("after submit\n")  ;          }
 
             return (Core::ERROR_NONE);
         }
@@ -421,6 +483,7 @@ POP_WARNING()
             ASSERT(_shell != nullptr);
 
             if(_shell != nullptr) {
+                _job.Revoke();
                 _monitor.Unregister(_shell);
                 _shell->Release();
                 _shell = nullptr;
@@ -455,6 +518,7 @@ POP_WARNING()
 
     private:
         friend Monitor;
+        friend Job;
 
         void Activated(INTERFACE* plugin)
         {
@@ -465,9 +529,15 @@ POP_WARNING()
             Operational(false);
         }
 
+        void Register() 
+        {
+            _monitor.Register(_shell);
+        }
+
     private:
         PluginHost::IShell* _shell;
         Monitor _monitor;
+        Job _job;
     };
 
     template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
