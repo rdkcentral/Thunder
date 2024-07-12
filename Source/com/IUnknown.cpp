@@ -41,6 +41,7 @@ namespace ProxyStub {
             case 0: {
                 // AddRef
                 implementation->AddRef();
+                Core::ServiceAdministrator::Instance().AddRef();
                 break;
             }
             case 1: {
@@ -67,6 +68,10 @@ namespace ProxyStub {
                 ASSERT(dropReleases == 0);
 
                 response.Number<uint32_t>(result);
+                if (Core::ServiceAdministrator::Instance().Instances()) {
+                    Core::ServiceAdministrator::Instance().Release();
+		}
+
                 break;
             }
             case 2: {
@@ -85,6 +90,7 @@ namespace ProxyStub {
                 }
 
                 response.Number<Core::instance_id>(RPC::instance_cast<void*>(newInterface));
+                Core::ServiceAdministrator::Instance().AddRef();
 
                 break;
             }
