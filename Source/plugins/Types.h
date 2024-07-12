@@ -255,6 +255,16 @@ namespace PluginHost {
     };
 }
 
+
+/*
+*
+* Use the SmartInterfaceType to interact with (a) COMRPC interface(s) exposed by a plugin (identified by its callsign).
+* This class will handle the situation where that plugin could be activated and deactivated.
+* This class is intended to be used from code which is NOT a plugin.
+* If you require this functionality from inside a plugin please see the PluginSmartInterfaceType below.
+*
+*/
+
 namespace RPC {
 
     template <typename INTERFACE, Core::ProxyType<RPC::IIPCServer> ENGINE() = DefaultInvokeServer>
@@ -388,6 +398,19 @@ POP_WARNING()
         uint32_t _connectionId;
     };
 
+/*
+*
+* Use the PluginSmartInterfaceType to interact with (a) COMRPC interface(s) exposed by a plugin (identified by its callsign).
+* This class will handle the situation where that plugin could be activated and deactivated.
+* This class is intended to be used from code which is a plugin. It can be used from both an in process as well as an 
+* out of process plugin.
+* WARNING: if you use this class in the out of process part of a plugin this plugin must have a minimum workerpool thread count
+* of 2 otherwise deadlocks can occur!!!!
+*
+* If you require this functionality from code that is NOT a plugin please see the SmartInterfaceType above.
+*
+*/
+
     template <typename INTERFACE>
     class PluginSmartInterfaceType {
     private:
@@ -455,26 +478,9 @@ POP_WARNING()
 
                 _monitor.Callsign(callsign);
 
-                        const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
-                                                printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
-                        printf("Poolruns:\n");
-                        for (uint8_t index = 0; index < metaData.Slots; index++) {
-#ifdef __APPLE__
-                           printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
-#else
-                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
-#endif
-                            if (metaData.Slot[index].Job.IsSet() == false) {
-                                printf("\n");
-                            }
-                            else {
-                                printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
-                            }
-                        }
-
-    printf("before submit\n");
                 _job.Submit();
-    printf("after submit\n")  ;          }
+
+            }
 
             return (Core::ERROR_NONE);
         }
