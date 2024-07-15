@@ -21,51 +21,39 @@
 
 #include <string>
 #include <time.h>
+#include <atomic>
+#include <functional>
 
 #include "Module.h"
 
+#ifndef __LINUX__
+static_assert(false, "Only LINUX is supported");
+#endif
+
 class IPTestAdministrator
 {
-private:
-   static constexpr uint32_t MaxWaitTime = 2; // In seconds
+public :
+    using Callback =  std::function<void (IPTestAdministrator&)>;
 
+    IPTestAdministrator(Callback /* executed by parent */, Callback /* executed by child */, const uint32_t initHandshakeValue, const uint32_t waitTime);
+    ~IPTestAdministrator();
+
+    IPTestAdministrator(const IPTestAdministrator&) = delete;
+    const IPTestAdministrator& operator=(const IPTestAdministrator&) = delete;
+
+    uint32_t Wait(uint32_t expectedHandshakeValue) const;
+    uint32_t Signal(uint32_t expectedNextHandshakeValue);
+
+private :
+
+    struct SharedData
+    {
+        // std::atomic integral> has standard layout!
+        // A pointer may be converted to a pointer of the first non-static data element with reinterpret_cast
+        std::atomic<uint32_t> handshakeValue;
+    };
 public:
-   typedef void (*OtherSideMain)(IPTestAdministrator & testAdmin);
-
-   IPTestAdministrator(OtherSideMain otherSideMain, const uint32_t waitTime = MaxWaitTime);
-   IPTestAdministrator(OtherSideMain otherSideMain, void* data, const uint32_t waitTime = MaxWaitTime);
-   ~IPTestAdministrator();
-
-   void ForkChildProcess(OtherSideMain otherSideMain);
-   // Method to sync the two test processes.
-   bool Sync(const std::string & str);
-   void WaitForChildCompletion();
-
-   void* Data() { return m_data; }
-private:
-   static const uint32_t m_messageBufferSize = 1024;
-
-   struct SharedData
-   {
-      pthread_mutex_t m_stateMutex; // Guards state (are we first or second?)
-      pthread_cond_t m_waitingForSecondCond; // Used to wait for second
-      pthread_mutex_t m_waitingForSecondCondMutex;
-      bool m_waitingForOther;   // whether we are waiting for the other side or not
-      bool m_messageTheSame;    // whether message comparison was a success
-      char m_message[m_messageBufferSize];     // Expected message string
-      bool m_backToNormal;
-      pthread_cond_t m_waitingForNormalCond; // To wait for first to restore state to normal
-      pthread_mutex_t m_waitingForNormalCondMutex;
-   };
-
-   SharedData * m_sharedData;
-   pid_t m_childPid; // Set if we are parent processs.
-   void* m_data;
-   uint32_t m_maxWaitTime; // In seconds.
-
-   const char * GetProcessName() const;
-   void TimedLock(pthread_mutex_t * mutex, const std::string & str);
-   void TimedWait(pthread_cond_t * cond, pthread_mutex_t * mutex, const std::string & str);
-   
-   void FillTimeOut(timespec & timeSpec);
+    SharedData* _sharedData;
+    pid_t _pid;
+    uint32_t _waitTime; // In seconds
 };

@@ -17,234 +17,176 @@
  * limitations under the License.
  */
 
+#include <sys/shm.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <linux/futex.h>    // FUTEX_* constants
+#include <sys/syscall.h>    // SYS_* constants
+#include <poll.h>
+#ifdef __cplusplus
+}
+#endif
+
+#include <climits>
+#include <limits>
+
 #include "IPTestAdministrator.h"
 
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 #include <core/core.h>
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE);
 
-#ifdef WITH_CODE_COVERAGE
-extern "C" void __gcov_flush();
-#endif
-
-IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain, void* data, const uint32_t waitTime)
-   : m_sharedData(nullptr)
-   , m_childPid(0)
-   , m_data(data)
-   , m_maxWaitTime(waitTime)
+IPTestAdministrator::IPTestAdministrator(Callback parent, Callback child, const uint32_t initHandShakeValue, const uint32_t waitTime)
+    : _sharedData{nullptr}
+    , _pid{-1}
+    , _waitTime(waitTime)
 {
-    ForkChildProcess(otherSideMain);
-}
-IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain, const uint32_t waitTime)
-   : m_sharedData(nullptr)
-   , m_childPid(0)
-   , m_data(nullptr)
-   , m_maxWaitTime(waitTime)
-{
-    ForkChildProcess(otherSideMain);
-}
+    ASSERT(waitTime > 0 && waitTime < ::Thunder::Core::infinite);
 
-void IPTestAdministrator::ForkChildProcess(OtherSideMain otherSideMain)
-{
-   m_sharedData = static_cast<SharedData *>(mmap(NULL, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0));
+    int shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData) /* size */, IPC_CREAT | 0666 /* read and write for user, group and others */);
 
-   pthread_mutexattr_t mutexAttr;
-   pthread_mutexattr_init(&mutexAttr);
-   pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
-   pthread_mutex_init(&m_sharedData->m_stateMutex, &mutexAttr);
-   pthread_mutex_init(&m_sharedData->m_waitingForSecondCondMutex, &mutexAttr);
-   pthread_mutex_init(&m_sharedData->m_waitingForNormalCondMutex, &mutexAttr);
-   pthread_mutexattr_destroy(&mutexAttr);
+    ASSERT(shm_id >= 0);
 
-   pthread_condattr_t condAttr;
-   pthread_condattr_init(&condAttr);
-   pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
-   pthread_cond_init(&m_sharedData->m_waitingForSecondCond, &condAttr);
-   pthread_cond_init(&m_sharedData->m_waitingForNormalCond, &condAttr);
-   pthread_condattr_destroy(&condAttr);
+    _sharedData = reinterpret_cast<struct SharedData*>(shmat(shm_id, nullptr, 0 /* attach for reading and writing */));
 
-   pid_t childProcess = fork();
+    ASSERT(_sharedData != nullptr);
 
-   if (childProcess == 0) {
-      // In child process
-      otherSideMain(*this);
+    _sharedData->handshakeValue.exchange(initHandShakeValue);
 
-      // TODO: should we clean up stuff here or not?
-      //Thunder::Core::Singleton::Dispose();
+    _pid = fork();
 
-      // Make sure no gtest cleanup code is called (summary etc).
-      #ifdef WITH_CODE_COVERAGE
-      __gcov_flush();
-      #endif
+    ASSERT(_pid != -1);
 
-      abort();
-   } else {
-      // In parent process, store child pid, so we can kill it later.
-      m_childPid = childProcess;
-   }
+    if (_pid == 0) {
+        // Child process
+
+        ASSERT(child !=  nullptr);
+        child(*this);
+
+        std::exit(0); // Avoid multiple / repeated test runs
+    } else {
+        ASSERT(parent !=  nullptr);
+        parent(*this);
+    }
 }
 
 IPTestAdministrator::~IPTestAdministrator()
 {
-   waitpid(m_childPid, 0, 0);
+    if (_pid > 0) {
+        // Is the child still alive?
+
+        int pid_fd = syscall(SYS_pidfd_open, _pid, 0);
+
+        if (pid_fd != -1) {
+            struct pollfd fds = { pid_fd, POLLIN, 0 };
+
+            switch (poll(&fds, sizeof(fds) / sizeof(struct pollfd), _waitTime >= std::numeric_limits<int>::max() ? std::numeric_limits<int>::max() : _waitTime /* timeout in milliseconds */)) {
+            case -1 : // error
+                        switch(errno) {
+                        case EFAULT :   // fds is not within address space
+                                        do {} while(false);
+                        case EINTR  :   // Signal occured before any requested event
+                                        do {} while(false);
+                        case EINVAL :   // Number of descriptors too large or invalid timeout value
+                                        do {} while(false);
+                        case ENOMEM :   // Unable to allocated supported memory
+                                        do {} while(false);
+                        default     :;
+                        }
+                        do {} while(false);
+            case 0  :   // Timeout expired before events are available
+                        {
+                            int result = syscall(SYS_kill, _pid, SIGKILL);
+
+                            ASSERT(result == 0);
+                        }
+                        do {} while(false);
+            default :   // Number of events set because the descriptor is readable, eg, the process has terminated
+                        ;
+            }
+
+            /* int */ close(pid_fd);
+        }
+    }
+
+    if(shmdt(_sharedData) == -1) {
+        switch(errno) {
+        case EINVAL :   // The shared data is not the start address of the sahred segment
+                        do {} while(false);
+        default     :   // Uninpsected or unknown error
+                        ;
+        }
+    }
 }
 
-void IPTestAdministrator::WaitForChildCompletion()
+uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
 {
-   waitpid(m_childPid, 0, 0);
+    uint32_t result = ::Thunder::Core::ERROR_GENERAL;
+
+    // Never wait infinite amount of time
+    const struct timespec timeout { _waitTime /* seconds */, 0 /* nanoseconds */};
+
+    constexpr bool stop = { false };
+
+    do {
+        long futex_result = syscall(SYS_futex, reinterpret_cast<uint32_t*>(&(_sharedData->handshakeValue)), FUTEX_WAIT, expectedHandshakeValue, &timeout, nullptr, 0);
+
+        switch(futex_result) {
+        case 0 :    if (_sharedData->handshakeValue == expectedHandshakeValue) {
+                        // True wake-up
+                        result = ::Thunder::Core::ERROR_NONE;
+                        break;
+                    }
+
+                    // Spurious wake-up
+    // TODO: continue with remaining time
+                    continue;
+        case -1 : //
+                    switch(errno) {
+                    case EAGAIN    :    
+                                        // Value mismatch
+                                        result = ::Thunder::Core::ERROR_INVALID_RANGE;
+                                        break;
+                    case ETIMEDOUT :    // Value has not changed within the specified timeout
+                                        result = ::Thunder::Core::ERROR_TIMEDOUT;
+                                        break;
+                    default        :    // Uninspected conditions like EINTR and EINVAL
+                                        ;
+                    }
+                    break;
+        default :   // Serious error
+                    ;
+        }
+
+        break;
+
+    } while(!stop);
+
+    return result;
 }
 
-bool IPTestAdministrator::Sync(const std::string & str)
+uint32_t IPTestAdministrator::Signal(uint32_t expectedNextHandshakeValue)
 {
-   bool result = false;
+    uint32_t result = ::Thunder::Core::ERROR_GENERAL;
 
-   // Get hold of mutex guarding state.
-   TimedLock(&m_sharedData->m_stateMutex, str);
+    long futex_result = syscall(SYS_futex, &(_sharedData->handshakeValue), FUTEX_WAKE, INT_MAX /* number of waiters to wake-up */, nullptr, nullptr, 0);
 
-   if (!m_sharedData->m_waitingForOther) {
-      // We are the first.
-      if (str.length() >= m_messageBufferSize) {
-         fprintf(stderr, "Warning: sync string is too long: \"%s\"\n", str.c_str());
-      }
+    switch(futex_result) {
+    case -1 :   // Error
+                switch(errno) {
+                case EINVAL :   // Inconsistent state
+                                do {} while (false);
+                default     :   // Uninspected // unknown conditions
+                                ;
+                }
+    case 0  :   // No waiters
+                do {} while (false);
+    default :   result = ::Thunder::Core::ERROR_NONE;
+                // Atomically replaces the current value by the expected value
+                bool oldHandshakeValue = _sharedData->handshakeValue.exchange(expectedNextHandshakeValue);
+    }
 
-      strncpy(m_sharedData->m_message, str.c_str(), m_messageBufferSize);
-
-      // Get hold of mutex of "waiting for second" cond var.
-      TimedLock(&m_sharedData->m_waitingForSecondCondMutex, str);
-
-      m_sharedData->m_waitingForOther = true;
-
-      // Release state mutex, because we set "waiting for other".
-      pthread_mutex_unlock(&m_sharedData->m_stateMutex);
-
-      // Wait for other side to arrive and set "m_messageTheSame"
-      while (m_sharedData->m_waitingForOther) {
-         TimedWait(&m_sharedData->m_waitingForSecondCond, &m_sharedData->m_waitingForSecondCondMutex, str);
-      }
-
-      // Now other side if waiting for us to set everything to normal situation.
-
-      // Cond var was triggered, release mutex we now hold.
-      pthread_mutex_unlock(&m_sharedData->m_waitingForSecondCondMutex);
-
-      // Other side arrived and set m_messageTheSame
-      result = m_sharedData->m_messageTheSame;
-
-      // Unset "waiting for other" bool
-      m_sharedData->m_waitingForOther = false;
-
-      // Get hold of mutex guarding "back to normal" cond var
-      TimedLock(&m_sharedData->m_waitingForNormalCondMutex, str);
-
-      m_sharedData->m_backToNormal = true;
-
-      // Signal other side everything is back to normal.
-      pthread_cond_signal(&m_sharedData->m_waitingForNormalCond);
-
-      // Unlock mutex belonging to this cond var.
-      pthread_mutex_unlock(&m_sharedData->m_waitingForNormalCondMutex);
-   } else {
-      if (str.length() >= m_messageBufferSize) {
-         fprintf(stderr, "Warning: sync string is too long: \"%s\"\n", str.c_str());
-      }
-
-      // Other side came first and set "m_message", compare.
-      result = (strcmp(m_sharedData->m_message, str.c_str()) == 0);
-
-      // Straight away we can unlock state mutex
-      pthread_mutex_unlock(&m_sharedData->m_stateMutex);
-
-      // Store result, so other side will also return it.
-      m_sharedData->m_messageTheSame = result;
-
-      // We will have to wait for other side to set everything back to normal.
-      // For this we need to lock the mutex with the cond var, and wait for it.
-      TimedLock(&m_sharedData->m_waitingForNormalCondMutex, str);
-
-      // We have to mutex, so now safe to unset this variable.
-      m_sharedData->m_backToNormal = false;
-
-      // We ("other side") are done, tell other process about it.
-      TimedLock(&m_sharedData->m_waitingForSecondCondMutex, str);
-      m_sharedData->m_waitingForOther = false;
-      pthread_cond_signal(&m_sharedData->m_waitingForSecondCond);
-      pthread_mutex_unlock(&m_sharedData->m_waitingForSecondCondMutex);
-
-      // Wait until other process tells us all is back to normal.
-      while (!m_sharedData->m_backToNormal) {
-         TimedWait(&m_sharedData->m_waitingForNormalCond, &m_sharedData->m_waitingForNormalCondMutex, str);
-      }
-
-      // We hold that mutex now, unlock it.
-      pthread_mutex_unlock(&m_sharedData->m_waitingForNormalCondMutex);
-   }
-
-   return result;
-}
-
-const char * IPTestAdministrator::GetProcessName() const
-{
-   if (m_childPid != 0) {
-      return "parent";
-   } else {
-      return "child";
-   }
-}
-
-void IPTestAdministrator::TimedLock(pthread_mutex_t * mutex, const std::string & str)
-{
-   timespec timeSpec;
-   FillTimeOut(timeSpec);
-#ifdef __APPLE__
-   int result;
-   do {
-       result = pthread_mutex_trylock(mutex);
-       if (result == EBUSY) {
-           int wait = -1;
-           timespec ts;
-           ts.tv_sec = 1000;
-           if (timeSpec.tv_sec > 1000) {
-               timeSpec.tv_sec -= ts.tv_sec;
-           } else if (timeSpec.tv_sec != -1) {
-               ts.tv_sec = timeSpec.tv_sec;
-               timeSpec.tv_sec = 0;
-           }
-
-           while (wait == -1) {
-               wait = nanosleep(&ts, &ts);
-           }
-       } else {
-           break;
-       }
-    } while (result != 0);
-
-#else
-   int result = pthread_mutex_timedlock(mutex, &timeSpec);
-   if (result == ETIMEDOUT) {
-      fprintf(stderr, "While locking mutex, time out expired for \"%s\" in %s.\n", str.c_str(), GetProcessName());
-      abort();
-   }
-#endif
-}
-void IPTestAdministrator::TimedWait(pthread_cond_t * cond, pthread_mutex_t * mutex, const std::string & str)
-{
-   timespec timeSpec;
-   FillTimeOut(timeSpec);
-   int result = pthread_cond_timedwait(cond, mutex, &timeSpec);
-   if (result == ETIMEDOUT) {
-      fprintf(stderr, "While waiting on cond var, time out expired for \"%s\" in %s (%u).\n", str.c_str(), GetProcessName(), getpid());
-      abort();
-   }
-}
-
-void IPTestAdministrator::FillTimeOut(timespec & timeSpec)
-{
-   clock_gettime(CLOCK_REALTIME, &timeSpec);
-   timeSpec.tv_sec += m_maxWaitTime;
+    return result;
 }

@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if(LINUX)
 set(TEST_RUNNER_NAME "Thunder_test_tests")
 
 add_executable(${TEST_RUNNER_NAME}
@@ -36,3 +37,5 @@ install(
     DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 
 add_test(${TEST_RUNNER_NAME} ${TEST_RUNNER_NAME})
+
+endif()
