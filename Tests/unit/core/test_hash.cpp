@@ -17,12 +17,16 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
+#include <thread>
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 #include <cryptalgo/cryptalgo.h>
-#include <thread>
 
 namespace Thunder {
 namespace Tests {
@@ -85,7 +89,7 @@ namespace Core {
 
         for (const unsigned char *ptr = buffer; ptr < buffer + length; ++ptr) {
             char buf[3];
-            sprintf(buf, "%02x", (*ptr)&0xff);
+            snprintf(buf, sizeof(buf), "%02x", (*ptr)&0xff);
             hash += buf;
         }
         return hash;

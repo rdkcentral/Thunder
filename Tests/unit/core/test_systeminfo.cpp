@@ -17,16 +17,21 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <fstream>
-
-#include <gtest/gtest.h>
-#include <core/core.h>
 #include <sys/utsname.h>
 #include <inttypes.h>
 #include <unistd.h>
+#ifndef __APPLE__
 #include <sys/sysinfo.h>
+#endif
+
+#include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
 
 namespace Thunder {
 namespace Tests {
@@ -534,10 +539,12 @@ namespace Core {
 
             uint64_t* cpuLoadAvg = ::Thunder::Core::SystemInfo::Instance().GetCpuLoadAvg();
             double loadFromThunder[3];
+#ifndef __APPLE__
             // Fixed point arithmetic
             EXPECT_DOUBLE_EQ(loadFromSystem[0], cpuLoadAvg[0] / (1 << SI_LOAD_SHIFT));
             EXPECT_DOUBLE_EQ(loadFromSystem[1], cpuLoadAvg[1] / (1 << SI_LOAD_SHIFT));
             EXPECT_DOUBLE_EQ(loadFromSystem[2], cpuLoadAvg[2] / (1 << SI_LOAD_SHIFT));
+#endif
         }
     }
 #endif

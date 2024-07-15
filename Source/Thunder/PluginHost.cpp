@@ -699,37 +699,29 @@ POP_WARNING()
 
                     switch (keyPress) {
                     case 'A': {
-                        Core::JSON::ArrayType<Metadata::COMRPC> proxyChannels;
-                        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies) {
-                            Metadata::COMRPC& entry(proxyChannels.Add());
-                            const Core::SocketPort* socketPort = proxies.front()->Socket();
+                        Core::JSON::ArrayType<Metadata::Channel> channels;
 
-                            if (socketPort != nullptr) {
-                                entry.Remote = PluginHost::ChannelIdentifier(*socketPort);
-                            }
+                        _dispatcher->Metadata(channels);
 
-                            for (const auto& proxy : proxies) {
-                                Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-                                info.Instance = proxy->Implementation();
-                                info.Interface = proxy->InterfaceId();
-                                info.Count = proxy->ReferenceCount();
-                            }
-                        });
-                        Core::JSON::ArrayType<Metadata::COMRPC>::Iterator index(proxyChannels.Elements());
+                        Core::JSON::ArrayType<Metadata::Channel>::Iterator index(channels.Elements());
 
                         printf("COMRPC Links:\n");
                         printf("============================================================\n");
                         while (index.Next() == true) {
-                            printf("Link: %s\n", index.Current().Remote.Value().c_str());
-                            printf("------------------------------------------------------------\n");
+                            if (index.Current().State.Value() == Metadata::Channel::state::COMRPC) {
+                                printf("Link: %s\n", index.Current().Remote.Value().c_str());
+                                printf("------------------------------------------------------------\n");
 
-                            Core::JSON::ArrayType<Metadata::COMRPC::Proxy>::Iterator loop(index.Current().Proxies.Elements());
+                                RPC::Administrator::Proxies proxies;
 
-                            while (loop.Next() == true) {
-                                uint64_t instanceId = loop.Current().Instance.Value();
-                                printf("InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", instanceId, loop.Current().Count.Value(), loop.Current().Interface.Value(), loop.Current().Interface.Value());
+                                RPC::Administrator::Instance().Allocations(index.Current().ID.Value(), proxies);
+
+                                for (const ProxyStub::UnknownProxy* proxy : proxies) {
+                                    Core::instance_id instanceId = proxy->Implementation();
+                                    printf("[%s] InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", proxy->Name(), static_cast<uint64_t>(instanceId), proxy->ReferenceCount(), proxy->InterfaceId(), proxy->InterfaceId());
+                                }
+                                printf("\n");
                             }
-                            printf("\n");
                         }
                         break;
                     }
@@ -742,7 +734,7 @@ POP_WARNING()
                         printf("============================================================\n");
                         while (index.Next() == true) {
                             printf("ID:         %d\n", index.Current().ID.Value());
-                            printf("State:      %s\n", index.Current().JSONState.Data().c_str());
+                            printf("State:      %s\n", Core::EnumerateType<Metadata::Channel::state>(index.Current().State.Value()).Data());
                             printf("Active:     %s\n", (index.Current().Activity.Value() == true ? _T("true") : _T("false")));
                             printf("Remote:     %s\n", (index.Current().Remote.Value().c_str()));
                             printf("Name:       %s\n\n", (index.Current().Name.Value().c_str()));
@@ -774,10 +766,7 @@ POP_WARNING()
                             printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                             printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                             printf("StartMode:  %s\n", index.Current().StartMode.Data());
-#if THUNDER_RESTFULL_API
-
                             printf("Observers:  %d\n", index.Current().Observers.Value());
-#endif
 
 #if THUNDER_RUNTIME_STATISTICS
                             printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
@@ -902,7 +891,11 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
+#ifdef __APPLE__
+                           printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
+#else
                            printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+#endif
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }

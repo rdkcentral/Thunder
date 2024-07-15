@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
@@ -37,10 +40,6 @@ namespace Core {
     
     TEST(Core_NumberType, generic)
     {
-        ::Thunder::Core::NumberType<uint8_t> numbertype;
-        string buffer = "/Service/testing/numbertype";
-        ::Thunder::Core::NumberType<::Thunder::Core::TextFragment> typetextfragment(::Thunder::Core::TextFragment(string(buffer)));
-
         string valdata = "90";
         ::Thunder::Core::NumberType<uint8_t> val1 = Tester<::Thunder::Core::NumberType<uint8_t>>(valdata);
         ::Thunder::Core::NumberType<int8_t> val2 = Tester<::Thunder::Core::NumberType<int8_t>>(valdata);

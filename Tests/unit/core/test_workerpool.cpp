@@ -17,11 +17,15 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
+#include <thread>
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
-#include <thread>
 
 namespace Thunder {
 namespace Tests {
@@ -256,10 +260,10 @@ namespace Core {
             const uint8_t MaxSize = 15;
             bool isPoolId = false;
             char id[MaxSize];
-            sprintf(id, "%x", static_cast<uint32_t>(pthread_self()));
+            sprintf(id, "%x", static_cast<::ThreadId>(pthread_self()));
             for (uint8_t index = 0; index < _threadsCount + 2; index++) {
             char workerId[MaxSize];
-            sprintf(workerId, "%x", static_cast<uint32_t>(::Thunder::Core::IWorkerPool::Instance().Id(index)));
+            sprintf(workerId, "%x", static_cast<::ThreadId>(::Thunder::Core::IWorkerPool::Instance().Id(index)));
 
                 if (strcpy(workerId, id)) {
                     isPoolId = true;

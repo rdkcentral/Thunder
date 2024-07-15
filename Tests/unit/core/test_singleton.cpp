@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
@@ -60,12 +63,14 @@ namespace Core {
         static SingletonTypeOne& object1 = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
         static SingletonTypeOne& object_sample = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
         EXPECT_EQ(&object1,&object_sample);
+#ifndef __APPLE__ // These are already marked as deprecated in core/Singleton.h, so commenting to avoid warning
         static SingletonTypeTwo& object2 = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
         static SingletonTypeThree& object3 = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
         ::Thunder::Core::SingletonType<SingletonTypeTwo>* x = (::Thunder::Core::SingletonType<SingletonTypeTwo>*)&object2;
         EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
         ::Thunder::Core::SingletonType<SingletonTypeThree>* y = (::Thunder::Core::SingletonType<SingletonTypeThree>*)&object3;
         EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
+#endif
         ::Thunder::Core::Singleton::Dispose();
     }
 

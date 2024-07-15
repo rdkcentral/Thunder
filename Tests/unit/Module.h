@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,25 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #pragma once
 
 #ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#define MODULE_NAME ThunderUnitTests
 #endif
-
-#include "AES.h"
-#include "HMAC.h"
-#include "Hash.h"
-#include "HashStream.h"
-#include "Random.h"
-
-#if defined(SECURESOCKETS_ENABLED)
-#include "SecureSocketPort.h"
-#endif
-
-#ifdef __WINDOWS__
-#pragma comment(lib, "cryptalgo.lib")
-#endif
-
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Crypto)

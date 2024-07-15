@@ -17,13 +17,16 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
 
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
 #include <com/com.h>
-#include <core/Portability.h>
+
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
@@ -46,17 +49,17 @@ namespace Exchange {
         {
         }
 
-        uint32_t GetValue()
+        uint32_t GetValue() override
         {
             return m_value;
         }
 
-        void Add(uint32_t value)
+        void Add(uint32_t value) override
         {
             m_value += value;
         }
 
-        uint32_t GetPid()
+        uint32_t GetPid() override
         {
             return getpid();
         }
@@ -248,6 +251,7 @@ namespace Exchange {
 
     TEST(Core_RPC, adder)
     {
+#ifndef __APPLE__
        std::string connector{"/tmp/wperpc01"};
        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
           ::Thunder::Core::NodeId remoteNode(connector.c_str());
@@ -299,6 +303,7 @@ namespace Exchange {
 
        testAdmin.Sync("done testing");
        ::Thunder::Core::Singleton::Dispose();
+#endif
     }
 
 } // Core

@@ -19,13 +19,15 @@
 
 #include <functional>
 #include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
-#include "../IPTestAdministrator.h"
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
-
-#include <string>
 
 namespace Thunder {
 namespace Tests {
@@ -2018,7 +2020,7 @@ namespace Core {
         ~SmallTest() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }
@@ -2047,7 +2049,7 @@ namespace Core {
         ~SmallTest2() override = default;
 
     public:
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }
@@ -2150,7 +2152,7 @@ namespace Core {
 
         ~CommandRequest() override = default;
 
-        void Clear()
+        void Clear() override
         {
             ::Thunder::Core::JSON::Container::Clear();
         }

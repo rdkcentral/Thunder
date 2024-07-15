@@ -17,14 +17,17 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
 namespace Thunder {
 namespace Tests {
-namespace Core {    
+namespace Core {
 
     TEST(Core_Library, simpleSet)
     {
@@ -41,7 +44,9 @@ namespace Core {
         ::Thunder::Core::Library LibObj1(file.c_str());
         EXPECT_TRUE(LibObj1.Error().empty());
 
+#ifndef __APPLE__
         LibObj1.LoadFunction(function);
+#endif
         EXPECT_TRUE(LibObj1.IsLoaded());
         EXPECT_TRUE(LibObj1.Error().empty());
 
