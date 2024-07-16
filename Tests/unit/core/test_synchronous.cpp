@@ -162,34 +162,52 @@ namespace Core {
 
     TEST(test_synchronous, simple_synchronous)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) {
-            SynchronousSocket synchronousServerSocket(true);
-            testAdmin.Sync("setup server");
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
 
-            testAdmin.Sync("connect client");
-            testAdmin.Sync("client msg");
-            testAdmin.Sync("client newmsg");
-            testAdmin.Sync("client revokemsg");
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            SynchronousSocket synchronousServerSocket(true);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            testAdmin.Sync("setup server");
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             SynchronousSocket synchronousClientSocket(false);
 
-            testAdmin.Sync("connect client");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             uint8_t buffer[] = "Hello";
-            Message message(5,buffer);
-            EXPECT_EQ(synchronousClientSocket.Exchange(500, message),0u);
-            testAdmin.Sync("client msg");
+            Message message(sizeof(buffer), buffer);
+            // Outbound
+            EXPECT_EQ(synchronousClientSocket.Exchange(maxWaitTimeMs, message), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
            
             InMessage response; 
-            Message newmessage(5,buffer);
-            synchronousClientSocket.Exchange(500, newmessage, response);//TODO Output verification is pending.
-            testAdmin.Sync("client newmsg");
+            Message newmessage(sizeof(buffer), buffer);
+            // Inbound
+            EXPECT_EQ(synchronousClientSocket.Exchange(maxWaitTimeMs, newmessage, response), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             synchronousClientSocket.Revoke(message);
-            testAdmin.Sync("client revokemsg");
-        }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
         ::Thunder::Core::Singleton::Dispose();
     }
 
