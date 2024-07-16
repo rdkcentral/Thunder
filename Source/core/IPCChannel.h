@@ -333,11 +333,6 @@ namespace Core {
             ASSERT(index != _handlers.end());
 
             if (index != _handlers.end()) {
-                for(auto it = _clients.begin(), tail = _clients.end(); it != tail; it++) {
-                    Core::ProxyType<Client> element(it->second);
-                    element->Unregister(index->first);
-                }
-
                 _handlers.erase(index);
             }
 
