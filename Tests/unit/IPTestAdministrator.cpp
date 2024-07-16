@@ -34,8 +34,6 @@ extern "C" {
 
 #include "IPTestAdministrator.h"
 
-#include <core/core.h>
-
 MODULE_NAME_DECLARATION(BUILD_REFERENCE);
 
 IPTestAdministrator::IPTestAdministrator(Callback parent, Callback child, const uint32_t initHandShakeValue, const uint32_t waitTime)

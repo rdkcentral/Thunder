@@ -23,7 +23,6 @@
 #include "../Module.h"
 #endif
 
-#include <core/core.h>
 #include <websocket/websocket.h>
 
 #include "../IPTestAdministrator.h"

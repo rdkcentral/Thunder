@@ -24,7 +24,11 @@
 #include <atomic>
 #include <functional>
 
+#ifndef MODULE_NAME
 #include "Module.h"
+#endif
+
+#include <core/core.h>
 
 #ifndef __LINUX__
 static_assert(false, "Only LINUX is supported");
