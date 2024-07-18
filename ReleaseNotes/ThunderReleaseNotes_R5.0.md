@@ -1,12 +1,61 @@
+# Thunder Release Notes R5.0
+
+## introduction
+
+This document describes the new features and changes introduced in Thunder R5.0 (compared to the latest R4 release).
+See [here](https://github.com/rdkcentral/Thunder/blob/master/ReleaseNotes/ThunderReleaseNotes_R4.4.md) for the release notes of Thunder R4.4.
+This document describes the changes in Thunder and ThunderTools as they are related. 
+
+## WARNING 
+
+Thunder R5.0 is a major step up from R4. For the new features quite a lot of the internal code was changed or rewritten. Although it was very carefully tested by QA it will most probably contain some issues that have not been found yet as the Thunder framework can be used in a lot of different ways. Therefore our advise will be to use R5.0 only to do an early integration as it also contains some breaking changes (see the Braking Changes paragraph below). Please report any issues you find so these can be fixed. Our advise will be to use R5.1 for production usage as it will have all the combined fixes for the issues found with R5.0.
+
+# Thunder 
+
+##  Process Changes and new Features 
+
+### New Feature: Issue Template 
+
+An issue template was added to the documentation for reporting Thunder issues. Please use the template that can be found [here](https://rdkcentral.github.io/Thunder/issuetemplate/issuetemplate/) when you want to report a Thunder issue.
+
+### Change: Unit test improvements
+
+The existing Thunder unittests were improved and new tests were added. These are also triggered from a GitHub action on each merge of a Pull Request.
+
+### Change: Thunder Documentation
+
+The Thunder documentation was extended with new content, please find the documentation [here](https://rdkcentral.github.io/Thunder/). More content still to come!
+
+### Change: QA interfaces
+
+To make it clear what interfaces are specifically added for QA purposes these have been put into a separate folder and namespace. They can be found [here](https://github.com/rdkcentral/ThunderInterfaces/tree/master/qa_interfaces) 
+
+## Major Changes and new Features
+
+### JSON-RPC non happy day scenarios
+bla die bla die bla
+
+## Minor Changes and new Features 
+
+### Installation and Cryptography subystem
+sjdklsadjklsaD
+
+### General bug fixes
+
+A lot of issues were fixed in Thunder R5.0 improving stability and resource usage. 
+
+## Breaking Changes
+
+### WPEFramework renamed to Thunder
+dsajklsaDJSAL
+
+
+# Thunder Tools
+
+
 -------------------------------------------
-JIRA ticket for Session Based JSONRPC describing HowTo:
 
 
-Process changes:
-F - issue template added
-C - Unit test improvements
-C - Documentation extended and improved (add URL in notes)
-C - Seperate QA interfaces
 
 
 
@@ -56,11 +105,17 @@ C - JSONRPC event forwarding (Controller all event): nolonger wrapped in an addi
 
 TO BE CHECKED!
 - automatic deinitialize after failed initialize is now default (hadden we toc al gechecked was in R4 al zo??
+
+-> yes dus al in R4, niet opnemen nu
+
 - Document plugin subsystem init and de-init sequence changes (METROL-927)
-- enums notificaties endata jsonrpc lowecase
 
+-> Nog niet in code, niet opnemen nu
 
-- OOP for non OOP plugins (zouden we pas bij 5.1 melden toch?)
+- enums notificaties en data jsonrpc lowecase
+
+-> lijkt niet te zijn veranderd
+
 
 
 Tools
