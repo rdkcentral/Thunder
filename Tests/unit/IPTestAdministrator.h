@@ -37,16 +37,21 @@ static_assert(false, "Only LINUX is supported");
 class IPTestAdministrator
 {
 public :
+
     using Callback =  std::function<void (IPTestAdministrator&)>;
 
-    IPTestAdministrator(Callback /* executed by parent */, Callback /* executed by child */, const uint32_t initHandshakeValue, const uint32_t waitTime);
+    IPTestAdministrator(Callback /* executed by parent */, Callback /* executed by child */, const uint32_t initHandshakeValue, const uint32_t waitTime /* seconds */);
     ~IPTestAdministrator();
 
     IPTestAdministrator(const IPTestAdministrator&) = delete;
     const IPTestAdministrator& operator=(const IPTestAdministrator&) = delete;
 
     uint32_t Wait(uint32_t expectedHandshakeValue) const;
-    uint32_t Signal(uint32_t expectedNextHandshakeValue);
+    uint32_t Signal(uint32_t expectedNextHandshakeValue, uint8_t maxRetries = 0);
+
+    uint32_t WaitTimeDivisor() const {
+        return _waitTimeDivisor;
+    }
 
 private :
 
@@ -56,8 +61,10 @@ private :
         // A pointer may be converted to a pointer of the first non-static data element with reinterpret_cast
         std::atomic<uint32_t> handshakeValue;
     };
-public:
+
+    constexpr static uint32_t _waitTimeDivisor = 10;
+
     SharedData* _sharedData;
     pid_t _pid;
-    uint32_t _waitTime; // In seconds
+    uint32_t _waitTime; // Seconds
 };
