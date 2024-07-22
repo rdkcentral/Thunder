@@ -28,13 +28,13 @@ The Thunder documentation was extended with new content, please find the documen
 
 ### Change: QA interfaces
 
-To make it clear what interfaces are specifically inteneded for QA purposes these have been put into a separate folder and namespace. They can be found [here](https://github.com/rdkcentral/ThunderInterfaces/tree/master/qa_interfaces) 
+To make it clear what interfaces are specifically intended for QA purposes these have been put into a separate folder and namespace. They can be found [here](https://github.com/rdkcentral/ThunderInterfaces/tree/master/qa_interfaces) 
 
 ## Major Changes and new Features
 
 ### New Feature: JSON-RPC non happy day scenarios
 
-One of the main focusses of Thunder R5 was improved support for JSON-RPC non happy day scenario's. When a JSON-RPC interface was for example "session based" there was little automated support for handling connection issues and correct session management based on that (one would need to write the complete interface by hand). In R5 it is now possible to specify a separate JSON-RPC interface for these purposes and this will bring also much more options when the JSON-RPC interface deviates from the COM-RPC interface. An example can be found [here](https://github.com/rdkcentral/ThunderInterfaces/blob/227976cc2fa9e7167414aa6e924d3767ae9cf2b0/interfaces/IMessenger.h#L66) but this will be fully documented in the Thunder documentation asap.
+One of the main focus points of Thunder R5 was improved support for JSON-RPC non happy day scenario's. When a JSON-RPC interface was for example "session based" there was little automated support for handling connection issues and correct session management based on that (one would need to write the complete interface by hand). In R5 it is now possible to specify a separate JSON-RPC interface for these purposes and this will bring also much more options when the JSON-RPC interface deviates from the COM-RPC interface. An example can be found [here](https://github.com/rdkcentral/ThunderInterfaces/blob/227976cc2fa9e7167414aa6e924d3767ae9cf2b0/interfaces/IMessenger.h#L66) but this will be fully documented in the Thunder documentation asap.
 
 ### New Feature: Private COM-RPC
 
