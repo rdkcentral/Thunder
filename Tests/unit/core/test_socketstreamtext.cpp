@@ -72,7 +72,7 @@ namespace Core {
             }
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -121,6 +121,7 @@ namespace Core {
     TEST(Core_Socket, StreamText)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector {"/tmp/wpestreamtext0"};
 
@@ -147,9 +148,9 @@ namespace Core {
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
             TextConnector textSocketClient(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(textSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         
@@ -164,7 +165,7 @@ namespace Core {
 
             ASSERT_EQ(textSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);

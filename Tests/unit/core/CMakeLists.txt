@@ -18,7 +18,7 @@
 set(TEST_RUNNER_NAME "Thunder_test_core")
 
 if(LINUX)
-    # IPTestAdministrator only supprt LINUX platform
+    # IPTestAdministrator only supported on LINUX platform
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    #test_cyclicbuffer.cpp
@@ -68,18 +68,29 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-#####   test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
-#   test_weblinkjson.cpp
-#   test_weblinktext.cpp
-#   test_websocketjson.cpp
-#   test_websockettext.cpp
-####   test_workerpool.cpp
+   test_weblinkjson.cpp
+   test_weblinktext.cpp
+   test_websocketjson.cpp
+   test_websockettext.cpp
+   test_workerpool.cpp
    test_xgetopt.cpp
 )
+#[[ if(MESSAGING)    
+   target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
+   target_link_libraries(${TEST_RUNNER_NAME}
+      ThunderMessaging
+   )
+else()
+   target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
+   target_link_libraries(${TEST_RUNNER_NAME}
+      ThunderTracing
+   )
+endif() ]]
 else()
 add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
@@ -130,19 +141,6 @@ add_executable(${TEST_RUNNER_NAME}
    test_xgetopt.cpp
 )
 endif()
-
-
-#[[ if(MESSAGING)    
-   target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
-   target_link_libraries(${TEST_RUNNER_NAME}
-      ThunderMessaging
-   )
-else()
-   target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
-   target_link_libraries(${TEST_RUNNER_NAME}
-      ThunderTracing
-   )
-endif() ]]
 
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 

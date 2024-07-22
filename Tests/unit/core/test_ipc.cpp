@@ -208,6 +208,7 @@ namespace Core {
     TEST(Core_IPC, ContinuousChannel)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver0");
 
@@ -291,11 +292,11 @@ namespace Core {
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(continousChannel.Invoke(textTextData, maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
@@ -316,9 +317,10 @@ namespace Core {
 
     TEST(Core_IPC, ContinuousChannelReversed)
     {
-        const std::string connector = _T("/tmp/testserver1");
-
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector = _T("/tmp/testserver1");
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             // A small delay so the parent can be set up
@@ -350,17 +352,17 @@ namespace Core {
 
             EXPECT_EQ(continousChannel.Invoke(tripletResponseData, maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(continousChannel.Invoke(voidTripletData, maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(continousChannel.Invoke(textTextData, maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
@@ -426,6 +428,7 @@ namespace Core {
     TEST(Core_IPC, FlashChannel)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver2");
 
@@ -503,17 +506,17 @@ namespace Core {
 
             EXPECT_EQ(flashChannel.Invoke(tripletResponseData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(flashChannel.Invoke(voidTripletData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(flashChannel.Invoke(textTextData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
@@ -535,6 +538,7 @@ namespace Core {
     TEST(Core_IPC, FlashChannelReversed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver3");
 
@@ -568,17 +572,17 @@ namespace Core {
 
             EXPECT_EQ(flashChannel.Invoke(tripletResponseData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(flashChannel.Invoke(voidTripletData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(flashChannel.Invoke(textTextData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
@@ -644,6 +648,7 @@ namespace Core {
     TEST(Core_IPC, MultiChannel)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver4");
 
@@ -727,17 +732,17 @@ namespace Core {
 
             EXPECT_EQ(multiChannel.Invoke(tripletResponseData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(multiChannel.Invoke(voidTripletData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(multiChannel.Invoke(textTextData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
@@ -762,6 +767,7 @@ namespace Core {
     TEST(Core_IPC, MultiChannelReversed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver5");
 
@@ -795,17 +801,17 @@ namespace Core {
 
             EXPECT_EQ(multiChannel.Invoke(tripletResponseData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(tripletResponseData->Response().Result(), result);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(multiChannel.Invoke(voidTripletData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_EQ(voidTripletData->Response().Display(), display);
             EXPECT_EQ(voidTripletData->Response().Surface(), surface);
             EXPECT_EQ(voidTripletData->Response().Context(), context);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(multiChannel.Invoke(textTextData, maxWaitTime), ::Thunder::Core::ERROR_NONE);
             EXPECT_STREQ(textTextData->Response().Value(), text.c_str());
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();

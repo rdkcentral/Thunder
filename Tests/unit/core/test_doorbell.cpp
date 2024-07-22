@@ -34,22 +34,22 @@ namespace Core {
     TEST(Core_DoorBell, simpleSet)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string fileName {"/tmp/doorbell01"};
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-            ASSERT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
-
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             doorBell.Acknowledge();
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             doorBell.Acknowledge();
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             doorBell.Relinquish();
         };
@@ -77,6 +77,7 @@ namespace Core {
     TEST(Core_DoorBell, simpleSetReversed)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string fileName {"/tmp/doorbell02"};
 
@@ -96,15 +97,15 @@ namespace Core {
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-            ASSERT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             doorBell.Acknowledge();
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             doorBell.Acknowledge();
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             doorBell.Relinquish();
         };

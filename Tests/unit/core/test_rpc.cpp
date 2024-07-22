@@ -252,6 +252,7 @@ namespace Exchange {
     TEST(Core_RPC, adder)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector{"/tmp/wperpc01"};
 
@@ -270,8 +271,6 @@ namespace Exchange {
             // A small delay so the child can be set up
             SleepMs(maxInitTime);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
             ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
             ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
@@ -279,6 +278,8 @@ namespace Exchange {
 
             ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client = ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(remoteNode, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
             ASSERT_TRUE(client.IsValid());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             // Create remote instance of "Thunder::Tests::Core::Exchange::IAdder".
             Thunder::Tests::Core::Exchange::IAdder* adder = client->Open<Thunder::Tests::Core::Exchange::IAdder>(_T("Adder"));
@@ -298,7 +299,7 @@ namespace Exchange {
 
             ASSERT_EQ(client->Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);

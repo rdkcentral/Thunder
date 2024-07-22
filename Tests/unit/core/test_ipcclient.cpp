@@ -34,6 +34,7 @@ namespace Core {
     TEST(Core_IPC, IPCClientConnection)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver");
 
@@ -76,7 +77,7 @@ namespace Core {
             ASSERT_EQ(clientChannel.Source().Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // Signal the server it can 'end' its life
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);

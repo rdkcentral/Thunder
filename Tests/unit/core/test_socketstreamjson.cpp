@@ -187,7 +187,7 @@ namespace Core {
             return (true);
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -225,6 +225,7 @@ namespace Core {
     TEST(Core_Socket, StreamJSON)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = "/tmp/wpestreamjson0";
 
@@ -267,7 +268,7 @@ namespace Core {
 
             ASSERT_EQ(jsonSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             jsonSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
         
@@ -280,7 +281,7 @@ namespace Core {
 
             EXPECT_EQ(jsonSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
