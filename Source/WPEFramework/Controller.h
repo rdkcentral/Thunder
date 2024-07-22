@@ -39,7 +39,8 @@ namespace Plugin {
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystemManagement
         , public Exchange::Controller::IMetadata
-        , public Exchange::Controller::ILifeTime {
+        , public Exchange::Controller::ILifeTime
+        {
     public:
 	class SubsystemsData : public Core::JSON::Container {
         public:
@@ -369,7 +370,6 @@ namespace Plugin {
     private:
         //  ILocalDispatcher methods
         // -------------------------------------------------------------------------------------------------------
-        uint32_t Validate(const string& token, const string& method, const string& paramaters) const override;
         uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) override;
 
         inline Core::ProxyType<PluginHost::IShell> FromIdentifier(const string& callsign) const

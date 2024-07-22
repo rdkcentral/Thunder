@@ -783,10 +783,6 @@ namespace Plugin {
         }
     }
 
-    uint32_t Controller::Validate(const string& token, const string& method, const string& paramaters) const /* override */ {
-        return(PluginHost::JSONRPC::Validate(token, Core::JSONRPC::Message::Method(method), paramaters));
-    }
-
     uint32_t Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
@@ -813,13 +809,7 @@ namespace Plugin {
                     PluginHost::IDispatcher* dispatcher = reinterpret_cast<PluginHost::IDispatcher*>(service->QueryInterface(PluginHost::IDispatcher::ID));
 
                     if (dispatcher != nullptr) {
-                        PluginHost::ILocalDispatcher* localDispatcher = dispatcher->Local();
-
-                        ASSERT(localDispatcher != nullptr);
-
-                        if (localDispatcher != nullptr) {
-                            result = localDispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
-                        }
+                        result = dispatcher->Invoke(channelId, id, token, Core::JSONRPC::Message::VersionedFullMethod(method), parameters, response);
                         dispatcher->Release();
                     }
                 }

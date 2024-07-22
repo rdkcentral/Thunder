@@ -773,13 +773,6 @@ namespace PluginHost {
                     return (Core::ERROR_NOT_SUPPORTED);
                 }
 
-                // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
-                // This method will return a nullptr if it is NOT in the main process.
-                /* @stubgen:stub */
-                ICOMLink* COMLink() override {
-                    return (nullptr);
-                }
-
                 BEGIN_INTERFACE_MAP(ShellProxy)
                     INTERFACE_ENTRY(PluginHost::IShell)
                 END_INTERFACE_MAP
@@ -1474,61 +1467,41 @@ namespace PluginHost {
                         response->Id = message.Id.Value();
                     }
 
-                    if ((result = _jsonrpc->Validate(token, method, message.Parameters.Value())) == Core::ERROR_PRIVILIGED_REQUEST) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation not allowed.");
-                        }
-                    }
-                    else if (result == Core::ERROR_UNAVAILABLE) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation is deferred, Currently not allowed.");
-                        }
-                    }
-                    else if (result != Core::ERROR_NONE) {
-                        if (response.IsValid() == true) {
-                            response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            response->Error.Text = _T("method invokation could not be validated.");
-                        }
-                    }
-                    else {
-                        string output;
-                        result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
+                    string output;
+                    result = _jsonrpc->Invoke(channelId, message.Id.Value(), token, method, message.Parameters.Value(), output);
 
-                        if (response.IsValid() == true) {
-                            if (result == static_cast<uint32_t>(~0)) {
-                                response.Release();
+                    if (response.IsValid() == true) {
+                        if (result == static_cast<uint32_t>(~0)) {
+                            response.Release();
 
-                            } else if (result == Core::ERROR_NONE) {
-                                if (output.empty() == true) {
-                                    response->Result.Null(true);
-                                }
-                                else {
-                                    response->Result = output;
-                                }
+                        } else if (result == Core::ERROR_NONE) {
+                            if (output.empty() == true) {
+                                response->Result.Null(true);
+                            }
+                            else {
+                                response->Result = output;
+                            }
 
-                            } else {
-                                switch (result) {
-                                case Core::ERROR_INVALID_RANGE:
-                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                                    break;
-                                case Core::ERROR_FAILED_REGISTERED:
-                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                    response->Error.Text = _T("Registration already done!!!.");
-                                    break;
-                                case Core::ERROR_FAILED_UNREGISTERED:
-                                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                                    response->Error.Text = _T("Unregister was already done!!!.");
-                                    break;
-                                default:
-                                    response->Error.SetError(result);
-                                    break;
-                                }
+                        } else {
+                            switch (result) {
+                            case Core::ERROR_INVALID_RANGE:
+                                response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                                break;
+                            case Core::ERROR_FAILED_REGISTERED:
+                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                response->Error.Text = _T("Registration already done!!!.");
+                                break;
+                            case Core::ERROR_FAILED_UNREGISTERED:
+                                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                                response->Error.Text = _T("Unregister was already done!!!.");
+                                break;
+                            default:
+                                response->Error.SetError(result);
+                                break;
+                            }
 
-                                if (output.empty() == false) {
-                                    response->Error.Text = output;
-                                }
+                            if (output.empty() == false) {
+                                response->Error.Text = output;
                             }
                         }
                     }
@@ -2283,103 +2256,7 @@ namespace PluginHost {
             using Iterator = Core::IteratorMapType<ServiceContainer, Core::ProxyType<Service>, const string&>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using CompositPlugins = std::list< Core::Sink<CompositPlugin> >;
-            using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
-
-            class Iterator {
-            public:
-                Iterator()
-                    : _container()
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(Shells&& services)
-                    : _container(services)
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(Iterator&& move)
-                    : _container(std::move(move._container))
-                    , _index()
-                    , _position(0) {
-                }
-                Iterator(const Iterator& copy)
-                    : _container(copy._container)
-                    , _index()
-                    , _position(0) {
-                }
-                ~Iterator() {
-                    for (const std::pair<const string, PluginHost::IShell*>& entry :  _container) {
-                        entry.second->Release();
-                    }
-                }
-
-                Iterator& operator=(Iterator&& move) {
-                    if (this != &move) {
-                        _container = std::move(move._container);
-                        _index = std::move(move._index);
-                        _position = move._position;
-                    }
-                    return (*this);
-                }
-                Iterator& operator=(const Iterator& copy) {
-                    _container = copy._container;
-                    _position = copy._position;
-                    if (_position > 0) {
-                        _index = _container.begin();
-                        uint32_t steps = _position - 1;
-                        while ((steps != 0) && (_index != _container.end())) {
-                            _index++;
-                            steps--;
-                        }
-                    }
-                    return (*this);
-                }
-
-            public:
-                bool IsValid() const {
-                    return ((_position > 0) && (_index != _container.end()));
-                }
-                void Reset() {
-                    _position = 0;
-                }
-                bool Next() {
-                    if (_position == 0) {
-                        _position = 1;
-                        _index = _container.begin();
-                    }
-                    else if (_index != _container.end()) {
-                        _position++;
-                        _index++;
-                    }
-                    return (_index != _container.end());
-                }
-                Core::ProxyType<PluginHost::IShell> Current() {
-                    ASSERT(IsValid());
-                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-                uint32_t Count() const {
-                    return (static_cast<uint32_t>(_container.size()));
-                }
-                Core::ProxyType<PluginHost::IShell> operator->()
-                {
-                    ASSERT(IsValid());
-
-                    return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-
-                Core::ProxyType<const PluginHost::IShell> operator->() const
-                {
-                    ASSERT(IsValid());
-
-                    return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
-                }
-
-            private:
-                 Shells _container;
-                 Shells::iterator _index;
-                 uint32_t _position;
-            }; 
 
         private:
             class CommunicatorServer : public RPC::Communicator {
@@ -2960,8 +2837,7 @@ POP_WARNING()
                 , _compositPlugins()
                 , _opened()
                 , _closed()
-                , _job(*this)                
-                , _shellObservers()
+                , _job(*this)
                 , _channelObservers()
             {
                 if (server._config.PluginConfigPath().empty() == true) {
@@ -3216,43 +3092,6 @@ POP_WARNING()
 
                 _notificationLock.Unlock();
             }
-            void Register(Exchange::Controller::IShells::INotification* sink) {
-                _notificationLock.Lock();
-
-                // Make sure a sink is not registered multiple times.
-                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
-                ASSERT(index == _shellObservers.end());
-
-                if (index == _shellObservers.end()) {
-                    _shellObservers.push_back(sink);
-                    sink->AddRef();
-
-                    for (const std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
-                        sink->Created(entry.first, entry.second.operator->());
-                        // Report any composit plugins that are active..
-                        entry.second->Composits().Visit([&](const string& callsign, IShell* proxy) {
-                            sink->Created(callsign, proxy);
-                        });
-                    }
-                }
-
-                _notificationLock.Unlock();
-            }
-            void Unregister(Exchange::Controller::IShells::INotification* sink) {
-                _notificationLock.Lock();
-
-                ShellNotifiers::iterator index(std::find(_shellObservers.begin(), _shellObservers.end(), sink));
-
-                // Make sure you do not unregister something you did not register !!!
-                ASSERT(index != _shellObservers.end());
-
-                if (index != _shellObservers.end()) {
-                    (*index)->Release();
-                    _shellObservers.erase(index);
-                }
-
-                _notificationLock.Unlock();
-            }
             RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
@@ -3484,14 +3323,13 @@ POP_WARNING()
                 _adminLock.Unlock();
 
                 _job.Submit();
-                return todo_fixme_methodwasnotthere
             }
             void Closed(const uint32_t id)
             {
                 _adminLock.Lock();
-                Channels::iterator index(std::find(.begin(), .end(), id));
-                if (index != .end()) {
-                    .erase(index);
+                Channels::iterator index(std::find(_opened.begin(), _opened.end(), id));
+                if (index != _opened.end()) {
+                    _opened.erase(index);
                 }
                 else {
                     _closed.push_back(id);
@@ -3499,30 +3337,6 @@ POP_WARNING()
                 _adminLock.Unlock();
 
                 _job.Submit();
-                return todo_fixme_methodwasnotthere
-
-            }
-
-
-            void Opened(const uint32_t id)
-            {
-                _notificationLock.Lock();
-
-                for (auto& sink : _channelObservers) {
-                    sink->Opened(id);
-                }
-
-                _notificationLock.Unlock();
-            }
-            void Closed(const uint32_t id)
-            {
-                _notificationLock.Lock();
-
-                for (auto& sink : _channelObservers) {
-                    sink->Closed(id);
-                }
-
-                _notificationLock.Unlock();
             }
 
         private:
@@ -3697,7 +3511,6 @@ POP_WARNING()
             Channels _opened;
             Channels _closed;
             Core::ThreadPool::JobType<ServiceMap&> _job;
-            ShellNotifiers _shellObservers;
             ChannelObservers _channelObservers;
         };
 
@@ -4584,10 +4397,8 @@ POP_WARNING()
 
                 // Start by closing the server thread..
                 // Kill all open connections, we are shutting down !!!
-                BaseClass::Close(waitTime);
+                BaseClass::Close(Core::infinite);
                 BaseClass::Cleanup();
-
-                return (Core::ERROR_NONE);
             }
 
         public:

@@ -893,7 +893,8 @@ namespace PluginHost {
             }
 
             if (_service != nullptr) {
-                _service->Notify(event, parameters);
+                string message(_T("{ \"event\": \"") + event + _T(",\" \"params\": \"") + parameters + _T("\"}"));
+                _service->Notify(message);
             }
 
             _adminLock.Unlock();
