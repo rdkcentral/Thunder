@@ -49,6 +49,10 @@ namespace Controller {
         // @param newcallsign: Callsign for the cloned plugin
         virtual Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) = 0;
 
+        // @brief Destroy given plugin
+        // @param callsign: Callsign of the plugin
+        virtual Core::hresult Destroy(const string& callsign) = 0;
+
         // @property
         // @brief Environment variable value
         virtual Core::hresult Environment(const string& variable /* @index */, string& value /* @out */ ) const = 0;

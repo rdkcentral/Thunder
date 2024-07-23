@@ -843,8 +843,6 @@ namespace PluginHost {
             }
             void Destroy()
             {
-                ASSERT(_handler != nullptr);
-
                 Lock();
 
                 // It's reference counted, so just take it out of the list, state to DESTROYED

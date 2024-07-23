@@ -354,6 +354,28 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult Controller::Destroy(const string& callsign)
+    {
+        Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::IShell> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                _pluginServer->Services().Destroy(callsign);
+                result = Core::ERROR_NONE;
+            }
+        }
+
+        return result;
+    }
+
     Core::hresult Controller::Hibernate(const string& callsign, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;

@@ -298,6 +298,7 @@ namespace Plugin {
         Core::hresult Reboot() override;
         Core::hresult Environment(const string& variable, string& value) const override;
         Core::hresult Clone(const string& callsign, const string& newcallsign, string& response) override;
+        Core::hresult Destroy(const string& callsign) override;
 
         // IDiscovery overrides
         Core::hresult StartDiscovery(const uint8_t ttl) override;
