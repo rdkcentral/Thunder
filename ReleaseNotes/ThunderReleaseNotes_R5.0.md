@@ -63,7 +63,7 @@ Next to Linux and Microsoft Windows Thunder can now also be build and run on Mac
 
 ### Change: IController suspend en resume via IController ILifetime
 
-Managing suspend and resume plugin lifetime now can be done from the IController ILifetime interface. Most imortanly this means that there are no longer both a JSON-RPC and COM-RPC interface file but all is specified in one IDL header file. The JSON-RPC interface has not changed because of this.
+Managing suspend and resume plugin lifetime now can be done from the IController ILifetime interface. Most importantly this means that there are no longer both a JSON-RPC and COM-RPC interface file but all is specified in one IDL header file. The JSON-RPC interface has not changed because of this.
 
 ### New Feature: Delegated release configurable.
 
@@ -127,7 +127,7 @@ A lot of issues were fixed in Thunder R5.0 improving stability and resource usag
 All references to WPEFramework have been renamed to Thunder, this goes for example for the namespace in code, names of binaries, name of build files etc. 
 For the namespace changes mitigation measures have been put in place to have old code still using the WPEFramework namespace still compile but due to the complexity of the C++ language this will not cover all cases. Also make sure to adapt your script referring to Thunder binary and/or make files.
 
-### Plugin/interface versioning (
+### Plugin/interface versioning 
     
 In the JSON-RPC interface the plugin version is now embedded in a MetaData structure.
 
@@ -142,11 +142,11 @@ The old config meta files are removed and the new config.in files are now the de
 ### AutoStart
 
 In plugin config files the "AutoStart" : boolean has been changed into "Mode" : [Unavailable,Activated,Deactivated,Resumes,Suspend] . Reason for this change was the addition of the Unavailable mode.
-Note that tools will still handle plugin configuration meta files correclty that use "AutoStart", it will generate a correct config will (where "mode" will be used).
+Note that tools will still handle plugin configuration meta files correctly that use "AutoStart", it will generate a correct config will (where "mode" will be used).
 
 ### Metadata
 
-The "Metadata" strcuture in plugins has been renamed to "MetaData".
+The "Metadata" structure in plugins has been renamed to "MetaData".
 
 ### Plugin status via Controller JSON-RPC
 
@@ -197,7 +197,7 @@ As an optimization the @length for out parameters can now be a return value.
 
 The JSON::InstanceId is now also supported in the IDL header files.
 
-### Desctiption tags
+### Description tags
 
 The description tag will now support multiple line descriptions.
 
