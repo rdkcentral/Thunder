@@ -271,11 +271,6 @@ namespace Core {
         Singleton::Dispose();
     }
 
-<<<<<<< HEAD
-    testAdmin.WaitForChildCompletion();
-    Singleton::Dispose();
-}
-=======
     TEST(Core_tracing, simpleTracingReversed)
     {
         std::string tracePath = "/tmp/tracebuffer02";
@@ -362,4 +357,3 @@ namespace Core {
 } // Core
 } // Tests
 } // Thunder
->>>>>>> master
