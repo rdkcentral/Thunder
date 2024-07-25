@@ -61,7 +61,7 @@ namespace Core {
     class ResourceMonitorType {
     private:
         using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
-        using Resources = std::list<RESOURCE*>;
+        using Resources = std::vector<RESOURCE*>;
 
         class MonitorWorker : public Core::Thread {
         public:
@@ -459,8 +459,22 @@ POP_WARNING()
                 int fd_index = 1;
                 index = _resources.begin();
 
+                size_t capacity = _resources.capacity();
+
                 while (fd_index < filledFileDescriptors) {
                     ASSERT(index != _resources.end());
+
+                    if (capacity != _resources.capacity()) {
+                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
+                        index = _resources.begin();
+                        int current = fd_index;
+
+                        while ((index != _resources.end()) && (current > 1)) {
+                            index++;
+                            current--;
+                        }
+                        capacity = _resources.capacity();
+                    }
 
                     RESOURCE* entry = (*index);
 
