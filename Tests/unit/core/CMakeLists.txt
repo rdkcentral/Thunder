@@ -80,17 +80,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_workerpool.cpp
    test_xgetopt.cpp
 )
-#[[ if(MESSAGING)    
-   target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
-   target_link_libraries(${TEST_RUNNER_NAME}
-      ThunderMessaging
-   )
-else()
-   target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
-   target_link_libraries(${TEST_RUNNER_NAME}
-      ThunderTracing
-   )
-endif() ]]
+#[[
+target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
+target_link_libraries(${TEST_RUNNER_NAME}
+    ThunderMessaging
+)
+]]
 else()
 add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp

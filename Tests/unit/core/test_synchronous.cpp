@@ -164,7 +164,7 @@ namespace Core {
 
     TEST(test_synchronous, simple_synchronous)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 6000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 15; // Approximately 150% maxWaitTime
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
