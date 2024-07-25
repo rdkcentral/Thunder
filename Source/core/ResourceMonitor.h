@@ -458,7 +458,6 @@ POP_WARNING()
                 // We also know that once a file descriptor is not found, we handled them all...
                 int fd_index = 1;
                 index = _resources.begin();
-
                 size_t capacity = _resources.capacity();
 
                 while (fd_index < filledFileDescriptors) {
@@ -548,10 +547,23 @@ POP_WARNING()
 
                 // Find all "pending" sockets and signal them..
                 index = _resources.begin();
+                size_t capacity = _resources.capacity();
 
                 ::WSAResetEvent(_action);
 
                 while (index != _resources.end()) {
+                    if (capacity != _resources.capacity()) {
+                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
+                        index = _resources.begin();
+                        int current = fd_index;
+
+                        while ((index != _resources.end()) && (current > 1)) {
+                            index++;
+                            current--;
+                        }
+                        capacity = _resources.capacity();
+                    }
+
                     RESOURCE* entry = (*index);
 
                     if (entry != nullptr) {
