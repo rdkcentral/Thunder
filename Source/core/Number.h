@@ -25,7 +25,7 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     extern "C" {
     EXTERNAL unsigned char FromDigits(const TCHAR element);
@@ -1030,8 +1030,7 @@ namespace Core {
     public:
         using BASE = BitArrayBaseType<MAXBITS,BitArrayFlexType<MAXBITS>>;
         using T = typename BASE::T;
-
-        BitArrayFlexType(uint8_t size = 0, T initial = 0)
+        BitArrayFlexType(uint8_t size = 0, VARIABLE_IS_NOT_USED T initial = 0)
         {
             Reset(size);
         }

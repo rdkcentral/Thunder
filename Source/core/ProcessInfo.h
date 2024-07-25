@@ -23,7 +23,7 @@
 #include "IIterator.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
@@ -120,7 +120,7 @@ namespace Core {
                 , _index(copy._index)
             {
             }
-            Iterator(Iterator&& move)
+            Iterator(Iterator&& move) noexcept
                 : _pids(std::move(move._pids))
                 , _current(std::move(move._current))
                 , _index(move._index)
@@ -140,7 +140,7 @@ namespace Core {
                 return (*this);
             }
 
-            Iterator& operator=(Iterator&& move)
+            Iterator& operator=(Iterator&& move) noexcept
             {
                 if (this != &move) {
                     _pids = std::move(move._pids);
@@ -157,10 +157,15 @@ namespace Core {
             {
                 return ((_index != 0) && (_index <= _pids.size()));
             }
-            inline void Reset()
+            inline void Reset(bool start = true)
             {
-                _index = 0;
-                _current = _pids.begin();
+                if (start) {
+                    _index = 0;
+                    _current = _pids.begin();
+                } else {
+                    _index = static_cast<uint32_t>(_pids.size()) + 1;
+                    _current = _pids.end();
+                }
             }
             bool Next()
             {
@@ -172,6 +177,17 @@ namespace Core {
                     }
                 }
                 return (_index <= _pids.size());
+            }
+            bool Previous()
+            {
+                if (_index > 0) {
+                    _index--;
+
+                    if (_index > 0) {
+                        _current--;
+                    }
+                }
+                return (_index > 0);
             }
             inline ProcessInfo Current() const
             {
@@ -407,5 +423,5 @@ namespace Core {
     };
 
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 

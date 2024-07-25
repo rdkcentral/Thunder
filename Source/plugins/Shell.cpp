@@ -21,7 +21,7 @@
 #include "IShell.h"
 #include "Configuration.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost
 {
@@ -59,10 +59,7 @@ namespace PluginHost
                 }
             }
         } else {
-            ICOMLink* handler(COMLink());
-
-            // This method can only be used in the main process. Only this process, can instantiate a new process
-            ASSERT(handler != nullptr);
+            ICOMLink* handler(QueryInterface<ICOMLink>());
 
             if (handler != nullptr) {
                 string locator(rootConfig.Locator.Value());

@@ -20,7 +20,7 @@
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
-#ifndef __WINDOWS__
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
 
 #include "Module.h"
 #include "NodeId.h"
@@ -31,7 +31,7 @@
 #include <linux/connector.h>
 #include <linux/rtnetlink.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -420,7 +420,7 @@ namespace Core {
         PendingList _pending;
     };
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
 #endif // __WINDOWS__
 

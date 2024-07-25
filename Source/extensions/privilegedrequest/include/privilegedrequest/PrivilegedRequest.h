@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
     class PrivilegedRequest {
@@ -127,7 +127,10 @@ namespace Core {
                 , _signal(true, true)
             {
             }
-            ~Connection() override = default;
+            ~Connection() override
+            {
+                Close();
+            };
 
         public:
             uint32_t Request(const uint32_t waitTime, const string& connector, const uint32_t id, Container& descriptors)
@@ -456,4 +459,4 @@ namespace Core {
         Connection _link;
     };
 }
-} // Namespace WPEFramework::Core
+} // Namespace Thunder::Core

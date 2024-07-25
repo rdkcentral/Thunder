@@ -76,7 +76,7 @@ void IPTestAdministrator::ForkChildProcess(OtherSideMain otherSideMain)
       otherSideMain(*this);
 
       // TODO: should we clean up stuff here or not?
-      //WPEFramework::Core::Singleton::Dispose();
+      //Thunder::Core::Singleton::Dispose();
 
       // Make sure no gtest cleanup code is called (summary etc).
       #ifdef WITH_CODE_COVERAGE
@@ -201,11 +201,36 @@ void IPTestAdministrator::TimedLock(pthread_mutex_t * mutex, const std::string &
 {
    timespec timeSpec;
    FillTimeOut(timeSpec);
+#ifdef __APPLE__
+   int result;
+   do {
+       result = pthread_mutex_trylock(mutex);
+       if (result == EBUSY) {
+           int wait = -1;
+           timespec ts;
+           ts.tv_sec = 1000;
+           if (timeSpec.tv_sec > 1000) {
+               timeSpec.tv_sec -= ts.tv_sec;
+           } else if (timeSpec.tv_sec != -1) {
+               ts.tv_sec = timeSpec.tv_sec;
+               timeSpec.tv_sec = 0;
+           }
+
+           while (wait == -1) {
+               wait = nanosleep(&ts, &ts);
+           }
+       } else {
+           break;
+       }
+    } while (result != 0);
+
+#else
    int result = pthread_mutex_timedlock(mutex, &timeSpec);
    if (result == ETIMEDOUT) {
       fprintf(stderr, "While locking mutex, time out expired for \"%s\" in %s.\n", str.c_str(), GetProcessName());
       abort();
    }
+#endif
 }
 void IPTestAdministrator::TimedWait(pthread_cond_t * cond, pthread_mutex_t * mutex, const std::string & str)
 {

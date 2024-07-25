@@ -19,7 +19,7 @@
  
 #include "Serialization.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 

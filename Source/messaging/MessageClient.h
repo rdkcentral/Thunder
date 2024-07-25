@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 
@@ -49,7 +49,8 @@ namespace Messaging {
         void SkipWaiting();
 
         void Enable(const Core::Messaging::Metadata& metadata, const bool enable);
-        void Controls(Messaging::MessageUnit::Iterator& controls) const;
+        void Modules(std::vector<string>& modules) const;
+        void Controls(Messaging::MessageUnit::Iterator& controls, const string& module) const;
 
         using MessageHandler = std::function<void(const Core::ProxyType<Core::Messaging::MessageInfo>&, const Core::ProxyType<Core::Messaging::IEvent>&)>;
         void PopMessagesAndCall(const MessageHandler& handler);
@@ -58,7 +59,16 @@ namespace Messaging {
         void RemoveFactory(Core::Messaging::Metadata::type type);
 
     private:
-        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
+        struct enumHash
+        {
+            template <typename T>
+            std::size_t operator()(T t) const
+            {
+                return static_cast<std::size_t>(t);
+            }
+        };
+
+        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*, enumHash>;
         using Clients = std::map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;

@@ -37,7 +37,7 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // The datapackage is the abstract of a package that needs to be send over the line.
     class EXTERNAL DataElementFile : public DataElement {
@@ -112,7 +112,7 @@ namespace Core {
 
     protected:
         void Close();
-        virtual void Reallocation(const uint64_t size);
+        void Reallocation(const uint64_t size) override;
 
         void ReopenMemoryMappedFile();
 

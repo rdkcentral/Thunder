@@ -28,7 +28,7 @@
 #include "SocketPort.h"
 #include "TypeTraits.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -449,15 +449,15 @@ POP_WARNING()
         {
             return (_response.Package());
         }
-        virtual uint32_t Label() const
+        uint32_t Label() const override
         {
             return (IDENTIFIER);
         }
-        virtual ProxyType<IMessage> IParameters()
+        ProxyType<IMessage> IParameters() override
         {
             return (ProxyType<IMessage>(_parameters, _parameters));
         }
-        virtual ProxyType<IMessage> IResponse()
+        ProxyType<IMessage> IResponse() override
         {
             return (ProxyType<IMessage>(_response, _response));
         }
@@ -717,9 +717,6 @@ POP_WARNING()
         virtual ~IPCChannel() = default;
 
     public:
-        uintptr_t LinkId() const {
-            return (reinterpret_cast<uintptr_t>(this));
-        }
         void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _administration.Register(id, handler);
@@ -762,6 +759,7 @@ POP_WARNING()
             _customData = data;
         }
 
+        virtual uint32_t Id() const = 0;
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
     private:
@@ -922,6 +920,9 @@ POP_WARNING()
         {
             return (_administration.InProgress());
         }
+        uint32_t Id() const {
+            return (__Id());
+        }
         uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
             // We got the event, start the invoke, wait for the event to be set again..
@@ -934,6 +935,7 @@ POP_WARNING()
             __StateChange();
         }
 
+
     private:
         IS_MEMBER_AVAILABLE(StateChange, hasStateChange);
 
@@ -944,11 +946,26 @@ POP_WARNING()
             _extension.StateChange();
         }
 
-
         template <typename T=EXTENSION>
         typename Core::TypeTraits::enable_if<!hasStateChange<T, void> ::value, void>::type
         __StateChange()
         {
+        }
+
+        IS_MEMBER_AVAILABLE(Id, hasId);
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<hasId<const T, uint32_t> ::value, uint32_t>::type
+            __Id() const
+        {
+            return (_extension.Id());
+        }
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<!hasId<const T, uint32_t> ::value, uint32_t>::type
+            __Id() const
+        {
+            return (0);
         }
 
         uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override

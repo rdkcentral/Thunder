@@ -38,3 +38,5 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "messaging.lib")
 #endif
+
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Messaging)

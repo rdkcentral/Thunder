@@ -17,37 +17,45 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_rectangle, simple_rectangle)
-{
-    Rectangle();
-    Rectangle r1(2,3,2,3); 
-    Rectangle r2(2,4,2,4);
-    EXPECT_FALSE(r1 == r2);
-    EXPECT_TRUE(r1 != r2);
- 
-    Rectangle r3(2,3,2,3); 
-    EXPECT_TRUE(r1 == r3);
-    EXPECT_FALSE(r1 != r3);
+    TEST(test_rectangle, simple_rectangle)
+    {
+        ::Thunder::Core::Rectangle();
+        ::Thunder::Core::Rectangle r1(2,3,2,3); 
+        ::Thunder::Core::Rectangle r2(2,4,2,4);
+        EXPECT_FALSE(r1 == r2);
+        EXPECT_TRUE(r1 != r2);
      
-    Rectangle r4 = r1 & r2;
-    Rectangle r5(2,4,2,2);
-    EXPECT_TRUE(r4 == r5);
+        ::Thunder::Core::Rectangle r3(2,3,2,3); 
+        EXPECT_TRUE(r1 == r3);
+        EXPECT_FALSE(r1 != r3);
+         
+        ::Thunder::Core::Rectangle r4 = r1 & r2;
+        ::Thunder::Core::Rectangle r5(2,4,2,2);
+        EXPECT_TRUE(r4 == r5);
 
-    Rectangle r6 = r1 | r2;
-    Rectangle r7(2,3,2,5);
-    EXPECT_TRUE(r6 == r7);
-    
-    Rectangle r8 = r1.combine(r2);
-    EXPECT_TRUE(r8 == r7);
+        ::Thunder::Core::Rectangle r6 = r1 | r2;
+        ::Thunder::Core::Rectangle r7(2,3,2,5);
+        EXPECT_TRUE(r6 == r7);
+        
+        ::Thunder::Core::Rectangle r8 = r1.combine(r2);
+        EXPECT_TRUE(r8 == r7);
 
-    EXPECT_TRUE(r1.Contains(2,3));
-    EXPECT_TRUE(r1.Overlaps(r2));
-}
+        EXPECT_TRUE(r1.Contains(2,3));
+        EXPECT_TRUE(r1.Overlaps(r2));
+    }
+
+} // Core
+} // Tests
+} // Thunder

@@ -17,32 +17,35 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_messageException, simple_messageException)
-{
-    std::string msg = "Testing the message exception.";
-    MessageException exception(msg.c_str(),false);
-    EXPECT_STREQ(exception.Message(),msg.c_str());
-    
-    MessageException exception1(msg.c_str(),true);
-    char buffer[50];
-    string status = ": File exists";
-    snprintf(buffer, msg.size()+status.size()+1, "%s%s",msg.c_str(),status.c_str());
-#ifdef BUILD_ARM
-    if (strcmp(exception1.Message(), buffer) != 0) {
-#else
-    if (strcmp(exception1.Message(), buffer) != 0) {
-#endif
-        memset(buffer, 0, sizeof buffer);
-        status = ": No such file or directory";
-        snprintf(buffer, msg.size()+status.size()+1, "%s%s",msg.c_str(),status.c_str());
+    TEST(test_messageException, simple_messageException)
+    {
+        const std::string msg = "Testing the message exception.";
+
+        // No 'error' concatenated
+        ::Thunder::Core::MessageException exception(msg, false);
+
+        EXPECT_STREQ(exception.Message(), msg.c_str());
+
+        // 'error' concatenated
+        ::Thunder::Core::MessageException exception1(msg, true);
+
+        const string result = msg + ": No such file or directory";
+
+        EXPECT_STREQ(exception1.Message(), result.c_str());
     }
-    EXPECT_STREQ(exception1.Message(),buffer);
-}
+
+} // Core
+} // Tests
+} // Thunder

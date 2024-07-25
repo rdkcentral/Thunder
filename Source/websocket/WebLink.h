@@ -26,7 +26,7 @@
 #include "WebSerializer.h"
 #include "WebTransform.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
     template <typename LINK, typename INBOUND, typename OUTBOUND, typename ALLOCATOR, typename TRANSFORM = NoTransform>
     class WebLinkType {
@@ -121,7 +121,7 @@ namespace Web {
             ~DeserializerImpl() override = default;
 
         public:
-            void Deserialized(typename INBOUND::BaseElement& element)
+            void Deserialized(typename INBOUND::BaseElement& element) override
             {
                 ASSERT(&element == static_cast<typename INBOUND::BaseElement*>(&(*(_current))));
                 DEBUG_VARIABLE(element);

@@ -28,7 +28,7 @@ Thunder supports the following subsystems (enumerated in `Source/plugins/ISubSys
 
 All subsystems have a negated equivalent - e.g. `NOT_PLATFORM` and `NOT_SECURITY` that indicates the absence of those subsystems.
 
-When the WPEFramework process starts, Controller will check to see which subsystems are provided by plugins (as defined in the plugin metadata or the Controller configuration). These subsystems are sometimes referred to "external", since their lifetime is managed by a plugin external to the Thunder core. 
+When the Thunder process starts, Controller will check to see which subsystems are provided by plugins (as defined in the plugin metadata or the Controller configuration). These subsystems are sometimes referred to "external", since their lifetime is managed by a plugin external to the Thunder core.
 
 If the subsystem is not provided by a plugin, then Controller will mark the subsystem as active at startup. The opposite happens at shutdown, with Controller marking the subsystems as inactive.
 
@@ -63,11 +63,11 @@ struct EXTERNAL IInternet : virtual public Core::IUnknown {
 };
 ```
 
-Default implementations of these interfaces are provided in `Source/WPEFramework/SystemInfo.h`, which populate the values with sane defaults, but it is expected plugins that provide that subsystem provide their own implementations as required.
+Default implementations of these interfaces are provided in `Source/Thunder/SystemInfo.h`, which populate the values with sane defaults, but it is expected plugins that provide that subsystem provide their own implementations as required.
 
 ## Using Subsystems
 
-Plugins can use the `ISubsystem` interface (as implemented by `Source/WPEFramework/SystemInfo.h`) to retrieve information about the state of the subsystems and mark subsystems as active/inactive. This interface can be retrieved from the plugin shell provided to the plugin at initialisation. 
+Plugins can use the `ISubsystem` interface (as implemented by `Source/Thunder/SystemInfo.h`) to retrieve information about the state of the subsystems and mark subsystems as active/inactive. This interface can be retrieved from the plugin shell provided to the plugin at initialisation.
 
 ### Mark Subsystem as Active
 

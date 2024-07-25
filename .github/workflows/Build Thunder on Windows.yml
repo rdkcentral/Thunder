@@ -1,6 +1,7 @@
 name: Build Thunder on Windows
 
 on:
+  workflow_dispatch:
   push:
     branches: ["master"]
     paths-ignore:
@@ -15,8 +16,8 @@ on:
       - 'ReleaseNotes/**'
 
 env:
-  bridge: Thunder\Source\WPEFramework\bridge.vcxproj
-  comProcess: Thunder\Source\WPEProcess\comprocess.vcxproj
+  bridge: Thunder\Source\Thunder\bridge.vcxproj
+  comProcess: Thunder\Source\ThunderPlugin\comprocess.vcxproj
   devEnv: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com
   solution: Thunder.sln
   warningReporting: Thunder\Source\extensions\warningreporting\warningreporting.vcxproj
@@ -32,8 +33,9 @@ jobs:
 
     name: Build type - ${{matrix.type}}${{matrix.version}}
     steps:
+# ----- Checkout & DependsOn regex -----
     - name: Checkout ThunderOnWindows
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows
         repository: WebPlatformForEmbedded/ThunderOnWindows
@@ -41,7 +43,7 @@ jobs:
 # ----- Thunder -----
     - name: Checkout Thunder - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=Thunder:') }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/Thunder
         repository: ${{github.repository_owner}}/Thunder
@@ -57,7 +59,7 @@ jobs:
 
     - name: Checkout Thunder - ${{steps.thunder.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/Thunder
         repository: ${{github.repository_owner}}/Thunder
@@ -66,7 +68,7 @@ jobs:
 # ----- ThunderTools -----
     - name: Checkout ThunderTools - default
       if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderTools
         repository: ${{github.repository_owner}}/ThunderTools
@@ -82,7 +84,7 @@ jobs:
 
     - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
       if: contains(github.event.pull_request.body, '[DependsOn=ThunderTools:')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderTools
         repository: ${{github.repository_owner}}/ThunderTools
@@ -90,30 +92,30 @@ jobs:
 
 # ----- Other checkouts -----
     - name: Checkout ThunderClientLibraries
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderClientLibraries
         repository: ${{github.repository_owner}}/ThunderClientLibraries
 
     - name: Checkout ThunderInterfaces
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderInterfaces
         repository: ${{github.repository_owner}}/ThunderInterfaces
 
     - name: Checkout ThunderNanoServices
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderNanoServices
         repository: ${{github.repository_owner}}/ThunderNanoServices
 
     - name: Checkout ThunderNanoServicesRDK
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: ThunderOnWindows/ThunderNanoServicesRDK
         repository: WebPlatformForEmbedded/ThunderNanoServicesRDK
 
-# ----- Building -----
+# ----- Building & uploading artifacts -----
     - name: Install jsonref
       run: pip install jsonref
 
@@ -122,15 +124,15 @@ jobs:
       run: >
         cd ThunderOnWindows
         && set CoreConsole="__CORE_WARNING_REPORTING__"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"  "%solution%"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"  "%solution%"
-        && "%devEnv%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"  "%solution%"
+        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%bridge%"
+        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%comProcess%"
+        && "%devEnv%" "%solution%" /Build "${{matrix.type}}|x${{matrix.version}}" /Project "%warningReporting%"
 
     - name: Tar files
       run: tar -czvf ${{matrix.type}}${{matrix.version}}.tar.gz artifacts
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Thunder-${{matrix.type}}${{matrix.version}}-artifact
         path: ${{matrix.type}}${{matrix.version}}.tar.gz

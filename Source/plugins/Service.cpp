@@ -20,45 +20,40 @@
 #include "Service.h"
 #include "Channel.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace PluginHost {
 
     PluginHost::Request::Request()
         : Web::Request()
-        , _state(INCOMPLETE | SERVICE_CALL)
+        , _state(INCOMPLETE | mode::RESTFULL)
         , _service()
-    {
-    }
-    /* virtual */ PluginHost::Request::~Request()
     {
     }
 
     void PluginHost::Request::Clear()
     {
         Web::Request::Clear();
-        _state = INCOMPLETE | SERVICE_CALL;
+        _state = INCOMPLETE | mode::RESTFULL;
 
         if (_service.IsValid()) {
             _service.Release();
         }
     }
-    void PluginHost::Request::Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const bool serviceCall)
+    void PluginHost::Request::Set(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const mode type)
     {
         ASSERT(_service.IsValid() == false);
         ASSERT(State() == INCOMPLETE);
 
-        uint8_t value = (serviceCall ? SERVICE_CALL : 0);
-
         if (service.IsValid() == true) {
-            _state = COMPLETE | value;
+            _state = COMPLETE | (type & 0xF0);
             _service = service;
         } else if (errorCode == Core::ERROR_BAD_REQUEST) {
-            _state = OBLIVIOUS | value;
+            _state = OBLIVIOUS | (type & 0xF0);
         } else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
-            _state = INVALID_VERSION | value;
+            _state = INVALID_VERSION | (type & 0xF0);
         } else if (errorCode == Core::ERROR_UNAVAILABLE) {
-            _state = MISSING_CALLSIGN | value;
+            _state = MISSING_CALLSIGN | (type & 0xF0);
         }
     }
 
@@ -67,24 +62,19 @@ namespace PluginHost {
         return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
-#if THUNDER_RESTFULL_API
     void Service::Notification(const string& message)
     {
         _notifierLock.Lock();
 
         ASSERT(message.empty() != true);
         {
-            std::list<Channel*>::iterator index(_notifiers.begin());
-
-            while (index != _notifiers.end()) {
-                (*index)->Submit(message);
-                index++;
+            for (auto entry : _notifiers) {
+                entry->Submit(message);
             }
         }
 
         _notifierLock.Unlock();
     }
-#endif
 
     void Service::FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath)
     {

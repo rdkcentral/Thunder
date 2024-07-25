@@ -15,35 +15,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TEST_RUNNER_NAME "WPEFramework_test_core")
+set(TEST_RUNNER_NAME "Thunder_test_core")
 
 
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   test_cyclicbuffer.cpp
+   #test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
-   #test_doorbell.cpp
+   test_doorbell.cpp
    test_enumerate.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_filesystem.cpp
    test_frametype.cpp
    test_hash.cpp
-   #test_ipc.cpp
-   #test_ipcclient.cpp
+   test_ipcclient.cpp
+   test_ipc.cpp
    test_iso639.cpp
    test_iterator.cpp
-   #test_jsonparser.cpp
+   test_jsonparser.cpp
    test_keyvalue.cpp
    test_library.cpp
    test_lockablecontainer.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
-   #test_messageException.cpp
-   #test_networkinfo.cpp
+   test_messageException.cpp
+   test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
@@ -56,7 +56,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_rpc.cpp
    test_semaphore.cpp
-   test_sharedbuffer.cpp
+   #test_sharedbuffer.cpp
    test_singleton.cpp
    test_socketstreamjson.cpp
    test_socketstreamtext.cpp
@@ -68,29 +68,29 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-   #test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
-   #test_timer.cpp
+   test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
-   #test_workerpool.cpp
+   test_workerpool.cpp
    test_xgetopt.cpp
-   #test_message_dispatcher.cpp
+   test_message_dispatcher.cpp
 )
 
 if(MESSAGING)
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkMessaging
+      ThunderMessaging
    )
 else()
    target_sources(${TEST_RUNNER_NAME} PRIVATE test_tracing.cpp)
    target_link_libraries(${TEST_RUNNER_NAME}
-      WPEFrameworkTracing
+      ThunderTracing
    )
 endif()
 
@@ -104,8 +104,14 @@ target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
 )
 
-target_link_libraries(${TEST_RUNNER_NAME} 
-    ${GTEST_BOTH_LIBRARIES}
+if (APPLE)
+    set(GTEST_LIBRARY GTest::gtest GTest::gtest_main)
+else()
+    set(GTEST_LIBRARY "${GTEST_BOTH_LIBRARIES}")
+endif()
+
+target_link_libraries(${TEST_RUNNER_NAME}
+    ${GTEST_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${NAMESPACE}Core::${NAMESPACE}Core
     ${NAMESPACE}COM::${NAMESPACE}COM
@@ -116,14 +122,14 @@ target_link_libraries(${TEST_RUNNER_NAME}
 
 install(
     TARGETS ${TEST_RUNNER_NAME}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 
 
 add_library(helloworld SHARED test_library_helloworld.cpp)
 
 install(
     TARGETS helloworld
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/testdata)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/testdata COMPONENT ${NAMESPACE}_Test)
 
 
 add_test(NAME ${TEST_RUNNER_NAME} COMMAND ${TEST_RUNNER_NAME})

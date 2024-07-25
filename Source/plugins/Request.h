@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Config.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     // Forward declaration. We only have a smart pointer to a service.
@@ -36,46 +36,55 @@ namespace PluginHost {
     // used but are not actively used.
     class EXTERNAL Request : public Web::Request {
     public:
-        enum enumState : uint8_t {
+        enum state : uint8_t {
             INCOMPLETE = 0x01,
             OBLIVIOUS,
             MISSING_CALLSIGN,
             INVALID_VERSION,
             COMPLETE,
-            UNAUTHORIZED,
-            SERVICE_CALL = 0x80	
+            UNAUTHORIZED
+        };
+        enum mode : uint8_t {
+            RESTFULL    = 0x10,
+            JSONRPC     = 0x20,
+            PROPRIETARY = 0x30
         };
 
-    private:
+    public:
+        Request(Request&&) = delete;
         Request(const Request&) = delete;
+        Request& operator=(Request&&) = delete;
         Request& operator=(const Request&) = delete;
 
-    public:
         Request();
-        virtual ~Request();
+        ~Request() = default;
 
     public:
 		// This method tells us if this call was received over the 
 		// Service prefix path or (if it is false) over the JSONRPC
 		// prefix path.
-        inline bool ServiceCall() const
+        inline bool RestfulCall() const
         {
-            return ((_state & SERVICE_CALL) != 0);
+            return ((_state & 0xF0) == RESTFULL);
         }
-        inline enumState State() const
+        inline bool JSONRPCCall() const
         {
-            return (static_cast<enumState>(_state & 0x7F));
+            return ((_state & 0xF0) == JSONRPC);
+        }
+        inline state State() const
+        {
+            return (static_cast<state>(_state & 0x0F));
         }
         inline Core::ProxyType<PluginHost::Service>& Service()
         {
             return (_service);
         }
 		inline void Unauthorized() {
-            _state = ((_state & 0x80) | UNAUTHORIZED);
+            _state = ((_state & 0xF0) | UNAUTHORIZED);
 		}
 
         void Clear();
-        void Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const bool serviceCall);
+        void Set(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const mode type);
 
     private:
         uint8_t _state;

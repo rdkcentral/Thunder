@@ -20,7 +20,7 @@
 #include "AccessControl.h"
 #include "FileSystem.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     File::File()

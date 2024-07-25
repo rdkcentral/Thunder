@@ -17,17 +17,23 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
 
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
 #include <com/com.h>
-#include <core/Portability.h>
 
-namespace WPEFramework {
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
+namespace Tests {
+namespace Core {
+
 namespace Exchange {
-    struct IAdder : virtual public Core::IUnknown {
+    struct IAdder : virtual public ::Thunder::Core::IUnknown {
         enum { ID = 0x80000001 };
         virtual uint32_t GetValue() = 0;
         virtual void Add(uint32_t value) = 0;
@@ -35,9 +41,7 @@ namespace Exchange {
     };
 } // Exchange
 
-namespace Tests {
-
-    class Adder : public Exchange::IAdder
+    class Adder : public Thunder::Tests::Core::Exchange::IAdder
     {
     public:
         Adder()
@@ -45,38 +49,35 @@ namespace Tests {
         {
         }
 
-        uint32_t GetValue()
+        uint32_t GetValue() override
         {
             return m_value;
         }
 
-        void Add(uint32_t value)
+        void Add(uint32_t value) override
         {
             m_value += value;
         }
 
-        uint32_t GetPid()
+        uint32_t GetPid() override
         {
             return getpid();
         }
 
         BEGIN_INTERFACE_MAP(Adder)
-            INTERFACE_ENTRY(Exchange::IAdder)
+            INTERFACE_ENTRY(Thunder::Tests::Core::Exchange::IAdder)
         END_INTERFACE_MAP
 
     private:
         uint32_t m_value;
     };
 
-    // Proxystubs.
-    using namespace Exchange;
-
     // -----------------------------------------------------------------
     // STUB
     // -----------------------------------------------------------------
 
     //
-    // IAdder interface stub definitions
+    // Thunder::Tests::Core::Exchange::IAdder interface stub definitions
     //
     // Methods:
     //  (0) virtual uint32_t GetValue() = 0
@@ -84,49 +85,49 @@ namespace Tests {
     //  (2) virtual uint32_t GetPid() = 0
     //
 
-    ProxyStub::MethodHandler AdderStubMethods[] = {
+    ::Thunder::ProxyStub::MethodHandler AdderStubMethods[] = {
         // virtual uint32_t GetValue() = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            RPC::Data::Input& input(message->Parameters());
+        [](::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, ::Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
+            ::Thunder::RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
+            Thunder::Tests::Core::Exchange::IAdder* implementation = reinterpret_cast<Thunder::Tests::Core::Exchange::IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null Thunder::Tests::Core::Exchange::IAdder implementation pointer");
             const uint32_t output = implementation->GetValue();
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            ::Thunder::RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
         // virtual void Add(uint32_t) = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            RPC::Data::Input& input(message->Parameters());
+        [](::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, ::Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
+            ::Thunder::RPC::Data::Input& input(message->Parameters());
 
             // read parameters
-            RPC::Data::Frame::Reader reader(input.Reader());
+            ::Thunder::RPC::Data::Frame::Reader reader(input.Reader());
             const uint32_t param0 = reader.Number<uint32_t>();
 
             // call implementation
-            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
+            Thunder::Tests::Core::Exchange::IAdder* implementation = reinterpret_cast<Thunder::Tests::Core::Exchange::IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null Thunder::Tests::Core::Exchange::IAdder implementation pointer");
             implementation->Add(param0);
         },
 
         // virtual uint32_t GetPid() = 0
         //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            RPC::Data::Input& input(message->Parameters());
+        [](::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, ::Thunder::Core::ProxyType<RPC::InvokeMessage>& message) {
+            ::Thunder::RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
-            EXPECT_TRUE((implementation != nullptr) && "Null IAdder implementation pointer");
+            Thunder::Tests::Core::Exchange::IAdder* implementation = reinterpret_cast<Thunder::Tests::Core::Exchange::IAdder*>(input.Implementation());
+            EXPECT_TRUE((implementation != nullptr) && "Null Thunder::Tests::Core::Exchange::IAdder implementation pointer");
             const uint32_t output = implementation->GetPid();
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            ::Thunder::RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -138,7 +139,7 @@ namespace Tests {
     // -----------------------------------------------------------------
 
     //
-    // IAdder interface proxy definitions
+    // Thunder::Tests::Core::Exchange::IAdder interface proxy definitions
     //
     // Methods:
     //  (0) virtual uint32_t GetValue() = 0
@@ -146,22 +147,22 @@ namespace Tests {
     //  (2) virtual uint32_t GetPid() = 0
     //
 
-    class AdderProxy final : public ProxyStub::UnknownProxyType<IAdder> {
+    class AdderProxy final : public ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder> {
     public:
-        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, Core::instance_id implementation, const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
+        AdderProxy(const ::Thunder::Core::ProxyType<::Thunder::Core::IPCChannel>& channel, ::Thunder::Core::instance_id implementation, const bool otherSideInformed)
+            : ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::BaseClass(channel, implementation, otherSideInformed)
         {
         }
 
         uint32_t GetValue() override
         {
-            IPCMessage newMessage(BaseClass::Message(0));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::BaseClass::Message(0));
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+            if ((output = Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
                 // read return value
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                ::Thunder::RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
             }
 
@@ -170,10 +171,10 @@ namespace Tests {
 
         void Add(uint32_t param0) override
         {
-            IPCMessage newMessage(BaseClass::Message(1));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::BaseClass::Message(1));
 
             // write parameters
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            ::Thunder::RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<const uint32_t>(param0);
 
             // invoke the method handler
@@ -182,13 +183,13 @@ namespace Tests {
 
         uint32_t GetPid() override
         {
-            IPCMessage newMessage(BaseClass::Message(2));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::BaseClass::Message(2));
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+            if ((output = Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
                 // read return value
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                ::Thunder::RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
             }
 
@@ -202,35 +203,35 @@ namespace Tests {
 
     namespace {
 
-        typedef ProxyStub::UnknownStubType<IAdder, AdderStubMethods> AdderStub;
+        typedef ::Thunder::ProxyStub::UnknownStubType<Thunder::Tests::Core::Exchange::IAdder, AdderStubMethods> AdderStub;
 
         static class Instantiation {
         public:
             Instantiation()
             {
-                RPC::Administrator::Instance().Announce<IAdder, AdderProxy, AdderStub>();
+                ::Thunder::RPC::Administrator::Instance().Announce<Thunder::Tests::Core::Exchange::IAdder, AdderProxy, AdderStub>();
             }
         } ProxyStubRegistration;
 
     } // namespace
 
     namespace {
-        class ExternalAccess : public RPC::Communicator
+        class ExternalAccess : public ::Thunder::RPC::Communicator
         {
         public:
             ExternalAccess() = delete;
             ExternalAccess(const ExternalAccess &) = delete;
             ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-            ExternalAccess(const Core::NodeId & source)
-                : RPC::Communicator(source, _T(""))
+            ExternalAccess(const ::Thunder::Core::NodeId & source)
+                : ::Thunder::RPC::Communicator(source, _T(""))
             {
-                Open(Core::infinite);
+                Open(::Thunder::Core::infinite);
             }
 
             ~ExternalAccess()
             {
-                Close(Core::infinite);
+                Close(::Thunder::Core::infinite);
             }
 
         private:
@@ -238,8 +239,8 @@ namespace Tests {
             {
                 void* result = nullptr;
 
-                if (interfaceId == Exchange::IAdder::ID) {
-                    Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
+                if (interfaceId == Thunder::Tests::Core::Exchange::IAdder::ID) {
+                    Thunder::Tests::Core::Exchange::IAdder * newAdder = ::Thunder::Core::Service<Adder>::Create<Thunder::Tests::Core::Exchange::IAdder>();
                     result = newAdder;
                 }
 
@@ -250,9 +251,10 @@ namespace Tests {
 
     TEST(Core_RPC, adder)
     {
+#ifndef __APPLE__
        std::string connector{"/tmp/wperpc01"};
        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-          Core::NodeId remoteNode(connector.c_str());
+          ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
           ExternalAccess communicator(remoteNode);
 
@@ -260,7 +262,7 @@ namespace Tests {
 
           testAdmin.Sync("done testing");
 
-          communicator.Close(Core::infinite);
+          communicator.Close(::Thunder::Core::infinite);
        };
 
        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
@@ -272,15 +274,17 @@ namespace Tests {
        testAdmin.Sync("setup server");
 
        {
-          Core::NodeId remoteNode(connector.c_str());
+          ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
-          Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
+          ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
           EXPECT_TRUE(engine.IsValid());
-          Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
+          ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client = ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(remoteNode, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
           EXPECT_TRUE(client.IsValid());
 
-          // Create remote instance of "IAdder".
-          Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
+          // Create remote instance of "Thunder::Tests::Core::Exchange::IAdder".
+          Thunder::Tests::Core::Exchange::IAdder * adder = client->Open<Thunder::Tests::Core::Exchange::IAdder>(_T("Adder"));
+
+          ASSERT_TRUE(adder != nullptr);
 
           // Perform some arithmatic.
           EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
@@ -294,11 +298,14 @@ namespace Tests {
 
           adder->Release();
 
-          client->Close(Core::infinite);
+          client->Close(::Thunder::Core::infinite);
        }
 
        testAdmin.Sync("done testing");
-       Core::Singleton::Dispose();
+       ::Thunder::Core::Singleton::Dispose();
+#endif
     }
+
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "BaseCategory.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Trace {
 

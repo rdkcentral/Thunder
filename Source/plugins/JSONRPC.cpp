@@ -19,7 +19,7 @@
 
 #include "JSONRPC.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace PluginHost {
 
@@ -32,6 +32,7 @@ namespace WPEFramework {
             , _versions()
             , _observers()
             , _eventAliases()
+            , _notification(*this)
         {
             std::vector<uint8_t> versions = { 1 };
 
@@ -47,6 +48,7 @@ namespace WPEFramework {
             , _versions()
             , _observers()
             , _eventAliases()
+            , _notification(*this)
         {
             _handlers.emplace_back(versions);
         }
@@ -60,6 +62,7 @@ namespace WPEFramework {
             , _versions()
             , _observers()
             , _eventAliases()
+            , _notification(*this)
         {
             std::vector<uint8_t> versions = { 1 };
 
@@ -75,6 +78,7 @@ namespace WPEFramework {
             , _versions()
             , _observers()
             , _eventAliases()
+            , _notification(*this)
         {
             _handlers.emplace_back(versions);
         }

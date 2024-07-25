@@ -24,7 +24,7 @@
 
 // @stubgen:include "IIteratorType.h"
 
-namespace WPEFramework {
+namespace Thunder {
     namespace RPC {
 
         struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {

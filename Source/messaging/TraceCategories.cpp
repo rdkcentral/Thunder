@@ -23,7 +23,7 @@
 #include "TraceFactory.h"
 #endif // __WINDOWS__
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Trace {
 

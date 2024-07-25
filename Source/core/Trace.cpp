@@ -22,8 +22,11 @@
 #include "Sync.h"
 #include "TextFragment.h"
 #include "Trace.h"
+#if defined(__APPLE__)
+#include <pthread.h>
+#endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class Demangling {
     public:

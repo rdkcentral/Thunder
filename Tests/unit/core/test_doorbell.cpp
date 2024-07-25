@@ -16,28 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     TEST(Core_DoorBell, simpleSet)
     {
         std::string fileName {"/tmp/doorbell01"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
-            Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
             }
@@ -50,22 +57,23 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
             ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
             doorBell.Ring();
             testAdmin.Sync("Second ring");
         }
-        Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST(Core_DoorBell, simpleSetReversed)
     {
+        
+
         std::string fileName {"/tmp/doorbell02"};
         auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
-
-            Core::DoorBell doorBell(fileName.c_str());
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
             ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
@@ -79,22 +87,23 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::DoorBell doorBell(fileName.c_str());
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
             }
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+            EXPECT_EQ(doorBell.Wait(::Thunder::Core::infinite), ::Thunder::Core::ERROR_NONE);
+            if (doorBell.Wait(::Thunder::Core::infinite) == ::Thunder::Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("Second ring");
             }
             doorBell.Relinquish();
         }
-       // Core::Singleton::Dispose();
+        ::Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

@@ -24,8 +24,9 @@
 #include "IPlugin.h"
 #include "IShell.h"
 #include "ISubSystem.h"
+#include "IController.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     /**
      * IMPORTANT: If updating this class to add/remove/modify configuration options, ensure
@@ -149,7 +150,7 @@ namespace Plugin {
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
             }
-            RootConfig(RootConfig&& move)
+            RootConfig(RootConfig&& move) noexcept
                 : Core::JSON::Container()
                 , Locator(std::move(move.Locator))
                 , User(std::move(move.User))
@@ -189,7 +190,7 @@ namespace Plugin {
                 return (*this);
             }
 
-            RootConfig& operator=(RootConfig&& move)
+            RootConfig& operator=(RootConfig&& move) noexcept
             {
                 if (this != &move) {
                     Locator = std::move(move.Locator);
@@ -245,6 +246,7 @@ namespace Plugin {
             , WebUI()
             , Precondition()
             , Termination()
+            , Control()
             , Configuration(false)
             , PersistentPathPostfix()
             , VolatilePathPostfix()
@@ -252,6 +254,7 @@ namespace Plugin {
             , StartupOrder(50)
             , StartMode(PluginHost::IShell::startmode::ACTIVATED)
             , Communicator()
+            , Root()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -261,6 +264,7 @@ namespace Plugin {
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
+            Add(_T("control"), &Control);
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
@@ -268,6 +272,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -279,6 +284,7 @@ namespace Plugin {
             , WebUI(copy.WebUI)
             , Precondition(copy.Precondition)
             , Termination(copy.Termination)
+            , Control(copy.Control)
             , Configuration(copy.Configuration)
             , PersistentPathPostfix(copy.PersistentPathPostfix)
             , VolatilePathPostfix(copy.VolatilePathPostfix)
@@ -286,6 +292,7 @@ namespace Plugin {
             , StartupOrder(copy.StartupOrder)
             , StartMode(copy.StartMode)
             , Communicator(copy.Communicator)
+            , Root(copy.Root)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -295,6 +302,7 @@ namespace Plugin {
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
+            Add(_T("control"), &Control);
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
@@ -302,8 +310,9 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
-        Config(Config&& move)
+        Config(Config&& move) noexcept
             : Core::JSON::Container()
             , Callsign(std::move(move.Callsign))
             , Locator(std::move(move.Locator))
@@ -313,6 +322,7 @@ namespace Plugin {
             , WebUI(std::move(move.WebUI))
             , Precondition(std::move(move.Precondition))
             , Termination(std::move(move.Termination))
+            , Control(std::move(move.Control))
             , Configuration(std::move(move.Configuration))
             , PersistentPathPostfix(std::move(move.PersistentPathPostfix))
             , VolatilePathPostfix(std::move(move.VolatilePathPostfix))
@@ -320,6 +330,7 @@ namespace Plugin {
             , StartupOrder(std::move(move.StartupOrder))
             , StartMode(std::move(move.StartMode))
             , Communicator(std::move(move.Communicator))
+            , Root(std::move(move.Root))
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -329,6 +340,7 @@ namespace Plugin {
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
+            Add(_T("control"), &Control);
             Add(_T("configuration"), &Configuration);
             Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
@@ -336,6 +348,7 @@ namespace Plugin {
             Add(_T("startuporder"), &StartupOrder);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
+            Add(_T("root"), &Root);
         }
 
         ~Config() override = default;
@@ -351,17 +364,19 @@ namespace Plugin {
             Configuration = RHS.Configuration;
             Precondition = RHS.Precondition;
             Termination = RHS.Termination;
+            Control = RHS.Control;
             PersistentPathPostfix = RHS.PersistentPathPostfix;
             VolatilePathPostfix = RHS.VolatilePathPostfix;
             SystemRootPath = RHS.SystemRootPath;
             StartupOrder = RHS.StartupOrder;
             StartMode = RHS.StartMode;
             Communicator = RHS.Communicator;
+            Root = RHS.Root;
 
             return (*this);
         }
 
-        Config& operator=(Config&& move)
+        Config& operator=(Config&& move) noexcept
         {
             Callsign = std::move(move.Callsign);
             Locator = std::move(move.Locator);
@@ -372,12 +387,14 @@ namespace Plugin {
             Configuration = std::move(move.Configuration);
             Precondition = std::move(move.Precondition);
             Termination = std::move(move.Termination);
+            Control = std::move(move.Control);
             PersistentPathPostfix = std::move(move.PersistentPathPostfix);
             VolatilePathPostfix = std::move(move.VolatilePathPostfix);
             SystemRootPath = std::move(move.SystemRootPath);
             StartupOrder = std::move(move.StartupOrder);
             StartMode = std::move(move.StartMode);
             Communicator = std::move(move.Communicator);
+            Root = std::move(move.Root);
 
             return (*this);
         }
@@ -394,6 +411,30 @@ namespace Plugin {
             return (basePath + postfixPath + '/');
         }
 
+        explicit operator Exchange::Controller::IMetadata::Data::Service() const { 
+            Exchange::Controller::IMetadata::Data::Service result;
+
+            result.Callsign = Callsign;
+            result.Locator = Locator;
+            result.ClassName = ClassName;
+            result.StartMode = StartMode;
+            result.Communicator = Communicator;
+            result.PersistentPathPostfix = PersistentPathPostfix;
+            result.VolatilePathPostfix = VolatilePathPostfix;
+            result.SystemRootPath = SystemRootPath;
+            result.Configuration = Configuration;
+            if (Precondition.IsSet() == true) {
+                result.Precondition = Precondition;
+            }
+            if (Termination.IsSet() == true) {
+                result.Termination = Termination;
+            }
+            if (Control.IsSet() == true) {
+                result.Control = Control;
+            }
+            return result; 
+        }
+
     public:
         Core::JSON::String Callsign;
         Core::JSON::String Locator;
@@ -403,6 +444,7 @@ namespace Plugin {
         Core::JSON::String WebUI;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
+        Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Control;
         Core::JSON::String Configuration;
         Core::JSON::String PersistentPathPostfix;
         Core::JSON::String VolatilePathPostfix;
@@ -410,6 +452,7 @@ namespace Plugin {
         Core::JSON::DecUInt32 StartupOrder;
         Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
         Core::JSON::String Communicator;
+        RootConfig Root;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 

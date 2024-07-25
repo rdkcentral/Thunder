@@ -38,7 +38,7 @@
 
 // ---- Class Definition ----
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
 
         template<typename CONTEXT>
@@ -176,10 +176,12 @@ namespace WPEFramework {
                 const void* result = Alignment(alignof(TYPE), data);
                 return (reinterpret_cast<const TYPE*>(result));
             }
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
             inline void Clear()
             {
                 __Clear();
             }
+POP_WARNING()
             inline bool IsInitialized() const
             {
                 return (__IsInitialized());
@@ -525,7 +527,6 @@ POP_WARNING()
             {
                 return (_refCount == a_RHS._refCount);
             }
-
             inline bool operator!=(const ProxyType<CONTEXT>& a_RHS) const
             {
                 return !(operator==(a_RHS));
@@ -534,10 +535,17 @@ POP_WARNING()
             {
                 return ((_refCount != nullptr) && (_realObject == &a_RHS));
             }
-
             inline bool operator!=(const CONTEXT& a_RHS) const
             {
                 return (!operator==(a_RHS));
+            }
+            inline bool operator==(const nullptr_t&) const
+            {
+                return (_refCount == nullptr);
+            }
+            inline bool operator!=(const nullptr_t&) const
+            {
+                return (_refCount != nullptr);
             }
 
             inline CONTEXT* operator->() const

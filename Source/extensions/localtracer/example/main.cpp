@@ -8,7 +8,7 @@
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 constexpr char module[] = "LocalTraceTest";
 
@@ -60,7 +60,7 @@ int main(int /*argc*/, const char* argv[])
 
     tracer.Close();
 
-    WPEFramework::Core::Singleton::Dispose();
+    Thunder::Core::Singleton::Dispose();
 
     return 0;
 }

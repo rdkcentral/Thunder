@@ -109,7 +109,7 @@
 
     #if defined(__clang__)
         #define PUSH_WARNING_ _Pragma("clang diagnostic push")
-        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored #WARNING)
+        #define PUSH_WARNING_ARG_(WARNING) DO_PRAGMA(clang diagnostic ignored WARNING)
         #define POP_WARNING_ _Pragma("clang diagnostic pop")
 
     #elif (__GNUC__ >= 4)
@@ -185,6 +185,11 @@
 #define DISABLE_WARNING_TYPE_LIMITS
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD
 #define DISABLE_WARNING_PEDANTIC
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS
+#define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND
+#define DISABLE_WARNING_DELETE_INCOMPLETE
+#define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE
+#define DISABLE_WARNING_MAYBE_UNINITIALIZED
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -194,7 +199,6 @@
 #define DISABLE_WARNING_NO_MATCHING_OPERATOR_DELETE
 #define DISABLE_WARNING_CONVERSION_TRUNCATION
 #define DISABLE_WARNING_POINTER_TRUNCATION
-#define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE
 #define DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST
 #define DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS
 #define DISABLE_WARNING_DISCARD_RETURN_VALUE_FOR_NONDISCARD_FUNCTION
@@ -211,6 +215,12 @@
 #define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
 #define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wpedantic")
+#define DISABLE_WARNING_OVERLOADED_VIRTUALS PUSH_WARNING_ARG_("-Woverloaded-virtual")
+#define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE PUSH_WARNING_ARG_("-Wint-to-pointer-cast")
+#define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND PUSH_WARNING_ARG_("-Wconstant-logical-operand")
+#define DISABLE_WARNING_DELETE_INCOMPLETE PUSH_WARNING_ARG_("-Wdelete-incomplete")
+#define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE PUSH_WARNING_ARG_("-Winconsistent-missing-override")
+#define DISABLE_WARNING_MAYBE_UNINITIALIZED PUSH_WARNING_ARG_("-Wmaybe-uninitialized")
 #endif
 #endif
 
@@ -357,13 +367,13 @@ typedef std::string string;
 #endif
 
 #ifdef __LINUX__
-
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <string>
+#include <sys/time.h>
 #include <algorithm>
 #include <atomic>
 #include <array>
@@ -413,13 +423,29 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
+
+#define AF_NETLINK 16
+#define AF_PACKET  17
+
+#ifndef POLLRDHUP
+#define POLLRDHUP 0x2000
+#endif
+
+#define SOCK_CLOEXEC 0
+#define __APPLE_USE_RFC_3542
+
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
-int clock_gettime(int, struct timespec*);
+//clock_gettime is available in OSX Darwin >= 10.12
+//int clock_gettime(int, struct timespec*);
+extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>
 #include <linux/uinput.h>
 #include <sys/signalfd.h>
+
+uint64_t htonll(const uint64_t& value);
+uint64_t ntohll(const uint64_t& value);
 #endif
 
 #define ONESTOPBIT 0
@@ -451,6 +477,7 @@ int clock_gettime(int, struct timespec*);
 #define _tcsrchr wcsrchr
 #define _tcsftime wcsftime
 #define _stprintf swprintf
+#define _stnprintf swprintf
 #define _tcscpy wcscpy
 #define _tcsncpy wcsncpy
 
@@ -480,6 +507,7 @@ int clock_gettime(int, struct timespec*);
 #define _tcsrchr strrchr
 #define _tcsftime strftime
 #define _stprintf sprintf
+#define _stnprintf snprintf
 #define _tcscpy strcpy
 #define _tcsncpy strncpy
 
@@ -594,10 +622,7 @@ DEPRECATED inline EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _M
     return (::memmove(_Dst, _Src, _MaxCount));
 }
 
-#if defined(__LINUX__)
-uint64_t htonll(const uint64_t& value);
-uint64_t ntohll(const uint64_t& value);
-#endif
+
 }
 
 #define SLEEPSLOT_POLLING_TIME 100
@@ -642,7 +667,6 @@ typedef enum {
 
 
 #endif // __LINUX__
-
 #ifdef _UNICODE
 typedef std::wstring string;
 #endif
@@ -669,7 +693,7 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -941,6 +965,17 @@ namespace Core {
 }
 }
 
+namespace WPEFramework {
+    using namespace Thunder;
+}
+
+#define WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(NESTED_NAMESPACE) \
+namespace WPEFramework { \
+namespace NESTED_NAMESPACE { \
+    using namespace Thunder::NESTED_NAMESPACE; \
+} \
+}
+
 extern "C" {
 
 #ifdef __WINDOWS__
@@ -948,7 +983,7 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
@@ -972,6 +1007,6 @@ namespace std {
 #endif
 #endif
 
-#define THUNDER_VERSION 5
+#include "Version.h"
 
 #endif // __PORTABILITY_H
