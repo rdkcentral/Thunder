@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev g++-11-multilib gcc-11-multilib
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
@@ -83,6 +83,8 @@ jobs:
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m32" \
+        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m32" \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
@@ -99,7 +101,8 @@ jobs:
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m32" \
+        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m32" \
         -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
