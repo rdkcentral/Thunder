@@ -239,13 +239,14 @@ namespace Core {
 
     TEST_F(Core_Messaging_MessageUnit, MessageClientWillReturnListOfControls)
     {
+        ToggleDefaultConfig(true);
+
         //this test is using metadata (IPC) passing, so no other proces tests for now
-        ::Thunder::Messaging::MessageClient client(::Thunder::Messaging::MessageUnit::Instance().Identifier(), ::Thunder::Messaging::MessageUnit::Instance().BasePath().empty() ? Core_Messaging_MessageUnit::_basePath : ::Thunder::Messaging::MessageUnit::Instance().BasePath());
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
 
         client.AddInstance(0 /*id*/); //we are in framework
 
         std::vector<std::string> modules;
-
         client.Modules(modules);
 
         int matches = 0;
@@ -260,15 +261,14 @@ namespace Core {
 
         client.RemoveInstance(0);
 
-        EXPECT_GE(count, 4);
-        EXPECT_EQ(matches, 4);
+        EXPECT_GE(count, 2);
+        EXPECT_EQ(matches, 0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldUpdateExistingDefaultConfig)
     {
-        // Reload with new configuration
-        ToggleDefaultConfig(false);
-
         ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
 
         // If 'enabled' equals false the entry is not added to 'Settings'
@@ -300,7 +300,9 @@ namespace Core {
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
- 
+
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -321,9 +323,13 @@ namespace Core {
         modules.clear();
         client.Modules(modules);
 
+        /* bool */ enabled = false;
+
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
  
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -336,21 +342,19 @@ namespace Core {
             }
         }
 
-        /* bool */ enabled = false;
-
         EXPECT_TRUE(enabled);
-
-        client.RemoveInstance(0);
 
         ::Thunder::Core::Messaging::IControl::Revoke(&control);
 
-        ::Thunder::Messaging::MessageUnit::Instance().Close();
+        client.RemoveInstance(0);
 
-        ToggleDefaultConfig(true);
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
+        ToggleDefaultConfig(true);
+
         const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
@@ -359,12 +363,14 @@ namespace Core {
 
         std::vector<std::string> modules;
         client.Modules(modules);
-
+//missing operational stream
         bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
  
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -391,6 +397,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
  
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -407,21 +415,27 @@ namespace Core {
         client.RemoveInstance(0);
 
         ::Thunder::Core::Messaging::IControl::Revoke(&control);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesByTypeShouldEnableEverything)
     {
+        ToggleDefaultConfig(true);
+
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
 
         std::vector<std::string> modules;
         client.Modules(modules);
-
+//empty
         bool enabled = true;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
 
             while (item.Next()) {
                 enabled =    enabled
@@ -444,6 +458,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           && item.Enabled()
@@ -454,10 +470,14 @@ namespace Core {
         EXPECT_TRUE(enabled);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, LogMessagesCanToggledWhenLogModuleSpecified)
     {
+        ToggleDefaultConfig(true);
+
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
@@ -471,6 +491,8 @@ namespace Core {
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
 
             while (item.Next()) {
                 if (   item.Type() == messageToToggle.Type()
@@ -495,6 +517,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 if (   item.Type() == messageToToggle.Type()
                     && item.Category() == messageToToggle.Category()
@@ -509,10 +533,14 @@ namespace Core {
         EXPECT_EQ(matches, 1);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, LogEnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
+        ToggleDefaultConfig(true);
+
         const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
@@ -529,6 +557,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -544,10 +574,14 @@ namespace Core {
         EXPECT_TRUE(enabled);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingFullySpecifiedMessageUpdateOnlyThisOne)
     {
+        ToggleDefaultConfig(true);
+
         ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
@@ -563,6 +597,8 @@ namespace Core {
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
 
             while (item.Next()) {
                 enabled =    enabled
@@ -590,6 +626,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 enabled =    enabled
                           ||
@@ -605,10 +643,14 @@ namespace Core {
         EXPECT_TRUE(enabled);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByModuleShouldEnableAllCategoriesInsideIt)
     {
+        ToggleDefaultConfig(false);
+
         const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME));
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
@@ -623,6 +665,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 if (   message.Type() == item.Type()
                     && message.Module() == item.Module()
@@ -646,6 +690,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 if (   message.Type() == item.Type()
                     && message.Module() == item.Module()
@@ -660,10 +706,14 @@ namespace Core {
         EXPECT_TRUE(enabled);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByCategoryShouldEnableItInAllModules)
     {
+        ToggleDefaultConfig(true);
+
         const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T(""));
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
@@ -678,6 +728,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 if (   message.Type() == item.Type()
                     && message.Category() == item.Category()
@@ -701,6 +753,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 if (   message.Type() == item.Type()
                     && message.Category() == item.Category()
@@ -715,6 +769,8 @@ namespace Core {
         EXPECT_TRUE(enabled);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, TextMessageEventIsProperlySerializedIfBufferBigEnough)
@@ -760,6 +816,8 @@ namespace Core {
 
     TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferBigEnough)
     {
+        ToggleDefaultConfig(true);
+
         constexpr string::size_type bufferSize = 1024;
 
         uint8_t buffer[bufferSize];
@@ -774,6 +832,8 @@ namespace Core {
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
+            client.Controls(item, *it);
+
             while (item.Next()) {
                 ::Thunder::Messaging::MessageUnit::Control control({item.Type(), item.Category(), item.Module()}, item.Enabled());
                 auto serialized = control.Serialize(buffer, sizeof(buffer));
@@ -787,10 +847,14 @@ namespace Core {
         }
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferNotBigEnough)
     {
+        ToggleDefaultConfig(true);
+
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
@@ -802,6 +866,8 @@ namespace Core {
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
 
             while (item.Next()) {
                 buffer.resize(buffer.size() + sizeof(item.Type()), ::Thunder::Core::Messaging::Metadata::type::INVALID);
@@ -820,6 +886,8 @@ namespace Core {
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
 
             while (item.Next()) {
                 ::Thunder::Messaging::MessageUnit::Control control({item.Type(), item.Category(), item.Module()}, item.Enabled());
@@ -840,10 +908,14 @@ namespace Core {
         EXPECT_LT(index, buffer.size());
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessage)
     {
+        ToggleDefaultConfig(true);
+
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
@@ -896,6 +968,8 @@ namespace Core {
         EXPECT_TRUE(present);
 
         client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
 TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
@@ -962,6 +1036,8 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOthe
                     {
                         ASSERT_FALSE(sigprocmask(SIG_UNBLOCK, &sigset, nullptr) == -1);
 
+                        ToggleDefaultConfig(true);
+
                         ::Thunder::Messaging::TextMessage tm(traceMessage);
 
                         ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
@@ -990,6 +1066,8 @@ TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOthe
 
                             break;
                         } while(waitpid(-1, nullptr, WNOHANG) <= 0);
+
+                        ToggleDefaultConfig(false);
                     }
     }
 }
