@@ -27,7 +27,7 @@
 
 #include <messaging/messaging.h>
 
-//#include "../IPTestAdministrator.h"
+#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
@@ -935,8 +935,6 @@ namespace Core {
 
         ::Thunder::Messaging::MessageUnit::Instance().Push(info, &tm);
 
-        // Risk of blocking or unknown suitable 'waittime'
-        //client.WaitForUpdates(::Thunder::Core::infinite);
         // Instead 'flush' and continue
         client.SkipWaiting();
 
@@ -972,105 +970,74 @@ namespace Core {
         ToggleDefaultConfig(false);
     }
 
-TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
-{
-    const string traceMessage = _T("some trace");
+    TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 15;
 
-    ::Thunder::Core::Messaging::Metadata metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
+        const string traceMessage = _T("some trace");
 
-    // Make sure the parent does not miss out on the signal if the child completes prematurely
-    sigset_t sigset;
+        ::Thunder::Core::Messaging::Metadata metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
 
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGCHLD);
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-    // Do not continue if it is not guaranteed a child can be killed / ended
-    ASSERT_FALSE(sigprocmask(SIG_BLOCK, &sigset, nullptr) == -1);
+            ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
-    pid_t pid = fork();
+            client.AddInstance(0);
 
-    switch(pid) {
-    case  -1    :   // error
-                    {
-                        EXPECT_TRUE(pid != -1);
-                        break;
-                    }
-    case 0      :   // child
-                    {
-                        ASSERT_FALSE(sigprocmask(SIG_UNBLOCK, &sigset, nullptr) == -1);
+            ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
+            client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
 
-                        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+            client.Enable(metadata, true);
 
-                        client.AddInstance(0);
+            client.WaitForUpdates(maxWaitTimeMs);
 
-                        ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
-                        client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
-
-                        client.Enable(metadata, true);
-
-                        client.WaitForUpdates(::Thunder::Core::infinite);
-//                        client.SkipWaiting();
-
-                        client.PopMessagesAndCall(
-                            [&](const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::MessageInfo>& metadata, const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::IEvent>& message) {
-                                if ((*metadata).Type() == ::Thunder::Core::Messaging::Metadata::type::TRACING) {
-                                    TRACE_L1(
-                                        _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
-                                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
-                                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
-                                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
-                                    );
-
-                                    EXPECT_TRUE((*message).Data() == traceMessage);
-                                }
-                            }
+            client.PopMessagesAndCall(
+                [&](const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::MessageInfo>& metadata, const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::IEvent>& message) {
+                    if ((*metadata).Type() == ::Thunder::Core::Messaging::Metadata::type::TRACING) {
+                        TRACE_L1(
+                            _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
                         );
 
-                        client.RemoveFactory(::Thunder::Core::Messaging::Metadata::TRACING);
-
-                        client.RemoveInstance(0);
-
-                        break;
+                        EXPECT_TRUE((*message).Data() == traceMessage);
                     }
-        default :   // parent
-                    {
-                        ASSERT_FALSE(sigprocmask(SIG_UNBLOCK, &sigset, nullptr) == -1);
+                }
+            );
 
-                        ToggleDefaultConfig(true);
+            client.RemoveFactory(::Thunder::Core::Messaging::Metadata::TRACING);
 
-                        ::Thunder::Messaging::TextMessage tm(traceMessage);
+            client.RemoveInstance(0);
 
-                        ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
 
-                        ::Thunder::Messaging::MessageUnit::Instance().Push(info, &tm);
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ToggleDefaultConfig(true);
 
-                        struct timespec timeout;
-                        timeout.tv_sec = 60; // Arbitrary value
-                        timeout.tv_nsec = 0;
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-                        do {
-                            if (sigtimedwait(&sigset, nullptr, &timeout) == -1) {
-                                int err = errno;
-                                if (err == EINTR) {
-                                    // Signal other than SIGCHLD
-                                    continue;
-                                } else if (err == EAGAIN) {
-                                    // Timeout and no SIGCHLD received
-                                    // Kill the child
-                                    EXPECT_FALSE(kill(pid, SIGKILL) == -1);
-                                } else {
-                                    // Error in executing sigtimedwait, 'abort'
-                                    EXPECT_FALSE(err == 0);
-                                }
-                            }
+            ::Thunder::Messaging::TextMessage tm(traceMessage);
 
-                            break;
-                        } while(waitpid(-1, nullptr, WNOHANG) <= 0);
+            ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
 
-                        ToggleDefaultConfig(false);
-                    }
+            ::Thunder::Messaging::MessageUnit::Instance().Push(info, &tm);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ToggleDefaultConfig(false);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+//        ::Thunder::Core::Singleton::Dispose();
     }
-}
 
 } // Core
 } // Tests
