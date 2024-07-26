@@ -285,6 +285,10 @@ namespace ProxyStub {
         {
             return (_implementation);
         }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_channel);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
@@ -299,18 +303,18 @@ namespace ProxyStub {
         }
         inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
-	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
-		
+    	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+
             _adminLock.Lock();
-	    Core::ProxyType<Core::IPCChannel> channel (_channel);
+	        Core::ProxyType<Core::IPCChannel> channel (_channel);
             _adminLock.Unlock();
-		
+
             if (channel.IsValid() == true) {
 	            result = channel->Invoke(message, waitTime);
-	
+
 	            if (result != Core::ERROR_NONE) {
 	                result |= COM_ERROR;
-	
+
 	                // Oops something failed on the communication. Report it.
 	                TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
 	            }
@@ -399,7 +403,7 @@ namespace ProxyStub {
         inline const char* Name() const {
             return (_name);
         }
- 
+
     private:
         friend RPC::Administrator;
 
@@ -493,6 +497,10 @@ namespace ProxyStub {
         uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how)
         {
             return (_unknown.Complete(instance, id, how));
+        }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_unknown.Channel());
         }
 
         // -------------------------------------------------------------------------------------------------------------------------------
