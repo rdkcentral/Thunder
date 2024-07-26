@@ -35,7 +35,11 @@ namespace Core {
     DoorBell::Connector::Connector(DoorBell& parent, const Core::NodeId& node)
         : _parent(parent)
         , _doorbell(node)
+#ifdef __APPLE__        
+        , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM, 0))
+#else
         , _sendSocket(::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0))
+#endif
         , _receiveSocket(INVALID_SOCKET)
         , _registered(0)
     {
@@ -46,6 +50,9 @@ namespace Core {
         }
         #else
         int flags = fcntl(_sendSocket, F_GETFL, 0) | O_NONBLOCK;
+#ifdef __APPLE__
+        flags |= O_CLOEXEC;
+#endif
         if (fcntl(_sendSocket, F_SETFL, flags) != 0) {
             TRACE_L1("SendSocket:Error on port socket F_SETFL call. Error %d", errno);
         }
@@ -72,7 +79,11 @@ namespace Core {
     bool DoorBell::Connector::Bind() const
     {
         if (_receiveSocket == INVALID_SOCKET) {
+#ifdef __APPLE__  
+            _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM, 0);
+#else
             _receiveSocket = ::socket(_doorbell.Type(), SOCK_DGRAM|SOCK_CLOEXEC, 0);
+#endif
 
 #ifndef __WINDOWS__
             // Check if domain path already exists, if so remove.
@@ -109,7 +120,9 @@ namespace Core {
             }
             else {
                 int flags = fcntl(_receiveSocket, F_GETFL, 0) | O_NONBLOCK;
-
+#ifdef __APPLE__
+                flags |= O_CLOEXEC;
+#endif
                 if (fcntl(_receiveSocket, F_SETFL, flags) != 0) {
                     TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
                     ::close(_receiveSocket);

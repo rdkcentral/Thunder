@@ -237,10 +237,6 @@ namespace PluginHost {
 
             return (result);
         }
-        string Name() const
-        {
-            return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : BaseClass::Path().c_str());
-        }
         uint32_t Id() const
         {
             return (_ID);
@@ -314,10 +310,6 @@ namespace PluginHost {
         void Unlock() const 
 		{
             BaseClass::Unlock();
-        }
-        void Properties(const uint32_t offset)
-        {
-            _nameOffset = offset;
         }
         void State(const ChannelState state, const bool notification)
         {
@@ -443,6 +435,7 @@ namespace PluginHost {
         }
 
     private:
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
         // Handle the WebRequest coming in.
         virtual void LinkBody(Core::ProxyType<Request>& request) = 0;
         virtual void Received(Core::ProxyType<Request>& request) = 0;
@@ -465,8 +458,9 @@ namespace PluginHost {
 
         // Whenever there is a state change on the link, it is reported here.
         virtual void StateChange() = 0;
+POP_WARNING()
 
-        virtual bool IsIdle() const
+        bool IsIdle() const override
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
@@ -486,7 +480,6 @@ namespace PluginHost {
 
     private:
         uint32_t _ID;
-        uint32_t _nameOffset;
         mutable uint16_t _state;
         SerializerImpl _serializer;
         DeserializerImpl _deserializer;

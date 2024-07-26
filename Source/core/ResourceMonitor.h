@@ -25,6 +25,22 @@
 #include "Thread.h"
 #include "Trace.h"
 #include "Timer.h"
+#include "NodeId.h"
+
+#ifdef __WINDOWS__
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif
+
+#ifdef __UNIX__
+#define SOCKET signed int
+#define SOCKET_ERROR static_cast<signed int>(-1)
+#define INVALID_SOCKET static_cast<SOCKET>(-1)
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#endif
 
 namespace Thunder {
 
@@ -45,16 +61,7 @@ namespace Core {
     class ResourceMonitorType {
     private:
         using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
-
-        // Using the std::vector here caused an issue on Windows as the iterator in the Worker was corrupted after
-        // a new connection was added during the worker run (accept on listen) Although this should be added to 
-        // the end of the vector/list, it did cause an issue on Windows and probbaly *not* on linux. Requires further 
-        // investigation
-        #ifdef __WINDOWS__
         using Resources = std::list<RESOURCE*>;
-        #else
-        using Resources = std::vector<RESOURCE*>;
-        #endif
 
         class MonitorWorker : public Core::Thread {
         public:
@@ -198,7 +205,7 @@ namespace Core {
                 info.events  = _descriptorArray[position + 1].revents;
 
                 char procfn[64];
-                sprintf(procfn, "/proc/self/fd/%d", info.descriptor);
+                snprintf(procfn, sizeof(procfn), "/proc/self/fd/%d", info.descriptor);
 
                 size_t len = readlink(procfn, info.filename, sizeof(info.filename) - 1);
                 info.filename[len] = '\0';
@@ -258,10 +265,10 @@ namespace Core {
 
             #ifdef __APPLE__
             int data = 0;
-            ::sendto(_signalDescriptor
+            ::sendto(_signalDescriptor,
                     & data,
                 sizeof(data), 0,
-                _signalNode,
+                static_cast<const NodeId&>(_signalNode),
                 _signalNode.Size());
             #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
@@ -301,7 +308,39 @@ namespace Core {
         {
         }
 
-        #ifdef __LINUX__
+        bool SetNonBlocking(signed int socket)
+        {
+#ifdef __WINDOWS__
+            unsigned long l_Value = 1;
+            if (ioctlsocket(socket, FIONBIO, &l_Value) != 0) {
+                TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
+            }
+            else {
+                return (true);
+            }
+#endif
+
+#ifdef __POSIX__
+            if (fcntl(socket, F_SETOWN, getpid()) == -1) {
+                TRACE_L1("Setting Process ID failed. <%d>", errno);
+            }
+            else {
+                int flags = fcntl(socket, F_GETFL, 0) | O_NONBLOCK;
+
+                if (fcntl(socket, F_SETFL, flags) != 0) {
+                    TRACE_L1("Error on port socket F_SETFL call. Error %d", errno);
+                }
+                else {
+                    return (true);
+                }
+            }
+#endif
+
+            return (false);
+        }
+
+    public:
+#ifdef __LINUX__
         uint32_t Initialize()
         {
             #ifdef __APPLE__
@@ -312,11 +351,13 @@ namespace Core {
                 _signalDescriptor = -1;
                 TRACE_L1("Error on etting socket to non blocking. Error %d", errno);
             } else {
-                char* file = mktemp("/tmp/ResourceMonitor.XXXXXX");
-
+                char fileNameTemplate[] = "/tmp/ResourceMonitor.XXXXXX";
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
+                char* file = mktemp(fileNameTemplate);
+POP_WARNING()
                 // Do we need to find something to bind to or is it pre-destined
                 _signalNode = Core::NodeId(file);
-                if (::bind(_signalDescriptor, _signalNode, _signalNode.Size()) != 0) {
+                if (::bind(_signalDescriptor, static_cast<const NodeId&>(_signalNode), _signalNode.Size()) != 0) {
                     _signalDescriptor = -1;
                 }
             }

@@ -209,7 +209,7 @@ namespace Core {
         INotification* _callback;
     };
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) || defined(__APPLE__)
 
     class EXTERNAL IPV4AddressIterator {
     public:
@@ -310,6 +310,7 @@ namespace Core {
         uint16_t _section3;
     };
 
+#if defined(__WINDOWS__)
     class EXTERNAL IPV6AddressIterator {
     public:
         inline IPV6AddressIterator()
@@ -408,6 +409,9 @@ namespace Core {
         uint16_t _section3;
     };
 
+#else
+    using IPV6AddressIterator = IPV4AddressIterator;
+#endif
 
     class EXTERNAL AdapterIterator {
     public:

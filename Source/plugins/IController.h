@@ -296,6 +296,7 @@ namespace Controller {
 
                 string Precondition /* @opaque @optional @brief Activation conditons */;
                 string Termination /* @opaque @optional @brief Deactivation conditions */;
+                string Control /* @opaque @optional @brief Conditions controlled by this service */;
 
                 string Configuration /* @opaque @optional @brief Plugin configuration */;
 
