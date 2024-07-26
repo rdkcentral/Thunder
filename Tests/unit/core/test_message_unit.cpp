@@ -27,7 +27,7 @@
 
 #include <messaging/messaging.h>
 
-#include "../IPTestAdministrator.h"
+//#include "../IPTestAdministrator.h"
 
 namespace Thunder {
 namespace Tests {
@@ -363,7 +363,7 @@ namespace Core {
 
         std::vector<std::string> modules;
         client.Modules(modules);
-//missing operational stream
+
         bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -429,7 +429,7 @@ namespace Core {
 
         std::vector<std::string> modules;
         client.Modules(modules);
-//empty
+
         bool enabled = true;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
