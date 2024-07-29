@@ -30,12 +30,11 @@ jobs:
 
     - name: Install required packages for 32-bit and x32 builds
       run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt-get update
-        sudo apt-get upgrade -y
-        apt-cache madison gcc-11-multilib
-        apt-cache madison g++-11-multilib
-        sudo apt install gcc-11-multilib=11.4.0-1ubuntu1~22.04 g++-11-multilib=11.4.0-1ubuntu1~22.04
+        wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-11/gcc-11-multilib_11.4.0-9ubuntu1_amd64.deb
+        wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-11/g++-11-multilib_11.4.0-9ubuntu1_amd64.deb
+        sudo dpkg -i gcc-11-multilib_11.4.0-9ubuntu1_amd64.deb
+        sudo dpkg -i g++-11-multilib_11.4.0-9ubuntu1_amd64.deb
+        sudo apt-get install -f
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
