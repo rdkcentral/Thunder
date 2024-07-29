@@ -212,8 +212,6 @@ namespace Core {
         {
             uint8_t testData[2] = { 13, 37 };
             ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
-            // The 'ring' is implicit
-//            _dispatcher->Ring();
         }
     }
 
@@ -312,6 +310,7 @@ namespace Core {
         EXPECT_EQ(readData[0], testData2[0]);
         EXPECT_EQ(readData[3], testData2[3]);
     }
+
 } // Core
 } // Tests
 } // Thunder

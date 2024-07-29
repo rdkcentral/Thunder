@@ -33,7 +33,8 @@ namespace Core {
 
     TEST(Core_IPC, IPCClientConnection)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = _T("/tmp/testserver");
 
@@ -44,7 +45,7 @@ namespace Core {
 
             ::Thunder::Core::IPCChannelServerType<::Thunder::Core::Void, false> serverChannel(serverNode, 512, factory);
 
-            ASSERT_EQ(serverChannel.Open(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(serverChannel.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // Only for internal factories
 //            factory->DestroyFactories();
@@ -55,7 +56,7 @@ namespace Core {
             // Do not unregister any / the last handler prior the call of cleanup
             serverChannel.Cleanup();
 
-            ASSERT_EQ(serverChannel.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(serverChannel.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -68,15 +69,15 @@ namespace Core {
 
             ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> clientChannel(clientNode, 512, factory);
 
-            ASSERT_EQ(clientChannel.Open(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(clientChannel.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // Only for internal factories
 //           factory->DestroyFactories();
 
-            ASSERT_EQ(clientChannel.Source().Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(clientChannel.Source().Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // Signal the server it can 'end' its life
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);

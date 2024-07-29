@@ -187,7 +187,7 @@ namespace Core {
             return (true);
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -224,14 +224,15 @@ namespace Core {
 
     TEST(Core_Socket, StreamJSON)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
         const std::string connector = "/tmp/wpestreamjson0";
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::SocketServerType<JSONConnector<::Thunder::Core::JSON::IElement>> jsonSocketServer(::Thunder::Core::NodeId(connector.c_str()));
 
-            ASSERT_EQ(jsonSocketServer.Open(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(jsonSocketServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
@@ -244,7 +245,7 @@ namespace Core {
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(jsonSocketServer.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(jsonSocketServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -265,9 +266,9 @@ namespace Core {
 
             JSONConnector<::Thunder::Core::JSON::IElement> jsonSocketClient(::Thunder::Core::NodeId(connector.c_str()));
 
-            ASSERT_EQ(jsonSocketClient.Open(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(jsonSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             jsonSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
         
@@ -278,10 +279,10 @@ namespace Core {
 
             EXPECT_STREQ(sendString.c_str(), received.c_str());
 
-            EXPECT_EQ(jsonSocketClient.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
+            EXPECT_EQ(jsonSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-       };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
 

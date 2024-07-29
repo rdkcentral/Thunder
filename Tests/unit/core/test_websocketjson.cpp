@@ -174,9 +174,12 @@ namespace Core {
 	    virtual void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
 	    {
 		    string textElement;
-		    jsonObject->ToString(textElement);
+
+		    EXPECT_TRUE(jsonObject->ToString(textElement));
+
             _dataReceived = textElement;
-            _dataPending.Unlock();
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
         virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
@@ -197,7 +200,7 @@ namespace Core {
             return _objectFactory.Element("");
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -214,46 +217,70 @@ namespace Core {
         mutable ::Thunder::Core::Event _dataPending;
     };
 
-    TEST(WebSocket, DISABLED_Json)
+    TEST(WebSocket, Json)
     {
-        std::string connector {"/tmp/wpewebsocketjson0"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"/tmp/wpewebsocketjson0"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::SocketServerType<JsonSocketServer<::Thunder::Core::JSON::IElement>> jsonWebSocketServer(::Thunder::Core::NodeId(connector.c_str()));
-            jsonWebSocketServer.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("setup server");
+
+            ASSERT_EQ(jsonWebSocketServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             std::unique_lock<std::mutex> lk(JsonSocketServer<::Thunder::Core::JSON::IElement>::_mutex);
+
             while (!JsonSocketServer<::Thunder::Core::JSON::IElement>::GetState()) {
                 JsonSocketServer<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
             }
-            testAdmin.Sync("server open");
-            testAdmin.Sync("client done");
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
             ::Thunder::Core::ProxyType<Message> sendObject = ::Thunder::Core::ProxyType<Message>::Create();
+
             sendObject->EventType = _T("Test");
             sendObject->Event = _T("TestSend");
+
             std::string sendString;
-            sendObject->ToString(sendString);
+
+            EXPECT_TRUE(sendObject->ToString(sendString));
 
             JsonSocketClient<::Thunder::Core::JSON::IElement> jsonWebSocketClient(::Thunder::Core::NodeId(connector.c_str()));
-            jsonWebSocketClient.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("server open");
+
+            ASSERT_EQ(jsonWebSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_TRUE(jsonWebSocketClient.IsOpen());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             jsonWebSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
-            jsonWebSocketClient.Wait();
+
+            ASSERT_EQ(jsonWebSocketClient.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             jsonWebSocketClient.Retrieve(received);
+
             EXPECT_STREQ(sendString.c_str(), received.c_str());
-            jsonWebSocketClient.Close(::Thunder::Core::infinite);
-            testAdmin.Sync("client done");
-        }
+
+            EXPECT_EQ(jsonWebSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        // Code after this line is executed by both parent and child
+
         ::Thunder::Core::Singleton::Dispose();
     }
 

@@ -139,12 +139,11 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
                     }
 
                     // Spurious wake-up
-    // TODO: continue with remaining time
+// TODO: continue with remaining time
                     continue;
         case -1 : //
                     switch(errno) {
-                    case EAGAIN    :    
-                                        // Value mismatch
+                    case EAGAIN    :    // Value mismatch
                                         result = ::Thunder::Core::ERROR_INVALID_RANGE;
                                         break;
                     case ETIMEDOUT :    // Value has not changed within the specified timeout
@@ -165,8 +164,10 @@ uint32_t IPTestAdministrator::Wait(uint32_t expectedHandshakeValue) const
     return result;
 }
 
-uint32_t IPTestAdministrator::Signal(uint32_t expectedNextHandshakeValue)
+uint32_t IPTestAdministrator::Signal(uint32_t expectedNextHandshakeValue, uint8_t maxRetries)
 {
+    constexpr std::chrono::seconds s {0};
+
     uint32_t result = ::Thunder::Core::ERROR_GENERAL;
 
     long futex_result = syscall(SYS_futex, &(_sharedData->handshakeValue), FUTEX_WAKE, INT_MAX /* number of waiters to wake-up */, nullptr, nullptr, 0);
@@ -179,8 +180,20 @@ uint32_t IPTestAdministrator::Signal(uint32_t expectedNextHandshakeValue)
                 default     :   // Uninspected // unknown conditions
                                 ;
                 }
-    case 0  :   // No waiters
-                do {} while (false);
+                break;
+    case 0  :   {
+                    // No waiters
+                    constexpr auto seconds2milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(1)).count();
+
+                    if (maxRetries > 0) {
+                        std::this_thread::yield(); // Hopefully the scheduler plays nice
+                        std::this_thread::sleep_for(std::chrono::milliseconds(_waitTime * seconds2milliseconds / _waitTimeDivisor)); // Sleep a fraction of the maximum specified waiting time
+                        result = Signal(expectedNextHandshakeValue, maxRetries - 1);
+                    } else {
+                        result = ::Thunder::Core::ERROR_BAD_REQUEST;
+                    }
+                }
+                break;
     default :   result = ::Thunder::Core::ERROR_NONE;
                 // Atomically replaces the current value by the expected value
                 bool oldHandshakeValue = _sharedData->handshakeValue.exchange(expectedNextHandshakeValue);

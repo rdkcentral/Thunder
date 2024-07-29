@@ -27,7 +27,7 @@
 
 namespace Thunder {
 namespace Tests {
-namespace Core {    
+namespace Core {
 
     TEST(Core_Library, simpleSet)
     {
