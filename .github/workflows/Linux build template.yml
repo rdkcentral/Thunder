@@ -28,13 +28,6 @@ jobs:
           pip install jsonref
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
 
-    - name: Set up APT repository
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        sudo apt-get update
-
     - name: Install specific package versions and allow downgrades
       run: |
         sudo apt-get update
@@ -48,7 +41,18 @@ jobs:
           lib32gcc-11-dev=11.3.0-1ubuntu1~22.04 \
           libx32gcc-11-dev=11.3.0-1ubuntu1~22.04 \
           libc6-dev-i386=2.35-0ubuntu3.1 \
-          libc6-dev-x32=2.35-0ubuntu3.1
+          libc6-dev-x32=2.35-0ubuntu3.1 \
+          libx32gcc-s1=11.3.0-1ubuntu1~22.04 \
+          libx32gomp1=11.3.0-1ubuntu1~22.04 \
+          libx32itm1=11.3.0-1ubuntu1~22.04 \
+          libx32atomic1=11.3.0-1ubuntu1~22.04 \
+          lib32asan6=11.3.0-1ubuntu1~22.04 \
+          libx32asan6=11.3.0-1ubuntu1~22.04 \
+          libx32ubsan1=11.3.0-1ubuntu1~22.04 \
+          libx32quadmath0=11.3.0-1ubuntu1~22.04 \
+          libstdc++-11-dev=11.3.0-1ubuntu1~22.04 \
+          libc6-i386=2.35-0ubuntu3.1 \
+          libc6-dev=2.35-0ubuntu3.1
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
