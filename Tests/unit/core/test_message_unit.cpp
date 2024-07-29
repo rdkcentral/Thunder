@@ -25,6 +25,8 @@
 
 #include <core/core.h>
 
+#include <messaging/messaging.h>
+
 #include "../IPTestAdministrator.h"
 
 namespace Thunder {
@@ -33,7 +35,7 @@ namespace Core {
 
     class Control : public ::Thunder::Core::Messaging::IControl {
     public:
-        Control(const ::Thunder::Core::Messaging::MetaData& metaData)
+        Control(const ::Thunder::Core::Messaging::Metadata& metaData)
             : _metaData(metaData)
         {
         }
@@ -53,72 +55,94 @@ namespace Core {
         {
             _isEnabled = false;
         }
-        const ::Thunder::Core::Messaging::MetaData& MessageMetaData() const override
+        const ::Thunder::Core::Messaging::Metadata& Metadata() const override
         {
             return _metaData;
         }
 
     private:
         bool _isEnabled;
-        ::Thunder::Core::Messaging::MetaData _metaData;
+        ::Thunder::Core::Messaging::Metadata _metaData;
     };
 
     class Core_Messaging_MessageUnit : public testing::Test {
     protected:
         Core_Messaging_MessageUnit()
         {
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
-            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
+
         }
         ~Core_Messaging_MessageUnit() = default;
 
         static void SetUpTestSuite()
         {
-            ::Thunder::Core::Messaging::MessageUnit::Instance().IsBackground(_background);
-            ::Thunder::Core::Messaging::MessageUnit::Instance().Open(_basePath);
         }
 
         static void TearDownTestSuite()
         {
-            ::Thunder::Core::Messaging::MessageUnit::Instance().Close();
             ::Thunder::Core::Singleton::Dispose();
         }
+
         void SetUp() override
         {
-            for (const auto& control : _controls) {
-                ::Thunder::Core::Messaging::MessageUnit::Instance().Announce(control.get());
-            }
         }
 
         void TearDown() override
         {
-            ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(_T(""));
-            for (const auto& control : _controls) {
-                ::Thunder::Core::Messaging::MessageUnit::Instance().Revoke(control.get());
-            }
         }
 
         string DispatcherIdentifier()
         {
-            string result;
-            ::Thunder::Core::SystemInfo::GetEnvironment(::Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPACTHER_IDENTIFIER_ENV, result);
-            return result;
+            return ::Thunder::Messaging::MessageUnit::Instance().Identifier();
         }
 
         string DispatcherBasePath()
         {
             string result;
-            ::Thunder::Core::SystemInfo::GetEnvironment(::Thunder::Core::Messaging::MessageUnit::MESSAGE_DISPATCHER_PATH_ENV, result);
-            return result;
+            return ::Thunder::Messaging::MessageUnit::Instance().BasePath();
+        }
+
+        void AnnounceAllControls()
+        {
+            for (const auto& control : _controls) {
+                // Only for 'controls' enabled in configuration
+                ::Thunder::Core::Messaging::IControl::Announce(control.get());
+            }
+        }
+
+        void RevokeAllControls()
+        {
+            for (const auto& control : _controls) {
+                ::Thunder::Core::Messaging::IControl::Revoke(control.get());
+            }
+        }
+
+        void ToggleDefaultConfig(bool activate)
+        {
+            ASSERT(_activeConfig != activate);
+
+            if (!_activeConfig && activate) {
+                ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+                ::Thunder::Messaging::MessageUnit::Instance().Open(Core_Messaging_MessageUnit::_basePath, configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+            }
+
+            if (_activeConfig && !activate) {
+                ::Thunder::Messaging::MessageUnit::Instance().Close();
+            }
+
+            _activeConfig = !_activeConfig;
         }
 
         static bool _background;
         static string _basePath;
         std::list<std::unique_ptr<::Thunder::Core::Messaging::IControl>> _controls;
+
+        bool _activeConfig;
     };
 
     bool Core_Messaging_MessageUnit::_background = false;
@@ -126,457 +150,893 @@ namespace Core {
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessageIsEnabledByDefaultWhenConfigFullySpecified)
     {
-        const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":true}]}})";
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+        configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":true}]}})");
 
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Messaging::MessageUnit::Settings settings;
+        settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        ::Thunder::Core::Messaging::Metadata metaData(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+        EXPECT_TRUE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessageIsDisabledByDefaultWhenConfigFullySpecified)
     {
-        const string config = R"({"tracing":{"messages":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":false}]}})";
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+        configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","module":"Plugin_DeviceInfo","enabled":false}]}})");
 
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Messaging::MessageUnit::Settings settings;
+        settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        ::Thunder::Core::Messaging::Metadata metaData(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreEnabledWhenModuleNotSpecified)
     {
-        const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":true}]}})";
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+        configuration.FromString(R"({"tracing":{"settings":[{"category":"Information","enabled":true}]}})");
 
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Messaging::MessageUnit::Settings settings;
+        settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        ::Thunder::Core::Messaging::Metadata metaData(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+        EXPECT_TRUE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+        EXPECT_TRUE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
     }
 
     TEST_F(Core_Messaging_MessageUnit, TraceMessagesAreDisabledWhenModuleNotSpecified)
     {
-        const string config = R"({"tracing":{"messages":[{"category":"Information","enabled":false}]}})";
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+        configuration.FromString(R"({"tracing":{"messages":[{"category":"Information","enabled":false}]}})");
 
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Plugin_DeviceInfo") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Information"), _T("Some_Module") }));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo") }));
+        ::Thunder::Messaging::MessageUnit::Settings settings;
+        settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        ::Thunder::Core::Messaging::Metadata metaData(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Information"), _T("Some_Module"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("SomeCategory"), _T("Plugin_DeviceInfo"));
+        EXPECT_FALSE(settings.IsEnabled(metaData));
     }
 
     TEST_F(Core_Messaging_MessageUnit, LoggingMessageIsEnabledIfNotConfigured)
     {
-        //logging messages are enabled by default (if not specified otherwise in the config)
-        const string config = R"({"logging":{"messages":[{"category":"Startup","module":"SysLog","enabled":false}]}})";
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Startup"), _T("SysLog") }));
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault({ ::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Notification"), _T("SysLog") }));
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
+        configuration.FromString(R"({"logging":{"settings":[{"category":"Startup","module":"SysLog","enabled":false}]}})");
+
+        ::Thunder::Messaging::MessageUnit::Settings settings;
+        settings.Configure(Core_Messaging_MessageUnit::_basePath, "SomeIdentifier", configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        ::Thunder::Core::Messaging::Metadata metaData(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Startup"), _T("SysLog"));
+        // Internal Metadata::Default() is true for LOGGING but here overwritten because of element of config
+        EXPECT_FALSE(settings.IsEnabled(metaData));
+
+        metaData = ::Thunder::Core::Messaging::Metadata(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Notification"), _T("SysLog"));
+        // Internal Metadata::Default() is true for LOGGING and not overwritten because of no element of config
+        EXPECT_TRUE(settings.IsEnabled(metaData));
     }
 
     TEST_F(Core_Messaging_MessageUnit, MessageClientWillReturnListOfControls)
     {
+        ToggleDefaultConfig(true);
+
         //this test is using metadata (IPC) passing, so no other proces tests for now
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
-        client.AddInstance(0); //we are in framework
-        auto it = client.Enabled();
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+
+        client.AddInstance(0 /*id*/); //we are in framework
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
 
         int matches = 0;
         int count = 0;
-        while (it.Next()) {
-            auto info = it.Current();
-            if (info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            if (*it == EXPAND_AND_QUOTE(MODULE_NAME)) {
                 ++matches;
             }
             ++count;
         }
 
-        ASSERT_GE(count, 4);
-        ASSERT_EQ(matches, 4);
+        client.RemoveInstance(0);
+
+        EXPECT_GE(count, 2);
+        EXPECT_EQ(matches, 0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldUpdateExistingDefaultConfig)
     {
-        const string config = R"({"tracing":{"messages":[{"category":"ExampleCategory","module":"ExampleModule","enabled":false}]}})";
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults(config);
-        const ::Thunder::Core::Messaging::MetaData toBeUpdated(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+        ::Thunder::Messaging::MessageUnit::Settings::Config configuration;
 
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        // If 'enabled' equals false the entry is not added to 'Settings'
+        configuration.FromString(R"({"tracing":{"settings":[{"category":"ExampleCategory","module":"ExampleModule","enabled":false}]}})");
+
+        // Populate settings with specified configuration
+        ::Thunder::Messaging::MessageUnit::Instance().Open(Core_Messaging_MessageUnit::_basePath, configuration, Core_Messaging_MessageUnit::_background, ::Thunder::Messaging::MessageUnit::OFF);
+
+        const ::Thunder::Core::Messaging::Metadata toBeUpdated(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+
+        Control control(toBeUpdated);
+        // Add to the internal list if it is not already
+        ::Thunder::Core::Messaging::IControl::Announce(&control);
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+        // Creates a MessageUnit::Client internally with the id passed in
         client.AddInstance(0); //we are in framework
+
+        // Get the system 'status'
+
+        bool enabled = false;
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        int matches = 0;
+        int count = 0;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   toBeUpdated.Type() == item.Type()
+                              && toBeUpdated.Category() == item.Category()
+                              && toBeUpdated.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
+            }
+        }
+
+        EXPECT_FALSE(enabled);
+
+        // Enable message via metadata, eg, set enable for the previously added Control, eg, enable category
         client.Enable(toBeUpdated, true);
 
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeUpdated));
+        modules.clear();
+        client.Modules(modules);
+
+        /* bool */ enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+ 
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   toBeUpdated.Type() == item.Type()
+                              && toBeUpdated.Category() == item.Category()
+                              && toBeUpdated.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
+            }
+        }
+
+        EXPECT_TRUE(enabled);
+
+        ::Thunder::Core::Messaging::IControl::Revoke(&control);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
-        const ::Thunder::Core::Messaging::MetaData toBeAdded(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
+        ToggleDefaultConfig(true);
 
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
+        const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("ExampleCategory"), _T("ExampleModule"));
 
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        client.Enable(toBeAdded, true);
 
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(toBeAdded));
-        auto defaultsString = ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
-        ::Thunder::Core::Messaging::Settings settings;
-        settings.FromString(defaultsString);
+        std::vector<std::string> modules;
+        client.Modules(modules);
 
-        ASSERT_EQ(settings.Tracing.Entries.Length(), 1);
-        auto entriesIt = settings.Tracing.Entries.Elements();
-        while (entriesIt.Next()) {
-            ASSERT_STREQ(entriesIt.Current().Category.Value().c_str(), toBeAdded.Category().c_str());
-            ASSERT_STREQ(entriesIt.Current().Module.Value().c_str(), toBeAdded.Module().c_str());
+        bool enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+ 
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   toBeAdded.Type() == item.Type()
+                              && toBeAdded.Category() == item.Category()
+                              && toBeAdded.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
+            }
         }
+
+        EXPECT_FALSE(enabled);
+
+        Control control(toBeAdded);
+
+        ::Thunder::Core::Messaging::IControl::Announce(&control);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+ 
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   toBeAdded.Type() == item.Type()
+                              && toBeAdded.Category() == item.Category()
+                              && toBeAdded.Module() == item.Module()
+                            )
+                         ;
+            }
+        }
+
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ::Thunder::Core::Messaging::IControl::Revoke(&control);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesByTypeShouldEnableEverything)
     {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(true);
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        auto itBeforeUpdate = client.Enabled();
 
-        int matches = 0;
-        while (itBeforeUpdate.Next()) {
-            auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
-                ++matches;
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        bool enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          && item.Enabled()
+                         ;
             }
         }
-        ASSERT_EQ(matches, 0);
 
-        matches = 0;
-        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), _T("") }, true);
-        auto itAfterUpdate = client.Enabled();
-        while (itAfterUpdate.Next()) {
-            auto info = itAfterUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.second == true) {
-                ++matches;
+        // Controls from the default are disabled by default, except a few
+        EXPECT_FALSE(enabled);
+
+        // Enable message via metadata, eg, set enable for the previously added Control, eg, enable category
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          && item.Enabled()
+                         ;
             }
         }
-        ASSERT_GE(matches, 5);
+
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, LogMessagesCanToggledWhenLogModuleSpecified)
     {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(true);
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        auto itBeforeUpdate = client.Enabled();
-        ::Thunder::Core::Messaging::MetaData messageToToggle(::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+
+        ::Thunder::Core::Messaging::Metadata messageToToggle(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
 
         int matches = 0;
-        while (itBeforeUpdate.Next()) {
-            auto info = itBeforeUpdate.Current();
-            if (info.first == messageToToggle && info.second == true) {
-                ++matches;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   item.Type() == messageToToggle.Type()
+                    && item.Category() == messageToToggle.Category()
+                    && item.Module() == messageToToggle.Module()
+                    && item.Enabled()
+                   ) {
+                    ++matches;
+                }
             }
         }
-        ASSERT_EQ(matches, 1);
+
+        EXPECT_EQ(matches, 1);
+
+        client.Enable(messageToToggle, false);
+
+        modules.clear();
+        client.Modules(modules);
 
         matches = 0;
-        client.Enable(messageToToggle, false);
-        auto itAfterUpdate = client.Enabled();
-        while (itAfterUpdate.Next()) {
-            auto info = itAfterUpdate.Current();
-            if (info.first == messageToToggle && info.second == false) {
-                ++matches;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   item.Type() == messageToToggle.Type()
+                    && item.Category() == messageToToggle.Category()
+                    && item.Module() == messageToToggle.Module()
+                    && !item.Enabled()
+                   ) {
+                    ++matches;
+                }
             }
         }
-        ASSERT_EQ(matches, 1);
+
+        EXPECT_EQ(matches, 1);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, LogEnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
     {
-        const ::Thunder::Core::Messaging::MetaData tobeAdded(::Thunder::Core::Messaging::MetaData::MessageType::LOGGING, _T("Test_Category_5"), _T("SysLog"));
-        ASSERT_TRUE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
+        ToggleDefaultConfig(true);
 
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        client.Enable(tobeAdded, false);
 
-        ASSERT_FALSE(::Thunder::Core::Messaging::MessageUnit::Instance().IsEnabledByDefault(tobeAdded));
-        auto defaultsString = ::Thunder::Core::Messaging::MessageUnit::Instance().Defaults();
-        ::Thunder::Core::Messaging::Settings settings;
-        settings.FromString(defaultsString);
+        // LOGGING is enabled and available by default
 
-        ASSERT_EQ(settings.Logging.Entries.Length(), 1);
-        auto entriesIt = settings.Logging.Entries.Elements();
-        while (entriesIt.Next()) {
-            ASSERT_STREQ(entriesIt.Current().Category.Value().c_str(), tobeAdded.Category().c_str());
-            ASSERT_STREQ(entriesIt.Current().Module.Value().c_str(), tobeAdded.Module().c_str());
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        bool enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   toBeAdded.Type() == item.Type()
+                              && toBeAdded.Category() == item.Category()
+                              && toBeAdded.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
+            }
         }
+
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingFullySpecifiedMessageUpdateOnlyThisOne)
     {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(true);
+
+        ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        auto itBeforeUpdate = client.Enabled();
-        ::Thunder::Core::Messaging::MetaData message(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
 
-        int matches = 0;
-        while (itBeforeUpdate.Next()) {
-            auto info = itBeforeUpdate.Current();
-            if (info.first == message && info.second == false) {
-                ++matches;
+        // TRACING is not enabled but available by default
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        bool enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   message.Type() == item.Type()
+                              && message.Category() == item.Category()
+                              && message.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
             }
         }
-        ASSERT_EQ(matches, 1);
 
-        matches = 0;
+        EXPECT_FALSE(enabled);
+
         client.Enable(message, true);
-        auto itAfterUpdate = client.Enabled();
-        while (itAfterUpdate.Next()) {
-            auto info = itAfterUpdate.Current();
-            if (info.first == message && info.second == true) {
-                ++matches;
+
+        client.Enable(message, true);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          ||
+                             (   message.Type() == item.Type()
+                              && message.Category() == item.Category()
+                              && message.Module() == item.Module()
+                              && item.Enabled()
+                            )
+                         ;
             }
         }
-        ASSERT_EQ(matches, 1);
+
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByModuleShouldEnableAllCategoriesInsideIt)
     {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(false);
+
+        const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME));
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        auto itBeforeUpdate = client.Enabled();
 
-        int enabled = 0;
-        while (itBeforeUpdate.Next()) {
-            auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
-                if (info.second == true) {
-                    ++enabled;
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        bool enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   message.Type() == item.Type()
+                    && message.Module() == item.Module()
+                ) {
+                    enabled =    enabled
+                              && item.Enabled()
+                             ;
                 }
             }
         }
-        ASSERT_EQ(enabled, 0);
 
-        enabled = 0;
-        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME) }, true);
-        auto itAfterUpdate = client.Enabled();
-        while (itAfterUpdate.Next()) {
-            auto info = itAfterUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Module() == EXPAND_AND_QUOTE(MODULE_NAME)) {
-                if (info.second == true) {
-                    ++enabled;
+        EXPECT_FALSE(enabled);
+
+        client.Enable(message, true);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   message.Type() == item.Type()
+                    && message.Module() == item.Module()
+                ) {
+                    enabled =    enabled
+                              && item.Enabled()
+                             ;
                 }
             }
         }
 
-        ASSERT_EQ(enabled, 4);
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByCategoryShouldEnableItInAllModules)
     {
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(true);
+
+        const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T(""));
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
-        auto itBeforeUpdate = client.Enabled();
 
-        int enabled = 0;
-        while (itBeforeUpdate.Next()) {
-            auto info = itBeforeUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
-                if (info.second == true) {
-                    ++enabled;
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        bool enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   message.Type() == item.Type()
+                    && message.Category() == item.Category()
+                ) {
+                    enabled =    enabled
+                              && item.Enabled()
+                             ;
                 }
             }
         }
-        ASSERT_EQ(enabled, 0);
 
-        enabled = 0;
-        client.Enable({ ::Thunder::Core::Messaging::MetaData::MessageType::TRACING, _T("Test_Category_1"), _T("") }, true);
-        auto itAfterUpdate = client.Enabled();
-        while (itAfterUpdate.Next()) {
-            auto info = itAfterUpdate.Current();
-            if (info.first.Type() == ::Thunder::Core::Messaging::MetaData::MessageType::TRACING && info.first.Category() == _T("Test_Category_1")) {
-                if (info.second == true) {
-                    ++enabled;
+        EXPECT_FALSE(enabled);
+
+        client.Enable(message, true);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   message.Type() == item.Type()
+                    && message.Category() == item.Category()
+                ) {
+                    enabled =    enabled
+                              && item.Enabled()
+                             ;
                 }
             }
         }
 
-        ASSERT_EQ(enabled, 2);
+        EXPECT_TRUE(enabled);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, TextMessageEventIsProperlySerializedIfBufferBigEnough)
     {
-        uint8_t buffer[1 * 1024];
+        constexpr string::size_type bufferSize = 1024;
+
+        uint8_t buffer[bufferSize];
         const string testTextMessage = _T("TEST MESSAGE");
 
-        Messaging::TextMessage tm(testTextMessage);
+        EXPECT_GT(bufferSize, sizeof(testTextMessage.size()));
+
+        ::Thunder::Messaging::TextMessage tm(testTextMessage);
         auto serialized = tm.Serialize(buffer, sizeof(buffer));
-        ASSERT_GT(serialized, 0);
+        EXPECT_GT(serialized, 0);
 
         auto deserialized = tm.Deserialize(buffer, sizeof(buffer));
-        ASSERT_EQ(serialized, deserialized);
+        EXPECT_EQ(serialized, deserialized);
 
-        string result;
-        tm.ToString(result);
-        ASSERT_STREQ(result.c_str(), testTextMessage.c_str());
+        string result = tm.Data();
+        EXPECT_STREQ(result.c_str(), testTextMessage.c_str());
     }
 
     TEST_F(Core_Messaging_MessageUnit, TextMessageEventIsProperlySerializedAndCutIfBufferNotBigEnough)
     {
-        uint8_t buffer[5];
+        constexpr string::size_type bufferSize = 5;
+
+        uint8_t buffer[bufferSize];
         const string testTextMessage = _T("abcdefghi");
 
-        Messaging::TextMessage tm(testTextMessage);
+        EXPECT_LT(bufferSize, sizeof(testTextMessage.size()));
+
+        ::Thunder::Messaging::TextMessage tm(testTextMessage);
         auto serialized = tm.Serialize(buffer, sizeof(buffer));
-        ASSERT_GT(serialized, 0);
+        EXPECT_GT(serialized, 0);
 
         auto deserialized = tm.Deserialize(buffer, serialized);
-        ASSERT_EQ(serialized, deserialized);
+        EXPECT_EQ(serialized, deserialized);
 
-        string result;
-        tm.ToString(result);
-        //last byte reserved for null termination
-        ASSERT_STREQ(result.c_str(), _T("abcd"));
+        string result = tm.Data();
+
+        EXPECT_STREQ(result.c_str(), testTextMessage.substr(0, bufferSize - 1).c_str());
     }
 
     TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferBigEnough)
     {
-        uint8_t buffer[1 * 1024];
+        ToggleDefaultConfig(true);
 
-        ::Thunder::Core::Messaging::ControlList cl;
-        for (const auto& control : _controls) {
-            cl.Announce(control.get());
+        constexpr string::size_type bufferSize = 1024;
+
+        uint8_t buffer[bufferSize];
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+        client.AddInstance(0); //we are in framework
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                ::Thunder::Messaging::MessageUnit::Control control({item.Type(), item.Category(), item.Module()}, item.Enabled());
+                auto serialized = control.Serialize(buffer, sizeof(buffer));
+
+                EXPECT_GT(serialized, 0);
+
+                auto deserialized = control.Deserialize(buffer, serialized);
+
+                EXPECT_EQ(serialized, deserialized);
+            }
         }
 
-        auto serialized = cl.Serialize(buffer, sizeof(buffer));
-        ASSERT_GT(serialized, 0);
-        ASSERT_EQ(buffer[0], _controls.size());
+        client.RemoveInstance(0);
 
-        auto deserialized = cl.Deserialize(buffer, serialized);
-        ASSERT_EQ(serialized, deserialized);
-
-        auto informationIt = cl.Information();
-        auto controlsIt = _controls.cbegin();
-        while (informationIt.Next()) {
-            ASSERT_EQ(informationIt.Current().first, controlsIt->get()->MessageMetaData());
-            ++controlsIt;
-        }
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, ControlListIsProperlySerializedIfBufferNotBigEnough)
     {
-        const int controlsThatShouldFit = 2;
-        uint16_t maxBufferSize = 0;
-        auto it = _controls.cbegin();
-        for (int i = 0; i < controlsThatShouldFit; ++i, ++it) {
-            maxBufferSize += sizeof(it->get()->MessageMetaData().Type());
-            maxBufferSize += it->get()->MessageMetaData().Category().size() + 1;
-            maxBufferSize += it->get()->MessageMetaData().Module().size() + 1;
-            maxBufferSize += sizeof(bool);
-        }
+        ToggleDefaultConfig(true);
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
+        client.AddInstance(0); //we are in framework
+
+        std::vector<std::string> modules;
+        client.Modules(modules);
 
         std::vector<uint8_t> buffer;
-        buffer.resize(maxBufferSize + 1);
 
-        ::Thunder::Core::Messaging::ControlList cl;
-        for (const auto& control : _controls) {
-            cl.Announce(control.get());
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                buffer.resize(buffer.size() + sizeof(item.Type()), ::Thunder::Core::Messaging::Metadata::type::INVALID);
+                buffer.resize(buffer.size() + item.Category().size() + 1, ::Thunder::Core::Messaging::Metadata::type::INVALID);
+                buffer.resize(buffer.size() + item.Module().size() + 1, ::Thunder::Core::Messaging::Metadata::type::INVALID);
+                buffer.resize(buffer.size() + sizeof(bool), ::Thunder::Core::Messaging::Metadata::type::INVALID);
+            }
         }
 
-        auto serialized = cl.Serialize(buffer.data(), buffer.size());
-        ASSERT_GT(serialized, 0);
-        ASSERT_EQ(buffer[0], controlsThatShouldFit);
+        buffer.resize(buffer.size() + 1);
 
-        auto deserialized = cl.Deserialize(buffer.data(), serialized);
-        ASSERT_EQ(serialized, deserialized);
+        uint16_t index = 0;
 
-        auto informationIt = cl.Information();
-        auto controlsIt = _controls.cbegin();
-        while (informationIt.Next()) {
-            ASSERT_EQ(informationIt.Current().first, controlsIt->get()->MessageMetaData());
-            ++controlsIt;
+        modules.clear();
+        client.Modules(modules);
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                ::Thunder::Messaging::MessageUnit::Control control({item.Type(), item.Category(), item.Module()}, item.Enabled());
+                auto serialized = control.Serialize(&(buffer.data()[index]), buffer.size());
+
+                EXPECT_GT(serialized, 0);
+
+                EXPECT_GT(buffer.size(), serialized);
+
+                auto deserialized = control.Deserialize(&buffer.data()[index], serialized);
+
+                index += serialized;
+
+                EXPECT_EQ(serialized, deserialized);
+            }
         }
+
+        EXPECT_LT(index, buffer.size());
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessage)
     {
-        const string traceMessage = _T("some trace");
-        Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ToggleDefaultConfig(true);
+
+        ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
         client.AddInstance(0); //we are in framework
 
         //factory should be added before attempting to pop data
-        Messaging::TraceFactory factory;
-        client.AddFactory(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
+        ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
+        client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
 
-        Messaging::TextMessage tm(traceMessage);
-        ::Thunder::Core::Messaging::Information info(::Thunder::Core::Messaging::MetaData::MessageType::TRACING,
-            _T("some_category"),
-            EXPAND_AND_QUOTE(MODULE_NAME),
-            _T("some_file.cpp"),
-            1337,
-            ::Thunder::Core::Time::Now().Ticks());
+        ::Thunder::Core::Messaging::Metadata metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
 
-        ::Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
+        client.Enable(metadata, true);
 
-        auto messages = client.PopMessagesAsList();
-        ASSERT_EQ(messages.size(), 1);
-        auto message = messages.front();
+        const string traceMessage = _T("some trace");
+        ::Thunder::Messaging::TextMessage tm(traceMessage);
 
-        ASSERT_NE(message.first.MessageMetaData().Type(), ::Thunder::Core::Messaging::MetaData::MessageType::INVALID);
-        ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
+        ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
 
-        string result;
-        message.second->ToString(result);
-        ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
-        ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
-        ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
-        ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+        ::Thunder::Messaging::MessageUnit::Instance().Push(info, &tm);
+
+        // Instead 'flush' and continue
+        client.SkipWaiting();
+
+        bool present = false;
+
+        client.PopMessagesAndCall(
+            [&](const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::MessageInfo>& metadata, const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::IEvent>& message) {
+                //(*metadata).TimeStamp();
+                //(*metadata).Module();
+                //(*metadata).Category();
+
+                if ((*metadata).Type() == ::Thunder::Core::Messaging::Metadata::type::TRACING) {
+                    TRACE_L1(
+                        _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
+                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
+                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
+                        , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
+                    );
+
+                    present = present || (*message).Data() == traceMessage;
+                } else {
+                    TRACE_L1(_T("PopMessagesAndCall : Unknown message"));
+                }
+
+                // By defining a callback data could be further processed
+            }
+        );
+
+        EXPECT_TRUE(present);
+
+        client.RemoveInstance(0);
+
+        ToggleDefaultConfig(false);
     }
 
     TEST_F(Core_Messaging_MessageUnit, PopMessageShouldReturnLastPushedMessageInOtherProcess)
     {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 15;
+
         const string traceMessage = _T("some trace");
-        Messaging::TextMessage tm(traceMessage);
-        ::Thunder::Core::Messaging::Information info(::Thunder::Core::Messaging::MetaData::MessageType::TRACING,
-            _T("some_category"),
-            EXPAND_AND_QUOTE(MODULE_NAME),
-            _T("some_file.cpp"),
-            1337,
-            ::Thunder::Core::Time::Now().Ticks());
 
-        auto lambdaFunc = [&](IPTestAdministrator& testAdmin) {
-            Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath());
+        ::Thunder::Core::Messaging::Metadata metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
+
             client.AddInstance(0);
-            Messaging::TraceFactory factory;
-            client.AddFactory(::Thunder::Core::Messaging::MetaData::MessageType::TRACING, &factory);
-            testAdmin.Sync("setup");
-            testAdmin.Sync("writer wrote");
-            auto messages = client.PopMessagesAsList();
 
-            ASSERT_EQ(messages.size(), 1);
-            auto message = messages.front();
+            ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
+            client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
 
-            ASSERT_NE(message.first.MessageMetaData().Type(), ::Thunder::Core::Messaging::MetaData::MessageType::INVALID);
-            ASSERT_EQ(message.first.MessageMetaData(), info.MessageMetaData());
+            client.Enable(metadata, true);
 
-            string result;
-            message.second->ToString(result);
-            ASSERT_STREQ(message.first.FileName().c_str(), info.FileName().c_str());
-            ASSERT_EQ(message.first.LineNumber(), info.LineNumber());
-            ASSERT_EQ(message.first.TimeStamp(), info.TimeStamp());
-            ASSERT_STREQ(traceMessage.c_str(), result.c_str());
+            client.WaitForUpdates(maxWaitTimeMs);
 
-            testAdmin.Sync("reader read");
-            testAdmin.Sync("done");
+            client.PopMessagesAndCall(
+                [&](const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::MessageInfo>& metadata, const ::Thunder::Core::ProxyType<::Thunder::Core::Messaging::IEvent>& message) {
+                    if ((*metadata).Type() == ::Thunder::Core::Messaging::Metadata::type::TRACING) {
+                        TRACE_L1(
+                            _T("PopMessagesAndCall : Tracing message -> Filename : %s, Linenumber : %d, Classname : %s")
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).FileName().c_str()
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).LineNumber()
+                            , static_cast<::Thunder::Core::Messaging::IStore::Tracing&>(*metadata).ClassName().c_str()
+                        );
+
+                        EXPECT_TRUE((*message).Data() == traceMessage);
+                    }
+                }
+            );
+
+            client.RemoveFactory(::Thunder::Core::Messaging::Metadata::TRACING);
+
+            client.RemoveInstance(0);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
-        IPTestAdministrator testAdmin(otherSide);
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ToggleDefaultConfig(true);
 
-        {
-            testAdmin.Sync("setup");
-            testAdmin.Sync("writer wrote");
-            ::Thunder::Core::Messaging::MessageUnit::Instance().Push(info, &tm);
-            testAdmin.Sync("reader read");
-        }
-        testAdmin.Sync("done");
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
+
+            ::Thunder::Messaging::TextMessage tm(traceMessage);
+
+            ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
+
+            ::Thunder::Messaging::MessageUnit::Instance().Push(info, &tm);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ToggleDefaultConfig(false);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+//        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core
