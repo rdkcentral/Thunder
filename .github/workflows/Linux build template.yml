@@ -30,6 +30,12 @@ jobs:
 
     - name: Install required packages for 32-bit and x32 builds
       run: |
+        apt-cache madison gcc-11-multilib
+        apt-cache madison g++-11-multilib
+        sudo apt-get update
+        sudo apt-get upgrade -y
+        apt-cache madison gcc-11-multilib
+        apt-cache madison g++-11-multilib
         sudo apt install gcc-11-multilib=11.4.0-1ubuntu1~22.04 g++-11-multilib=11.4.0-1ubuntu1~22.04
 
 # ----- Checkout & DependsOn regex -----
