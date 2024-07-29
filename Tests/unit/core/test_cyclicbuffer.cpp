@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+#ifdef __APPLE__
+#include <time.h>
+#endif
+
 #include <gtest/gtest.h>
 
 #ifndef MODULE_NAME
@@ -26,10 +30,6 @@
 #include <core/core.h>
 
 #include "../IPTestAdministrator.h"
-
-#ifdef __APPLE__
-#include <time.h>
-#endif
 
 namespace Thunder {
 namespace Tests {
