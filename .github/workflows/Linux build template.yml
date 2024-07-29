@@ -30,18 +30,7 @@ jobs:
 
     - name: Install required packages for 32-bit and x32 builds
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          gcc-11 \
-          g++-11 \
-          gcc-11-multilib \
-          g++-11-multilib \
-          libc6-dev-i386 \
-          libc6-dev-x32 \
-          lib32stdc++-11-dev \
-          libx32stdc++-11-dev \
-          lib32gcc-11-dev \
-          libx32gcc-11-dev
+        sudo apt install gcc-11-multilib=11.4.0-1ubuntu1~22.04 g++-11-multilib=11.4.0-1ubuntu1~22.04
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
