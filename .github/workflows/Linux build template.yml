@@ -27,10 +27,11 @@ jobs:
           sudo apt install python3-pip
           pip install jsonref
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-          sudo apt install lib32stdc++-11-dev libx32stdc++-11-dev
-          sudo apt install lib32gcc-11-dev libx32gcc-11-dev
-          sudo apt install libc6-dev-i386 libc6-dev-x32
-          sudo apt install g++-11-multilib gcc-11-multilib
+          sudo apt-get install -y gcc-11=11.4.0-1ubuntu1~22.04 g++-11=11.4.0-1ubuntu1~22.04 gcc-11-base=11.4.0-1ubuntu1~22.04
+          sudo apt-get install -y gcc-11-multilib=11.4.0-1ubuntu1~22.04 g++-11-multilib=11.4.0-1ubuntu1~22.04
+          sudo apt-get install -y lib32stdc++-11-dev=11.4.0-1ubuntu1~22.04 libx32stdc++-11-dev=11.4.0-1ubuntu1~22.04
+          sudo apt-get install -y lib32gcc-11-dev=11.4.0-1ubuntu1~22.04 libx32gcc-11-dev=11.4.0-1ubuntu1~22.04
+          sudo apt-get install -y libc6-dev-i386 libc6-dev-x32
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
