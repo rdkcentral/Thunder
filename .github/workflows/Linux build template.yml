@@ -5,7 +5,7 @@ on:
 
 jobs:
   Thunder:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -23,11 +23,14 @@ jobs:
         command: |
           sudo gem install apt-spy2
           sudo apt-spy2 fix --commit --launchpad --country=US
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt install python3-pip
           pip install jsonref
+          sudo apt-get remove --purge gcc-11
+          sudo apt-get install gcc-11=11.3.*
           sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-          sudo apt-get install --reinstall gcc-11 g++-11 g++-11-multilib gcc-11-multilib
+          sudo apt-get install g++-11-multilib gcc-11-multilib
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
