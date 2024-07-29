@@ -30,8 +30,7 @@ jobs:
 
     - name: Install required packages for 32-bit and x32 builds
       run: |
-        apt-cache madison gcc-11-multilib
-        apt-cache madison g++-11-multilib
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt-get update
         sudo apt-get upgrade -y
         apt-cache madison gcc-11-multilib
