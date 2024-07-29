@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #ifndef MODULE_NAME
@@ -28,6 +30,8 @@
 #include <messaging/messaging.h>
 
 #include "../IPTestAdministrator.h"
+
+#define PRINT_MODULES(NAME, MODULES) {std::cout << NAME << " ---> "; std::for_each(MODULES.begin(), MODULES.end(), [](std::string MODULE){std::cout << " " << MODULE;}); std::cout << std::endl;};
 
 namespace Thunder {
 namespace Tests {
@@ -249,6 +253,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         int matches = 0;
         int count = 0;
 
@@ -295,6 +301,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         int matches = 0;
         int count = 0;
 
@@ -322,6 +330,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         /* bool */ enabled = false;
 
@@ -364,6 +374,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -391,6 +403,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = false;
 
@@ -430,6 +444,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         bool enabled = true;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -452,6 +468,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = true;
 
@@ -487,6 +505,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         int matches = 0;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -511,6 +531,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         matches = 0;
 
@@ -551,6 +573,8 @@ namespace Core {
 
         std::vector<std::string> modules;
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         bool enabled = false;
 
@@ -593,6 +617,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -620,6 +646,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = false;
 
@@ -660,6 +688,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         bool enabled = true;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -684,6 +714,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = true;
 
@@ -723,6 +755,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         bool enabled = true;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -747,6 +781,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = true;
 
@@ -829,6 +865,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
@@ -862,6 +900,8 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+
         std::vector<uint8_t> buffer;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -883,6 +923,8 @@ namespace Core {
 
         modules.clear();
         client.Modules(modules);
+
+PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
