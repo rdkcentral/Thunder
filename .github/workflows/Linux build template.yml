@@ -34,6 +34,7 @@ jobs:
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
+        sudo dpkg --add-architecture i386
         sudo apt-get update
         sudo apt install python3-pip
         pip install jsonref
