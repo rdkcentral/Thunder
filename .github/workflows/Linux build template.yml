@@ -38,7 +38,7 @@ jobs:
         sudo apt install python3-pip
         pip install jsonref
         sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-        sudo apt-get install -y gcc-11-multilib g++-11-multilib
+        sudo apt-get install -y gcc-11-multilib g++-11-multilib zlib1g-dev:i386
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
