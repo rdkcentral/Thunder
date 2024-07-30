@@ -358,7 +358,8 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         client.RemoveInstance(0);
 
-        ToggleDefaultConfig(false);
+        // Direct call required
+        ::Thunder::Messaging::MessageUnit::Instance().Close();
     }
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessagesShouldAddToDefaultConfigListIfNotPresent)
