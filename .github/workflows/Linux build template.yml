@@ -31,7 +31,6 @@ jobs:
 
     - name: Update APT sources to install multilib
       run: |
-        sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
         echo "deb http://archive.ubuntu.com/ubuntu/ jammy-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
