@@ -13,7 +13,7 @@ jobs:
         shared_libs: [ON, OFF]
         architecture: [32, 64]
 
-    name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
+    name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}${{matrix.architecture == '32' && ' x86' || ''}}
     steps:
 # --------- Installing packages ---------
     - name: Install necessary packages
