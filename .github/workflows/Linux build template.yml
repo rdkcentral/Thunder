@@ -28,19 +28,8 @@ jobs:
           echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt install python3-pip
+          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev zlib1g-dev:i386 libssl-dev gcc-11-multilib g++-11-multilib
           pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-          sudo apt-get install -y gcc-11-multilib g++-11-multilib zlib1g-dev:i386
-
-#    - name: Update APT sources to install multilib
-#      run: |
-#        echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-#        echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-#        sudo dpkg --add-architecture i386
-#        sudo apt-get update
-#        sudo apt-get install -y gcc-11-multilib g++-11-multilib zlib1g-dev:i386
-#        echo "deb http://archive.ubuntu.com/ubuntu/ jammy-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
