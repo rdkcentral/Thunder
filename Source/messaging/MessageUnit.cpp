@@ -314,6 +314,10 @@ namespace Thunder {
                     Messaging::ConsoleStandardOut::Instance().Close();
                 }
                 Core::Messaging::IStore::Set(nullptr);
+
+                // Loop of the entire list including those added via the announce macros like
+                // SYSLOG_ANNOUNCE, OPERATIONAL_STREAM_ANNOUNCE, ANNOUNCE_WARNING
+                // Re-opening MessageUnit does not restore // anounces them 
                 Core::Messaging::IControl::Iterate(handler);
 
                 _adminLock.Lock();
