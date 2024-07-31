@@ -1057,7 +1057,7 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
         std::list<IMetadata::Data::Service> services;
 
-        if (callsign.IsSet() == true) {
+        if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -1087,6 +1087,9 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
             }
         }
 
