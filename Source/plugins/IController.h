@@ -281,6 +281,7 @@ namespace Controller {
                 state State /* @brief Current state */;
                 PluginHost::IShell::startmode StartMode /* @brief Startup mode */;
                 bool Resumed /* @brief Determines if the plugin is to be activated in resumed or suspended mode */;
+
                 Data::Version Version /* @brief Version */;
 
                 Core::OptionalType<string> Communicator /* @brief Communicator */;
