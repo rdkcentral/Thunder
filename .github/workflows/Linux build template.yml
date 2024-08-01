@@ -126,11 +126,11 @@ jobs:
 
     - name: Tar files
       if: matrix.shared_libs == 'ON'
-      run: tar -czvf ${{matrix.build_type}}${{matrix.architecture == '32' && 'x86' || ''}}.tar.gz ${{matrix.build_type}}
+      run: tar -czvf ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz ${{matrix.build_type}}
 
     - name: Upload
       if: matrix.shared_libs == 'ON'
       uses: actions/upload-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}${{matrix.architecture == '32' && 'x86' || ''}}-artifact
-        path: ${{matrix.build_type}}${{matrix.architecture == '32' && 'x86' || ''}}.tar.gz
+        name: Thunder-${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}-artifact
+        path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
