@@ -37,4 +37,4 @@ jobs:
 
   ThunderNanoServicesRDK:
     needs: ThunderInterfaces
-    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@development/actions-32-bit
