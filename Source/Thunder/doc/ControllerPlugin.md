@@ -224,7 +224,7 @@ Creates a clone of given plugin with a new callsign.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| response | string | *...* |
+| result | string | *...* |
 
 ### Example
 
@@ -262,7 +262,7 @@ Starts SSDP network discovery.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object | *...* |
-| params.ttl | integer | Time to live, parameter for SSDP discovery |
+| params?.ttl | integer | <sup>*(optional)*</sup> Time to live, parameter for SSDP discovery (default: *1*)<br>*Value must be in range [1..255].* |
 
 ### Result
 
@@ -280,7 +280,7 @@ Starts SSDP network discovery.
   "id": 42,
   "method": "Controller.1.startdiscovery",
   "params": {
-    "ttl": 0
+    "ttl": 1
   }
 }
 ```
@@ -672,9 +672,15 @@ Provides access to the environment variable value.
 
 > This property is **read-only**.
 
-### Value
+> The *variable* argument shall be passed as the index to the property, e.g. ``Controller.1.environment@<variable>``.
 
-> The *variable* argument shall be passed as the index to the property, e.g. ``Controller.1.environment@xyz``.
+### Index
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| variable | string | *...* |
+
+### Value
 
 ### Result
 
@@ -758,13 +764,25 @@ Provides access to the SSDP network discovery results.
 
 Provides access to the service configuration.
 
+> The *callsign* argument shall be passed as the index to the property, e.g. ``Controller.1.configuration@<callsign>``. The index is optional for the get request.
+
+### Index (Get)
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| callsign | string | <sup>*(optional)*</sup> *...* |
+
+### Index (Set)
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| callsign | string | *...* |
+
 ### Value
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | (property) | opaque object | Service configuration |
-
-> The *callsign* argument shall be passed as the index to the property, e.g. ``Controller.1.configuration@xyz``.
 
 ### Result
 
@@ -871,9 +889,15 @@ Provides access to the services metadata.
 
 If callsign is omitted, metadata of all services is returned.
 
-### Value
+> The *callsign* argument shall be passed as the index to the property, e.g. ``Controller.1.services@<callsign>``. The index is optional for the get request.
 
-> The *callsign* argument shall be passed as the index to the property, e.g. ``Controller.1.services@xyz``.
+### Index
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| callsign | string | <sup>*(optional)*</sup> *...* |
+
+### Value
 
 ### Result
 
@@ -889,7 +913,7 @@ If callsign is omitted, metadata of all services is returned.
 | result[#].startmode | string | Startup mode (must be one of the following: *Activated, Deactivated, Unavailable*) |
 | result[#].resumed | boolean | Determines if the plugin is to be activated in resumed or suspended mode |
 | result[#].version | object | Version |
-| result[#].version.hash | string | SHA256 hash identifying the source code |
+| result[#].version.hash | string | SHA256 hash identifying the source code<br>*String length must be in range [64..64] bytes.* |
 | result[#].version.major | integer | Major number |
 | result[#].version.minor | integer | Minor number |
 | result[#].version.patch | integer | Patch number |
@@ -899,8 +923,9 @@ If callsign is omitted, metadata of all services is returned.
 | result[#]?.systemrootpath | string | <sup>*(optional)*</sup> Path of system root |
 | result[#]?.precondition | opaque object | <sup>*(optional)*</sup> Activation conditons |
 | result[#]?.termination | opaque object | <sup>*(optional)*</sup> Deactivation conditions |
-| result[#]?.configuration | opaque object | <sup>*(optional)*</sup> Plugin configuration |
-| result[#]?.observers | integer | <sup>*(optional)*</sup> Number or observers |
+| result[#]?.control | opaque object | <sup>*(optional)*</sup> Conditions controlled by this service |
+| result[#].configuration | opaque object | Plugin configuration |
+| result[#].observers | integer | Number or observers |
 | result[#]?.processedrequests | integer | <sup>*(optional)*</sup> Number of API requests that have been processed by the plugin |
 | result[#]?.processedobjects | integer | <sup>*(optional)*</sup> Number of objects that have been processed by the plugin |
 
@@ -943,6 +968,7 @@ If callsign is omitted, metadata of all services is returned.
       "systemrootpath": "...",
       "precondition": {},
       "termination": {},
+      "control": {},
       "configuration": {},
       "observers": 0,
       "processedrequests": 0,
@@ -1010,9 +1036,15 @@ Provides access to the proxies list.
 
 > This property is **read-only**.
 
-### Value
+> The *linkid* argument shall be passed as the index to the property, e.g. ``Controller.1.proxies@<linkid>``.
 
-> The *linkid* argument shall be passed as the index to the property, e.g. ``Controller.1.proxies@0``.
+### Index
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| linkid | integer | *...* |
+
+### Value
 
 ### Result
 
@@ -1021,6 +1053,7 @@ Provides access to the proxies list.
 | result | array | Proxies list |
 | result[#] | object | *...* |
 | result[#].interface | integer | Interface ID |
+| result[#].name | string | The fully qualified name of the interface |
 | result[#].instance | instanceid | Instance ID |
 | result[#].count | integer | Reference count |
 
@@ -1045,6 +1078,7 @@ Provides access to the proxies list.
   "result": [
     {
       "interface": 0,
+      "name": "...",
       "instance": "0x...",
       "count": 0
     }
@@ -1066,7 +1100,7 @@ Provides access to the framework version.
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | result | object | Framework version |
-| result.hash | string | SHA256 hash identifying the source code |
+| result.hash | string | SHA256 hash identifying the source code<br>*String length must be in range [64..64] bytes.* |
 | result.major | integer | Major number |
 | result.minor | integer | Minor number |
 | result.patch | integer | Patch number |
@@ -1192,9 +1226,15 @@ Provides access to the thread callstack.
 
 > This property is **read-only**.
 
-### Value
+> The *thread* argument shall be passed as the index to the property, e.g. ``Controller.1.callstack@<thread>``.
 
-> The *thread* argument shall be passed as the index to the property, e.g. ``Controller.1.callstack@0``.
+### Index
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| thread | integer | *...* |
+
+### Value
 
 ### Result
 
@@ -1245,24 +1285,24 @@ The following events are provided by the Controller plugin:
 
 Controller LifeTime interface events:
 
-| Event | Description |
+| Notification | Description |
 | :-------- | :-------- |
-| [statechange](#event.statechange) | Notifies of a plugin state change |
+| [statechange](#notification.statechange) | Notifies of a plugin state change |
 
 Controller Subsystems interface events:
 
-| Event | Description |
+| Notification | Description |
 | :-------- | :-------- |
-| [subsystemchange](#event.subsystemchange) | Notifies a subsystem change |
+| [subsystemchange](#notification.subsystemchange) | Notifies a subsystem change |
 
 Controller Events interface events:
 
-| Event | Description |
+| Notification | Description |
 | :-------- | :-------- |
-| [all](#event.all) | Notifies all events forwarded by the framework |
+| [all](#notification.all) | Notifies all events forwarded by the framework |
 
-<a name="event.statechange"></a>
-## *statechange [<sup>event</sup>](#head.Notifications)*
+<a name="notification.statechange"></a>
+## *statechange [<sup>notification</sup>](#head.Notifications)*
 
 Notifies of a plugin state change.
 
@@ -1277,10 +1317,26 @@ Notifies of a plugin state change.
 
 ### Example
 
+#### Registration
+
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "client.events.1.statechange",
+  "id": 42,
+  "method": "Controller.1.register",
+  "params": {
+    "event": "statechange",
+    "id": "client"
+  }
+}
+```
+
+#### Message
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "client.statechange",
   "params": {
     "callsign": "...",
     "state": "Unavailable",
@@ -1289,8 +1345,8 @@ Notifies of a plugin state change.
 }
 ```
 
-<a name="event.subsystemchange"></a>
-## *subsystemchange [<sup>event</sup>](#head.Notifications)*
+<a name="notification.subsystemchange"></a>
+## *subsystemchange [<sup>notification</sup>](#head.Notifications)*
 
 Notifies a subsystem change.
 
@@ -1298,17 +1354,33 @@ Notifies a subsystem change.
 
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
-| subsystems | array | Subsystems that have changed |
-| subsystems[#] | object | *...* |
-| subsystems[#].subsystem | string | Name of the subsystem (must be one of the following: *Bluetooth, Cryptography, Decryption, Graphics, Identifier, Installation, Internet, Location, Network, Platform, Provisioning, Security, Streaming, Time, WebSource*) |
-| subsystems[#].active | boolean | Denotes if the subsystem is currently active |
+| params | array | Subsystems that have changed |
+| params[#] | object | *...* |
+| params[#].subsystem | string | Name of the subsystem (must be one of the following: *Bluetooth, Cryptography, Decryption, Graphics, Identifier, Installation, Internet, Location, Network, Platform, Provisioning, Security, Streaming, Time, WebSource*) |
+| params[#].active | boolean | Denotes if the subsystem is currently active |
 
 ### Example
+
+#### Registration
 
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "client.events.1.subsystemchange",
+  "id": 42,
+  "method": "Controller.1.register",
+  "params": {
+    "event": "subsystemchange",
+    "id": "client"
+  }
+}
+```
+
+#### Message
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "client.subsystemchange",
   "params": [
     {
       "subsystem": "Platform",
@@ -1318,8 +1390,8 @@ Notifies a subsystem change.
 }
 ```
 
-<a name="event.all"></a>
-## *all [<sup>event</sup>](#head.Notifications)*
+<a name="notification.all"></a>
+## *all [<sup>notification</sup>](#head.Notifications)*
 
 Notifies all events forwarded by the framework.
 
@@ -1332,18 +1404,36 @@ The Controller plugin is an aggregator of all the events triggered by a specific
 | Name | Type | Description |
 | :-------- | :-------- | :-------- |
 | params | object | *...* |
-| params.callsign | string | Origin of the message |
-| params.data | opaque object | Contents of the message |
+| params.event | string | Name of the message |
+| params?.callsign | string | <sup>*(optional)*</sup> Origin of the message |
+| params?.params | opaque object | <sup>*(optional)*</sup> Contents of the message |
 
 ### Example
+
+#### Registration
 
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "client.events.1.all",
+  "id": 42,
+  "method": "Controller.1.register",
   "params": {
+    "event": "all",
+    "id": "client"
+  }
+}
+```
+
+#### Message
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "client.all",
+  "params": {
+    "event": "...",
     "callsign": "...",
-    "data": {}
+    "params": {}
   }
 }
 ```
