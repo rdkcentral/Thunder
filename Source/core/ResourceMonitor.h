@@ -61,7 +61,7 @@ namespace Core {
     class ResourceMonitorType {
     private:
         using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
-        using Resources = std::list<RESOURCE*>;
+        using Resources = std::vector<RESOURCE*>;
 
         class MonitorWorker : public Core::Thread {
         public:
@@ -458,9 +458,22 @@ POP_WARNING()
                 // We also know that once a file descriptor is not found, we handled them all...
                 int fd_index = 1;
                 index = _resources.begin();
+                size_t capacity = _resources.capacity();
 
                 while (fd_index < filledFileDescriptors) {
                     ASSERT(index != _resources.end());
+
+                    if (capacity != _resources.capacity()) {
+                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
+                        index = _resources.begin();
+                        int current = fd_index;
+
+                        while ((index != _resources.end()) && (current > 1)) {
+                            index++;
+                            current--;
+                        }
+                        capacity = _resources.capacity();
+                    }
 
                     RESOURCE* entry = (*index);
 
@@ -534,10 +547,23 @@ POP_WARNING()
 
                 // Find all "pending" sockets and signal them..
                 index = _resources.begin();
+                size_t capacity = _resources.capacity();
+                uint8_t counter = 0;
 
                 ::WSAResetEvent(_action);
 
                 while (index != _resources.end()) {
+                    if (capacity != _resources.capacity()) {
+                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
+                        index = _resources.begin();
+
+                        while ((index != _resources.end()) && (counter > 0)) {
+                            index++;
+                            counter--;
+                        }
+                        capacity = _resources.capacity();
+                    }
+
                     RESOURCE* entry = (*index);
 
                     if (entry != nullptr) {
@@ -557,6 +583,7 @@ POP_WARNING()
                         Reset();
                     }
                     index++;
+                    counter++;
                 }
             } else {
                 delay = Core::infinite;
