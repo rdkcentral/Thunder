@@ -548,6 +548,7 @@ POP_WARNING()
                 // Find all "pending" sockets and signal them..
                 index = _resources.begin();
                 size_t capacity = _resources.capacity();
+                uint8_t counter = 0;
 
                 ::WSAResetEvent(_action);
 
@@ -555,11 +556,10 @@ POP_WARNING()
                     if (capacity != _resources.capacity()) {
                         // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
                         index = _resources.begin();
-                        int current = fd_index;
 
-                        while ((index != _resources.end()) && (current > 1)) {
+                        while ((index != _resources.end()) && (counter > 0)) {
                             index++;
-                            current--;
+                            counter--;
                         }
                         capacity = _resources.capacity();
                     }
@@ -583,6 +583,7 @@ POP_WARNING()
                         Reset();
                     }
                     index++;
+                    counter++;
                 }
             } else {
                 delay = Core::infinite;
