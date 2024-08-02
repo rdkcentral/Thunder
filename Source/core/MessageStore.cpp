@@ -157,9 +157,9 @@ namespace Core {
         {
             uint16_t length = 0;
 
-            ASSERT(bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2)));
+            ASSERT(bufferSize > (sizeof(_type) + _category.size() + 1));
 
-            if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
+            if (bufferSize > (sizeof(_type) + _category.size() + 1)) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _type = frameReader.Number<type>();
