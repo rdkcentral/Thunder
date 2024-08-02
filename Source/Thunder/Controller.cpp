@@ -1363,5 +1363,87 @@ namespace Plugin {
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
+
+    Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
+    {   
+        
+        #if defined(_THUNDER_DEBUG_OPTIMIZED)
+            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
+        #elif defined(_THUNDER_DEBUG)
+            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG;
+        #elif defined(_THUNDER_NDEBUG_DEB_INFO)
+            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
+        #elif defined(THUNDER_NDEBUG)
+            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE;
+        #elif defined(_THUNDER_PRODUCTION)
+            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::PRODUCTION;
+        #else
+            #error no build flag detected
+        #endif
+
+        #ifdef _TRACE_LEVEL
+            buildInfo.TraceLevel = _TRACE_LEVEL;
+        #endif
+
+        #ifdef __CORE_WARNING_REPORTING__
+            buildInfo.WarningReporting = true;
+        #else
+            buildInfo.WarningReporting = false;
+        #endif
+
+        #ifdef PROCESSCONTAINERS_ENABLED
+            buildInfo.ProcessContainers = true;
+        #else
+            buildInfo.ProcessContainers = false;
+        #endif
+
+        #ifdef HIBERNATE_SUPPORT_ENABLED
+            buildInfo.HibernateSupport= true;
+        #else
+            buildInfo.HibernateSupport = false;
+        #endif
+
+        #ifdef __CORE_BLUETOOTH_SUPPORT__
+            buildInfo.BluetoothSupport = true;
+        #else
+            buildInfo.BluetoothSupport= false;
+        #endif
+
+        #ifdef __CORE_MESSAGING__
+            buildInfo.Messaging = true;
+        #else
+            buildInfo.Messaging= false;
+        #endif
+
+        #ifdef __CORE_EXCEPTION_CATCHING__
+            buildInfo.ExceptionCatching = true;
+        #else
+            buildInfo.ExceptionCatching = false;
+        #endif
+
+        buildInfo.InstanceIDBits = (sizeof(Core::instance_id) * 8);
+       
+        #ifdef __CORE_CRITICAL_SECTION_LOG__
+            buildInfo.DeadlockDetection = true;
+        #else
+            buildInfo.DeadlockDetection = false;
+        #endif
+
+        #ifdef __CORE_EXCEPTION_CATCHING__
+            buildInfo.ExceptionCatching = true;
+        #else
+            buildInfo.ExceptionCatching = false;
+        #endif
+
+        #ifdef __CORE_NO_WCHAR_SUPPORT__
+            buildInfo.WCharSupport = false;
+        #else
+            buildInfo.WCharSupport = true;
+        #endif
+
+        return (Core::ERROR_NONE);
+
+    }
+
 }
 }

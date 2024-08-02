@@ -227,6 +227,29 @@ namespace Controller {
                 uint8_t Patch /* @brief Patch number */;
             };
 
+            struct BuildInfo {
+
+                enum buildtype : uint8_t{
+                    DEBUG,
+                    DEBUG_OPTIMIZED,
+                    RELEASE_WITH_DEBUG_INFO,
+                    RELEASE,
+                    PRODUCTION
+                };
+
+                buildtype BuildType /* @brief Build type */;
+                bool WarningReporting /* @brief Denotes whether WarningReport is enabled */;
+                bool ProcessContainers /* @brief Denotes whether ProcessContainers is enabled */;
+                bool HibernateSupport /* @brief Denotes whether HibernateSupport is enabled*/;
+                bool BluetoothSupport /* @brief Denotes whether BluetoothSupport is enabled */;
+                bool Messaging /* @brief Denotes whether Messaging is enabled*/;
+                bool ExceptionCatching /* @brief Denotes whether there is an exception */;
+                bool DeadlockDetection /* @brief Denotes whether there is a deadlock */;
+                uint8_t InstanceIDBits /* @brief Core instance bits */;
+                Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
+                bool WCharSupport /*Denotes whether there is wchar support */;
+            };
+            
             struct CallStack {
                 Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
@@ -341,7 +364,11 @@ namespace Controller {
         // @property
         // @brief Thread callstack
         virtual Core::hresult CallStack(const uint8_t thread /* @index */, Data::ICallStackIterator*& callstack /* @out */) const = 0;
-    };
+    
+        // @property
+        // @brief Build information
+        virtual Core::hresult BuildInfo(Data::BuildInfo& buildInfo /* @out */) const = 0;
+        };
 
 } // namespace Controller
 
