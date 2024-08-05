@@ -1373,7 +1373,7 @@ namespace Plugin {
             buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG;
         #elif defined(_THUNDER_NDEBUG_DEB_INFO)
             buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
-        #elif defined(THUNDER_NDEBUG)
+        #elif defined(_THUNDER_NDEBUG)
             buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE;
         #elif defined(_THUNDER_PRODUCTION)
             buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::PRODUCTION;
@@ -1428,13 +1428,7 @@ namespace Plugin {
         #else
             buildInfo.DeadlockDetection = false;
         #endif
-
-        #ifdef __CORE_EXCEPTION_CATCHING__
-            buildInfo.ExceptionCatching = true;
-        #else
-            buildInfo.ExceptionCatching = false;
-        #endif
-
+     
         #ifdef __CORE_NO_WCHAR_SUPPORT__
             buildInfo.WCharSupport = false;
         #else
