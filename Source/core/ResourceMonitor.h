@@ -61,16 +61,7 @@ namespace Core {
     class ResourceMonitorType {
     private:
         using Parent = ResourceMonitorType<RESOURCE, WATCHDOG, STACK_SIZE, RESOURCE_SLOTS>;
-
-        // Using the std::vector here caused an issue on Windows as the iterator in the Worker was corrupted after
-        // a new connection was added during the worker run (accept on listen) Although this should be added to 
-        // the end of the vector/list, it did cause an issue on Windows and probbaly *not* on linux. Requires further 
-        // investigation
-        #ifdef __WINDOWS__
         using Resources = std::list<RESOURCE*>;
-        #else
-        using Resources = std::vector<RESOURCE*>;
-        #endif
 
         class MonitorWorker : public Core::Thread {
         public:

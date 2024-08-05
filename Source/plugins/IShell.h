@@ -313,6 +313,7 @@ namespace PluginHost {
             else {
                 handler->Unregister(sink);
                 handler->Release();
+                result = Core::ERROR_NONE;
             }
 
             return (result);

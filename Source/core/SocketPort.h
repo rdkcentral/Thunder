@@ -180,11 +180,11 @@ namespace Thunder {
             }
             inline string LocalId() const
             {
-                return (m_LocalNode.HostAddress());
+                return (Identifier(m_LocalNode));
             }
             inline string RemoteId() const
             {
-                return (m_RemoteNode.HostAddress());
+                return (Identifier(m_RemoteNode));
             }
             inline const NodeId& ReceivedNode() const
             {
@@ -266,6 +266,7 @@ namespace Thunder {
             }
 
         private:
+            string Identifier(const NodeId& node) const;
             IResource::handle Descriptor() const override
             {
                 return (static_cast<IResource::handle>(m_Socket));

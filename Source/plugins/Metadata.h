@@ -87,6 +87,9 @@ namespace PluginHost {
 #if THUNDER_RUNTIME_STATISTICS
                 result.ProcessedRequests = meta.ProcessedRequests;
                 result.ProcessedObjects = meta.ProcessedObjects;
+#else
+                result.ProcessedRequests = 0;
+                result.ProcessedObjects = 0;
 #endif
 
                 return result;
@@ -106,28 +109,6 @@ namespace PluginHost {
         public:
             using state = Exchange::Controller::IMetadata::Data::Link::state;
 
-            class EXTERNAL State : public Core::JSON::EnumType<state> {
-            public:
-                inline State() = default;
-                inline State(State&& move) noexcept
-                    : Core::JSON::EnumType<state>(move)
-                {
-                }
-                inline State(const State& copy)
-                    : Core::JSON::EnumType<state>(copy)
-                {
-                }
-                inline ~State() override = default;
-
-            public:
-                State& operator=(const state RHS);
-                State& operator=(State&& move);
-                State& operator=(const State& RHS);
-
-                string Data() const;
-            };
-
-        public:
             Channel();
             Channel(Channel&& move);
             Channel(const Channel& copy);
@@ -138,7 +119,7 @@ namespace PluginHost {
 
         public:
             Core::JSON::String Remote;
-            State JSONState;
+            Core::JSON::EnumType<state> State;
             Core::JSON::Boolean Activity;
             Core::JSON::DecUInt32 ID;
             Core::JSON::String Name;

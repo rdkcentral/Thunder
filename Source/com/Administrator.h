@@ -125,8 +125,8 @@ namespace RPC {
 
     public:
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-        using ChannelMap = std::unordered_map<uintptr_t, Proxies>;
-        using ReferenceMap = std::unordered_map<uintptr_t, std::list< RecoverySet > >;
+        using ChannelMap = std::unordered_map<uint32_t, Proxies>;
+        using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
 
@@ -147,21 +147,27 @@ namespace RPC {
         void DelegatedReleases(const bool enabled) {
             _delegatedReleases = enabled;
         }
-        // void action(const Client& client)
-        template<typename ACTION>
-        void Visit(ACTION&& action) const {
-            _adminLock.Lock();
+        bool Allocations(const uint32_t id, Proxies& proxies) const {
+            bool found = false;
+            if (id == 0) {
+                found = true;
+                proxies = _danglingProxies;
+            }
+            else {
+                ChannelMap::const_iterator index(_channelProxyMap.begin());
 
-            for (const auto& entry : _channelProxyMap) {
-                if (entry.second.empty() == false) {
-                    action(entry.second);
+                while ((found == false) && (index != _channelProxyMap.end())) {
+
+                    if (index->first != id) {
+                        index++;
+                    }
+                    else {
+                        found = true;
+                        proxies = index->second;
+                    }
                 }
             }
-
-            if (_danglingProxies.empty() == false) {
-                action(_danglingProxies);
-            }
-            _adminLock.Unlock();
+            return (found);
         }
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()

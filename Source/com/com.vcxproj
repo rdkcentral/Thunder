@@ -33,8 +33,9 @@
     <ClInclude Include="ConnectorType.h" />
     <ClInclude Include="Ids.h" />
     <ClInclude Include="ICOM.h" />
-    <ClInclude Include="IRPCIterator.h" />
+    <ClInclude Include="IIteratorType.h" />
     <ClInclude Include="IStringIterator.h" />
+    <ClInclude Include="IteratorType.h" />
     <ClInclude Include="IUnknown.h" />
     <ClInclude Include="IValueIterator.h" />
     <ClInclude Include="Messages.h" />

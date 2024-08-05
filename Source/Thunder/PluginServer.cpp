@@ -165,21 +165,6 @@ namespace PluginHost {
         const string _controllerName;
     };
 
-    string ChannelIdentifier (const Core::SocketPort& input) {
-        string result;
-        const Core::NodeId& localNode(input.LocalNode());
-
-        if ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV4) || ((localNode.Type() == Core::NodeId::enumType::TYPE_IPV6))) {
-            // It is using TCP/IP (4 or 6) connectivity..
-            result = input.RemoteNode().HostName() + '@' + Core::NumberType<uint16_t>(localNode.PortNumber()).Text();
-        }
-        else {
-            // It's not a network connection, let report to whom it hooked up..
-            result = localNode.HostName() + '@' + Core::NumberType<Core::IResource::handle>(static_cast<const Core::IResource&>(input).Descriptor()).Text();
-        }
-        return (result);
-    }
-
     //
     // class Server::WorkerPoolImplementation
     // -----------------------------------------------------------------------------------------------------------------------------------
@@ -225,8 +210,13 @@ namespace PluginHost {
 
             newInfo.Activity = client->HasActivity();
             newInfo.Remote = client->RemoteId();
-            newInfo.JSONState = (client->IsWebSocket() ? ((client->State() != PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
-            string name = client->Name();
+            if (client->IsOpen() == false) {
+                newInfo.State = Metadata::Channel::state::CLOSED;
+            }
+            else {
+                newInfo.State = (client->IsWebSocket() ? ((client->State() == PluginHost::Channel::RAW) ? Metadata::Channel::state::RAWSOCKET : Metadata::Channel::state::WEBSOCKET) : (client->IsWebServer() ? Metadata::Channel::state::WEBSERVER : Metadata::Channel::state::SUSPENDED));
+            }
+            string name = client->Path();
 
             if (name.empty() == false) {
                 newInfo.Name = name;

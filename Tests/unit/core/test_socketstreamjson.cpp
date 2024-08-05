@@ -187,7 +187,7 @@ namespace Core {
             return (true);
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -224,46 +224,71 @@ namespace Core {
 
     TEST(Core_Socket, StreamJSON)
     {
-        std::string connector = "/tmp/wpestreamjson0";
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector = "/tmp/wpestreamjson0";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::SocketServerType<JSONConnector<::Thunder::Core::JSON::IElement>> jsonSocketServer(::Thunder::Core::NodeId(connector.c_str()));
-            jsonSocketServer.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("setup server");
+
+            ASSERT_EQ(jsonSocketServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             std::unique_lock<std::mutex> lk(JSONConnector<::Thunder::Core::JSON::IElement>::_mutex);
+
             while (!JSONConnector<::Thunder::Core::JSON::IElement>::GetState()) {
                 JSONConnector<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
             }
 
-            testAdmin.Sync("client open");
-            testAdmin.Sync("client done");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(jsonSocketServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
             ::Thunder::Core::ProxyType<Command> sendObject = ::Thunder::Core::ProxyType<Command>::Create();
+            ASSERT_TRUE(sendObject.IsValid());
+
             sendObject->Identifier = 1;
             sendObject->Name = _T("TestCase");
             sendObject->Params.Duration = 100;
+        
             std::string sendString;
-            sendObject->ToString(sendString);
+            EXPECT_TRUE(sendObject->ToString(sendString));
 
             JSONConnector<::Thunder::Core::JSON::IElement> jsonSocketClient(::Thunder::Core::NodeId(connector.c_str()));
-            jsonSocketClient.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("client open");
+
+            ASSERT_EQ(jsonSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             jsonSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
-            jsonSocketClient.Wait();
+        
+            EXPECT_EQ(jsonSocketClient.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
             jsonSocketClient.Retrieve(received);
+
             EXPECT_STREQ(sendString.c_str(), received.c_str());
-            jsonSocketClient.Close(::Thunder::Core::infinite);
-            testAdmin.Sync("client done");
-       }
-       ::Thunder::Core::Singleton::Dispose();
+
+            EXPECT_EQ(jsonSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core
