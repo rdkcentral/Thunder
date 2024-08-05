@@ -179,9 +179,10 @@ namespace RPC {
         if (impl != 0) {
             // Firstly check against the temporarily valid instances (i.e. interfaces currently passed as parameters)
             const RPC::InstanceRecord* tempInstances = static_cast<const RPC::InstanceRecord*>(channel->CustomData());
+
             if (tempInstances != nullptr) {
-                while ((*tempInstances).instance != 0) {
-                    ASSERT((*tempInstances).interface != 0);
+
+                while ((*tempInstances).interface != 0) {
 
                     if ((impl == (*tempInstances).instance) && (id == (*tempInstances).interface)) {
                         TRACE_L3("Validated instance 0x%08" PRIxPTR " by local set", impl);
@@ -434,11 +435,11 @@ namespace RPC {
                 entry->Invalidate();
                 _danglingProxies.emplace_back(entry);
 
-                // This is actually for the pendingProxies to be reported 
+                // This is actually for the pendingProxies to be reported
                 // dangling!!
                 entry->AddRef();
             }
-            // The _channelProxyMap does have a reference for each Proxy it 
+            // The _channelProxyMap does have a reference for each Proxy it
             // holds, so it is safe to just move the vector from the map to
             // the pendingProxies. The receiver of pendingProxies has to take
             // care of releasing the last reference we, as administration layer

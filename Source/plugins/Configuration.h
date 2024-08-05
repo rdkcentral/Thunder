@@ -418,11 +418,20 @@ namespace Plugin {
             result.Locator = Locator;
             result.ClassName = ClassName;
             result.StartMode = StartMode;
-            result.Communicator = Communicator;
-            result.PersistentPathPostfix = PersistentPathPostfix;
-            result.VolatilePathPostfix = VolatilePathPostfix;
-            result.SystemRootPath = SystemRootPath;
             result.Configuration = Configuration;
+
+            if (Communicator.IsSet() == true) {
+                result.Communicator = Communicator;
+            }
+            if (PersistentPathPostfix.IsSet() == true) {
+                result.PersistentPathPostfix = PersistentPathPostfix;
+            }
+            if (VolatilePathPostfix.IsSet() == true) {
+                result.VolatilePathPostfix = VolatilePathPostfix;
+            }
+            if (SystemRootPath.IsSet() == true) {
+                result.SystemRootPath = SystemRootPath;
+            }
             if (Precondition.IsSet() == true) {
                 result.Precondition = Precondition;
             }
@@ -432,6 +441,7 @@ namespace Plugin {
             if (Control.IsSet() == true) {
                 result.Control = Control;
             }
+
             return result; 
         }
 
