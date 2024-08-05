@@ -843,8 +843,6 @@ namespace PluginHost {
             }
             void Destroy()
             {
-                ASSERT(_handler != nullptr);
-
                 Lock();
 
                 // It's reference counted, so just take it out of the list, state to DESTROYED
@@ -3165,36 +3163,65 @@ namespace PluginHost {
             }
 
         private:
-            void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) {
-                if (interfaceId == RPC::IRemoteConnection::INotification::ID)
-                {
-                    const RPC::IRemoteConnection::INotification* base = source->QueryInterface<RPC::IRemoteConnection::INotification>();
+            void Dangling(const Core::IUnknown* remote, const uint32_t interfaceId)
+            {
+                Core::IUnknown* result = nullptr;
 
-                    ASSERT(base != nullptr);
+                if (interfaceId == PluginHost::IPlugin::INotification::ID) {
+                    _notificationLock.Lock();
 
-                    if (base != nullptr) {
-                        TRACE(Activity, (_T("Unregistered the dangling: RPC::IRemoteConnection::INotification")));
-                        _processAdministrator.Unregister(base);
-                        base->Release();
-                    }
-                }
-                else if (interfaceId == PluginHost::IPlugin::INotification::ID) {
-                    const PluginHost::IPlugin::INotification* base = source->QueryInterface<PluginHost::IPlugin::INotification>();
+                    Notifiers::iterator index(_notifiers.begin());
 
-                    ASSERT(base != nullptr);
-
-                    if (base != nullptr) {
-                        _notificationLock.Lock();
-
-                        Notifiers::iterator index(std::find(_notifiers.begin(), _notifiers.end(), base));
-
-                        if (index != _notifiers.end()) {
-                            (*index)->Release();
-                            _notifiers.erase(index);
-                            TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
+                    while ((result == nullptr) && (index != _notifiers.end())) {
+                        if (static_cast<Core::IUnknown*>(*index) != remote) {
+                            index++;
                         }
-                        _notificationLock.Unlock();
+                        else {
+                            result = *index;
+                            _notifiers.erase(index);
+                        }
                     }
+
+                    _notificationLock.Unlock();
+                }
+                else if (interfaceId == IShell::IConnectionServer::INotification::ID) {
+
+                    _notificationLock.Lock();
+
+                    ChannelObservers::iterator index(_channelObservers.begin());
+
+                    while ((result == nullptr) && (index != _channelObservers.end())) {
+                        if (static_cast<Core::IUnknown*>(*index) != remote) {
+                            index++;
+                        }
+                        else {
+                            result = *index;
+                            _channelObservers.erase(index);
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                else if (interfaceId == Exchange::Controller::IShells::INotification::ID) {
+                    _notificationLock.Lock();
+
+                    ShellNotifiers::iterator index(_shellObservers.begin());
+
+                    while ((result == nullptr) && (index != _shellObservers.end())) {
+                        if (static_cast<Core::IUnknown*>(*index) != remote) {
+                            index++;
+                        }
+                        else {
+                            result = *index;
+                            _shellObservers.erase(index);
+                        }
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+                if (result != nullptr) {
+                    result->Release();
                 }
             }
             void ConfigReload(const string& configs) {

@@ -176,6 +176,7 @@ namespace Core {
             : ACTUALSERVICE(std::forward<Args>(args)...)
             , _referenceLib()
         {
+            ServiceAdministrator::Instance().AddRef();
         }
 
     public:
@@ -202,6 +203,7 @@ namespace Core {
             // requires a destructor on the union member, but we 
             // do not want a union destructor, so lets create our
             // own!!!!
+            ServiceAdministrator::Instance().Release();
         }
 
         void LockLibrary(const Library& library) {
