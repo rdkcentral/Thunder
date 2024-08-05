@@ -43,11 +43,11 @@ IPTestAdministrator::IPTestAdministrator(Callback parent, Callback child, const 
 {
     ASSERT(waitTime > 0 && waitTime < ::Thunder::Core::infinite);
 
-    int shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData) /* size */, IPC_CREAT | 0666 /* read and write for user, group and others */);
+    _shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData) /* size */, IPC_CREAT | 0666 /* read and write for user, group and others */);
 
-    ASSERT(shm_id >= 0);
+    ASSERT(_shm_id >= 0);
 
-    _sharedData = reinterpret_cast<struct SharedData*>(shmat(shm_id, nullptr, 0 /* attach for reading and writing */));
+    _sharedData = reinterpret_cast<struct SharedData*>(shmat(_shm_id, nullptr, 0 /* attach for reading and writing */));
 
     ASSERT(_sharedData != nullptr);
 
@@ -96,6 +96,7 @@ IPTestAdministrator::~IPTestAdministrator()
                         do {} while(false);
             case 0  :   // Timeout expired before events are available
                         {
+                            // Potential leak of shared memory descriptor
                             int result = syscall(SYS_kill, _pid, SIGKILL);
 
                             ASSERT(result == 0);
@@ -111,11 +112,21 @@ IPTestAdministrator::~IPTestAdministrator()
 
     if(shmdt(_sharedData) == -1) {
         switch(errno) {
-        case EINVAL :   // The shared data is not the start address of the sahred segment
+        case EINVAL :   // The shared data is not the start address of the shared segment
                         do {} while(false);
         default     :   // Uninpsected or unknown error
                         ;
         }
+    }
+
+    if (shmctl(_shm_id, IPC_RMID, nullptr) == -1) {
+        switch(errno) {
+        case EPERM :    // User ID is not that of the creator, owner or insufficient privileges
+                        do {} while(false);
+        default     :   // Uninpsected or unknown error
+                        ;
+        }
+
     }
 }
 
