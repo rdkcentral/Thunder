@@ -217,8 +217,10 @@ if(BUILD_TESTS)
 endif()
 
 target_link_libraries(${TARGET}
+
+        PUBLIC
+            CompileSettings::CompileSettings
         PRIVATE
-          CompileSettings::CompileSettings
           CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
           Threads::Threads
