@@ -51,7 +51,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             {
                 _adminLock.Lock();
 
-                for_each (_controlList.begin(), _controlList.end(), [](Core::Messaging::IControl* const & control) {
+                for_each (_controlList.begin(), _controlList.end(), [](VARIABLE_IS_NOT_USED Core::Messaging::IControl* const & control) {
                     TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(control).name(), static_cast<uint32_t>(_controlList.size()));
                 }
                 );
