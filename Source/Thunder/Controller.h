@@ -298,14 +298,15 @@ namespace Plugin {
         Core::hresult Reboot() override;
         Core::hresult Environment(const string& variable, string& value) const override;
         Core::hresult Clone(const string& callsign, const string& newcallsign, string& response) override;
+        Core::hresult Destroy(const string& callsign) override;
 
         // IDiscovery overrides
-        Core::hresult StartDiscovery(const uint8_t ttl) override;
+        Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl) override;
         Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         // IConfiguration overrides
         Core::hresult Persist() override;
-        Core::hresult Configuration(const string& callsign, string& configuration) const override;
+        Core::hresult Configuration(const Core::OptionalType<string>& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
         // ILifeTime overrides
@@ -324,7 +325,7 @@ namespace Plugin {
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
         Core::hresult Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
-        Core::hresult Services(const string& callsign, IMetadata::Data::IServicesIterator*& services) const override;
+        Core::hresult Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& services) const override;
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
         Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;

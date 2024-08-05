@@ -1189,7 +1189,7 @@ namespace PluginHost {
         IFactories::Assign(nullptr);
     }
 
-    void Server::Notification(const string& callsign, const string& jsonrpc_event, const string& parameters)
+    void Server::Notification(const string& callsign, const string& event, const string& parameters)
     {
         ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
 
@@ -1200,12 +1200,22 @@ namespace PluginHost {
 
             ASSERT(callsign.empty() == false);
 
-            if (jsonrpc_event.empty() == false) {
-                JsonData::Events::ForwardMessageParamsData::EventData message({ jsonrpc_event, parameters, callsign });
-                controller->Notify(_T("all"), message);
+            if (event.empty() == false) {
+
+                Core::OptionalType<string> eventParams;
+                if (parameters.empty() == false) {
+                    eventParams = parameters;
+                }
+
+                Core::OptionalType<string> eventCallsign;
+                if (callsign.empty() == false) {
+                    eventCallsign = callsign;
+                }
+
+                Exchange::Controller::JEvents::Event::ForwardMessage(*controller, event, eventCallsign, eventParams);
             }
             else {
-                string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":\"") + parameters + _T("\"}}");
+                string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":") + parameters + _T("}}");
 
                 _controller->Notify(EMPTY_STRING, messageString);
             }
