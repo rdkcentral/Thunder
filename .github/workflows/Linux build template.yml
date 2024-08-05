@@ -1,4 +1,4 @@
-name: Build Thunder on Linux
+name: Linux build template
 
 on:
   workflow_call:
@@ -11,8 +11,9 @@ jobs:
       matrix:
         build_type: [Debug, Release, MinSizeRel]
         shared_libs: [ON, OFF]
+        architecture: [32, 64]
 
-    name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}
+    name: Build type - ${{matrix.shared_libs == 'OFF' && 'Static ' || ''}}${{matrix.build_type}}${{matrix.architecture == '32' && ' x86' || ''}}
     steps:
 # --------- Installing packages ---------
     - name: Install necessary packages
@@ -23,10 +24,12 @@ jobs:
         command: |
           sudo gem install apt-spy2
           sudo apt-spy2 fix --commit --launchpad --country=US
+          echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
+          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt install python3-pip
-          pip install jsonref
-          sudo apt install build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
+          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev zlib1g-dev:i386 libssl-dev gcc-11-multilib g++-11-multilib
+          sudo pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
@@ -83,6 +86,8 @@ jobs:
     - name: Install generators
       run: |
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
+        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
         -DCMAKE_INSTALL_PREFIX=${{matrix.build_type}}/install/usr
         cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
 
@@ -99,7 +104,8 @@ jobs:
     - name: Build Thunder
       run: |
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
+        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
+        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
         -DBUILD_SHARED_LIBS=${{matrix.shared_libs}} \
         -DBINDING="127.0.0.1" \
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
@@ -120,11 +126,11 @@ jobs:
 
     - name: Tar files
       if: matrix.shared_libs == 'ON'
-      run: tar -czvf ${{matrix.build_type}}.tar.gz ${{matrix.build_type}}
+      run: tar -czvf ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz ${{matrix.build_type}}
 
     - name: Upload
       if: matrix.shared_libs == 'ON'
       uses: actions/upload-artifact@v4
       with:
-        name: Thunder-${{matrix.build_type}}-artifact
-        path: ${{matrix.build_type}}.tar.gz
+        name: Thunder-${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}-artifact
+        path: ${{matrix.build_type}}${{matrix.architecture == '32' && '_x86' || ''}}.tar.gz
