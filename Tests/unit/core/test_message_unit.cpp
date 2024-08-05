@@ -31,8 +31,6 @@
 
 #include "../IPTestAdministrator.h"
 
-#define PRINT_MODULES(NAME, MODULES) {std::cout << NAME << " ---> "; std::for_each(MODULES.begin(), MODULES.end(), [](std::string MODULE){std::cout << " " << MODULE;}); std::cout << std::endl;};
-
 namespace Thunder {
 namespace Tests {
 namespace Core {
@@ -77,6 +75,7 @@ namespace Core {
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_2"), EXPAND_AND_QUOTE(MODULE_NAME) }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_3"), EXPAND_AND_QUOTE(MODULE_NAME) }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_4"), EXPAND_AND_QUOTE(MODULE_NAME) }));
+            _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_5"), EXPAND_AND_QUOTE(MODULE_NAME) }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
 
@@ -253,8 +252,6 @@ namespace Core {
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         int matches = 0;
         int count = 0;
 
@@ -301,8 +298,6 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         int matches = 0;
         int count = 0;
 
@@ -331,13 +326,11 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         modules.clear();
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         /* bool */ enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
- 
+
             client.Controls(item, *it);
 
             while (item.Next()) {
@@ -375,13 +368,11 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
- 
+
             client.Controls(item, *it);
 
             while (item.Next()) {
@@ -405,13 +396,11 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         modules.clear();
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
- 
+
             client.Controls(item, *it);
 
             while (item.Next()) {
@@ -445,7 +434,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+        // Controls from the default are disabled by default, except a few, like the once announce with the ANNOUNCE-macros
 
         bool enabled = true;
 
@@ -461,16 +450,48 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             }
         }
 
-        // Controls from the default are disabled by default, except a few
-        EXPECT_FALSE(enabled);
+        if (modules.size() > 0) {
+            EXPECT_TRUE(enabled);
+        } else {
+            EXPECT_FALSE(enabled);
+        }
 
-        // Enable message via metadata, eg, set enable for the previously added Control, eg, enable category
-        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        // Effective only for exsting modules / controls for this category
+        // Disable all controls within a category via metadata
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, false);
 
         modules.clear();
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+        enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          || item.Enabled()
+                         ;
+            }
+        }
+
+        // All categories are disabled
+        EXPECT_FALSE(enabled);
+
+        // WARNING: This effects all successive tests as it can differ from the defaults
+
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, true);
+
+        modules.clear();
+        client.Modules(modules);
 
         enabled = true;
 
@@ -501,12 +522,66 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         client.AddInstance(0); //we are in framework
 
-        ::Thunder::Core::Messaging::Metadata messageToToggle(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
-
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
+        // Controls from the default are disabled by default, except a few, like the once announce with the ANNOUNCE-macros
+
+        bool enabled = true;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          && item.Enabled()
+                         ;
+            }
+        }
+
+        if (modules.size() > 0) {
+            EXPECT_TRUE(enabled);
+        } else {
+            EXPECT_FALSE(enabled);
+        }
+
+        // Effective only for exsting modules / controls for this category
+        // Disable all controls within a category via metadata
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, false);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = false;
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                enabled =    enabled
+                          || item.Enabled()
+                         ;
+            }
+        }
+
+        // All categories are disabled
+        EXPECT_FALSE(enabled);
+
+        // WARNING: This effects all successive tests as it can differ from the defaults
+
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("SysLog")}, true);
+
+        modules.clear();
+        client.Modules(modules);
+
+        enabled = true;
 
         int matches = 0;
 
@@ -516,44 +591,23 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                if (   item.Type() == messageToToggle.Type()
-                    && item.Category() == messageToToggle.Category()
-                    && item.Module() == messageToToggle.Module()
-                    && item.Enabled()
-                   ) {
+                if (item.Module() == "SysLog") {
+                    enabled =    enabled
+                              && item.Enabled()
+                             ;
                     ++matches;
                 }
             }
         }
 
-        EXPECT_EQ(matches, 1);
+        EXPECT_TRUE(enabled);
+        EXPECT_GT(matches, 0);
 
-        client.Enable(messageToToggle, false);
-
-        modules.clear();
-        client.Modules(modules);
-
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
-        matches = 0;
-
-        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
-            ::Thunder::Messaging::MessageUnit::Iterator item;
-
-            client.Controls(item, *it);
-
-            while (item.Next()) {
-                if (   item.Type() == messageToToggle.Type()
-                    && item.Category() == messageToToggle.Category()
-                    && item.Module() == messageToToggle.Module()
-                    && !item.Enabled()
-                   ) {
-                    ++matches;
-                }
-            }
-        }
-
-        EXPECT_EQ(matches, 1);
+        // Re-enable all
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, true);
 
         client.RemoveInstance(0);
 
@@ -565,19 +619,16 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         ToggleDefaultConfig(true);
 
         const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+        Control control(toBeAdded);
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
 
-        // LOGGING is enabled and available by default
-
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
-        bool enabled = false;
+        int matches = 0;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
@@ -585,18 +636,40 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                enabled =    enabled
-                          ||
-                             (   toBeAdded.Type() == item.Type()
-                              && toBeAdded.Category() == item.Category()
-                              && toBeAdded.Module() == item.Module()
-                              && item.Enabled()
-                            )
-                         ;
+                if (   toBeAdded.Type() == item.Type()
+                    && toBeAdded.Category() == item.Category()
+                    && toBeAdded.Module() == item.Module()
+                   ) {
+                    ++matches;
+                }
             }
         }
 
-        EXPECT_TRUE(enabled);
+        EXPECT_EQ(matches, 0);
+
+        matches = 0;
+
+        ::Thunder::Core::Messaging::IControl::Announce(&control);
+
+        for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
+            ::Thunder::Messaging::MessageUnit::Iterator item;
+
+            client.Controls(item, *it);
+
+            while (item.Next()) {
+                if (   toBeAdded.Type() == item.Type()
+                    && toBeAdded.Category() == item.Category()
+                    && toBeAdded.Module() == item.Module()
+                   ) {
+                    ++matches;
+                }
+            }
+        }
+
+        EXPECT_EQ(matches, 1);
+
+        // The control goes out of scope
+        ::Thunder::Core::Messaging::IControl::Revoke(&control);
 
         client.RemoveInstance(0);
 
@@ -608,17 +681,22 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         ToggleDefaultConfig(true);
 
         ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), EXPAND_AND_QUOTE(MODULE_NAME));
+        Control control(message);
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
         client.AddInstance(0); //we are in framework
 
-        // TRACING is not enabled but available by default
+        ::Thunder::Core::Messaging::IControl::Announce(&control);
+
+        // Disable all controls within a category via metadata
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, false);
 
         std::vector<std::string> modules;
         client.Modules(modules);
-
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         bool enabled = false;
 
@@ -643,12 +721,8 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         client.Enable(message, true);
 
-        client.Enable(message, true);
-
         modules.clear();
         client.Modules(modules);
-
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         enabled = false;
 
@@ -671,6 +745,13 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         EXPECT_TRUE(enabled);
 
+        ::Thunder::Core::Messaging::IControl::Revoke(&control);
+
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, true);
+
         client.RemoveInstance(0);
 
         ToggleDefaultConfig(false);
@@ -678,20 +759,28 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
     TEST_F(Core_Messaging_MessageUnit, EnablingMessageSpecifiedByModuleShouldEnableAllCategoriesInsideIt)
     {
-        ToggleDefaultConfig(false);
-
-        const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), EXPAND_AND_QUOTE(MODULE_NAME));
+        ToggleDefaultConfig(true);
 
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
+        const ::Thunder::Core::Messaging::Metadata toBeAdded(::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog"));
+        Control control(toBeAdded);
+
         client.AddInstance(0); //we are in framework
+
+        ::Thunder::Core::Messaging::IControl::Announce(&control);
+
+        // Effective only for exsting modules / controls for this category
+        // Disable all controls within a category via metadata
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, false);
 
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
-        bool enabled = true;
+        bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
@@ -699,26 +788,25 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                if (   message.Type() == item.Type()
-                    && message.Module() == item.Module()
-                ) {
-                    enabled =    enabled
-                              && item.Enabled()
-                             ;
-                }
+                enabled =    enabled
+                          || item.Enabled()
+                         ;
             }
         }
 
+        // All categories are disabled
         EXPECT_FALSE(enabled);
 
-        client.Enable(message, true);
+        // WARNING: This effects all successive tests as it can differ from the defaults
+
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("SysLog")}, true);
 
         modules.clear();
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         enabled = true;
+
+        int matches = 0;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
@@ -726,17 +814,25 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                if (   message.Type() == item.Type()
-                    && message.Module() == item.Module()
+                if (   item.Module() == "SysLog"
+                    && item.Category() == "Test_Category_5"
+                    && item.Enabled()
                 ) {
-                    enabled =    enabled
-                              && item.Enabled()
-                             ;
+                    ++matches;
                 }
             }
         }
 
         EXPECT_TRUE(enabled);
+        EXPECT_EQ(matches, 1);
+
+        ::Thunder::Core::Messaging::IControl::Revoke(&control);
+
+        // Re-enable all
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, true);
 
         client.RemoveInstance(0);
 
@@ -747,18 +843,30 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
     {
         ToggleDefaultConfig(true);
 
-        const ::Thunder::Core::Messaging::Metadata message(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T(""));
-
         ::Thunder::Messaging::MessageClient client(DispatcherIdentifier(), DispatcherBasePath() /*, socketPort not specified, domain socket used instead */);
 
+        const ::Thunder::Core::Messaging::Metadata moduleMessage(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_5"), EXPAND_AND_QUOTE(MODULE_NAME));
+        Control moduleControl(moduleMessage);
+
+        const ::Thunder::Core::Messaging::Metadata syslogMessage(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_5"), _T("SysLog"));
+        Control syslogControl(syslogMessage);
+
         client.AddInstance(0); //we are in framework
+
+        ::Thunder::Core::Messaging::IControl::Announce(&moduleControl);
+        ::Thunder::Core::Messaging::IControl::Announce(&syslogControl);
+
+        // Effective only for exsting modules / controls for this category
+        // Disable all controls within a category via metadata
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, false);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, false);
 
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
-        bool enabled = true;
+        bool enabled = false;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
@@ -766,26 +874,25 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                if (   message.Type() == item.Type()
-                    && message.Category() == item.Category()
-                ) {
-                    enabled =    enabled
-                              && item.Enabled()
-                             ;
-                }
+                enabled =    enabled
+                          || item.Enabled()
+                         ;
             }
         }
 
+        // All categories are disabled
         EXPECT_FALSE(enabled);
 
-        client.Enable(message, true);
+        // WARNING: This effects all successive tests as it can differ from the defaults
+
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_5"), _T("")}, true);
 
         modules.clear();
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         enabled = true;
+
+        int matches = 0;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
@@ -793,17 +900,25 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             client.Controls(item, *it);
 
             while (item.Next()) {
-                if (   message.Type() == item.Type()
-                    && message.Category() == item.Category()
+                if (   item.Category() == "Test_Category_5"
+                    && item.Enabled()
                 ) {
-                    enabled =    enabled
-                              && item.Enabled()
-                             ;
+                    ++matches;
                 }
             }
         }
 
         EXPECT_TRUE(enabled);
+        EXPECT_EQ(matches, 2); // 'all' within the same TYPE, ie, TRACING
+
+        ::Thunder::Core::Messaging::IControl::Revoke(&moduleControl);
+        ::Thunder::Core::Messaging::IControl::Revoke(&syslogControl);
+
+        // Re-enable all
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::LOGGING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::TRACING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::REPORTING, _T(""), _T("")}, true);
+        client.Enable({::Thunder::Core::Messaging::Metadata::type::OPERATIONAL_STREAM, _T(""), _T("")}, true);
 
         client.RemoveInstance(0);
 
@@ -866,8 +981,6 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
 
@@ -901,8 +1014,6 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         std::vector<std::string> modules;
         client.Modules(modules);
 
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
-
         std::vector<uint8_t> buffer;
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
@@ -924,8 +1035,6 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         modules.clear();
         client.Modules(modules);
-
-PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         for (auto it = modules.begin(), end = modules.end(); it != end; it++) {
             ::Thunder::Messaging::MessageUnit::Iterator item;
