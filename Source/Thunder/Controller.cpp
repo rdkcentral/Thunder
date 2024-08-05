@@ -286,7 +286,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Configuration(const string& callsign, string& configuration) const
+    Core::hresult Controller::Configuration(const Core::OptionalType<string>& callsign, string& configuration) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
         Core::ProxyType<PluginHost::IShell> service;
@@ -348,6 +348,28 @@ namespace Plugin {
             }
             else {
                 result = _pluginServer->Services().Clone(baseService, newcallsign, newService);
+            }
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Destroy(const string& callsign)
+    {
+        Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::IShell> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                _pluginServer->Services().Destroy(callsign);
+                result = Core::ERROR_NONE;
             }
         }
 
@@ -1010,7 +1032,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::StartDiscovery(const uint8_t ttl)
+    Core::hresult Controller::StartDiscovery(const Core::OptionalType<uint8_t>& ttl)
     {
         if (_probe != nullptr) {
             _probe->Ping(ttl);
@@ -1027,7 +1049,15 @@ namespace Plugin {
             Probe::Iterator index(_probe->Instances());
 
             while (index.Next() == true) {
-                results.push_back({ (*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure() });
+                IDiscovery::Data::DiscoveryResult result;
+                result.Locator = (*index).URL().Text();
+                result.Latency = (*index).Latency();
+                result.Secure = (*index).IsSecure();
+                if ((*index).Model().empty() == false) {
+                    result.Model = (*index).Model();
+                }
+
+                results.push_back(std::move(result));
             }
         }
 
@@ -1044,12 +1074,12 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Services(const string& callsign, IMetadata::Data::IServicesIterator*& outServices) const
+    Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
         std::list<IMetadata::Data::Service> services;
 
-        if (callsign.empty() == true) {
+        if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -1079,6 +1109,9 @@ namespace Plugin {
                     meta.FromString(info);
                     services.push_back(IMetadata::Data::Service(meta));
                 }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
             }
         }
 
@@ -1111,8 +1144,19 @@ namespace Plugin {
             std::list<IMetadata::Data::CallStack> callstack;
 
             for (const Core::callstack_info& entry : callStackInfo) {
-                callstack.push_back({ reinterpret_cast<Core::instance_id>(entry.address), entry.function, entry.module,
-                                      (entry.line != static_cast<uint32_t>(~0)? entry.line : 0) });
+                IMetadata::Data::CallStack cs;
+                cs.Address = reinterpret_cast<Core::instance_id>(entry.address);
+                cs.Module = entry.module;
+
+                if (entry.function.empty() == false) {
+                    cs.Function = entry.function;
+                }
+
+                if (entry.line != static_cast<uint32_t>(~0)) {
+                    cs.Line = entry.line;
+                }
+
+                callstack.push_back(std::move(cs));
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
@@ -1144,7 +1188,18 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 auto const& entry = it.Current();
-                links.push_back({ entry.Remote.Value(), entry.State.Value(), entry.Name.Value(), entry.ID.Value(), entry.Activity.Value() });
+
+                IMetadata::Data::Link link;
+                link.Remote = entry.Remote;
+                link.State = entry.State;
+                link.Id = entry.ID;
+                link.Activity = entry.Activity;
+
+                if (entry.Name.Value().empty() == false) {
+                    link.Name = entry.Name;
+                }
+
+                links.push_back(std::move(link));
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
