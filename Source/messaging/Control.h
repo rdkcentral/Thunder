@@ -44,7 +44,7 @@ namespace Messaging {
             Core::Messaging::IControl::Announce(this);
         }
         ~ControlType() override {
-            Core::Messaging::IControl::Revoke(this);
+            Destroy();
         }
 
     public:
@@ -67,6 +67,10 @@ namespace Messaging {
 
         void Destroy() override
         {
+            if ((_enabled & 0x02) != 0) {
+                Core::Messaging::IControl::Revoke(this);
+                _enabled = 0;
+            }
         }
 
     private:
