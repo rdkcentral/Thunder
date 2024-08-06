@@ -65,6 +65,7 @@ private :
     constexpr static uint32_t _waitTimeDivisor = 10;
 
     SharedData* _sharedData;
+    int _shm_id;
     pid_t _pid;
     uint32_t _waitTime; // Seconds
 };
