@@ -450,11 +450,8 @@ namespace Core {
             }
         }
 
-        if (modules.size() > 0) {
-            EXPECT_TRUE(enabled);
-        } else {
-            EXPECT_FALSE(enabled);
-        }
+        EXPECT_GT(modules.size(), 0);
+        EXPECT_TRUE(enabled);
 
         // Effective only for exsting modules / controls for this category
         // Disable all controls within a category via metadata
@@ -541,11 +538,8 @@ namespace Core {
             }
         }
 
-        if (modules.size() > 0) {
-            EXPECT_TRUE(enabled);
-        } else {
-            EXPECT_FALSE(enabled);
-        }
+        EXPECT_GT(modules.size(), 0);
+        EXPECT_TRUE(enabled);
 
         // Effective only for exsting modules / controls for this category
         // Disable all controls within a category via metadata
