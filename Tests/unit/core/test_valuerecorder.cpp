@@ -29,9 +29,6 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    
-    
-
     const unsigned int BLOCKSIZE = 20;
 
     class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
