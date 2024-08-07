@@ -1296,10 +1296,9 @@ namespace PluginHost {
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
             #endif
 
-            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override 
-            {   
+            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
+            {
                 std::vector<string> all_paths;
-
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
                 string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
 
@@ -1344,7 +1343,7 @@ namespace PluginHost {
 
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
                 string element;
-                while((all_paths->Next(element) == true) && (progressedState <= 2)){
+                while((all_paths->Next(element) == true) && (progressedState <= 2)) {
                     Core::File libraryToLoad(element);
                     
                     if (libraryToLoad.Exists() == true) {
@@ -1358,7 +1357,7 @@ namespace PluginHost {
                         // by forwarding this call to the ServiceAdministrator, so please so...
                         Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
 
-                         if (newLib.IsLoaded() == true) {
+                        if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
                                 progressedState = 2;
                             }
