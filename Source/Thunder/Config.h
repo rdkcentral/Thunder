@@ -1074,7 +1074,7 @@ POP_WARNING()
                 _accessor.PortNumber(_portNumber);
                 hostaddress = _accessor.HostAddress();
                 _configLock.Unlock();
-                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
+                SYSLOG(Logging::Activate, ("Invalid config information could not resolve to a proper IP"));
             } else {
                 _accessor.PortNumber(_portNumber);
                 hostaddress= _accessor.HostAddress();
@@ -1089,8 +1089,8 @@ POP_WARNING()
             }
             
 
-            SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), hostaddress.c_str()));
+            SYSLOG(Logging::Activate, (_T("Accessor: %s"), _URL.c_str()));
+            SYSLOG(Logging::Activate, (_T("Interface IP: %s"), hostaddress.c_str()));
 
         }
 
