@@ -674,7 +674,6 @@ namespace PluginHost {
                 ControlData& operator=(const ControlData&) = delete;
                 ControlData(const uint32_t maxRequests)
                     : _isExtended(false)
-                    , _queued(0)
                     , _maxRequests(maxRequests)
                     , _state(0)
                     , _major(~0)
@@ -713,19 +712,6 @@ namespace PluginHost {
                 }
 
             public:
-                bool IsRequestAllowed() const {
-                    uint32_t newValue = Core::InterlockedIncrement(_queued);
-                    if (newValue > _maxRequests) {
-                        Core::InterlockedDecrement(_queued);
-                    }
-                    return (newValue <= _maxRequests);
-                }
-                void RequestHandled() const {
-                    Core::InterlockedDecrement(_queued);
-                }
-                uint32_t Requests() const {
-                    return (_queued);
-                }
                 uint32_t MaxRequests() const {
                     return (_maxRequests);
                 }
@@ -766,7 +752,6 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-                mutable uint32_t _queued;
                 uint8_t _state;
                 uint8_t _major;
                 uint8_t _minor;
