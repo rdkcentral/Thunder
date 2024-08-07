@@ -247,7 +247,8 @@ namespace Controller {
                 bool DeadlockDetection /* @brief Denotes whether there is a deadlock */;
                 uint8_t InstanceIDBits /* @brief Core instance bits */;
                 Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
-                bool WCharSupport /*Denotes whether there is wchar support */;
+                bool WCharSupport /* Denotes whether there is wchar support */;
+                uint8_t ThreadPoolCount /* Number of configured threads on the threadpool */;
             };
             
             struct CallStack {

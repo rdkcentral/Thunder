@@ -1435,6 +1435,10 @@ namespace Plugin {
             buildInfo.WCharSupport = true;
         #endif
 
+        #ifdef THREADPOOL_COUNT
+            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
+        #endif
+
         return (Core::ERROR_NONE);
 
     }
