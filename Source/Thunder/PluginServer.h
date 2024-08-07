@@ -1296,9 +1296,9 @@ namespace PluginHost {
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
             #endif
 
-            std::vector<string> GetLibrarySearchPaths(const string& locator) const override
-            {
-                std::vector<string> all_paths;
+            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override 
+            {   
+                std::list<string> all_paths;
 
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
                 string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
@@ -1335,19 +1335,18 @@ namespace PluginHost {
                     all_paths.push_back(PluginPath() + locator);
                 }
 
-                return all_paths;
+                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(all_paths));
             }
 
             Core::Library LoadLibrary(const string& name) {
                 uint8_t progressedState = 0;
                 Core::Library result;
+                RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
 
-                std::vector<string> all_paths = GetLibrarySearchPaths(name);
-                std::vector<string>::const_iterator iter = std::begin(all_paths);
-
-                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
-                    Core::File libraryToLoad(*iter);
-
+                string element;
+                while((all_paths->Next(element) == true) && (progressedState <= 2)){
+                    Core::File libraryToLoad(element);
+                    
                     if (libraryToLoad.Exists() == true) {
                         if (progressedState == 0) {
                             progressedState = 1;
@@ -1357,13 +1356,13 @@ namespace PluginHost {
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
-                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
+                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
 
-                        if (newLib.IsLoaded() == true) {
+                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
                                 progressedState = 2;
                             }
-
+                            
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
@@ -1380,8 +1379,8 @@ namespace PluginHost {
                             }
                         }
                     }
-                    ++iter;
                 }
+                all_paths -> Release();
 
                 if (HasError() == false) {
                     if (progressedState == 0) {

@@ -41,13 +41,14 @@ namespace PluginHost
             if (locator.empty() == true) {
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
-                std::vector<string> all_paths = GetLibrarySearchPaths(locator);
-                std::vector<string>::const_iterator index = all_paths.begin();
-                while ((result == nullptr) && (index != all_paths.end())) {
-                    Core::File file(index->c_str());
+                RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
+
+                string element;
+                while (all_paths->Next(element) == true){
+                    Core::File file(element.c_str());
                     if (file.Exists())
                     {
-                        Core::Library resource(index->c_str());
+                        Core::Library resource(element.c_str());
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
@@ -55,7 +56,7 @@ namespace PluginHost
                                 version,
                                 interface);
                     }
-                    index++;
+                    
                 }
             }
         } else {
