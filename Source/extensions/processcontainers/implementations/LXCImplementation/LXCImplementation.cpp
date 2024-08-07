@@ -22,6 +22,7 @@
 
 namespace Thunder {
 namespace ProcessContainers {
+
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
             : _current(UINT32_MAX)
             , _interfaces()
@@ -51,7 +52,7 @@ namespace ProcessContainers {
 
             interface.addresses = lxcContainer->get_ips(lxcContainer, interface.name, NULL, 0);
             if (!interface.addresses) {
-                TRACE_L1("Failed to get IP addreses inside container. Interface: %s", interface.name);
+                TRACE_L1("LXC: Failed to get IP addreses inside container. Interface: %s", interface.name);
             }
 
             interface.numAddresses = 0;
@@ -141,7 +142,6 @@ namespace ProcessContainers {
 #endif
     {
         Add(_T("console"), &ConsoleLogging); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB', 0 is off, auto is auto determined
-
         Add(_T("items"), &ConfigItems);
 
 #ifdef __DEBUG__
@@ -159,7 +159,9 @@ namespace ProcessContainers {
     {
         Config config;
         Core::OptionalType<Core::JSON::Error> error;
+
         config.FromString(configuration, error);
+
         if (error.IsSet() == true) {
             SYSLOG(Logging::ParsingError, (_T("Parsing container %s configuration failed with %s"), name.c_str(), ErrorDisplayMessage(error.Value()).c_str()));
         }
@@ -167,6 +169,7 @@ namespace ProcessContainers {
 #ifdef __DEBUG__
         _attach = config.Attach.Value();
 #endif
+
         InheritRequestedEnvironment();
 
         if (config.ConsoleLogging.Value() != _T("0")) {
@@ -183,14 +186,14 @@ namespace ProcessContainers {
         Core::JSON::ArrayType<Config::ConfigItem>::Iterator index(config.ConfigItems.Elements());
         while (index.Next() == true) {
             _lxcContainer->set_config_item(_lxcContainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
-        };
+        }
     }
 
     LXCContainer::~LXCContainer()
     {
-        if (IsRunning()) {
-            Stop(2000);
-        }
+        ASSERT(_lxcContainer == nullptr); // should be released by now!
+
+        TRACE_L2("Destroying container '%s'", _name.c_str());
 
         TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
 
@@ -199,16 +202,18 @@ namespace ProcessContainers {
 
     const string& LXCContainer::Id() const
     {
-        return _name;
+        return (_name);
     }
 
     uint32_t LXCContainer::Pid() const
     {
-        return _pid;
+        return (_pid);
     }
 
     IMemoryInfo* LXCContainer::Memory() const
     {
+        _adminLock.Lock();
+
         ASSERT(_lxcContainer != nullptr);
 
         CGroupMemoryInfo* result = new CGroupMemoryInfo;
@@ -224,11 +229,13 @@ namespace ProcessContainers {
             result->Allocated(allocated);
 
             if (scanned != 1) {
-                TRACE(Trace::Warning, ("Could not read allocated memory of LXC container"));
+                TRACE(Trace::Warning, (_T("Could not read allocated memory of LXC container")));
             }
         }
 
         read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.stat", buffer, sizeof(buffer));
+
+        _adminLock.Unlock();
 
         if ((read > 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
             char name[128];
@@ -245,14 +252,16 @@ namespace ProcessContainers {
 
                 if (strcmp(name, "rss") == 0) {
                     result->Resident(value);
-                } else if (strcmp(name, "mapped_file") == 0) {
+                }
+                else if (strcmp(name, "mapped_file") == 0) {
                     result->Shared(value);
                 }
 
                 position += charsRead;
             }
-        } else {
-            TRACE(Trace::Warning, ("Could not read memory usage of LXC container"));
+        }
+        else {
+            TRACE(Trace::Warning, (_T("Could not read memory usage of LXC container")));
         }
 
         return result;
@@ -260,12 +269,16 @@ namespace ProcessContainers {
 
     IProcessorInfo* LXCContainer::ProcessorInfo() const
     {
-        ASSERT(_lxcContainer != nullptr);
-
         std::vector<uint64_t> cores;
 
         char buffer[512];
+
+        _adminLock.Lock();
+
+        ASSERT(_lxcContainer != nullptr);
         uint32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
+
+        _adminLock.Unlock();
 
         if ((read != 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
             char* pos = buffer;
@@ -285,38 +298,58 @@ namespace ProcessContainers {
                 cores.push_back(value);
                 pos = end;
             }
-        } else {
-            TRACE(Trace::Warning, ("Could not per thread cpu-usage of LXC container"));
+        }
+        else {
+            TRACE(Trace::Warning, (_T("Could not per thread cpu-usage of LXC container")));
         }
 
-        return new CGroupProcessorInfo(std::move(cores));
+        return (new CGroupProcessorInfo(std::move(cores)));
     }
 
     INetworkInterfaceIterator* LXCContainer::NetworkInterfaces() const
     {
-        return new LXCNetworkInterfaceIterator(_lxcContainer);
+        _adminLock.Lock();
+
+        ASSERT(_lxcContainer != nullptr);
+        INetworkInterfaceIterator* it = new LXCNetworkInterfaceIterator(_lxcContainer);
+
+        _adminLock.Unlock();
+
+        return (it);
     }
 
     bool LXCContainer::IsRunning() const
     {
-        return _lxcContainer->is_running(_lxcContainer);
+        _adminLock.Lock();
+
+        ASSERT(_lxcContainer != nullptr);
+        const bool running = (_lxcContainer->is_running(_lxcContainer));
+
+        _adminLock.Unlock();
+
+        return (running);
     }
 
     bool LXCContainer::Start(const string& command, IStringIterator& parameters)
     {
         bool result = false;
 
-        std::vector<const char*> params;
-        params.reserve(parameters.Count() + 2);
         parameters.Reset(0);
 
-        _adminLock.Lock();
+        std::vector<const char*> params;
+        params.reserve(parameters.Count() + 2);
+
         params.push_back(command.c_str());
 
         while (parameters.Next() == true) {
             params.push_back(parameters.Current().c_str());
         }
+
         params.push_back(nullptr);
+
+        _adminLock.Lock();
+
+        TRACE_L2("LXC: Starting container '%s'", _name.c_str());
 
 #ifdef __DEBUG__
         if (_attach == true) {
@@ -328,10 +361,12 @@ namespace ProcessContainers {
                 lxccommand.argv = const_cast<char**>(params.data());
 
                 lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+
                 int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, reinterpret_cast<pid_t*>(&_pid));
                 if (ret != 0) {
                     _lxcContainer->shutdown(_lxcContainer, 0);
                 }
+
                 result = (ret == 0);
             }
         } else
@@ -343,9 +378,11 @@ namespace ProcessContainers {
         if (result == true) {
             _pid = _lxcContainer->init_pid(_lxcContainer);
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] was started successfully! pid=%u"), _name.c_str(), _pid));
-        } else {
+        }
+        else {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] could not be started!"), _name.c_str()));
         }
+
         _adminLock.Unlock();
 
         return result;
@@ -356,46 +393,77 @@ namespace ProcessContainers {
         bool result = true;
 
         _adminLock.Lock();
+
+        TRACE_L2("LXC: Stopping container '%s' (timeout: %i ms)", _name.c_str(), timeout);
+
+        ASSERT(_lxcContainer != nullptr);
+
         if (_lxcContainer->is_running(_lxcContainer) == true) {
+
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container name [%s] Stop activated"), _name.c_str()));
-            int internaltimeout = defaultTimeOutInMSec / 1000;
-#if 0
-            if (timeout == Core::infinite) {
-                internaltimeout = -1;
-            }
 
-            if (internaltimeout != -1) {
-                result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
-            }
+            const int internaltimeout = (((timeout == Core::infinite)? defaultTimeOutInMSec : timeout) / 1000);
 
-            if (internaltimeout == -1 || result == false) {
-                result = _lxcContainer->stop(_lxcContainer);
-            }
-#endif
             result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
-            if (!result){
-                result = _lxcContainer->stop(_lxcContainer);
+            if (result == false) {
+                TRACE(Trace::Error, (_T("Failed to shutdown container '%s'"), _name.c_str()));
+            }
+            else {
+                TRACE_L2("LXC: Container successfully shut down");
+            }
+
+            result = _lxcContainer->stop(_lxcContainer);
+            if (result == false) {
+                TRACE(Trace::Error, (_T("Failed to stop container '%s'"), _name.c_str()));
+            }
+            else {
+                _pid = 0;
+                TRACE_L2("LXC: Container successfully stopped");
             }
         }
 
         _adminLock.Unlock();
 
-        return result;
+        ASSERT(IsRunning() == false);
+
+        return (result);
     }
 
     uint32_t LXCContainer::AddRef() const
     {
+        _adminLock.Lock();
+
+        ASSERT(_lxcContainer != nullptr);
+
         lxc_container_get(_lxcContainer);
-        return(BaseRefCount<IContainer>::AddRef());
+
+        _adminLock.Unlock();
+
+        uint32_t result = BaseRefCount::AddRef();
+
+        return (result);
     }
 
     uint32_t LXCContainer::Release() const
     {
-        uint32_t lxcresult = lxc_container_put(_lxcContainer);
-        uint32_t retval = BaseRefCount<IContainer>::Release();
+        _adminLock.Lock();
 
-        ASSERT((retval != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
-        return retval;
+        ASSERT(_lxcContainer != nullptr);
+
+        const uint32_t lxcresult = lxc_container_put(_lxcContainer);
+
+        if (lxcresult == 1) {
+            // Last put, container is gone
+            _lxcContainer = nullptr;
+        }
+
+        _adminLock.Unlock();
+
+        const uint32_t result = BaseRefCount::Release();
+
+        ASSERT((result != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
+
+        return (result);
     }
 
     void LXCContainer::InheritRequestedEnvironment()
@@ -405,9 +473,12 @@ namespace ProcessContainers {
         // For some reason this doesn't work with current build of lxc, so we have to provide this functionality
         // from by ourselves
 
+        ASSERT(_lxcContainer != nullptr);
+
         uint32_t len = _lxcContainer->get_config_item(_lxcContainer, "lxc.environment", nullptr, 0);
         if (len > 0) {
             char* buffer = new char[len];
+            ASSERT(buffer != nullptr);
 
             uint32_t read = _lxcContainer->get_config_item(_lxcContainer, "lxc.environment", buffer, len);
 
@@ -443,39 +514,58 @@ namespace ProcessContainers {
         lxc_log_close();
     }
 
-    IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration)
+    IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchPaths, const string& containerLogDir, const string& configuration)
     {
         LXCContainer* container = nullptr;
 
-        searchpaths.Reset(0);
-        while ((container == nullptr) && (searchpaths.Next() == true)) {
+        searchPaths.Reset(0);
+
+        while ((container == nullptr) && (searchPaths.Next() == true)) {
+
             LxcContainerType** clist = nullptr;
-            int32_t numberofcontainersfound = list_defined_containers(searchpaths.Current().c_str(), nullptr, &clist);
-            int32_t index = 0;
 
-            while ((container == nullptr) && (index < numberofcontainersfound)) {
-                LxcContainerType* c = clist[index];
-                if (strcmp(c->name, "Container") == 0) {
+            TRACE_L2("LXC: Looking for containers in %s...", searchPaths.Current().c_str());
 
-                    this->InternalLock();
-                    container = new LXCContainer(name, c, containerLogDir, configuration, searchpaths.Current());
-                    InsertContainer(container);
-                    this->InternalUnlock();
-                } else {
-                    lxc_container_put(c);
+            const string& containerPath = searchPaths.Current();
+
+            const int32_t count = list_defined_containers(containerPath.c_str(), nullptr, &clist);
+
+            if ((clist != nullptr) && (count > 0)) {
+
+                int32_t index = 0;
+
+                while ((container == nullptr) && (index < count)) {
+
+                    LxcContainerType* c = clist[index];
+                    ASSERT(c != nullptr);
+
+                    TRACE_L2("LXC: Found container '%s'", c->name);
+
+                    if (strcmp(c->name, _T("Container")) == 0) {
+                        container = new LXCContainer(name, c, containerLogDir, configuration, containerPath);
+                        ASSERT(container != nullptr);
+
+                        InternalLock();
+                        InsertContainer(container);
+                        InternalUnlock();
+
+                        TRACE(Trace::Information, (_T("LXC container '%s' created from %s/Container/config"), name.c_str(), containerPath.c_str()));
+                    }
+                    else {
+                        lxc_container_put(c);
+                    }
+
+                    ++index;
                 }
-                ++index;
-            };
-            if (numberofcontainersfound > 0) {
                 free(clist);
             }
-        };
-
-        if (container == nullptr) {
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));
         }
 
-        return static_cast<IContainer*>(container);
+        if (container == nullptr) {
+            TRACE(Trace::Error, (_T("LXC container configuration for '%s' not found!"), name.c_str()));
+        }
+
+        return (container);
     }
 
     void LXCContainerAdministrator::Logging(const string& globalLogDir, const string& loggingOptions)
@@ -510,9 +600,8 @@ namespace ProcessContainers {
 
     IContainerAdministrator& IContainerAdministrator::Instance()
     {
-        static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
-
-        return myLXCContainerAdministrator;
+        static LXCContainerAdministrator& administrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
+        return (administrator);
     }
 
     constexpr char const* LXCContainerAdministrator::logFileName;
@@ -520,4 +609,4 @@ namespace ProcessContainers {
     constexpr uint32_t LXCContainerAdministrator::maxReadSize;
 
 }
-} //namespace Thunder
+}
