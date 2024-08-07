@@ -51,11 +51,10 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             {
                 _adminLock.Lock();
 
-                while (_controlList.size() > 0) {
-                    VARIABLE_IS_NOT_USED auto& control = *_controlList.front();
+                for_each (_controlList.begin(), _controlList.end(), [this](VARIABLE_IS_NOT_USED Core::Messaging::IControl* const & control) {
                     TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(control).name(), static_cast<uint32_t>(_controlList.size()));
-                    _controlList.front()->Destroy();
                 }
+                );
 
                 _adminLock.Unlock();
             }
@@ -157,9 +156,9 @@ namespace Core {
         {
             uint16_t length = 0;
 
-            ASSERT(bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2)));
+            ASSERT(bufferSize > (sizeof(_type) + _category.size() + 1));
 
-            if (bufferSize > (sizeof(_type) + (sizeof(_category[0]) * 2))) {
+            if (bufferSize > (sizeof(_type) + _category.size() + 1)) {
                 Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
                 Core::FrameType<0>::Reader frameReader(frame, 0);
                 _type = frameReader.Number<type>();
