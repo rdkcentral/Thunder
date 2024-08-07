@@ -43,7 +43,7 @@ namespace PluginHost
             } else {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
                 string element;
-                while (all_paths->Next(element) == true){
+                while (all_paths->Next(element) == true) {
                     Core::File file(element.c_str());
                     if (file.Exists())
                     {
