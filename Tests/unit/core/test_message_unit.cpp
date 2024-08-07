@@ -78,7 +78,6 @@ namespace Core {
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_5"), EXPAND_AND_QUOTE(MODULE_NAME) }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::TRACING, _T("Test_Category_1"), _T("Test_Module2") }));
             _controls.emplace_back(new Control({ ::Thunder::Core::Messaging::Metadata::type::LOGGING, _T("Test_Category_5"), _T("SysLog") }));
-
         }
         ~Core_Messaging_MessageUnit() = default;
 
@@ -93,6 +92,7 @@ namespace Core {
 
         void SetUp() override
         {
+            _activeConfig = false;
         }
 
         void TearDown() override
