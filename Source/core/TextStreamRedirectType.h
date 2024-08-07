@@ -394,121 +394,41 @@ namespace Core {
                 _handle[1] = Core::IResource::INVALID;
             }
             ~ReaderImplementation() override {
-                ASSERT(_handle[0] == Core::IResource::INVALID);
-                ASSERT(_handle[1] == Core::IResource::INVALID);
-                ASSERT(_index != Core::IResource::INVALID);
-                ASSERT(_copy == Core::IResource::INVALID);
-
-                // The original owner of replacing (_index) is responsible for cleaning it up
+                Close();
                 _index = Core::IResource::INVALID;
             }
 
         public:
             bool Open() {
-                // Create a pipe only once
 
                 ASSERT(_index != Core::IResource::INVALID);
-                ASSERT(_handle[0] == Core::IResource::INVALID);
-                ASSERT(_handle[1] == Core::IResource::INVALID);
 
-                if ((_handle[0] == Core::IResource::INVALID) && (::pipe(_handle) != -1)) {
+                if ((_handle[0] == Core::IResource::INVALID) && (::pipe(_handle) == 0)) {
                     _copy = ::dup(_index);
-
-                    ASSERT(_copy != -1);
-
-                    // A copy of some valid file descriptior represented by _index
-
-                    switch(_index) {
-                    case STDERR_FILENO  :   do {} while(false);
-                    case STDIN_FILENO   :   // no sync
-                                            break;
-                    case STDOUT_FILENO  :   do {} while(false);
-                    default             :   {
-                                            int result = ::fsync(_index);
-                                            ASSERT(result != 1);
-                                            }
-                    }
-
-                    // Get flags associated with _handle[0]
+                    ::fsync(_index);
                     int flags = ::fcntl(_handle[0], F_GETFL);
-
-                    ASSERT(flags >= 0);
-
-                    // Set 'old' flags to _handle[0], with one extra flag
-                    int result = ::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
-
-                    ASSERT(result != -1);
-
-                    ASSERT(_handle[1] != Core::IResource::INVALID);
-                    ASSERT(_handle[1] != _index);
-
-                    // For invalid handle _index remains open
-                    // Identical handles have no effect and returns _index, otherwise _index closed, and then _index becomes a copy of _handle[1] 
-                    result = ::dup2(_handle[1], _index);
-
-                    ASSERT(result != -1);
-
-                    result = ::close(_handle[1]);
-
-                    ASSERT(result != -1);
-
+                    ::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
+                    ::dup2(_handle[1], _index);
+                    ::close(_handle[1]);
                     _handle[1] = Core::IResource::INVALID;
+                    ResourceMonitor::Instance().Register(*this);
                 }
-
-                ResourceMonitor::Instance().Register(*this);
-
-                ASSERT(_handle[0] != Core::IResource::INVALID);
-                ASSERT(_handle[1] == Core::IResource::INVALID);
-                ASSERT(_index != Core::IResource::INVALID);
-                ASSERT(_copy != Core::IResource::INVALID);
-
                 return (_handle[0] != Core::IResource::INVALID);
             }
             bool Close() {
-                ASSERT(_handle[0] != Core::IResource::INVALID);
-                ASSERT(_handle[1] == Core::IResource::INVALID);
-                ASSERT(_index != Core::IResource::INVALID);
-                ASSERT(_copy != Core::IResource::INVALID);
-
                 if (_handle[0] != Core::IResource::INVALID) {
-                    switch(_handle[0]) {
-                    case STDERR_FILENO  :   do {} while(false);
-                    case STDIN_FILENO   :   // no sync
-                                            break;
-                    case STDOUT_FILENO  :   do {} while(false);
-                    default             :   {
-                                            int result = ::fsync(_index);
-                                            ASSERT(result != 1);
-                                            }
+
+                    ::fsync(_handle[0]);
+
+                    if (::dup2(_copy, _index) != -1) {
+                        ::close(_handle[0]);
+                        ::close(_copy);
+                        ResourceMonitor::Instance().Unregister(*this);
+                        _handle[0] = Core::IResource::INVALID;
+                        _copy = Core::IResource::INVALID;
+                        Reader::Flush();
                     }
-
-                    int result = ::close(_handle[0]);
-
-                    ASSERT(result != -1);
-
-                    _handle[0] = Core::IResource::INVALID;
                 }
-
-                if (_copy != Core::IResource::INVALID) {
-                    ASSERT(_copy != _index);
-
-                    int result = ::dup2(_copy, _index);
-
-                    ASSERT(result != -1);
-
-                    result = ::close(_copy);
-
-                    ASSERT(result != -1);
-
-                    _copy = Core::IResource::INVALID;
-                }
-
-                ResourceMonitor::Instance().Unregister(*this);
-
-                Reader::Flush();
-
-                ASSERT(_handle[0] == Core::IResource::INVALID);
-
                 return (_handle[0] == Core::IResource::INVALID);
             }
             Core::IResource::handle Origin() const {
