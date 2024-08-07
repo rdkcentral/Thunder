@@ -58,6 +58,7 @@ namespace PluginHost
                     }
                     
                 }
+                all_paths -> Release();
             }
         } else {
             ICOMLink* handler(QueryInterface<ICOMLink>());
