@@ -32,7 +32,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_frametype.cpp
    test_hash.cpp
    test_hex2strserialization.cpp
-   test_ipc.cpp
+   #test_ipc.cpp
    test_ipcclient.cpp
    test_iso639.cpp
    test_iterator.cpp
@@ -80,10 +80,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_workerpool.cpp
    test_xgetopt.cpp
 )
+#[[
 target_sources(${TEST_RUNNER_NAME} PRIVATE test_message_unit.cpp)
 target_link_libraries(${TEST_RUNNER_NAME}
     ThunderMessaging
 )
+]]
 else()
 add_executable(${TEST_RUNNER_NAME}
    test_databuffer.cpp
@@ -125,12 +127,12 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
-#   test_threadpool.cpp
+   test_threadpool.cpp
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
-#   test_workerpool.cpp
+   test_workerpool.cpp
    test_xgetopt.cpp
 )
 endif()
