@@ -119,7 +119,7 @@ namespace Core {
         template <typename... Args>
         inline static SINGLETON& Instance(Args&&... args)
         {
-//            static_assert(sizeof...(Args) == 0, "The use of arguments is deprecated / no longer supported. Use Create(Args...) prior to Instance().");
+            static_assert(sizeof...(Args) == 0, "The use of arguments is deprecated / no longer supported. Use Create(Args...) prior to Instance().");
 
             return (GetObject(TemplateIntToType<sizeof...(Args) == 0>()));
         }
