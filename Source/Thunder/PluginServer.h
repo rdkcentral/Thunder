@@ -1298,7 +1298,7 @@ namespace PluginHost {
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override 
             {   
-                std::list<string> all_paths;
+                std::vector<string> all_paths;
 
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
                 string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
@@ -1341,8 +1341,8 @@ namespace PluginHost {
             Core::Library LoadLibrary(const string& name) {
                 uint8_t progressedState = 0;
                 Core::Library result;
-                RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
 
+                RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
                 string element;
                 while((all_paths->Next(element) == true) && (progressedState <= 2)){
                     Core::File libraryToLoad(element);
@@ -1362,7 +1362,7 @@ namespace PluginHost {
                             if (progressedState == 1) {
                                 progressedState = 2;
                             }
-                            
+
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
@@ -1380,7 +1380,7 @@ namespace PluginHost {
                         }
                     }
                 }
-                all_paths -> Release();
+                all_paths->Release();
 
                 if (HasError() == false) {
                     if (progressedState == 0) {

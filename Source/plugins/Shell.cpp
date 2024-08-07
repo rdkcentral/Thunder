@@ -42,7 +42,6 @@ namespace PluginHost
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
-
                 string element;
                 while (all_paths->Next(element) == true){
                     Core::File file(element.c_str());
@@ -56,9 +55,8 @@ namespace PluginHost
                                 version,
                                 interface);
                     }
-                    
                 }
-                all_paths -> Release();
+                all_paths->Release();
             }
         } else {
             ICOMLink* handler(QueryInterface<ICOMLink>());
