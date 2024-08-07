@@ -424,7 +424,7 @@ namespace Core {
                                             break;
                     case STDOUT_FILENO  :   do {} while(false);
                     default             :   {
-                                            VARIABLE_IS_NOT_USED int result = ::fsync(_index);
+                                            int result = ::fsync(_index);
                                             ASSERT(result != 1);
                                             }
                     }
@@ -435,7 +435,7 @@ namespace Core {
                     ASSERT(flags >= 0);
 
                     // Set 'old' flags to _handle[0], with one extra flag
-                    VARIABLE_IS_NOT_USED int result = ::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
+                    int result = ::fcntl(_handle[0], F_SETFL, (flags | O_NONBLOCK));
 
                     ASSERT(result != -1);
 
@@ -477,12 +477,12 @@ namespace Core {
                                             break;
                     case STDOUT_FILENO  :   do {} while(false);
                     default             :   {
-                                            VARIABLE_IS_NOT_USED int result = ::fsync(_index);
+                                            int result = ::fsync(_index);
                                             ASSERT(result != 1);
                                             }
                     }
 
-                    VARIABLE_IS_NOT_USED int result = ::close(_handle[0]);
+                    int result = ::close(_handle[0]);
 
                     ASSERT(result != -1);
 
@@ -492,7 +492,7 @@ namespace Core {
                 if (_copy != Core::IResource::INVALID) {
                     ASSERT(_copy != _index);
 
-                    VARIABLE_IS_NOT_USED int result = ::dup2(_copy, _index);
+                    int result = ::dup2(_copy, _index);
 
                     ASSERT(result != -1);
 
