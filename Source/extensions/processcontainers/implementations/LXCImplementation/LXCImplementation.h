@@ -172,8 +172,8 @@ namespace ProcessContainers {
         friend class Core::SingletonType<LXCContainerAdministrator>;
 
     private:
-        static constexpr char const* logFileName = "lxclogging.log";
-        static constexpr char const* configFileName = "config";
+        static constexpr TCHAR const* logFileName = "lxclogging.log";
+        static constexpr TCHAR const* configFileName = "config";
         static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
 
     private:
@@ -187,9 +187,6 @@ namespace ProcessContainers {
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
 
         void Logging(const string& globalLogDir, const string& loggingOptions) override;
-
-    private:
-        string _globalLogDir;
     };
 
 }
