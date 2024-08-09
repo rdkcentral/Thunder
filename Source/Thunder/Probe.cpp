@@ -174,7 +174,7 @@ namespace Plugin {
     }
 
     // Notification of a Response send.
-    /* virtual */ void Probe::Listener::Send(const Core::ProxyType<Web::Response>& response)
+    /* virtual */ void Probe::Listener::Send(const Core::ProxyType<Web::Response>& response VARIABLE_IS_NOT_USED)
     {
         TRACE(Discovery, (response, _destinations.front()._destination));
 

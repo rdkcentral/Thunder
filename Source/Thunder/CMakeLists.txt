@@ -60,6 +60,7 @@ endif()
 
 target_link_libraries(${TARGET}
         PRIVATE
+          CompileSettings::CompileSettings
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo

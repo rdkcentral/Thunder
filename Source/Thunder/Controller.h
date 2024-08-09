@@ -330,6 +330,7 @@ namespace Plugin {
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
         Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
         Core::hresult Version(IMetadata::Data::Version& version) const override;
+        Core::hresult BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const override;
 
         // IShells overrides
         Core::hresult Register(Exchange::Controller::IShells::INotification* sink) override;
