@@ -744,13 +744,17 @@ namespace Core {
                 bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
+                    TYPE previous = _value;
+                    TYPE current = _value;
                     if (isdigit(stream[loaded])) {
                         _value *= (_set & 0x1F);
                         _value += (stream[loaded] - '0');
                         loaded++;
+                        current = _value / (_set & 0x1F);
                     } else if (isxdigit(stream[loaded])) {
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
+                        current = _value / 16;
                         loaded++;
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
@@ -761,6 +765,12 @@ namespace Core {
                         // Oopsie daisy, error, computer says *NO*
                         error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                         ++loaded;
+                        _set |= ERROR;
+                        completed = true;
+                    }
+
+                    if (previous != current) {
+                        error = Error{ "Integer overflow is detected, it should be in the integer type range" };
                         _set |= ERROR;
                         completed = true;
                     }
