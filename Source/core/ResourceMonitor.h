@@ -424,7 +424,8 @@ POP_WARNING()
 
                 if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
                     index = _resources.erase(index);
-                } else {
+                }
+                else {
                     _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
                     _descriptorArray[filledFileDescriptors].events = events;
                     _descriptorArray[filledFileDescriptors].revents = 0;
@@ -442,8 +443,8 @@ POP_WARNING()
 
                 if (result == -1) {
                     TRACE_L1("poll failed with error <%d>", errno);
-
-                } else if (_descriptorArray[0].revents & POLLIN) {
+                }
+                else if (_descriptorArray[0].revents & POLLIN) {
                     #ifdef __APPLE__
                     int info;
                     #else
@@ -462,18 +463,6 @@ POP_WARNING()
 
                 while (fd_index < filledFileDescriptors) {
                     ASSERT(index != _resources.end());
-
-                    if (capacity != _resources.capacity()) {
-                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
-                        index = _resources.begin();
-                        int current = fd_index;
-
-                        while ((index != _resources.end()) && (current > 1)) {
-                            index++;
-                            current--;
-                        }
-                        capacity = _resources.capacity();
-                    }
 
                     RESOURCE* entry = (*index);
 
@@ -494,10 +483,25 @@ POP_WARNING()
                         Reset();
                     }
 
-                    index++;
                     fd_index++;
+
+                    if (capacity == _resources.capacity()) {
+                        index++;
+                    }
+                    else {
+                        // vector's capacity was changed, which means its memory was reallocated and we have to adjust the index
+                        index = _resources.begin();
+                        int current = fd_index;
+
+                        while ((index != _resources.end()) && (current > 1)) {
+                            index++;
+                            current--;
+                        }
+                        capacity = _resources.capacity();
+                    }
                 }
-            } else {
+            }
+            else {
                 _monitor->Block();
                 delay = Core::infinite;
             }
