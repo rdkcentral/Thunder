@@ -189,30 +189,41 @@ namespace Core {
 
     TEST_F(Core_MessageDispatcher, WriteAndReadDataAreEqualInDifferentProcesses)
     {
-        auto lambdaFunc = [this](IPTestAdministrator& testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Messaging::MessageDataBuffer dispatcher(this->_identifier, this->_instanceId, this->_basePath, DATA_SIZE, 0, false);
 
             uint8_t readData[4];
             uint16_t readLength = sizeof(readData);
 
-            // Arbitrary timeout value, 1 second
-            ASSERT_EQ(dispatcher.Wait(1000), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(dispatcher.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(dispatcher.PopData(readLength, readData), ::Thunder::Core::ERROR_NONE);
 
             ASSERT_EQ(readLength, 2);
             ASSERT_EQ(readData[0], 13);
             ASSERT_EQ(readData[1], 37);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void(IPTestAdministrator&)> lambdaVar = lambdaFunc;
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) { lambdaVar(testAdmin); };
-
         // This side (tested) acts as writer
-        IPTestAdministrator testAdmin(otherSide);
-        {
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
+
             uint8_t testData[2] = { 13, 37 };
             ASSERT_EQ(_dispatcher->PushData(sizeof(testData), testData), ::Thunder::Core::ERROR_NONE);
-        }
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST_F(Core_MessageDispatcher, PushDataShouldNotFitWhenExcedingDataBufferSize)
