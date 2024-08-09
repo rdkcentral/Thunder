@@ -26,10 +26,9 @@
 #endif
 
 #include <core/core.h>
+#include <messaging/messaging.h>
 
 #include "../IPTestAdministrator.h"
-
-#include <messaging/messaging.h>
 
 namespace Thunder {
 

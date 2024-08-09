@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
@@ -108,14 +109,17 @@ namespace ProcessContainers {
             };
 
         public:
-            Config(const Config&) = delete;
-            Config& operator=(const Config&) = delete;
-
             Config();
+            Config(const Config&) = delete;
+            Config(Config&&) = delete;
+            Config& operator=(const Config&) = delete;
+            Config& operator=(Config&&) = delete;
             ~Config() override = default;
 
+        public:
             Core::JSON::String ConsoleLogging;
             Core::JSON::ArrayType<ConfigItem> ConfigItems;
+
 #ifdef __DEBUG__
             Core::JSON::Boolean Attach;
 #endif
@@ -126,19 +130,21 @@ namespace ProcessContainers {
 
         friend class LXCContainerAdministrator;
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
+
     public:
         LXCContainer(const LXCContainer&) = delete;
+        LXCContainer(LXCContainer&&) = delete;
         ~LXCContainer() override;
-
         LXCContainer& operator=(const LXCContainer&) = delete;
+        LXCContainer& operator=(LXCContainer&&) = delete;
 
+    public:
         const string& Id() const override;
         uint32_t Pid() const override;
         IMemoryInfo* Memory() const override;
         IProcessorInfo* ProcessorInfo() const override;
         INetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
-
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
@@ -154,7 +160,8 @@ namespace ProcessContainers {
         string _lxcPath;
         string _containerLogDir;
         mutable Core::CriticalSection _adminLock;
-        LxcContainerType* _lxcContainer;
+        mutable LxcContainerType* _lxcContainer;
+
 #ifdef __DEBUG__
         bool _attach;
 #endif
@@ -165,9 +172,10 @@ namespace ProcessContainers {
         friend class Core::SingletonType<LXCContainerAdministrator>;
 
     private:
-        static constexpr char const* logFileName = "lxclogging.log";
-        static constexpr char const* configFileName = "config";
+        static constexpr TCHAR const* logFileName = "lxclogging.log";
+        static constexpr TCHAR const* configFileName = "config";
         static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
+
     private:
         LXCContainerAdministrator();
 
@@ -179,9 +187,6 @@ namespace ProcessContainers {
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
 
         void Logging(const string& globalLogDir, const string& loggingOptions) override;
-
-    private:
-        string _globalLogDir;
     };
 
 }

@@ -23,7 +23,6 @@
 #include "../Module.h"
 #endif
 
-#include <core/core.h>
 #include <websocket/websocket.h>
 
 #include "../IPTestAdministrator.h"
@@ -35,6 +34,8 @@ namespace Core {
     class WebServer : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > {
     private:
         typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > BaseClass;
+
+        constexpr static uint32_t maxWaitTimeMs = 4000;
 
     public:
         WebServer() = delete;
@@ -48,7 +49,7 @@ namespace Core {
 
         virtual ~WebServer()
         {
-            Close(::Thunder::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
@@ -70,7 +71,8 @@ namespace Core {
             ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<Web::TextBody>(request->Body<Web::TextBody>());
-            Submit(response);
+
+            EXPECT_TRUE(Submit(response));
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Response>& response)
@@ -93,6 +95,8 @@ namespace Core {
     private:
         typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
+        static constexpr uint32_t maxWaitTimeMs = 4000;
+
     public:
         WebClient() = delete;
         WebClient(const WebClient& copy) = delete;
@@ -106,7 +110,7 @@ namespace Core {
 
         virtual ~WebClient()
         {
-            Close(::Thunder::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
@@ -127,7 +131,8 @@ namespace Core {
             EXPECT_EQ(response->ContentLength.Value(), 19u);
 
             _dataReceived = *(response->Body<Web::TextBody>());
-            _dataPending.Unlock();
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Request>& request)
@@ -140,7 +145,7 @@ namespace Core {
         {
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -163,38 +168,63 @@ namespace Core {
 
     TEST(WebLink, Text)
     {
-        std::string connector {"127.0.0.1"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"127.0.0.1"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::SocketServerType<WebServer> _webServer(::Thunder::Core::NodeId(connector.c_str(), 12343));
-            _webServer.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("setup server");
-            testAdmin.Sync("client done");
+
+            ASSERT_EQ(_webServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(_webServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
             WebClient webConnector(::Thunder::Core::NodeId(connector.c_str(), 12343));
+
             ::Thunder::Core::ProxyType<Web::Request> webRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
             ::Thunder::Core::ProxyType<Web::TextBody> webRequestBody(::Thunder::Core::ProxyType<Web::TextBody>::Create());
+        
             webRequest->Body<Web::TextBody>(webRequestBody);
-            webConnector.Open(::Thunder::Core::infinite);
-            while (!webConnector.IsOpen());
-            webRequest->Verb = Web::Request::HTTP_GET;
-            string sent = "Just a body to send";
-            *webRequestBody = sent;
-            webConnector.Submit(webRequest);
 
-            webConnector.Wait();
+            ASSERT_EQ(webConnector.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        
+            ASSERT_TRUE(webConnector.IsOpen());
+
+            webRequest->Verb = Web::Request::HTTP_GET;
+
+            // True object
+            ASSERT_TRUE(webRequest->IsValid());
+ 
+            string sent = "Just a body to send";
+        
+            *webRequestBody = sent;
+
+            EXPECT_TRUE(webConnector.Submit(webRequest));
+
+            ASSERT_EQ(webConnector.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             webConnector.Retrieve(received);
+
             EXPECT_STREQ(received.c_str(), sent.c_str());
-            testAdmin.Sync("client done");
-        }
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        // Code after this line is executed by both parent and child
+
         ::Thunder::Core::Singleton::Dispose();
     }
 

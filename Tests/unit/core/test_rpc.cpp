@@ -221,7 +221,7 @@ namespace Exchange {
         public:
             ExternalAccess() = delete;
             ExternalAccess(const ExternalAccess &) = delete;
-            ExternalAccess & operator=(const ExternalAccess &) = delete;
+            ExternalAccess& operator=(const ExternalAccess &) = delete;
 
             ExternalAccess(const ::Thunder::Core::NodeId & source)
                 : ::Thunder::RPC::Communicator(source, _T(""))
@@ -251,59 +251,62 @@ namespace Exchange {
 
     TEST(Core_RPC, adder)
     {
-#ifndef __APPLE__
-       std::string connector{"/tmp/wperpc01"};
-       auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-          ::Thunder::Core::NodeId remoteNode(connector.c_str());
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
-          ExternalAccess communicator(remoteNode);
+        const std::string connector{"/tmp/wperpc01"};
 
-          testAdmin.Sync("setup server");
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
-          testAdmin.Sync("done testing");
+            ExternalAccess communicator(remoteNode);
 
-          communicator.Close(::Thunder::Core::infinite);
-       };
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-       static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+            EXPECT_EQ(communicator.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
 
-       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // A small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-       IPTestAdministrator testAdmin(otherSide);
+            ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
-       testAdmin.Sync("setup server");
+            ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
+            ASSERT_TRUE(engine.IsValid());
 
-       {
-          ::Thunder::Core::NodeId remoteNode(connector.c_str());
+            ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client = ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(remoteNode, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
+            ASSERT_TRUE(client.IsValid());
 
-          ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
-          EXPECT_TRUE(engine.IsValid());
-          ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client = ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(remoteNode, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
-          EXPECT_TRUE(client.IsValid());
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-          // Create remote instance of "Thunder::Tests::Core::Exchange::IAdder".
-          Thunder::Tests::Core::Exchange::IAdder * adder = client->Open<Thunder::Tests::Core::Exchange::IAdder>(_T("Adder"));
+            // Create remote instance of "Thunder::Tests::Core::Exchange::IAdder".
+            Thunder::Tests::Core::Exchange::IAdder* adder = client->Open<Thunder::Tests::Core::Exchange::IAdder>(_T("Adder"));
+            ASSERT_TRUE(adder != nullptr);
 
-          ASSERT_TRUE(adder != nullptr);
+            // Perform some arithmatic.
+            EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
+            adder->Add(20);
+            EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
+            adder->Add(22);
+            EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
 
-          // Perform some arithmatic.
-          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
-          adder->Add(20);
-          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
-          adder->Add(22);
-          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
+            // Make sure other side is indeed running in other process.
+            EXPECT_NE(adder->GetPid(), static_cast<uint32_t>(getpid()));
 
-          // Make sure other side is indeed running in other process.
-          EXPECT_NE(adder->GetPid(), (uint32_t)getpid());
+            EXPECT_EQ(adder->Release(), ::Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED);
 
-          adder->Release();
+            ASSERT_EQ(client->Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-          client->Close(::Thunder::Core::infinite);
-       }
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
 
-       testAdmin.Sync("done testing");
-       ::Thunder::Core::Singleton::Dispose();
-#endif
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

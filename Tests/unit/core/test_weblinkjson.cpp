@@ -106,6 +106,8 @@ namespace Core {
     private:
         typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request>&> BaseClass;
 
+        constexpr static uint32_t maxWaitTimeMs = 4000;
+
     public:
         JSONWebServer() = delete;
         JSONWebServer(const JSONWebServer& copy) = delete;
@@ -120,7 +122,7 @@ namespace Core {
 
         virtual ~JSONWebServer()
         {
-            Close(::Thunder::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
@@ -142,7 +144,8 @@ namespace Core {
             ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<CommandBody>(request->Body<CommandBody>());
-            Submit(response);
+
+            EXPECT_TRUE(Submit(response));
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Response>& response)
@@ -164,6 +167,8 @@ namespace Core {
     private:
         typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
+        static constexpr uint32_t maxWaitTimeMs = 4000;
+
     public:
         JSONWebClient() = delete;
         JSONWebClient(const JSONWebClient& copy) = delete;
@@ -179,7 +184,7 @@ namespace Core {
 
         virtual ~JSONWebClient()
         {
-            Close(::Thunder::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
@@ -199,8 +204,9 @@ namespace Core {
             EXPECT_TRUE(response->HasBody());
             EXPECT_EQ(response->ContentLength.Value(), 60u);
 
-            response->Body<CommandBody>()->ToString(_dataReceived);
-            _dataPending.Unlock();
+            EXPECT_TRUE(response->Body<CommandBody>()->ToString(_dataReceived));
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
         virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request)
@@ -213,7 +219,7 @@ namespace Core {
         {
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -233,42 +239,72 @@ namespace Core {
 
     TEST(WebLink, Json)
     {
-        std::string connector {"0.0.0.0"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"0.0.0.0"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             ::Thunder::Core::SocketServerType<JSONWebServer> webServer(::Thunder::Core::NodeId(connector.c_str(), 12341));
-            webServer.Open(::Thunder::Core::infinite);
-            testAdmin.Sync("setup server");
-            testAdmin.Sync("client done");
+
+            ASSERT_EQ(webServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(webServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
             JSONWebClient jsonWebConnector(::Thunder::Core::NodeId(connector.c_str(), 12341));
+
             ::Thunder::Core::ProxyType<Web::Request> jsonRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
             ::Thunder::Core::ProxyType<CommandBody> jsonRequestBody(::Thunder::Core::ProxyType<CommandBody>::Create());
+        
+            // ProxyType
+            ASSERT_TRUE(jsonRequest.IsValid());
+            // ProxyType
+            ASSERT_TRUE(jsonRequestBody.IsValid());
+
             jsonRequest->Body<CommandBody>(jsonRequestBody);
-            jsonWebConnector.Open(::Thunder::Core::infinite);
-            while (!jsonWebConnector.IsOpen());
+
+            ASSERT_EQ(jsonWebConnector.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_TRUE(jsonWebConnector.IsOpen());
+        
             jsonRequest->Verb = Web::Request::HTTP_GET;
             jsonRequestBody->Identifier = 123;
             jsonRequestBody->Name = _T("TestCase");
             jsonRequestBody->Params.Speed = 4321;
-            string sent;
-            jsonRequestBody->ToString(sent);
-            jsonWebConnector.Submit(jsonRequest);
 
-            jsonWebConnector.Wait();
+            // True object
+            ASSERT_TRUE(jsonRequest->IsValid());
+ 
+            string sent;
+            EXPECT_TRUE(jsonRequestBody->ToString(sent));
+
+            EXPECT_TRUE(jsonWebConnector.Submit(jsonRequest));
+
+            EXPECT_EQ(jsonWebConnector.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             jsonWebConnector.Retrieve(received);
+
             EXPECT_STREQ(received.c_str(), sent.c_str());
-            testAdmin.Sync("client done");
-       }
-       ::Thunder::Core::Singleton::Dispose();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
 } // Core

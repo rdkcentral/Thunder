@@ -29,9 +29,6 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    
-    
-
     enum class TestState {
         TEST_INIT = 0x00,
         TEST_MESSAGE = 0x01,
