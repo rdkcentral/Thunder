@@ -34,7 +34,7 @@ During plugin activation, the library is loaded, constructed and the `Initialize
 When a plugin is deactivated the reverse happens; the `Deinitialize()` method is called, the plugin moves to the Deactivated state and the library is destructed and unloaded. As a result, once a plugin is deactivated it is safe to replace the library file (perhaps to upgrade to a new version) without needing to restart the framework.
 
 !!! note
-	All plugin libraries will be quickly loaded & unloaded once during WPEFramework startup regardless of plugin start mode to retrieve the version information.
+	All plugin libraries will be quickly loaded & unloaded once during Thunder startup regardless of plugin start mode to retrieve the version information.
 
 Every plugin **must** implement the `Initialize()` and `Deinitialize()` methods from the `IPlugin` interface, which are called during plugin activation and deactivation respectively. After `Initialize()` completes, the plugin must be in a state where it is ready to respond to incoming method calls. 
 
@@ -399,7 +399,7 @@ There are multiple options for controlling plugin state over COM-RPC:
 #include <core/core.h>
 #include <plugins/plugins.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 int main(int argc, char const* argv[])
 {
@@ -441,7 +441,7 @@ int main(int argc, char const* argv[])
 #include <core/core.h>
 #include <plugins/plugins.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 int main(int argc, char const* argv[])
 {
@@ -486,7 +486,7 @@ int main(int argc, char const* argv[])
 #include <core/core.h>
 #include <plugins/plugins.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 int main(int argc, char const* argv[])
 {
@@ -582,7 +582,7 @@ For the sake of an example, the below code will subscribe to state change notifi
 #include <core/core.h>
 #include <plugins/plugins.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 class StateChangeNotification : public Exchange::IController::ILifeTime::INotification {
 public:

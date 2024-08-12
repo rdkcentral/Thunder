@@ -25,7 +25,7 @@
 #include "BaseCategory.h"
 #include "MessageUnit.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Logging {
 
@@ -73,31 +73,31 @@ namespace Logging {
 #ifdef __WINDOWS__
 
 #define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
-    DEFINE_MESSAGING_CATEGORY(WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
+    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
 
 #else
 
 #define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
-    DEFINE_MESSAGING_CATEGORY(WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                         \
+    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                         \
     template<>                                                                                                                                    \
-    EXTERNAL typename WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control;
+    EXTERNAL typename Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control;
 
 #endif
 
-#define SYSLOG_ANNOUNCE(CATEGORY) template<> WPEFramework::Logging::BaseLoggingType<CATEGORY>::Control WPEFramework::Logging::BaseLoggingType<CATEGORY>::_control(true)
+#define SYSLOG_ANNOUNCE(CATEGORY) template<> Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control(true)
 
 #define SYSLOG(CATEGORY, PARAMETERS)                                                                                                              \
     do {                                                                                                                                          \
-        static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
+        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
         if (CATEGORY::IsEnabled() == true) {                                                                                                      \
             CATEGORY __data__ PARAMETERS;                                                                                                         \
-            WPEFramework::Core::Messaging::MessageInfo __info__(                                                                                  \
+            Thunder::Core::Messaging::MessageInfo __info__(                                                                                  \
                 CATEGORY::Metadata(),                                                                                                             \
-                WPEFramework::Core::Time::Now().Ticks()                                                                                           \
+                Thunder::Core::Time::Now().Ticks()                                                                                           \
             );                                                                                                                                    \
-            WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
+            Thunder::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
+            Thunder::Messaging::TextMessage __message__(__data__.Data());                                                                    \
+            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
         }                                                                                                                                         \
     } while(false)
 

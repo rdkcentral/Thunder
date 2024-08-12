@@ -25,7 +25,7 @@
 #include "Administrator.h"
 #include "Messages.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace RPC {
     class Communicator;
@@ -52,10 +52,10 @@ namespace ProxyStub {
         inline uint16_t Length() const {
             return (3);
         }
-	    virtual Core::IUnknown* Convert(void* incomingData) const {
+        virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
         }
-	    virtual uint32_t InterfaceId() const {
+        virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
@@ -87,14 +87,15 @@ namespace ProxyStub {
         {
             return (_myHandlerCount + UnknownStub::Length());
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const
+        Core::IUnknown* Convert(void* incomingData) const override
         {
             return (reinterpret_cast<INTERFACE*>(incomingData));
         }
-    	virtual uint32_t InterfaceId() const {
+    	uint32_t InterfaceId() const override
+        {
             return (INTERFACE::ID);
         }
-        virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
+        void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) override
         {
             uint16_t baseNumber(UnknownStub::Length());
 
@@ -138,7 +139,7 @@ namespace ProxyStub {
         UnknownProxy& operator=(UnknownProxy&&) = delete;
         UnknownProxy& operator=(const UnknownProxy&) = delete;
 
-        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
+        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent, const char* name)
             : _adminLock()
             , _refCount(1)
             , _mode(outbound ? 0 : CACHING_ADDREF)
@@ -147,13 +148,15 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
+            , _name(&(name[7])) /* It always starts with "struct ", remove it...*/
         {
         }
         virtual ~UnknownProxy() = default;
 
     public:
         uint32_t ReferenceCount() const {
-            return(_refCount);
+            // Subtract 1, as that is for the holding in the administration system here of the created Proxies
+            return(_refCount - 1);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
@@ -284,6 +287,10 @@ namespace ProxyStub {
         {
             return (_implementation);
         }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_channel);
+        }
 
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy environment calls
@@ -298,18 +305,18 @@ namespace ProxyStub {
         }
         inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
-	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
-		
+    	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+
             _adminLock.Lock();
-	    Core::ProxyType<Core::IPCChannel> channel (_channel);
+	        Core::ProxyType<Core::IPCChannel> channel (_channel);
             _adminLock.Unlock();
-		
+
             if (channel.IsValid() == true) {
 	            result = channel->Invoke(message, waitTime);
-	
+
 	            if (result != Core::ERROR_NONE) {
 	                result |= COM_ERROR;
-	
+
 	                // Oops something failed on the communication. Report it.
 	                TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
 	            }
@@ -395,7 +402,10 @@ namespace ProxyStub {
 
             return (result);
         }
- 
+        inline const char* Name() const {
+            return (_name);
+        }
+
     private:
         friend RPC::Administrator;
 
@@ -422,9 +432,9 @@ namespace ProxyStub {
         // and the clearing of the _channel is also only called from there,
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
-        uintptr_t LinkId() const
+        uint32_t Id() const
         {
-            return (_channel.IsValid() ? _channel->LinkId() : 0);
+            return (_channel.IsValid() ? _channel->Id() : 0);
         }
         void Invalidate() {
             ASSERT(_refCount > 0);
@@ -442,6 +452,7 @@ namespace ProxyStub {
         Core::IUnknown& _parent;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
         uint32_t _remoteReferences;
+        const char* _name;
     };
 
     template <typename INTERFACE>
@@ -451,12 +462,14 @@ namespace ProxyStub {
         using IPCMessage = Core::ProxyType<RPC::InvokeMessage>;
 
     public:
+        UnknownProxyType(UnknownProxyType<INTERFACE>&&) = delete;
         UnknownProxyType(const UnknownProxyType<INTERFACE>&) = delete;
+        UnknownProxyType<INTERFACE>& operator=(UnknownProxyType<INTERFACE>&&) = delete;
         UnknownProxyType<INTERFACE>& operator=(const UnknownProxyType<INTERFACE>&) = delete;
 
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool outbound)
-            : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
+            : _unknown(channel, implementation, INTERFACE::ID, outbound, *this, typeid(INTERFACE).name())
         {
         }
         POP_WARNING()
@@ -486,6 +499,10 @@ namespace ProxyStub {
         uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how)
         {
             return (_unknown.Complete(instance, id, how));
+        }
+        // Required by proxystubs!
+        const Core::ProxyType<Core::IPCChannel>& Channel() const {
+            return (_unknown.Channel());
         }
 
         // -------------------------------------------------------------------------------------------------------------------------------

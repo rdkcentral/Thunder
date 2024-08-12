@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
     namespace JSONRPC {
 
@@ -1491,4 +1491,4 @@ namespace WPEFramework {
             string _callsign;
         };
     }
-} // namespace WPEFramework::JSONRPC
+} // namespace Thunder::JSONRPC

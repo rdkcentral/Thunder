@@ -219,7 +219,7 @@ static int getopt(int argc, TCHAR* argv[], TCHAR* optstring)
 
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     void Options::Parse()
     {

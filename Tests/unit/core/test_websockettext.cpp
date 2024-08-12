@@ -17,27 +17,34 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
-#include <gtest/gtest.h>
-#include <core/core.h>
-#include <websocket/websocket.h>
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
-namespace Tests {
+#include <gtest/gtest.h>
 
-    class TextSocketServer : public Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+#include <websocket/websocket.h>
+
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
+namespace Tests {
+namespace Core {
+
+    class TextSocketServer : public ::Thunder::Core::StreamTextType<Web::WebSocketServerType<::Thunder::Core::SocketStream>, ::Thunder::Core::TerminatorCarriageReturn> {
     private:
-        typedef Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
+        typedef ::Thunder::Core::StreamTextType<Web::WebSocketServerType<::Thunder::Core::SocketStream>, ::Thunder::Core::TerminatorCarriageReturn> BaseClass;
 
     public:
         TextSocketServer() = delete;
 	    TextSocketServer(const TextSocketServer&) = delete;
 	    TextSocketServer& operator=(const TextSocketServer&) = delete;
 
-        TextSocketServer(const SOCKET& socket, const WPEFramework::Core::NodeId& remoteNode, WPEFramework::Core::SocketServerType<TextSocketServer>*)
+        TextSocketServer(const SOCKET& socket, const ::Thunder::Core::NodeId& remoteNode, ::Thunder::Core::SocketServerType<TextSocketServer>*)
             : BaseClass(false, true, false, socket, remoteNode, 1024, 1024)
         {
         }
@@ -82,16 +89,16 @@ namespace Tests {
     std::mutex TextSocketServer::_mutex;
     std::condition_variable TextSocketServer::_cv;
 
-    class TextSocketClient : public Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
+    class TextSocketClient : public ::Thunder::Core::StreamTextType<Web::WebSocketClientType<::Thunder::Core::SocketStream>, ::Thunder::Core::TerminatorCarriageReturn> {
     private:
-		typedef Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
+		typedef ::Thunder::Core::StreamTextType<Web::WebSocketClientType<::Thunder::Core::SocketStream>, ::Thunder::Core::TerminatorCarriageReturn> BaseClass;
 
     public:
         TextSocketClient() = delete;
 	    TextSocketClient(const TextSocketClient&) = delete;
         TextSocketClient& operator=(const TextSocketClient&) = delete;
 
-        TextSocketClient(const Core::NodeId& remoteNode)
+        TextSocketClient(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(_T("/"), _T("echo"), "", "", false, true, false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _dataPending(false, false)
         {
@@ -105,7 +112,8 @@ namespace Tests {
 	    virtual void Received(string& text)
 	    {
             _dataReceived = text;
-            _dataPending.Unlock();
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
 	    }
 
         virtual void Send(const string& text)
@@ -116,7 +124,7 @@ namespace Tests {
         {
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -129,46 +137,71 @@ namespace Tests {
 
     private:
         string _dataReceived;
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
     };
 
-    TEST(WebSocket, DISABLED_Text)
+    TEST(WebSocket, Text)
     {
-        std::string connector {"/tmp/wpewebsockettext0"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextSocketServer> textWebSocketServer(Core::NodeId(connector.c_str()));
-            textWebSocketServer.Open(Core::infinite);
-            testAdmin.Sync("setup server");
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"/tmp/wpewebsockettext0"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<TextSocketServer> textWebSocketServer(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(textWebSocketServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             std::unique_lock<std::mutex> lk(TextSocketServer::_mutex);
+
             while (!TextSocketServer::GetState()) {
                 TextSocketServer::_cv.wait(lk);
             }
 
-            testAdmin.Sync("server open");
-            testAdmin.Sync("client done");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(textWebSocketServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
-            TextSocketClient textWebSocketClient(Core::NodeId(connector.c_str()));
-            textWebSocketClient.Open(Core::infinite);
-            testAdmin.Sync("server open");
+            TextSocketClient textWebSocketClient(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(textWebSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_TRUE(textWebSocketClient.IsOpen());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             string sentString = "Test String";
+
             textWebSocketClient.Submit(sentString);
-            textWebSocketClient.Wait();
+
+            EXPECT_EQ(textWebSocketClient.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             textWebSocketClient.Retrieve(received);
+
             EXPECT_STREQ(sentString.c_str(), received.c_str());
-            textWebSocketClient.Close(Core::infinite);
-            testAdmin.Sync("client done");
-        }
-        Core::Singleton::Dispose();
+
+            EXPECT_EQ(textWebSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

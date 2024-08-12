@@ -28,7 +28,7 @@
 #include <pwd.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     struct AccessControl {

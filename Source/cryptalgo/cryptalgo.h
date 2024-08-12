@@ -36,3 +36,5 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "cryptalgo.lib")
 #endif
+
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Crypto)

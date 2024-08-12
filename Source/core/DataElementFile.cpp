@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     DataElementFile::DataElementFile(File& file, const uint32_t type)
         : DataElement()

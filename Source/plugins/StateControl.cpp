@@ -20,7 +20,7 @@
 #include "Module.h"
 #include "IStateControl.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(PluginHost::IStateControl::state)
 

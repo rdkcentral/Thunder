@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "MessageStore.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace WarningReporting { 
 

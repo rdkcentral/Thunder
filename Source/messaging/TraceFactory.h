@@ -20,7 +20,7 @@
 #pragma once
 #include "TextMessage.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 

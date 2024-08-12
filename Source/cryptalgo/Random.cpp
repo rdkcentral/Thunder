@@ -31,7 +31,7 @@
 #include <openssl/rand.h>
 #endif // SECURESOCKETS_ENABLED
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     // --------------------------------------------------------------------------------------------
     // RANDOM functionality
@@ -215,4 +215,4 @@ namespace Crypto {
 #endif
     }
 }
-} // namespace WPEFramework::Crypto
+} // namespace Thunder::Crypto

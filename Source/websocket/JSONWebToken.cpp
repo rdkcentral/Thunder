@@ -19,7 +19,7 @@
 
 #include "JSONWebToken.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Web::JSONWebToken::mode)
 
@@ -193,4 +193,4 @@ namespace Web
         }
         return (result);
     }
-} } // namespace WPEFramework::Web
+} } // namespace Thunder::Web

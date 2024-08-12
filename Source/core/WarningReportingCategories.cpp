@@ -21,7 +21,7 @@
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace WarningReporting {
 

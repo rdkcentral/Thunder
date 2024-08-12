@@ -24,6 +24,9 @@
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
+
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
+
 extern "C" {
 #include <crun/container.h>
 #include <crun/error.h>
@@ -31,7 +34,9 @@ extern "C" {
 #include <crun/utils.h>
 }
 
-namespace WPEFramework {
+POP_WARNING()
+
+namespace Thunder {
 namespace ProcessContainers {
 
     class CRunContainer : public BaseRefCount<IContainer> {

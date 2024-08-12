@@ -34,7 +34,7 @@
 #define ROOT_META_DATA_1 RootMetaData_
 #define ROOT_META_DATA CONCAT_STRINGS(ROOT_META_DATA_1,MODULE_NAME)
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     struct EXTERNAL IService {
@@ -55,7 +55,7 @@ namespace Core {
     };
 
     namespace System {
-        extern "C" EXTERNAL_EXPORT const WPEFramework::Core::IService::IMetadata * ROOT_META_DATA;
+        extern "C" EXTERNAL_EXPORT const Thunder::Core::IService::IMetadata * ROOT_META_DATA;
 
         extern "C" EXTERNAL_EXPORT const char* MODULE_NAME;
 
@@ -253,14 +253,14 @@ namespace Core {
 #endif
     }; // class SystemInfo
 } // namespace Core
-} // namespace WPEFramework
+} // namespace Thunder
 
 #define MODULE_NAME_DECLARATION(buildref)                                                                     \
     extern "C" {                                                                                              \
-    namespace WPEFramework {                                                                                  \
+    namespace Thunder {                                                                                  \
         namespace Core {                                                                                      \
             namespace System {                                                                                \
-                EXTERNAL_EXPORT const WPEFramework::Core::IService::IMetadata* ROOT_META_DATA = nullptr;      \
+                EXTERNAL_EXPORT const Thunder::Core::IService::IMetadata* ROOT_META_DATA = nullptr;      \
                 EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                         \
                 EXTERNAL_EXPORT const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }            \
                 EXTERNAL_EXPORT const IService::IMetadata* ModuleServiceMetadata() {return(ROOT_META_DATA);}  \
@@ -271,7 +271,7 @@ namespace Core {
 
 #define MODULE_NAME_ARCHIVE_DECLARATION                                                             \
     extern "C" {                                                                                    \
-    namespace WPEFramework {                                                                        \
+    namespace Thunder {                                                                        \
         namespace Core {                                                                            \
             namespace System {                                                                      \
                 EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);               \

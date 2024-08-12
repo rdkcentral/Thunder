@@ -32,7 +32,7 @@
 #include <semaphore.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // ===========================================================================
     // class CriticalSection

@@ -24,7 +24,7 @@
 #include "SocketPort.h"
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     class EXTERNAL DoorBell {

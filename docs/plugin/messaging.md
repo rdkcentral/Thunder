@@ -27,7 +27,7 @@ Logging, tracing and warning reporting are important techniques often used in so
 
 ### MessageControl plugin
 
-The `MessageControl` plugin not only consolidates all of the various message types but also offers the flexibility to redirect these messages to different outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP. This can be configured by assigning appropriate values to JSON objects in the configuration file located in `/etc/WPEFramework/plugins/MessageControl.json`. These object's names can be found in the constructor of the `Config` class in `ThunderNanoServicesRDK/MessageControl/MessageControl.h`:
+The `MessageControl` plugin not only consolidates all of the various message types but also offers the flexibility to redirect these messages to different outputs. These outputs include the Console, Syslog, a file, or even a Network Stream through UDP. This can be configured by assigning appropriate values to JSON objects in the configuration file located in `/etc/Thunder/plugins/MessageControl.json`. These object's names can be found in the constructor of the `Config` class in `ThunderNanoServicesRDK/MessageControl/MessageControl.h`:
 
 ```c++
 Config()
@@ -88,7 +88,7 @@ void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const
 
 ### Configuration
 
-The main config file (` /etc/WPEFramework/config.json`) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.
+The main config file (` /etc/Thunder/config.json`) can be used to enable/disable the default messaging categories used for logging, tracing and warning reporting.
 
 Messages are split into 3 types: logging, tracing and warning reporting. Each type has a list of categories which can be marked as enabled or disabled. There is also a similar list for tracing when it comes to enabling or disabling certain modules (e.g. plugins). By default, all categories are enabled for logging and warning reporting, but in terms of tracing, if a category or a module is not present in the config, it will be disabled.
 
@@ -225,18 +225,18 @@ In Thunder, there are two main macros that can be used to wrap messages that wil
         using __control__ = TRACE_CONTROL(CATEGORY);
         if (__control__::IsEnabled() == true) {
             CATEGORY __data__ PARAMETERS;
-            WPEFramework::Core::Messaging::MessageInfo __info__(
+            Thunder::Core::Messaging::MessageInfo __info__(
                 __control__::Metadata(),
-                WPEFramework::Core::Time::Now().Ticks()
+                Thunder::Core::Time::Now().Ticks()
             );
-            WPEFramework::Core::Messaging::IStore::Tracing __trace__(
+            Thunder::Core::Messaging::IStore::Tracing __trace__(
                 __info__,
                 __FILE__,
                 __LINE__,
-                WPEFramework::Core::ClassNameOnly(typeid(*this).name()).Text()
+                Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()
             );
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
+            Thunder::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
         }
     } while(false)
 ```
@@ -321,16 +321,16 @@ In the piece of code below we can see that the first noticeable difference betwe
 ```c++
 #define SYSLOG(CATEGORY, PARAMETERS)
     do {
-        static_assert(std::is_base_of<WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");
+        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");
         if (CATEGORY::IsEnabled() == true) {
             CATEGORY __data__ PARAMETERS;
-            WPEFramework::Core::Messaging::MessageInfo __info__(
+            Thunder::Core::Messaging::MessageInfo __info__(
                 CATEGORY::Metadata(),
-                WPEFramework::Core::Time::Now().Ticks()
+                Thunder::Core::Time::Now().Ticks()
             );
-            WPEFramework::Core::Messaging::IStore::Logging __log__(__info__);
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__log__, &__message__);
+            Thunder::Core::Messaging::IStore::Logging __log__(__info__);
+            Thunder::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);
         }
     } while(false)
 ```
@@ -405,14 +405,14 @@ The `REPORT_DURATION_WARNING` macro, as its name implies, serves the purpose of 
 ```c++
 #define REPORT_DURATION_WARNING(CODE, CATEGORY, ...)
 	if (...WarningReportingType<...WarningReportingBoundsCategory<CATEGORY>>::IsEnabled() == true) {
-        WPEFramework::Core::Time start = WPEFramework::Core::Time::Now();
+        Thunder::Core::Time start = Thunder::Core::Time::Now();
         CODE
         uint32_t duration = static_cast<uint32_t>((Core::Time::Now().Ticks() - start.Ticks()) / Core::Time::TicksPerMillisecond);
 		...WarningReportingType<...WarningReportingBoundsCategory<CATEGORY>> __message__;
-        if (__message__.Analyze(WPEFramework::Core::System::MODULE_NAME, ...CallsignAccess<&...MODULE_NAME>::Callsign(),
+        if (__message__.Analyze(Thunder::Core::System::MODULE_NAME, ...CallsignAccess<&...MODULE_NAME>::Callsign(),
                                 duration, ##__VA_ARGS__) == true) {
             ...WarningReportingUnitProxy::Instance().ReportWarningEvent(
-                ...CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),__message__);
+                ...CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),__message__);
         }
     } else {
         CODE
@@ -541,7 +541,7 @@ These logging categories are created using the `DEFINE_LOGGING_CATEGORY` macro d
 
 ```c++
 #define DEFINE_LOGGING_CATEGORY(CATEGORY)
-    DEFINE_MESSAGING_CATEGORY(WPEFramework::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
+    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
     template<>
     EXTERNAL typename ...BaseLoggingType<CATEGORY>::Control ...BaseLoggingType<CATEGORY>::_control;
 ```
@@ -550,7 +550,7 @@ The `DEFINE_LOGGING_CATEGORY` macro functions by invoking the `DEFINE_MESSAGING_
 
 ##### Warning reporting default categories
 
-Last but not least, the warning reporting categories in Thunder can be found in either `Source/WPEFramework/WarningReportingCategories.h` or `Source/core/WarningReportingCategories.h`. These categories, located within the `WPEFramework::WarningReporting` namespace, include:
+Last but not least, the warning reporting categories in Thunder can be found in either `Source/Thunder/WarningReportingCategories.h` or `Source/core/WarningReportingCategories.h`. These categories, located within the `Thunder::WarningReporting` namespace, include:
 
 - TooLongWaitingForLock
 - SinkStillHasReference
@@ -572,18 +572,18 @@ Now, let us delve into how the MessageControl plugin manages the messages from l
         using __control__ = TRACE_CONTROL(CATEGORY);
         if (__control__::IsEnabled() == true) {
             CATEGORY __data__ PARAMETERS;
-            WPEFramework::Core::Messaging::MessageInfo __info__(
+            Thunder::Core::Messaging::MessageInfo __info__(
                 __control__::Metadata(),
-                WPEFramework::Core::Time::Now().Ticks()
+                Thunder::Core::Time::Now().Ticks()
             );
-            WPEFramework::Core::Messaging::IStore::Tracing __trace__(
+            Thunder::Core::Messaging::IStore::Tracing __trace__(
                 __info__,
                 __FILE__,
                 __LINE__,
                 __FUNCTION__
             );
-            WPEFramework::Messaging::TextMessage __message__(__data__.Data());
-            WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
+            Thunder::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
         }
     } while(false)
 ```
@@ -602,7 +602,7 @@ The initial section is identical across all macros, including warning reporting,
 		...WarningReportingType<...WarningReportingBoundsCategory<CATEGORY>> __message__;
         if(__message__.Analyze(...MODULE_NAME, ...Callsign(), ACTUALVALUE, ##__VA_ARGS__) == true) {
             ...WarningReportingUnitProxy::Instance().ReportWarningEvent(
-                ...CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign(),
+                ...CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign(),
                     __message__);
 		}
     }
@@ -634,16 +634,16 @@ Moving forward, the next step involves sending the message to a proxy called `Wa
 ```c++
 void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWarningEvent& information)
 {        
-    WPEFramework::Core::Messaging::Metadata metadata(WPEFramework::Core::Messaging::Metadata::type::REPORTING,
-                                                     information.Category(), WPEFramework::Core::Messaging::MODULE_REPORTING);
-    WPEFramework::Core::Messaging::MessageInfo messageInfo(metadata, WPEFramework::Core::Time::Now().Ticks());
-    WPEFramework::Core::Messaging::IStore::WarningReporting report(messageInfo, identifier);
+    Thunder::Core::Messaging::Metadata metadata(Thunder::Core::Messaging::Metadata::type::REPORTING,
+                                                     information.Category(), Thunder::Core::Messaging::MODULE_REPORTING);
+    Thunder::Core::Messaging::MessageInfo messageInfo(metadata, Thunder::Core::Time::Now().Ticks());
+    Thunder::Core::Messaging::IStore::WarningReporting report(messageInfo, identifier);
 
     string text;
     information.ToString(text);
-    WPEFramework::Messaging::TextMessage data(text);
+    Thunder::Messaging::TextMessage data(text);
 
-    WPEFramework::Messaging::MessageUnit::Instance().Push(report, &data);
+    Thunder::Messaging::MessageUnit::Instance().Push(report, &data);
 }
 ```
 
@@ -656,7 +656,7 @@ In tracing and logging macros, the user directly enters the message as a macro p
 In addition to the part of the macros where the messages are formed, the crucial part to which we want to pay extra attention is this line of code:
 
 ```c++
-WPEFramework::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
+Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
 ```
 
 This is how the communication between Thunder and the `MessageControl` plugin takes place. For tracing and logging it is within the macros, but for warning reporting it is in the separate method `ReportWarningEvent()` of the reporting proxy `WarningReportingUnit`. The first step involves the construction of message content. Once prepared, it is push to a buffer or special queue in the second line of code. This buffer serves as a centralized storage for messages, ensuring that they are properly organized and ready for further processing.

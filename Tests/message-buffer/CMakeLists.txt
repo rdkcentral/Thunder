@@ -31,4 +31,4 @@ set_target_properties(MessageBufferTest PROPERTIES
         CXX_STANDARD_REQUIRED YES
         )
 
-install(TARGETS MessageBufferTest DESTINATION bin)
+install(TARGETS MessageBufferTest DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

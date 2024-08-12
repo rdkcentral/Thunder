@@ -6,7 +6,7 @@
 
 #include "AWCContainerBase.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
 class AWCProxyContainer: public AWCContainerBase
@@ -55,4 +55,4 @@ protected:
 };
 
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */

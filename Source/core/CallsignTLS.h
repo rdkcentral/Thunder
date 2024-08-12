@@ -30,12 +30,12 @@
 #else
 
 #define WARNING_REPORTING_THREAD_SETCALLSIGN_GUARD(CALLSIGN) \
-    WPEFramework::Core::CallsignTLS::CallSignTLSGuard callsignguard(CALLSIGN); 
+    Thunder::Core::CallsignTLS::CallSignTLSGuard callsignguard(CALLSIGN);
 
 #define WARNING_REPORTING_THREAD_SETCALLSIGN(CALLSIGN)    \
-    WPEFramework::Core::CallsignTLS::Callsign(CALLSIGN);
+    Thunder::Core::CallsignTLS::Callsign(CALLSIGN);
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

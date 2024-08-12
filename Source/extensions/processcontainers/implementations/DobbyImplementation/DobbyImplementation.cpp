@@ -22,9 +22,8 @@
 #include <Dobby/IpcService/IpcFactory.h>
 #include <fstream>
 #include <thread>
-#include <json/value.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace ProcessContainers {
     // Container administrator
@@ -36,7 +35,7 @@ namespace ProcessContainers {
         return dobbyContainerAdministrator;
     }
 
-    IContainer* DobbyContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration)
+    IContainer* DobbyContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration VARIABLE_IS_NOT_USED)
     {
         searchpaths.Reset(0);
         while (searchpaths.Next()) {
@@ -97,7 +96,7 @@ namespace ProcessContainers {
     {
     }
 
-    void DobbyContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
+    void DobbyContainerAdministrator::Logging(const string& logPath VARIABLE_IS_NOT_USED, const string& loggingOptions VARIABLE_IS_NOT_USED)
     {
         // Only container-scope logging
     }
@@ -173,7 +172,7 @@ namespace ProcessContainers {
         return result;
     }
 
-    void DobbyContainerAdministrator::containerStopCallback(int32_t cd, const std::string& containerId,
+    void DobbyContainerAdministrator::containerStopCallback(int32_t cd VARIABLE_IS_NOT_USED, const std::string& containerId,
         IDobbyProxyEvents::ContainerState state,
         const void* params)
     {
@@ -227,9 +226,9 @@ namespace ProcessContainers {
             } else {
                 // Dobby returns the container info as JSON, so parse it
                 JsonObject containerInfoJson;
-                WPEFramework::Core::OptionalType<WPEFramework::Core::JSON::Error> error;
-                if (!WPEFramework::Core::JSON::IElement::FromString(containerInfoString, containerInfoJson, error)) {
-                    TRACE(Trace::Warning, (_T("Failed to parse Dobby container info JSON due to: %s"), WPEFramework::Core::JSON::ErrorDisplayMessage(error).c_str()));
+                Thunder::Core::OptionalType<Thunder::Core::JSON::Error> error;
+                if (!Thunder::Core::JSON::IElement::FromString(containerInfoString, containerInfoJson, error)) {
+                    TRACE(Trace::Warning, (_T("Failed to parse Dobby container info JSON due to: %s"), Thunder::Core::JSON::ErrorDisplayMessage(error).c_str()));
                 } else {
                     JsonArray pids = containerInfoJson["pids"].Array();
 
@@ -237,7 +236,7 @@ namespace ProcessContainers {
                     // the container
 
                     // If we're running a plugin in container, the plugin should run
-                    // under WPEProcess. Return the WPEProcess PID if available to
+                    // under ThunderPlugin. Return the ThunderPlugin PID if available to
                     // ensure consistency with non-containerised oop plugins
                     if (pids.Length() > 0) {
                         if (pids.Length() == 1) {
@@ -248,7 +247,7 @@ namespace ProcessContainers {
                             JsonArray::Iterator index(processes.Elements());
 
                             uint32_t dobbyInitPid = 0;
-                            uint32_t wpeProcessPid = 0;
+                            uint32_t thunderPluginPid = 0;
 
                             while (index.Next()) {
                                 if (Core::JSON::Variant::type::OBJECT == index.Current().Content()) {
@@ -263,20 +262,20 @@ namespace ProcessContainers {
                                     }
 
                                     string executable = process["executable"].String();
-                                    if (executable.find("WPEProcess") != std::string::npos) {
-                                        wpeProcessPid = pid;
+                                    if (executable.find("ThunderPlugin") != std::string::npos) {
+                                        thunderPluginPid = pid;
                                         break;
                                     }
                                 }
                             }
 
-                            if (wpeProcessPid == 0 && dobbyInitPid > 0) {
-                                // We didn't find WPEProcess, just return DobbyInit
+                            if (thunderPluginPid == 0 && dobbyInitPid > 0) {
+                                // We didn't find ThunderPlugin, just return DobbyInit
                                 returnedPid = dobbyInitPid;
                                 _pid = returnedPid;
-                            } else if (wpeProcessPid > 0) {
-                                // Found WPEProcess, return its PID
-                                returnedPid = wpeProcessPid;
+                            } else if (thunderPluginPid > 0) {
+                                // Found ThunderPlugin, return its PID
+                                returnedPid = thunderPluginPid;
                                 _pid = returnedPid;
                             } else {
                                 // Unable to determine the PID for some reason
@@ -390,7 +389,7 @@ namespace ProcessContainers {
         return result;
     }
 
-    bool DobbyContainer::Stop(const uint32_t timeout /*ms*/)
+    bool DobbyContainer::Stop(const uint32_t timeout /*ms*/ VARIABLE_IS_NOT_USED)
     {
         // TODO: add timeout support
         bool result = false;
@@ -412,4 +411,4 @@ namespace ProcessContainers {
 
 } // namespace ProcessContainers
 
-} // namespace WPEFramework
+} // namespace Thunder

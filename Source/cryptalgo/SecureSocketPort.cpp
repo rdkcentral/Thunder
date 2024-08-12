@@ -47,7 +47,7 @@ namespace {
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Crypto {
 
@@ -240,4 +240,4 @@ void SecureSocketPort::Handler::Update() {
     }
 }
 
-} } // namespace WPEFramework::Crypto
+} } // namespace Thunder::Crypto

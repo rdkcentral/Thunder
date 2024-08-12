@@ -31,5 +31,5 @@ set_target_properties(WPELibraryTestLoader PROPERTIES
         CXX_STANDARD_REQUIRED YES
         )
 
-install(TARGETS WPELibraryTestLoader DESTINATION bin)
+install(TARGETS WPELibraryTestLoader DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
 

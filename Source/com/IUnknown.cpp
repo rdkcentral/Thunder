@@ -21,7 +21,7 @@
 #include "Administrator.h"
 #include "Communicator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB

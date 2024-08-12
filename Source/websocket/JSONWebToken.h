@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "URL.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Web {
 
     class EXTERNAL JSONWebToken {
@@ -55,4 +55,4 @@ namespace Web {
         string _key;
     };
 
-} } // namespace WPEFramework::Web
+} } // namespace Thunder::Web

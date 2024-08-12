@@ -33,7 +33,7 @@
 
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <class enumerate>
     class StateTrigger {

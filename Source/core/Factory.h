@@ -25,7 +25,7 @@
 #include "Portability.h"
 #include "Proxy.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename BASEOBJECT, typename IDENTIFIER>
     class FactoryType {

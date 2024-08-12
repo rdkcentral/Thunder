@@ -20,7 +20,7 @@
 #include <random>
 #include "Module.h"
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 class WorkerPoolTestAdministrator
 {

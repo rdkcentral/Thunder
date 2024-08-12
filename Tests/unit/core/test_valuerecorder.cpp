@@ -17,119 +17,126 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include "gtest/gtest.h"
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include "core/core.h"
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-const unsigned int BLOCKSIZE = 20;
+    const unsigned int BLOCKSIZE = 20;
 
-class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
-{
-    public:
-        WriterClass() = delete;
+    class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
+    {
+        public:
+            WriterClass() = delete;
 
-        WriterClass(string filename)
-            : Writer(filename)
-            , _file(filename)
-        {
-        }
+            WriterClass(string filename)
+                : Writer(filename)
+                , _file(filename)
+            {
+            }
 
-        ~WriterClass()
-        {
-        }
+            ~WriterClass()
+            {
+            }
 
-    public:
-        void WriterJob()
-        {
-            uint8_t arr[] = {1,2,3};
-            SetBuffer(arr);
-            auto object = Create(_file);
-            Record(10);
-            uint64_t TimeValue = Time();
-            std::string storageName = Source();
-            uint32_t  value = Value();
-            object.Release();
-        }
+        public:
+            void WriterJob()
+            {
+                uint8_t arr[] = {1,2,3};
+                SetBuffer(arr);
+                auto object = Create(_file);
+                Record(10);
+                uint64_t TimeValue = Time();
+                std::string storageName = Source();
+                uint32_t  value = Value();
+                object.Release();
+            }
 
-    private:
-        string _file;
-};
+        private:
+            string _file;
+    };
 
-class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
-{
-    public:
-        ReaderClass() = delete;
+    class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
+    {
+        public:
+            ReaderClass() = delete;
 
-        ReaderClass(string filename)
-            : Reader(filename)
-            , _file(filename)
-        {
-        }
+            ReaderClass(string filename)
+                : Reader(filename)
+                , _file(filename)
+            {
+            }
 
-        ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
-                : Reader(recorder->Source())
-                , _file(recorder->Source())
-        {
-        }
+            ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
+                    : Reader(recorder->Source())
+                    , _file(recorder->Source())
+            {
+            }
 
-        ~ReaderClass()
-        {
-        }
+            ~ReaderClass()
+            {
+            }
 
-    public:
-        void ReaderJob()
-        {
-            Next();
-            EXPECT_TRUE(IsValid());
+        public:
+            void ReaderJob()
+            {
+                Next();
+                EXPECT_TRUE(IsValid());
 
-            uint32_t time = 20;
-            Core::Time curTime = Core::Time::Now();
-            curTime.Add(time);
-            uint32_t index = Store(curTime.Ticks(), 1);
-            
-            StepForward();
-            StepBack();
-            ClearData();
+                uint32_t time = 20;
+                ::Thunder::Core::Time curTime = ::Thunder::Core::Time::Now();
+                curTime.Add(time);
+                uint32_t index = Store(curTime.Ticks(), 1);
+                
+                StepForward();
+                StepBack();
+                ClearData();
 
-            Reader obj1(_file, 1u);
-            EXPECT_FALSE(obj1.Previous());
-            EXPECT_TRUE(obj1.Next());
+                Reader obj1(_file, 1u);
+                EXPECT_FALSE(obj1.Previous());
+                EXPECT_TRUE(obj1.Next());
 
-            EXPECT_EQ(StartId(),1u);
+                EXPECT_EQ(StartId(),1u);
 
-            if (EndId() == StartId())
-                EXPECT_EQ(EndId(),1u);
-            else
-                EXPECT_EQ(EndId(),2u);
+                if (EndId() == StartId())
+                    EXPECT_EQ(EndId(),1u);
+                else
+                    EXPECT_EQ(EndId(),2u);
 
-            uint32_t id = EndId();
-            std::string storageName = Source();
-        }
+                uint32_t id = EndId();
+                std::string storageName = Source();
+            }
 
-    private:
-        string _file;
-};
+        private:
+            string _file;
+    };
 
-TEST(test_valuerecorder, test_writer)
-{
-    string filename = "baseRecorder.txt";
+    TEST(test_valuerecorder, test_writer)
+    {
+        string filename = "baseRecorder.txt";
 
-    auto obj1 = RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
+        auto obj1 = RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
 
-    obj1->Copy(*(obj1),1);
-    obj1->Copy(*(obj1),100);
+        obj1->Copy(*(obj1),1);
+        obj1->Copy(*(obj1),100);
 
-    static_cast<WriterClass&>(*obj1).WriterJob();
+        static_cast<WriterClass&>(*obj1).WriterJob();
 
-    ReaderClass obj2(filename);
-    obj2.ReaderJob();
+        ReaderClass obj2(filename);
+        obj2.ReaderJob();
 
-    ReaderClass obj4(ProxyType<WriterClass>(obj3));
+        ReaderClass obj4(ProxyType<WriterClass>(obj3));
 
-    obj1.Release();
-}
+        obj1.Release();
+    }
 
+} // Core
+} // Tests
+} // Thunder

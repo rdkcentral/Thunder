@@ -22,7 +22,7 @@
 // TODO: remove if no longer needed for simple tracing.
 #include <iostream>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 

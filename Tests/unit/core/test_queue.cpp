@@ -17,17 +17,21 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
 TEST(test_queue, simple_queue)
 {
-    QueueType<int> obj1(20);
+    ::Thunder::Core::QueueType<int> obj1(20);
     EXPECT_TRUE(obj1.Insert(20,300));
     EXPECT_TRUE(obj1.Insert(30,300));
     EXPECT_TRUE(obj1.Post(20));
@@ -39,3 +43,7 @@ TEST(test_queue, simple_queue)
     obj1.Disable();
     obj1.Flush();
 }
+
+} // Core
+} // Tests
+} // Thunder

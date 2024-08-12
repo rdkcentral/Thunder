@@ -20,6 +20,7 @@
 #include "Time.h"
 #include "Number.h"
 #include <time.h>
+#include <cstdio>
 
 namespace {
     // Start day of NTP time as days past the imaginary date 12/1/1 BC.
@@ -29,12 +30,12 @@ namespace {
     // Start day of the UNIX epoch (1970-01-01), also counting from BCE
     constexpr uint32_t DayUNIXEpochStarts = 719163;
 
-    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * WPEFramework::Core::Time::SecondsPerDay;
+    constexpr uint32_t NTPToUNIXSeconds = (DayUNIXEpochStarts - DayNTPStarts) * Thunder::Core::Time::SecondsPerDay;
 
 }
 
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     static bool IsLeapYear(const uint16_t year)
@@ -816,11 +817,11 @@ namespace Core {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+            std::snprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
-POP_WARNING()
+            std::snprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+        POP_WARNING()
 
         string value(buffer);
         if( zone != nullptr ) {
@@ -843,13 +844,13 @@ POP_WARNING()
         if (localTime == true) {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
-           Time converted(convertedTime, localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
+            Time converted(convertedTime, localTime);
+            std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
+            std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(), Day(), MonthName(), Year(),
                 Hours(), Minutes(), Seconds(), zone);
 POP_WARNING()
 
@@ -871,13 +872,13 @@ POP_WARNING()
 
             Time converted(convertedTime, localTime);
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
+            std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
                 converted.Minutes(), converted.Seconds(), zone);
 POP_WARNING()
         } else
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
-POP_WARNING()
+            std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(), Minutes(), Seconds(), zone);
+        POP_WARNING()
 
         return (string(buffer));
     }
@@ -1047,12 +1048,12 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
+            std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(localTime),
                 Day(localTime), MonthName(localTime), Year(localTime),
                 Hours(localTime), Minutes(localTime), Seconds(localTime), zone);
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
+            std::snprintf(buffer, sizeof(buffer), _T("%s, %02d %s %04d %02d:%02d:%02d%s"), WeekDayName(utcTime), Day(utcTime), MonthName(utcTime), Year(utcTime), Hours(utcTime),
                 Minutes(utcTime), Seconds(utcTime), zone);
         }
 
@@ -1070,11 +1071,11 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
+            std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(localTime), Month(localTime), Day(localTime), Hours(localTime),
                 Minutes(localTime), Seconds(localTime), zone);
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime),Minutes(utcTime),
+            std::snprintf(buffer, sizeof(buffer), _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(utcTime), Month(utcTime), Day(utcTime), Hours(utcTime), Minutes(utcTime),
                 Seconds(utcTime), zone);
         }
 
@@ -1092,10 +1093,10 @@ POP_WARNING()
         if (localTime == true) {
             struct tm localTime{};
             localtime_r(&_time.tv_sec, &localTime);
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
+            std::snprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(localTime), Minutes(localTime), Seconds(localTime));
         } else {
             struct tm utcTime = TMHandle();
-            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
+            std::snprintf(buffer, sizeof(buffer), _T("%02d:%02d:%02d"), Hours(utcTime), Minutes(utcTime), Seconds(utcTime));
         }
 
         string value(buffer);
