@@ -80,13 +80,16 @@ namespace Core {
         ::Thunder::Core::SingletonType<SingletonTypeTwo>::Create("My custom 2-string");
         // Deprecated use
         ::Thunder::Tests::Core::SingletonTypeTwo& objectTypeTwo = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance("My other custom 2-string");
+//        ::Thunder::Tests::Core::SingletonTypeTwo& objectTypeTwo = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance();
         EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().empty());
         EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().c_str(), "SingletonTypeTwo");
         EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeTwo>::Dispose());
 
         // Well-known lifetime!
         ::Thunder::Core::SingletonType<SingletonTypeThree>::Create("My first custom 3-string", "My second custom 3-string");
+        // Deprecated use
         ::Thunder::Tests::Core::SingletonTypeThree& objectTypeThree = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance("My other first custom 3-string", "My other second custom 3 string");
+//        ::Thunder::Tests::Core::SingletonTypeThree& objectTypeThree = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance();
         EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().empty());
         EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().c_str(), "SingletonTypeThree");
         EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeThree>::Dispose());

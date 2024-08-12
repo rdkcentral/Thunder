@@ -117,11 +117,35 @@ namespace Core {
         }
 
         template <typename... Args>
-        inline static SINGLETON& Instance(Args&&... args)
+        DEPRECATED inline static SINGLETON& Instance(Args&&... args)
         {
-            static_assert(sizeof...(Args) == 0, "The use of arguments is deprecated / no longer supported. Use Create(Args...) prior to Instance().");
+//            static_assert(sizeof...(Args) == 0, "The use of arguments is deprecated / no longer supported. Use Create(Args...) prior to Instance().");
 
-            return (GetObject(TemplateIntToType<sizeof...(Args) == 0>()));
+            static CriticalSection g_AdminLock;
+
+            // Hmm Double Lock syndrom :-)
+            if (g_TypedSingleton == nullptr) {
+                g_AdminLock.Lock();
+
+                if (g_TypedSingleton == nullptr) {
+                    // Create a singleton
+                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+                }
+
+                g_AdminLock.Unlock();
+            }
+
+            ASSERT(g_TypedSingleton != nullptr);
+
+            return *(g_TypedSingleton);
+        }
+
+        inline static SINGLETON& Instance() {
+            // As available does not see through friend clas/protected
+            // declarations, we can not rely on the output of it.
+            // If this Instance method id called, assume it has a
+            // default constructor..
+            return (GetObject(TemplateIntToType<true>()));
         }
 
         // The Create() and Dispose() methods should only be used if the lifetime of 
@@ -133,18 +157,13 @@ namespace Core {
         template <typename... Args>
         inline static void Create(Args&&... args)
         {
-            static CriticalSection g_AdminLock;
-
-            g_AdminLock.Lock();
-
             ASSERT(g_TypedSingleton == nullptr);
 
             if (g_TypedSingleton == nullptr) {
+
                 // Create a singleton
                 g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
             }
-
-            g_AdminLock.Unlock();
 
             ASSERT(g_TypedSingleton != nullptr);
         }
