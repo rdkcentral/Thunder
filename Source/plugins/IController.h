@@ -247,7 +247,7 @@ namespace Controller {
                     WARNING_REPORTING = 1,
                     BLUETOOTH = 2,
                     HIBERBATE = 4,
-                    PROCESS_CONTRAINERS = 16
+                    PROCESS_CONTAINERS = 16
                 };
 
                 systemtype SystemType /* @brief System type */;
