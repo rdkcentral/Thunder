@@ -247,7 +247,7 @@ namespace Controller {
                     WARNING_REPORTING = 1,
                     BLUETOOTH = 2,
                     HIBERBATE = 4,
-                    PROCESS_CONTAINERS = 16
+                    PROCESS_CONTAINERS = 8
                 };
 
                 systemtype SystemType /* @brief System type */;
@@ -380,7 +380,7 @@ namespace Controller {
         // @property
         // @brief Build information
         virtual Core::hresult BuildInfo(Data::BuildInfo& buildInfo /* @out */) const = 0;
-        };
+    };
 
 } // namespace Controller
 

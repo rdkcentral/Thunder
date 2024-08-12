@@ -1367,28 +1367,28 @@ namespace Plugin {
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
     {   
         #if defined(__WINDOWS__)
-            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
         #elif defined(__LINUX__)
-            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_LINUX;
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_LINUX;
         #elif defined(__APPLE__)
-            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_MACOS;
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_MACOS;
         #else
             #error No system type detected
         #endif
 
         #if defined(__DEBUG__)
             #if defined(_THUNDER_DEBUG_OPTIMIZED_)
-                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
             #else
-                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG;
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG;
             #endif
         #else // !__DEBUG__
             #if defined(_THUNDER_NDEBUG_DEB_INFO)
-                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
             #elif defined(_THUNDER_PRODUCTION)
-                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::PRODUCTION;
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::PRODUCTION;
             #else
-                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE;
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE;
             #endif
         #endif
 
@@ -1398,20 +1398,20 @@ namespace Plugin {
 
         uint8_t extensions = 0;
         #ifdef __CORE_WARNING_REPORTING__
-            extensions |= Controller::IMetadata::Data::BuildInfo::WARNING_REPORTING;
+            extensions |= IMetadata::Data::BuildInfo::WARNING_REPORTING;
         #endif
         #ifdef __CORE_BLUETOOTH_SUPPORT__
-            extensions |= Controller::IMetadata::Data::BuildInfo::BLUETOOTH;
+            extensions |= IMetadata::Data::BuildInfo::BLUETOOTH;
         #endif
         #ifdef HIBERNATE_SUPPORT_ENABLED
-            extensions |= Controller::IMetadata::Data::BuildInfo::HIBERNATE;
+            extensions |= IMetadata::Data::BuildInfo::HIBERNATE;
         #endif
         #ifdef PROCESSCONTAINERS_ENABLED
-            extensions |= Controller::IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
+            extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
         #endif
         
         if (extensions != 0) {
-        buildInfo.Extensions = static_cast<Thunder::Exchange::Controller::IMetadata::Data::BuildInfo::extensiontype>(extensions);
+            buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
         }
 
         #ifdef __CORE_MESSAGING__
@@ -1447,6 +1447,5 @@ namespace Plugin {
         return (Core::ERROR_NONE);
 
     }
-
 }
 }
