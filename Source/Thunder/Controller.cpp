@@ -1372,6 +1372,8 @@ namespace Plugin {
             buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_LINUX;
         #elif defined(__APPLE__)
             buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_MACOS;
+        #else
+            #error No system type detected
         #endif
 
         #if defined(__DEBUG__)
@@ -1394,29 +1396,23 @@ namespace Plugin {
             buildInfo.TraceLevel = _TRACE_LEVEL;
         #endif
 
+        uint8_t extensions = 0;
         #ifdef __CORE_WARNING_REPORTING__
-            buildInfo.WarningReporting = true;
-        #else
-            buildInfo.WarningReporting = false;
+            extensions |= Controller::IMetadata::Data::BuildInfo::WARNING_REPORTING;
         #endif
-
-        #ifdef PROCESSCONTAINERS_ENABLED
-            buildInfo.ProcessContainers = true;
-        #else
-            buildInfo.ProcessContainers = false;
-        #endif
-
-        #ifdef HIBERNATE_SUPPORT_ENABLED
-            buildInfo.HibernateSupport= true;
-        #else
-            buildInfo.HibernateSupport = false;
-        #endif
-
         #ifdef __CORE_BLUETOOTH_SUPPORT__
-            buildInfo.BluetoothSupport = true;
-        #else
-            buildInfo.BluetoothSupport= false;
+            extensions |= Controller::IMetadata::Data::BuildInfo::BLUETOOTH;
         #endif
+        #ifdef HIBERNATE_SUPPORT_ENABLED
+            extensions |= Controller::IMetadata::Data::BuildInfo::HIBERNATE;
+        #endif
+        #ifdef PROCESSCONTAINERS_ENABLED
+            extensions |= Controller::IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
+        #endif
+        
+        if (extensions != 0) {
+        buildInfo.Extensions = static_cast<Thunder::Exchange::Controller::IMetadata::Data::BuildInfo::extensiontype>(extensions);
+        }
 
         #ifdef __CORE_MESSAGING__
             buildInfo.Messaging = true;

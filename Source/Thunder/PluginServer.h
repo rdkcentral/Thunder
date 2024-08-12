@@ -4074,7 +4074,7 @@ namespace PluginHost {
                 }
                 }
             }
-            void Send(const Core::ProxyType<Web::Response>& response) override
+            void Send(const Core::ProxyType<Web::Response>& response VARIABLE_IS_NOT_USED) override
             {
                 if (_requestClose == true) {
                     PluginHost::Channel::Close(0);
@@ -4099,7 +4099,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            void Send(const Core::ProxyType<Core::JSON::IElement>& element) override
+            void Send(const Core::ProxyType<Core::JSON::IElement>& element VARIABLE_IS_NOT_USED) override
             {
                 TRACE(SocketFlow, (element));
             }

@@ -230,9 +230,9 @@ namespace Controller {
             struct BuildInfo {
 
                 enum systemtype : uint8_t {
-                    SYSTEM_WINDOWS,
-                    SYSTEM_LINUX,
-                    SYSTEM_MACOS
+                    SYSTEM_WINDOWS /* @text:Windows */,
+                    SYSTEM_LINUX /* @text:Linux */,
+                    SYSTEM_MACOS /* @text:MacOS */
                 };
 
                 enum buildtype : uint8_t {
@@ -243,15 +243,19 @@ namespace Controller {
                     PRODUCTION
                 };
 
+                enum extensiontype : uint8_t {
+                    WARNING_REPORTING = 1,
+                    BLUETOOTH = 2,
+                    HIBERBATE = 4,
+                    PROCESS_CONTRAINERS = 16
+                };
+
                 systemtype SystemType /* @brief System type */;
                 buildtype BuildType /* @brief Build type */;
-                bool WarningReporting /* @brief Denotes whether WarningReport is enabled */;
-                bool ProcessContainers /* @brief Denotes whether ProcessContainers is enabled */;
-                bool HibernateSupport /* @brief Denotes whether HibernateSupport is enabled*/;
-                bool BluetoothSupport /* @brief Denotes whether BluetoothSupport is enabled */;
+                Core::OptionalType<extensiontype> Extensions /* @bitmask */;
                 bool Messaging /* @brief Denotes whether Messaging is enabled*/;
                 bool ExceptionCatching /* @brief Denotes whether there is an exception */;
-                bool DeadlockDetection /* @brief Denotes whether there is a deadlock */;
+                bool DeadlockDetection /* @brief Denotes whether deadlock detection is enabled */;
                 bool WCharSupport /* Denotes whether there is wchar support */;
                 uint8_t InstanceIDBits /* @brief Core instance bits */;
                 Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
