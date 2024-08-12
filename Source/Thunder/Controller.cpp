@@ -1445,7 +1445,6 @@ namespace Plugin {
         #endif
 
         return (Core::ERROR_NONE);
-
     }
 }
 }
