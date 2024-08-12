@@ -31,7 +31,7 @@ namespace Core {
 
     const unsigned int BLOCKSIZE = 20;
 
-    class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
+    class WriterClass : public ::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Writer
     {
         public:
             WriterClass() = delete;
@@ -63,7 +63,7 @@ namespace Core {
             string _file;
     };
 
-    class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
+    class ReaderClass : public ::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Reader
     {
         public:
             ReaderClass() = delete;
@@ -74,7 +74,7 @@ namespace Core {
             {
             }
 
-            ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
+            ReaderClass(const ::Thunder::Core::ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
                     : Reader(recorder->Source())
                     , _file(recorder->Source())
             {
@@ -122,7 +122,7 @@ namespace Core {
     {
         string filename = "baseRecorder.txt";
 
-        auto obj1 = RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
+        auto obj1 = ::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
 
         obj1->Copy(*(obj1),1);
         obj1->Copy(*(obj1),100);
@@ -131,8 +131,6 @@ namespace Core {
 
         ReaderClass obj2(filename);
         obj2.ReaderJob();
-
-        ReaderClass obj4(ProxyType<WriterClass>(obj3));
 
         obj1.Release();
     }
