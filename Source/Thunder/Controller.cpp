@@ -1366,19 +1366,28 @@ namespace Plugin {
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
     {   
-        
-        #if defined(_THUNDER_DEBUG_OPTIMIZED)
-            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
-        #elif defined(_THUNDER_DEBUG)
-            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG;
-        #elif defined(_THUNDER_NDEBUG_DEB_INFO)
-            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
-        #elif defined(_THUNDER_NDEBUG)
-            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE;
-        #elif defined(_THUNDER_PRODUCTION)
-            buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::PRODUCTION;
-        #else
-            #error no build flag detected
+        #if defined(__WINDOWS__)
+            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
+        #elif defined(__LINUX__)
+            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_LINUX;
+        #elif defined(__APPLE__)
+            buildInfo.SystemType = Controller::IMetadata::Data::BuildInfo::SYSTEM_MACOS;
+        #endif
+
+        #if defined(__DEBUG__)
+            #if defined(_THUNDER_DEBUG_OPTIMIZED_)
+                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
+            #else
+                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::DEBUG;
+            #endif
+        #else // !__DEBUG__
+            #if defined(_THUNDER_NDEBUG_DEB_INFO)
+                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
+            #elif defined(_THUNDER_PRODUCTION)
+                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::PRODUCTION;
+            #else
+                buildInfo.BuildType = Controller::IMetadata::Data::BuildInfo::RELEASE;
+            #endif
         #endif
 
         #ifdef _TRACE_LEVEL

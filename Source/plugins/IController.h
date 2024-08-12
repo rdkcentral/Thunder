@@ -229,7 +229,13 @@ namespace Controller {
 
             struct BuildInfo {
 
-                enum buildtype : uint8_t{
+                enum systemtype : uint8_t {
+                    SYSTEM_WINDOWS,
+                    SYSTEM_LINUX,
+                    SYSTEM_MACOS
+                };
+
+                enum buildtype : uint8_t {
                     DEBUG,
                     DEBUG_OPTIMIZED,
                     RELEASE_WITH_DEBUG_INFO,
@@ -237,6 +243,7 @@ namespace Controller {
                     PRODUCTION
                 };
 
+                systemtype SystemType /* @brief System type */;
                 buildtype BuildType /* @brief Build type */;
                 bool WarningReporting /* @brief Denotes whether WarningReport is enabled */;
                 bool ProcessContainers /* @brief Denotes whether ProcessContainers is enabled */;
@@ -245,9 +252,9 @@ namespace Controller {
                 bool Messaging /* @brief Denotes whether Messaging is enabled*/;
                 bool ExceptionCatching /* @brief Denotes whether there is an exception */;
                 bool DeadlockDetection /* @brief Denotes whether there is a deadlock */;
+                bool WCharSupport /* Denotes whether there is wchar support */;
                 uint8_t InstanceIDBits /* @brief Core instance bits */;
                 Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
-                bool WCharSupport /* Denotes whether there is wchar support */;
                 uint8_t ThreadPoolCount /* Number of configured threads on the threadpool */;
             };
             
