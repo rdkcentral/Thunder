@@ -59,7 +59,7 @@ endif()
 set(PUBLIC_HEADERS
         processcontainers.h
         IProcessContainers.h
-        ContainerProducer.h
+        ContainerAdministrator.h
         Module.h
         )
 
