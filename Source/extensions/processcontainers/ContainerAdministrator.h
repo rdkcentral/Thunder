@@ -27,7 +27,7 @@ namespace Thunder {
 
 namespace ProcessContainers {
 
-    class ContainerAdministrator {
+    class EXTERNAL ContainerAdministrator {
     private:
         template<typename T>
         friend class Core::SingletonType;
