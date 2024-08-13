@@ -19,9 +19,8 @@
 
 #pragma once
 
-#include "processcontainers/Messaging.h"
-#include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/IProcessContainers.h"
+#include "processcontainers/ContainerAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
@@ -32,20 +31,21 @@ namespace ProcessContainers {
         class Runner;
     }
 
-    class RunCContainer : public BaseRefCount<IContainer> {
-    private:
-        friend class RunCContainerAdministrator;
+    class RunCContainer : public IContainer {
+    public:
         RunCContainer(const string& id, const string& path, const string& logPath);
 
-    public:
-        RunCContainer(const RunCContainer&) = delete;
-        RunCContainer& operator=(const RunCContainer&) = delete;
-        RunCContainer(RunCContainer&&) = delete;
-        RunCContainer& operator=(RunCContainer&&) = delete;
+        RunCContainer() = delete;
         ~RunCContainer() override;
+
+        RunCContainer(const RunCContainer&) = delete;
+        RunCContainer(RunCContainer&&) = delete;
+        RunCContainer& operator=(const RunCContainer&) = delete;
+        RunCContainer& operator=(RunCContainer&&) = delete;
 
     public:
         // IContainer methods
+        containertype Type() const override { return IContainer::RUNC; }
         const string& Id() const override;
         uint32_t Pid() const override;
         bool IsRunning() const override;
@@ -66,23 +66,22 @@ namespace ProcessContainers {
         std::unique_ptr<runc::Runner> _runner;
     };
 
-    class RunCContainerAdministrator : public BaseContainerAdministrator<RunCContainer> {
-    private:
-        friend class RunCContainer;
-        friend class Core::SingletonType<RunCContainerAdministrator>;
-        RunCContainerAdministrator() = default;
-
+    class RunCContainerAdministrator : public IContainerProducer {
     public:
+        RunCContainerAdministrator() = default;
+        ~RunCContainerAdministrator() override = default;
+
         RunCContainerAdministrator(const RunCContainerAdministrator&) = delete;
         RunCContainerAdministrator(RunCContainerAdministrator&&) = delete;
         RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
         RunCContainerAdministrator& operator=(RunCContainerAdministrator&&) = delete;
-        ~RunCContainerAdministrator() override = default;
 
     public:
-        // IContainerAdministrator methods
-        IContainer* Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration) override;
-        void Logging(const string& logDir, const string& loggingOptions) override;
+        Core::ProxyType<IContainer> Container(const string& id, IStringIterator& searchpaths,
+                                        const string& logpath, const string& configuration) override;
+
+        uint32_t Initialize(const string& configuration) override;
+        void Deinitialize() { }
     };
 
 } // namespace ProcessContainers
