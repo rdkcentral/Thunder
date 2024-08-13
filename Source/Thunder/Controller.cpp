@@ -1227,13 +1227,23 @@ namespace Plugin {
 
             std::list< IMetadata::Data::Proxy> elements;
 
+            int status = 0;
             for (const ProxyStub::UnknownProxy* proxy : collection) {
                 IMetadata::Data::Proxy data;
                 data.Instance = proxy->Implementation();
                 data.Interface = proxy->InterfaceId();
                 data.Count = proxy->ReferenceCount();
-                data.Name = proxy->Name();
 
+                #ifdef __LINUX__
+                data.Name = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
+                if(status != 0) {
+                    // In the case where demangle fails, use original name
+                    data.Name = proxy->Name();
+                }
+                #else 
+                    data.Name = proxy->Name();
+                #endif
+                
                 elements.emplace_back(std::move(data));
             }
 
