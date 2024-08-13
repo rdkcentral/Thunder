@@ -26,4 +26,4 @@
 #include "IProcessContainers.h"
 #include "ContainerAdministrator.h"
 
-
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(ProcessContainers)
