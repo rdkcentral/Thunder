@@ -58,6 +58,11 @@ namespace Core {
             EXPECT_EQ(_writer->Value(), value);
         }
 
+        void Save()
+        {
+            _writer->Save();
+        }
+
     private:
         const string _file;
         ::Thunder::Core::ProxyType<::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Writer> _writer;
@@ -85,7 +90,7 @@ namespace Core {
 
             // Get a valid position
             Reset(StartId());
-
+ 
             ASSERT_TRUE(IsValid());
 
             EXPECT_EQ(Id(), StartId());
@@ -93,11 +98,13 @@ namespace Core {
             EXPECT_STREQ(Source().c_str(), _file.c_str());
             EXPECT_EQ(value, Value());
 
-            // Only one value recorder, some form of circular indexing
-            EXPECT_TRUE(Next());
-            EXPECT_EQ(value, Value());
+            ASSERT_EQ(Id(), EndId());
+
+            // Load next file if it exist if not additional data exist
+            EXPECT_FALSE(Next());
 
             // Only one value recorder, some form of circular indexing
+            // Load original
             EXPECT_TRUE(Previous());
             EXPECT_EQ(value, Value());
 
@@ -116,6 +123,7 @@ namespace Core {
 
         WriterClass writer(filename);
         writer.WriterJob(value);
+        writer.Save();
 
         ReaderClass reader(filename);
         reader.ReaderJob(value);
