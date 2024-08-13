@@ -84,9 +84,7 @@ namespace Core {
             const ::Thunder::Core::Time::microsecondsfromepoch readTime = ::Thunder::Core::Time::Now().Ticks();
 
             // Get a valid position
-            if (Id() < StartId()) {
-                Reset(StartId());
-            }
+            Reset(StartId());
 
             ASSERT_TRUE(IsValid());
 
