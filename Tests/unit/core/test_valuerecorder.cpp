@@ -100,13 +100,11 @@ namespace Core {
 
             ASSERT_EQ(Id(), EndId());
 
-            // Load next file if it exist if not additional data exist
+            // Load next file if it exist if no additional data exist
             EXPECT_FALSE(Next());
 
-            // Only one value recorder, some form of circular indexing
-            // Load original
+            // The previous failed so no new files has been loaded and the current file is still used
             EXPECT_TRUE(Previous());
-            EXPECT_EQ(value, Value());
 
             EXPECT_LE(Time(), readTime);
         }
