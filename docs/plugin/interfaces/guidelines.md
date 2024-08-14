@@ -1,13 +1,6 @@
 Interface Definition
 ====================
 
-|Author|Version|Date|
-|-|-|-|
-|Pierre Wielders|0.1 (proposal)|2024-05-16|
-
-!!! note annotate "©2024 All rights reserved by ***Comcast***"
-    This document contains information which is proprietary to ***Comcast***. It is provided with the expressed understanding that the recipient will not divulge its content to other parties or otherwise misappropriate the information contained herein. This information is furnished for guidance; specifications and availability of goods mentioned in it are subject to change without notice. No part of this publication may be reproduced, stored in a database, retrieval system or transmitted, in any form or by any means, electronic, mechanical, photocopying, recording or otherwise, without the written prior permission of ***Comcast***, Rotterdam, The Netherlands.
-
 Table of Contents
 =================
 
