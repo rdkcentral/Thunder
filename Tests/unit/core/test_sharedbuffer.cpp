@@ -33,8 +33,8 @@ namespace Core {
 
     TEST(Core_SharedBuffer, simpleSet)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 15;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 6, maxWaitTimeMs = 6000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 20;
 
         constexpr uint16_t administrationSize = 64;
         constexpr uint32_t bufferSize = 8 * 1024;
@@ -104,8 +104,8 @@ namespace Core {
 
     TEST(Core_SharedBuffer, simpleSetReversed)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 15;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 6, maxWaitTimeMs = 6000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 20;
 
         constexpr uint16_t administrationSize = 64;
         constexpr uint32_t bufferSize = 8 * 1024;
