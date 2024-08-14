@@ -25,7 +25,7 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 #ifdef _UNICODE
     inline int ToCharacter(const char* character, TCHAR converted[], unsigned int count)

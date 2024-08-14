@@ -30,7 +30,7 @@
 #include "Portability.h"
 #include "Range.h"
 
-namespace WPEFramework {
+namespace Thunder {
 	namespace Core {
 		template <typename TEXTTERMINATOR, typename HANDLER>
 		class ParserType {

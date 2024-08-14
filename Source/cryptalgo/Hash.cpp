@@ -207,7 +207,7 @@
         wv[h] = t1 + t2;                                        \
     }
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
     // --------------------------------------------------------------------------------------------
     // MD5 functionality
@@ -1939,4 +1939,4 @@ namespace Crypto {
         return *this;
     }
 }
-} // namespace WPEFramework::Crypto
+} // namespace Thunder::Crypto

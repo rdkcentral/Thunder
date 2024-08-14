@@ -22,7 +22,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Platform {
 
     template <typename REQUEST, typename RESPONSE>

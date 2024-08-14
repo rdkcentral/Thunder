@@ -17,13 +17,18 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     enum class TestEnum {
         ONE,
@@ -33,7 +38,7 @@ namespace Tests {
 
     TEST(Core_Enumerate, CheckEntries)
     {
-        Core::EnumerateType<TestEnum> testEnum;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum;
         EXPECT_FALSE(testEnum.IsSet());
         for (int i = 0; i < 3; i++) {
             EXPECT_EQ(testEnum.Entry(i)->value, (i == 0 ? TestEnum::ONE : (i == 1 ? TestEnum::TWO : TestEnum::THREE)));
@@ -43,7 +48,7 @@ namespace Tests {
 
     TEST(Core_Enumerate, Assignment)
     {
-        Core::EnumerateType<TestEnum> testEnum;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum;
         testEnum.Assignment(true, "three");
         EXPECT_FALSE(testEnum.IsSet());
 
@@ -62,14 +67,14 @@ namespace Tests {
         testEnum.Clear();
         EXPECT_FALSE(testEnum.IsSet());
 
-        Core::EnumerateType<TestEnum> testEnum1;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum1;
         testEnum.Assignment(true, "three");
 
         EXPECT_FALSE(testEnum != testEnum1);
         EXPECT_TRUE(testEnum != testEnum1.Value());
 
-        Core::EnumerateType<TestEnum> testEnum2(testEnum1);
-        Core::EnumerateType<TestEnum> testEnum3;
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum2(testEnum1);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum3;
         testEnum3 = testEnum1;
         EXPECT_TRUE(testEnum3 == testEnum1);
         testEnum3 = testEnum1.Value(); 
@@ -78,7 +83,7 @@ namespace Tests {
     TEST(Core_Enumerate, FromEnumType)
     {
         TestEnum e = TestEnum::TWO;
-        Core::EnumerateType<TestEnum> testEnum(e);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(e);
         EXPECT_EQ(testEnum, e);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::TWO);
@@ -87,7 +92,7 @@ namespace Tests {
 
     TEST(Core_Enumerate, FromValue)
     {
-        Core::EnumerateType<TestEnum> testEnum(1);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(1);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::TWO);
         EXPECT_STREQ(testEnum.Data(), "TWO");
@@ -98,7 +103,7 @@ namespace Tests {
 
     TEST(Core_Enumerate, FromStringCaseSensitiveTrue)
     {
-        Core::EnumerateType<TestEnum> testEnum("THREE");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("THREE");
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -106,13 +111,13 @@ namespace Tests {
 
     TEST(Core_Enumerate, FromStringCaseSensitiveFalse)
     {
-        Core::EnumerateType<TestEnum> testEnum("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("three");
         EXPECT_FALSE(testEnum.IsSet());
     }
 
     TEST(Core_Enumerate, FromStringCaseInsensitive)
     {
-        Core::EnumerateType<TestEnum> testEnum("three", false);
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum("three", false);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -120,8 +125,8 @@ namespace Tests {
 
     TEST(Core_Enumerate, FromTextFragmentCaseSensitiveTrue)
     {
-        Core::TextFragment testFragment("THREE");
-        Core::EnumerateType<TestEnum> testEnum(testFragment);
+        ::Thunder::Core::TextFragment testFragment("THREE");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
@@ -129,23 +134,27 @@ namespace Tests {
 
     TEST(Core_Enumerate, FromTextFragmentCaseSensitiveFalse)
     {
-        Core::TextFragment testFragment("three");
-        Core::EnumerateType<TestEnum> testEnum(testFragment);
+        ::Thunder::Core::TextFragment testFragment("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment);
         EXPECT_FALSE(testEnum.IsSet());
     }
 
     TEST(Core_Enumerate, FromTextFragmentCaseInsensitive)
     {
-        Core::TextFragment testFragment("three");
-        Core::EnumerateType<TestEnum> testEnum(testFragment, false);
+        ::Thunder::Core::TextFragment testFragment("three");
+        ::Thunder::Core::EnumerateType<TestEnum> testEnum(testFragment, false);
         EXPECT_TRUE(testEnum.IsSet());
         EXPECT_EQ(testEnum.Value(), TestEnum::THREE);
         EXPECT_STREQ(testEnum.Data(), "THREE");
     }
+
+} // Core
 } // Tests
-ENUM_CONVERSION_BEGIN(Tests::TestEnum)
-    { Tests::TestEnum::ONE, _TXT("ONE") },
-    { Tests::TestEnum::TWO, _TXT("TWO") },
-    { Tests::TestEnum::THREE, _TXT("THREE") },
-ENUM_CONVERSION_END(Tests::TestEnum)
-} // WPEFramework
+
+ENUM_CONVERSION_BEGIN(Tests::Core::TestEnum)
+    { Tests::Core::TestEnum::ONE, _TXT("ONE") },
+    { Tests::Core::TestEnum::TWO, _TXT("TWO") },
+    { Tests::Core::TestEnum::THREE, _TXT("THREE") },
+ENUM_CONVERSION_END(Tests::Core::TestEnum)
+
+} // Thunder

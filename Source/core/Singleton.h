@@ -32,7 +32,7 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class EXTERNAL Singleton {
     private:

@@ -20,7 +20,7 @@
 #include "Singleton.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     /* static */ Singleton::SingletonList& Singleton::ListInstance()

@@ -24,7 +24,7 @@
 
 #include <atomic>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Exchange {
 

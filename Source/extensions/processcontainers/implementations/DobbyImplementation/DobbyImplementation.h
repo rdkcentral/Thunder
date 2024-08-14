@@ -31,7 +31,7 @@
 
 #include <future>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     const string CONFIG_NAME = "/config.json";

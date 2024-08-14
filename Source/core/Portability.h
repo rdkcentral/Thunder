@@ -187,6 +187,9 @@
 #define DISABLE_WARNING_PEDANTIC
 #define DISABLE_WARNING_OVERLOADED_VIRTUALS
 #define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND
+#define DISABLE_WARNING_DELETE_INCOMPLETE
+#define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE
+#define DISABLE_WARNING_MAYBE_UNINITIALIZED
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -215,6 +218,9 @@
 #define DISABLE_WARNING_OVERLOADED_VIRTUALS PUSH_WARNING_ARG_("-Woverloaded-virtual")
 #define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE PUSH_WARNING_ARG_("-Wint-to-pointer-cast")
 #define DISABLE_WARNING_CONSTANT_LOGICAL_OPERAND PUSH_WARNING_ARG_("-Wconstant-logical-operand")
+#define DISABLE_WARNING_DELETE_INCOMPLETE PUSH_WARNING_ARG_("-Wdelete-incomplete")
+#define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE PUSH_WARNING_ARG_("-Winconsistent-missing-override")
+#define DISABLE_WARNING_MAYBE_UNINITIALIZED PUSH_WARNING_ARG_("-Wmaybe-uninitialized")
 #endif
 #endif
 
@@ -346,6 +352,8 @@ typedef std::string string;
 #undef ERROR_NOT_SUPPORTED
 #undef ERROR_HIBERNATED
 #undef ERROR_INVALID_PARAMETER
+#undef InterlockedIncrement
+#undef InterlockedDecrement
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
@@ -425,6 +433,7 @@ typedef std::string string;
 #define POLLRDHUP 0x2000
 #endif
 
+#define SOCK_CLOEXEC 0
 #define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
@@ -470,6 +479,7 @@ uint64_t ntohll(const uint64_t& value);
 #define _tcsrchr wcsrchr
 #define _tcsftime wcsftime
 #define _stprintf swprintf
+#define _stnprintf swprintf
 #define _tcscpy wcscpy
 #define _tcsncpy wcsncpy
 
@@ -499,6 +509,7 @@ uint64_t ntohll(const uint64_t& value);
 #define _tcsrchr strrchr
 #define _tcsftime strftime
 #define _stprintf sprintf
+#define _stnprintf snprintf
 #define _tcscpy strcpy
 #define _tcsncpy strncpy
 
@@ -684,7 +695,7 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -956,6 +967,17 @@ namespace Core {
 }
 }
 
+namespace WPEFramework {
+    using namespace Thunder;
+}
+
+#define WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(NESTED_NAMESPACE) \
+namespace WPEFramework { \
+namespace NESTED_NAMESPACE { \
+    using namespace Thunder::NESTED_NAMESPACE; \
+} \
+}
+
 extern "C" {
 
 #ifdef __WINDOWS__
@@ -963,7 +985,7 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<WPEFramework::Core::callstack_info>& stack);
+void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
 
 }
@@ -987,6 +1009,6 @@ namespace std {
 #endif
 #endif
 
-#define THUNDER_VERSION 5
+#include "Version.h"
 
 #endif // __PORTABILITY_H

@@ -5,7 +5,7 @@ Thunder is made up of a number of different GitHub repositories, although you do
 
 | Repository Name          | URL                                                          | Maintainer       | Description                                                  |
 | ------------------------ | ------------------------------------------------------------ | ---------------- | ------------------------------------------------------------ |
-| Thunder                  | [https://github.com/rdkcentral/Thunder/](https://github.com/rdkcentral/Thunder/) | Metrological/RDK | Core Thunder repository. Contains the WPEFramework daemon, core libraries and utilities. |
+| Thunder                  | [https://github.com/rdkcentral/Thunder/](https://github.com/rdkcentral/Thunder/) | Metrological/RDK | Core Thunder repository. Contains the Thunder daemon, core libraries and utilities. |
 | Thunder Tools            | [https://github.com/rdkcentral/ThunderTools](https://github.com/rdkcentral/ThunderTools) | Metrological     | Supporting tooling for building Thunder & Thunder plugins. For example, stub and documentation generation. |
 | Thunder Interfaces       | [https://github.com/rdkcentral/ThunderInterfaces/](https://github.com/rdkcentral/ThunderInterfaces/) | Metrological/RDK | Interface definitions for plugins                            |
 | Thunder Client Libraries | [https://github.com/rdkcentral/ThunderClientLibraries](https://github.com/rdkcentral/ThunderClientLibraries) | Metrological     | C/C++ libraries that can be used for client applications to make it easier to work with some plugins |

@@ -22,7 +22,7 @@
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/BaseContainerIterator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     template <typename CONTAINER>
@@ -106,4 +106,4 @@ namespace ProcessContainers {
     };
 
 } // ProcessContainers
-} // WPEFramework
+} // Thunder

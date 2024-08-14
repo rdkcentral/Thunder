@@ -4,29 +4,29 @@ As with all code, it is important that Thunder plugins handle errors gracefully 
 
 By default, Thunder is compiled with `-fno-exceptions` to disable exception support in the framework. This can be changed by enabling the `EXCEPTIONS_ENABLE` CMake option. As a result, plugins should **never** be designed to throw exceptions.
 
-If an exception does occur, the WPEFramework process will immediately shut down with an error to prevent any further issues and log the following message:
+If an exception does occur, the Thunder process will immediately shut down with an error to prevent any further issues and log the following message:
 
 ```
-WPEFramework shutting down due to an uncaught exception.
+Thunder shutting down due to an uncaught exception.
 ```
 
 If the `Crash` logging category is enabled, then more information about the faulting callstack will be available (only on debug builds). Thunder will attempt to resolve the callsign of the faulting plugin but this is not always possible.
 
 ```
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: -== Unhandled exception in: NoTLSCallsign [General] ==-
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [000] [0x7ffff7d22cba] /Thunder/install/usr/lib/libWPEFrameworkCore.so.1 DumpCallStack [74]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [001] [0x7ffff7e02b84] /Thunder/install/usr/lib/libWPEFrameworkMessaging.so.1 WPEFramework::Logging::DumpException(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [88]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [002] [0x555555641b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [000] [0x7ffff7d22cba] /Thunder/install/usr/lib/libThunderCore.so.1 DumpCallStack [74]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [001] [0x7ffff7e02b84] /Thunder/install/usr/lib/libThunderMessaging.so.1 Thunder::Logging::DumpException(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) [88]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [002] [0x555555641b35] /Thunder/install/usr/bin/Thunder
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [003] [0x7ffff7aae24c] /lib/x86_64-linux-gnu/libstdc++.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [004] [0x7ffff7aae2b7] /lib/x86_64-linux-gnu/libstdc++.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [005] [0x7ffff7aae518] /lib/x86_64-linux-gnu/libstdc++.so.6 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [006] [0x7ffff49820ff] /Thunder/install/usr/lib/wpeframework/plugins/libWPEFrameworkTestPlugin.so 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [007] [0x555555664a61] /Thunder/install/usr/bin/WPEFramework 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [008] [0x55555566b47e] /Thunder/install/usr/bin/WPEFramework 
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [009] [0x555555643b35] /Thunder/install/usr/bin/WPEFramework 
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [006] [0x7ffff49820ff] /Thunder/install/usr/lib/thunder/plugins/libThunderTestPlugin.so
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [007] [0x555555664a61] /Thunder/install/usr/bin/Thunder
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [008] [0x55555566b47e] /Thunder/install/usr/bin/Thunder
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [009] [0x555555643b35] /Thunder/install/usr/bin/Thunder
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [010] [0x7ffff7629d90] /lib/x86_64-linux-gnu/libc.so.6 
 [Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [011] [0x7ffff7629e40] /lib/x86_64-linux-gnu/libc.so.6 __libc_start_main [128]
-[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [012] [0x555555596055] /Thunder/install/usr/bin/WPEFramework _start [37]
+[Wed, 05 Jul 2023 10:43:38]:[SysLog]:[Crash]: [012] [0x555555596055] /Thunder/install/usr/bin/Thunder _start [37]
 ```
 
 ### Exception Catching

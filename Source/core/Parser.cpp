@@ -19,7 +19,7 @@
  
 #include "Parser.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     uint32_t TextParser::ReadText(const TCHAR delimiters[], const uint32_t offset) const

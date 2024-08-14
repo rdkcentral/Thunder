@@ -19,7 +19,7 @@
 
 #include "MessageClient.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Messaging {
 

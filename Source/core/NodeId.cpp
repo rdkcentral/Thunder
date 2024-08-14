@@ -43,7 +43,7 @@
 
 #include "NodeId.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 static bool IsIPv4Address(const TCHAR hostname[]) {

@@ -38,11 +38,11 @@ The `FindByName` method will search for all currently running processes that mat
 std::list<Core::ProcessInfo> processes;
 
 // Second argument specifies if we should match exactly
-Core::ProcessInfo::FindByName("WPEFramework", true, processes);
-printf("There are currently %d WPEFramework processes\n", processes.size());
+Core::ProcessInfo::FindByName("Thunder", true, processes);
+printf("There are currently %d Thunder processes\n", processes.size());
 
 /* Output:
-There are currently 1 WPEFramework processes
+There are currently 1 Thunder processes
 */
 ```
 
@@ -167,7 +167,7 @@ For simplicity, the example will print the data sent to stdout along with the ti
 #include <core/ResourceMonitor.h>
 #include <core/core.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 /**
  * @brief A simple class that will monitor the stdout/err from a long-running process

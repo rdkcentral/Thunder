@@ -24,7 +24,7 @@
 #include "Enumerate.h"
 #include "Singleton.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
@@ -52,7 +52,8 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Lock();
 
                 while (_controlList.size() > 0) {
-                    TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(*_controlList.front()).name(), static_cast<uint32_t>(_controlList.size()));
+                    VARIABLE_IS_NOT_USED auto& control = *_controlList.front();
+                    TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(control).name(), static_cast<uint32_t>(_controlList.size()));
                     _controlList.front()->Destroy();
                 }
 

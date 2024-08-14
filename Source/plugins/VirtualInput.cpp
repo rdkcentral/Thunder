@@ -19,7 +19,7 @@
 
 #include "VirtualInput.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 

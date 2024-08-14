@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
 
@@ -132,4 +132,4 @@ namespace ProcessContainers {
         virtual IContainer* Get(const string& id) = 0;
     };
 } // ProcessContainers
-} // WPEFramework
+} // Thunder

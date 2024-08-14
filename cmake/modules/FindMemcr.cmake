@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.15)
 
 # Be compatible even if a newer CMake version is available
 cmake_policy(VERSION 3.7...3.12)

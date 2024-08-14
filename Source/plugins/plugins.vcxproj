@@ -181,7 +181,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -220,7 +220,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -259,7 +259,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>
@@ -302,7 +302,7 @@
       </Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace WPEFramework::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command>python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSON Generated Code</Message>

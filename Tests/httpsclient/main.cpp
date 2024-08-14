@@ -4,46 +4,46 @@
 #include <cryptalgo/cryptalgo.h>
 #include <websocket/websocket.h>
 
-using namespace WPEFramework;
+using namespace Thunder;
 
-class WebClient : public Web::WebLinkType<Crypto::SecureSocketPort, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
+class WebClient : public Web::WebLinkType<Crypto::SecureSocketPort, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> {
 private:
-    typedef Web::WebLinkType<Crypto::SecureSocketPort, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
+    typedef Web::WebLinkType<Crypto::SecureSocketPort, Web::Response, Web::Request, Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
     // All requests needed by any instance of this socket class, is coming from this static factory.
     // This means that all Requests, received are shared among all WebServer sockets, hopefully limiting
     // the number of requests that need to be created.
-    static WPEFramework::Core::ProxyPoolType<Web::Response> _responseFactory;
+    static Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
 
 public:
     WebClient() = delete;
     WebClient(const WebClient& copy) = delete;
     WebClient& operator=(const WebClient&) = delete;
 
-    WebClient(const WPEFramework::Core::NodeId& remoteNode)
+    WebClient(const Thunder::Core::NodeId& remoteNode)
         : BaseClass(5, _responseFactory, Core::SocketPort::STREAM, remoteNode.AnyInterface(), remoteNode, 2048, 2048)
         , _textBodyFactory(2)
     {
     }
     virtual ~WebClient()
     {
-        BaseClass::Close(WPEFramework::Core::infinite);
+        BaseClass::Close(Thunder::Core::infinite);
     }
 
 public:
     // Notification of a Partial Request received, time to attach a body..
-    virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
+    virtual void LinkBody(Core::ProxyType<Thunder::Web::Response>& element)
     {
         // Time to attach a String Body
         element->Body<Web::TextBody>(_textBodyFactory.Element());
     }
-    virtual void Received(Core::ProxyType<WPEFramework::Web::Response>& element)
+    virtual void Received(Core::ProxyType<Thunder::Web::Response>& element)
     {
         string received;
         element->ToString(received);
         printf(_T("Received: %s\n"), received.c_str());
     }
-    virtual void Send(const Core::ProxyType<WPEFramework::Web::Request>& response)
+    virtual void Send(const Core::ProxyType<Thunder::Web::Request>& response)
     {
         string send;
         response->ToString(send);
@@ -61,7 +61,7 @@ public:
     void Submit()
     {
         if (IsOpen()) {
-            Core::ProxyType<WPEFramework::Web::Request> request = Core::ProxyType<WPEFramework::Web::Request>::Create();
+            Core::ProxyType<Thunder::Web::Request> request = Core::ProxyType<Thunder::Web::Request>::Create();
 
             printf("Creating Request!!!!.\n");
             request->Verb = Web::Request::HTTP_GET;
@@ -75,7 +75,7 @@ public:
     void SubmitAuthRequest()
     {
         if (IsOpen()) {
-            Core::ProxyType<WPEFramework::Web::Request> request = Core::ProxyType<WPEFramework::Web::Request>::Create();
+            Core::ProxyType<Thunder::Web::Request> request = Core::ProxyType<Thunder::Web::Request>::Create();
 
             printf("Creating Auth Request!!!!.\n");
             request->Verb = Web::Request::HTTP_GET;
@@ -107,7 +107,7 @@ public:
     Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
 };
 
-/* static */ WPEFramework::Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
+/* static */ Thunder::Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
 
 #ifdef __WIN32__
 int _tmain(int argc, _TCHAR**)
@@ -127,7 +127,7 @@ int main(int argc, const char* argv[])
         int keyPress;
 
         WebClient webConnector(Core::NodeId("httpbin.org", 443));
-        Core::ProxyType<WPEFramework::Web::Request> webRequest(Core::ProxyType<WPEFramework::Web::Request>::Create());
+        Core::ProxyType<Thunder::Web::Request> webRequest(Core::ProxyType<Thunder::Web::Request>::Create());
 
         printf("Ready to start processing events, options to start \n 0 -> connect \n 1 -> disconnect \n 2 -> Submit Request \n 3 -> Submit with Authorization Header \n");
         do {
@@ -167,7 +167,7 @@ int main(int argc, const char* argv[])
     }
 
     // Clear the factory we created..
-    WPEFramework::Core::Singleton::Dispose();
+    Thunder::Core::Singleton::Dispose();
 
     printf("\nClosing down!!!\n");
 

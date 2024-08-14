@@ -34,7 +34,7 @@
 #endif
 #endif
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 #ifdef __WINDOWS__
 
@@ -196,7 +196,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFramework::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
+void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
 #if defined(THUNDER_BACKTRACE)
     void* callstack[32];
@@ -338,7 +338,7 @@ uint64_t ntohll(const uint64_t& value)
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifndef va_copy

@@ -21,7 +21,7 @@
 
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace IVirtualInput {
 
@@ -82,4 +82,4 @@ namespace IVirtualInput {
 
 } // namespace IVirtualInput
 
-} // namespace WPEFramework
+} // namespace Thunder

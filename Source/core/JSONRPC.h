@@ -27,7 +27,7 @@
 #include <functional>
 #include <vector>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -65,7 +65,7 @@ namespace Core {
                     Add(_T("message"), &Text);
                     Add(_T("data"), &Data);
                 }
-                Info(Info&& move)
+                Info(Info&& move) noexcept
                     : Core::JSON::Container()
                     , Code(std::move(move.Code))
                     , Text(std::move(move.Text))
@@ -85,7 +85,7 @@ namespace Core {
                     return (*this);
                 }
 
-                Info& operator=(Info&& move)
+                Info& operator=(Info&& move) noexcept
                 {
                     if (this != &move) {
                         Code = std::move(move.Code);
@@ -96,7 +96,7 @@ namespace Core {
                 }
 
             public:
-                void Clear()
+                void Clear() override
                 {
                     Code.Clear();
                     Text.Clear();
@@ -218,7 +218,7 @@ namespace Core {
                 Add(_T("error"), &Error);
             }
 
-            Message(Message&& move)
+            Message(Message&& move) noexcept
                 : Core::JSON::Container()
                 , JSONRPC(std::move(move.JSONRPC))
                 , Id(std::move(move.Id))
@@ -369,7 +369,7 @@ namespace Core {
 
                 return (val);
             }
-            void Clear()
+            void Clear() override
             {
                 JSONRPC = DefaultVersion;
                 Id.Clear();
@@ -438,7 +438,7 @@ namespace Core {
                 , _sequence(copy._sequence)
                 , _token(copy._token) {
             }
-            Context(Context&& move)
+            Context(Context&& move) noexcept
                 : _channelId(move._channelId)
                 , _sequence(move._sequence)
                 , _token(std::move(move._token)) {
@@ -464,9 +464,9 @@ namespace Core {
             }
 
         private:
-            const uint32_t _channelId;
-            const uint32_t _sequence;
-            const string _token;
+            uint32_t _channelId;
+            uint32_t _sequence;
+            string _token;
         };
 
         typedef std::function<void(const Context& context, const string& parameters, Core::OptionalType<Core::JSON::Error>&)> CallbackFunction;
@@ -545,7 +545,7 @@ namespace Core {
                     , _info(copy._info, copy._asynchronous)
                 {
                 }
-                Entry(Entry&& move)
+                Entry(Entry&& move) noexcept
                     : _asynchronous(move._asynchronous)
                     , _info(std::move(move._info), move._asynchronous)
                 {
@@ -621,7 +621,7 @@ namespace Core {
                     , _position(copy._position)
                 {
                 }
-                EventIterator(EventIterator&& move)
+                EventIterator(EventIterator&& move) noexcept
                     : _container(move._container)
                     , _index(std::move(move._index))
                     , _position(move._position)
@@ -639,7 +639,7 @@ namespace Core {
 
                     return (*this);
                 }
-                EventIterator& operator=(EventIterator&& move)
+                EventIterator& operator=(EventIterator&& move) noexcept
                 {
                     if (this != &move) {
                         _container = move._container;
@@ -1055,7 +1055,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int()));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method));
                 });
             }
 
@@ -1085,7 +1085,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int(), context));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context));
                 });
             }
 
@@ -1108,7 +1108,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<2>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int(), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::Index(methodName)));
                 });
             }
 
@@ -1131,7 +1131,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<3>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int(), context, Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::Index(methodName)));
                 });
             }
 
@@ -1161,7 +1161,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int(), Message::InstanceId(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName)));
                 });
             }
 
@@ -1184,7 +1184,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND, METHOD>(parameters, result, method, int(), Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
@@ -1214,7 +1214,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Core::JSONRPC::Context&, const string&, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2), int()));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2)));
                 });
             }
 
@@ -1244,7 +1244,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), int(), context));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), context));
                 });
             }
 
@@ -1267,7 +1267,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<2>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), int(), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), Message::Index(methodName)));
                 });
             }
 
@@ -1290,7 +1290,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<3>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), int(), context, Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), context, Message::Index(methodName)));
                 });
             }
 
@@ -1320,7 +1320,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), int(), Message::InstanceId(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), Message::InstanceId(methodName)));
                 });
             }
 
@@ -1343,7 +1343,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
-                    return (InternalRegisterImpl<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), int(), Message::InstanceId(methodName), Message::Index(methodName)));
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND>(parameters, result, std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
@@ -1373,7 +1373,7 @@ namespace Core {
                 return(code);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename... Args>
-            static uint32_t InternalRegisterImpl(const string& parameters, string& result, const METHOD& method, int, Args&&... args)
+            static uint32_t InternalRegisterImplIO(const string& parameters, string& result, const METHOD& method, Args&&... args)
             {
                 uint32_t code;
                 INBOUND inbound;

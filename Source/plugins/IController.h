@@ -25,7 +25,7 @@
 // @stubgen:include <plugins/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Exchange {
 
@@ -49,6 +49,10 @@ namespace Controller {
         // @param newcallsign: Callsign for the cloned plugin
         virtual Core::hresult Clone(const string& callsign, const string& newcallsign, string& response /* @out */) = 0;
 
+        // @brief Destroy given plugin
+        // @param callsign: Callsign of the plugin
+        virtual Core::hresult Destroy(const string& callsign) = 0;
+
         // @property
         // @brief Environment variable value
         virtual Core::hresult Environment(const string& variable /* @index */, string& value /* @out */ ) const = 0;
@@ -62,7 +66,7 @@ namespace Controller {
             struct DiscoveryResult {
                 string Locator /* @brief Locator for the discovery */;
                 uint32_t Latency /* @brief Latency for the discovery */;
-                string Model /* @optional @brief Model */;
+                Core::OptionalType<string> Model /* @brief Model */;
                 bool Secure /* @brief Secure or not */;
             };
 
@@ -71,7 +75,7 @@ namespace Controller {
 
         // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const uint8_t ttl) = 0;
+        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @default:1 @restrict:1..255 */) = 0;
 
         // @property
         // @brief SSDP network discovery results
@@ -88,7 +92,7 @@ namespace Controller {
 
         // @property
         // @brief Service configuration
-        virtual Core::hresult Configuration(const string& callsign /* @index @optional */, string& configuration /* @out @opaque */) const = 0;
+        virtual Core::hresult Configuration(const Core::OptionalType<string>& callsign /* @index */, string& configuration /* @out @opaque */) const = 0;
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
     };
 
@@ -200,21 +204,14 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_EVENTS_NOTIFICATION };
 
-            struct Event {
-                string event;
-                string params /* @opaque @optional */;
-            };
-
             // @text all
             // @brief Notifies all events forwarded by the framework
             // @details The Controller plugin is an aggregator of all the events triggered by a specific plugin.
             //          All notifications send by any plugin are forwarded over the Controller socket as an event.
+            // @param event: Name of the message
             // @param callsign: Origin of the message
-            // @param data: Contents of the message
-            virtual void ForwardMessage(const string& callsign, const string& data /* @opaque */) = 0;
-
-            // @text all
-            virtual void ForwardEvent(const string& callsign, const Event& data) = 0;
+            // @param params: Contents of the message
+            virtual void ForwardMessage(const string& event, const Core::OptionalType<string>& callsign, const Core::OptionalType<string>& params /* @opaque */) = 0;
         };
     };
 
@@ -224,7 +221,7 @@ namespace Controller {
 
         struct Data {
             struct Version {
-                string Hash /* @brief SHA256 hash identifying the source code */;
+                string Hash /* @brief SHA256 hash identifying the source code @restrict:64..64 */;
                 uint8_t Major /* @brief Major number */;
                 uint8_t Minor /* @brief Minor number */;
                 uint8_t Patch /* @brief Patch number */;
@@ -233,8 +230,8 @@ namespace Controller {
             struct CallStack {
                 Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
-                string Function /* @optional @brief Function name */;
-                uint32_t Line /* @optional @brief Line number */;
+                Core::OptionalType<string> Function /* @brief Function name */;
+                Core::OptionalType<uint32_t> Line /* @brief Line number */;
             };
 
             struct Thread {
@@ -245,6 +242,7 @@ namespace Controller {
 
             struct Proxy {
                 uint32_t Interface /* @brief Interface ID */;
+                string Name /* @brief The fully qualified name of the interface */;
                 Core::instance_id Instance /* @brief Instance ID */;
                 uint32_t Count /* @brief Reference count */;
             };
@@ -261,7 +259,7 @@ namespace Controller {
 
                 string Remote /* @brief IP address (or FQDN) of the other side of the connection */;
                 state State /* @brief State of the link */;
-                string Name /* @optional @brief Name of the connection */;
+                Core::OptionalType<string> Name /* @brief Name of the connection */;
                 uint32_t Id /* @brief A unique number identifying the connection */;
                 bool Activity /* @brief Denotes if there was any activity on this connection */;
             };
@@ -287,22 +285,24 @@ namespace Controller {
                 state State /* @brief Current state */;
                 PluginHost::IShell::startmode StartMode /* @brief Startup mode */;
                 bool Resumed /* @brief Determines if the plugin is to be activated in resumed or suspended mode */;
+
                 Data::Version Version /* @brief Version */;
 
-                string Communicator /* @optional @brief Communicator */;
+                Core::OptionalType<string> Communicator /* @brief Communicator */;
 
-                string PersistentPathPostfix /* @optional @brief Postfix of persistent path */;
-                string VolatilePathPostfix /* @optional @brief Postfix of volatile path */;
-                string SystemRootPath /* @optional @brief Path of system root */;
+                Core::OptionalType<string> PersistentPathPostfix /* @brief Postfix of persistent path */;
+                Core::OptionalType<string> VolatilePathPostfix /* @brief Postfix of volatile path */;
+                Core::OptionalType<string> SystemRootPath /* @brief Path of system root */;
 
-                string Precondition /* @opaque @optional @brief Activation conditons */;
-                string Termination /* @opaque @optional @brief Deactivation conditions */;
+                Core::OptionalType<string> Precondition /* @opaque @brief Activation conditons */;
+                Core::OptionalType<string> Termination /* @opaque @brief Deactivation conditions */;
+                Core::OptionalType<string> Control /* @opaque @brief Conditions controlled by this service */;
 
-                string Configuration /* @opaque @optional @brief Plugin configuration */;
+                string Configuration /* @opaque @brief Plugin configuration */;
 
-                uint16_t Observers /* @optional @brief Number or observers */;
-                uint32_t ProcessedRequests /* @optional @brief Number of API requests that have been processed by the plugin */;
-                uint32_t ProcessedObjects /* @optional @brief Number of objects that have been processed by the plugin */;
+                uint16_t Observers /* @brief Number or observers */;
+                Core::OptionalType<uint32_t> ProcessedRequests /* @brief Number of API requests that have been processed by the plugin */;
+                Core::OptionalType<uint32_t> ProcessedObjects /* @brief Number of objects that have been processed by the plugin */;
             };
 
             using ICallStackIterator = RPC::IIteratorType<Data::CallStack, RPC::ID_CONTROLLER_METADATA_CALLSTACK_ITERATOR>;
@@ -316,7 +316,7 @@ namespace Controller {
         // @property @alt:deprecated status
         // @brief Services metadata
         // @details If callsign is omitted, metadata of all services is returned.
-        virtual Core::hresult Services(const string& callsign /* @index @optional */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
+        virtual Core::hresult Services(const Core::OptionalType<string>& callsign /* @index */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 
         // @property
         // @brief Connections list

@@ -17,43 +17,50 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
-#include <core/core.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <websocket/websocket.h>
 
-namespace WPEFramework {
-namespace Tests {
+#include "../IPTestAdministrator.h"
 
-    class WebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > {
+namespace Thunder {
+namespace Tests {
+namespace Core {
+
+    class WebServer : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request> > BaseClass;
+
+        constexpr static uint32_t maxWaitTimeMs = 4000;
 
     public:
         WebServer() = delete;
         WebServer(const WebServer& copy) = delete;
         WebServer& operator=(const WebServer&) = delete;
 
-        WebServer(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<WebServer>*)
+        WebServer(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<WebServer>*)
             : BaseClass(5, false, connector, remoteId, 2048, 2048)
         {
         }
 
         virtual ~WebServer()
         {
-            Close(WPEFramework::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Request>& element)
         {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
 
-        virtual void Received(Core::ProxyType<WPEFramework::Web::Request>& request)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_EQ(request->MajorVersion, 1);
@@ -61,13 +68,14 @@ namespace Tests {
             EXPECT_TRUE(request->HasBody());
             EXPECT_EQ(request->ContentLength.Value(), 19u);
 
-            Core::ProxyType<Web::Response> response(Core::ProxyType<Web::Response>::Create());
+            ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<Web::TextBody>(request->Body<Web::TextBody>());
-            Submit(response);
+
+            EXPECT_TRUE(Submit(response));
         }
 
-        virtual void Send(const Core::ProxyType<WPEFramework::Web::Response>& response)
+        virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
@@ -78,21 +86,23 @@ namespace Tests {
         }
 
     private:
-        static Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
 
-    Core::ProxyPoolType<Web::TextBody> WebServer::_textBodyFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::TextBody> WebServer::_textBodyFactory(5);
 
-    class WebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
+    class WebClient : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
+
+        static constexpr uint32_t maxWaitTimeMs = 4000;
 
     public:
         WebClient() = delete;
         WebClient(const WebClient& copy) = delete;
         WebClient& operator=(const WebClient&) = delete;
 
-        WebClient(const WPEFramework::Core::NodeId& remoteNode)
+        WebClient(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(5,_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
         {
@@ -100,18 +110,18 @@ namespace Tests {
 
         virtual ~WebClient()
         {
-            Close(WPEFramework::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Response>& element)
         {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
 
-        virtual void Received(Core::ProxyType<WPEFramework::Web::Response>& response)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_STREQ(response->Message.c_str(), "OK");
@@ -121,10 +131,11 @@ namespace Tests {
             EXPECT_EQ(response->ContentLength.Value(), 19u);
 
             _dataReceived = *(response->Body<Web::TextBody>());
-            _dataPending.Unlock();
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
-        virtual void Send(const Core::ProxyType<WPEFramework::Web::Request>& request)
+        virtual void Send(const ::Thunder::Core::ProxyType<::Thunder::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
@@ -134,7 +145,7 @@ namespace Tests {
         {
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -146,51 +157,77 @@ namespace Tests {
         }
 
     private:
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         string _dataReceived;
-        static Core::ProxyPoolType<Web::Response> _responseFactory;
-        static Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        static ::Thunder::Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
 
-    Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
-    Core::ProxyPoolType<Web::TextBody> WebClient::_textBodyFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
+    ::Thunder::Core::ProxyPoolType<Web::TextBody> WebClient::_textBodyFactory(5);
 
     TEST(WebLink, Text)
     {
-        std::string connector {"127.0.0.1"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<WebServer> _webServer(Core::NodeId(connector.c_str(), 12343));
-            _webServer.Open(Core::infinite);
-            testAdmin.Sync("setup server");
-            testAdmin.Sync("client done");
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"127.0.0.1"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<WebServer> _webServer(::Thunder::Core::NodeId(connector.c_str(), 12343));
+
+            ASSERT_EQ(_webServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(_webServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
-            WebClient webConnector(Core::NodeId(connector.c_str(), 12343));
-            Core::ProxyType<Web::Request> webRequest(Core::ProxyType<Web::Request>::Create());
-            Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
+            WebClient webConnector(::Thunder::Core::NodeId(connector.c_str(), 12343));
+
+            ::Thunder::Core::ProxyType<Web::Request> webRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
+            ::Thunder::Core::ProxyType<Web::TextBody> webRequestBody(::Thunder::Core::ProxyType<Web::TextBody>::Create());
+        
             webRequest->Body<Web::TextBody>(webRequestBody);
-            webConnector.Open(Core::infinite);
-            while (!webConnector.IsOpen());
-            webRequest->Verb = Web::Request::HTTP_GET;
-            string sent = "Just a body to send";
-            *webRequestBody = sent;
-            webConnector.Submit(webRequest);
 
-            webConnector.Wait();
+            ASSERT_EQ(webConnector.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        
+            ASSERT_TRUE(webConnector.IsOpen());
+
+            webRequest->Verb = Web::Request::HTTP_GET;
+
+            // True object
+            ASSERT_TRUE(webRequest->IsValid());
+ 
+            string sent = "Just a body to send";
+        
+            *webRequestBody = sent;
+
+            EXPECT_TRUE(webConnector.Submit(webRequest));
+
+            ASSERT_EQ(webConnector.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             webConnector.Retrieve(received);
+
             EXPECT_STREQ(received.c_str(), sent.c_str());
-            testAdmin.Sync("client done");
-        }
-        Core::Singleton::Dispose();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

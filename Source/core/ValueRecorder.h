@@ -36,7 +36,7 @@
 // ---- Helper functions ----
 
 // ---- Class Definition ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // C = continuation. [1] Next byte is part of this element, [0] Last part of element
     // T = Type. [1] = Time / [0] = Value
@@ -431,7 +431,7 @@ namespace Core {
                 ASSERT((_storage[_index] & 0x80) == 0);
 
                 // we need to loopback for another 0..
-                while ((_storage[_index - 1] & 0x80) != 0) {
+                while (_index > 0 && (_storage[_index - 1] & 0x80) != 0) {
                     result = (result << 7) | (_storage[_index] & 0x7F);
                     _index--;
                     stepBack++;

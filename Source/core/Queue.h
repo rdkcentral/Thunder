@@ -34,7 +34,7 @@
 #include "StateTrigger.h"
 #include "Sync.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename CONTEXT>
     class QueueType {

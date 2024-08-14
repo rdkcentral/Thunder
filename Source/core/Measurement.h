@@ -24,7 +24,7 @@
 #include "Number.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename TYPE>
     class MeasurementType {

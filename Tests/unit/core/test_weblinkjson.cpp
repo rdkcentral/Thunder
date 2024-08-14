@@ -17,30 +17,35 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 #include <websocket/websocket.h>
 
-namespace WPEFramework {
-namespace Tests {
+#include "../IPTestAdministrator.h"
 
-namespace {
-    enum class CommandType {
+namespace Thunder {
+namespace Tests {
+namespace Core {
+
+    enum class CommandTypeWeblinkJSON {
         EXECUTESHELL,
         WIFISETTINGS,
         FANCONTROL,
         PLAYERCONTROL
     };
 
-    class Parameters : public Core::JSON::Container {
+    class Parameters : public ::Thunder::Core::JSON::Container {
     public:
         Parameters(const Parameters&) = delete;
         Parameters& operator=(const Parameters&) = delete;
 
         Parameters()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Speed(0)
             , Duration(0)
             , Command()
@@ -57,19 +62,19 @@ namespace {
         }
 
     public:
-        Core::JSON::OctSInt16 Speed;
-        Core::JSON::DecUInt16 Duration;
-        Core::JSON::EnumType<CommandType> Command;
-        Core::JSON::ArrayType<Core::JSON::DecUInt16> Settings;
+        ::Thunder::Core::JSON::OctSInt16 Speed;
+        ::Thunder::Core::JSON::DecUInt16 Duration;
+        ::Thunder::Core::JSON::EnumType<CommandTypeWeblinkJSON> Command;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16> Settings;
     };
 
-    class Command : public Core::JSON::Container {
+    class Command : public ::Thunder::Core::JSON::Container {
     public:
         Command(const Command&) = delete;
         Command& operator=(const Command&) = delete;
 
         Command()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Identifier(0)
             , Name()
             , BaseAddress(0)
@@ -88,27 +93,27 @@ namespace {
         }
 
     public:
-        Core::JSON::DecUInt32 Identifier;
-        Core::JSON::String Name;
-        Core::JSON::HexUInt32 BaseAddress;
-        Core::JSON::Boolean TrickFlag;
+        ::Thunder::Core::JSON::DecUInt32 Identifier;
+        ::Thunder::Core::JSON::String Name;
+        ::Thunder::Core::JSON::HexUInt32 BaseAddress;
+        ::Thunder::Core::JSON::Boolean TrickFlag;
         Parameters Params;
     };
 
     typedef Web::JSONBodyType<Command> CommandBody;
 
-    }
-
-    class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> {
+    class JSONWebServer : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request>&> {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Request, Web::Response, ::Thunder::Core::ProxyPoolType<Web::Request>&> BaseClass;
+
+        constexpr static uint32_t maxWaitTimeMs = 4000;
 
     public:
         JSONWebServer() = delete;
         JSONWebServer(const JSONWebServer& copy) = delete;
         JSONWebServer& operator=(const JSONWebServer&) = delete;
 
-        JSONWebServer(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONWebServer>*)
+        JSONWebServer(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<JSONWebServer>*)
             : BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
             , _requestFactory(5)
             , _commandBodyFactory(5)
@@ -117,18 +122,18 @@ namespace {
 
         virtual ~JSONWebServer()
         {
-            Close(WPEFramework::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Request>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
         }
 
-        virtual void Received(Core::ProxyType<Web::Request>& request)
+        virtual void Received(::Thunder::Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_EQ(request->MajorVersion, 1);
@@ -136,13 +141,14 @@ namespace {
             EXPECT_TRUE(request->HasBody());
             EXPECT_EQ(request->ContentLength.Value(), 60u);
 
-            Core::ProxyType<Web::Response> response(Core::ProxyType<Web::Response>::Create());
+            ::Thunder::Core::ProxyType<Web::Response> response(::Thunder::Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
             response->Body<CommandBody>(request->Body<CommandBody>());
-            Submit(response);
+
+            EXPECT_TRUE(Submit(response));
         }
 
-        virtual void Send(const Core::ProxyType<Web::Response>& response)
+        virtual void Send(const ::Thunder::Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
@@ -153,20 +159,22 @@ namespace {
         }
 
     private:
-        Core::ProxyPoolType<Web::Request> _requestFactory;
-        Core::ProxyPoolType<CommandBody> _commandBodyFactory;
+        ::Thunder::Core::ProxyPoolType<Web::Request> _requestFactory;
+        ::Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
-    class JSONWebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
+    class JSONWebClient : public Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> {
     private:
-        typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
+        typedef Web::WebLinkType<::Thunder::Core::SocketStream, Web::Response, Web::Request, ::Thunder::Core::ProxyPoolType<Web::Response>&> BaseClass;
+
+        static constexpr uint32_t maxWaitTimeMs = 4000;
 
     public:
         JSONWebClient() = delete;
         JSONWebClient(const JSONWebClient& copy) = delete;
         JSONWebClient& operator=(const JSONWebClient&) = delete;
 
-        JSONWebClient(const WPEFramework::Core::NodeId& remoteNode)
+        JSONWebClient(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
             , _responseFactory(5)
@@ -176,18 +184,18 @@ namespace {
 
         virtual ~JSONWebClient()
         {
-            Close(WPEFramework::Core::infinite);
+            EXPECT_EQ(Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
     public:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
+        virtual void LinkBody(::Thunder::Core::ProxyType<::Thunder::Web::Response>& element)
         {
             // Time to attach a Command Body
             element->Body<CommandBody>(_commandBodyFactory.Element());
         }
 
-        virtual void Received(Core::ProxyType<Web::Response>& response)
+        virtual void Received(::Thunder::Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_STREQ(response->Message.c_str(), "OK");
@@ -196,11 +204,12 @@ namespace {
             EXPECT_TRUE(response->HasBody());
             EXPECT_EQ(response->ContentLength.Value(), 60u);
 
-            response->Body<CommandBody>()->ToString(_dataReceived);
-            _dataPending.Unlock();
+            EXPECT_TRUE(response->Body<CommandBody>()->ToString(_dataReceived));
+
+            EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
-        virtual void Send(const Core::ProxyType<Web::Request>& request)
+        virtual void Send(const ::Thunder::Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
@@ -210,7 +219,7 @@ namespace {
         {
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -222,58 +231,90 @@ namespace {
         }
 
     private:
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         string _dataReceived;
-        Core::ProxyPoolType<Web::Response> _responseFactory;
-        Core::ProxyPoolType<CommandBody> _commandBodyFactory;
+        ::Thunder::Core::ProxyPoolType<Web::Response> _responseFactory;
+        ::Thunder::Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
     TEST(WebLink, Json)
     {
-        std::string connector {"0.0.0.0"};
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONWebServer> webServer(Core::NodeId(connector.c_str(), 12341));
-            webServer.Open(Core::infinite);
-            testAdmin.Sync("setup server");
-            testAdmin.Sync("client done");
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector {"0.0.0.0"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONWebServer> webServer(::Thunder::Core::NodeId(connector.c_str(), 12341));
+
+            ASSERT_EQ(webServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(webServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
-            JSONWebClient jsonWebConnector(Core::NodeId(connector.c_str(), 12341));
-            Core::ProxyType<Web::Request> jsonRequest(Core::ProxyType<Web::Request>::Create());
-            Core::ProxyType<CommandBody> jsonRequestBody(Core::ProxyType<CommandBody>::Create());
+            JSONWebClient jsonWebConnector(::Thunder::Core::NodeId(connector.c_str(), 12341));
+
+            ::Thunder::Core::ProxyType<Web::Request> jsonRequest(::Thunder::Core::ProxyType<Web::Request>::Create());
+            ::Thunder::Core::ProxyType<CommandBody> jsonRequestBody(::Thunder::Core::ProxyType<CommandBody>::Create());
+        
+            // ProxyType
+            ASSERT_TRUE(jsonRequest.IsValid());
+            // ProxyType
+            ASSERT_TRUE(jsonRequestBody.IsValid());
+
             jsonRequest->Body<CommandBody>(jsonRequestBody);
-            jsonWebConnector.Open(Core::infinite);
-            while (!jsonWebConnector.IsOpen());
+
+            ASSERT_EQ(jsonWebConnector.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_TRUE(jsonWebConnector.IsOpen());
+        
             jsonRequest->Verb = Web::Request::HTTP_GET;
             jsonRequestBody->Identifier = 123;
             jsonRequestBody->Name = _T("TestCase");
             jsonRequestBody->Params.Speed = 4321;
-            string sent;
-            jsonRequestBody->ToString(sent);
-            jsonWebConnector.Submit(jsonRequest);
 
-            jsonWebConnector.Wait();
+            // True object
+            ASSERT_TRUE(jsonRequest->IsValid());
+ 
+            string sent;
+            EXPECT_TRUE(jsonRequestBody->ToString(sent));
+
+            EXPECT_TRUE(jsonWebConnector.Submit(jsonRequest));
+
+            EXPECT_EQ(jsonWebConnector.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
+
             jsonWebConnector.Retrieve(received);
+
             EXPECT_STREQ(received.c_str(), sent.c_str());
-            testAdmin.Sync("client done");
-       }
-       Core::Singleton::Dispose();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
+
+} // Core
 } // Tests
 
-ENUM_CONVERSION_BEGIN(Tests::CommandType)
-    { Tests::CommandType::EXECUTESHELL, _TXT("ExecuteShell") },
-    { Tests::CommandType::WIFISETTINGS, _TXT("WiFiSettings") },
-    { Tests::CommandType::FANCONTROL, _TXT("FanControl") },
-    { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
-ENUM_CONVERSION_END(Tests::CommandType)
+ENUM_CONVERSION_BEGIN(Tests::Core::CommandTypeWeblinkJSON)
+    { Tests::Core::CommandTypeWeblinkJSON::EXECUTESHELL, _TXT("ExecuteShell") },
+    { Tests::Core::CommandTypeWeblinkJSON::WIFISETTINGS, _TXT("WiFiSettings") },
+    { Tests::Core::CommandTypeWeblinkJSON::FANCONTROL, _TXT("FanControl") },
+    { Tests::Core::CommandTypeWeblinkJSON::PLAYERCONTROL, _TXT("PlayerControl") },
+ENUM_CONVERSION_END(Tests::Core::CommandTypeWeblinkJSON)
 
-} // WPEFramework
+} // Thunder

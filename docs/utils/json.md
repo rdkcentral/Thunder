@@ -370,9 +370,9 @@ The JSON variant type behaves closer to other C++ json parsers, and does not req
 Some typedef's are provided to make the variant types easier to work with
 
 ```cpp
-using JsonObject = WPEFramework::Core::JSON::VariantContainer;
-using JsonValue = WPEFramework::Core::JSON::Variant;
-using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+using JsonObject = Thunder::Core::JSON::VariantContainer;
+using JsonValue = Thunder::Core::JSON::Variant;
+using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
 ```
 
 #### Deserialise
@@ -405,7 +405,7 @@ Age is 36
 #### Serialise
 
 ```cpp
-WPEFramework::Core::JSON::VariantContainer jsonObject;
+Thunder::Core::JSON::VariantContainer jsonObject;
 
 JsonArray sampleArray;
 sampleArray.Add(JsonValue("apple"));
