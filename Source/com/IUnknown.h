@@ -148,7 +148,7 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
-            , _name(&(name[0])) /* It always starts with "struct ", remove it...*/
+            , _name(name)
         {
         }
         virtual ~UnknownProxy() = default;

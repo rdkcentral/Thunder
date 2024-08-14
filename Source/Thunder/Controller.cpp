@@ -1235,12 +1235,15 @@ namespace Plugin {
                 data.Count = proxy->ReferenceCount();
 
                 #ifdef __LINUX__
-                data.Name = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
-                if(status != 0) {
-                    // In the case where demangle fails, use original name
-                    data.Name = proxy->Name();
-                }
-                #else 
+                    char* temp = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
+                    if(temp) {
+                        data.Name = temp;
+                        ::free(temp);
+                    }
+                    else {
+                        data.Name = proxy->Name();
+                    }
+                #else
                     data.Name = proxy->Name();
                 #endif
                 
