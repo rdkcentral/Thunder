@@ -42,6 +42,9 @@ namespace Core {
         const std::string bufferName {"testbuffer01"} ;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the parent can be set up
+            SleepMs(maxInitTime);
+
             ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
                 ::Thunder::Core::File::USER_READ    |
                 ::Thunder::Core::File::USER_WRITE   |
@@ -50,6 +53,8 @@ namespace Core {
                 ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(buff01.RequestProduce(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
@@ -72,8 +77,7 @@ namespace Core {
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            // a small delay so the child can be set up
-            SleepMs(maxInitTime);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
@@ -115,6 +119,8 @@ namespace Core {
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             // In extra scope, to make sure "buff01" is destructed before producer.
 
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
@@ -151,6 +157,8 @@ namespace Core {
                 ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(buff01.RequestProduce(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
