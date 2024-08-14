@@ -1240,12 +1240,11 @@ namespace Plugin {
                         data.Name = temp;
                         ::free(temp);
                     }
-                    else {
+                    else
+                #endif 
+                    {
                         data.Name = proxy->Name();
                     }
-                #else
-                    data.Name = proxy->Name();
-                #endif
                 
                 elements.emplace_back(std::move(data));
             }
