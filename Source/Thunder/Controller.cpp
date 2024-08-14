@@ -1235,7 +1235,7 @@ namespace Plugin {
                 data.Count = proxy->ReferenceCount();
 
                 #ifdef __LINUX__
-                    const char* temp = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
+                    char* temp = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
                     if(temp != nullptr) {
                         data.Name = temp;
                         ::free(temp);
