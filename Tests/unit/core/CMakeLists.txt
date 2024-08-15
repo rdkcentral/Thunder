@@ -21,7 +21,8 @@ if(LINUX)
     # IPTestAdministrator only supported on LINUX platform
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   #test_cyclicbuffer.cpp
+   test_cyclicbuffer.cpp
+#   test_cyclicbuffer_dataexchange.cpp
    test_databuffer.cpp
    test_dataelement.cpp
    test_dataelementfile.cpp
@@ -57,7 +58,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rectangle.cpp
    test_rpc.cpp
    test_semaphore.cpp
-   #test_sharedbuffer.cpp
+   test_sharedbuffer.cpp
    test_singleton.cpp
    test_socketstreamjson.cpp
    test_socketstreamtext.cpp
@@ -73,7 +74,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_time.cpp
    test_timer.cpp
    test_tristate.cpp
-   #test_valuerecorder.cpp
+   test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
    test_websocketjson.cpp
