@@ -1363,5 +1363,88 @@ namespace Plugin {
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
+
+    Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
+    {   
+        #if defined(__WINDOWS__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
+        #elif defined(__LINUX__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_LINUX;
+        #elif defined(__APPLE__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_MACOS;
+        #else
+            #error No system type detected
+        #endif
+
+        #if defined(__DEBUG__)
+            #if defined(_THUNDER_DEBUG_OPTIMIZED_)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
+            #else
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG;
+            #endif
+        #else // !__DEBUG__
+            #if defined(_THUNDER_NDEBUG_DEB_INFO)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
+            #elif defined(_THUNDER_PRODUCTION)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::PRODUCTION;
+            #else
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE;
+            #endif
+        #endif
+
+        #ifdef _TRACE_LEVEL
+            buildInfo.TraceLevel = _TRACE_LEVEL;
+        #endif
+
+        uint8_t extensions = 0;
+        #ifdef __CORE_WARNING_REPORTING__
+            extensions |= IMetadata::Data::BuildInfo::WARNING_REPORTING;
+        #endif
+        #ifdef __CORE_BLUETOOTH_SUPPORT__
+            extensions |= IMetadata::Data::BuildInfo::BLUETOOTH;
+        #endif
+        #ifdef HIBERNATE_SUPPORT_ENABLED
+            extensions |= IMetadata::Data::BuildInfo::HIBERNATE;
+        #endif
+        #ifdef PROCESSCONTAINERS_ENABLED
+            extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
+        #endif
+        
+        if (extensions != 0) {
+            buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
+        }
+
+        #ifdef __CORE_MESSAGING__
+            buildInfo.Messaging = true;
+        #else
+            buildInfo.Messaging= false;
+        #endif
+
+        #ifdef __CORE_EXCEPTION_CATCHING__
+            buildInfo.ExceptionCatching = true;
+        #else
+            buildInfo.ExceptionCatching = false;
+        #endif
+
+        buildInfo.InstanceIDBits = (sizeof(Core::instance_id) * 8);
+       
+        #ifdef __CORE_CRITICAL_SECTION_LOG__
+            buildInfo.DeadlockDetection = true;
+        #else
+            buildInfo.DeadlockDetection = false;
+        #endif
+     
+        #ifdef __CORE_NO_WCHAR_SUPPORT__
+            buildInfo.WCharSupport = false;
+        #else
+            buildInfo.WCharSupport = true;
+        #endif
+
+        #ifdef THREADPOOL_COUNT
+            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
+        #endif
+
+        return (Core::ERROR_NONE);
+    }
 }
 }
