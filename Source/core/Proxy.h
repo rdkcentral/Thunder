@@ -1794,7 +1794,28 @@ POP_WARNING()
 
                 return (result);
             }
-
+            template<typename ACTION>
+            void Visit(ACTION&& action)
+            {
+                _lock.Lock();
+                for (auto& entry : _list) {
+                    if (action(entry.first) == true) {
+                        break;
+                    }
+                }
+                _lock.Unlock();
+            }
+            template<typename ACTION>
+            void Visit(ACTION&& action) const
+            {
+                _lock.Lock();
+                for (auto const& entry : _list) {
+                    if (action(entry.first) == true) {
+                        break;
+                    }
+                }
+                _lock.Unlock();
+            }
             void Clear()
             {
                 _lock.Lock();
