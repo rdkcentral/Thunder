@@ -25,7 +25,7 @@
 #endif
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
+#include "../processcontainers/processcontainers.h"
 #endif
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
@@ -1072,6 +1072,7 @@ namespace PluginHost {
         , _security(_parent.Officer())
         , _service()
         , _requestClose(false)
+        , _jobs()
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
@@ -1174,11 +1175,10 @@ namespace PluginHost {
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
 
-        #ifdef PROCESSCONTAINERS_ENABLED
+#ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging
-        ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-        admin.Logging(_config.VolatilePath(), configuration.ProcessContainersLogging());
-        #endif
+        ProcessContainers::ContainerAdministrator::Instance().Initialize(_config.ProcessContainersConfig());
+#endif
     }
     POP_WARNING()
 
