@@ -342,14 +342,15 @@ namespace RPC {
 
     void Communicator::ContainerProcess::Terminate() /* override */
     {
-        ASSERT(_container != nullptr);
-        g_destructor.Destruct(Id(), *this);
+        if (_container.IsValid() == true) {
+            g_destructor.Destruct(Id(), *this);
+        }
     }
 
     void Communicator::ContainerProcess::PostMortem() /* override */
     {
         Core::process_t pid;
-        if ( (_container != nullptr) && ((pid = static_cast<Core::process_t>(_container->Pid())) != 0) ) {
+        if ( (_container.IsValid() == true) && ((pid = static_cast<Core::process_t>(_container->Pid())) != 0) ) {
             Core::ProcessInfo process(pid);
             process.Dump();
         }
