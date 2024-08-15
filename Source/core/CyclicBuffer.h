@@ -30,8 +30,6 @@
 #include <semaphore.h>
 #endif
 
-#include <limits>
-
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
@@ -67,8 +65,6 @@ namespace Core {
             template <typename ArgType>
             void Peek(ArgType& buffer) const
             {
-                ASSERT(_Parent._administration != nullptr);
-
                 uint32_t startIndex = _Tail & _Parent._administration->_tailIndexMask;
                 startIndex += _Offset;
                 startIndex %= _Parent._administration->_size;
@@ -98,8 +94,7 @@ namespace Core {
 
             uint32_t GetCompleteTail(uint32_t offset) const
             {
-                ASSERT(_Parent._administration != nullptr);
-                ASSERT(_Parent._administration->_tailIndexMask < std::numeric_limits<uint32_t>::max());
+                ASSERT(_Parent._administration->_tailIndexMask < static_cast<uint32_t>(~0));
 
                 uint32_t oldTail = _Tail;
                 uint32_t roundCount = oldTail / (1 + _Parent._administration->_tailIndexMask);
@@ -136,16 +131,12 @@ namespace Core {
 
         inline uint32_t Used(uint32_t head, uint32_t tail) const
         {
-            ASSERT(_administration != nullptr);
-
             uint32_t output = (head >= tail ? head - tail : _administration->_size - (tail - head));
             return output;
         }
 
         inline uint32_t Free(uint32_t head, uint32_t tail) const
         {
-            ASSERT(_administration != nullptr);
-
             uint32_t result = (head >= tail ? _administration->_size - (head - tail) : tail - head);
             return result;
         }
@@ -153,14 +144,10 @@ namespace Core {
     public:
         inline void Flush()
         {
-            ASSERT(_administration != nullptr);
-
             std::atomic_store_explicit(&(_administration->_tail), (std::atomic_load(&(_administration->_head))), std::memory_order_relaxed);
         }
         inline bool Overwritten() const
         {
-            ASSERT(_administration != nullptr);
-
             bool overwritten((std::atomic_load(&(_administration->_state)) & OVERWRITTEN) == OVERWRITTEN);
 
             // Now clear the flag.
@@ -190,20 +177,14 @@ namespace Core {
         }
         inline bool IsLocked() const
         {
-            ASSERT(_administration != nullptr);
-
             return ((std::atomic_load(&(_administration->_state)) & LOCKED) == LOCKED);
         }
         inline uint32_t LockPid() const
         {
-            ASSERT(_administration != nullptr);
-
             return (_administration->_lockPID);
         }
         inline bool IsOverwrite() const
         {
-            ASSERT(_administration != nullptr);
-
             return ((std::atomic_load(&(_administration->_state)) & OVERWRITE) == OVERWRITE);
         }
         inline bool IsValid() const
@@ -216,8 +197,6 @@ namespace Core {
         }
         inline uint32_t Used() const
         {
-            ASSERT(_administration != nullptr);
-
             uint32_t head(_administration->_head);
             uint32_t tail(_administration->_tail & _administration->_tailIndexMask);
 
@@ -225,8 +204,6 @@ namespace Core {
         }
         inline uint32_t Free() const
         {
-            ASSERT(_administration != nullptr);
-
             uint32_t head(_administration->_head);
             uint32_t tail(_administration->_tail & _administration->_tailIndexMask);
 
@@ -234,8 +211,6 @@ namespace Core {
         }
         inline uint32_t Size() const
         {
-            ASSERT(_administration != nullptr);
-
             return (_administration->_size);
         }        
         bool Open();
@@ -270,7 +245,6 @@ namespace Core {
         // This allows for writes of partial buffers without worrying about
         //    readers seeing incomplete data.
         uint32_t Reserve(const uint32_t length);
-        uint32_t ReservedRemaining() const;
 
         virtual void DataAvailable();
 
@@ -312,8 +286,7 @@ namespace Core {
             UNLOCKED = 0x00,
             LOCKED = 0x01,
             OVERWRITE = 0x02,
-            OVERWRITTEN = 0x04,
-            INITIALIZED = 0x08 //  simplified signal for non-creator mutex and condition variable are initialized
+            OVERWRITTEN = 0x04
         };
 
         Core::DataElementFile _buffer;

@@ -910,52 +910,53 @@ namespace Core {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
-        std::string bufferName {"cyclicbuffer01"};
-        const uint32_t CyclicBufferSize = 10;
+        const std::string bufferName {"cyclicbuffer01"};
 
-        uint32_t shareableFlag = (shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
-        const uint32_t mode =
-            (::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-            ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-            shareableFlag);
+        constexpr uint32_t CyclicBufferSize = 10;
+        constexpr uint32_t cyclicBufferWithControlDataSize = CyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
 
-        struct Data data;
-        data.mode = mode;
-        data.bufferName = bufferName.c_str();
-        data.shareable = shareable;
-        data.usingDataElementFile = usingDataElementFile;
-        data.offset = offset;
+        const uint32_t mode = (  ::Thunder::Core::File::Mode::USER_READ
+                               | ::Thunder::Core::File::Mode::USER_WRITE
+                               | ::Thunder::Core::File::Mode::USER_EXECUTE
+                               | ::Thunder::Core::File::Mode::GROUP_READ
+                               | ::Thunder::Core::File::Mode::GROUP_WRITE
+                               | (shareable ? ::Thunder::Core::File::Mode::SHAREABLE : 0)
+                              );
+
+        const struct Data data{shareable, usingDataElementFile, mode, offset, bufferName.c_str()};
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-//            struct Data* data = (reinterpret_cast<struct Data*>(testAdmin.Data()));
-            uint32_t result;
-            uint32_t cyclicBufferSize = CyclicBufferSize;
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            // a small delay so the parent can be set up
+            SleepMs(maxInitTime);
 
-           CyclicBufferTest* buffer = nullptr;
+            uint32_t result;
+            uint8_t loadBuffer[CyclicBufferSize + 1];
+
+            CyclicBufferTest* buffer = nullptr;
             ::Thunder::Core::DataElementFile* dataElementFile = nullptr;
+
             if (data.usingDataElementFile == true) {
-                uint8_t cyclicBufferWithControlDataSize = cyclicBufferSize + sizeof(::Thunder::Core::CyclicBuffer::control);
                 dataElementFile = new ::Thunder::Core::DataElementFile(bufferName, data.mode | ::Thunder::Core::File::CREATE, cyclicBufferWithControlDataSize + data.offset);
+
+                ASSERT_TRUE(dataElementFile != nullptr);
+
                 buffer = new CyclicBufferTest(*dataElementFile, true, data.offset, cyclicBufferWithControlDataSize, false);
             } else {
-                buffer = new CyclicBufferTest(bufferName, data.mode, cyclicBufferSize, false);
+                buffer = new CyclicBufferTest(bufferName, data.mode, CyclicBufferSize, false);
             }
 
-            EXPECT_EQ(buffer->Size(), cyclicBufferSize);
-//            testAdmin.Sync("setup server");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(buffer != nullptr);
+
+            EXPECT_EQ(buffer->Size(), CyclicBufferSize);
+
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-//            testAdmin.Sync("setup client");
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             if (data.shareable == true) {
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-//                testAdmin.Sync("client read empty data");
-                string dataStr = "abcd";
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
+                string dataStr = "abcd";
                 result = buffer->Write(reinterpret_cast<const uint8_t*>(dataStr.c_str()), dataStr.size());
                 EXPECT_EQ(result, dataStr.size());
 
@@ -963,126 +964,108 @@ namespace Core {
                 result = buffer->Write(reinterpret_cast<const uint8_t*>(dataStr.c_str()), dataStr.size());
                 EXPECT_EQ(result, dataStr.size());
 
-//                testAdmin.Sync("server wrote");
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-//                testAdmin.Sync("client read");
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-//                testAdmin.Sync("client wrote");
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
                 result = buffer->Peek(loadBuffer, buffer->Used());
                 loadBuffer[result] = '\0';
                 EXPECT_EQ(result, 9u);
-                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
+
+                EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "bcdefghkl");
                 EXPECT_EQ(buffer->Used(), 9u);
 
-//                testAdmin.Sync("server peek");
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-//                testAdmin.Sync("server start read");
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
                 result = buffer->Read(loadBuffer, buffer->Used());
                 loadBuffer[result] = '\0';
+
                 EXPECT_EQ(result, 9u);
-                EXPECT_STREQ((char*)loadBuffer, "bcdefghkl");
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+                EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "bcdefghkl");
 
                 EXPECT_EQ(buffer->Used(), 0u);
-//                testAdmin.Sync("server read");
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
                 delete buffer;
+
                 if (dataElementFile) {
                     delete dataElementFile;
                 }
             }
         };
 
-// acting as vclient
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            // a small delay so the child can be set up
-            SleepMs(maxInitTime);
-
-//            testAdmin.Sync("setup server");
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             uint32_t result;
-            uint32_t cyclicBufferSize = CyclicBufferSize;
-            uint8_t loadBuffer[cyclicBufferSize];
+            uint8_t loadBuffer[CyclicBufferSize];
 
-           CyclicBufferTest* buffer;
+            CyclicBufferTest* buffer = nullptr;
             ::Thunder::Core::DataElementFile* dataElementFile = nullptr;
+
             if (usingDataElementFile == true) {
                 dataElementFile = new ::Thunder::Core::DataElementFile(bufferName, mode, 0);
+
+                ASSERT_TRUE(dataElementFile != nullptr);
+
                 buffer = new CyclicBufferTest(*dataElementFile, false, offset, 0, false);
             } else {
                 buffer = new CyclicBufferTest(bufferName, mode, 0, false);
             }
 
-            EXPECT_EQ(buffer->Size(), static_cast<uint32_t>(((shareable == true) ?CyclicBufferSize : 0)));
-//            testAdmin.Sync("setup client");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_TRUE(buffer != nullptr);
+
+            EXPECT_EQ(buffer->Size(), static_cast<uint32_t>((shareable ? CyclicBufferSize : 0)));
+
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             if (shareable == true) {
-                memset(loadBuffer, 0, cyclicBufferSize);
-                result = buffer->Read(loadBuffer, 1, false);
-                EXPECT_EQ(result, static_cast<uint32_t>(0));
-
-//                testAdmin.Sync("client read empty data");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-//                testAdmin.Sync("server wrote");
+                memset(loadBuffer, 0, CyclicBufferSize);
 
                 result = buffer->Read(loadBuffer, 1, false);
-                EXPECT_EQ(result, static_cast<uint32_t>(1));
+                EXPECT_EQ(result, 0);
+
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+                result = buffer->Read(loadBuffer, 1, false);
+                EXPECT_EQ(result, 1);
+
                 loadBuffer[result] = '\0';
-                EXPECT_STREQ((char*)loadBuffer, "a");
-//                testAdmin.Sync("client read");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+                EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "a");
+
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
                 string data = "kl";
                 result = buffer->Reserve(data.size());
                 EXPECT_EQ(result, 2u);
+
                 result = buffer->Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
                 EXPECT_EQ(result, 2u);
-//                testAdmin.Sync("client wrote");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-//                testAdmin.Sync("server peek");
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
-
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
                 EXPECT_EQ(buffer->Used(), 9u);
-//                testAdmin.Sync("server start read");
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-//            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-//                testAdmin.Sync("server read");
-//            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+                ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
+                ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
                 EXPECT_EQ(buffer->Used(), 0u);
             }
+
             buffer->Close();
+
             delete buffer;
+
             if (dataElementFile) {
                 delete dataElementFile;
             }
@@ -1115,36 +1098,49 @@ namespace Core {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
-        std::string bufferName {"cyclicbuffer02"};
+        const std::string bufferName {"cyclicbuffer02"};
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-//            testAdmin.Sync("setup client");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            uint32_t cyclicBufferSize = 0;
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            constexpr uint32_t cyclicBufferSize = 0;
 
-           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            constexpr uint32_t mode =   ::Thunder::Core::File::Mode::USER_READ
+                                      | ::Thunder::Core::File::Mode::USER_WRITE
+                                      | ::Thunder::Core::File::Mode::USER_EXECUTE
+                                      | ::Thunder::Core::File::Mode::GROUP_READ
+                                      | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                      | ::Thunder::Core::File::Mode::SHAREABLE
+                                      ;
 
-//            testAdmin.Sync("setup server");
-//            testAdmin.Sync("client wrote");
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+
+            ASSERT_TRUE(buffer.IsValid());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
+
             uint32_t result = buffer.Read(loadBuffer, 4);
             loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "abcd");
 
-//            testAdmin.Sync("server read");
-            string data = "klmnopq";
+            EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "abcd");
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+       
+            const string data = "klmnopq";
+
             result = buffer.Reserve(data.size());
             EXPECT_EQ(result, ::Thunder::Core::ERROR_INVALID_INPUT_LENGTH);
+        
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, 0u);
 
-//            testAdmin.Sync("server wrote");
-//            testAdmin.Sync("client peek");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_FALSE(buffer.Overwritten());
             EXPECT_FALSE(buffer.IsLocked());
@@ -1152,54 +1148,74 @@ namespace Core {
             EXPECT_EQ(buffer.LockPid(), 0u);
             EXPECT_EQ(buffer.Free(), 5u);
 
-//            testAdmin.Sync("client start read");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
             EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
 
-//            testAdmin.Sync("client read");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             EXPECT_EQ(buffer.Used(), 0u);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
- 
-            uint32_t cyclicBufferSize = 10;
 
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            constexpr uint32_t cyclicBufferSize = 10;
 
-           ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+            constexpr uint32_t mode =   ::Thunder::Core::File::Mode::USER_READ
+                                      | ::Thunder::Core::File::Mode::USER_WRITE
+                                      | ::Thunder::Core::File::Mode::USER_EXECUTE 
+                                      | ::Thunder::Core::File::Mode::GROUP_READ
+                                      | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                      | ::Thunder::Core::File::Mode::SHAREABLE
+                                      ;
 
-//            testAdmin.Sync("setup client");
-//            testAdmin.Sync("setup server");
+            ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(), mode, cyclicBufferSize, false);
+
+            ASSERT_TRUE(buffer.IsValid());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
 
-            string data = "abcdefghi";
+            const string data = "abcdefghi";
+
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
-//            testAdmin.Sync("client wrote");
 
-//            testAdmin.Sync("server read");
-//            testAdmin.Sync("server wrote");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             result = buffer.Peek(loadBuffer, buffer.Used());
             loadBuffer[result] = '\0';
-            EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
 
-//            testAdmin.Sync("client peek");
-//            testAdmin.Sync("client start read");
+            EXPECT_EQ(result, 5u);
+            EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "efghi");
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             result = buffer.Read(loadBuffer, buffer.Used());
             loadBuffer[result] = '\0';
+
             EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
+            EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "efghi");
 
             EXPECT_EQ(buffer.Used(), 0u);
-//            testAdmin.Sync("client read");
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             buffer.Close();
         };
@@ -1215,80 +1231,107 @@ namespace Core {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
-        std::string bufferName {"cyclicbuffer03"};
+        const std::string bufferName {"cyclicbuffer03"};
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            uint32_t cyclicBufferSize = 10;
+            // a small delay so the parent can be set up
+            SleepMs(maxInitTime);
 
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            constexpr uint32_t cyclicBufferSize = 10;
 
-           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            constexpr uint32_t mode =   ::Thunder::Core::File::Mode::USER_READ
+                                      | ::Thunder::Core::File::Mode::USER_WRITE
+                                      | ::Thunder::Core::File::Mode::USER_EXECUTE
+                                      | ::Thunder::Core::File::Mode::GROUP_READ
+                                      | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                      | ::Thunder::Core::File::Mode::SHAREABLE
+                                      ;
+
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
  
-//            testAdmin.Sync("setup server");
-//            testAdmin.Sync("setup client");
+            ASSERT_TRUE(buffer.IsValid());
 
-            string data = "abcdef";
-            uint16_t size = data.size() + 2;
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            const string data = "abcdef";
+            const uint16_t size = data.size() + 2;
+
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2u);
             EXPECT_EQ(result, 2u);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
 
-//            testAdmin.Sync("server wrote");
-//            testAdmin.Sync("client wrote");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
+
             result = buffer.Peek(loadBuffer, buffer.Used());
             loadBuffer[result] = '\0';
 
-//            testAdmin.Sync("server peek");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             result = buffer.Read(loadBuffer, buffer.Used());
             loadBuffer[result] = '\0';
 
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             buffer.Alert();
             buffer.Flush();
 
-//            testAdmin.Sync("server read");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
-            // a small delay so the child can be set up
-            SleepMs(maxInitTime);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-//            testAdmin.Sync("setup server");
+            constexpr uint32_t cyclicBufferSize = 0;
 
-            uint32_t cyclicBufferSize = 0;
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            constexpr uint32_t mode =  ::Thunder::Core::File::Mode::USER_READ
+                                     | ::Thunder::Core::File::Mode::USER_WRITE
+                                     | ::Thunder::Core::File::Mode::USER_EXECUTE
+                                     | ::Thunder::Core::File::Mode::GROUP_READ
+                                     | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                     | ::Thunder::Core::File::Mode::SHAREABLE
+                                     ;
 
-           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
 
-//            testAdmin.Sync("setup client");
-//            testAdmin.Sync("server wrote");
+            ASSERT_TRUE(buffer.IsValid());
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             string data = "j";
-            uint16_t size = 9;
+            const uint16_t size = 9;
+
             uint32_t result = buffer.Reserve(9);
             EXPECT_EQ(result, 9u);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2u);
             EXPECT_EQ(result, 2u);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1u);
             EXPECT_EQ(result, data.size());
 
             data = "klmnop";
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 6u);
             EXPECT_EQ(result, data.size());
-//            testAdmin.Sync("client wrote");
 
-//            testAdmin.Sync("server peek");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-//            testAdmin.Sync("server read");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             buffer.Close();
         };
 
@@ -1303,101 +1346,140 @@ namespace Core {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
-        std::string bufferName {"cyclicbuffer03"};
+        const std::string bufferName {"cyclicbuffer03"};
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            uint32_t cyclicBufferSize = 0;
-//            testAdmin.Sync("setup server");
+            constexpr uint32_t cyclicBufferSize = 0;
 
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            constexpr uint32_t mode =   ::Thunder::Core::File::Mode::USER_READ
+                                      | ::Thunder::Core::File::Mode::USER_WRITE
+                                      | ::Thunder::Core::File::Mode::USER_EXECUTE
+                                      | ::Thunder::Core::File::Mode::GROUP_READ
+                                      | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                      | ::Thunder::Core::File::Mode::SHAREABLE
+                                      ;
+
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
             EXPECT_TRUE(buffer.IsOverwrite());
 
-//            testAdmin.Sync("setup client");
-//            testAdmin.Sync("server wrote");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             uint16_t size;
-            buffer.Read(reinterpret_cast<uint8_t*>(&size), 2);
+            EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&size), 2), 2);
+
             uint8_t loadBuffer[cyclicBufferSize + 1];
             uint32_t result = buffer.Read(loadBuffer, size - 2);
             loadBuffer[result] = '\0';
+            EXPECT_EQ(result, size - 2);
 
-//            testAdmin.Sync("client read");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             string data = "j";
             size = 9;
+
             result = buffer.Reserve(size);
+            EXPECT_EQ(result, size);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
+            EXPECT_EQ(result, size);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1);
+            EXPECT_EQ(result, size);
+
             data = "lmnopq";
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 6);
+            EXPECT_EQ(result, 6);
+
             EXPECT_EQ(buffer.Used(), 9u);
             EXPECT_EQ(buffer.Overwritten(), false);
 
             size = 7;
             result = buffer.Reserve(size);
+            EXPECT_EQ(result, size);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
+            EXPECT_EQ(result, size);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), size - 2);
+            EXPECT_EQ(result, size);
+
             EXPECT_EQ(buffer.Free(), 3u);
             EXPECT_EQ(buffer.Used(), 7u);
 
-//            testAdmin.Sync("client wrote");
-//            testAdmin.Sync("server peek");
-//            testAdmin.Sync("server read");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             buffer.Flush();
             EXPECT_EQ(buffer.Used(), 0u);
-//            testAdmin.Sync("client flush");
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
 
-            uint32_t cyclicBufferSize = 10;
-            const uint32_t mode =
-                ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
-                ::Thunder::Core::File::Mode::GROUP_READ | ::Thunder::Core::File::Mode::GROUP_WRITE  |
-                ::Thunder::Core::File::Mode::SHAREABLE;
+            constexpr uint32_t cyclicBufferSize = 10;
 
-           CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+            constexpr uint32_t mode =   ::Thunder::Core::File::Mode::USER_READ
+                                      | ::Thunder::Core::File::Mode::USER_WRITE
+                                      | ::Thunder::Core::File::Mode::USER_EXECUTE
+                                      | ::Thunder::Core::File::Mode::GROUP_READ
+                                      | ::Thunder::Core::File::Mode::GROUP_WRITE
+                                      | ::Thunder::Core::File::Mode::SHAREABLE
+                                      ;
+
+            CyclicBufferTest buffer(bufferName.c_str(), mode, cyclicBufferSize, true);
+
             EXPECT_TRUE(buffer.IsOverwrite());
             EXPECT_TRUE(buffer.IsValid());
 
-//            testAdmin.Sync("setup server");
-//            testAdmin.Sync("setup client");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             uint8_t loadBuffer[cyclicBufferSize + 1];
 
             uint16_t size = 9;
             string data = "abcdefi";
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
+
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), size - 2);
             EXPECT_EQ(result, data.size());
 
-//            testAdmin.Sync("server wrote");
-//            testAdmin.Sync("client read");
-//            testAdmin.Sync("client wrote");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
             buffer.Peek(reinterpret_cast<uint8_t*>(&size), 2);
             EXPECT_EQ(size, buffer.Used());
+
             result = buffer.Peek(loadBuffer, size);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 7u);
-            EXPECT_STREQ((char*)loadBuffer  +2, "lmnop");
+            EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0] + 2), "lmnop");
 
-//            testAdmin.Sync("server peek");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             EXPECT_EQ(buffer.Free(), 3u);
+
             buffer.Read(reinterpret_cast<uint8_t*>(&size), 2);
             EXPECT_EQ(buffer.Used(), static_cast<uint32_t>(size - 2));
+
             result = buffer.Read(loadBuffer, size - 2);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "lmnop");
+            EXPECT_STREQ(reinterpret_cast<const char*>(&loadBuffer[0]), "lmnop");
+
             EXPECT_EQ(buffer.Free(), 10u);
             EXPECT_EQ(buffer.Used(), 0u);
 
@@ -1405,8 +1487,10 @@ namespace Core {
             EXPECT_FALSE(buffer.IsLocked());
             EXPECT_EQ(buffer.LockPid(), 0u);
 
-//            testAdmin.Sync("server read");
-//            testAdmin.Sync("client flush");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             EXPECT_EQ(buffer.Free(), cyclicBufferSize);
 
             buffer.Close();
