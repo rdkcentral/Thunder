@@ -27,10 +27,6 @@
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
 
-#ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
-#endif
-
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
 #endif

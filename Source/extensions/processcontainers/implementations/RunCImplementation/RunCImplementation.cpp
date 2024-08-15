@@ -18,13 +18,16 @@
  */
 
 #include "RunCImplementation.h"
-#include <core/JSON.h>
+#include "processcontainers/Messaging.h"
+#include "processcontainers/ContainerProducer.h"
+#include "processcontainers/ContainerAdministrator.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace Thunder {
 
 namespace ProcessContainers {
 
-    static constexpr uint32_t DEFAULT_TIMEOUT = 5000 /* ms */;
+    static constexpr uint32_t DEFAULT_TIMEOUT = 2000 /* ms */;
 
     namespace runc {
 
@@ -137,16 +140,7 @@ namespace ProcessContainers {
 
                 // runc --log <log-file> create --no-new-keyring --bundle <bundle-path> <container-id>
 
-                const uint32_t result = Execute(options);
-
-                if (result == Core::ERROR_NONE) {
-                    TRACE_L2("Successfuly created container '%s'", id.c_str());
-                }
-                else {
-                    TRACE_L1("Failed to create container '%s'", id.c_str());
-                }
-
-                return (result);
+                return (Execute(options));
             }
             uint32_t Exec(const string& id, const string& bundlePath, const string& command, IStringIterator* parameters = nullptr) const
             {
@@ -177,16 +171,7 @@ namespace ProcessContainers {
 
                 // runc --log <log-file> exec --detach [--env <variable=value>...] <container-id> <command> [command-parameters...]
 
-                const uint32_t result = Execute(options);
-
-                if (result == Core::ERROR_NONE) {
-                    TRACE_L2("Successfuly executed command '%s' on container '%s'", command.c_str(), id.c_str());
-                }
-                else {
-                    TRACE_L1("Failed to execute command '%s' on container '%s'", command.c_str(), id.c_str());
-                }
-
-                return (result);
+                return (Execute(options));
             }
             uint32_t Delete(const string& id, const uint32_t timeout = 0) const
             {
@@ -204,16 +189,7 @@ namespace ProcessContainers {
 
                 // runc --log <log-file> delete --force <container-id>
 
-                const uint32_t result = Execute(options, nullptr, timeout);
-
-                if (result == Core::ERROR_NONE) {
-                    TRACE_L2("Successfuly deleted container '%s'", id.c_str());
-                }
-                else {
-                    TRACE_L1("Failed to delete container '%s'", id.c_str());
-                }
-
-                return (result);
+                return (Execute(options, nullptr, timeout));
             }
             uint32_t State(const string& id, Info& info) const
             {
@@ -231,11 +207,6 @@ namespace ProcessContainers {
 
                 if (result ==  Core::ERROR_NONE) {
                     info.FromString(output);
-
-                    TRACE_L2("Successfully retrieved state from container '%s'", id.c_str());
-                }
-                else {
-                    TRACE_L1("Failed to retrieve state from container '%s'", id.c_str());
                 }
 
                 return (result);
@@ -248,16 +219,16 @@ namespace ProcessContainers {
 
                 // runc list --quiet
 
-                const uint32_t result = Execute(options, &list);
+                return (Execute(options, &list));
+            }
+            uint32_t Version(string& version) const
+            {
+                Options options;
+                options.Add(_T("--version"));
 
-                if (result ==  Core::ERROR_NONE) {
-                    TRACE_L2("Successfully retrieved container list (%s)", list.c_str());
-                }
-                else {
-                    TRACE_L1("Failed to retrieve container list");
-                }
+                // runc --version
 
-                return (result);
+                return (Execute(options, &version));
             }
 
         private:
@@ -345,7 +316,7 @@ namespace ProcessContainers {
                                     string value;
 
                                     if ((Core::SystemInfo::GetEnvironment(hostVar, value) == true) && (value.size() != 0)) {
-                                        TRACE_L1("Using host environment variable: %s", hostVar.c_str());
+                                        TRACE_GLOBAL(Debug, (_T("Using host environment variable: %s"), hostVar.c_str()));
                                         options.Add(_T("--env")).Add(var + _T("=") + value);
                                     }
                                 }
@@ -356,7 +327,7 @@ namespace ProcessContainers {
                     file.Close();
                 }
                 else {
-                    TRACE_L1("Failed to open config.json file");
+                    TRACE_GLOBAL(Trace::Error, (_T("Failed to open config.json file")));
                 }
             }
 
@@ -370,18 +341,27 @@ namespace ProcessContainers {
 
     // ContainerAdministrator
 
-    IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
+    uint32_t RunCContainerAdministrator::Initialize(const string& configuration VARIABLE_IS_NOT_USED)
     {
-        static RunCContainerAdministrator& runCContainerAdministrator = Core::SingletonType<RunCContainerAdministrator>::Instance();
-        return (runCContainerAdministrator);
+        string version;
+
+        runc::Runner runner;
+        runner.Version(version);
+
+        DEBUG_VARIABLE(runner);
+        DEBUG_VARIABLE(version);
+
+        TRACE(Trace::Information, (_T("runc runtime: %s"), version.substr(0, version.find('\n')).c_str()));
+
+        return (Core::ERROR_NONE);
     }
 
-    IContainer* RunCContainerAdministrator::Container(const string& id, IStringIterator& searchPaths, const string& logPath,
+    Core::ProxyType<IContainer> RunCContainerAdministrator::Container(const string& id, IStringIterator& searchPaths, const string& logPath,
                     const string& configuration VARIABLE_IS_NOT_USED) /* override */
     {
         ASSERT(id.empty() == false);
 
-        RunCContainer* container = nullptr;
+        Core::ProxyType<IContainer> container;
 
         searchPaths.Reset(0);
 
@@ -391,29 +371,20 @@ namespace ProcessContainers {
             Core::File configFile(containerPath + runc::CONFIG_FILE);
 
             if (configFile.Exists() == true) {
-                container = new RunCContainer(id, containerPath, logPath);
-                ASSERT(container != nullptr);
+                container = ContainerAdministrator::Instance().Create<RunCContainer>(id, containerPath, logPath);
+                ASSERT(container.IsValid() == true);
 
-                InternalLock();
-                InsertContainer(container);
-                InternalUnlock();
-
-                TRACE(Trace::Information, (_T("Container '%s' created from '%s'"), id.c_str(), configFile.Name().c_str()));
+                TRACE(Debug, (_T("Container '%s' created from '%s'"), id.c_str(), configFile.Name().c_str()));
 
                 break;
             }
         }
 
-        if (container == nullptr) {
-            TRACE(Trace::Error, (_T("Runc container configuration not found!")));
+        if (container.IsValid() == false) {
+            TRACE(Trace::Error, (_T("Runc container configuration for '%s' not found!"), id.c_str()));
         }
 
         return (container);
-    }
-
-    void RunCContainerAdministrator::Logging(const string& logDir VARIABLE_IS_NOT_USED, const string& loggingOptions VARIABLE_IS_NOT_USED) /* override */
-    {
-        TRACE_L1("runc logging only on container level");
     }
 
 
@@ -437,9 +408,9 @@ namespace ProcessContainers {
     {
         _adminLock.Lock();
 
-        static_cast<RunCContainerAdministrator&>(ProcessContainers::IContainerAdministrator::Instance()).RemoveContainer(this);
-
         InternalPurge(DEFAULT_TIMEOUT);
+
+        TRACE(Debug, (_T("runc container '%s' released"), _id.c_str()));
 
         _adminLock.Unlock();
     }
@@ -460,8 +431,6 @@ namespace ProcessContainers {
 
             if (_runner->State(_id, info) == Core::ERROR_NONE) {
                 _pid = info.Pid;
-
-                TRACE_L1("Container '%s' PID is %u", _id.c_str(), _pid);
             }
         }
 
@@ -485,12 +454,7 @@ namespace ProcessContainers {
 
                 if (_runner->State(_id, info) == Core::ERROR_NONE) {
                     result = info.Status.IsSet();
-
-                    TRACE_L1("Container '%s' is %s", _id.c_str(), info.Status.Value().c_str());
-                }
-            }
-            else {
-                TRACE_L1("Container '%s' is not available", _id.c_str());
+               }
             }
         }
 
@@ -501,7 +465,7 @@ namespace ProcessContainers {
     {
         ASSERT(command.empty() == false);
 
-        TRACE(Trace::Information, (_T("Starting container '%s'..."), _id.c_str()));
+        TRACE(Debug, (_T("Starting container '%s'..."), _id.c_str()));
 
         _adminLock.Lock();
 
@@ -526,7 +490,7 @@ namespace ProcessContainers {
     {
         bool result = false;
 
-        TRACE_L1("Stopping container '%s'...", _id.c_str());
+        TRACE(Debug, ("Stopping container '%s'...", _id.c_str()));
 
         _adminLock.Lock();
 
@@ -537,7 +501,7 @@ namespace ProcessContainers {
         if ((purgeResult == Core::ERROR_NONE) || (purgeResult == Core::ERROR_ALREADY_RELEASED)) {
 
             if (IsRunning() == false) {
-                TRACE(Trace::Information, (_T("Container '%s' has been stopped"), _id.c_str()));
+                TRACE(Debug, (_T("Container '%s' has been stopped"), _id.c_str()));
                 result = true;
             }
             else {
@@ -575,6 +539,10 @@ namespace ProcessContainers {
     {
         return (IsRunning()? _runner->Delete(_id, timeout) : static_cast<uint32_t>(Core::ERROR_ALREADY_RELEASED));
     }
+
+
+    // FACTORY REGISTRATION
+    static ContainerProducerRegistrationType<RunCContainerAdministrator, IContainer::containertype::RUNC> registration;
 
 } // namespace ProcessContainers
 
