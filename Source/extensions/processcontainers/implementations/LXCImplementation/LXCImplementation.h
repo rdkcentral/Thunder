@@ -19,16 +19,11 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/BaseAdministrator.h"
-#include "processcontainers/common/BaseRefCount.h"
-#include "Module.h"
-#include "Messaging.h"
-#include <cctype>
 #include <lxc/lxccontainer.h>
-#include <thread>
-#include <utility>
-#include <vector>
+
+#include "processcontainers/Messaging.h"
+#include "processcontainers/ContainerAdministrator.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace Thunder {
 namespace ProcessContainers {
@@ -61,7 +56,7 @@ namespace ProcessContainers {
         std::vector<LXCNetInterface> _interfaces;
     };
 
-    class LXCContainer : public BaseRefCount<IContainer> {
+    class LXCContainer : public IContainer {
     private:
         class Config : public Core::JSON::Container {
         public:
@@ -128,17 +123,20 @@ namespace ProcessContainers {
     private:
         static constexpr uint32_t defaultTimeOutInMSec = 2000;
 
-        friend class LXCContainerAdministrator;
-        LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
-
     public:
+        LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir,
+            const string& configuration, const string& lxcPath);
+
+        LXCContainer() = delete;
+        ~LXCContainer() override;
+
         LXCContainer(const LXCContainer&) = delete;
         LXCContainer(LXCContainer&&) = delete;
-        ~LXCContainer() override;
         LXCContainer& operator=(const LXCContainer&) = delete;
         LXCContainer& operator=(LXCContainer&&) = delete;
 
     public:
+        containertype Type() const override { return IContainer::LXC; }
         const string& Id() const override;
         uint32_t Pid() const override;
         IMemoryInfo* Memory() const override;
@@ -148,10 +146,7 @@ namespace ProcessContainers {
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
-        uint32_t AddRef() const override;
-        uint32_t Release() const override;
-
-    protected:
+    private:
         void InheritRequestedEnvironment();
 
     private:
@@ -167,26 +162,24 @@ namespace ProcessContainers {
 #endif
     };
 
-    class LXCContainerAdministrator : public BaseContainerAdministrator<LXCContainer> {
-        friend class LXCContainer;
-        friend class Core::SingletonType<LXCContainerAdministrator>;
+    class LXCContainerAdministrator : public IContainerProducer {
+    public:
+        LXCContainerAdministrator() = default;
+        ~LXCContainerAdministrator() override = default;
 
-    private:
-        static constexpr TCHAR const* logFileName = "lxclogging.log";
-        static constexpr TCHAR const* configFileName = "config";
-        static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
-
-    private:
-        LXCContainerAdministrator();
+        LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
+        LXCContainerAdministrator(LXCContainerAdministrator&&) = delete;
+        LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
+        LXCContainerAdministrator& operator=(LXCContainerAdministrator&&) = delete;
 
     public:
-        LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
-        LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
-        ~LXCContainerAdministrator() override;
+        uint32_t Initialize(const string& config) override;
+        void Deinitialize() override;
+        Core::ProxyType<IContainer> Container(const string& name, IStringIterator& searchpaths,
+                                        const string& containerLogDir, const string& configuration) override;
 
-        ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
-
-        void Logging(const string& globalLogDir, const string& loggingOptions) override;
+    private:
+        void Logging(const string& globalLogDir, const string& loggingOptions);
     };
 
 }

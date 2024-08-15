@@ -18,10 +18,17 @@
  */
 
 #include "LXCImplementation.h"
+#include "processcontainers/Messaging.h"
+#include "processcontainers/ContainerProducer.h"
+#include "processcontainers/ContainerAdministrator.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace Thunder {
 namespace ProcessContainers {
+
+
+    static constexpr TCHAR const* logFileName = _T("lxclogging.log");
+    static constexpr TCHAR const* configFileName = _T("config");
 
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
             : _current(UINT32_MAX)
@@ -176,6 +183,8 @@ namespace ProcessContainers {
         _attach = config.Attach.Value();
 #endif
 
+        ::lxc_container_get(lxcContainer);
+
         InheritRequestedEnvironment();
 
         if ((config.ConsoleLogging.IsSet() == true) && (config.ConsoleLogging.Value() != _T("0"))) {
@@ -205,11 +214,13 @@ namespace ProcessContainers {
 
     LXCContainer::~LXCContainer()
     {
-        ASSERT(_lxcContainer == nullptr); // should be released by now!
+        ASSERT(_lxcContainer != nullptr);
+
+        int result = ::lxc_container_put(_lxcContainer);
+        ASSERT(result == 1);
+        DEBUG_VARIABLE(result);
 
         TRACE(Debug, (_T("LXC container [%s] released"), _name.c_str()));
-
-        static_cast<LXCContainerAdministrator&>(LXCContainerAdministrator::Instance()).RemoveContainer(this);
     }
 
     const string& LXCContainer::Id() const
@@ -364,7 +375,7 @@ namespace ProcessContainers {
 
         params.push_back(nullptr);
 
-        TRACE(Trace::Warning, (_T("Starting container [%s]..."), _name.c_str()));
+        TRACE(Debug, (_T("Starting container [%s]..."), _name.c_str()));
 
         _adminLock.Lock();
 
@@ -400,7 +411,7 @@ namespace ProcessContainers {
 
         if (result == true) {
             ASSERT(_pid != 0);
-            TRACE(Trace::Information, (_T("Container [%s] started successfully, PID=%u"), _name.c_str(), _pid));
+            TRACE(Debug, (_T("Container [%s] started successfully, PID=%u"), _name.c_str(), _pid));
         }
         else {
             TRACE(Trace::Error, (_T("Failed to start LXC container [%s]"), _name.c_str()));
@@ -450,43 +461,6 @@ namespace ProcessContainers {
         return (result);
     }
 
-    uint32_t LXCContainer::AddRef() const
-    {
-        _adminLock.Lock();
-
-        ASSERT(_lxcContainer != nullptr);
-
-        ::lxc_container_get(_lxcContainer);
-
-        _adminLock.Unlock();
-
-        uint32_t result = BaseRefCount::AddRef();
-
-        return (result);
-    }
-
-    uint32_t LXCContainer::Release() const
-    {
-        _adminLock.Lock();
-
-        ASSERT(_lxcContainer != nullptr);
-
-        const uint32_t lxcresult = ::lxc_container_put(_lxcContainer);
-
-        if (lxcresult == 1) {
-            // Last put, container is gone
-            _lxcContainer = nullptr;
-        }
-
-        _adminLock.Unlock();
-
-        const uint32_t result = BaseRefCount::Release();
-
-        ASSERT((result != Thunder::Core::ERROR_DESTRUCTION_SUCCEEDED) || (lxcresult == 1)); // if 1 is returned, lxc also released the container
-
-        return (result);
-    }
-
     void LXCContainer::InheritRequestedEnvironment()
     {
         // According to https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html#lbBM we
@@ -528,24 +502,14 @@ namespace ProcessContainers {
         }
     }
 
-    LXCContainerAdministrator::LXCContainerAdministrator()
-        : BaseContainerAdministrator()
+    Core::ProxyType<IContainer> LXCContainerAdministrator::Container(const string& name, IStringIterator& searchPaths,
+                                    const string& containerLogDir, const string& configuration)  /* override */
     {
-        TRACE(Trace::Information, (_T("LXC library initialization, version: %s"), ::lxc_get_version()));
-    }
-
-    LXCContainerAdministrator::~LXCContainerAdministrator()
-    {
-        ::lxc_log_close();
-    }
-
-    IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchPaths, const string& containerLogDir, const string& configuration)
-    {
-        LXCContainer* container = nullptr;
+        Core::ProxyType<IContainer> container;
 
         searchPaths.Reset(0);
 
-        while ((container == nullptr) && (searchPaths.Next() == true)) {
+        while ((container.IsValid() == false) && (searchPaths.Next() == true)) {
 
             LxcContainerType** clist = nullptr;
 
@@ -559,24 +523,17 @@ namespace ProcessContainers {
 
                 int32_t index = 0;
 
-                while ((container == nullptr) && (index < count)) {
+                while ((container.IsValid() == false) && (index < count)) {
 
                     LxcContainerType* c = clist[index];
                     ASSERT(c != nullptr);
 
                     if (::strcmp(c->name, "Container") == 0) {
-                        container = new LXCContainer(name, c, containerLogDir, configuration, containerPath);
-                        ASSERT(container != nullptr);
-
-                        InternalLock();
-                        InsertContainer(container);
-                        InternalUnlock();
-
-                        TRACE(Trace::Information, (_T("LXC container [%s] created from %sContainer/%s"), name.c_str(), containerPath.c_str(), configFileName));
+                        container = ContainerAdministrator::Instance().Create<LXCContainer>(name, c, containerLogDir, configuration, containerPath);
+                        TRACE(Debug, (_T("LXC container [%s] created from %sContainer/%s"), name.c_str(), containerPath.c_str(), configFileName));
                     }
-                    else {
-                        lxc_container_put(c);
-                    }
+
+                    ::lxc_container_put(c);
 
                     ++index;
                 }
@@ -585,7 +542,7 @@ namespace ProcessContainers {
             }
         }
 
-        if (container == nullptr) {
+        if (container.IsValid() == false) {
             TRACE(Trace::Error, (_T("LXC container configuration for container [%s] not found!"), name.c_str()));
         }
 
@@ -607,17 +564,18 @@ namespace ProcessContainers {
             ASSERT(globalLogDir.empty() == false);
 
             // Create logging directory
-            Core::Directory logDir(globalLogDir.c_str());
+            const string dirname = Core::Directory::Normalize(globalLogDir);
+            Core::Directory logDir(dirname.c_str());
             logDir.CreatePath();
 
             bool valid{};
-            const string filename(Core::File::Normalize(globalLogDir + logFileName, valid));
+            const string filename(Core::File::Normalize(dirname + logFileName, valid));
 
             ASSERT(valid == true);
 
             const std::string file = Core::ToString(filename);
             const std::string level = Core::ToString(loggingOptions);
-            const std::string lxcpath = Core::ToString(globalLogDir);
+            const std::string lxcpath = Core::ToString(dirname);
 
             lxc_log log;
             log.name = "ThunderLXC";
@@ -636,15 +594,52 @@ namespace ProcessContainers {
         }
     }
 
-    IContainerAdministrator& IContainerAdministrator::Instance()
+    uint32_t LXCContainerAdministrator::Initialize(const string& configuration) /* override */
     {
-        static LXCContainerAdministrator& administrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
-        return (administrator);
+        uint32_t result = Core::ERROR_NONE;
+
+        TRACE(Trace::Information, (_T("LXC library initialization, version: %s"), ::lxc_get_version()));
+
+        class Config : public Core::JSON::Container {
+        public:
+            Config()
+                : Logging()
+                , LoggingDir()
+            {
+                Add(_T("logging"), &Logging);
+                Add(_T("loggingdir"), &LoggingDir);
+            }
+
+            ~Config() override = default;
+
+            Config(const Config&) = delete;
+            Config(Config&&) = delete;
+            Config& operator=(const Config&) = delete;
+            Config& operator=(Config&&) = delete;
+
+        public:
+            Core::JSON::String Logging;
+            Core::JSON::String LoggingDir;
+        };
+
+        Config config;
+        config.FromString(configuration);
+
+        if ((config.Logging.IsSet() == true) && (config.LoggingDir.IsSet() == true)) {
+            Logging(config.LoggingDir, config.Logging);
+        }
+
+        return (result);
     }
 
-    constexpr char const* LXCContainerAdministrator::logFileName;
-    constexpr char const* LXCContainerAdministrator::configFileName;
-    constexpr uint32_t LXCContainerAdministrator::maxReadSize;
+    void LXCContainerAdministrator::Deinitialize() /* override */
+    {
+        ::lxc_log_close();
+    }
 
-}
+    // FACTORY REGISTRATION
+    static ContainerProducerRegistrationType<LXCContainerAdministrator, IContainer::containertype::LXC> registration;
+
+} // namespace ProcessContainers
+
 }
