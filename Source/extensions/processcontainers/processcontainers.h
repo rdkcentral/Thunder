@@ -1,8 +1,8 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2024 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,11 @@
 
 #pragma once
 
-#include "Module.h"
+#ifndef MODULE_NAME
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
+#endif
 
-namespace Thunder {
-namespace ProcessContainers {
+#include "IProcessContainers.h"
+#include "ContainerAdministrator.h"
 
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, ProcessContainerization)
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Debug)
-
-} // ProcessContainers
-}
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(ProcessContainers)
