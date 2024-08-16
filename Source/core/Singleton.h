@@ -119,8 +119,6 @@ namespace Core {
         template <typename... Args>
         DEPRECATED inline static SINGLETON& Instance(Args&&... args)
         {
-            static_assert(sizeof...(Args) == 0, "The use of arguments is deprecated / no longer supported. Use Create(Args...) prior to Instance().");
-
             static CriticalSection g_AdminLock;
 
             // Hmm Double Lock syndrom :-)
