@@ -106,6 +106,8 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
+|[@default](#default)|Provides a default value for an unset variable |  | Yes | Yes |Method parameter|
+|[@encode:base64](#encode:base64)|Encodes C-Style arrays as JSON-RPC Base64 arrays |  | Yes | Yes |Method parameter|
 
 #### @in
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
@@ -208,6 +210,64 @@ When used with `@inout` it will use different buffer for output depending upon t
 ##### Example
 In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IPerformance.h#L32) it specifies, the maximum length for the buffer.
 
+<hr/>
+
+#### @default
+This tag should be associated with optional types. It provides a default value for JSON-RPC, even if no explicit value was set.
+
+Note: Unless a parameter is optional, it must be set.
+Note: Currently, OptionalType does not work with C-Style arrays.
+
+##### Example
+
+In this example class, the OptionalType members have a default value that would be transmitted incase their values have not been set.
+
+```cpp
+struct Store {
+	enum sizetype: uint8_t {
+		S, M, L
+	};
+
+	Core::OptionalType<string> Brand /* @default:"unknown" */;
+	Core::OptionalType<sizetype> Size /* @default: M */;
+};
+
+virtual Core::hresult Shirt(const Core::OptionalType<Store>& London) = 0;
+```
+<hr/>
+
+In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78) it specifies, the default value assigned incase the parameter is not set.
+
+<hr/>
+
+#### @encode:base64
+
+This tag encodes C-Style arrays into JSON-RPC arrays as Base64 strings, on the condition that the array base is type uint8_t. 
+
+##### Example
+
+In this example, C-Style uint8_t arrays are encoded as Base64.
+
+```cpp
+struct Fixated {
+	struct BlueToothInfo {
+		uint8_t Addr[6] /* encode:base64 */;
+		uint32_t UUIDs[8];
+		string Descriptions[8];
+	};
+
+Bluetooth BtAddr[5];
+uint8_t Edid[128] /*encode:base64 */;
+};
+
+```
+
+<hr/>
+
+In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IDisplayInfo.h#L101), the EDID data parameter is encoded.
+
+
+<hr/>
 
 ### JSON-RPC Related Tags
 
@@ -226,6 +286,9 @@ In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166b
 |[@opaque](#opaque)| Indicates that a string parameter is an opaque JSON object | | No | Yes |Method parameter|
 |[@alt](#alt)| Provides an alternative name a method can by called by | | No | Yes |Method|
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
+|[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
+|[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
+|[@lookup](#lookup)| Creates JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -397,8 +460,19 @@ Indicates the string parameter contains a JSON document that should not be deser
 #### @alt
 Provide an alternative name for the method. JSON-RPC methods will be generated for both the actual function name and the alternative name
 
+Note: @text, @alt, @deprecated can be used together.
+
 ##### Example
-[IController](https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38) uses @alt for the `Reboot()` method to generate an alternatively named method called `Harakiri` (for legacy reasons)
+
+Methods, properties and notifications can be marked by using:
+```cpp
+// @alt <alternative_name>
+// @alt:deprecated <alternative_deprecated_name>
+// @alt:obsolete <alternative_obsolete_name>
+```
+<hr/>
+
+[IController.h](https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38) uses @alt for the `Reboot()` method to generate an alternatively named method called `Harakiri` (for legacy reasons)
 
 <hr/>
 
@@ -442,10 +516,23 @@ In this example now for all enums, method names, method parameters and PoD membe
   /* @json 1.0.0 @text:keep */
   struct EXTERNAL IExample : virtual public Core::IUnknown {
 ```
+</hr>
+<hr>
+
+#### @prefix
+Use this tag on a class to prepend all JSON-RPC methods with a prefix identifier. This is an alternative to using multiple @text tags.
+
+In this example, all registered methods would contain the prefix source::.
+This is particularly useful for avoiding clashes, especially if several interfaces are implemented by the same plugin.
+
+```cpp
+// @json 1.0.0
+// @prefix source
+struct EXTERNAL ISource: virtual public Core::IUnknown {
+```
 
 </hr>
-
-
+<hr>
 
 ### JSON-RPC Documentation Related Tags
 
@@ -545,3 +632,90 @@ This tag adds description about each return codes specified in the generated mar
 
 ##### Example
 In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54), it uses this tag to add description about the returned error code.
+
+<hr/>
+
+### Advanced Topics
+
+#### @statuslistener
+
+Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification.
+
+As a result, an additional IHandler interface is generated, providing the callbacks.
+
+##### Example
+
+In [IMessenger.H](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IMessenger.h#L95-L111), the methods use this tag to enable notification changes.
+
+<hr/>
+
+In this example, a method with the tag @lookup is used, which will allow for the generation of an IHandler interface.
+
+```cpp
+// @json 1.0.0
+struct EXTERNAL IMessenger {
+	virtual ~IMessenger() = default;
+
+	/* @event */
+    struct EXTERNAL INotification {
+		virtual ~INotification() = default;
+
+		// @statuslistener
+		virtual void RoomUpdate() = 0;
+	}
+}	
+```
+An example of a generated IHandler interface providing the callbacks from the RoomUpdate() function.
+
+```cpp 
+struct IHandler {
+    virtual ~IHandler() = default;
+
+    virtual void OnRoomUpdateEventRegistration(const string& client, const   
+		PluginHost::JSONRPCSupportsEventStatus::Status status) = 0;
+}
+```
+<hr/>
+
+#### @lookup
+
+This tag can be used on a method, to create a JSON-RPC interface that is accessing dynamically created objects (or sessions). This object interface is brought into JSON-RPC scope with a prefix.
+
+The format for this tag is '@lookup:[prefix]'.
+
+Note: If 'prefix' is not set, then the name of the object interface is used instead.
+
+
+##### Example
+
+The signature of the lookup function must be:
+
+```cpp 
+virtual <Interface>* Method(const uint32_t id) = 0;
+```
+
+An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.
+
+```cpp 
+struct IPlayer {
+	struct IPlaybackSession {
+		virtual Core::hresult Play() = 0;
+		virtual Core::hresult Stop() = 0;
+	};
+
+	// @lookup:session
+	virtual IPlaySession* Session(const uint32_t id) = 0;
+
+	virtual Core::hresult Create(uint32_t& id /* @out */) = 0;
+	virtual Core::hresult Configure(const string& config) = 0;
+}
+```
+An example of possible calls to the interface: the lookup method is used to convert the id to the object.
+
+```
+Player.1.configure
+Player.1.create
+Player.1.session#1::play
+Player.1.session#1::stop
+```
+
