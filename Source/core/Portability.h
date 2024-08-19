@@ -695,9 +695,12 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
+
 namespace Thunder {
 
 namespace Core {
+
+    class TextFragment;
 
     #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
     #if __CORE_INSTANCE_BITS__ <= 8
@@ -786,6 +789,23 @@ namespace Core {
 
     const uint32_t infinite = -1;
     static const string emptyString;
+
+
+    class Demangling {
+    public:
+        static Demangling& demangleInstance() {static Demangling demangleClassNames; return demangleClassNames;}
+        ~Demangling() = default;
+
+    private:
+        Demangling() = default;
+        Demangling(const Demangling&) = delete;
+        Demangling& operator=(const Demangling&) = delete;
+
+    public:
+        inline TextFragment Demangled(const char name[]);
+        inline TextFragment ClassName(const char name[]);
+        inline TextFragment ClassNameOnly(const char name[]);
+    };
 
     class Void {
     public:
@@ -987,7 +1007,7 @@ extern void EXTERNAL usleep(const uint32_t value);
 
 void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
-
+string EXTERNAL Demangle(const TCHAR name[]);
 }
 
 

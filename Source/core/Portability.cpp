@@ -255,7 +255,11 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
 
 #endif
 }
+
+string Demangle(const TCHAR name[]) {
+    return(string(Thunder::Core::ClassNameOnly(name).Text()));
 }
+} // extern c
 
 #ifdef __LINUX__
 
@@ -409,6 +413,68 @@ namespace Core {
     void Format(string& dst, const TCHAR format[], va_list ap)
     {
         toString(dst, format, ap);
+    }
+
+    inline TextFragment Demangling::Demangled(const char name[]) {
+
+        char allocationName[512];
+        size_t allocationSize = sizeof(allocationName) - 1;
+
+        #ifdef __LINUX__
+            int status;
+            char* demangledName = abi::__cxa_demangle(name, allocationName, &allocationSize, &status);
+            std::string newName;
+
+            // Check for, and deal with, error.
+            if (demangledName == nullptr) {
+                newName = allocationName;
+            } else {
+                newName = demangledName;
+            }
+        #endif
+
+        #ifdef __WINDOWS__
+            uint16_t index = 0;
+            uint16_t moveTo = 0;
+            while ((name[index] != '\0') && (moveTo < (allocationSize - 1))) {
+                if ((name[index] == 'c') && (name[index + 1] == 'l') && (name[index + 2] == 'a') && (name[index + 3] == 's') && (name[index + 4] == 's') && (name[index + 5] == ' ')) {
+                    // we need to skip class :-)
+                    index += 6;
+                } else if ((name[index] == 's') && (name[index + 1] == 't') && (name[index + 2] == 'r') && (name[index + 3] == 'u') && (name[index + 4] == 'c') && (name[index + 5] == 't') && (name[index + 6] == ' ')) {
+                    // We need to skip struct
+                    index += 7;
+                } else if ((name[index] == 'e') && (name[index + 1] == 'n') && (name[index + 2] == 'u') && (name[index + 3] == 'm') && (name[index + 4] == ' ')) {
+                    // We need to skip enum
+                    index += 5;
+                } else {
+                    allocationName[moveTo++] = name[index++];
+                }
+            }
+            allocationName[moveTo] = '\0';
+            std::string newName(allocationName, moveTo);
+        #endif
+
+        return (TextFragment(newName));
+    }
+
+    inline TextFragment Demangling::ClassName(const char name[]) {
+        return(Demangled(name));
+    }
+
+    inline TextFragment Demangling::ClassNameOnly(const char name[]) {
+
+        TextFragment result(Demangled(name));
+        uint16_t index = 0;
+        uint16_t lastIndex = static_cast<uint16_t>(~0);
+
+        while ((index < result.Length()) && (result[index] != '<')) {
+            if (result[index] == ':') {
+                lastIndex = index;
+            }
+            index++;
+        }
+
+        return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
 }
 }
