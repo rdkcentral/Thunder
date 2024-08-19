@@ -27,10 +27,6 @@
 #include "WarningReportingCategories.h"
 #include "PostMortem.h"
 
-#ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
-#endif
-
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
 #endif
@@ -1375,10 +1371,9 @@ namespace PluginHost {
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
             #endif
 
-            std::vector<string> GetLibrarySearchPaths(const string& locator) const override
+            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> all_paths;
-
                 const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
                 string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
 
@@ -1414,19 +1409,18 @@ namespace PluginHost {
                     all_paths.push_back(PluginPath() + locator);
                 }
 
-                return all_paths;
+                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(all_paths));
             }
 
             Core::Library LoadLibrary(const string& name) {
                 uint8_t progressedState = 0;
                 Core::Library result;
 
-                std::vector<string> all_paths = GetLibrarySearchPaths(name);
-                std::vector<string>::const_iterator iter = std::begin(all_paths);
-
-                while ( (iter != std::end(all_paths)) && (progressedState <= 2) ) {
-                    Core::File libraryToLoad(*iter);
-
+                RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
+                string element;
+                while((all_paths->Next(element) == true) && (progressedState <= 2)) {
+                    Core::File libraryToLoad(element);
+                    
                     if (libraryToLoad.Exists() == true) {
                         if (progressedState == 0) {
                             progressedState = 1;
@@ -1436,7 +1430,7 @@ namespace PluginHost {
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
-                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(iter->c_str());
+                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
 
                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
@@ -1459,8 +1453,8 @@ namespace PluginHost {
                             }
                         }
                     }
-                    ++iter;
                 }
+                all_paths->Release();
 
                 if (HasError() == false) {
                     if (progressedState == 0) {
@@ -4190,7 +4184,7 @@ namespace PluginHost {
                 }
                 }
             }
-            void Send(const Core::ProxyType<Web::Response>& response) override
+            void Send(const Core::ProxyType<Web::Response>& response VARIABLE_IS_NOT_USED) override
             {
                 if (_requestClose == true) {
                     PluginHost::Channel::Close(0);
@@ -4215,7 +4209,7 @@ namespace PluginHost {
 
                 return (result);
             }
-            void Send(const Core::ProxyType<Core::JSON::IElement>& element) override
+            void Send(const Core::ProxyType<Core::JSON::IElement>& element VARIABLE_IS_NOT_USED) override
             {
                 TRACE(SocketFlow, (element));
             }
