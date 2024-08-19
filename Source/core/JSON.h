@@ -744,17 +744,29 @@ namespace Core {
                 bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
+#ifdef __WINDOWS__
                     TYPE previous = _value;
                     TYPE current = _value;
+#else
+                    bool overflow = false;
+#endif
                     if (isdigit(stream[loaded])) {
+#ifdef __WINDOWS__
                         _value *= (_set & 0x1F);
                         _value += (stream[loaded] - '0');
-                        loaded++;
                         current = _value / (_set & 0x1F);
+#else
+                        overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
+#endif
+                        loaded++;
                     } else if (isxdigit(stream[loaded])) {
+#ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
                         current = _value / 16;
+#else
+                        overflow = __builtin_mul_overflow(_value, 16, &_value) || __builtin_add_overflow((::toupper(stream[loaded]) - 'A') + 10, _value, &_value);
+#endif
                         loaded++;
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
@@ -769,8 +781,12 @@ namespace Core {
                         completed = true;
                     }
 
+#ifdef __WINDOWS__
                     if (previous != current) {
-                        error = Error{ "Integer overflow is detected, it should be in the integer type range" };
+#else
+                    if (overflow == true) {
+#endif
+                        error = Error{ "Integer overflow, it should be in the integer type range" };
                         _set |= ERROR;
                         completed = true;
                     }
