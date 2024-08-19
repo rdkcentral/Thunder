@@ -29,12 +29,12 @@
 namespace Thunder {
 namespace Core {
 
-     TextFragment ClassName2(const char className[])
+     TextFragment ClassName(const char className[])
     {
         return (Demangling::demangleInstance().ClassName(className));
     }
 
-    TextFragment ClassNameOnly2(const char className[])
+    TextFragment ClassNameOnly(const char className[])
     {
         return (Demangling::demangleInstance().ClassNameOnly(className));
     } 
