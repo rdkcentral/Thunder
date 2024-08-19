@@ -1233,18 +1233,7 @@ namespace Plugin {
                 data.Instance = proxy->Implementation();
                 data.Interface = proxy->InterfaceId();
                 data.Count = proxy->ReferenceCount();
-
-                #ifdef __LINUX__
-                    char* temp = abi::__cxa_demangle(proxy->Name(), nullptr, nullptr, &status);
-                    if(temp != nullptr) {
-                        data.Name = temp;
-                        ::free(temp);
-                    }
-                    else
-                #endif 
-                    {
-                        data.Name = proxy->Name();
-                    }
+                data.Name = proxy->Name();
                 
                 elements.emplace_back(std::move(data));
             }
