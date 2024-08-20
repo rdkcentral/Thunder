@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/BaseRefCount.h"
+#include "processcontainers/IProcessContainers.h"
+#include "BaseRefCount.h"
 
 namespace Thunder {
 namespace ProcessContainers {

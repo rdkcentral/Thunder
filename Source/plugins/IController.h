@@ -227,6 +227,41 @@ namespace Controller {
                 uint8_t Patch /* @brief Patch number */;
             };
 
+            struct BuildInfo {
+
+                enum systemtype : uint8_t {
+                    SYSTEM_WINDOWS /* @text:Windows */,
+                    SYSTEM_LINUX /* @text:Linux */,
+                    SYSTEM_MACOS /* @text:MacOS */
+                };
+
+                enum buildtype : uint8_t {
+                    DEBUG,
+                    DEBUG_OPTIMIZED,
+                    RELEASE_WITH_DEBUG_INFO,
+                    RELEASE,
+                    PRODUCTION
+                };
+
+                enum extensiontype : uint8_t {
+                    WARNING_REPORTING = 1,
+                    BLUETOOTH = 2,
+                    HIBERBATE = 4,
+                    PROCESS_CONTAINERS = 8
+                };
+
+                systemtype SystemType /* @brief System type */;
+                buildtype BuildType /* @brief Build type */;
+                Core::OptionalType<extensiontype> Extensions /* @bitmask */;
+                bool Messaging /* @brief Denotes whether Messaging is enabled*/;
+                bool ExceptionCatching /* @brief Denotes whether there is an exception */;
+                bool DeadlockDetection /* @brief Denotes whether deadlock detection is enabled */;
+                bool WCharSupport /* Denotes whether there is wchar support */;
+                uint8_t InstanceIDBits /* @brief Core instance bits */;
+                Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
+                uint8_t ThreadPoolCount /* Number of configured threads on the threadpool */;
+            };
+            
             struct CallStack {
                 Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
@@ -341,6 +376,10 @@ namespace Controller {
         // @property
         // @brief Thread callstack
         virtual Core::hresult CallStack(const uint8_t thread /* @index */, Data::ICallStackIterator*& callstack /* @out */) const = 0;
+    
+        // @property
+        // @brief Build information
+        virtual Core::hresult BuildInfo(Data::BuildInfo& buildInfo /* @out */) const = 0;
     };
 
 } // namespace Controller
