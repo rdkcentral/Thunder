@@ -237,11 +237,12 @@ When designing the interface it is good to use the "less it more" principle when
 Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. 
 
 Let's design an Player Interface as an example. At first one would expect all the following should be possible for a player:
-- Start playback
-- Stop Playback
-- Pause Playback
-- Rewind (with a certain speed perhaps)
-- Forward (with a certain speed perhaps)
+
+* Start playback
+* Stop Playback
+* Pause Playback
+* Rewind (with a certain speed perhaps)
+* Forward (with a certain speed perhaps)
 
 So a naive interface could look like this:
 
@@ -264,7 +265,7 @@ So this is how this was specified in the ISteamer interface [here](https://githu
 Frequency versus Quantity {#FrequencyVersusQuantity}
 ------------------------
 
-When designing an interface in an embedded environment where memory, processing power and bandwith might be limited it is also advisable to think about the frequency and quantity of the data exchange. Even if bandwith itself is not an issue, sending big chuncks of data, or small ones with a high frequency will lead to an increase in resource usage (memory and CPU) for handling this. 
+When designing an interface in an embedded environment where memory, processing power and bandwith might be limited it is also advisable to think about the frequency and quantity of the data exchange. Even if bandwith itself is not an issue, sending big chuncks of data, or small ones with a high frequency will lead to an increase in resource usage (memory and CPU) for sending and/or handling this. 
 
 So when thinking of the data passed to/from a component via a method on the interface take into consideration if all the data is really needed for handling that call or notification. On the other hand sending very small chunks per call while it is expected up front that multiple calls will be needed to combine enough data that is only useful for processing is also not very efficient (certainly for an environment where latency is high). So don't make the amount of data per call an afterthought but pass enough data that can be processed in one call but not more.
 
@@ -280,10 +281,54 @@ Prefer multiple smaller interfaces over one big one {#PreferMultipleInterfaces}
 
 COM-RPC makes it rather easy to have one component implement multiple interfaces instead of just one and have the user of the interface query if a certain interface is implemented by a component, see the IUnknown QueryInterface method on how to do that.
 
+to briefly reiterate how that works, suppose a component implements multiple interfaces:
+
+``` c++
+  class WebKitImplementation :   public Exchange::IBrowser,
+                                 public Exchange::IWebBrowser,
+                                 public Exchange::IApplication,
+                                 public Exchange::IBrowserScripting,
+   ...
+```
+
+and exposes these interfaces in the interface map:
+
+``` c++
+        BEGIN_INTERFACE_MAP(WebKitImplementation)
+        INTERFACE_ENTRY(Exchange::IWebBrowser)
+        INTERFACE_ENTRY(Exchange::IBrowser)
+        INTERFACE_ENTRY (Exchange::IApplication)
+        INTERFACE_ENTRY (Exchange::IBrowserScripting)
+        ...
+        END_INTERFACE_MAP
+```
+
+then a client that via any of the available methods got access to an interface of a component (which could also just be the IShell of the plugin of course) can query if an interface is available via the QueryInterface method (that is always available on an interface as it is part of IUnknown):
+
+``` c++
+        Exchange::IWebBrowser* webbrowser = service.QueryInterface<Exchange::IWebBrowser>();
+
+        if( webbrowser != nullptr ) {
+            ...
+            webbrowser->Release();
+        } else {
+            Exchange::IBrowser* browser = service.QueryInterface<Exchange::IBrowser>();
+
+            if( browser != nullptr ) {
+                ...
+                browser->Release();
+            }
+        ...
+```
+if the component does not expose the requested interface a nullptr will be returned and logic can be created around the availability of the interface.
+
 This feature of come can be used in multiple ways:
-- When designing an interface only have one responsibility per interface. This makes it easier to understand and maintain the interface but now also gives component the opportunity to only implement one responsibility and not the other if it does not make sense. The client can using QueryInterface check if also the extended functionality is available. For example a Player interface where you could also change the Volume you would create an IPlayer and an IVolume instead of only an IPlayer. This will also make reuse of an interface easier as it can be used for any component implementing that responsibility , no reason to say it does not fit the component as only a part of the interface applies to what it is trying to achieve.
-- When an interface needs to be extended instead of adding new methods to the existing one one could add the extended functionality to a new interface. Now the client can also work with components that do not yet implement the new extended functionality (as it can find out with QueryInterface if it is available) while on the other hand not forcing an update of all the components that do implement the initial interface, you only update the one(s) for which the extended new functionality makes sense.
-- When implementing an interface in a plugin meant to be used out of process it can be used to distinguish between the public part (what really is the interface to be used by clients of the interface) and the private part (what is needed to facilitate the exchange between the in process and out of process part of the plugin). Most probably this would already be in contradiction with the first bullet point above but an example of this would be the Configure method to forward the configuration from the in process part of the plugin to the out of process part. It does not make sense to add a Configuration method to your public interface for this, it does not belong to this and of course it is far from ideal that you just document "do not call this from the outside, it is internal only. It would be better to have the Configuration call in its own interface and have the out of process part of the plugin implement both the public interface as well as The IConfiguration interface. The in process part can then via QueryInterface get access to IConfiguration and call the Configuration method. The in process part would then of course not expose the IConfiguration via the interface map making it impossible to be called externally. As this is of course a real wold use case the IConfiguration interface is already available [here](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IConfiguration.h#L26).
+
+* When designing an interface only have one responsibility per interface. This makes it easier to understand and maintain the interface but now also gives component the opportunity to only implement one responsibility and not the other if it does not make sense. The client can using QueryInterface check if also the extended functionality is available. For example a Player interface where you could also change the Volume you would create an IPlayer and an IVolume instead of only an IPlayer. This will also make reuse of an interface easier as it can be used for any component implementing that responsibility , no reason to say it does not fit the component as only a part of the interface applies to what it is trying to achieve.
+
+* When an interface needs to be extended instead of adding new methods to the existing one one could add the extended functionality to a new interface. Now the client can also work with components that do not yet implement the new extended functionality (as it can find out with QueryInterface if it is available) while on the other hand not forcing an update of all the components that do implement the initial interface, you only update the one(s) for which the extended new functionality makes sense.
+
+* When implementing an interface in a plugin meant to be used out of process it can be used to distinguish between the public part (what really is the interface to be used by clients of the interface) and the private part (what is needed to facilitate the exchange between the in process and out of process part of the plugin). Most probably this would already be in contradiction with the first bullet point above but an example of this would be the Configure method to forward the configuration from the in process part of the plugin to the out of process part. It does not make sense to add a Configuration method to your public interface for this, it does not belong to this and of course it is far from ideal that you just document "do not call this from the outside, it is internal only. It would be better to have the Configuration call in its own interface and have the out of process part of the plugin implement both the public interface as well as The IConfiguration interface. The in process part can then via QueryInterface get access to IConfiguration and call the Configuration method. The in process part would then of course not expose the IConfiguration via the interface map making it impossible to be called externally. As this is of course a real wold use case the IConfiguration interface is already available [here](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IConfiguration.h#L26).
 
 
 
