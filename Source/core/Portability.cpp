@@ -295,7 +295,7 @@ void SleepUs(const unsigned int time) {
 
 const char* Demangle(const char name[])
 {
-    return "hi";
+    return name;
 }
 
 #endif
@@ -309,7 +309,7 @@ const char* Demangle(const char name[])
 
 const char* Demangle(const char name[])
 {
-    return "hi";
+    return name;
 }
 
 #endif
