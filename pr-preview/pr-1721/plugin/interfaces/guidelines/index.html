@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.32">
     
     
       
@@ -2083,6 +2083,12 @@
 </li>
 <li><a href="#MandatoryKeywordsInAnInterfaceDefinition">Mandatory keywords in an interface definition</a></li>
 <li><a href="#TagsAnnotationsAvailableForOptimizingTheGeneratedCode">Tags/annotations available for optimizing the generated code</a></li>
+<li><a href="#PracticalConsiderations">Practical Considerations</a><ol>
+<li>[Less is more]{#LessIsMore}</li>
+<li>[Frequency versus Quantity]{#FrequencyVersusQuantity}</li>
+<li>[Prefer multiple smaller interfaces over one big one]{#PreferMultipleInterfaces}</li>
+</ol>
+</li>
 </ol>
 <h1 id="Introduction">Introduction</h1>
 <p>Interface-based development offers several advantages:</p>
@@ -2095,7 +2101,7 @@
 <li><strong>Testing</strong>: Interfaces help in unit testing by allowing developers to create mock objects that implement interfaces. This enables easier testing of individual components in isolation, leading to more robust and reliable code.</li>
 </ol>
 <p>Overall, interface-based development promotes a modular, flexible, and maintainable codebase that is easier to work with and extend over time.</p>
-<p>To exploit these advantages to the fullest, Thunder uses Interfaces defintions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface.</p>
+<p>To exploit these advantages to the fullest, Thunder uses Interfaces definitions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface.</p>
 <h1 id="RuleRecommendationGuideline">Rule, Recommendation or guideline</h1>
 <p>Here are the distinctions between a rule, a recommendation, and a guideline:</p>
 <ol>
@@ -2187,7 +2193,7 @@
 </code></pre></div>
 <h1 id="Recommendations">Recommendations</h1>
 <h2 id="StatetCompleteInterfaces">State complete interfaces</h2>
-<p>If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can <code>core::hresult Start() = 0</code> the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an <code>core::hresult::Abort() = 0</code> method.  </p>
+<p>If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can <code>core::hresult Start() = 0</code> the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an <code>core::hresult::Abort() = 0</code> method. </p>
 <h2 id="ReturnCorehresultOnMethods">Return <code>core::hresult</code> on methods</h2>
 <p>As most interfaces are designed to work over process boundaries, it is recommended to cater for issues during the passing of the process boundary, e.g. the other process might have crashed. This means that method calls on interfaces that seem triial but do change the state of an implementation, like <code>SetTime()</code>, may fail due to cross process communication. If the return value of a method is defined as core::hresult, the Thunder COMRPC framework will signal issues with the communication by returning a negative value. The whole positive range from 0-2147483647 (0-0x7FFFFFFF) is free for the implementer to return values.</p>
 <h2 id="SpecificallyDefineTheLenthgOfTheEnumToBeUsed">Specifically define the length of the enum to be used</h2>
@@ -2252,6 +2258,45 @@
 <h1 id="TagsAnnotationsAvailableForOptimizingTheGeneratedCode">Tags/annotations available for optimizing the generated code</h1>
 <p>Tags/annotations that can be used to optimize the generated code, influence the generated JSON-RPC interface from the interface (if desired at all), or document the interface can be found here:</p>
 <p>See: <a href="https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/">https://rdkcentral.github.io/Thunder/plugin/interfaces/tags</a></p>
+<h1 id="PracticalConsiderations">Practical Considerations</h1>
+<h2 id="LessIsMore">Less is more</h2>
+<p>When designing an interface spend some time thinking on how the interface can be as easy to use, understand and be consistent without the need of adding a lot of documentation and the need of explaining all the cornercases that can happen when using the interface in a certain way.</p>
+<p>As an interface is in principle immutable it is better to spend more time on this before releasing the interface than later on trying to improve the interface or writing a lot of documentation explaining on how to use it in certain situations. </p>
+<p>When designing the interface it is good to use the "less it more" principle when adding methods to it to make sure it can do what should be possible with it. 
+Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. </p>
+<p>Let's design an Player Interface as an example. At first one would expect all the following should be possible for a player:
+* Start playback
+* Stop Playback
+* Pause Playback
+* Rewind (with a certain speed perhaps)
+* Forward (with a certain speed perhaps)</p>
+<p>So a naive interface could look like this:</p>
+<p><div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IPlayer</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_PLAYER</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Play</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Stop</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Pause</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Rewind</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Forward</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+At first this might seem logical but how would you expect the implementation to respond, if you would do Pause(), before Play()? Or Play() after Rewind()? You would need to think about all the different options and specify how the interface should respond in that situation. 
+But if you think of it what all the different methods do is specify a certain playback speed. So if you have one method with which you could set the player speed (and allow a negative number) it could do all the above while at the same time be consistent, easy to understand and no need to explain what will happen in certain situation as just the last set speed is the one that is current.
+So this is how this was specified in the ISteamer interface <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IStream.h#L105C32-L105C53">here</a></p>
+<h2 id="FrequencyVersusQuantity">Frequency versus Quantity</h2>
+<p>When designing an interface in an embedded environment where memory, processing power and bandwith might be limited it is also advisable to think about the frequency and quantity of the data exchange. Even if bandwith itself is not an issue, sending big chuncks of data, or small ones with a high frequency will lead to an increase in resource usage (memory and CPU) for handling this. </p>
+<p>So when thinking of the data passed to/from a component via a method on the interface take into consideration if all the data is really needed for handling that call or notification. On the other hand sending very small chunks per call while it is expected up front that multiple calls will be needed to combine enough data that is only useful for processing is also not very efficient (certainly for an environment where latency is high). So don't make the amount of data per call an afterthought but pass enough data that can be processed in one call but not more.</p>
+<p>As an example when designing an interface to send stored EPG data to a client it probably does not make much sense of sending a month of EPG data for all channels in one call. Probably the client will only display a certain number of channels and a week of data so it would make sense to only send this amount. It also would not make sense to sent it per channel per hour only as that would require multiple calls to combine all information the client is interested in (and might cause additional consistency issues as the data is not retrieved over multiple calls and could change in the mean time).</p>
+<p>A technique that can be considered in these kind of situations are iterators that allow retrieval of only part of the data per call, certainly if the whole dataset needs to be kept consistent (but then might come at the cost of keeping a (partial) copy of the data).</p>
+<p>Also when sending notifications on certain events keep in mind how often these happen and if the client is always interested in receiving all of these (also see the "Static vs Dynamic" section above). 
+If these events happen a lot the component might become very chatty and it might be a better idea think of solutions on how to reduce the number of events sent (e.g. reduce the number of possible events, make it possible to subscribe to subevents etc.).</p>
+<h2 id="PreferMultipleInterfaces">Prefer multiple smaller interfaces over one big one</h2>
+<p>COM-RPC makes it rather easy to have one component implement multiple interfaces instead of just one and have the user of the interface query if a certain interface is implemented by a component, see the IUnknown QueryInterface method on how to do that.</p>
+<p>This feature of come can be used in multiple ways:
+* When designing an interface only have one responsibility per interface. This makes it easier to understand and maintain the interface but now also gives component the opportunity to only implement one responsibility and not the other if it does not make sense. The client can using QueryInterface check if also the extended functionality is available. For example a Player interface where you could also change the Volume you would create an IPlayer and an IVolume instead of only an IPlayer. This will also make reuse of an interface easier as it can be used for any component implementing that responsibility , no reason to say it does not fit the component as only a part of the interface applies to what it is trying to achieve.
+* When an interface needs to be extended instead of adding new methods to the existing one one could add the extended functionality to a new interface. Now the client can also work with components that do not yet implement the new extended functionality (as it can find out with QueryInterface if it is available) while on the other hand not forcing an update of all the components that do implement the initial interface, you only update the one(s) for which the extended new functionality makes sense.
+* When implementing an interface in a plugin meant to be used out of process it can be used to distinguish between the public part (what really is the interface to be used by clients of the interface) and the private part (what is needed to facilitate the exchange between the in process and out of process part of the plugin). Most probably this would already be in contradiction with the first bullet point above but an example of this would be the Configure method to forward the configuration from the in process part of the plugin to the out of process part. It does not make sense to add a Configuration method to your public interface for this, it does not belong to this and of course it is far from ideal that you just document "do not call this from the outside, it is internal only. It would be better to have the Configuration call in its own interface and have the out of process part of the plugin implement both the public interface as well as The IConfiguration interface. The in process part can then via QueryInterface get access to IConfiguration and call the Configuration method. The in process part would then of course not expose the IConfiguration via the interface map making it impossible to be called externally. As this is of course a real wold use case the IConfiguration interface is already available <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IConfiguration.h#L26">here</a>.</p>
 
 
 
@@ -2347,7 +2392,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.471ce7a9.min.js"></script>
       
     
   </body>
