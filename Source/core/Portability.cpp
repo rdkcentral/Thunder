@@ -224,7 +224,7 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
                 entry.line = ~0;
             }
             else {
-                entry.function = Demangle(info.dli_sname);
+                entry.function = Core::ClassName(info.dli_sname).Text();
                 entry.line = (char*)callstack[i] - (char*)info.dli_saddr;
             }
         }
@@ -243,9 +243,7 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
 
 } // extern c
 
-string Demangle(const TCHAR name[]) {
-    return (Thunder::Core::Demangling::ClassName(name).Text());
-}
+
 
 #ifdef __LINUX__
 
@@ -400,8 +398,6 @@ namespace Core {
         toString(dst, format, ap);
     }
 
-namespace Demangling {
-
     TextFragment Demangled(const char name[]) {
 
         char allocationName[512];
@@ -463,6 +459,5 @@ namespace Demangling {
 
         return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
-} // namespace Demangling
 } // namespace Core
 } // namespace Thunder

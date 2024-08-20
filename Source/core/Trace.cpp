@@ -29,16 +29,6 @@
 namespace Thunder {
 namespace Core {
 
-     TextFragment ClassName(const char className[])
-    {
-        return (Demangling::ClassName(className));
-    }
-
-    TextFragment ClassNameOnly(const char className[])
-    {
-        return (Demangling::ClassNameOnly(className));
-    } 
-
     const char* FileNameOnly(const char fileName[])
     {
         uint16_t index = static_cast<uint16_t>(strlen(fileName));

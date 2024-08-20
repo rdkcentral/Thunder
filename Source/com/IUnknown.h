@@ -403,7 +403,7 @@ namespace ProxyStub {
             return (result);
         }
         inline string Name() const {
-            return Demangle(_name);
+            return Core::ClassName(_name).Text();
         }
 
     private:
