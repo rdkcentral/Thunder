@@ -293,11 +293,9 @@ void SleepUs(const unsigned int time) {
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
-const char* Demangle(const char name[])
-{
-    return name;
+string Demangle(const TCHAR name[]) {
+    return (name);
 }
-
 #endif
 
 #if defined(__WINDOWS__)
@@ -307,11 +305,9 @@ const char* Demangle(const char name[])
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }
 
-const char* Demangle(const char name[])
-{
-    return name;
+string Demangle(const TCHAR name[]) {
+    return (name);
 }
-
 #endif
 
 
