@@ -23,10 +23,10 @@ Table of Contents
 7. [Tags/annotations available for optimizing the generated code](#TagsAnnotationsAvailableForOptimizingTheGeneratedCode)
 8. [Practical Considerations](#PracticalConsiderations)
     1. [Less is more](#LessIsMore)
-    2. [Static and Dynamic behaviour]{#StaticAndDynamic}
+    2. [Static and Dynamic behaviour](#StaticAndDynamic)
     3. [Frequency versus Quantity](#FrequencyVersusQuantity)
     4. [Prefer multiple smaller interfaces over one big one](#PreferMultipleInterfaces)
-    5. [Asynchronous interfaces]{#AsynchronousInterfaces}
+    5. [Asynchronous interfaces](#AsynchronousInterfaces)
 
 Introduction {#Introduction}
 ============
