@@ -148,7 +148,7 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
-            , _name(Demangle(name))
+            , _name(Demangle(name).c_str())
         {
         }
         virtual ~UnknownProxy() = default;
