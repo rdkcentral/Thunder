@@ -21,6 +21,10 @@ Table of Contents
     4. [Be verbose even if there is functionally no need](#BeVerboseEvenIfThereIsFunctionallyNoNeed)
 6. [Mandatory keywords in an interface definition](#MandatoryKeywordsInAnInterfaceDefinition)
 7. [Tags/annotations available for optimizing the generated code](#TagsAnnotationsAvailableForOptimizingTheGeneratedCode)
+8. [Practical Considerations](#PracticalConsiderations)
+    1. [Less is more]{#LessIsMore}
+    2. [Frequency versus Quantity]{#FrequencyVersusQuantity}
+    3. [Prefer multiple smaller interfaces over one big one]{#PreferMultipleInterfaces}
 
 Introduction {#Introduction}
 ============
@@ -36,7 +40,7 @@ Interface-based development offers several advantages:
 
 Overall, interface-based development promotes a modular, flexible, and maintainable codebase that is easier to work with and extend over time.
 
-To exploit these advantages to the fullest, Thunder uses Interfaces defintions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface.
+To exploit these advantages to the fullest, Thunder uses Interfaces definitions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface.
 
 Rule, Recommendation or guideline {#RuleRecommendationGuideline}
 =================================
@@ -159,7 +163,7 @@ Recommendations {#Recommendations}
 
 State complete interfaces {#StatetCompleteInterfaces}
 -------------------------
-If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can ```core::hresult Start() = 0``` the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an ```core::hresult::Abort() = 0``` method.  
+If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can ```core::hresult Start() = 0``` the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an ```core::hresult::Abort() = 0``` method. 
 
 Return ```core::hresult``` on methods {#ReturnCorehresultOnMethods}
 ---------------------------------
@@ -219,6 +223,67 @@ Tags/annotations that can be used to optimize the generated code, influence the 
  
 See: [https://rdkcentral.github.io/Thunder/plugin/interfaces/tags](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/)
 
+Practical Considerations {#PracticalConsiderations}
+========================
+
+Less is more {#LessIsMore}
+------------
+
+When designing an interface spend some time thinking on how the interface can be as easy to use, understand and be consistent without the need of adding a lot of documentation and the need of explaining all the cornercases that can happen when using the interface in a certain way.
+
+As an interface is in principle immutable it is better to spend more time on this before releasing the interface than later on trying to improve the interface or writing a lot of documentation explaining on how to use it in certain situations. 
+
+When designing the interface it is good to use the "less it more" principle when adding methods to it to make sure it can do what should be possible with it. 
+Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. 
+
+Let's design an Player Interface as an example. At first one would expect all the following should be possible for a player:
+* Start playback
+* Stop Playback
+* Pause Playback
+* Rewind (with a certain speed perhaps)
+* Forward (with a certain speed perhaps)
+
+So a naive interface could look like this:
+
+``` c++
+struct EXTERNAL IPlayer : public virtual Core::IUnknown {
+    enum { ID = ID_PLAYER };
+
+    core::hresult Play() const = 0;
+    core::hresult Stop() = 0;
+    core::hresult Pause() const = 0;
+    core::hresult Rewind(const uint32_t speed) = 0;
+    core::hresult Forward(const uint32_t speed) = 0;
+};
+```
+At first this might seem logical but how would you expect the implementation to respond, if you would do Pause(), before Play()? Or Play() after Rewind()? You would need to think about all the different options and specify how the interface should respond in that situation. 
+But if you think of it what all the different methods do is specify a certain playback speed. So if you have one method with which you could set the player speed (and allow a negative number) it could do all the above while at the same time be consistent, easy to understand and no need to explain what will happen in certain situation as just the last set speed is the one that is current.
+So this is how this was specified in the ISteamer interface [here](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IStream.h#L105C32-L105C53)
+
+
+Frequency versus Quantity {#FrequencyVersusQuantity}
+------------------------
+
+When designing an interface in an embedded environment where memory, processing power and bandwith might be limited it is also advisable to think about the frequency and quantity of the data exchange. Even if bandwith itself is not an issue, sending big chuncks of data, or small ones with a high frequency will lead to an increase in resource usage (memory and CPU) for handling this. 
+
+So when thinking of the data passed to/from a component via a method on the interface take into consideration if all the data is really needed for handling that call or notification. On the other hand sending very small chunks per call while it is expected up front that multiple calls will be needed to combine enough data that is only useful for processing is also not very efficient (certainly for an environment where latency is high). So don't make the amount of data per call an afterthought but pass enough data that can be processed in one call but not more.
+
+As an example when designing an interface to send stored EPG data to a client it probably does not make much sense of sending a month of EPG data for all channels in one call. Probably the client will only display a certain number of channels and a week of data so it would make sense to only send this amount. It also would not make sense to sent it per channel per hour only as that would require multiple calls to combine all information the client is interested in (and might cause additional consistency issues as the data is not retrieved over multiple calls and could change in the mean time).
+
+A technique that can be considered in these kind of situations are iterators that allow retrieval of only part of the data per call, certainly if the whole dataset needs to be kept consistent (but then might come at the cost of keeping a (partial) copy of the data).
+
+Also when sending notifications on certain events keep in mind how often these happen and if the client is always interested in receiving all of these (also see the "Static vs Dynamic" section above). 
+If these events happen a lot the component might become very chatty and it might be a better idea think of solutions on how to reduce the number of events sent (e.g. reduce the number of possible events, make it possible to subscribe to subevents etc.).
+
+Prefer multiple smaller interfaces over one big one {#PreferMultipleInterfaces}
+---------------------------------------------------
+
+COM-RPC makes it rather easy to have one component implement multiple interfaces instead of just one and have the user of the interface query if a certain interface is implemented by a component, see the IUnknown QueryInterface method on how to do that.
+
+This feature of come can be used in multiple ways:
+* When designing an interface only have one responsibility per interface. This makes it easier to understand and maintain the interface but now also gives component the opportunity to only implement one responsibility and not the other if it does not make sense. The client can using QueryInterface check if also the extended functionality is available. For example a Player interface where you could also change the Volume you would create an IPlayer and an IVolume instead of only an IPlayer. This will also make reuse of an interface easier as it can be used for any component implementing that responsibility , no reason to say it does not fit the component as only a part of the interface applies to what it is trying to achieve.
+* When an interface needs to be extended instead of adding new methods to the existing one one could add the extended functionality to a new interface. Now the client can also work with components that do not yet implement the new extended functionality (as it can find out with QueryInterface if it is available) while on the other hand not forcing an update of all the components that do implement the initial interface, you only update the one(s) for which the extended new functionality makes sense.
+* When implementing an interface in a plugin meant to be used out of process it can be used to distinguish between the public part (what really is the interface to be used by clients of the interface) and the private part (what is needed to facilitate the exchange between the in process and out of process part of the plugin). Most probably this would already be in contradiction with the first bullet point above but an example of this would be the Configure method to forward the configuration from the in process part of the plugin to the out of process part. It does not make sense to add a Configuration method to your public interface for this, it does not belong to this and of course it is far from ideal that you just document "do not call this from the outside, it is internal only. It would be better to have the Configuration call in its own interface and have the out of process part of the plugin implement both the public interface as well as The IConfiguration interface. The in process part can then via QueryInterface get access to IConfiguration and call the Configuration method. The in process part would then of course not expose the IConfiguration via the interface map making it impossible to be called externally. As this is of course a real wold use case the IConfiguration interface is already available [here](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IConfiguration.h#L26).
 
 
 
