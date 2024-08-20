@@ -17,11 +17,6 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-find_package(Thunder)
-find_package(${NAMESPACE}Core REQUIRED)
-find_package(${NAMESPACE}Messaging REQUIRED)
-find_package(CompileSettingsDebug CONFIG REQUIRED)
-
 project(${NAMESPACE}BluetoothGATT
         VERSION 1.0.0
         DESCRIPTION "Bluetooth GATT library"
