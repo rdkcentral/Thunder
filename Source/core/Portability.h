@@ -290,8 +290,6 @@ typedef std::wstring string;
 typedef std::string string;
 #endif
 
-extern string EXTERNAL Demangle(const TCHAR* name);
-
 #define CBR_110 110
 #define CBR_300 300
 #define CBR_600 600
@@ -679,8 +677,6 @@ typedef std::wstring string;
 typedef std::string string;
 #endif
 
-extern string EXTERNAL Demangle(const TCHAR* name);
-
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
 
@@ -699,6 +695,7 @@ typedef DWORD ThreadId;
 #define DEBUG_VARIABLE(x)
 #endif
 
+extern string EXTERNAL Demangle(const TCHAR* name);
 
 namespace Thunder {
 
@@ -793,23 +790,6 @@ namespace Core {
 
     const uint32_t infinite = -1;
     static const string emptyString;
-
-
-    class Demangling {
-    public:
-        static Demangling& demanglingInstance() {static Demangling demangleClassNames; return demangleClassNames;}
-
-    private:
-        Demangling() = default;
-        ~Demangling() = default;
-        Demangling(const Demangling&) = delete;
-        Demangling& operator=(const Demangling&) = delete;
-
-    public:
-        TextFragment Demangled(const char name[]);
-        TextFragment ClassName(const char name[]);
-        TextFragment ClassNameOnly(const char name[]);
-    };
 
     class Void {
     public:
@@ -988,6 +968,12 @@ namespace Core {
     }
 
     #undef ERROR_CODE
+
+    namespace Demangling { 
+        TextFragment Demangled(const char name[]); 
+        TextFragment ClassName(const char name[]); 
+        TextFragment ClassNameOnly(const char name[]); 
+    }
 }
 }
 

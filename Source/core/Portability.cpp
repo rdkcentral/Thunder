@@ -224,23 +224,8 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
                 entry.line = ~0;
             }
             else {
-                char* demangled;
-                int status = -1;
-
-                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-
-                if ( (demangled == nullptr) || (status != 0) || (demangled[0] == '\0') ) {
-                    entry.function = string(info.dli_sname);
-                }
-                else {
-                    entry.function = string(demangled);
-                }
-                
+                entry.function = Demangle(info.dli_sname);
                 entry.line = (char*)callstack[i] - (char*)info.dli_saddr;
-
-                if (demangled != nullptr) {
-                    free(demangled);
-                }
             }
         }
 
@@ -258,6 +243,9 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
 
 } // extern c
 
+string Demangle(const TCHAR name[]) {
+    return (Thunder::Core::Demangling::ClassName(name).Text());
+}
 
 #ifdef __LINUX__
 
@@ -293,9 +281,6 @@ void SleepUs(const unsigned int time) {
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
-string Demangle(const TCHAR name[]) {
-    return (name);
-}
 #endif
 
 #if defined(__WINDOWS__)
@@ -305,14 +290,8 @@ string Demangle(const TCHAR name[]) {
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }
 
-string Demangle(const TCHAR name[]) {
-    return (name);
-}
+
 #endif
-
-
-
-
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 
 uint64_t htonll(const uint64_t& value)
@@ -421,7 +400,9 @@ namespace Core {
         toString(dst, format, ap);
     }
 
-    TextFragment Demangling::Demangled(const char name[]) {
+namespace Demangling {
+
+    TextFragment Demangled(const char name[]) {
 
         char allocationName[512];
         size_t allocationSize = sizeof(allocationName) - 1;
@@ -463,11 +444,11 @@ namespace Core {
         return (TextFragment(newName));
     }
 
-    TextFragment Demangling::ClassName(const char name[]) {
+    TextFragment ClassName(const char name[]) {
         return(Demangled(name));
     }
 
-    TextFragment Demangling::ClassNameOnly(const char name[]) {
+    TextFragment ClassNameOnly(const char name[]) {
 
         TextFragment result(Demangled(name));
         uint16_t index = 0;
@@ -482,5 +463,6 @@ namespace Core {
 
         return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
-}
-}
+} // namespace Demangling
+} // namespace Core
+} // namespace Thunder

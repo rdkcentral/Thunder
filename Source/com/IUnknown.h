@@ -148,7 +148,7 @@ namespace ProxyStub {
             , _parent(parent)
             , _channel(channel)
             , _remoteReferences(1)
-            , _name(Demangle(name).c_str())
+            , _name(name)
         {
         }
         virtual ~UnknownProxy() = default;
@@ -402,8 +402,8 @@ namespace ProxyStub {
 
             return (result);
         }
-        inline const char* Name() const {
-            return (_name);
+        inline string Name() const {
+            return Demangle(_name);
         }
 
     private:

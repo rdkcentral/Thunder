@@ -211,8 +211,6 @@ namespace Thunder {
 
 namespace Thunder {
 namespace Core {
-    //class TextFragment;
-
     EXTERNAL TextFragment ClassName(const char className[]);
     EXTERNAL TextFragment ClassNameOnly(const char className[]);
     EXTERNAL const char* FileNameOnly(const char fileName[]);
