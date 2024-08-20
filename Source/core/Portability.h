@@ -290,6 +290,8 @@ typedef std::wstring string;
 typedef std::string string;
 #endif
 
+extern string EXTERNAL Demangle(const TCHAR* name);
+
 #define CBR_110 110
 #define CBR_300 300
 #define CBR_600 600
@@ -536,8 +538,6 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
     ::SleepMs(a_Time * 1000);
 }
 
-extern const char* EXTERNAL Demangle(const char name[]);
-
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_PLATFORM 1
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -678,6 +678,8 @@ typedef std::wstring string;
 #ifndef _UNICODE
 typedef std::string string;
 #endif
+
+extern string EXTERNAL Demangle(const TCHAR* name);
 
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
