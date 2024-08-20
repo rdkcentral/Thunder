@@ -536,6 +536,8 @@ inline void EXTERNAL SleepS(unsigned int a_Time)
     ::SleepMs(a_Time * 1000);
 }
 
+extern const char* EXTERNAL Demangle(const char name[]);
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_PLATFORM 1
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -793,18 +795,18 @@ namespace Core {
 
     class Demangling {
     public:
-        static Demangling& demangleInstance() {static Demangling demangleClassNames; return demangleClassNames;}
-        ~Demangling() = default;
+        static Demangling& demanglingInstance() {static Demangling demangleClassNames; return demangleClassNames;}
 
     private:
         Demangling() = default;
+        ~Demangling() = default;
         Demangling(const Demangling&) = delete;
         Demangling& operator=(const Demangling&) = delete;
 
     public:
-        inline TextFragment Demangled(const char name[]);
-        inline TextFragment ClassName(const char name[]);
-        inline TextFragment ClassNameOnly(const char name[]);
+        TextFragment Demangled(const char name[]);
+        TextFragment ClassName(const char name[]);
+        TextFragment ClassNameOnly(const char name[]);
     };
 
     class Void {
@@ -1007,7 +1009,6 @@ extern void EXTERNAL usleep(const uint32_t value);
 
 void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
-string EXTERNAL Demangle(const TCHAR name[]);
 }
 
 

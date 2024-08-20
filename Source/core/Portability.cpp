@@ -256,10 +256,8 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
 #endif
 }
 
-string Demangle(const TCHAR name[]) {
-    return(string(Thunder::Core::ClassNameOnly(name).Text()));
-}
 } // extern c
+
 
 #ifdef __LINUX__
 
@@ -295,15 +293,27 @@ void SleepUs(const unsigned int time) {
     while ( ((result = ::nanosleep(&elapse, &elapse)) != 0) && (errno == EINTR) ) /* Intentionally left empty */;
 }
 
+const char* Demangle(const char name[])
+{
+    return "hi";
+}
+
 #endif
 
 #if defined(__WINDOWS__)
 
-void SleepUs(const uint32_t time) {
+    void
+    SleepUs(const uint32_t time) {
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }
 
+const char* Demangle(const char name[])
+{
+    return "hi";
+}
+
 #endif
+
 
 
 
@@ -415,7 +425,7 @@ namespace Core {
         toString(dst, format, ap);
     }
 
-    inline TextFragment Demangling::Demangled(const char name[]) {
+    TextFragment Demangling::Demangled(const char name[]) {
 
         char allocationName[512];
         size_t allocationSize = sizeof(allocationName) - 1;
@@ -457,11 +467,11 @@ namespace Core {
         return (TextFragment(newName));
     }
 
-    inline TextFragment Demangling::ClassName(const char name[]) {
+    TextFragment Demangling::ClassName(const char name[]) {
         return(Demangled(name));
     }
 
-    inline TextFragment Demangling::ClassNameOnly(const char name[]) {
+    TextFragment Demangling::ClassNameOnly(const char name[]) {
 
         TextFragment result(Demangled(name));
         uint16_t index = 0;

@@ -1227,7 +1227,6 @@ namespace Plugin {
 
             std::list< IMetadata::Data::Proxy> elements;
 
-            int status = 0;
             for (const ProxyStub::UnknownProxy* proxy : collection) {
                 IMetadata::Data::Proxy data;
                 data.Instance = proxy->Implementation();
