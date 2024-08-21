@@ -32,8 +32,8 @@ Next, install the required Python packages:
 
 - Then, clone the remaining repos.
 	```
+ 	git clone https://github.com/rdkcentral/Thunder.git
 	git clone https://github.com/rdkcentral/ThunderTools.git
-	git clone https://github.com/rdkcentral/Thunder.git
 	git clone https://github.com/rdkcentral/ThunderInterfaces.git
 	git clone https://github.com/rdkcentral/ThunderClientLibraries.git
 	git clone https://github.com/rdkcentral/ThunderNanoServices.git
