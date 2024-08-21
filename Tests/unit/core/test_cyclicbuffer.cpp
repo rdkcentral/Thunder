@@ -1121,7 +1121,7 @@ namespace Core {
 
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            uint8_t loadBuffer[10 + 1];
 
             uint32_t result = buffer.Read(loadBuffer, 4);
             loadBuffer[result] = '\0';
@@ -1371,7 +1371,10 @@ namespace Core {
             uint16_t size;
             EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&size), 2), 2);
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            uint8_t loadBuffer[size + 1];
+
+            ASSERT_GE(size, 2);
+
             uint32_t result = buffer.Read(loadBuffer, size - 2);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, size - 2);
@@ -1385,10 +1388,10 @@ namespace Core {
             EXPECT_EQ(result, size);
 
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            EXPECT_EQ(result, size);
+            EXPECT_EQ(result, 2);
 
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 1);
-            EXPECT_EQ(result, size);
+            EXPECT_EQ(result, 1);
 
             data = "lmnopq";
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), 6);
@@ -1402,10 +1405,10 @@ namespace Core {
             EXPECT_EQ(result, size);
 
             result = buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            EXPECT_EQ(result, size);
+            EXPECT_EQ(result, 2);
 
             result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), size - 2);
-            EXPECT_EQ(result, size);
+            EXPECT_EQ(result, size - 2);
 
             EXPECT_EQ(buffer.Free(), 3u);
             EXPECT_EQ(buffer.Used(), 7u);
