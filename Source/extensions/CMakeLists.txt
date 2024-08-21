@@ -15,10 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(LOCALTRACER
-        "Include local tracing support library in the build." OFF)
+option(BLUETOOTH
+        "Include bluetooth library in the build." OFF)
+option(BROADCAST
+        "Include broadcasting library in the build." OFF)
 option(HIBERNATESUPPORT
         "Include hibernate support in the build." OFF)
+option(LOCALTRACER
+        "Include local tracing support library in the build." OFF)
 option(PRIVILEGEDREQUEST
         "Include hthe privileged request support in the build." OFF)
 option(PROCESSCONTAINERS
@@ -26,12 +30,20 @@ option(PROCESSCONTAINERS
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
-if(LOCALTRACER)
-    add_subdirectory(localtracer)
+if(BLUETOOTH)
+    add_subdirectory(bluetooth)
+endif()
+
+if(BROADCAST)
+    add_subdirectory(broadcast)
 endif()
 
 if(HIBERNATESUPPORT)
     add_subdirectory(hibernate)
+endif()
+
+if(LOCALTRACER)
+    add_subdirectory(localtracer)
 endif()
 
 if(PRIVILEGEDREQUEST)
