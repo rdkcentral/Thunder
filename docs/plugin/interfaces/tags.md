@@ -107,7 +107,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset variable |  | Yes | Yes |Method parameter|
-|[@encode:base64](#encode:base64)|Encodes C-Style arrays as JSON-RPC Base64 arrays |  | Yes | Yes |Method parameter|
+|[@encode:base64](#encode:base64)|Encodes C-Style arrays as JSON-RPC base64 arrays |  | Yes | Yes |Method parameter|
 
 #### @in
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
@@ -216,6 +216,7 @@ In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166b
 This tag should be associated with optional types. It provides a default value for JSON-RPC, even if no explicit value was set.
 
 Note: Unless a parameter is optional, it must be set.
+
 Note: Currently, OptionalType does not work with C-Style arrays.
 
 ##### Example
@@ -242,11 +243,11 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 
 #### @encode:base64
 
-This tag encodes C-Style arrays into JSON-RPC arrays as Base64 strings, on the condition that the array base is type uint8_t. 
+This tag encodes C-Style arrays into JSON-RPC arrays as base64 strings, on the condition that the array base is type `uint8_t`. 
 
 ##### Example
 
-In this example, C-Style uint8_t arrays are encoded as Base64.
+In this example, C-Style `uint8_t` arrays are encoded as base64.
 
 ```cpp
 struct Fixated {
@@ -530,6 +531,23 @@ This is particularly useful for avoiding clashes, especially if several interfac
 // @prefix source
 struct EXTERNAL ISource: virtual public Core::IUnknown {
 ```
+</hr>
+<hr>
+
+#### @statuslistener
+
+Use this tag, to receive notifications when a JSON-RPC client has registered (or unregistered) from a notification.
+
+For more details, click [here](../interfaces/#notification-registration)
+
+</hr>
+<hr>
+
+#### @lookup
+
+This tag is used on methods, to create a JSON-RPC interface that is dynamically accessing created objects (or sessions).
+
+For more details, click [here](../interfaces/#object-lookup)
 
 </hr>
 <hr>
@@ -634,88 +652,3 @@ This tag adds description about each return codes specified in the generated mar
 In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54), it uses this tag to add description about the returned error code.
 
 <hr/>
-
-### Advanced Topics
-
-#### @statuslistener
-
-Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification.
-
-As a result, an additional IHandler interface is generated, providing the callbacks.
-
-##### Example
-
-In [IMessenger.H](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IMessenger.h#L95-L111), the methods use this tag to enable notification changes.
-
-<hr/>
-
-In this example, a method with the tag @lookup is used, which will allow for the generation of an IHandler interface.
-
-```cpp
-// @json 1.0.0
-struct EXTERNAL IMessenger {
-	virtual ~IMessenger() = default;
-
-	/* @event */
-    struct EXTERNAL INotification {
-		virtual ~INotification() = default;
-
-		// @statuslistener
-		virtual void RoomUpdate() = 0;
-	}
-}	
-```
-An example of a generated IHandler interface providing the callbacks from the RoomUpdate() function.
-
-```cpp 
-struct IHandler {
-    virtual ~IHandler() = default;
-
-    virtual void OnRoomUpdateEventRegistration(const string& client, const   
-		PluginHost::JSONRPCSupportsEventStatus::Status status) = 0;
-}
-```
-<hr/>
-
-#### @lookup
-
-This tag can be used on a method, to create a JSON-RPC interface that is accessing dynamically created objects (or sessions). This object interface is brought into JSON-RPC scope with a prefix.
-
-The format for this tag is '@lookup:[prefix]'.
-
-Note: If 'prefix' is not set, then the name of the object interface is used instead.
-
-
-##### Example
-
-The signature of the lookup function must be:
-
-```cpp 
-virtual <Interface>* Method(const uint32_t id) = 0;
-```
-
-An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.
-
-```cpp 
-struct IPlayer {
-	struct IPlaybackSession {
-		virtual Core::hresult Play() = 0;
-		virtual Core::hresult Stop() = 0;
-	};
-
-	// @lookup:session
-	virtual IPlaySession* Session(const uint32_t id) = 0;
-
-	virtual Core::hresult Create(uint32_t& id /* @out */) = 0;
-	virtual Core::hresult Configure(const string& config) = 0;
-}
-```
-An example of possible calls to the interface: the lookup method is used to convert the id to the object.
-
-```
-Player.1.configure
-Player.1.create
-Player.1.session#1::play
-Player.1.session#1::stop
-```
-

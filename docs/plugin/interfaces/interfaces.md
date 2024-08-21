@@ -604,3 +604,144 @@ The auto-generated `JsonData_WiFi.h` file contains code that can convert from th
     ```
 
 Since there are no enums in this example interface, no `JsonEnums_WiFi.cpp` file was generated.
+
+## Advanced Topics
+
+### Serialized Types
+
+Serialized types are ...
+
+
+`Core::OptionalType<T>` allows a member to be optional, and must be used if a attribute is expected to be optional on JSON-RPC. 
+
+Note: An unset value is not transmitted.
+
+A @default tag can be used to provide a value, in the case T is not set. See more [here](../tags/#default)
+
+<hr/>
+
+#### Preventing Memory leaks
+
+A resource allocated by a remote client must still be freed in case the channel is disconnected, before the client was able to do it on its own.
+
+To deal with this, a method can receive a ```Core::JSONRPC::Context``` as a parameter.
+
+Amongst other things, the context includes the channel ID, which enables the association of the JSON-RPC call with the client.
+
+Note: Context must be defined as the first parameter, and will not be visible in the JSON-RPC messages.
+```cpp
+virtual Core::hresult Join(const Core::JSONRPC::Context& context, ...) = 0;
+```
+Note: ```IConnection::INotification``` can be used to be notified of the dropped channels.
+
+Examples:
+
+View [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255) to see how ```Core::JSONRPC::Context``` is used.
+
+<hr/>
+
+### Notification Registration
+
+Notification registration is a way of tracking updates on a notification: 
+
+Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
+
+Examples: 
+
+In [IMessenger.H](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IMessenger.h#L95-L111), @statuslistener is used on two methods.
+
+<hr/>
+This example will demonstrate the ability to be notified when a user performs a certain action.
+
+Suppose an interface "INotification" that contains a method "RoomUpdate", which tracks the availability of a room. The method is tagged with @statuslistener, which will allow for the creation of an "IHandler" interface. The "IHandler" interface will contain the required declaration of methods, to allow for notification registration tracking.
+
+```cpp
+// @json 1.0.0
+struct EXTERNAL IMessenger {
+	virtual ~IMessenger() = default;
+
+	/* @event */
+    struct EXTERNAL INotification {
+		virtual ~INotification() = default;
+
+		// @statuslistener
+		virtual void RoomUpdate(...) = 0;
+	}
+}	
+```
+An example of a generated IHandler interface providing the callbacks from the RoomUpdate() function. 
+
+```cpp 
+struct IHandler {
+    virtual ~IHandler() = default;
+
+    virtual void OnRoomUpdateEventRegistration(const string& client, const   
+		PluginHost::JSONRPCSupportsEventStatus::Status status) = 0;
+}
+```
+
+Using the "IHandler" interface, its methods should be implemented to track the availability of the room.
+``` cpp
+
+class Messenger : public PluginHost::IPlugin
+                , public JSONRPC::IMessenger
+                , public JSONRPC::JMessenger::IHandler {
+
+    // JSONRPC::JMessenger::IHandler override
+    void OnRoomUpdateEventRegistration(const string& client, const   
+		PluginHost::JSONRPCSupportsEventStatus::Status status) {
+
+            if(status == Status::registered) {
+
+                for (const string& room: _rooms) {
+                    JMessenger::Event::RoomUpdate(...)
+                }
+            }
+    }
+}
+```
+For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h).
+
+<hr/>
+
+### Object lookup
+
+Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
+This object interface is brought into JSON-RPC scope with a prefix.
+
+The format for this ability, is to use the tag '@lookup:[prefix]' on a method.
+
+Note: If 'prefix' is not set, then the name of the object interface is used instead.
+
+##### Example
+
+The signature of a lookup function must be:
+
+```cpp 
+virtual <Interface>* Method(const uint32_t id) = 0;
+```
+
+An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.
+
+```cpp 
+struct IPlayer {
+	struct IPlaybackSession {
+		virtual Core::hresult Play() = 0;
+		virtual Core::hresult Stop() = 0;
+	};
+
+	// @lookup:session
+	virtual IPlaySession* Session(const uint32_t id) = 0;
+
+	virtual Core::hresult Create(uint32_t& id /* @out */) = 0;
+	virtual Core::hresult Configure(const string& config) = 0;
+}
+```
+An example of possible calls to the interface: the lookup method is used to convert the id to the object.
+
+```
+Player.1.configure
+Player.1.create
+Player.1.session#1::play
+Player.1.session#1::stop
+```
