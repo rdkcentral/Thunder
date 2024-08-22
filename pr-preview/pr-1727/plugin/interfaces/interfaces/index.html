@@ -929,6 +929,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="JSON-RPC Interfaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preventing-memory-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preventing Memory leaks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notification-registration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notification Registration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object lookup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -977,63 +1019,6 @@
   <a href="#enable-json-rpc-generation" class="md-nav__link">
     <span class="md-ellipsis">
       Enable JSON-RPC Generation
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#advanced-topics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Topics
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Topics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#serialized-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Serialized Types
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serialized Types">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#preventing-memory-leaks" class="md-nav__link">
-    <span class="md-ellipsis">
-      Preventing Memory leaks
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#notification-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Notification Registration
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#object-lookup" class="md-nav__link">
-    <span class="md-ellipsis">
-      Object lookup
     </span>
   </a>
   
@@ -2319,6 +2304,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="JSON-RPC Interfaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preventing-memory-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preventing Memory leaks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notification-registration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notification Registration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object lookup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2367,63 +2394,6 @@
   <a href="#enable-json-rpc-generation" class="md-nav__link">
     <span class="md-ellipsis">
       Enable JSON-RPC Generation
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#advanced-topics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Topics
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Topics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#serialized-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Serialized Types
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serialized Types">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#preventing-memory-leaks" class="md-nav__link">
-    <span class="md-ellipsis">
-      Preventing Memory leaks
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#notification-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Notification Registration
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#object-lookup" class="md-nav__link">
-    <span class="md-ellipsis">
-      Object lookup
     </span>
   </a>
   
@@ -2526,6 +2496,155 @@
 <p>Once a COM-RPC interface is defined, if a JSON-RPC interface is also required then the interface should have the <strong><code>@json</code></strong> tag added. This signals to the code-generator that a corresponding JSON-RPC interface should be generated alongside the COM-RPC one. </p>
 <p>By default, when the <code>@json</code> tag is added, all methods in the COM-RPC interface will have corresponding JSON-RPC methods. It is possible to ignore/skip specific methods from the JSON-RPC generation by adding tags in the interface definition.</p>
 <p>In older Thunder versions (&lt;R4), JSON-RPC interfaces were defined using separate JSON schema files. These would then need to be manually wired up in the plugin. By using the code-generators, we can eliminate this step, making it much faster and easier to write plugins. It is no longer recommended to create JSON schema files for JSON-RPC interfaces.</p>
+<h4 id="overview">Overview</h4>
+<ul>
+<li>
+<p>It is now possible to specify a separate JSON-RPC interface for handling connection issues and correct session management, and this will bring more options when the JSON-RPC interface deviates from the COM-RPC interface.</p>
+</li>
+<li>
+<p>It is supported to send JSON-RPC over COM-RPC using the 'IDispatch' interface without the need for serialization.</p>
+<ul>
+<li>This is particularly useful for out-of-process (OOP) and remote plugins.</li>
+</ul>
+</li>
+<li>
+<p>The JSON-RPC generator now supports the usage of nested "plain-old data"(POD) types (such as plain C structs) in the C++ interface.</p>
+<ul>
+<li>The JSON-RPC generator can now parse these structs and their usage in methods and generate a JSON-RPC interface for such cases.</li>
+</ul>
+</li>
+<li>
+<p><code>Core::hresult</code> is required as a return type value of all JSON-RPC enabled interfaces.</p>
+</li>
+<li>
+<p><code>@text</code> metatag has been extended to have more options to influence the names used in generated code.</p>
+<ul>
+<li>For more details click <a href="../tags/#text">here</a>.</li>
+</ul>
+</li>
+<li>
+<p>Float type is now supported in the IDL header files.</p>
+</li>
+<li>
+<p><code>Core::instance_id</code> is now supported in the IDL header files.</p>
+<ul>
+<li>It is presented as a 32/64 bit hexadecimal value in JSON-RPC.</li>
+</ul>
+</li>
+<li>
+<p><code>Core::Time</code> is now supported in the IDL header files.</p>
+<ul>
+<li>It is presented as an <a href="https://www.iso.org/iso-8601-date-and-time-format.html">ISO 8601</a> formatted string in JSON-RPC.</li>
+</ul>
+</li>
+<li>
+<p><code>Core::OptionalType&lt;T&gt;</code> allows a member to be optional (this superseded @optional), and must be used if an attribute is expected to be optional on JSON-RPC. In COM-RPC the OptionalType can be used to see if a value was set, and in JSON-RPC it is then allowed to omit this parameter.</p>
+<ul>
+<li>A @default tag can be used to provide a value, in the case T is not set. See more <a href="../tags/#default">here</a>.</li>
+<li>Note: Currently, OptionalType does not work with C-Style arrays.</li>
+</ul>
+</li>
+<li>
+<p>JSON-RPC supports the usage of bitmask enums (a combination of enum values can be set in the same enum parameter at the same time).</p>
+<ul>
+<li>This is mapped as an array of values in the JSON-RPC interface.</li>
+<li>See more information about <code>/* bitmask */</code> <a href="../tags/#bitmask">here</a>.</li>
+</ul>
+</li>
+</ul>
+<hr/>
+
+<h4 id="preventing-memory-leaks">Preventing Memory leaks</h4>
+<p>A resource allocated by a remote client must still be freed in case the channel is disconnected before the client is able to do it on its own.</p>
+<p>To deal with this, a method can receive a <code>Core::JSONRPC::Context</code> as a parameter.</p>
+<p>Amongst other things, the context includes the channel ID, which enables the association of the JSON-RPC call with the client.</p>
+<p>Note: Context must be defined as the first parameter and will not be visible in the JSON-RPC messages.
+<div class="highlight"><pre><span></span><code><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Join</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">Context</span><span class="o">&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">,...)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</code></pre></div>
+Note: <code>IConnection::INotification</code> can be used to be notified of the dropped channels.</p>
+<p>Examples:</p>
+<p>View <a href="https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255">Messenger.h</a> to see how <code>Core::JSONRPC::Context</code> is used.</p>
+<hr/>
+
+<h4 id="notification-registration">Notification Registration</h4>
+<p>Notification registration is a way of tracking updates on a notification.</p>
+<p>Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.</p>
+<p>Examples: </p>
+<p>In <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IMessenger.h#L95-L111">IMessenger.H</a>, @statuslistener is used on two methods.</p>
+<hr/>
+<p>This example will demonstrate the ability to be notified when a user performs a certain action.</p>
+<p>Suppose an interface "INotification" that contains a method "RoomUpdate", which tracks the availability of a room. The method is tagged with @statuslistener, which will allow for the creation of an "IHandler" interface. The "IHandler" interface will contain the required declaration of methods to allow for notification registration tracking.</p>
+<p><div class="highlight"><pre><span></span><code><span class="c1">// @json 1.0.0</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IMessenger</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">IMessenger</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="cm">/* @event */</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">INotification</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">        </span><span class="c1">// @statuslistener</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">RoomUpdate</span><span class="p">(...)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span><span class="w">   </span>
+</code></pre></div>
+An example of a generated IHandler interface providing the callbacks from the RoomUpdate() function. </p>
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">IHandler</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">IHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">OnRoomUpdateEventRegistration</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w">   </span>
+<span class="w">        </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPCSupportsEventStatus</span><span class="o">::</span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Using the "IHandler" interface, its methods should be implemented to track the availability of the room.
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Messenger</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span>
+<span class="w">                </span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">IMessenger</span>
+<span class="w">                </span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">JMessenger</span><span class="o">::</span><span class="n">IHandler</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="c1">// JSONRPC::JMessenger::IHandler override</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">OnRoomUpdateEventRegistration</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w">   </span>
+<span class="w">        </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPCSupportsEventStatus</span><span class="o">::</span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">registered</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">room</span><span class="o">:</span><span class="w"> </span><span class="n">_rooms</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">JMessenger</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">RoomUpdate</span><span class="p">(...)</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+For a more detailed view, visit <a href="https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h">Messenger.h</a>.</p>
+<hr/>
+
+<h4 id="object-lookup">Object lookup</h4>
+<p>Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
+This object interface is brought into JSON-RPC scope with a prefix.</p>
+<p>The format for this ability is to use the tag '@lookup:[prefix]' on a method.</p>
+<p>Note: If 'prefix' is not set, then the name of the object interface is used instead.</p>
+<h5 id="example">Example</h5>
+<p>The signature of a lookup function must be:</p>
+<div class="highlight"><pre><span></span><code><span class="k">virtual</span><span class="w"> </span><span class="o">&lt;</span><span class="n">Interface</span><span class="o">&gt;*</span><span class="w"> </span><span class="n">Method</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</code></pre></div>
+<p>An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.</p>
+<p><div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">IPlayer</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">IPlaybackSession</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Play</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Stop</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="c1">// @lookup:session</span>
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">IPlaySession</span><span class="o">*</span><span class="w"> </span><span class="nf">Session</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Create</span><span class="p">(</span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="cm">/* @out */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Configure</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+An example of possible calls to the interface: the lookup method is used to convert the id to the object.</p>
+<div class="highlight"><pre><span></span><code>Player.1.configure
+Player.1.create
+Player.1.session#1::play
+Player.1.session#1::stop
+</code></pre></div>
 <h3 id="code-generation">Code Generation</h3>
 <p>The code generation tooling for Thunder lives in the <a href="https://github.com/rdkcentral/ThunderTools">ThunderTools</a> repository. These tools are responsible for the generation of ProxyStub implementations for COM-RPC, JSON-RPC interfaces, JSON data types, and documentation.</p>
 <p>When building the interfaces from the ThunderInterfaces repository, the code generation is automatically triggered as part of the CMake configuration.</p>
@@ -3431,105 +3550,6 @@
 </code></pre></div></td></tr></table></div>
 </details>
 <p>Since there are no enums in this example interface, no <code>JsonEnums_WiFi.cpp</code> file was generated.</p>
-<h2 id="advanced-topics">Advanced Topics</h2>
-<h3 id="serialized-types">Serialized Types</h3>
-<p>Serialized types are ...</p>
-<p><code>Core::OptionalType&lt;T&gt;</code> allows a member to be optional, and must be used if a attribute is expected to be optional on JSON-RPC. </p>
-<p>Note: An unset value is not transmitted.</p>
-<p>A @default tag can be used to provide a value, in the case T is not set. See more <a href="../tags/#default">here</a></p>
-<hr/>
-
-<h4 id="preventing-memory-leaks">Preventing Memory leaks</h4>
-<p>A resource allocated by a remote client must still be freed in case the channel is disconnected, before the client was able to do it on its own.</p>
-<p>To deal with this, a method can receive a <code>Core::JSONRPC::Context</code> as a parameter.</p>
-<p>Amongst other things, the context includes the channel ID, which enables the association of the JSON-RPC call with the client.</p>
-<p>Note: Context must be defined as the first parameter, and will not be visible in the JSON-RPC messages.
-<div class="highlight"><pre><span></span><code><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Join</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">Context</span><span class="o">&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-</code></pre></div>
-Note: <code>IConnection::INotification</code> can be used to be notified of the dropped channels.</p>
-<p>Examples:</p>
-<p>View <a href="https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255">Messenger.h</a> to see how <code>Core::JSONRPC::Context</code> is used.</p>
-<hr/>
-
-<h3 id="notification-registration">Notification Registration</h3>
-<p>Notification registration is a way of tracking updates on a notification: </p>
-<p>Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.</p>
-<p>Examples: </p>
-<p>In <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IMessenger.h#L95-L111">IMessenger.H</a>, @statuslistener is used on two methods.</p>
-<hr/>
-<p>This example will demonstrate the ability to be notified when a user performs a certain action.</p>
-<p>Suppose an interface "INotification" that contains a method "RoomUpdate", which tracks the availability of a room. The method is tagged with @statuslistener, which will allow for the creation of an "IHandler" interface. The "IHandler" interface will contain the required declaration of methods, to allow for notification registration tracking.</p>
-<p><div class="highlight"><pre><span></span><code><span class="c1">// @json 1.0.0</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IMessenger</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">IMessenger</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
-
-<span class="w">    </span><span class="cm">/* @event */</span>
-<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">INotification</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
-
-<span class="w">        </span><span class="c1">// @statuslistener</span>
-<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">RoomUpdate</span><span class="p">(...)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span><span class="w">   </span>
-</code></pre></div>
-An example of a generated IHandler interface providing the callbacks from the RoomUpdate() function. </p>
-<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">IHandler</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">IHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
-
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">OnRoomUpdateEventRegistration</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w">   </span>
-<span class="w">        </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPCSupportsEventStatus</span><span class="o">::</span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>Using the "IHandler" interface, its methods should be implemented to track the availability of the room.
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Messenger</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">IPlugin</span>
-<span class="w">                </span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">IMessenger</span>
-<span class="w">                </span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">JSONRPC</span><span class="o">::</span><span class="n">JMessenger</span><span class="o">::</span><span class="n">IHandler</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">    </span><span class="c1">// JSONRPC::JMessenger::IHandler override</span>
-<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">OnRoomUpdateEventRegistration</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w">   </span>
-<span class="w">        </span><span class="n">PluginHost</span><span class="o">::</span><span class="n">JSONRPCSupportsEventStatus</span><span class="o">::</span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">registered</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">room</span><span class="o">:</span><span class="w"> </span><span class="n">_rooms</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                    </span><span class="n">JMessenger</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">RoomUpdate</span><span class="p">(...)</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-For a more detailed view, visit <a href="https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h">Messenger.h</a>.</p>
-<hr/>
-
-<h3 id="object-lookup">Object lookup</h3>
-<p>Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
-This object interface is brought into JSON-RPC scope with a prefix.</p>
-<p>The format for this ability, is to use the tag '@lookup:[prefix]' on a method.</p>
-<p>Note: If 'prefix' is not set, then the name of the object interface is used instead.</p>
-<h5 id="example">Example</h5>
-<p>The signature of a lookup function must be:</p>
-<div class="highlight"><pre><span></span><code><span class="k">virtual</span><span class="w"> </span><span class="o">&lt;</span><span class="n">Interface</span><span class="o">&gt;*</span><span class="w"> </span><span class="n">Method</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-</code></pre></div>
-<p>An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.</p>
-<p><div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">IPlayer</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">IPlaybackSession</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Play</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Stop</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="p">};</span>
-
-<span class="w">    </span><span class="c1">// @lookup:session</span>
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">IPlaySession</span><span class="o">*</span><span class="w"> </span><span class="nf">Session</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Create</span><span class="p">(</span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="cm">/* @out */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Configure</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-An example of possible calls to the interface: the lookup method is used to convert the id to the object.</p>
-<div class="highlight"><pre><span></span><code>Player.1.configure
-Player.1.create
-Player.1.session#1::play
-Player.1.session#1::stop
-</code></pre></div>
 
 
 

@@ -3181,7 +3181,7 @@
 </tr>
 <tr>
 <td><a href="#default">@default</a></td>
-<td>Provides a default value for an unset variable</td>
+<td>Provides a default value for an unset optional type</td>
 <td style="text-align: center;"></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -3450,7 +3450,7 @@ When the function returns, the parameter will have the modified length value. Th
 </tr>
 <tr>
 <td><a href="#lookup">@lookup</a></td>
-<td>Creates JSON-RPC interface to access dynamically created sessions</td>
+<td>Creates a JSON-RPC interface to access dynamically created sessions</td>
 <td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
@@ -3641,7 +3641,7 @@ The helper functions are defined in IIteratorType.h. </p>
 
 <h4 id="prefix">@prefix</h4>
 <p>Use this tag on a class to prepend all JSON-RPC methods with a prefix identifier. This is an alternative to using multiple @text tags.</p>
-<p>In this example, all registered methods would contain the prefix source::.
+<p>In this example, all registered methods would contain the prefix <code>source::</code>
 This is particularly useful for avoiding clashes, especially if several interfaces are implemented by the same plugin.</p>
 <p><div class="highlight"><pre><span></span><code><span class="c1">// @json 1.0.0</span>
 <span class="c1">// @prefix source</span>
