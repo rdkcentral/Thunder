@@ -106,7 +106,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
-|[@default](#default)|Provides a default value for an unset variable |  | Yes | Yes |Method parameter|
+|[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
 |[@encode:base64](#encode:base64)|Encodes C-Style arrays as JSON-RPC base64 arrays |  | Yes | Yes |Method parameter|
 
 #### @in
@@ -289,7 +289,7 @@ In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea2
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
 |[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
-|[@lookup](#lookup)| Creates JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
+|[@lookup](#lookup)| Creates a JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -523,7 +523,7 @@ In this example now for all enums, method names, method parameters and PoD membe
 #### @prefix
 Use this tag on a class to prepend all JSON-RPC methods with a prefix identifier. This is an alternative to using multiple @text tags.
 
-In this example, all registered methods would contain the prefix source::.
+In this example, all registered methods would contain the prefix `source::`
 This is particularly useful for avoiding clashes, especially if several interfaces are implemented by the same plugin.
 
 ```cpp
