@@ -479,9 +479,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-build" class="md-nav__link">
+  <a href="#3-build-the-thunder-framework" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Build
+      3. Build the Thunder Framework
     </span>
   </a>
   
@@ -497,9 +497,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-run" class="md-nav__link">
+  <a href="#5-run-the-thunder-framework" class="md-nav__link">
     <span class="md-ellipsis">
-      5. Run
+      5. Run the Thunder Framework
     </span>
   </a>
   
@@ -2114,9 +2114,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-build" class="md-nav__link">
+  <a href="#3-build-the-thunder-framework" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Build
+      3. Build the Thunder Framework
     </span>
   </a>
   
@@ -2132,9 +2132,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-run" class="md-nav__link">
+  <a href="#5-run-the-thunder-framework" class="md-nav__link">
     <span class="md-ellipsis">
-      5. Run
+      5. Run the Thunder Framework
     </span>
   </a>
   
@@ -2160,59 +2160,118 @@
 
   <h1>Windows Build</h1>
 
-<p>To build Thunder and its components on Windows, you will need Visual Studio installed -  the free community edition is just fine.</p>
-<p>The main solution file with all projects and their  dependencies can be found in the <a href="https://github.com/WebPlatformForEmbedded/ThunderOnWindows">ThunderOnWindows</a> repo. This repository also holds some binaries and the header files required to build the Thunder framework on Windows. </p>
+<p>To build the Thunder framework and its components on Windows, you need to have Visual Studio installed. The free Community Edition is sufficient if you are entitled to use it in your situation, and to make sure of that please check the license.</p>
+<p>The main solution file, containing all projects and their dependencies, is located in the <a href="https://github.com/WebPlatformForEmbedded/ThunderOnWindows">ThunderOnWindows</a> repository. This repository also includes some binaries and the header files required to build the Thunder framework on Windows.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <code>ThunderOnWindows</code> repo contains some submodules for other Thunder repos. These aren't necessarily kept up to date, so it is recommended to just manually clone the other repos to ensure you get the versions you require</p>
+<p>The <code>ThunderOnWindows</code> repository includes submodules for other Thunder repositories. These submodules may not always be up to date, so it is recommended to manually clone the necessary repositories to ensure you have the correct versions.</p>
 </div>
 <h2 id="1-install-dependencies">1. Install Dependencies</h2>
-<p>Thunder uses Python 3 for code and documentation generation scripts. Ensure you have at least <strong>Python 3.5</strong> installed. On Windows 10 and above, this can be done from the Microsoft Store, see <a href="https://learn.microsoft.com/en-us/windows/python/beginners">here</a> for instructions.</p>
-<p>Install the <a href="https://pypi.org/project/jsonref/"><strong>jsonref</strong></a> library with pip:</p>
-<div class="highlight"><pre><span></span><code>pip install jsonref
-</code></pre></div>
+<p>Thunder uses Python 3 for code and documentation generation scripts. Ensure that you have at least <strong>Python 3.5</strong> installed. On Windows 10 and above, Python can be installed via the Microsoft Store. Refer to <a href="https://learn.microsoft.com/en-us/windows/python/beginners">this guide</a> for instructions.</p>
+<p>Next, install the required Python packages:</p>
+<ul>
+<li>
+<p>Install the <a href="https://pypi.org/project/jsonref/"><strong>jsonref</strong></a> package:
+    <div class="highlight"><pre><span></span><code>pip install jsonref
+</code></pre></div></p>
+</li>
+<li>
+<p>Install the <a href="https://pypi.org/project/six/"><strong>six</strong></a> package:
+    <div class="highlight"><pre><span></span><code>pip install six
+</code></pre></div></p>
+</li>
+</ul>
 <h2 id="2-clone-all-repositories">2. Clone All Repositories</h2>
-<p>Make a dedicated folder called <code>ThunderWin</code> directly on the drive <code>C:\</code>, clone ThunderOnWindows into it and change the directory.</p>
-<div class="highlight"><pre><span></span><code>mkdir C:\ThunderWin
+<ul>
+<li>
+<p>Make a dedicated folder called <code>ThunderWin</code> directly on the drive <code>C:\</code>, clone ThunderOnWindows into it and change the directory.
+    <div class="highlight"><pre><span></span><code>mkdir C:\ThunderWin
 cd C:\ThunderWin
 git clone https://github.com/WebPlatformForEmbedded/ThunderOnWindows.git
 cd ThunderOnWindows
-</code></pre></div>
-<p>Then, clone the remaining repos.</p>
-<div class="highlight"><pre><span></span><code>git clone https://github.com/rdkcentral/ThunderTools.git
-git clone https://github.com/rdkcentral/Thunder.git
+</code></pre></div></p>
+</li>
+<li>
+<p>Then, clone the remaining repos.
+    <div class="highlight"><pre><span></span><code>git clone https://github.com/rdkcentral/Thunder.git
+git clone https://github.com/rdkcentral/ThunderTools.git
 git clone https://github.com/rdkcentral/ThunderInterfaces.git
 git clone https://github.com/rdkcentral/ThunderClientLibraries.git
 git clone https://github.com/rdkcentral/ThunderNanoServices.git
 git clone https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK.git
 git clone https://github.com/rdkcentral/ThunderUI.git
-</code></pre></div>
-<h2 id="3-build">3. Build</h2>
-<p>The next step is to open the solution file <code>ThunderOnWindows\Thunder.sln</code> in  Visual Studio, right click on <code>Solution Thunder</code> and build it. This will build all project files in a similar order to the Linux cmake build. </p>
+</code></pre></div></p>
+</li>
+</ul>
+<h2 id="3-build-the-thunder-framework">3. Build the Thunder Framework</h2>
+<ol>
+<li>
+<p><strong>Open the Solution File</strong>: Open the main solution file located in the <code>ThunderOnWindows</code> repository using Visual Studio.</p>
+</li>
+<li>
+<p><strong>Restore NuGet Packages</strong>: Before building, make sure all required NuGet packages are restored. You can do this by right-clicking on the solution in the Solution Explorer and selecting <code>Restore NuGet Packages</code>.</p>
+</li>
+<li>
+<p><strong>Build the Solution</strong>: To build the entire solution, click on <code>Build &gt; Build Solution</code> in the Visual Studio menu. This will build all the projects in the solution and generate the necessary binaries.</p>
+</li>
+<li>
+<p><strong>Check for Errors</strong>: Ensure that the build completes without errors. If there are errors, they will be listed in the <code>Error List</code> window at the bottom of the Visual Studio interface.</p>
+</li>
+</ol>
 <div class="admonition hint">
 <p class="admonition-title">Hint</p>
-<p>Some of the project names in the Visual Studio solution reflect old project names - e.g. Thunder is known as <code>Bridge</code>, reflecting its original WebBridge codename</p>
+<p>Some of the project names in the Visual Studio solution reflect old project names - e.g. Thunder is known as <code>Bridge</code>, reflecting its original WebBridge codename.</p>
 </div>
-<p>If you are interested in building only a specific part of  Thunder, for example just ThunderInterfaces, you can build only the <code>Interfaces</code> project file and it will automatically build its dependencies, so in this case <code>bridge</code>.</p>
+<p>If you are interested in building only a specific part of Thunder, for example just ThunderInterfaces, you can build only the <code>Interfaces</code> project file and it will automatically build its dependencies, so in this case <code>bridge</code>.</p>
 <h2 id="4-configure-artifacts">4. Configure Artifacts</h2>
-<p>After the building process is finished, you still need to make a few adjustments before running Thunder. One of them is to create a volatile and a persistent directory in a specific location, this can be done with the following commands:</p>
-<div class="highlight"><pre><span></span><code>mkdir ..\artifacts\temp
+<p>After the building process is finished, you still need to make a few adjustments before running Thunder.</p>
+<ul>
+<li>
+<p>First, create a volatile and a persistent directory in a specific location, as well as a directory for the necessary dlls, which can be done with the following commands:
+    <div class="highlight"><pre><span></span><code>mkdir ..\artifacts\Debug
 mkdir ..\artifacts\Persistent
 mkdir ..\artifacts\temp\MessageDispatcher
-</code></pre></div>
-<p>Move two dlls with libs into the artifacts folder:</p>
-<div class="highlight"><pre><span></span><code>move lib\static_x64\libcrypto-1_1-x64.dll ..\artifacts\Debug\libcrypto-1_1-x64.dll
+</code></pre></div></p>
+</li>
+<li>
+<p>Next, move two dlls into the artifacts folder:
+    <div class="highlight"><pre><span></span><code>move lib\static_x64\libcrypto-1_1-x64.dll ..\artifacts\Debug\libcrypto-1_1-x64.dll
 move lib\static_x64\libssl-1_1-x64.dll ..\artifacts\Debug\libssl-1_1-x64.dll
-</code></pre></div>
-<p>To use ThunderUI on Windows, copy it into the artifacts folder:</p>
-<div class="highlight"><pre><span></span><code>robocopy ThunderUI\dist ..\artifacts\Debug\Plugins\Controller\UI /S
-</code></pre></div>
-<h2 id="5-run">5. Run</h2>
-<p>Right click on <code>bridge</code> project file and select <code>Properties</code>. Go into <code>Debugging</code> tab, and put the following line into <code>Command Arguments</code>:</p>
-<div class="highlight"><pre><span></span><code>-f -c &quot;$(ProjectDir)ExampleConfigWindows.json&quot;
-</code></pre></div>
-<p><img alt="https://camo.githubusercontent.com/66a3000de0d428e7c860e502434b7ca9153adc3b2cabd3c9123e50a007f4a998/68747470733a2f2f692e696d6775722e636f6d2f706267415853562e706e67" src="https://camo.githubusercontent.com/66a3000de0d428e7c860e502434b7ca9153adc3b2cabd3c9123e50a007f4a998/68747470733a2f2f692e696d6775722e636f6d2f706267415853562e706e67" /></p>
-<p>Apply the changes, and press <code>F5</code> to run Thunder</p>
+</code></pre></div></p>
+</li>
+<li>
+<p>To use ThunderUI on Windows, copy it into the artifacts folder:
+    <div class="highlight"><pre><span></span><code>robocopy ThunderUI\dist ..\artifacts\Debug\Plugins\Controller\UI /S
+</code></pre></div></p>
+</li>
+</ul>
+<h2 id="5-run-the-thunder-framework">5. Run the Thunder Framework</h2>
+<p>Once the build process is complete, you can run the Thunder framework:</p>
+<ol>
+<li>
+<p><strong>Set the Startup Project</strong>: In Visual Studio, right-click on the project you want to run (usually the <code>bridge</code> project) and select <code>Set as StartUp Project</code>.</p>
+</li>
+<li>
+<p><strong>Set Command Arguments</strong>: Right click on the <code>bridge</code> project file and select <code>Properties</code>. Go into the <code>Debugging</code> tab, and make sure to put the following line into <code>Command Arguments</code>:
+    <div class="highlight"><pre><span></span><code>-f -c &quot;$(ProjectDir)ExampleConfigWindows.json&quot;
+</code></pre></div></p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Remove the <code>-f</code> flag if you want to see the messages in ThunderUI under the <code>Messaging</code> tab, otherwise they will be displayed in the console.</p>
+</div>
+<ol>
+<li>
+<p><strong>Run the Project</strong>: Press <code>F5</code> to run the project in Debug mode or <code>Ctrl + F5</code> to run it without debugging. Visual Studio will start the project, and you should see the Thunder framework running in the foreground.</p>
+</li>
+<li>
+<p><strong>Verify Functionality</strong>: Check the output window in Visual Studio for any logs or error messages. This will help ensure that the framework is running as expected.</p>
+</li>
+<li>
+<p><strong>ThunderUI</strong>: If you want to display the ThunderUI, you can do that by going into this address in your browser: <a href="http://127.0.0.1:25555/Service/Controller/UI">127.0.0.1:25555</a>.</p>
+</li>
+</ol>
 
 
 
