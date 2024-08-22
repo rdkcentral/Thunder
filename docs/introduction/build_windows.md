@@ -1,4 +1,4 @@
-To build the Thunder framework and its components on Windows, you need to have Visual Studio installed. The free Community Edition is sufficient.
+To build the Thunder framework and its components on Windows, you need to have Visual Studio installed. The free Community Edition is sufficient if you are entitled to use it in your situation, and to make sure of that please check the license.
 
 The main solution file, containing all projects and their dependencies, is located in the [ThunderOnWindows](https://github.com/WebPlatformForEmbedded/ThunderOnWindows) repository. This repository also includes some binaries and the header files required to build the Thunder framework on Windows.
 
