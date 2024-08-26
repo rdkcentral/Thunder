@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.32">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.33">
     
     
       
@@ -2502,19 +2502,13 @@
 <p>It is now possible to specify a separate JSON-RPC interface for handling connection issues and correct session management, and this will bring more options when the JSON-RPC interface deviates from the COM-RPC interface.</p>
 </li>
 <li>
-<p>It is supported to send JSON-RPC over COM-RPC using the 'IDispatch' interface without the need for serialization.</p>
-<ul>
-<li>This is particularly useful for out-of-process (OOP) and remote plugins.</li>
-</ul>
-</li>
-<li>
 <p>The JSON-RPC generator now supports the usage of nested "plain-old data"(POD) types (such as plain C structs) in the C++ interface.</p>
 <ul>
 <li>The JSON-RPC generator can now parse these structs and their usage in methods and generate a JSON-RPC interface for such cases.</li>
 </ul>
 </li>
 <li>
-<p><code>Core::hresult</code> is required as a return type value of all JSON-RPC enabled interfaces.</p>
+<p><code>Core::hresult</code> is now supported as a return type from Thunder 5.0 onwards for JSONRPC and is strongly recommended to be used.</p>
 </li>
 <li>
 <p><code>@text</code> metatag has been extended to have more options to influence the names used in generated code.</p>
@@ -2524,6 +2518,12 @@
 </li>
 <li>
 <p>Float type is now supported in the IDL header files.</p>
+</li>
+<li>
+<p>Fixed size arrays are now supported, for example:<code>array[10]</code></p>
+<ul>
+<li>See an example in <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/ICryptography.h#L140">ICryptography</a></li>
+</ul>
 </li>
 <li>
 <p><code>Core::instance_id</code> is now supported in the IDL header files.</p>
@@ -2548,7 +2548,7 @@
 <p>JSON-RPC supports the usage of bitmask enums (a combination of enum values can be set in the same enum parameter at the same time).</p>
 <ul>
 <li>This is mapped as an array of values in the JSON-RPC interface.</li>
-<li>See more information about <code>/* bitmask */</code> <a href="../tags/#bitmask">here</a>.</li>
+<li>See more information about <code>/* @encode:bitmask */</code> <a href="../tags/#encode">here</a>.</li>
 </ul>
 </li>
 </ul>
@@ -3645,7 +3645,7 @@ Player.1.session#1::stop
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.471ce7a9.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.af256bd8.min.js"></script>
       
     
   </body>
