@@ -22,7 +22,7 @@
 #include "Module.h"
 #include "Serialization.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
     namespace Frame {
@@ -114,7 +114,7 @@ namespace Core {
             AllocatorType<STARTSIZE, SIZETYPE>& operator=(const AllocatorType<STARTSIZE, SIZETYPE>& copy) = delete;
 
             AllocatorType()
-                : _bufferSize(STARTSIZE)
+                : _bufferSize(static_cast<SIZETYPE>(STARTSIZE))
                 , _data(static_cast<uint8_t*>(::malloc(_bufferSize)))
             {
                 // It looks like there is a bug in the windows compiler. It prepares a default/copy constructor
@@ -178,7 +178,7 @@ namespace Core {
                     if (_data != nullptr) {
                         ::free(_data);
                     }
-                    _data ==  move._data;
+                    _data =  move._data;
                     move._data = nullptr;
                     _bufferSize = move._bufferSize;
                 }
@@ -465,11 +465,11 @@ namespace Core {
 
                 _offset += _container->SetText<TYPENAME>(_offset, text);
             }
-            void NullTerminatedText(const string& text)
+            void NullTerminatedText(const string& text, const SIZE_CONTEXT maxLength = ~0)
             {
                 ASSERT(_container != nullptr);
 
-                _offset += _container->SetNullTerminatedText(_offset, text);
+                _offset += _container->SetNullTerminatedText(_offset, text, maxLength);
             }
 
         private:
@@ -647,16 +647,16 @@ namespace Core {
             return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
-        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value)
+        SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
         {
-            std::string convertedText(Core::ToString(value));
-            SIZE_CONTEXT requiredLength(static_cast< SIZE_CONTEXT>(convertedText.length() + 1));
+            std::string convertedText(Core::ToString(value).data(), (((maxLength != static_cast<SIZE_CONTEXT>(~0)) && ((value.length() + 1) > maxLength)) ? (maxLength - 1) : value.length()));
+            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(convertedText.length() + 1));
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
             }
 
-            ::memcpy(&(_data[offset]), convertedText.c_str(), convertedText.length() + 1);
+            ::memcpy(&(_data[offset]), convertedText.c_str(), requiredLength);
 
             return (requiredLength);
         }

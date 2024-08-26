@@ -19,67 +19,70 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/IProcessContainers.h"
+#include "processcontainers/ContainerAdministrator.h"
 #include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
-    class RunCContainer : public BaseRefCount<IContainer> {
-    private:
-        friend class RunCContainerAdministrator;
+    namespace runc {
+        class Runner;
+    }
 
-        RunCContainer(const string& name, const string& path, const string& logPath);
-
+    class RunCContainer : public IContainer {
     public:
-        RunCContainer(const RunCContainer&) = delete;
-        RunCContainer& operator=(const RunCContainer&) = delete;
+        RunCContainer(const string& id, const string& path, const string& logPath);
+
+        RunCContainer() = delete;
         ~RunCContainer() override;
 
-        // IContainerMethods
+        RunCContainer(const RunCContainer&) = delete;
+        RunCContainer(RunCContainer&&) = delete;
+        RunCContainer& operator=(const RunCContainer&) = delete;
+        RunCContainer& operator=(RunCContainer&&) = delete;
+
+    public:
+        // IContainer methods
+        containertype Type() const override { return IContainer::RUNC; }
         const string& Id() const override;
         uint32_t Pid() const override;
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
-        bool Stop(const uint32_t timeout /*ms*/) override;
-
+        bool Stop(const uint32_t timeout /* ms */) override;
         IMemoryInfo* Memory() const override;
         IProcessorInfo* ProcessorInfo() const override;
         INetworkInterfaceIterator* NetworkInterfaces() const override;
 
     private:
+        uint32_t InternalPurge(const uint32_t timeout = 0);
+
+    private:
         mutable Core::CriticalSection _adminLock;
-        string _name;
+        string _id;
         string _path;
-        string _logPath;
-        mutable Core::OptionalType<uint32_t> _pid;
+        mutable uint32_t _pid;
+        std::unique_ptr<runc::Runner> _runner;
     };
 
-    class RunCContainerAdministrator : public BaseContainerAdministrator<RunCContainer> {
-    private:
-        friend class RunCContainer;
-        friend class Core::SingletonType<RunCContainerAdministrator>;
+    class RunCContainerAdministrator : public IContainerProducer {
+    public:
+        RunCContainerAdministrator() = default;
+        ~RunCContainerAdministrator() override = default;
 
-        RunCContainerAdministrator();
         RunCContainerAdministrator(const RunCContainerAdministrator&) = delete;
+        RunCContainerAdministrator(RunCContainerAdministrator&&) = delete;
         RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
+        RunCContainerAdministrator& operator=(RunCContainerAdministrator&&) = delete;
 
     public:
-        ~RunCContainerAdministrator() override;
+        Core::ProxyType<IContainer> Container(const string& id, IStringIterator& searchpaths,
+                                        const string& logpath, const string& configuration) override;
 
-        IContainer* Container(const string& id,
-            IStringIterator& searchpaths,
-            const string& logpath,
-            const string& configuration) override; //searchpaths will be searched in order in which they are iterated
-
-        // IContainerAdministrator methods
-        void Logging(const string& logDir, const string& loggingOptions) override;
-
-    protected:
-        void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
-        bool ContainerNameTaken(const string& name);
+        uint32_t Initialize(const string& configuration) override;
+        void Deinitialize() { }
     };
-}
+
+} // namespace ProcessContainers
 }

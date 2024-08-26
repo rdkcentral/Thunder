@@ -30,7 +30,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     struct IStream {
         virtual ~IStream() = default;

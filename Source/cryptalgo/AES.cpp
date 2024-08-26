@@ -19,7 +19,7 @@
  
 #include "AES.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
 
     AESEncryption::AESEncryption(const aesType type)
@@ -344,4 +344,4 @@ namespace Crypto {
         return (result);
     }
 }
-} // namespace WPEFramework::Crypto
+} // namespace Thunder::Crypto

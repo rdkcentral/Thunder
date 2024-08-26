@@ -10,4 +10,4 @@ target_link_libraries(WorkerPoolTest
         ${NAMESPACE}Core
 )
 
-install(TARGETS WorkerPoolTest DESTINATION bin)
+install(TARGETS WorkerPoolTest DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

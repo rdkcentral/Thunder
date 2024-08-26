@@ -26,7 +26,7 @@
 
 // @insert <com/IIteratorType.h>
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Exchange {
 

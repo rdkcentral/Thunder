@@ -29,10 +29,12 @@
 #ifdef __LINUX__
 #include <atomic>
 #include <signal.h>
+#ifdef THUNDER_BACKTRACE
 #include <elf.h>
 #endif
+#endif
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 #ifdef __WINDOWS__
 
@@ -65,15 +67,18 @@ extern "C" {
 
 #ifdef __APPLE__
 extern "C" {
-//@TODO @Pierre implement mremap and clock_gettime
+//@TODO @Pierre implement mremap
 void* mremap(void* old_address, size_t old_size, size_t new_size, int flags)
 {
     return (nullptr);
 }
 };
-int clock_gettime(int, struct timespec*)
+#include <pthread.h>
+uint64_t gettid()
 {
-    return 0;
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
 }
 #endif
 
@@ -191,7 +196,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<WPEFramework::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
+void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
 #if defined(THUNDER_BACKTRACE)
     void* callstack[32];
@@ -333,7 +338,7 @@ uint64_t ntohll(const uint64_t& value)
 }
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
 
 #ifndef va_copy

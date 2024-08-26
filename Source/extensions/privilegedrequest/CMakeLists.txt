@@ -15,9 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(PrivilegedRequest LANGUAGES CXX)
+project(PrivilegedRequest
+        VERSION 1.0.0
+        DESCRIPTION "With PrivilegedRequest you can make a file descriptor available to other processes."
+        LANGUAGES CXX)
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 
 set(MODULE_NAME ${NAMESPACE}${PROJECT_NAME})
 
@@ -30,15 +33,14 @@ add_library(${MODULE_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
 target_include_directories(${MODULE_NAME} INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include/${NAMESPACE}>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>)
 
 target_compile_features(${MODULE_NAME} INTERFACE cxx_std_11)
 
 install(TARGETS ${MODULE_NAME} EXPORT ${MODULE_NAME}Targets)
 
-install(FILES 
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/privilegedrequest/PrivilegedRequest.h
-        DESTINATION include/${NAMESPACE}/privilegedrequest)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/privilegedrequest/PrivilegedRequest.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/privilegedrequest COMPONENT ${NAMESPACE}_Development)
 
 include(HeaderOnlyInstall)
 

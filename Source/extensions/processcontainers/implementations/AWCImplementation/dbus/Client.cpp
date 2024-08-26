@@ -4,7 +4,7 @@
 
 #define CHECK(cond) ASSERT((cond))
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 namespace dbus {
 
@@ -23,9 +23,9 @@ struct DBusCallbacks
 
 } /* dbus */
 } /* ProcessContainers */
-} /* WPEFramework */
+} /* Thunder */
 
-using namespace WPEFramework::ProcessContainers::dbus;
+using namespace Thunder::ProcessContainers::dbus;
 
 namespace {
 

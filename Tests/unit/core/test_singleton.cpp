@@ -17,53 +17,87 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-class SingletonTypeOne {
-    public:
-        SingletonTypeOne()
-        {
-        }
-        virtual ~SingletonTypeOne()
-        {
-        }
-};
+    class SingletonTypeOne {
+        public:
+            SingletonTypeOne()
+            {
+            }
+            virtual ~SingletonTypeOne()
+            {
+            }
+            bool operator==(const SingletonTypeOne&) const
+            {
+                return true;
+            }
+    };
 
-class SingletonTypeTwo {
-    public:
-        SingletonTypeTwo(string)
-        {
-        }
-        virtual ~SingletonTypeTwo()
-        {
-        }
-};
-class SingletonTypeThree {
-    public:
-        SingletonTypeThree (string, string)
-        {
-        }
-        virtual ~SingletonTypeThree()
-        {
-        }
-};
+    class SingletonTypeTwo {
+        public:
+            SingletonTypeTwo() = default; // Required by Instance()
+            explicit SingletonTypeTwo(string)
+            {
+            }
+            virtual ~SingletonTypeTwo()
+            {
+            }
+    };
+    class SingletonTypeThree {
+        public:
+            SingletonTypeThree() = default; // Required by Instance()
+            explicit SingletonTypeThree (string, string)
+            {
+            }
+            virtual ~SingletonTypeThree()
+            {
+            }
+    };
 
-TEST(test_singleton, simple_singleton)
-{
-    static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
-    static SingletonTypeOne& object_sample = SingletonType<SingletonTypeOne>::Instance();
-    EXPECT_EQ(&object1,&object_sample);
-    static SingletonTypeTwo& object2 = SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
-    static SingletonTypeThree& object3 = SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
-    SingletonType<SingletonTypeTwo>* x = (SingletonType<SingletonTypeTwo>*)&object2;
-    EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
-    SingletonType<SingletonTypeThree>* y = (SingletonType<SingletonTypeThree>*)&object3;
-    EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
-    Singleton::Dispose();
-}
+    TEST(test_singleton, simple_singleton)
+    {
+        // 'old' use
+        ::Thunder::Tests::Core::SingletonTypeOne& objectTypeOne = ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance();
+
+        // Multiple inheritance, SingletonType has base SINGLETON, eg, ::Thunder::Tests::Core::SingletonTypeOne, and base Singleton
+        // Internally a ::Thunder::Core::SingletonType<SINGLETON> pointer is contructed and via upcasted version of a base avaiable via Instance
+        // It is safe to downcast it
+        ASSERT_NE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne), nullptr);
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeOne>*>(&objectTypeOne)->ImplementationName().c_str(), "SingletonTypeOne");
+
+        // Well-known lifetime!
+        ::Thunder::Core::SingletonType<SingletonTypeTwo>::Create("My custom 2-string");
+        ::Thunder::Tests::Core::SingletonTypeTwo& objectTypeTwo = ::Thunder::Core::SingletonType<SingletonTypeTwo>::Instance();
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeTwo>*>(&objectTypeTwo)->ImplementationName().c_str(), "SingletonTypeTwo");
+        EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeTwo>::Dispose());
+
+        // Well-known lifetime!
+        ::Thunder::Core::SingletonType<SingletonTypeThree>::Create("My first custom 3-string", "My second custom 3-string");
+        ::Thunder::Tests::Core::SingletonTypeThree& objectTypeThree = ::Thunder::Core::SingletonType<SingletonTypeThree>::Instance();
+        EXPECT_FALSE(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().empty());
+        EXPECT_STREQ(dynamic_cast<::Thunder::Core::SingletonType<SingletonTypeThree>*>(&objectTypeThree)->ImplementationName().c_str(), "SingletonTypeThree");
+        EXPECT_TRUE(::Thunder::Core::SingletonType<SingletonTypeThree>::Dispose());
+
+        // SingletonTypeOne has not yet been destroyed
+        // Assume equality operator has been defined
+        EXPECT_EQ(::Thunder::Core::SingletonType<SingletonTypeOne>::Instance(), ::Thunder::Core::SingletonType<SingletonTypeOne>::Instance());
+
+        // Keep going with good practise
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+} // Core
+} // Tests
+} // Thunder

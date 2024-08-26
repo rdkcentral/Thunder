@@ -23,7 +23,7 @@
 #include "ResourceMonitor.h"
 #include "Number.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -434,7 +434,7 @@ POP_WARNING()
                     #ifdef __CORE_WARNING_REPORTING__
                     // Add an entry into the JobMonitor list
                     DispatchedJobMetaData data{Thread::ThreadId(),
-                        string(WPEFramework::Core::CallsignTLS::CallsignAccess<&WPEFramework::Core::System::MODULE_NAME>::Callsign()),
+                        string(Thunder::Core::CallsignTLS::CallsignAccess<&Thunder::Core::System::MODULE_NAME>::Callsign()),
                         Time::Now().Ticks(), 0};
 
                     _parent.SaveDispatchedJobContext(data);

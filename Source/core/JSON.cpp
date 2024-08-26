@@ -21,7 +21,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     namespace JSON {
 

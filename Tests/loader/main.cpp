@@ -25,12 +25,12 @@
 static std::list<string> _loadLocation;
 
 static const char* _defaultSet[] = {
-    "/usr/lib/libWPEFrameworkCore.so"
-    "/usr/lib/libWPEFrameworkTracing.so", 
-    "/usr/lib/libWPEFrameworkCryptalgo.so", 
-    "/usr/lib/libWPEFrameworkProtocols.so",
-    "/usr/lib/libWPEFrameworkPlugins.so",
-    "/usr/lib/wpeframework/plugins",
+    "/usr/lib/libThunderCore.so"
+    "/usr/lib/libThunderTracing.so",
+    "/usr/lib/libThunderCryptalgo.so",
+    "/usr/lib/libThunderProtocols.so",
+    "/usr/lib/libThunderPlugins.so",
+    "/usr/lib/thunder/plugins",
     nullptr };
 
 bool ParseOptions (int argc, char** argv)
@@ -74,9 +74,9 @@ bool ParseOptions (int argc, char** argv)
 
     if (showHelp == true)
     {
-        printf("Verification and Analyze tool for WPEFramework Software.\n");
+        printf("Verification and Analyze tool for Thunder Software.\n");
         printf("verify -d [prefix_path] -l [directories or files]\n");
-        printf("  -d:  Use the default WPEFramework Software libraries deployed.\n");
+        printf("  -d:  Use the default Thunder Software libraries deployed.\n");
         printf("  -l:  Location of a file, or a directory that holds *.so files. These files\n");
         printf("       will be loaded and their versione (build tags) will be printed.\n\n");
     }
@@ -87,13 +87,13 @@ bool ParseOptions (int argc, char** argv)
 typedef const char* (*ModuleName)();
 typedef const char* (*ModuleBuildRef)();
 
-void ReadFile (const WPEFramework::Core::File& file) {
+void ReadFile (const Thunder::Core::File& file) {
 
-    WPEFramework::Core::Library library(file.Name().c_str());
+    Thunder::Core::Library library(file.Name().c_str());
 
     if (library.IsLoaded() == true)
     {
-        // extern "C" { namespace WPEFramework { namespace Core { namespace System {  
+        // extern "C" { namespace Thunder { namespace Core { namespace System {
         //     const char* ModuleName();
         //     const char* ModuleBuildRef();
         // }}}}
@@ -123,11 +123,11 @@ void ReadFile (const WPEFramework::Core::File& file) {
 
 void ReadDirectory (const string& name) {
 
-    WPEFramework::Core::Directory pluginDirectory (name.c_str());
+    Thunder::Core::Directory pluginDirectory (name.c_str());
 
     while (pluginDirectory.Next() == true) {
 
-        WPEFramework::Core::File file (pluginDirectory.Current());
+        Thunder::Core::File file (pluginDirectory.Current());
 
         if (file.Exists()) {
             if (file.IsDirectory()) {
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
         std::list<string>::const_iterator index(_loadLocation.begin());
 
         while (index != _loadLocation.end()) {
-            WPEFramework::Core::File file (*index, true);
+            Thunder::Core::File file (*index, true);
             if (file.Exists() == true) {
                 if (file.IsDirectory() == true) {
                     ReadDirectory(index->c_str());
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    WPEFramework::Core::Singleton::Dispose();
+    Thunder::Core::Singleton::Dispose();
   
     return 0;
 }

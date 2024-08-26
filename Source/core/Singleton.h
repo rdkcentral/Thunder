@@ -32,7 +32,7 @@
 // ---- Referenced classes and types ----
 
 // ---- Helper functions ----
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class EXTERNAL Singleton {
     private:
@@ -139,7 +139,7 @@ namespace Core {
         }
 
         inline static SINGLETON& Instance() {
-            // As available does not see through friend clas/protected 
+            // As available does not see through friend clas/protected
             // declarations, we can not rely on the output of it.
             // If this Instance method id called, assume it has a
             // default constructor..

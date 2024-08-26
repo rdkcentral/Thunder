@@ -16,85 +16,107 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     TEST(Core_DoorBell, simpleSet)
     {
-        std::string fileName {"/tmp/doorbell01"};
-        auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
-            Core::DoorBell doorBell(fileName.c_str());
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
-                doorBell.Acknowledge();
-                testAdmin.Sync("First ring");
-            }
+        const std::string fileName {"/tmp/doorbell01"};
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
-                doorBell.Acknowledge();
-                testAdmin.Sync("Second ring");
-            }
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
+
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            doorBell.Acknowledge();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            doorBell.Acknowledge();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             doorBell.Relinquish();
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            Core::DoorBell doorBell(fileName.c_str());
-            ::SleepMs(10);
             doorBell.Ring();
-            testAdmin.Sync("First ring");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             doorBell.Ring();
-            testAdmin.Sync("Second ring");
-        }
-        Core::Singleton::Dispose();
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST(Core_DoorBell, simpleSetReversed)
     {
-        std::string fileName {"/tmp/doorbell02"};
-        auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
-            Core::DoorBell doorBell(fileName.c_str());
-            ::SleepMs(10);
+        const std::string fileName {"/tmp/doorbell02"};
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
+
+            // A small delay so the child can be set up
+            SleepMs(maxInitTime);
+
             doorBell.Ring();
-            testAdmin.Sync("First ring");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
             doorBell.Ring();
-            testAdmin.Sync("Second ring");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::DoorBell doorBell(fileName.c_str());
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            doorBell.Acknowledge();
 
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            Core::DoorBell doorBell(fileName.c_str());
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
-                doorBell.Acknowledge();
-                testAdmin.Sync("First ring");
-            }
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            EXPECT_EQ(doorBell.Wait(Core::infinite), Core::ERROR_NONE);
-            if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
-                doorBell.Acknowledge();
-                testAdmin.Sync("Second ring");
-            }
+            ASSERT_EQ(doorBell.Wait(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            doorBell.Acknowledge();
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
             doorBell.Relinquish();
-        }
-       // Core::Singleton::Dispose();
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

@@ -17,107 +17,116 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include "gtest/gtest.h"
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include "core/core.h"
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-const unsigned int BLOCKSIZE = 20;
+    constexpr unsigned int BLOCKSIZE = 20;
 
-class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
-{
+    class WriterClass
+    {
     public:
         WriterClass() = delete;
 
-        WriterClass(string filename)
-            : Writer(filename)
-            , _file(filename)
+        WriterClass(const string& filename)
+            : _file{filename}
         {
+            _writer = ::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Writer::Create(filename);
         }
 
         ~WriterClass()
         {
+            _writer.Release();
         }
 
     public:
-        void WriterJob()
+        void WriterJob(const uint32_t& value)
         {
-            uint8_t arr[] = {1,2,3};
-            SetBuffer(arr);
-            Create(_file);
-            Record(10);
-            Time();
-            Source();
-            Value();
+            ASSERT_TRUE(_writer.IsValid());
+
+            _writer->Record(value);
+
+            EXPECT_STREQ(_writer->Source().c_str(), _file.c_str());
+            EXPECT_EQ(_writer->Value(), value);
+        }
+
+        void Save()
+        {
+            _writer->Save();
         }
 
     private:
-        string _file;
-};
+        const string _file;
+        ::Thunder::Core::ProxyType<::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Writer> _writer;
+    };
 
-class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
-{
+    class ReaderClass : public ::Thunder::Core::RecorderType<uint32_t, BLOCKSIZE>::Reader
+    {
     public:
         ReaderClass() = delete;
 
-        ReaderClass(string filename)
-            : Reader(filename)
-            , _file(filename)
+        ReaderClass(const string& filename)
+            : _file{filename}
+            , Reader(filename)
         {
         }
 
-        ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
-                : Reader(recorder->Source())
-                , _file(recorder->Source())
-        {
-        }
-
-        ~ReaderClass()
-        {
-        }
+        ~ReaderClass() = default;
 
     public:
-        void ReaderJob()
+        void ReaderJob(const uint32_t value)
         {
-            uint32_t time = 20;
-            Core::Time curTime = Core::Time::Now();
-            curTime.Add(time);
-            Store(curTime.Ticks(), 1);
-            
-            StepForward();
-            StepBack();
-            ClearData();
-            Reader obj1(_file, 1u);
-            EXPECT_FALSE(obj1.Previous());
-            EXPECT_TRUE(obj1.Next());
+            static_assert(std::is_same<::Thunder::Core::Time::microsecondsfromepoch, uint64_t>::value);
 
-            EXPECT_EQ(StartId(),1u);
+            const ::Thunder::Core::Time::microsecondsfromepoch readTime = ::Thunder::Core::Time::Now().Ticks();
 
-            if (EndId() == StartId())
-                EXPECT_EQ(EndId(),1u);
-            else
-                EXPECT_EQ(EndId(),2u);
+            // Get a valid position
+            Reset(StartId());
+ 
+            ASSERT_TRUE(IsValid());
 
-            EndId();
-            Source();
+            EXPECT_EQ(Id(), StartId());
+
+            EXPECT_STREQ(Source().c_str(), _file.c_str());
+            EXPECT_EQ(value, Value());
+
+            ASSERT_EQ(Id(), EndId());
+
+            // Load next file if it exist if no additional data exist
+            EXPECT_FALSE(Next());
+
+            // The previous failed so no new files has been loaded and the current file is still used
+            EXPECT_TRUE(Previous());
+
+            EXPECT_LE(Time(), readTime);
         }
 
     private:
-        string _file;
-};
+        const string _file;
+    };
 
-TEST(test_valuerecorder, test_writer)
-{
-    string filename = "baseRecorder.txt";
-    WriterClass obj1(filename);
-    obj1.Copy(obj1,1);
-    obj1.Copy(obj1,100);
-    obj1.WriterJob();
-    ReaderClass obj2(filename);
-    obj2.ReaderJob();
-    ReaderClass obj3(ProxyType<WriterClass>(obj1));
-}
+    TEST(test_valuerecorder, test_writer)
+    {
+        const string filename = "baseRecorder.txt";
 
+        constexpr uint32_t value = 10;
+
+        WriterClass writer(filename);
+        writer.WriterJob(value);
+        writer.Save();
+
+        ReaderClass reader(filename);
+        reader.ReaderJob(value);
+    }
+
+} // Core
+} // Tests
+} // Thunder

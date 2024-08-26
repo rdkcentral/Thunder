@@ -20,7 +20,7 @@
 #include "ResourceMonitor.h"
 #include "Singleton.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -38,4 +38,4 @@ namespace Core {
 #endif
     }
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core

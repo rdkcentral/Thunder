@@ -17,6 +17,7 @@
  * limitations under the License.
  */
  
+#if !defined (__WINDOWS__) && !defined(__APPLE__)
 #include <linux/rtnetlink.h>
 
 #include "Netlink.h"
@@ -24,7 +25,7 @@
 
 // #define DEBUG_FRAMES 1
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -238,4 +239,5 @@ namespace Core {
     {
     }
 }
-} // namespace WPEFramework::Core
+} // namespace Thunder::Core
+#endif //!defined (__WINDOWS__) && !defined(__APPLE__)

@@ -1,3 +1,5 @@
+set(TEMPLATES_LOCATION_RELATIVE_FROM_ME "${CMAKE_CURRENT_LIST_DIR}/../templates/" CACHE INTERNAL "relative location to the templates from this file")
+
 function(HeaderOnlyInstallCMakeConfig)
     set(optionsArgs NO_SKIP_INTERFACE_LIBRARIES, TREAT_AS_NORMAL)
     set(oneValueArgs LOCATION TEMPLATE TARGET)
@@ -9,7 +11,7 @@ function(HeaderOnlyInstallCMakeConfig)
         message(FATAL_ERROR "Unknown keywords given to HeaderOnlyInstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
     endif()
 
-    set(_install_path "lib/cmake") # default path
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/cmake") # default path
 
     set(TARGET ${Argument_TARGET})
     set(NAME ${Argument_NAME})
@@ -21,7 +23,11 @@ function(HeaderOnlyInstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates"
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -31,7 +37,11 @@ function(HeaderOnlyInstallCMakeConfig)
 
         find_file(_config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates" )
+            PATHS 
+                "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" )
 
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
@@ -82,7 +92,7 @@ function(HeaderOnlyInstallCMakeConfig)
         VERSION ${_version}
         COMPATIBILITY SameMajorVersion)
 
-    message(STATUS "${TARGET} added support for cmake consumers via '${_name}Config.cmake'")
+    message(VERBOSE "${TARGET} added support for cmake consumers via '${_name}Config.cmake'")
 
     if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_TREAT_AS_NORMAL)
         # The alias is used by local targets project
@@ -151,12 +161,14 @@ function(HeaderOnlyInstallCMakeConfig)
         EXPORT "${TARGET}Targets"
         FILE "${_name}Targets.cmake"
         NAMESPACE  "${_name}::"
-        DESTINATION "${_install_path}/${_name}")
+        DESTINATION "${_install_path}/${_name}"
+        COMPONENT ${NAMESPACE}_Development)
 
     install(FILES
             "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
-        DESTINATION "${_install_path}/${_name}")
+        DESTINATION "${_install_path}/${_name}"
+        COMPONENT ${NAMESPACE}_Development)
 
 endfunction(HeaderOnlyInstallCMakeConfig)
 
@@ -174,7 +186,11 @@ function(HeaderOnlyInstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates"
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates"
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -184,7 +200,11 @@ function(HeaderOnlyInstallPackageConfig)
 
         find_file(_pc_template
                     NAMES "default.pc.in"
-                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" "${CMAKE_INSTALL_PREFIX}/lib/cmake/${NAMESPACE}/templates")
+                    PATHS 
+                        "${TEMPLATES_LOCATION_RELATIVE_FROM_ME}" 
+                        "${PROJECT_SOURCE_DIR}/cmake/templates" 
+                        "${CMAKE_SYSROOT}/usr/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates" 
+                        "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/${NAMESPACE}/templates")
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")
@@ -229,7 +249,7 @@ function(HeaderOnlyInstallPackageConfig)
     endif()
 
     # Default path on UNIX, if you want Windows or Apple support add the path here. ;-)
-    set(_install_path "lib/pkgconfig")
+    set(_install_path "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
     if (${Argument_OUTPUT_NAME})
         set(_pc_filename  ${Argument_OUTPUT_NAME})
@@ -274,7 +294,7 @@ function(HeaderOnlyInstallPackageConfig)
     get_if_link_libraries(libraries link_dirs ${TARGET})
 
     if(NOT Argument_NO_DEFAULT_LIB_DIR_FILTER)
-        # remove the default library dir e.g /usr/lib
+        # remove the default library dir e.g /usr/${CMAKE_INSTALL_LIBDIR}
         list(LENGTH link_dirs _link_dirs_count)
         if (_link_dirs_count GREATER 0)
             list(REMOVE_ITEM link_dirs "${CMAKE_INSTALL_PREFIX}/${TARGET_LIBRARY_DIR}")
@@ -294,12 +314,13 @@ function(HeaderOnlyInstallPackageConfig)
         endif()
     endforeach()
 
-    message(STATUS "${TARGET} added support for generic consumers via ${_pc_filename}")
+    message(VERBOSE "${TARGET} added support for generic consumers via ${_pc_filename}")
 
     configure_file( "${_pc_template}"
                     "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"
                     @ONLY)
 
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${_pc_filename}"
-            DESTINATION "${_install_path}")
+            DESTINATION "${_install_path}"
+            COMPONENT ${NAMESPACE}_Development)
 endfunction(HeaderOnlyInstallPackageConfig)

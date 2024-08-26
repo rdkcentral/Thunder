@@ -24,7 +24,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename SOURCE, typename ALLOCATOR, typename INTERFACE>// = Core::JSON::IElement>
     class StreamJSONType {

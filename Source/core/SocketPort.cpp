@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "Thread.h"
 #include "Timer.h"
+#include "Number.h"
 
 #ifdef __POSIX__
 #include <arpa/inet.h>
@@ -41,6 +42,7 @@
 
 #ifdef __APPLE__
 #include <sys/event.h>
+#include <netinet/in.h>
 #elif defined(__LINUX__)
 #include <signal.h>
 #include <sys/ioctl.h>
@@ -64,7 +66,14 @@
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 #endif
 
-namespace WPEFramework {
+#ifdef __APPLE__
+#define IPV6_PACKAGE_TYPE IPV6_RECVPKTINFO
+#else
+#define IPV6_PACKAGE_TYPE IPV6_PKTINFO
+#endif
+
+
+namespace Thunder {
     namespace Core {
 
 #ifdef __DEBUG__
@@ -238,7 +247,7 @@ namespace WPEFramework {
                         interfaceId = info->ipi_ifindex;
                         break;
                     }
-                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO) && (remote->sa_family == AF_INET6)) {
+                    else if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PACKAGE_TYPE) && (remote->sa_family == AF_INET6)) {
                         const struct in6_pktinfo* info = reinterpret_cast<const struct in6_pktinfo*>CMSG_DATA(cmsg);
                         interfaceId = info->ipi6_ifindex;
                         break;
@@ -658,6 +667,16 @@ namespace WPEFramework {
         //////////////////////////////////////////////////////////////////////
         // PRIVATE SocketPort interface
         //////////////////////////////////////////////////////////////////////
+        string SocketPort::Identifier(const NodeId& node) const {
+            string result;
+            if (node.Type() == Core::NodeId::enumType::TYPE_DOMAIN) {
+                result = node.HostName() + '@' + Core::NumberType<uint32_t>(static_cast<uint32_t>(Descriptor())).Text();
+            }
+            else {
+                result = node.HostName() + '@' + Core::NumberType<uint16_t>(static_cast<uint32_t>(node.PortNumber())).Text();
+            }
+            return (result);
+        }
 
         void SocketPort::BufferAlignment(SOCKET socket)
         {
@@ -811,15 +830,31 @@ namespace WPEFramework {
             }
 #endif
 
+#ifdef __APPLE__
+    {
+        int flags = fcntl(l_Result, F_GETFL, 0) | O_CLOEXEC;
+
+        if (fcntl(l_Result, F_SETFL, flags) != 0) {
+            TRACE_L1("ConstructSocket:Error on port socket F_SETFL call. Error %d", errno);
+        }
+
+    }
+#endif
+
 #ifndef __WINDOWS__
             // See if we need to bind to a specific interface.
             if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
                 struct ifreq interface;
+#ifdef __APPLE__
+                strncpy(interface.ifr_name, specificInterface.c_str(), IFNAMSIZ - 1);
+                int index = if_nametoindex(interface.ifr_name);
+                if (::setsockopt(l_Result, IPPROTO_IP, IP_BOUND_IF, (const char*)&index, sizeof(index)) < 0) {
+#else
                 strncpy(interface.ifr_ifrn.ifrn_name, specificInterface.c_str(), IFNAMSIZ - 1);
 
                 if (::setsockopt(l_Result, SOL_SOCKET, SO_BINDTODEVICE, (const char*)&interface, sizeof(interface)) < 0) {
-
+#endif
                     TRACE_L1("Error binding socket to an interface. Error %d", __ERRORRESULT__);
 
                     ::close(l_Result);
@@ -838,7 +873,7 @@ namespace WPEFramework {
                         }
                     }
                     else if (localNode.Type() == NodeId::TYPE_IPV6) {
-                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PKTINFO, (const char*)&optval, sizeof(optval)) != 0) {
+                        if (::setsockopt(l_Result, IPPROTO_IPV6, IPV6_PACKAGE_TYPE, (const char*)&optval, sizeof(optval)) != 0) {
                             TRACE_L1("Error getting additional info on received packages. Error %d", __ERRORRESULT__);
                         }
                     }
@@ -1298,7 +1333,7 @@ namespace WPEFramework {
             socklen_t size = sizeof(address);
             SOCKET result;
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) || defined(__APPLE__)
             if ((result = ::accept(m_Socket, (struct sockaddr*)&address, &size)) != SOCKET_ERROR) {
 #else
             if ((result = ::accept4(m_Socket, (struct sockaddr*)&address, &size, SOCK_CLOEXEC)) != SOCKET_ERROR) {

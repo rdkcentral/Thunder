@@ -37,3 +37,5 @@
 #if defined(__WINDOWS__) && !defined(COM_EXPORTS)
 #pragma comment(lib, "com.lib")
 #endif
+
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(RPC)

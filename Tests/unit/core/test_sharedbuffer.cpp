@@ -17,173 +17,176 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
 namespace Tests {
-
-    void CleanUpBuffer(string bufferName)
-    {
-        // TODO: shouldn't this be done producer-side?
-        char systemCmd[1024];
-        string command = "rm -rf ";
-        snprintf(systemCmd, command.size() + bufferName.size() + 1, "%s%s", command.c_str(), bufferName.c_str());
-        system(systemCmd);
-
-        string ext = ".admin";
-        snprintf(systemCmd, command.size() + bufferName.size() + ext.size() + 1, "%s%s%s", command.c_str(), bufferName.c_str(), ext.c_str());
-        system(const_cast<char*>(systemCmd));
-    }
+namespace Core {
 
     TEST(Core_SharedBuffer, simpleSet)
     {
-        std::string bufferName {"testbuffer01"} ;
-        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
-            CleanUpBuffer(bufferName);
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 6, maxWaitTimeMs = 6000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 20;
 
-            uint16_t administrationSize = 64;
-            uint32_t bufferSize = 8 * 1024;
-            uint32_t result;
+        constexpr uint16_t administrationSize = 64;
+        constexpr uint32_t bufferSize = 8 * 1024;
 
-            Core::SharedBuffer buff01(bufferName.c_str(),
-                Core::File::USER_READ    |
-                Core::File::USER_WRITE   |
-                Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ   |
-                Core::File::GROUP_WRITE  ,
+        const std::string bufferName {"testbuffer01"} ;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the parent can be set up
+            SleepMs(maxInitTime);
+
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
+                ::Thunder::Core::File::USER_READ    |
+                ::Thunder::Core::File::USER_WRITE   |
+                ::Thunder::Core::File::USER_EXECUTE |
+                ::Thunder::Core::File::GROUP_READ   |
+                ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
-            result = buff01.RequestProduce(Core::infinite);
-            EXPECT_EQ(result, Core::ERROR_NONE);
 
-            testAdmin.Sync("setup producer");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            testAdmin.Sync("setup consumer");
+            EXPECT_EQ(buff01.RequestProduce(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            uint8_t * buffer = buff01.Buffer();
+            uint8_t* buffer = buff01.Buffer();
+
+            ASSERT_TRUE(buffer != nullptr);
             EXPECT_EQ(buff01.Size(), bufferSize);
 
             buffer[0] = 42;
             buffer[1] = 43;
             buffer[2] = 44;
 
-            result = buff01.Produced();
-            EXPECT_EQ(result, Core::ERROR_NONE);
+            EXPECT_EQ(buff01.Produced(), ::Thunder::Core::ERROR_NONE);
 
-            testAdmin.Sync("consumer done");
+            // Data made available
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            // Buffer no longer used
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
-        // This side (tested) acts as client (consumer).
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            // In extra scope, to make sure "buff01" is destructed before producer.
-            testAdmin.Sync("setup producer");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            uint32_t bufferSize = 8 * 1024;
-            uint32_t result;
-            Core::SharedBuffer buff01(bufferName.c_str());
+            EXPECT_EQ(buff01.RequestConsume(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            testAdmin.Sync("setup consumer");
+            uint8_t* buffer = buff01.Buffer();
 
-            result = buff01.RequestConsume(Core::infinite);
-            EXPECT_EQ(result, Core::ERROR_NONE);
-
-            uint8_t * buffer = buff01.Buffer();
+            ASSERT_TRUE(buffer != nullptr);
             EXPECT_EQ(buff01.Size(), bufferSize);
 
             EXPECT_EQ(buffer[0], 42);
             EXPECT_EQ(buffer[1], 43);
             EXPECT_EQ(buffer[2], 44);
 
-            buff01.Consumed();
-            EXPECT_EQ(result, Core::ERROR_NONE);
-        }
+            EXPECT_EQ(buff01.Consumed(), ::Thunder::Core::ERROR_NONE);
 
-        testAdmin.Sync("consumer done");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
 
-        Core::Singleton::Dispose();
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
     TEST(Core_SharedBuffer, simpleSetReversed)
     {
-        std::string bufferName {"testbuffer02"} ;
-        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 6, maxWaitTimeMs = 6000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 20;
+
+        constexpr uint16_t administrationSize = 64;
+        constexpr uint32_t bufferSize = 8 * 1024;
+
+        const std::string bufferName {"testbuffer02"} ;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
             // In extra scope, to make sure "buff01" is destructed before producer.
 
-            testAdmin.Sync("setup consumer");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            uint32_t bufferSize = 8 * 1024;
-            uint32_t result;
-            Core::SharedBuffer buff01(bufferName.c_str());
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str());
 
-            testAdmin.Sync("setup producer");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-            result = buff01.RequestConsume(Core::infinite);
-            EXPECT_EQ(result, Core::ERROR_NONE);
+            EXPECT_EQ(buff01.RequestConsume(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            uint8_t * buffer = buff01.Buffer();
+            uint8_t* buffer = buff01.Buffer();
+
+            ASSERT_TRUE(buffer != nullptr);
             EXPECT_EQ(buff01.Size(), bufferSize);
 
             EXPECT_EQ(buffer[0], 42);
             EXPECT_EQ(buffer[1], 43);
             EXPECT_EQ(buffer[2], 44);
 
-            buff01.Consumed();
-            EXPECT_EQ(result, Core::ERROR_NONE);
+            EXPECT_EQ(buff01.Consumed(), ::Thunder::Core::ERROR_NONE);
 
-            testAdmin.Sync("producer done");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
-
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
-
-        // This side (tested) acts as client (consumer).
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            CleanUpBuffer(bufferName);
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+           // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
             uint16_t administrationSize = 64;
             uint32_t bufferSize = 8 * 1024;
             uint32_t result;
 
-            Core::SharedBuffer buff01(bufferName.c_str(),
-                Core::File::USER_READ    |
-                Core::File::USER_WRITE   |
-                Core::File::USER_EXECUTE |
-                Core::File::GROUP_READ   |
-                Core::File::GROUP_WRITE  ,
+            ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
+                ::Thunder::Core::File::USER_READ    |
+                ::Thunder::Core::File::USER_WRITE   |
+                ::Thunder::Core::File::USER_EXECUTE |
+                ::Thunder::Core::File::GROUP_READ   |
+                ::Thunder::Core::File::GROUP_WRITE  ,
                 bufferSize,
                 administrationSize);
-            result = buff01.RequestProduce(Core::infinite);
-            EXPECT_EQ(result, Core::ERROR_NONE);
 
-            testAdmin.Sync("setup consumer");
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-            testAdmin.Sync("setup producer");
+            EXPECT_EQ(buff01.RequestProduce(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            uint8_t * buffer = buff01.Buffer();
+            uint8_t* buffer = buff01.Buffer();
+
+            ASSERT_TRUE(buffer != nullptr);
             EXPECT_EQ(buff01.Size(), bufferSize);
 
             buffer[0] = 42;
             buffer[1] = 43;
             buffer[2] = 44;
 
-            result = buff01.Produced();
-            EXPECT_EQ(result, Core::ERROR_NONE);
-        }
+            EXPECT_EQ(buff01.Produced(), Thunder::Core::ERROR_NONE);
 
-        testAdmin.Sync("producer done");
+            // Data made available
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
-        CleanUpBuffer(bufferName);
-        Core::Singleton::Dispose();
+            // Buffer no longer used
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
+
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

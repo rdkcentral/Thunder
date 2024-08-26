@@ -17,23 +17,30 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+ 
 #include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {    
 
-TEST(test_ReadWritelock, simpleSet)
-{
-    ReadWriteLock readObj;
-    EXPECT_TRUE(readObj.ReadLock());
+    TEST(test_ReadWritelock, simpleSet)
+    {
+        ::Thunder::Core::ReadWriteLock readObj;
+        EXPECT_TRUE(readObj.ReadLock());
 
-    readObj.ReadUnlock();
-    ReadWriteLock writeObj;
-    EXPECT_TRUE(writeObj.WriteLock());
+        readObj.ReadUnlock();
+        ::Thunder::Core::ReadWriteLock writeObj;
+        EXPECT_TRUE(writeObj.WriteLock());
 
-    writeObj.WriteUnlock();
-}
+        writeObj.WriteUnlock();
+    }
 
+} // Core
+} // Tests
+} // Thunder

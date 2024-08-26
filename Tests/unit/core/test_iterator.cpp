@@ -17,13 +17,17 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     class DataClass {
     public:
@@ -47,10 +51,10 @@ namespace Tests {
     };
 
     template <typename CONTAINER, typename ELEMENT>
-    class IteratorClass : public Core::IteratorType<CONTAINER, ELEMENT>
+    class IteratorClass : public ::Thunder::Core::IteratorType<CONTAINER, ELEMENT>
     {
     private:
-        typedef Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
+        typedef ::Thunder::Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
     public:
         IteratorClass() =delete;
 
@@ -66,10 +70,10 @@ namespace Tests {
     };
 
     template <typename CONTAINER, typename ELEMENT, typename KEY>
-    class IteratorMapClass : public Core::IteratorMapType<CONTAINER, ELEMENT, KEY>
+    class IteratorMapClass : public ::Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY>
     {
     private:
-        typedef Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
+        typedef ::Thunder::Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
 
     public:
         IteratorMapClass() = delete;
@@ -152,5 +156,7 @@ namespace Tests {
         for (uint8_t i = 1; iterator.Next(); i++)
             ValidateMap<DataMapIterator>(iterator, i);
     }
+
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

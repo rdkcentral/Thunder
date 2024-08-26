@@ -129,7 +129,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace Thunder --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -153,7 +153,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace Thunder --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -177,7 +177,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace Thunder --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>
@@ -205,7 +205,7 @@
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
+      <Command>python "$(ToolPath)\ProxyStubGenerator\StubGenerator.py" --namespace Thunder --outdir "$(SolutionDir)..\artifacts\generated\$(ProjectName)" "$(ProjectDir)IPlugin.h" "$(ProjectDir)IShell.h" "$(ProjectDir)IController.h" "$(ProjectDir)IStateControl.h" "$(ProjectDir)ISubSystem.h" "$(ProjectDir)IDispatcher.h" -I "$(ProjectDir)\.."</Command>
       <Message>
       </Message>
     </PreBuildEvent>

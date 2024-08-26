@@ -1,6 +1,6 @@
-## Run WPEFramework
+## Run Thunder
 
-To launch Thunder, execute the `WPEFramework` process from a command line.
+To launch Thunder, execute the `Thunder` process from a command line.
 
 If you have installed Thunder in a non-standard directory on Linux, you will need to set a few environment variables. If Thunder is installed in the standard system directories (e.g. `/usr/bin`) then you can just launch it directly
 
@@ -8,13 +8,13 @@ If you have installed Thunder in a non-standard directory on Linux, you will nee
 $ export LD_LIBRARY_PATH=${PWD}/install/usr/lib:${LD_LIBRARY_PATH}
 $ export PATH=${PWD}/install/usr/bin:${PATH}
 
-$ WPEFramework -f -c ${PWD}/install/etc/WPEFramework/config.json
+$ Thunder -f -c ${PWD}/install/etc/Thunder/config.json
 ```
 
 ### Available command-line options
 
 * `-c`: Path to the config file to use
-* `-b`: Daemonise WPEFramework and run in the background
+* `-b`: Daemonise Thunder and run in the background
 * `-f`: Flush all trace/logging/warning reporting messages directly to the console without any abbreviation
 * `-F`: Flush all trace/logging/warning reporting messages directly to the console with some abbreviation
 * `-h`: Show usage/help message
@@ -127,19 +127,19 @@ If a plugin is configured as auto-start, then it will automatically be activated
 
 ## Systemd Service
 
-An example systemd service to run WPEFramework daemon is below. This could be used to run Thunder on system startup automatically.
+An example systemd service to run Thunder daemon is below. This could be used to run Thunder on system startup automatically.
 
 ```ini
 [Unit]
-Description=wpeframework
+Description=thunder
 Wants=multi-user.target
 After=multi-user.target
 
 [Service]
-PIDFile=/var/run/WPEFramework.pid
+PIDFile=/var/run/Thunder.pid
 Environment="WAYLAND_DISPLAY=wayland-0"
 Environment="XDG_RUNTIME_DIR=/run"
-ExecStart=-/usr/bin/WPEFramework -b
+ExecStart=-/usr/bin/Thunder -b
 ExecStop=/bin/kill $MAINPID
 
 [Install]

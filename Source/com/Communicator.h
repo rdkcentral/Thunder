@@ -32,7 +32,7 @@
 
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include "../processcontainers/ProcessContainer.h"
+#include <processcontainers/processcontainers.h>
 #endif
 
 
@@ -40,7 +40,7 @@
 #include "../warningreporting/WarningReportingUnit.h"
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace RPC {
 
     class EXTERNAL Object {
@@ -83,7 +83,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(Object&& move)
+        Object(Object&& move) noexcept
             : _locator(std::move(move._locator))
             , _className(std::move(move._className))
             , _callsign(std::move(move._callsign))
@@ -151,7 +151,7 @@ namespace RPC {
         }
 
 
-        Object& operator=(Object&& move)
+        Object& operator=(Object&& move) noexcept
         {
             if (this != &move) {
                 _locator = std::move(move._locator);
@@ -297,7 +297,7 @@ namespace RPC {
             , _postMortem(copy._postMortem)
         {
         }
-	Config(Config&& move)
+	Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -620,10 +620,12 @@ namespace RPC {
             uint32_t Launch() override {
                 return (Core::ERROR_UNAVAILABLE);
             }
-
             inline bool IsOperational() const
             {
                 return (_channel.IsValid() == true);
+            }
+            const Core::NodeId& RemoteNode() const {
+                return(_channel->Source().RemoteNode());
             }
             inline Core::ProxyType<Core::IPCChannel> Channel()
             {
@@ -661,7 +663,6 @@ namespace RPC {
 
     private:
         friend class ProcessShutdown;
-        class RemoteConnectionMap;
 
         class MonitorableProcess : public RemoteConnection, public IMonitorableProcess {
         public:
@@ -822,15 +823,20 @@ namespace RPC {
 
                 ContainerConfig()
                     : Core::JSON::Container()
+                    , ContainerType(ProcessContainers::IContainer::LXC)
 #ifdef __DEBUG__
                     , ContainerPath()
 #endif
                 {
+                    Add(_T("containertype"), &ContainerType);
 #ifdef __DEBUG__
                     Add(_T("containerpath"), &ContainerPath);
 #endif
                 }
                 ~ContainerConfig() = default;
+
+            public:
+                Core::JSON::EnumType<ProcessContainers::IContainer::containertype> ContainerType;
 
 #ifdef __DEBUG__
                 Core::JSON::String ContainerPath;
@@ -849,33 +855,41 @@ namespace RPC {
                 : MonitorableProcess(instance.Callsign(), parent)
                 , _process(RemoteConnection::Id(), baseConfig, instance)
             {
-                ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-
-                std::vector<string> searchpaths(3);
-                searchpaths[0] = baseConfig.VolatilePath();
-                searchpaths[1] = baseConfig.PersistentPath();
-                searchpaths[2] = baseConfig.DataPath();
-
-#ifdef __DEBUG__
                 ContainerConfig config;
-                config.FromString(instance.Configuration());
 
-                if (config.ContainerPath.IsSet() == true) {
-                    searchpaths.emplace(searchpaths.cbegin(), config.ContainerPath.Value());
+                // Fetch container type
+                Core::OptionalType<Core::JSON::Error> error;
+                config.FromString(instance.Configuration(), error);
+
+                if (error.IsSet() == true) {
+                    TRACE_L1("Invalid process container configuration");
                 }
+                else {
+                    std::vector<string> searchPaths(3);
 
-#endif
+    #ifdef __DEBUG__
+                    if (config.ContainerPath.IsSet() == true) {
+                        searchPaths.push_back(config.ContainerPath.Value());
+                    }
+    #endif
 
-                Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
+                    searchPaths.push_back(baseConfig.VolatilePath());
+                    searchPaths.push_back(baseConfig.PersistentPath());
+                    searchPaths.push_back(baseConfig.DataPath());
 
-                string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
-                _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
+                    Core::IteratorType<std::vector<string>, const string> searchPathsIt(searchPaths);
+
+                    const string volatilePath(Core::Directory::Normalize(baseConfig.VolatilePath() + instance.Callsign()));
+
+                    _container = ProcessContainers::ContainerAdministrator::Instance().Container(config.ContainerType, instance.Callsign(),
+                                        searchPathsIt, volatilePath, instance.Configuration());
+                }
             }
 
             ~ContainerProcess() override
             {
-                if (_container != nullptr) {
-                    _container->Release();
+                if (_container.IsValid() == true) {
+                    _container.Release();
                 }
             }
 
@@ -884,7 +898,7 @@ namespace RPC {
             {
                 uint32_t result = Core::ERROR_GENERAL;
 
-                if (_container != nullptr) {
+                if (_container.IsValid() == true) {
 
                     // Note: replace below code with something more efficient when Iterators redesigned
                     Core::Process::Options::Iterator it(_process.Options());
@@ -953,7 +967,7 @@ namespace RPC {
             END_INTERFACE_MAP
 
         private:
-            ProcessContainers::IContainer* _container;
+            Core::ProxyType<ProcessContainers::IContainer> _container;
             Process _process;
         };
 
@@ -1546,7 +1560,6 @@ POP_WARNING()
         {
             return _hardKillCheckWaitTime;
         }
-
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
             _connectionMap.Register(sink);
@@ -1679,7 +1692,7 @@ POP_WARNING()
             return (result);
         }
 
-        // Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient)
+        // Open and offer the requested interface (Applicable if the ThunderPlugin starts the RPCClient)
         uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
 
         template <typename INTERFACE>
@@ -1841,7 +1854,7 @@ POP_WARNING()
             // Lock event until Dispatch() sets it.
             return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
         }
-        virtual void Dispatch(Core::IIPC& element);
+        void Dispatch(Core::IIPC& element) override;
 
     protected:
         void StateChange() override;

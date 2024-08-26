@@ -17,61 +17,76 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
 #include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
 #include <core/core.h>
 
-namespace WPEFramework {
+#include "../IPTestAdministrator.h"
+
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     TEST(Core_IPC, IPCClientConnection)
     {
-        std::string connector = _T("/tmp/testserver");
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::NodeId serverNode(connector.c_str());
+        const std::string connector = _T("/tmp/testserver");
 
-            uint32_t error;
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::NodeId serverNode(connector.c_str());
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
-            Core::IPCChannelServerType<Core::Void, false> serverChannel(serverNode, 512, factory);
-            error = serverChannel.Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
-            testAdmin.Sync("setup server");
-            testAdmin.Sync("setup client");
-            testAdmin.Sync("done testing");
+            ::Thunder::Core::IPCChannelServerType<::Thunder::Core::Void, false> serverChannel(serverNode, 512, factory);
 
-            error = serverChannel.Close(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
+            ASSERT_EQ(serverChannel.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            factory->DestroyFactories();
+            // Only for internal factories
+//            factory->DestroyFactories();
+
+            // A server cannot 'end' its life if clients are connected
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Do not unregister any / the last handler prior the call of cleanup
+            serverChannel.Cleanup();
+
+            ASSERT_EQ(serverChannel.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // A small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ::Thunder::Core::NodeId clientNode(connector.c_str());
 
-        IPTestAdministrator testAdmin(otherSide);
-        {
-            Core::NodeId clientNode(connector.c_str());
-            uint32_t error;
+            ::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> > factory(::Thunder::Core::ProxyType<::Thunder::Core::FactoryType<::Thunder::Core::IIPC, uint32_t> >::Create());
 
-            testAdmin.Sync("setup server");
+            ::Thunder::Core::IPCChannelClientType<::Thunder::Core::Void, false, false> clientChannel(clientNode, 512, factory);
 
-            Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
-            Core::IPCChannelClientType<Core::Void, false, false> clientChannel(clientNode, 512, factory);
-            error = clientChannel.Source().Open(1000); // Wait for 1 Second.
-            EXPECT_EQ(error, Core::ERROR_NONE);
-            testAdmin.Sync("setup client");
+            ASSERT_EQ(clientChannel.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-            error = clientChannel.Close(1000);
-            EXPECT_EQ(error, Core::ERROR_NONE);
-            factory->DestroyFactories();
-            Core::Singleton::Dispose();
-        }
-        testAdmin.Sync("done testing");
+            // Only for internal factories
+//           factory->DestroyFactories();
+
+            ASSERT_EQ(clientChannel.Source().Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // Signal the server it can 'end' its life
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
+
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

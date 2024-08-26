@@ -22,7 +22,7 @@
 #include "processcontainers/Tracing.h"
 
 
-using namespace WPEFramework::ProcessContainers;
+using namespace Thunder::ProcessContainers;
 
 AWCContainer::AWCContainer(const string& id, awc::AWCClient * client, AWCStateChangeNotifier * notifier):
     AWCContainerBase(id)

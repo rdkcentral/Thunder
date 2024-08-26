@@ -73,7 +73,7 @@ IDeviceInfo.h [includes](https://github.com/rdkcentral/ThunderInterfaces/blob/ma
 To avoid proxy implementation for a function, mark it with this tag.
 
 ##### Example
-In [IShell](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IShell.h#L232) Submit function is marked as stub as it does not want that function to be called beyond WPEFramework process
+In [IShell](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IShell.h#L232) Submit function is marked as stub as it does not want that function to be called beyond Thunder process
 
 <hr/>
 
@@ -106,6 +106,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
+|[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
 
 #### @in
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
@@ -208,6 +209,36 @@ When used with `@inout` it will use different buffer for output depending upon t
 ##### Example
 In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IPerformance.h#L32) it specifies, the maximum length for the buffer.
 
+<hr/>
+
+#### @default
+This tag should be associated with optional types. It provides a default value for JSON-RPC, even if no explicit value was set.
+
+Note: Unless a parameter is optional, it must be set.
+
+Note: Currently, OptionalType does not work with C-Style arrays.
+
+##### Example
+
+In this example class, the OptionalType members have a default value that would be transmitted incase their values have not been set.
+
+```cpp
+struct Store {
+	enum sizetype: uint8_t {
+		S, M, L
+	};
+
+	Core::OptionalType<string> Brand /* @default:"unknown" */;
+	Core::OptionalType<sizetype> Size /* @default: M */;
+};
+
+virtual Core::hresult Shirt(const Core::OptionalType<Store>& London) = 0;
+```
+<hr/>
+
+In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plugins/IController.h#L78) it specifies, the default value assigned incase the parameter is not set.
+
+<hr/>
 
 ### JSON-RPC Related Tags
 
@@ -221,11 +252,15 @@ In [IPerformance.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166b
 |[@event](#event)|Marks a class as JSON notification | | No| Yes|Class|
 |[@property](#property)|Marks a method as a property ||No|Yes| Method|
 |[@iterator](#iterator)|Marks a class as an iterator | | Yes| Yes|Class|
-|[@bitmask](#bitmask)| Indicates that enumerator lists should be packed into into a bit mask | | No | Yes |Method parameter|
+|[@bitmask](#bitmask)| Indicates that enumerator lists should be packed into into a bit mask | Yes| No | Yes |Method parameter|
 |[@index](#index)|Marks an index parameter to a property or notification | | No| Yes|Method paramter|
 |[@opaque](#opaque)| Indicates that a string parameter is an opaque JSON object | | No | Yes |Method parameter|
 |[@alt](#alt)| Provides an alternative name a method can by called by | | No | Yes |Method|
-|[@text](#text)| Renames identifier METHOD, PARAM, POD MEMBER, enum | | No | Yes |enum, Method paramters, Method names, PoD member|
+|[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
+|[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
+|[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
+|[@lookup](#lookup)| Creates a JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
+|[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -397,25 +432,144 @@ Indicates the string parameter contains a JSON document that should not be deser
 #### @alt
 Provide an alternative name for the method. JSON-RPC methods will be generated for both the actual function name and the alternative name
 
+Note: @text, @alt, @deprecated can be used together.
+
 ##### Example
-[IController](https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38) uses @alt for the `Reboot()` method to generate an alternatively named method called `Harakiri` (for legacy reasons)
+
+Methods, properties and notifications can be marked by using:
+```cpp
+// @alt <alternative_name>
+// @alt:deprecated <alternative_deprecated_name>
+// @alt:obsolete <alternative_obsolete_name>
+```
+<hr/>
+
+[IController.h](https://github.com/rdkcentral/Thunder/blob/R4.3/Source/plugins/IController.h#L38) uses @alt for the `Reboot()` method to generate an alternatively named method called `Harakiri` (for legacy reasons)
 
 <hr/>
 
 #### @text
-This tag is applicable to enums, function names and function parameters. 
+This tag is applicable to enums, method names, method parameters, PoD members and whole interfaces. 
 
-* When used with enum, it will associate the enum values to the given text in the JSON code.
-* When used in function names, it will replace the actual function name with the text that is given.
-* When used in function parameter, it will replace the parameter name with the text that is given in the tag.
+* When used for an enum value, it will associate the enum values to the given text in the JSON code while keeping the case of the given text as is.
+* When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.
+* When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.
+* When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).
+* When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.
 
 ##### Example
+<hr>
 
 [IBrowser.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IBrowser.h#L61) uses this tag for enum. The generated code for this header will map the text for these enums as allowed and not as Allowed, blocked and not as Blocked. 
 
 Without these tags the string equivalent of the enums will be first letter caps followed by all small. This tag has changed it to all small.
 
+</hr>
+<hr>
 
+[IDolby.h](https://github.com/rdkcentral/ThunderInterfaces/blob/ac6cd5e8fe6b1735d811ec85633d145e1c1d4945/interfaces/IDolby.h#L62) uses this tag for method names. The generated code for this header will map the text for this method to the name 'soundmodechanged'. As can be seen @text can be combined with @alt if needed so in this case in the JSON-RPC interface this method can be called with both 'soundmodechanged' as well as 'dolby_audiomodechanged'
+
+</hr>
+<hr>
+
+In this example the names for PoD member 'One' will be mapped to 'First' and 'Two' will be mapped to 'Second' in the generated code. So in the JSON-RPC interface the JSON container names will be 'First' and 'Second' for these PoD members.
+```cpp hl_lines="1"
+	struct EXTERNAL Example {
+		uint32_t One /* @text First */;
+		uint32_t Two /* @text Second */;
+	};
+```
+</hr>
+<hr>
+
+In this example now for all enums, method names, method parameters and PoD member names the exact name as in the IExample interface will be used in the JSON generated code.
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:keep */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+</hr>
+<hr>
+
+#### @prefix
+Use this tag on a class to prepend all JSON-RPC methods with a prefix identifier. This is an alternative to using multiple @text tags.
+
+In this example, all registered methods would contain the prefix `source::`
+This is particularly useful for avoiding clashes, especially if several interfaces are implemented by the same plugin.
+
+```cpp
+// @json 1.0.0
+// @prefix source
+struct EXTERNAL ISource: virtual public Core::IUnknown {
+```
+</hr>
+<hr>
+
+#### @statuslistener
+
+Use this tag, to receive notifications when a JSON-RPC client has registered (or unregistered) from a notification.
+
+For more details, click [here](../interfaces/#notification-registration)
+
+</hr>
+<hr>
+
+#### @lookup
+
+This tag is used on methods, to create a JSON-RPC interface that is dynamically accessing created objects (or sessions).
+
+For more details, click [here](../interfaces/#object-lookup)
+
+<hr/>
+
+#### @encode
+
+This tag encodes data into an alternate format.
+
+* `@encode:base64` encodes arrays as base64 JSON-RPC arrays, on the condition that the array base is type `uint8_t`.
+
+##### Example
+
+In this example, C-Style `uint8_t` arrays are encoded as base64.
+
+```cpp
+struct Fixated {
+	struct BlueToothInfo {
+		uint8_t Addr[6] /* encode:base64 */;
+		uint32_t UUIDs[8];
+		string Descriptions[8];
+	};
+
+Bluetooth BtAddr[5];
+uint8_t Edid[128] /*encode:base64 */;
+};
+
+```
+
+In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IDisplayInfo.h#L101), the EDID data parameter is encoded.
+
+<hr/>
+
+* `@encode:bitmask` encodes enumerator lists into into a bit mask.
+
+##### Example
+
+In this example, a tagged enum is treated as a bitmasked list.
+
+```cpp
+enum soundmode : uint8_t {
+	MONO = 1,
+	STEREO = 2,
+	SURROUND = 4
+};
+
+virtual Core::hresult SupportedSoundModes(soundmode &sm /* @out @encode:bitmask */) = 0;
+```
+
+Example list:
+`["mono", "stereo"]`
+
+<hr>
 
 ### JSON-RPC Documentation Related Tags
 
@@ -515,3 +669,5 @@ This tag adds description about each return codes specified in the generated mar
 
 ##### Example
 In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54), it uses this tag to add description about the returned error code.
+
+<hr/>

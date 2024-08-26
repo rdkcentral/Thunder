@@ -23,7 +23,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     struct IMedia {
         virtual ~IMedia() = default;

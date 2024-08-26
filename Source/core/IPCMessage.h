@@ -23,7 +23,7 @@
 #include "Portability.h"
 #include "Frame.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Core {
 
@@ -104,7 +104,7 @@ namespace Core {
                 : _data(copy._data)
             {
             }
-            ScalarType(ScalarType<string>&& move)
+            ScalarType(ScalarType<string>&& move) noexcept
                 : _data(std::move(move._data))
             {
             }
@@ -118,7 +118,7 @@ namespace Core {
 
                 return (*this);
             }
-            ScalarType<string>& operator=(ScalarType<string>&& move)
+            ScalarType<string>& operator=(ScalarType<string>&& move) noexcept
             {
                 if (this != &move) {
                     _data = std::move(move._data);
@@ -333,7 +333,7 @@ namespace Core {
             {
                 return (&(_buffer[0]));
             }
-            inline void Set (const uint16_t length, const uint8_t buffer[]) {
+            inline void Set(const uint16_t length, const uint8_t buffer[]) {
                 _buffer.Copy(0, length, buffer);
             }
             inline uint16_t Serialize(uint8_t buffer[], const uint16_t length, const uint32_t offset) const

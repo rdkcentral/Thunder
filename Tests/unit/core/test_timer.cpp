@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
-#include "../IPTestAdministrator.h"
-
-#include <gtest/gtest.h>
-#include <core/core.h>
 #include <condition_variable>
 #include <mutex>
 
-namespace WPEFramework {
+#include <gtest/gtest.h>
+
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
+
+#include <core/core.h>
+
+namespace Thunder {
 namespace Tests {
+namespace Core {
 
     class TimeHandler {
     public:
@@ -40,23 +45,27 @@ namespace Tests {
     public:
         uint64_t Timed(const uint64_t scheduledTime)
         {
-            if (!_timerDone) {
-                Core::Time nextTick = Core::Time::Now();
-                uint32_t time = 100; // 0.1 second
-                nextTick.Add(time);
-                std::unique_lock<std::mutex> lk(_mutex);
-                _timerDone++;
-                _cv.notify_one();
-                return nextTick.Ticks();
-            }
-            std::unique_lock<std::mutex> lk(_mutex);
+            constexpr uint32_t time = 100; // 0.1 second
+
+            std::unique_lock<std::mutex> lock(_mutex);
+
             _timerDone++;
+
+            lock.unlock();
+
             _cv.notify_one();
-            return 0;
+
+            ::Thunder::Core::Time nextTick = ::Thunder::Core::Time::Now() + time;
+
+            return nextTick.Ticks();
         }
 
         static int GetCount()
         {
+            std::unique_lock<std::mutex> lk(_mutex);
+
+            _cv.wait(lk);
+
             return _timerDone;
         }
 
@@ -72,15 +81,15 @@ namespace Tests {
     std::mutex TimeHandler::_mutex;
     std::condition_variable TimeHandler::_cv;
 
-    class WatchDogHandler : Core::WatchDogType<WatchDogHandler&> {
+    class WatchDogHandler : ::Thunder::Core::WatchDogType<WatchDogHandler&> {
     private:
-        typedef Core::WatchDogType<WatchDogHandler&> BaseClass;
+        typedef ::Thunder::Core::WatchDogType<WatchDogHandler&> BaseClass;
 
     public:
         WatchDogHandler& operator=(const WatchDogHandler&) = delete;
         WatchDogHandler()
-            : BaseClass(Core::Thread::DefaultStackSize(), _T("WatchDogTimer"), *this)
-            , _event(false, false)
+            : BaseClass(::Thunder::Core::Thread::DefaultStackSize(), _T("WatchDogTimer"), *this)
+            , _event(false, true)
         {
         }
         ~WatchDogHandler()
@@ -95,7 +104,7 @@ namespace Tests {
         uint32_t Expired()
         {
             _event.SetEvent();
-            return Core::infinite;
+            return ::Thunder::Core::infinite;
         }
 
         int Wait(unsigned int milliseconds) const
@@ -105,29 +114,33 @@ namespace Tests {
 
     private:
         uint32_t _delay;
-        mutable Core::Event _event;
+        mutable ::Thunder::Core::Event _event;
     };
 
-    TEST(DISABLED_Core_Timer, LoopedTimer)
+    TEST(Core_Timer, LoopedTimer)
     {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("LoopedTimer"));
-        uint32_t time = 100;
+        constexpr uint32_t time = 100;
 
-        Core::Time nextTick = Core::Time::Now();
-        nextTick.Add(time);
+        ::Thunder::Core::TimerType<TimeHandler> timer(::Thunder::Core::Thread::DefaultStackSize(), _T("LoopedTimer"));
+
+        ::Thunder::Core::Time nextTick = ::Thunder::Core::Time::Now() + time;
+
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while (!(TimeHandler::GetCount() == 2)) {
-            TimeHandler::_cv.wait(lk);
+
+        while (TimeHandler::GetCount() <= 2) {
         }
+
+        timer.Flush();
     }
 
     TEST(Core_Timer, QueuedTimer)
     {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("QueuedTimer"));
-        uint32_t time = 100;
+        constexpr uint32_t time = 100;
 
-        Core::Time nextTick = Core::Time::Now();
+        ::Thunder::Core::TimerType<TimeHandler> timer(::Thunder::Core::Thread::DefaultStackSize(), _T("QueuedTimer"));
+
+        ::Thunder::Core::Time nextTick = ::Thunder::Core::Time::Now();
+
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
 
@@ -136,24 +149,31 @@ namespace Tests {
 
         nextTick.Add(3 * time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while (!(TimeHandler::GetCount() == 5)) {
-            TimeHandler::_cv.wait(lk);
+
+        while (TimeHandler::GetCount() <= 5) {
         }
+
+        timer.Flush();
     }
 
     TEST(Core_Timer, PastTime)
     {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T("PastTime"));
-        uint32_t time = 100; // 0.1 second
+        constexpr uint32_t time = 100;
 
-        Core::Time pastTime = Core::Time::Now();
+        ::Thunder::Core::TimerType<TimeHandler> timer(::Thunder::Core::Thread::DefaultStackSize(), _T("PastTime"));
+
+        ::Thunder::Core::Time pastTime = ::Thunder::Core::Time::Now();
+
+        ASSERT_GT(pastTime.Ticks() / 1000, 0);
+
         pastTime.Sub(time);
+
         timer.Schedule(pastTime.Ticks(), TimeHandler());
-        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while (!(TimeHandler::GetCount() == 6)) {
-            TimeHandler::_cv.wait(lk);
+
+        while (TimeHandler::GetCount() <= 6) {
         }
+
+        timer.Flush();
     }
 
     TEST(Core_Timer, WatchDogType)
@@ -161,7 +181,9 @@ namespace Tests {
         WatchDogHandler timer;
         timer.Start(100); // 100 milliseconds delay
         int ret = timer.Wait(200); // Wait for 200 milliseconds
-        EXPECT_EQ(ret, Core::ERROR_NONE);
+        EXPECT_EQ(ret, ::Thunder::Core::ERROR_NONE);
     }
+
+} // Core
 } // Tests
-} // WPEFramework
+} // Thunder

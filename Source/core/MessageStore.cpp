@@ -24,7 +24,7 @@
 #include "Enumerate.h"
 #include "Singleton.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 ENUM_CONVERSION_BEGIN(Core::Messaging::Metadata::type)
     { Core::Messaging::Metadata::type::TRACING, _TXT("Tracing") },
@@ -36,7 +36,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
     namespace {
         /**
         * @brief Class responsible for storing information about announced controls and updating them based on incoming
-        *        metadata or  SettingsList from config. This class can be serialized, and then recreated on the other
+        *        metadata or SettingsList from config. This class can be serialized, and then recreated on the other
         *        side to get information about all announced controls on this side.
         */
         class Controls {
@@ -52,7 +52,8 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Lock();
 
                 while (_controlList.size() > 0) {
-                    TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(*_controlList.front()).name(), static_cast<uint32_t>(_controlList.size()));
+                    VARIABLE_IS_NOT_USED auto& control = *_controlList.front();
+                    TRACE_L1(_T("MessageControl %s, size = %u was not disposed before"), typeid(control).name(), static_cast<uint32_t>(_controlList.size()));
                     _controlList.front()->Destroy();
                 }
 
@@ -199,7 +200,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.Number(_timeStamp);
                     length += extra;
@@ -261,7 +262,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.NullTerminatedText(_className);
                     frameWriter.NullTerminatedText(_fileName);
@@ -333,7 +334,7 @@ namespace Core {
                 ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
-                    Core::FrameType<0> frame(const_cast<uint8_t*>(buffer) + length, bufferSize - length, bufferSize - length);
+                    Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
                     Core::FrameType<0>::Writer frameWriter(frame, 0);
                     frameWriter.NullTerminatedText(_callsign);
                     length += extra;

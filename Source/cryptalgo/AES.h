@@ -23,7 +23,7 @@
 #include "AESImplementation.h"
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Crypto {
 
     enum aesType : uint8_t {

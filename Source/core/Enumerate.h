@@ -29,7 +29,7 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     // ---- Referenced classes and types ----
 
@@ -42,7 +42,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
         template <>                                                                                 \
         EXTERNAL const Core::EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
         {                                                                                           \
-            static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
+            static Thunder::Core::EnumerateConversion<ENUMERATE> table[] = {
 
 #define ENUM_CONVERSION_END(ENUMERATE)                                                                   \
     {                                                                                                    \
@@ -50,7 +50,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
     }                                                                                                    \
     }                                                                                                    \
     ;                                                                                                    \
-    return (index < ((sizeof(table) / sizeof(WPEFramework::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
+    return (index < ((sizeof(table) / sizeof(Thunder::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
     }                                                                                                    \
     }
 

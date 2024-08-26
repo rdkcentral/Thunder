@@ -27,16 +27,15 @@
 #include <syslog.h>
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Core {
         template <typename T, size_t S>
         inline constexpr size_t FileNameOffset(const T(&str)[S], size_t i = S - 1)
         {
             return (str[i] == '/' || str[i] == '\\') ? i + 1 : (i > 0 ? FileNameOffset(str, i - 1) : 0);
         }
-
         template <typename T>
-        inline constexpr size_t FileNameOffset(T(&str)[1])
+        inline constexpr size_t FileNameOffset(T(&str)[1] VARIABLE_IS_NOT_USED)
         {
             return 0;
         }
@@ -52,11 +51,13 @@ namespace WPEFramework {
 #include <sys/syscall.h>
 #define TRACE_THREAD_ID syscall(SYS_gettid)
 #else
-#include <unistd.h>
 #if INTPTR_MAX == INT64_MAX
 #define TRACE_THREAD_ID static_cast<uint64_t>(::gettid())
 #else
 #define TRACE_THREAD_ID static_cast<uint32_t>(::gettid())
+#endif
+#ifndef __APPLE__
+#include <unistd.h>
 #endif
 #endif
 #endif
@@ -70,20 +71,21 @@ namespace WPEFramework {
 #ifdef __WINDOWS__
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                 \
     } while (0)
 #else
 #if INTPTR_MAX == INT64_MAX
+#include <inttypes.h>
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%ld>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%" PRId64 ">" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #else
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
+        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\033[0m\n", &__FILE__[Thunder::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
         fflush(stderr);                                                                                                                     \
     } while (0)
 #endif
@@ -158,9 +160,9 @@ namespace WPEFramework {
     do {                                                                                                        \
         if (!(expr)) {                                                                                          \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-            std::list<WPEFramework::Core::callstack_info> entries;                                              \
+            std::list<Thunder::Core::callstack_info> entries;                                              \
             DumpCallStack(0, entries);                                                                          \
-            for(const WPEFramework::Core::callstack_info& entry : entries) {                                    \
+            for(const Thunder::Core::callstack_info& entry : entries) {                                    \
                 fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
             }                                                                                                   \
             fflush(stderr);                                                                                     \
@@ -172,9 +174,9 @@ namespace WPEFramework {
     do {                                                                                                                                             \
         if (!(expr)) {                                                                                                                               \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-            std::list<WPEFramework::Core::callstack_info> entries;                                                                                   \
+            std::list<Thunder::Core::callstack_info> entries;                                                                                   \
             DumpCallStack(0, entries);                                                                                                               \
-            for(const WPEFramework::Core::callstack_info& entry : entries) {                                                                         \
+            for(const Thunder::Core::callstack_info& entry : entries) {                                                                         \
                 fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);                                       \
             }                                                                                                                                        \
             fflush(stderr);                                                                                                                          \
@@ -207,7 +209,7 @@ namespace WPEFramework {
             Core::LogMessage(Core::ToString(__FILE__).c_str(), __LINE__, MESSAGE)); \
     }
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     class TextFragment;
 

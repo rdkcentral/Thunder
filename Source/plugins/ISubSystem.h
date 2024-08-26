@@ -22,7 +22,7 @@
 
 #include <com/ICOM.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace PluginHost {
 
     struct EXTERNAL IMetadata : virtual public Core::IUnknown {

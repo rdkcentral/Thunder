@@ -28,7 +28,7 @@
 
 #include "../Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     template <typename CONTEXT>
@@ -64,4 +64,4 @@ namespace ProcessContainers {
     };
 
 } // ProcessContainers
-} // WPEFramework
+} // Thunder

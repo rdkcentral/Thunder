@@ -19,10 +19,9 @@
 
 #pragma once
 
-#include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/BaseRefCount.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace ProcessContainers {
 
     struct CGroupMemoryInfo : public BaseRefCount<ProcessContainers::IMemoryInfo> {
@@ -220,4 +219,4 @@ namespace ProcessContainers {
     };
 
 } // ProcessContainers
-} // WPEFramework
+} // Thunder

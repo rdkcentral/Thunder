@@ -24,7 +24,7 @@
 #include "Trace.h"
 #include "TextFragment.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Core {
     template <typename ELEMENT>
     struct IDispatchType {
