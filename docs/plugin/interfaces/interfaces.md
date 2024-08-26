@@ -80,18 +80,18 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 
 * It is now possible to specify a separate JSON-RPC interface for handling connection issues and correct session management, and this will bring more options when the JSON-RPC interface deviates from the COM-RPC interface.
 
-* It is supported to send JSON-RPC over COM-RPC using the 'IDispatch' interface without the need for serialization.
-    * This is particularly useful for out-of-process (OOP) and remote plugins.
-
 * The JSON-RPC generator now supports the usage of nested "plain-old data"(POD) types (such as plain C structs) in the C++ interface.
     * The JSON-RPC generator can now parse these structs and their usage in methods and generate a JSON-RPC interface for such cases.
 
-* `Core::hresult` is required as a return type value of all JSON-RPC enabled interfaces.
+* `Core::hresult` is now supported as a return type from Thunder 5.0 onwards for JSONRPC and is strongly recommended to be used.
 
 * `@text` metatag has been extended to have more options to influence the names used in generated code.
     * For more details click [here](../tags/#text).
 
 * Float type is now supported in the IDL header files.
+
+* Fixed size arrays are now supported, for example:`array[10]`
+    * See an example in [ICryptography](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/ICryptography.h#L140)
 
 * `Core::instance_id` is now supported in the IDL header files.
     * It is presented as a 32/64 bit hexadecimal value in JSON-RPC.
@@ -105,7 +105,7 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 
 * JSON-RPC supports the usage of bitmask enums (a combination of enum values can be set in the same enum parameter at the same time).
     * This is mapped as an array of values in the JSON-RPC interface.
-    * See more information about `/* bitmask */` [here](../tags/#bitmask).
+    * See more information about `/* @encode:bitmask */` [here](../tags/#encode).
 
 <hr/>
 

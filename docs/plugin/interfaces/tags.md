@@ -107,7 +107,6 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
-|[@encode:base64](#encode:base64)|Encodes C-Style arrays as JSON-RPC base64 arrays |  | Yes | Yes |Method parameter|
 
 #### @in
 This tag will mark a parameter in a function as an input parameter. By default, all parameters in a function are treated as input paramter. 
@@ -241,35 +240,6 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 
 <hr/>
 
-#### @encode:base64
-
-This tag encodes C-Style arrays into JSON-RPC arrays as base64 strings, on the condition that the array base is type `uint8_t`. 
-
-##### Example
-
-In this example, C-Style `uint8_t` arrays are encoded as base64.
-
-```cpp
-struct Fixated {
-	struct BlueToothInfo {
-		uint8_t Addr[6] /* encode:base64 */;
-		uint32_t UUIDs[8];
-		string Descriptions[8];
-	};
-
-Bluetooth BtAddr[5];
-uint8_t Edid[128] /*encode:base64 */;
-};
-
-```
-
-<hr/>
-
-In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IDisplayInfo.h#L101), the EDID data parameter is encoded.
-
-
-<hr/>
-
 ### JSON-RPC Related Tags
 
 | Tag|Short Description|Deprecated|StubGen|JsonGen|Scope|
@@ -282,7 +252,7 @@ In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea2
 |[@event](#event)|Marks a class as JSON notification | | No| Yes|Class|
 |[@property](#property)|Marks a method as a property ||No|Yes| Method|
 |[@iterator](#iterator)|Marks a class as an iterator | | Yes| Yes|Class|
-|[@bitmask](#bitmask)| Indicates that enumerator lists should be packed into into a bit mask | | No | Yes |Method parameter|
+|[@bitmask](#bitmask)| Indicates that enumerator lists should be packed into into a bit mask | Yes| No | Yes |Method parameter|
 |[@index](#index)|Marks an index parameter to a property or notification | | No| Yes|Method paramter|
 |[@opaque](#opaque)| Indicates that a string parameter is an opaque JSON object | | No | Yes |Method parameter|
 |[@alt](#alt)| Provides an alternative name a method can by called by | | No | Yes |Method|
@@ -290,6 +260,7 @@ In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea2
 |[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
 |[@lookup](#lookup)| Creates a JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
+|[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -549,7 +520,55 @@ This tag is used on methods, to create a JSON-RPC interface that is dynamically 
 
 For more details, click [here](../interfaces/#object-lookup)
 
-</hr>
+<hr/>
+
+#### @encode
+
+This tag encodes data into an alternate format.
+
+* `@encode:base64` encodes arrays as base64 JSON-RPC arrays, on the condition that the array base is type `uint8_t`.
+
+##### Example
+
+In this example, C-Style `uint8_t` arrays are encoded as base64.
+
+```cpp
+struct Fixated {
+	struct BlueToothInfo {
+		uint8_t Addr[6] /* encode:base64 */;
+		uint32_t UUIDs[8];
+		string Descriptions[8];
+	};
+
+Bluetooth BtAddr[5];
+uint8_t Edid[128] /*encode:base64 */;
+};
+
+```
+
+In [IDisplayInfo.h](https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IDisplayInfo.h#L101), the EDID data parameter is encoded.
+
+<hr/>
+
+* `@encode:bitmask` encodes enumerator lists into into a bit mask.
+
+##### Example
+
+In this example, a tagged enum is treated as a bitmasked list.
+
+```cpp
+enum soundmode : uint8_t {
+	MONO = 1,
+	STEREO = 2,
+	SURROUND = 4
+};
+
+virtual Core::hresult SupportedSoundModes(soundmode &sm /* @out @encode:bitmask */) = 0;
+```
+
+Example list:
+`["mono", "stereo"]`
+
 <hr>
 
 ### JSON-RPC Documentation Related Tags
