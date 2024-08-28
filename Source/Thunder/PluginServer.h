@@ -3717,7 +3717,7 @@ namespace PluginHost {
                         else {
                             response = IFactories::Instance().Response();
                             response->Body(body);
-                            // although there is no definitife approved RFC for this consensus is also on failure we should return a status OK (200)
+                            // although there is no definitive approved RFC for this consensus is also on failure we should return a status OK (200)
                             // e.g. see here:
                             // https://www.simple-is-better.org/json-rpc/transport_http.html
                             // https://json-rpc.readthedocs.io/en/latest/exceptions.html
