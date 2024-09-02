@@ -681,9 +681,9 @@ typedef std::string string;
 #define EMPTY_STRING _T("")
 
 #ifdef __LINUX__
-typedef pthread_t ThreadId;
+typedef pthread_t thread_id;
 #else
-typedef DWORD ThreadId;
+typedef DWORD thread_id;
 #endif
 
 #define QUOTE(str) #str
@@ -985,8 +985,8 @@ extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
 extern void EXTERNAL usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
-uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+void EXTERNAL DumpCallStack(const ::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+uint32_t EXTERNAL GetCallStack(const ::thread_id threadId, void* addresses[], const uint32_t bufferSize);
 
 }
 

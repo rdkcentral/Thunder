@@ -218,11 +218,11 @@ namespace Core {
         int PriorityMin() const;
         int PriorityMax() const;
         bool Priority(int priority);
-        inline ::ThreadId Id() const
+        inline ::thread_id Id() const
         {
             return (m_ThreadId);
         }
-        static ::ThreadId ThreadId();
+        static ::thread_id ThreadId();
 
         template <typename STORAGETYPE>
         static STORAGETYPE& GetContext()
@@ -288,7 +288,7 @@ namespace Core {
         HANDLE m_hThreadInstance;
 #endif
 
-        ::ThreadId m_ThreadId;
+        ::thread_id m_ThreadId;
         static uint32_t _defaultStackSize;
 #ifdef __POSIX__
         string m_threadName;

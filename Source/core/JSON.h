@@ -1017,7 +1017,6 @@ namespace Core {
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
         typedef NumberType<Core::instance_id, false, BASE_HEXADECIMAL> InstanceId;
-        typedef InstanceId Pointer;
 
         template <class TYPE>
         class FloatType : public IElement, public IMessagePack {
@@ -4979,6 +4978,114 @@ namespace Core {
         private:
             char _buffer[SIZE];
         };
+
+        class EXTERNAL ThreadId : public JSON::String {
+        public:
+            ThreadId()
+                : JSON::String(false)
+            {
+                JSON::String::operator=(Core::NumberType<uint8_t, false, NumberBase::BASE_HEXADECIMAL>(0));
+            }
+
+            template <typename TYPE, typename std::enable_if<(std::is_same<TYPE, void*>::value)>::type>
+            ThreadId(const TYPE& id)
+                : JSON::String(false)
+            {
+                String::operator=(Core::NumberType<uintptr_t, false, NumberBase::BASE_HEXADECIMAL>(reinterpret_cast<uintptr_t>(id)).Text());
+            }
+
+            template <typename TYPE, typename std::enable_if<!(std::is_same<TYPE, void*>::value)>::type>
+            ThreadId(const TYPE id)
+                : JSON::String(false)
+            {
+                String::operator=(Core::NumberType<TYPE, false, NumberBase::BASE_HEXADECIMAL>(id).Text());
+            }
+
+            ThreadId(const ThreadId&& move)
+                : String(std::move(move))
+            {
+            }
+
+            ThreadId(const ThreadId& copy)
+                : String(copy)
+            {
+            }
+
+            ~ThreadId() override = default;
+
+            ThreadId& operator=(const ThreadId&& move)
+            {
+                JSON::String::operator=(std::move(move));
+                return (*this);
+            }
+
+            ThreadId& operator=(const ThreadId& RHS)
+            {
+                JSON::String::operator=(RHS);
+                return (*this);
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<(std::is_same<TYPE, void*>::value), ThreadId&>::type
+            operator=(const TYPE& RHS)
+            {
+                String::operator=(Core::NumberType<uintptr_t, false, NumberBase::BASE_HEXADECIMAL>(reinterpret_cast<uintptr_t>(RHS)).Text());
+                return (*this);
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<(!std::is_same<TYPE, void*>::value), ThreadId&>::type
+            operator=(const TYPE RHS)
+            {
+                String::operator=(Core::NumberType<TYPE, false, NumberBase::BASE_HEXADECIMAL>(RHS).Text());
+                return (*this);
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<(std::is_same<TYPE, void*>::value), thread_id>::type
+            Default() const
+            {
+                return reinterpret_cast<thread_id>(Core::NumberType<uintptr_t, false, NumberBase::BASE_HEXADECIMAL>(String::Default().c_str(), static_cast<uint32_t>(String::Default().length())).Value());
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<!(std::is_same<TYPE, void*>::value), thread_id>::type
+            Default() const
+            {
+                return static_cast<thread_id>(Core::NumberType<uint64_t, false, NumberBase::BASE_HEXADECIMAL>(String::Default().c_str(), static_cast<uint32_t>(String::Default().length())).Value());
+            }
+
+            inline thread_id Default() const
+            {
+                return Default<thread_id>();
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<(std::is_same<TYPE, void*>::value), thread_id>::type
+            Value() const
+            {
+                return reinterpret_cast<thread_id>(Core::NumberType<uintptr_t, false, NumberBase::BASE_HEXADECIMAL>(String::Value().c_str(), static_cast<uint32_t>(String::Value().length())).Value());
+            }
+
+            template <typename TYPE>
+            inline typename std::enable_if<!(std::is_same<TYPE, void*>::value), thread_id>::type
+            Value() const
+            {
+                return static_cast<thread_id>(Core::NumberType<uint64_t, false, NumberBase::BASE_HEXADECIMAL>(String::Value().c_str(), static_cast<uint32_t>(String::Value().length())).Value());
+            }
+
+            inline thread_id Value() const
+            {
+                return Value<thread_id>();
+            }
+
+            inline operator thread_id() const
+            {
+                return Value();
+            }
+        };
+
+        typedef ThreadId Pointer;
 
         template <typename JSONOBJECT>
         class LabelType : public JSONOBJECT {

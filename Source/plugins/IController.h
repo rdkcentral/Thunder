@@ -270,7 +270,7 @@ namespace Controller {
             };
 
             struct Thread {
-                Core::instance_id Id /* @brief Thread ID */;
+                ::thread_id Id /* @brief Thread ID */;
                 string Job /* @brief Job name */;
                 uint32_t Runs /* @brief Number of runs */;
             };

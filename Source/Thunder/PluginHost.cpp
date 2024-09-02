@@ -298,6 +298,21 @@ POP_WARNING()
         return deviceId;
     }
 
+    template <typename TYPE>
+    inline typename std::enable_if<(std::is_same<TYPE, void*>::value), void>::type
+    PrintMetaData(const uint8_t index, const TYPE& workerId, const uint32_t runs)
+    {
+        printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(workerId), runs);
+    }
+
+    template <typename TYPE>
+    inline typename std::enable_if<(!std::is_same<TYPE, void*>::value), void>::type
+    PrintMetaData(const uint8_t index, const TYPE workerId, const uint32_t runs)
+    {
+        printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(workerId), runs);
+    }
+
+
     extern "C" {
 
 #ifndef __WINDOWS__
@@ -891,11 +906,7 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-#ifdef __APPLE__
-                           printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
-#else
-                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
-#endif
+                            PrintMetaData(index, metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
@@ -985,10 +996,10 @@ POP_WARNING()
                     case '7':
                     case '8': 
                     case '9': {
-                        ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
+                        ::thread_id threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
-                        if (threadId != (ThreadId)(~0)) {
+                        if (threadId != (::thread_id)(~0)) {
                             uint8_t counter = 0;
                             std::list<Core::callstack_info> stackList;
                             ::DumpCallStack(threadId, stackList);

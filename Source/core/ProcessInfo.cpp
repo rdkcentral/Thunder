@@ -686,30 +686,30 @@ namespace Core {
         EnumerateChildProcesses(processInfo, _processes);
     }
 
-    bool ProcessTree::ContainsProcess(ThreadId pid) const
+    bool ProcessTree::ContainsProcess(::thread_id pid) const
     {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        auto comparator = [pid](const ProcessInfo& processInfo) { return ((ThreadId)(processInfo.Id()) == pid); };
+        auto comparator = [pid](const ProcessInfo& processInfo) { return ((::thread_id)(processInfo.Id()) == pid); };
 POP_WARNING()
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
     }
 
-    void ProcessTree::GetProcessIds(std::list<ThreadId>& processIds) const
+    void ProcessTree::GetProcessIds(std::list<::thread_id>& processIds) const
     {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-            processIds.push_back((ThreadId)(process.Id()));
+            processIds.push_back((::thread_id)(process.Id()));
 POP_WARNING()
         }
     }
 
-    ThreadId ProcessTree::RootId() const
+    ::thread_id ProcessTree::RootId() const
     {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        return (ThreadId)(_processes.front().Id());
+        return (::thread_id)(_processes.front().Id());
 POP_WARNING()
     }
 

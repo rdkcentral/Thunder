@@ -50,7 +50,7 @@ namespace PluginHost {
             Add(_T("module"), &Module);
             Add(_T("line"), &Line);
 
-            Address = reinterpret_cast<Core::instance_id>(source.address);
+            Address = reinterpret_cast<::thread_id>(source.address);
             Function = source.function;
             if (source.module.empty() == false) {
                 Module = source.module;
@@ -123,7 +123,7 @@ namespace PluginHost {
 
             Callstack() 
                 : Core::JSON::Container()
-                , Id(0)
+                , Id()
                 , Data() {
                 Add(_T("id"), &Id);
                 Add(_T("stack"), &Data);

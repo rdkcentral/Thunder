@@ -147,7 +147,7 @@ static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* in
     }
 }
 
-uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
+uint32_t GetCallStack(const ::thread_id threadId, void* addresses[], const uint32_t bufferSize)
 {
     uint32_t result = 0;
 
@@ -159,7 +159,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
             }
             --result;
         }
-    } else if (threadId != (::ThreadId)(~0)) {
+    } else if (threadId != (::thread_id)(~0)) {
         while (std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire))
             ; // spin until acquired
 
@@ -196,7 +196,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
+void DumpCallStack(const ::thread_id threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
 #if defined(THUNDER_BACKTRACE)
     void* callstack[32];

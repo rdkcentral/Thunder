@@ -139,7 +139,7 @@ namespace PluginHost {
                 Minion& operator=(const Core::ThreadPool::Metadata&);
 
             public:
-                Core::JSON::InstanceId Id;
+                Core::JSON::ThreadId Id;
                 Core::JSON::String Job;
                 Core::JSON::DecUInt32 Runs;
             };

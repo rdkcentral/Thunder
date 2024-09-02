@@ -52,7 +52,7 @@ namespace Plugin {
 
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
-    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
+    void Controller::Callstack(const ::thread_id id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
         std::list<Core::callstack_info> stackList;
 
         ::DumpCallStack(id, stackList);
