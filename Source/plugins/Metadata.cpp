@@ -215,7 +215,7 @@ namespace PluginHost
 
     Metadata::Server::Minion::Minion() 
         : Core::JSON::Container()
-        , Id(0)
+        , Id()
         , Job()
         , Runs(0) {
         Add(_T("id"), &Id);
@@ -241,7 +241,7 @@ namespace PluginHost
         Add(_T("runs"), &Runs);
     }
     Metadata::Server::Minion& Metadata::Server::Minion::operator=(const Core::ThreadPool::Metadata& info) {
-        Id = (Core::instance_id)info.WorkerId;
+        Id = Metadata::InstanceId(info.WorkerId);
 
         Runs = info.Runs;
         if (info.Job.IsSet() == false) {

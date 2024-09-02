@@ -1017,7 +1017,6 @@ namespace Core {
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
         typedef NumberType<Core::instance_id, false, BASE_HEXADECIMAL> InstanceId;
-        typedef InstanceId Pointer;
 
         template <class TYPE>
         class FloatType : public IElement, public IMessagePack {

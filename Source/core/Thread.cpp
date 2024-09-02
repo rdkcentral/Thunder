@@ -132,14 +132,14 @@ namespace Core {
 #endif
     }
 
-    ::ThreadId Thread::ThreadId()
+    thread_id Thread::ThreadId()
     {
 #ifdef __WINDOWS__
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
         return (::GetCurrentThreadId());
 POP_WARNING()
 #else
-        return static_cast<::ThreadId>(pthread_self());
+        return static_cast<thread_id>(pthread_self());
 #endif
     }
 
