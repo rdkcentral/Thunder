@@ -32,7 +32,7 @@
 
 
 #ifdef PROCESSCONTAINERS_ENABLED
-#include <processcontainers/ProcessContainer.h>
+#include <processcontainers/processcontainers.h>
 #endif
 
 
@@ -823,15 +823,20 @@ namespace RPC {
 
                 ContainerConfig()
                     : Core::JSON::Container()
+                    , ContainerType(ProcessContainers::IContainer::LXC)
 #ifdef __DEBUG__
                     , ContainerPath()
 #endif
                 {
+                    Add(_T("containertype"), &ContainerType);
 #ifdef __DEBUG__
                     Add(_T("containerpath"), &ContainerPath);
 #endif
                 }
                 ~ContainerConfig() = default;
+
+            public:
+                Core::JSON::EnumType<ProcessContainers::IContainer::containertype> ContainerType;
 
 #ifdef __DEBUG__
                 Core::JSON::String ContainerPath;
@@ -850,33 +855,41 @@ namespace RPC {
                 : MonitorableProcess(instance.Callsign(), parent)
                 , _process(RemoteConnection::Id(), baseConfig, instance)
             {
-                ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-
-                std::vector<string> searchpaths(3);
-                searchpaths[0] = baseConfig.VolatilePath();
-                searchpaths[1] = baseConfig.PersistentPath();
-                searchpaths[2] = baseConfig.DataPath();
-
-#ifdef __DEBUG__
                 ContainerConfig config;
-                config.FromString(instance.Configuration());
 
-                if (config.ContainerPath.IsSet() == true) {
-                    searchpaths.emplace(searchpaths.cbegin(), config.ContainerPath.Value());
+                // Fetch container type
+                Core::OptionalType<Core::JSON::Error> error;
+                config.FromString(instance.Configuration(), error);
+
+                if (error.IsSet() == true) {
+                    TRACE_L1("Invalid process container configuration");
                 }
+                else {
+                    std::vector<string> searchPaths(3);
 
-#endif
+    #ifdef __DEBUG__
+                    if (config.ContainerPath.IsSet() == true) {
+                        searchPaths.push_back(config.ContainerPath.Value());
+                    }
+    #endif
 
-                Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
+                    searchPaths.push_back(baseConfig.VolatilePath());
+                    searchPaths.push_back(baseConfig.PersistentPath());
+                    searchPaths.push_back(baseConfig.DataPath());
 
-                string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
-                _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
+                    Core::IteratorType<std::vector<string>, const string> searchPathsIt(searchPaths);
+
+                    const string volatilePath(Core::Directory::Normalize(baseConfig.VolatilePath() + instance.Callsign()));
+
+                    _container = ProcessContainers::ContainerAdministrator::Instance().Container(config.ContainerType, instance.Callsign(),
+                                        searchPathsIt, volatilePath, instance.Configuration());
+                }
             }
 
             ~ContainerProcess() override
             {
-                if (_container != nullptr) {
-                    _container->Release();
+                if (_container.IsValid() == true) {
+                    _container.Release();
                 }
             }
 
@@ -885,7 +898,7 @@ namespace RPC {
             {
                 uint32_t result = Core::ERROR_GENERAL;
 
-                if (_container != nullptr) {
+                if (_container.IsValid() == true) {
 
                     // Note: replace below code with something more efficient when Iterators redesigned
                     Core::Process::Options::Iterator it(_process.Options());
@@ -954,7 +967,7 @@ namespace RPC {
             END_INTERFACE_MAP
 
         private:
-            ProcessContainers::IContainer* _container;
+            Core::ProxyType<ProcessContainers::IContainer> _container;
             Process _process;
         };
 
