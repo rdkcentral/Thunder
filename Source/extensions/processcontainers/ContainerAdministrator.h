@@ -77,20 +77,21 @@ namespace ProcessContainers {
         friend class ContainerProducerRegistrationType;
 
     private:
-        template<typename PRODUCER>
-        void Announce(const IContainer::containertype& type)
+        void Announce(const IContainer::containertype type, IContainerProducer* producer)
         {
+            ASSERT(producer != nullptr);
+
             _adminLock.Lock();
 
             ASSERT(_producers.find(type) == _producers.end());
 
             // Announce another container runtime...
-            _producers.emplace(type, new PRODUCER());
+            _producers.emplace(type, producer);
 
             _adminLock.Unlock();
         }
 
-        void Revoke(const IContainer::containertype& type)
+        void Revoke(const IContainer::containertype type)
         {
             _adminLock.Lock();
 
@@ -104,7 +105,7 @@ namespace ProcessContainers {
 
     private:
         mutable Core::CriticalSection _adminLock;
-        std::map<IContainer::containertype, std::unique_ptr<IContainerProducer>> _producers;
+        std::map<IContainer::containertype, IContainerProducer*> _producers;
         Core::ProxyListType<IContainer> _containers;
     };
 
