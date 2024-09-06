@@ -65,34 +65,6 @@ namespace Core {
         SharedBuffer& operator=(const SharedBuffer&) = delete;
 
     private:
-        class Semaphore {
-        private:
-            Semaphore() = delete;
-            Semaphore(const Semaphore&) = delete;
-            Semaphore& operator=(const Semaphore&) = delete;
-
-        public:
-#ifdef __WINDOWS__
-            Semaphore(const TCHAR name[]);
-#else
-            Semaphore(sem_t* storage);
-            //Semaphore(sem_t* storage, bool initialize) {
-            //}
-#endif
-            ~Semaphore();
-
-        public:
-            uint32_t Lock(const uint32_t waitTime);
-            uint32_t Unlock();
-            bool IsLocked();
-
-        private:
-#ifdef __WINDOWS__
-            HANDLE _semaphore;
-#else
-            sem_t* _semaphore;
-#endif
-        };
         struct Administration {
 
             uint32_t _bytesWritten;
@@ -215,8 +187,8 @@ namespace Core {
     private:
         DataElementFile _administrationBuffer;
         Administration* _administration;
-        Semaphore _producer;
-        Semaphore _consumer;
+        Core::BinairySemaphore _producer;
+        Core::BinairySemaphore _consumer;
         uint8_t* _customerAdministration;
     };
 }

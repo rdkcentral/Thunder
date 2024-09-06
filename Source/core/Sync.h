@@ -112,23 +112,22 @@ namespace Core {
     // ===========================================================================
     // class BinairySemaphore
     // ===========================================================================
-
-    class EXTERNAL BinairySemaphore {
+    class EXTERNAL BinarySemaphore {
     private:
-        BinairySemaphore() = delete;
-        BinairySemaphore(const BinairySemaphore&) = delete;
-        BinairySemaphore& operator=(const BinairySemaphore&) = delete;
+        BinarySemaphore() = delete;
+        BinarySemaphore(const BinarySemaphore&) = delete;
+        BinarySemaphore& operator=(const BinarySemaphore&) = delete;
 
     public: // Methods
-        BinairySemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
-        BinairySemaphore(bool blLocked);
-        ~BinairySemaphore();
+        BinarySemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
+        BinarySemaphore(bool blLocked);
+        ~BinarySemaphore();
 
         uint32_t Lock();
 
         // Time in milliseconds!
         uint32_t Lock(unsigned int nSeconds);
-        void Unlock();
+        uint32_t Unlock();
         bool Locked() const;
 
     protected: // Members
@@ -142,6 +141,9 @@ namespace Core {
         HANDLE m_syncMutex;
 #endif
     };
+
+    // For compatability reaons with old class name 
+    using BinairySemaphore = BinarySemaphore;
 
     // ===========================================================================
     // class CountingSemaphore

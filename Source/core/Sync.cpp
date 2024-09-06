@@ -271,7 +271,7 @@ namespace Core {
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
-    // BinairySemaphore class
+    // BinarySemaphore class
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -283,12 +283,12 @@ namespace Core {
     // sets the inital count an the maximum count. This way, on platform changes,
     // only the declaration/definition of the synchronisation object has to be defined
     // as being Binairy, not the coding.
-    BinairySemaphore::BinairySemaphore(unsigned int nInitialCount, unsigned int nMaxCount)
+    BinarySemaphore::BinarySemaphore(unsigned int nInitialCount, unsigned int nMaxCount)
     {
         DEBUG_VARIABLE(nMaxCount);
         ASSERT((nInitialCount == 0) || (nInitialCount == 1));
 
-        TRACE_L5("Constructor BinairySemaphore (int, int)  <%p>", (this));
+        TRACE_L5("Constructor BinarySemaphore (int, int)  <%p>", (this));
 
 #ifdef __POSIX__
         m_blLocked = (nInitialCount == 0);
@@ -323,12 +323,12 @@ namespace Core {
 #endif
     }
 
-    BinairySemaphore::BinairySemaphore(bool blLocked)
+    BinarySemaphore::BinarySemaphore(bool blLocked)
 #ifdef __POSIX__
         : m_blLocked(blLocked)
 #endif
     {
-        TRACE_L5("Constructor BinairySemaphore <%p>", (this));
+        TRACE_L5("Constructor BinarySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         pthread_condattr_t attr;
@@ -360,9 +360,9 @@ namespace Core {
 #endif
     }
 
-    BinairySemaphore::~BinairySemaphore()
+    BinarySemaphore::~BinarySemaphore()
     {
-        TRACE_L5("Destructor BinairySemaphore <%p>", (this));
+        TRACE_L5("Destructor BinarySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         // If we really create it, we really have to destroy it.
@@ -380,7 +380,7 @@ namespace Core {
     //----------------------------------------------------------------------------
 
     uint32_t
-    BinairySemaphore::Lock()
+    BinarySemaphore::Lock()
     {
 
 #ifdef __WINDOWS__
@@ -423,7 +423,7 @@ namespace Core {
     }
 
     uint32_t
-    BinairySemaphore::Lock(unsigned int nTime)
+    BinarySemaphore::Lock(unsigned int nTime)
     {
 #ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncMutex, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
@@ -482,8 +482,8 @@ namespace Core {
 #endif
     }
 
-    void
-    BinairySemaphore::Unlock()
+    uint32_t
+    BinarySemaphore::Unlock()
     {
 
 #ifdef __POSIX__
@@ -505,6 +505,7 @@ namespace Core {
 #ifdef __WINDOWS__
         ::ReleaseMutex(m_syncMutex);
 #endif
+        return ERROR_NONE;
     }
 
     //----------------------------------------------------------------------------
