@@ -187,8 +187,8 @@ namespace Core {
     private:
         DataElementFile _administrationBuffer;
         Administration* _administration;
-        Core::BinairySemaphore _producer;
-        Core::BinairySemaphore _consumer;
+        Core::BinarySemaphore _producer;
+        Core::BinarySemaphore _consumer;
         uint8_t* _customerAdministration;
     };
 }
