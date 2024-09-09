@@ -138,7 +138,8 @@ POP_WARNING()
         {
             Core::WorkerPool::Stop();
         }
-        void Idle() {
+        void Idle() override
+        {
             // If we handled all pending requests, it is safe to "unload"
             Core::ServiceAdministrator::Instance().FlushLibraries();
         }

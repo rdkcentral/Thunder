@@ -274,7 +274,7 @@ namespace Test {
 				HANDLE pipeHandle, pipeOutput;
 				TCHAR PipeNameBuffer[MAX_PATH];
 
-				sprintf(PipeNameBuffer,
+				snprintf(PipeNameBuffer, sizeof(PipeNameBuffer),
 					_T("\\\\.\\Pipe\\ThunderRedirectPipe.%08x.%08x"), Core::ProcessInfo().Id(), newIndex);
 
 				pipeHandle = CreateNamedPipeA(

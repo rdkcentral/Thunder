@@ -286,7 +286,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::Configuration(const string& callsign, string& configuration) const
+    Core::hresult Controller::Configuration(const Core::OptionalType<string>& callsign, string& configuration) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
         Core::ProxyType<PluginHost::IShell> service;
@@ -348,6 +348,28 @@ namespace Plugin {
             }
             else {
                 result = _pluginServer->Services().Clone(baseService, newcallsign, newService);
+            }
+        }
+
+        return result;
+    }
+
+    Core::hresult Controller::Destroy(const string& callsign)
+    {
+        Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if ((callsign.empty() == false) && (callsign != controllerName)) {
+            Core::ProxyType<PluginHost::IShell> service;
+
+            if (_pluginServer->Services().FromIdentifier(callsign, service) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else {
+                _pluginServer->Services().Destroy(callsign);
+                result = Core::ERROR_NONE;
             }
         }
 
@@ -504,11 +526,6 @@ namespace Plugin {
         else if (index.Current() == _T("Version")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata::Version>> response(jsonBodyVersionFactory.Element());
             _pluginServer->Metadata(*response);
-            result->Body(Core::ProxyType<Web::IBody>(response));
-        }
-        else if (index.Current() == _T("Proxies")) {
-            Core::ProxyType<Web::JSONBodyType<Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>>> response(jsonBodyProxiesFactory.Element());
-            Proxies(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
         }
 
@@ -713,29 +730,6 @@ namespace Plugin {
         }
     }
 
-    void Controller::Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& response) const {
-        RPC::Administrator::Instance().Visit([&](const RPC::Administrator::Proxies& proxies)
-            {
-                PluginHost::Metadata::COMRPC& entry(response.Add());
-                const Core::SocketPort* connection = proxies.front()->Socket();
-
-                if (connection != nullptr) {
-                    entry.Remote = PluginHost::ChannelIdentifier(*connection);
-                }
-
-                for (const auto& proxy : proxies) {
-                    PluginHost::Metadata::COMRPC::Proxy& info(entry.Proxies.Add());
-                    info.Instance = proxy->Implementation();
-                    info.Interface = proxy->InterfaceId();
-                    info.Name = Core::ClassName(proxy->Name()).Text();
-                    // Subtract one for the Thunder syatem that keeps track of this
-                    //proxy for leakage reporting!
-                    info.Count = proxy->ReferenceCount() - 1;
-                }
-            }
-        );
-    }
-
     void Controller::SubSystems()
     {
         PluginHost::Metadata response;
@@ -816,6 +810,9 @@ namespace Plugin {
                         result = dispatcher->Invoke(channelId, id, token, method, parameters, response);
 
                         dispatcher->Release();
+                    } else {
+                        TRACE_L1("IDispatcher is not available for %s plugin", callsign.c_str());
+                        result = Core::ERROR_BAD_REQUEST;
                     }
                 }
             }
@@ -1038,7 +1035,7 @@ namespace Plugin {
         return result;
     }
 
-    Core::hresult Controller::StartDiscovery(const uint8_t ttl)
+    Core::hresult Controller::StartDiscovery(const Core::OptionalType<uint8_t>& ttl)
     {
         if (_probe != nullptr) {
             _probe->Ping(ttl);
@@ -1055,7 +1052,15 @@ namespace Plugin {
             Probe::Iterator index(_probe->Instances());
 
             while (index.Next() == true) {
-                results.push_back({ (*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure() });
+                IDiscovery::Data::DiscoveryResult result;
+                result.Locator = (*index).URL().Text();
+                result.Latency = (*index).Latency();
+                result.Secure = (*index).IsSecure();
+                if ((*index).Model().empty() == false) {
+                    result.Model = (*index).Model();
+                }
+
+                results.push_back(std::move(result));
             }
         }
 
@@ -1072,63 +1077,44 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Services(const string& callsign, IMetadata::Data::IServicesIterator*& outServices) const
+    Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
         std::list<IMetadata::Data::Service> services;
 
-        auto _Populate = [&services, this](const string& callsign, PluginHost::IShell* shell) -> void {
-
-            string info;
-            IMetadata::Data::Service service{};
-
-            if (shell->Metadata(info) == Core::ERROR_NONE) {
-                PluginHost::Metadata::Service meta;
-                meta.FromString(info);
-
-
-                service.Callsign = meta.Callsign;
-                service.Locator = meta.Locator;
-                service.ClassName = meta.ClassName;
-                service.Module = meta.Module;
-                service.StartMode = meta.StartMode;
-                service.State = meta.JSONState;
-                service.Version = meta.ServiceVersion;
-                service.Communicator = meta.Communicator;
-                service.PersistentPathPostfix = meta.PersistentPathPostfix;
-                service.VolatilePathPostfix = meta.VolatilePathPostfix;
-                service.SystemRootPath = meta.SystemRootPath;
-                service.Configuration = meta.Configuration;
-                service.Precondition = meta.Precondition;
-                service.Termination = meta.Termination;
-                service.Observers = meta.Observers;
-
-                #if THUNDER_RUNTIME_STATISTICS
-                service.ProcessedRequests = meta.ProcessedRequests;
-                service.ProcessedObjects = meta.ProcessedObjects;
-                #endif
-
-                // Make sure the list is sorted..
-                std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                while ((index != services.end()) && (index->Callsign < callsign)) {
-                    index++;
-                }
-                services.insert(index, service);
-            }
-        };
-
-        if (callsign.empty() == true) {
+        if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
-                _Populate(it.Current()->Callsign(), it.Current().operator->());
+                string info;
+                const string& callsign(it.Current()->Callsign());
+
+                if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
+                    PluginHost::Metadata::Service meta;
+                    meta.FromString(info);
+                    IMetadata::Data::Service service(meta);
+
+                    // Make sure the list is sorted..
+                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
+                    while ((index != services.end()) && (index->Callsign < callsign)) {
+                        index++;
+                    }
+                    services.insert(index, service);
+                }
             }
         }
         else {
             PluginHost::IShell* shell = _service->QueryInterfaceByCallsign<PluginHost::IShell>(callsign);
             if (shell != nullptr) {
-                _Populate(callsign, shell);
-                shell->Release();
+                string info;
+                if (shell->Metadata(info) == Core::ERROR_NONE) {
+                    PluginHost::Metadata::Service meta;
+                    meta.FromString(info);
+                    services.push_back(IMetadata::Data::Service(meta));
+                }
+            }
+            else {
+                result = Core::ERROR_UNKNOWN_KEY;
             }
         }
 
@@ -1161,8 +1147,19 @@ namespace Plugin {
             std::list<IMetadata::Data::CallStack> callstack;
 
             for (const Core::callstack_info& entry : callStackInfo) {
-                callstack.push_back({ reinterpret_cast<Core::instance_id>(entry.address), entry.function, entry.module,
-                                      (entry.line != static_cast<uint32_t>(~0)? entry.line : 0) });
+                IMetadata::Data::CallStack cs;
+                cs.Address = reinterpret_cast<Core::instance_id>(entry.address);
+                cs.Module = entry.module;
+
+                if (entry.function.empty() == false) {
+                    cs.Function = entry.function;
+                }
+
+                if (entry.line != static_cast<uint32_t>(~0)) {
+                    cs.Line = entry.line;
+                }
+
+                callstack.push_back(std::move(cs));
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
@@ -1194,7 +1191,18 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 auto const& entry = it.Current();
-                links.push_back({ entry.Remote.Value(), entry.JSONState.Value(), entry.Name.Value(), entry.ID.Value(), entry.Activity.Value() });
+
+                IMetadata::Data::Link link;
+                link.Remote = entry.Remote;
+                link.State = entry.State;
+                link.Id = entry.ID;
+                link.Activity = entry.Activity;
+
+                if (entry.Name.Value().empty() == false) {
+                    link.Name = entry.Name;
+                }
+
+                links.push_back(std::move(link));
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
@@ -1213,54 +1221,29 @@ namespace Plugin {
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        Core::JSON::ArrayType<PluginHost::Metadata::Channel> meta;
-       _pluginServer->Services().GetMetadata(meta);
+        RPC::Administrator::Proxies collection;
 
-        Core::JSON::ArrayType<PluginHost::Metadata::COMRPC> comrpc;
-        Proxies(comrpc);
+        // Search for the Dangling proxies
+        if (RPC::Administrator::Instance().Allocations(linkId, collection) == true) {
 
-        string link;
-        std::list<IMetadata::Data::Proxy> proxies;
-
-        auto it = meta.Elements();
-
-        while (it.Next() == true) {
-
-            if (it.Current().ID.Value() == linkId) {
-                link = it.Current().Remote.Value();
-                break;
-            }
-        }
-
-        if (link.empty() == false) {
-            auto it = comrpc.Elements();
-
-            while (it.Next() == true) {
-
-                if (it.Current().Remote.Value() == link) {
-                    auto it2 = it.Current().Proxies.Elements();
-
-                    while (it2.Next() == true) {
-                        auto const& entry = it2.Current();
-
-                        proxies.push_back({ entry.Interface.Value(), entry.Name.Value(), entry.Instance.Value(), entry.Count.Value() });
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        if (proxies.empty() == false) {
             using Iterator = IMetadata::Data::IProxiesIterator;
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(proxies);
+            std::list< IMetadata::Data::Proxy> elements;
+
+            for (const ProxyStub::UnknownProxy* proxy : collection) {
+                IMetadata::Data::Proxy data;
+                data.Instance = proxy->Implementation();
+                data.Interface = proxy->InterfaceId();
+                data.Count = proxy->ReferenceCount();
+                data.Name = proxy->Name();
+
+                elements.emplace_back(std::move(data));
+            }
+
+            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(elements));
             ASSERT(outProxies != nullptr);
 
             result = Core::ERROR_NONE;
-        }
-        else {
-            outProxies = nullptr;
         }
 
         return (result);
@@ -1382,6 +1365,89 @@ namespace Plugin {
 
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+    }
+
+    Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
+    {   
+        #if defined(__WINDOWS__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_WINDOWS;
+        #elif defined(__LINUX__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_LINUX;
+        #elif defined(__APPLE__)
+            buildInfo.SystemType = IMetadata::Data::BuildInfo::SYSTEM_MACOS;
+        #else
+            #error No system type detected
+        #endif
+
+        #if defined(__DEBUG__)
+            #if defined(_THUNDER_DEBUG_OPTIMIZED_)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG_OPTIMIZED;
+            #else
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::DEBUG;
+            #endif
+        #else // !__DEBUG__
+            #if defined(_THUNDER_NDEBUG_DEB_INFO)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE_WITH_DEBUG_INFO;
+            #elif defined(_THUNDER_PRODUCTION)
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::PRODUCTION;
+            #else
+                buildInfo.BuildType = IMetadata::Data::BuildInfo::RELEASE;
+            #endif
+        #endif
+
+        #ifdef _TRACE_LEVEL
+            buildInfo.TraceLevel = _TRACE_LEVEL;
+        #endif
+
+        uint8_t extensions = 0;
+        #ifdef __CORE_WARNING_REPORTING__
+            extensions |= IMetadata::Data::BuildInfo::WARNING_REPORTING;
+        #endif
+        #ifdef __CORE_BLUETOOTH_SUPPORT__
+            extensions |= IMetadata::Data::BuildInfo::BLUETOOTH;
+        #endif
+        #ifdef HIBERNATE_SUPPORT_ENABLED
+            extensions |= IMetadata::Data::BuildInfo::HIBERNATE;
+        #endif
+        #ifdef PROCESSCONTAINERS_ENABLED
+            extensions |= IMetadata::Data::BuildInfo::PROCESS_CONTAINERS;
+        #endif
+        
+        if (extensions != 0) {
+            buildInfo.Extensions = static_cast<IMetadata::Data::BuildInfo::extensiontype>(extensions);
+        }
+
+        #ifdef __CORE_MESSAGING__
+            buildInfo.Messaging = true;
+        #else
+            buildInfo.Messaging= false;
+        #endif
+
+        #ifdef __CORE_EXCEPTION_CATCHING__
+            buildInfo.ExceptionCatching = true;
+        #else
+            buildInfo.ExceptionCatching = false;
+        #endif
+
+        buildInfo.InstanceIDBits = (sizeof(Core::instance_id) * 8);
+       
+        #ifdef __CORE_CRITICAL_SECTION_LOG__
+            buildInfo.DeadlockDetection = true;
+        #else
+            buildInfo.DeadlockDetection = false;
+        #endif
+     
+        #ifdef __CORE_NO_WCHAR_SUPPORT__
+            buildInfo.WCharSupport = false;
+        #else
+            buildInfo.WCharSupport = true;
+        #endif
+
+        #ifdef THREADPOOL_COUNT
+            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
+        #endif
+
+        return (Core::ERROR_NONE);
     }
 }
 }

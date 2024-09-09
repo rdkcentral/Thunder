@@ -398,7 +398,6 @@ namespace PluginHost {
         {
             _errorMessage = message;
         }
-
         #if THUNDER_RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
         {

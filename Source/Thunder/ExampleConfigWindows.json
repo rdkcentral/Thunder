@@ -3,16 +3,16 @@
   "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Domotica/artifacts/Persistent",
-  "volatilepath": "D:/Domotica/artifacts/temp",
-  "datapath": "D:/Domotica/artifacts/Debug/Plugins",
-  "systempath": "D:/Domotica/artifacts/Debug",
-  "proxystubpath": "D:/Domotica/artifacts/ProxyStubs/Debug",
+  "persistentpath": "C:/ThunderWin/artifacts/Persistent",
+  "volatilepath": "C:/ThunderWin/artifacts/temp",
+  "datapath": "C:/ThunderWin/artifacts/Debug/Plugins",
+  "systempath": "C:/ThunderWin/artifacts/Debug",
+  "proxystubpath": "C:/ThunderWin/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "observe": {
-    "proxystubpath": "D:/Domotica/artifacts/dynamic/proxystubs",
-    "configpath": "D:/Domotica/artifacts/dynamic/config"
+    "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
+    "configpath": "C:/ThunderWin/artifacts/dynamic/config"
   },
   "messaging": {
     "port": 63000,
@@ -411,7 +411,10 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "startmode": "Deactivated"
+      "startmode": "Deactivated",
+      "root": {
+        "mode": "Local"
+      }
     },
     {
       "callsign": "OpenCDMi",

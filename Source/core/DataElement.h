@@ -285,7 +285,9 @@ namespace Core {
                 m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
 
                 if (adjust != 0) {
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
                     TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!", adjust, m_Buffer);
+POP_WARNING()
                 }
             }
         }

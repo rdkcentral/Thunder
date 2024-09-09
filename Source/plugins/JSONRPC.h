@@ -736,8 +736,6 @@ namespace PluginHost {
             return (Core::ERROR_NONE);
         }
 
-        // Inherited via IDispatcher::ICallback
-        // ---------------------------------------------------------------------------------
         void Dropped(const IDispatcher::ICallback* callback) override {
             _adminLock.Lock();
 

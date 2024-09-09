@@ -486,17 +486,17 @@ POP_WARNING()
         }
 
     public:
-        static const TCHAR* GET;
-        static const TCHAR* HEAD;
-        static const TCHAR* POST;
-        static const TCHAR* PUT;
-        static const TCHAR* DELETE;
-        static const TCHAR* OPTIONS;
-        static const TCHAR* TRACE;
-        static const TCHAR* CONNECT;
-        static const TCHAR* PATCH;
-        static const TCHAR* MSEARCH;
-        static const TCHAR* NOTIFY;
+        static const TCHAR GET[];
+        static const TCHAR HEAD[];
+        static const TCHAR POST[];
+        static const TCHAR PUT[];
+        static const TCHAR DELETE[];
+        static const TCHAR OPTIONS[];
+        static const TCHAR TRACE[];
+        static const TCHAR CONNECT[];
+        static const TCHAR PATCH[];
+        static const TCHAR MSEARCH[];
+        static const TCHAR NOTIFY[];
 
         static const TCHAR* ToString(const type value);
         static void ToString(const Request& realObject, string& text)
@@ -513,7 +513,7 @@ POP_WARNING()
                 ~SerializerImpl() override = default;
 
             public:
-                virtual void Serialized(const Request& /* element */)
+                void Serialized(const Request& /* element */) override
                 {
                     _ready = true;
                 }
@@ -555,18 +555,18 @@ POP_WARNING()
 
             public:
                 // The whole request object is deserialised..
-                virtual void Deserialized(Web::Request& element VARIABLE_IS_NOT_USED)
+                void Deserialized(Web::Request& element VARIABLE_IS_NOT_USED) override
                 {
                 }
 
                 // We need a request object to be able to fill it with info
-                virtual Web::Request* Element()
+                Web::Request* Element() override
                 {
                     return (&_destination);
                 }
 
                 // We reached the body, link a proper body to the response..
-                virtual bool LinkBody(Web::Request& request)
+                bool LinkBody(Web::Request& request) override
                 {
                     return (request.HasBody());
                 }

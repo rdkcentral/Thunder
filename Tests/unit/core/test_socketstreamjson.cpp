@@ -32,21 +32,22 @@
 
 namespace Thunder {
 namespace Tests {
+namespace Core {
 
-    enum class CommandType {
+    enum class CommandTypeSocketStreamJSON {
         EXECUTESHELL,
         WIFISETTINGS,
         FANCONTROL,
         PLAYERCONTROL
     };
 
-    class Parameters : public Core::JSON::Container {
+    class Parameters : public ::Thunder::Core::JSON::Container {
     public:
         Parameters(const Parameters&) = delete;
         Parameters& operator=(const Parameters&) = delete;
 
         Parameters()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Speed(0)
             , Duration(0)
             , Command()
@@ -63,19 +64,19 @@ namespace Tests {
         }
 
     public:
-        Core::JSON::OctSInt16 Speed;
-        Core::JSON::DecUInt16 Duration;
-        Core::JSON::EnumType<CommandType> Command;
-        Core::JSON::ArrayType<Core::JSON::DecUInt16> Settings;
+        ::Thunder::Core::JSON::OctSInt16 Speed;
+        ::Thunder::Core::JSON::DecUInt16 Duration;
+        ::Thunder::Core::JSON::EnumType<CommandTypeSocketStreamJSON> Command;
+        ::Thunder::Core::JSON::ArrayType<::Thunder::Core::JSON::DecUInt16> Settings;
     };
 
-    class Command : public Core::JSON::Container {
+    class Command : public ::Thunder::Core::JSON::Container {
     public:
         Command(const Command&) = delete;
         Command& operator=(const Command&) = delete;
 
         Command()
-            : Core::JSON::Container()
+            : ::Thunder::Core::JSON::Container()
             , Identifier(0)
             , Name()
             , BaseAddress(0)
@@ -94,20 +95,20 @@ namespace Tests {
         }
 
     public:
-        Core::JSON::DecUInt32 Identifier;
-        Core::JSON::String Name;
-        Core::JSON::HexUInt32 BaseAddress;
-        Core::JSON::Boolean TrickFlag;
+        ::Thunder::Core::JSON::DecUInt32 Identifier;
+        ::Thunder::Core::JSON::String Name;
+        ::Thunder::Core::JSON::HexUInt32 BaseAddress;
+        ::Thunder::Core::JSON::Boolean TrickFlag;
         Parameters Params;
     };
 
-    class JSONObjectFactory : public Core::ProxyPoolType<Command> {
+    class JSONObjectFactory : public ::Thunder::Core::ProxyPoolType<Command> {
     public:
         JSONObjectFactory() = delete;
         JSONObjectFactory(const JSONObjectFactory&) = delete;
         JSONObjectFactory& operator= (const JSONObjectFactory&) = delete;
 
-        JSONObjectFactory(const uint32_t number) : Core::ProxyPoolType<Command>(number)
+        JSONObjectFactory(const uint32_t number) : ::Thunder::Core::ProxyPoolType<Command>(number)
         {
         }
 
@@ -116,23 +117,23 @@ namespace Tests {
         }
 
     public:
-        Core::ProxyType<Core::JSON::IElement> Element(const string&)
+        ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement> Element(const string&)
         {
-            return (Core::ProxyType<Core::JSON::IElement>(Core::ProxyPoolType<Command>::Element()));
+            return (::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(::Thunder::Core::ProxyPoolType<Command>::Element()));
         }
     };
 
     template<typename INTERFACE>
-    class JSONConnector : public Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&, INTERFACE> {
+    class JSONConnector : public ::Thunder::Core::StreamJSONType<::Thunder::Core::SocketStream, JSONObjectFactory&, INTERFACE> {
     private:
-        typedef Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&, INTERFACE> BaseClass;
+        typedef ::Thunder::Core::StreamJSONType<::Thunder::Core::SocketStream, JSONObjectFactory&, INTERFACE> BaseClass;
 
     public:
         JSONConnector() = delete;
         JSONConnector(const JSONConnector& copy) = delete;
         JSONConnector& operator=(const JSONConnector&) = delete;
 
-        JSONConnector(const Core::NodeId& remoteNode)
+        JSONConnector(const ::Thunder::Core::NodeId& remoteNode)
             : BaseClass(5, _objectFactory, false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _serverSocket(false)
             , _dataPending(false, false)
@@ -140,7 +141,7 @@ namespace Tests {
         {
         }
 
-        JSONConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONConnector<INTERFACE>>*)
+        JSONConnector(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<JSONConnector<INTERFACE>>*)
             : BaseClass(5, _objectFactory, false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
             , _dataPending(false, false)
@@ -153,7 +154,7 @@ namespace Tests {
         }
 
     public:
-        virtual void Received(Core::ProxyType<Core::JSON::IElement>& newElement)
+        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
         {
             string textElement;
             newElement->ToString(textElement);
@@ -166,7 +167,7 @@ namespace Tests {
             }
         }
 
-        virtual void Send(Core::ProxyType<Core::JSON::IElement>& newElement)
+        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
         {
         }
 
@@ -186,7 +187,7 @@ namespace Tests {
             return (true);
         }
 
-        int Wait() const
+        uint32_t Wait() const
         {
             return _dataPending.Lock();
         }
@@ -205,7 +206,7 @@ namespace Tests {
     private:
         bool _serverSocket;
         string _dataReceived;
-        mutable Core::Event _dataPending;
+        mutable ::Thunder::Core::Event _dataPending;
         JSONObjectFactory _objectFactory;
         static bool _done;
 
@@ -223,55 +224,81 @@ namespace Tests {
 
     TEST(Core_Socket, StreamJSON)
     {
-        std::string connector = "/tmp/wpestreamjson0";
-        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(connector.c_str()));
-            jsonSocketServer.Open(Core::infinite);
-            testAdmin.Sync("setup server");
-            std::unique_lock<std::mutex> lk(JSONConnector<Core::JSON::IElement>::_mutex);
-            while (!JSONConnector<Core::JSON::IElement>::GetState()) {
-                JSONConnector<Core::JSON::IElement>::_cv.wait(lk);
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
+
+        const std::string connector = "/tmp/wpestreamjson0";
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ::Thunder::Core::SocketServerType<JSONConnector<::Thunder::Core::JSON::IElement>> jsonSocketServer(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(jsonSocketServer.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            std::unique_lock<std::mutex> lk(JSONConnector<::Thunder::Core::JSON::IElement>::_mutex);
+
+            while (!JSONConnector<::Thunder::Core::JSON::IElement>::GetState()) {
+                JSONConnector<::Thunder::Core::JSON::IElement>::_cv.wait(lk);
             }
 
-            testAdmin.Sync("client open");
-            testAdmin.Sync("client done");
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(jsonSocketServer.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
 
-        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // a small delay so the child can be set up
+            SleepMs(maxInitTime);
 
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
-        IPTestAdministrator testAdmin(otherSide);
-        testAdmin.Sync("setup server");
-        {
-            Core::ProxyType<Command> sendObject = Core::ProxyType<Command>::Create();
+            ::Thunder::Core::ProxyType<Command> sendObject = ::Thunder::Core::ProxyType<Command>::Create();
+            ASSERT_TRUE(sendObject.IsValid());
+
             sendObject->Identifier = 1;
             sendObject->Name = _T("TestCase");
             sendObject->Params.Duration = 100;
+        
             std::string sendString;
-            sendObject->ToString(sendString);
+            EXPECT_TRUE(sendObject->ToString(sendString));
 
-            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(connector.c_str()));
-            jsonSocketClient.Open(Core::infinite);
-            testAdmin.Sync("client open");
-            jsonSocketClient.Submit(Core::ProxyType<Core::JSON::IElement>(sendObject));
-            jsonSocketClient.Wait();
+            JSONConnector<::Thunder::Core::JSON::IElement> jsonSocketClient(::Thunder::Core::NodeId(connector.c_str()));
+
+            ASSERT_EQ(jsonSocketClient.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            jsonSocketClient.Submit(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>(sendObject));
+        
+            EXPECT_EQ(jsonSocketClient.Wait(), ::Thunder::Core::ERROR_NONE);
+
             string received;
             jsonSocketClient.Retrieve(received);
+
             EXPECT_STREQ(sendString.c_str(), received.c_str());
-            jsonSocketClient.Close(Core::infinite);
-            testAdmin.Sync("client done");
-       }
-       Core::Singleton::Dispose();
+
+            EXPECT_EQ(jsonSocketClient.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
 
+} // Core
 } // Tests
 
-ENUM_CONVERSION_BEGIN(Tests::CommandType)
-    { Tests::CommandType::EXECUTESHELL, _TXT("ExecuteShell") },
-    { Tests::CommandType::WIFISETTINGS, _TXT("WiFiSettings") },
-    { Tests::CommandType::FANCONTROL, _TXT("FanControl") },
-    { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
-ENUM_CONVERSION_END(Tests::CommandType)
+ENUM_CONVERSION_BEGIN(Tests::Core::CommandTypeSocketStreamJSON)
+    { Tests::Core::CommandTypeSocketStreamJSON::EXECUTESHELL, _TXT("ExecuteShell") },
+    { Tests::Core::CommandTypeSocketStreamJSON::WIFISETTINGS, _TXT("WiFiSettings") },
+    { Tests::Core::CommandTypeSocketStreamJSON::FANCONTROL, _TXT("FanControl") },
+    { Tests::Core::CommandTypeSocketStreamJSON::PLAYERCONTROL, _TXT("PlayerControl") },
+ENUM_CONVERSION_END(Tests::Core::CommandTypeSocketStreamJSON)
 
 } // Thunder

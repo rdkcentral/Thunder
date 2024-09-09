@@ -51,3 +51,6 @@
 #ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")
 #endif
+
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Plugin)
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(PluginHost)

@@ -180,11 +180,11 @@ namespace Thunder {
             }
             inline string LocalId() const
             {
-                return (m_LocalNode.HostAddress());
+                return (Identifier(m_LocalNode));
             }
             inline string RemoteId() const
             {
-                return (m_RemoteNode.HostAddress());
+                return (Identifier(m_RemoteNode));
             }
             inline const NodeId& ReceivedNode() const
             {
@@ -266,6 +266,7 @@ namespace Thunder {
             }
 
         private:
+            string Identifier(const NodeId& node) const;
             IResource::handle Descriptor() const override
             {
                 return (static_cast<IResource::handle>(m_Socket));
@@ -356,14 +357,6 @@ namespace Thunder {
             }
 
             ~SocketStream() override = default;
-
-        public:
-            // Methods to extract and insert data into the socket buffers
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) = 0;
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) = 0;
-
-            // Signal a state change, Opened, Closed or Accepted
-            virtual void StateChange() = 0;
         };
 
         class EXTERNAL SocketDatagram : public SocketPort {
@@ -396,14 +389,6 @@ namespace Thunder {
             ~SocketDatagram() override
             {
             }
-
-        public:
-            // Methods to extract and insert data into the socket buffers
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) = 0;
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) = 0;
-
-            // Signal a state change, Opened, Closed or Accepted
-            virtual void StateChange() = 0;
         };
 
         class EXTERNAL SocketListner {
@@ -434,21 +419,21 @@ namespace Thunder {
                 {
                     SocketPort::LocalNode(localNode);
                 }
-                virtual uint16_t SendData(uint8_t* /* dataFrame */, const uint16_t /* maxSendSize */)
+                uint16_t SendData(uint8_t* /* dataFrame */, const uint16_t /* maxSendSize */) override
                 {
                     // This should not happen on this socket !!!!!
                     ASSERT(false);
 
                     return (0);
                 }
-                virtual uint16_t ReceiveData(uint8_t* /* dataFrame */, const uint16_t /* receivedSize */)
+                uint16_t ReceiveData(uint8_t* /* dataFrame */, const uint16_t /* receivedSize */) override
                 {
                     // This should not happen on this socket !!!!!
                     ASSERT(false);
 
                     return (0);
                 }
-                virtual void StateChange()
+                void StateChange() override
                 {
                     SOCKET newClient;
                     NodeId remoteId;

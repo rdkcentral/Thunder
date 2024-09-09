@@ -59,7 +59,16 @@ namespace Messaging {
         void RemoveFactory(Core::Messaging::Metadata::type type);
 
     private:
-        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
+        struct enumHash
+        {
+            template <typename T>
+            std::size_t operator()(T t) const
+            {
+                return static_cast<std::size_t>(t);
+            }
+        };
+
+        using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*, enumHash>;
         using Clients = std::map<uint32_t, MessageUnit::Client>;
 
         mutable Core::CriticalSection _adminLock;

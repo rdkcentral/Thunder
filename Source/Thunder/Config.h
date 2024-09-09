@@ -362,46 +362,6 @@ namespace PluginHost {
                 Core::JSON::String PluginConfigPath;
             };
 
-#ifdef PROCESSCONTAINERS_ENABLED
-
-            class ProcessContainerConfig : public Core::JSON::Container {
-            public:
-                ProcessContainerConfig()
-                    : Logging(_T("NONE"))
-                {
-
-                    Add(_T("logging"), &Logging);
-                }
-                ProcessContainerConfig(const ProcessContainerConfig& copy)
-                    : Logging(copy.Logging)
-                {
-                    Add(_T("logging"), &Logging);
-                }
-                ProcessContainerConfig(ProcessContainerConfig&& move) noexcept
-                    : Logging(std::move(move.Logging))
-                {
-                    Add(_T("logging"), &Logging);
-                }
-                ~ProcessContainerConfig() override = default;
-
-                ProcessContainerConfig& operator=(const ProcessContainerConfig& RHS)
-                {
-                    Logging = RHS.Logging;
-                    return (*this);
-                }
-                ProcessContainerConfig& operator=(ProcessContainerConfig&& move) noexcept
-                {
-                    if (this != &move) {
-                        Logging = std::move(move.Logging);
-                    }
-                    return (*this);
-                }
-
-                Core::JSON::String Logging;
-            };
-
-#endif
-
 #ifdef HIBERNATE_SUPPORT_ENABLED
             class HibernateConfig : public Core::JSON::Container {
             public:
@@ -472,6 +432,7 @@ namespace PluginHost {
                 , IdleTime(0)
                 , SoftKillCheckWaitTime(10)
                 , HardKillCheckWaitTime(4)
+                , OutOfProcessWaitTime(3)
                 , IPV6(false)
                 , LegacyInitialize(false)
                 , DefaultMessagingCategories(false)
@@ -510,6 +471,7 @@ namespace PluginHost {
                 Add(_T("idletime"), &IdleTime);
                 Add(_T("softkillcheckwaittime"), &SoftKillCheckWaitTime);
                 Add(_T("hardkillcheckwaittime"), &HardKillCheckWaitTime);
+                Add(_T("outofprocesswaittime"), &OutOfProcessWaitTime);
                 Add(_T("ipv6"), &IPV6);
                 Add(_T("legacyinitialize"), &LegacyInitialize);
                 Add(_T("messaging"), &DefaultMessagingCategories);
@@ -555,6 +517,7 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
             Core::JSON::DecUInt8 SoftKillCheckWaitTime;
             Core::JSON::DecUInt8 HardKillCheckWaitTime;
+            Core::JSON::DecUInt8 OutOfProcessWaitTime;
             Core::JSON::Boolean IPV6;
             Core::JSON::Boolean LegacyInitialize;
             Core::JSON::String DefaultMessagingCategories; 
@@ -569,7 +532,7 @@ namespace PluginHost {
             Core::JSON::DecSInt32 Longitude;
             Core::JSON::Boolean DelegatedReleases;
 #ifdef PROCESSCONTAINERS_ENABLED
-            ProcessContainerConfig ProcessContainers;
+            Core::JSON::String ProcessContainers;
 #endif
             Core::JSON::ArrayType<Core::JSON::String> LinkerPluginPaths;
             Observables Observe;
@@ -725,6 +688,7 @@ namespace PluginHost {
             , _idleTime(180)
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
+            , _outOfProcessWaitTime(3000)
             , _stackSize(0)
             , _inputInfo()
             , _processInfo()
@@ -733,13 +697,13 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
-            #ifdef PROCESSCONTAINERS_ENABLED
-            , _ProcessContainersLogging()
-            #endif
+#ifdef PROCESSCONTAINERS_ENABLED
+            , _processContainersConfig()
+#endif
             , _linkerPluginPaths()
-            #ifdef HIBERNATE_SUPPORT_ENABLED
+#ifdef HIBERNATE_SUPPORT_ENABLED
             , _hibernateLocator()
-            #endif
+#endif
         {
             JSONConfig config;
 
@@ -750,7 +714,7 @@ namespace PluginHost {
                 _webPrefix = '/' + _prefix;
                 _JSONRPCPrefix = '/' + config.JSONRPC.Value();
 #ifdef PROCESSCONTAINERS_ENABLED
-                _ProcessContainersLogging = config.ProcessContainers.Logging.Value();
+                _processContainersConfig = config.ProcessContainers.Value();
 #endif
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 _hibernateLocator = config.Hibernate.Locator.Value();
@@ -773,6 +737,7 @@ namespace PluginHost {
                 _idleTime = config.IdleTime.Value();
                 _softKillCheckWaitTime = config.SoftKillCheckWaitTime.Value();
                 _hardKillCheckWaitTime = config.HardKillCheckWaitTime.Value();
+                _outOfProcessWaitTime = config.OutOfProcessWaitTime.Value() * 1000; // Move to milliseconds
                 _IPV6 = config.IPV6.Value();
                 _legacyInitialize = config.LegacyInitialize.Value();
                 _binding = config.Binding.Value();
@@ -877,8 +842,8 @@ POP_WARNING()
             return (_JSONRPCPrefix);
         } 
 #ifdef PROCESSCONTAINERS_ENABLED
-        inline const string& ProcessContainersLogging() const {
-            return (_ProcessContainersLogging);
+        inline const string& ProcessContainersConfig() const {
+            return (_processContainersConfig);
         }
 #endif
 
@@ -974,6 +939,9 @@ POP_WARNING()
         }
         inline uint8_t HardKillCheckWaitTime() const {
             return _hardKillCheckWaitTime;
+        }
+        inline uint16_t OutOfProcessWaitTime() const {
+            return _outOfProcessWaitTime;
         }
         inline const string& URL() const {
             return (_URL);
@@ -1156,6 +1124,7 @@ POP_WARNING()
         uint16_t _idleTime;
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
+        uint16_t _outOfProcessWaitTime;
         uint32_t _stackSize;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
@@ -1166,7 +1135,7 @@ POP_WARNING()
         bool _delegatedReleases;
 
 #ifdef PROCESSCONTAINERS_ENABLED
-        string _ProcessContainersLogging;
+        string _processContainersConfig;
 #endif
         std::vector<std::string> _linkerPluginPaths;
 #ifdef HIBERNATE_SUPPORT_ENABLED

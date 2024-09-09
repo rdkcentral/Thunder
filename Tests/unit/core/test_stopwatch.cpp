@@ -25,68 +25,73 @@
 
 #include <core/core.h>
 
-using namespace Thunder;
-using namespace Thunder::Core;
+namespace Thunder {
+namespace Tests {
+namespace Core {
 
-TEST(test_stopWatch, Elapsed_WithoutDelay)
-{
-    StopWatch stopWatch1, stopWatch2;
-    uint64_t elapsed1 = stopWatch1.Elapsed();
-    uint64_t elapsed2 = stopWatch2.Elapsed();
-    EXPECT_EQ(elapsed1 /Time::MilliSecondsPerSecond, elapsed2 / Time::MilliSecondsPerSecond);
-}
-TEST(test_stopWatch, Elapsed_WithDelay)
-{
-    int8_t wait = 1;
-    StopWatch stopWatch1, stopWatch2;
-    uint64_t elapsed1 = stopWatch1.Elapsed();
-    EXPECT_EQ(stopWatch1.Elapsed() / Time::MicroSecondsPerSecond, (stopWatch1.Elapsed() / Time::MicroSecondsPerSecond));
-    sleep(wait);
-    uint64_t elapsed2 = stopWatch2.Elapsed();
-    uint64_t elapsed3 = stopWatch1.Elapsed();
-    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(elapsed3 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond));
-}
-TEST(test_stopWatch, Reset_WithoutDelay)
-{
-    StopWatch stopWatch1, stopWatch2;
-    uint64_t elapsed1 = stopWatch1.Elapsed();
-    uint64_t reset1 = stopWatch1.Reset();
-    uint64_t elapsed2 = stopWatch2.Elapsed();
-    uint64_t reset2 = stopWatch2.Reset();
+    TEST(test_stopWatch, Elapsed_WithoutDelay)
+    {
+        ::Thunder::Core::StopWatch stopWatch1, stopWatch2;
+        uint64_t elapsed1 = stopWatch1.Elapsed();
+        uint64_t elapsed2 = stopWatch2.Elapsed();
+        EXPECT_EQ(elapsed1 / ::Thunder::Core::Time::MilliSecondsPerSecond, elapsed2 / ::Thunder::Core::Time::MilliSecondsPerSecond);
+    }
+    TEST(test_stopWatch, Elapsed_WithDelay)
+    {
+        int8_t wait = 1;
+        ::Thunder::Core::StopWatch stopWatch1, stopWatch2;
+        uint64_t elapsed1 = stopWatch1.Elapsed();
+        EXPECT_EQ(stopWatch1.Elapsed() / ::Thunder::Core::Time::MicroSecondsPerSecond, (stopWatch1.Elapsed() / ::Thunder::Core::Time::MicroSecondsPerSecond));
+        sleep(wait);
+        uint64_t elapsed2 = stopWatch2.Elapsed();
+        uint64_t elapsed3 = stopWatch1.Elapsed();
+        EXPECT_EQ(elapsed2 / ::Thunder::Core::Time::MicroSecondsPerSecond, (elapsed1 / ::Thunder::Core::Time::MicroSecondsPerSecond) + wait);
+        EXPECT_EQ(elapsed3 / ::Thunder::Core::Time::MicroSecondsPerSecond, (elapsed1 / ::Thunder::Core::Time::MicroSecondsPerSecond) + wait);
+        EXPECT_EQ(elapsed3 / ::Thunder::Core::Time::MicroSecondsPerSecond, (elapsed2 / ::Thunder::Core::Time::MicroSecondsPerSecond));
+    }
+    TEST(test_stopWatch, Reset_WithoutDelay)
+    {
+        ::Thunder::Core::StopWatch stopWatch1, stopWatch2;
+        uint64_t elapsed1 = stopWatch1.Elapsed();
+        uint64_t reset1 = stopWatch1.Reset();
+        uint64_t elapsed2 = stopWatch2.Elapsed();
+        uint64_t reset2 = stopWatch2.Reset();
 
-    // Microsecond comparison is not doing
-    // instead simply checking reset is a value after elapsed one
-    EXPECT_LE(elapsed1, reset1);
-    EXPECT_LE(elapsed2, reset2);
+        // Microsecond comparison is not doing
+        // instead simply checking reset is a value after elapsed one
+        EXPECT_LE(elapsed1, reset1);
+        EXPECT_LE(elapsed2, reset2);
 
-    elapsed1 = stopWatch1.Elapsed();
-    elapsed2 = stopWatch2.Elapsed();
+        elapsed1 = stopWatch1.Elapsed();
+        elapsed2 = stopWatch2.Elapsed();
 
-    // Microsecond comparison is not doing
-    // instead simply checking converting to millisecond
-    EXPECT_EQ(elapsed1 / Time::MilliSecondsPerSecond, reset1 / Time::MilliSecondsPerSecond);
-    EXPECT_EQ(elapsed2 / Time::MilliSecondsPerSecond, reset2 / Time::MilliSecondsPerSecond);
-}
-TEST(test_stopWatch, Reset_WithDelay)
-{
-    int8_t wait = 1;
-    StopWatch stopWatch1, stopWatch2;
-    uint64_t elapsed1 = stopWatch1.Elapsed();
-    uint64_t elapsed2 = stopWatch2.Elapsed();
-    sleep(wait);
-    uint64_t reset1 = stopWatch1.Reset();
-    uint64_t reset2 = stopWatch2.Reset();
+        // Microsecond comparison is not doing
+        // instead simply checking converting to millisecond
+        EXPECT_EQ(elapsed1 / ::Thunder::Core::Time::MilliSecondsPerSecond, reset1 / ::Thunder::Core::Time::MilliSecondsPerSecond);
+        EXPECT_EQ(elapsed2 / ::Thunder::Core::Time::MilliSecondsPerSecond, reset2 / ::Thunder::Core::Time::MilliSecondsPerSecond);
+    }
+    TEST(test_stopWatch, Reset_WithDelay)
+    {
+        int8_t wait = 1;
+        ::Thunder::Core::StopWatch stopWatch1, stopWatch2;
+        uint64_t elapsed1 = stopWatch1.Elapsed();
+        uint64_t elapsed2 = stopWatch2.Elapsed();
+        sleep(wait);
+        uint64_t reset1 = stopWatch1.Reset();
+        uint64_t reset2 = stopWatch2.Reset();
 
-    EXPECT_EQ(reset1 / Time::MicroSecondsPerSecond, (elapsed1 / Time::MicroSecondsPerSecond) + wait);
-    EXPECT_EQ(reset2 / Time::MicroSecondsPerSecond, (elapsed2 / Time::MicroSecondsPerSecond) + wait);
+        EXPECT_EQ(reset1 / ::Thunder::Core::Time::MicroSecondsPerSecond, (elapsed1 / ::Thunder::Core::Time::MicroSecondsPerSecond) + wait);
+        EXPECT_EQ(reset2 / ::Thunder::Core::Time::MicroSecondsPerSecond, (elapsed2 / ::Thunder::Core::Time::MicroSecondsPerSecond) + wait);
 
-    sleep(wait);
-    elapsed1 = stopWatch1.Elapsed();
-    sleep(wait);
-    elapsed2 = stopWatch2.Elapsed();
+        sleep(wait);
+        elapsed1 = stopWatch1.Elapsed();
+        sleep(wait);
+        elapsed2 = stopWatch2.Elapsed();
 
-    EXPECT_EQ(elapsed1 / Time::MicroSecondsPerSecond, (reset1 / Time::MicroSecondsPerSecond));
-    EXPECT_EQ(elapsed2 / Time::MicroSecondsPerSecond, (reset2 / Time::MicroSecondsPerSecond) + wait);
-}
+        EXPECT_EQ(elapsed1 / ::Thunder::Core::Time::MicroSecondsPerSecond, (reset1 / ::Thunder::Core::Time::MicroSecondsPerSecond));
+        EXPECT_EQ(elapsed2 / ::Thunder::Core::Time::MicroSecondsPerSecond, (reset2 / ::Thunder::Core::Time::MicroSecondsPerSecond) + wait);
+    }
+
+} // Core
+} // Tests
+} // Thunder

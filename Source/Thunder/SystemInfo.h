@@ -292,7 +292,7 @@ namespace PluginHost {
             END_INTERFACE_MAP
 
         public:
-            uint64_t TimeSync() const;
+            uint64_t TimeSync() const override;
 
             bool Set(const PluginHost::ISubSystem::ITime* info);
             inline bool Set(const uint64_t ticks)
@@ -762,8 +762,8 @@ namespace PluginHost {
             return (_flags);
         }
 
-        string BuildTreeHash() const;
-        string Version() const;
+        string BuildTreeHash() const override;
+        string Version() const override;
 
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)

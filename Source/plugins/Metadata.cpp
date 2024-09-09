@@ -77,34 +77,6 @@ namespace PluginHost
         return (Core::JSON::EnumType<state>::Data());
     }
 
-    Metadata::Channel::State& Metadata::Channel::State::operator=(const Metadata::Channel::state RHS)
-    {
-        Core::JSON::EnumType<state>::operator=(RHS);
-
-        return (*this);
-    }
-
-    Metadata::Channel::State& Metadata::Channel::State::operator=(Metadata::Channel::State&& move)
-    {
-        if (this != &move) {
-            Core::JSON::EnumType<state>::operator=(move);
-        }
-
-        return (*this);
-    }
-
-    Metadata::Channel::State& Metadata::Channel::State::operator=(const Metadata::Channel::State& RHS)
-    {
-        Core::JSON::EnumType<state>::operator=(RHS);
-
-        return (*this);
-    }
-
-    string Metadata::Channel::State::Data() const
-    {
-        return (Core::JSON::EnumType<state>::Data());
-    }
-
     Metadata::Service::Service()
         : Plugin::Config()
         , JSONState()
@@ -144,9 +116,7 @@ namespace PluginHost
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#if THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
-#endif
         Add(_T("module"), &Module);
         Add(_T("version"), &ServiceVersion);
 
@@ -159,9 +129,7 @@ namespace PluginHost
         , ProcessedRequests(copy.ProcessedRequests)
         , ProcessedObjects(copy.ProcessedObjects)
 #endif
-#if THUNDER_RESTFULL_API
         , Observers(copy.Observers)
-#endif
         , ServiceVersion(copy.ServiceVersion)
         , Module(copy.Module)
         , InterfaceVersion(copy.InterfaceVersion)
@@ -171,9 +139,7 @@ namespace PluginHost
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
-#if THUNDER_RESTFULL_API
         Add(_T("observers"), &Observers);
-#endif
         Add(_T("module"), &Module);
         Add(_T("version"), &ServiceVersion);
 
@@ -190,7 +156,7 @@ namespace PluginHost
         : Core::JSON::Container()
     {
         Core::JSON::Container::Add(_T("remote"), &Remote);
-        Core::JSON::Container::Add(_T("state"), &JSONState);
+        Core::JSON::Container::Add(_T("state"), &State);
         Core::JSON::Container::Add(_T("activity"), &Activity);
         Core::JSON::Container::Add(_T("id"), &ID);
         Core::JSON::Container::Add(_T("name"), &Name);
@@ -198,13 +164,13 @@ namespace PluginHost
     Metadata::Channel::Channel(Metadata::Channel&& move)
         : Core::JSON::Container()
         , Remote(std::move(move.Remote))
-        , JSONState(std::move(move.JSONState))
+        , State(std::move(move.State))
         , Activity(std::move(move.Activity))
         , ID(std::move(move.ID))
         , Name(std::move(move.Name))
     {
         Core::JSON::Container::Add(_T("remote"), &Remote);
-        Core::JSON::Container::Add(_T("state"), &JSONState);
+        Core::JSON::Container::Add(_T("state"), &State);
         Core::JSON::Container::Add(_T("activity"), &Activity);
         Core::JSON::Container::Add(_T("id"), &ID);
         Core::JSON::Container::Add(_T("name"), &Name);
@@ -212,13 +178,13 @@ namespace PluginHost
     Metadata::Channel::Channel(const Metadata::Channel& copy)
         : Core::JSON::Container()
         , Remote(copy.Remote)
-        , JSONState(copy.JSONState)
+        , State(copy.State)
         , Activity(copy.Activity)
         , ID(copy.ID)
         , Name(copy.Name)
     {
         Core::JSON::Container::Add(_T("remote"), &Remote);
-        Core::JSON::Container::Add(_T("state"), &JSONState);
+        Core::JSON::Container::Add(_T("state"), &State);
         Core::JSON::Container::Add(_T("activity"), &Activity);
         Core::JSON::Container::Add(_T("id"), &ID);
         Core::JSON::Container::Add(_T("name"), &Name);
@@ -228,7 +194,7 @@ namespace PluginHost
     {
         if (this != &move) {
             Remote = std::move(move.Remote);
-            JSONState = std::move(move.JSONState);
+            State = std::move(move.State);
             Activity = std::move(move.Activity);
             ID = std::move(move.ID);
             Name = std::move(move.Name);
@@ -239,7 +205,7 @@ namespace PluginHost
     Metadata::Channel& Metadata::Channel::operator=(const Metadata::Channel& RHS)
     {
         Remote = RHS.Remote;
-        JSONState = RHS.JSONState;
+        State = RHS.State;
         Activity = RHS.Activity;
         ID = RHS.ID;
         Name = RHS.Name;

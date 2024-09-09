@@ -244,11 +244,15 @@ if (NOT BUILD_SHARED_LIBS)
     )
 endif()
 
+if (APPLE)
+    target_compile_definitions( ${TARGET} PRIVATE __APPLE_USE_RFC_3542)
+endif()
+
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/core> 
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>)
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>)
 
 if(LIBRT_FOUND)
     target_link_libraries(${TARGET}

@@ -176,10 +176,12 @@ namespace Thunder {
                 const void* result = Alignment(alignof(TYPE), data);
                 return (reinterpret_cast<const TYPE*>(result));
             }
+PUSH_WARNING(DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE)
             inline void Clear()
             {
                 __Clear();
             }
+POP_WARNING()
             inline bool IsInitialized() const
             {
                 return (__IsInitialized());
@@ -1792,7 +1794,28 @@ POP_WARNING()
 
                 return (result);
             }
-
+            template<typename ACTION>
+            void Visit(ACTION&& action)
+            {
+                _lock.Lock();
+                for (auto& entry : _list) {
+                    if (action(entry.first) == true) {
+                        break;
+                    }
+                }
+                _lock.Unlock();
+            }
+            template<typename ACTION>
+            void Visit(ACTION&& action) const
+            {
+                _lock.Lock();
+                for (auto const& entry : _list) {
+                    if (action(entry.first) == true) {
+                        break;
+                    }
+                }
+                _lock.Unlock();
+            }
             void Clear()
             {
                 _lock.Lock();

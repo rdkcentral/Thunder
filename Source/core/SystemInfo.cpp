@@ -33,8 +33,8 @@
 #include <iostream>
 
 #ifdef __APPLE__
-#import <mach/host_info.h>
-#import <mach/mach_host.h>
+#include <mach/host_info.h>
+#include <mach/mach_host.h>
 #include <sys/utsname.h>
 #include <sys/sysctl.h>
 #elif defined(__LINUX__)
@@ -300,8 +300,11 @@ namespace Core {
         mib[1] = KERN_BOOTTIME;
         length = sizeof(time);
         sysctl(mib, 2, &time, &length, nullptr, 0);
-
-        m_uptime = (Core::Time::Now().Ticks() - Core::Time(time).Ticks()) / (Core::Time::TicksPerMillisecond * 1000);
+        
+        struct timespec ts;
+        ts.tv_sec = time.tv_sec;
+        ts.tv_nsec = time.tv_usec * Core::Time::NanoSecondsPerMicroSecond;
+        m_uptime = (Core::Time::Now().Ticks() - Core::Time(ts).Ticks()) / (Core::Time::TicksPerMillisecond * 1000);
 
         mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
         if (host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmstat, &count) != KERN_SUCCESS) {

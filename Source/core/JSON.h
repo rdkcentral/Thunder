@@ -744,13 +744,29 @@ namespace Core {
                 bool completed = ((_set & (ERROR|UNDEFINED)) != 0);
 
                 while ((loaded < maxLength) && (completed == false)) {
+#ifdef __WINDOWS__
+                    TYPE previous = _value;
+                    TYPE current = _value;
+#else
+                    bool overflow = false;
+#endif
                     if (isdigit(stream[loaded])) {
+#ifdef __WINDOWS__
                         _value *= (_set & 0x1F);
                         _value += (stream[loaded] - '0');
+                        current = _value / (_set & 0x1F);
+#else
+                        overflow = __builtin_mul_overflow(_value, (_set & 0x1F), &_value) || __builtin_add_overflow(stream[loaded] - '0', _value, &_value);
+#endif
                         loaded++;
                     } else if (isxdigit(stream[loaded])) {
+#ifdef __WINDOWS__
                         _value *= 16;
                         _value += (::toupper(stream[loaded]) - 'A') + 10;
+                        current = _value / 16;
+#else
+                        overflow = __builtin_mul_overflow(_value, 16, &_value) || __builtin_add_overflow((::toupper(stream[loaded]) - 'A') + 10, _value, &_value);
+#endif
                         loaded++;
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
@@ -761,6 +777,16 @@ namespace Core {
                         // Oopsie daisy, error, computer says *NO*
                         error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
                         ++loaded;
+                        _set |= ERROR;
+                        completed = true;
+                    }
+
+#ifdef __WINDOWS__
+                    if (previous != current) {
+#else
+                    if (overflow == true) {
+#endif
+                        error = Error{ "Integer overflow, it should be in the integer type range" };
                         _set |= ERROR;
                         completed = true;
                     }
@@ -1280,7 +1306,7 @@ namespace Core {
 
                 if (_strValue.empty() == true) {
                     char str[16];
-                    std::sprintf(str, "%g", _value);
+                    std::snprintf(str, sizeof(str), "%g", _value);
                     const_cast<FloatType*>(this)->_strValue = str;
                 }
 
@@ -2324,7 +2350,7 @@ namespace Core {
                 return ((_length > 0) && ((_state & SET) != 0));
             }
 
-            bool IsNull() const
+            bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
             }
@@ -4738,7 +4764,7 @@ namespace Core {
                 return (Iterator(_elements));
             }
 
-            void Clear()
+            void Clear() override
             {
                 Reset();
                 _elements.clear();
