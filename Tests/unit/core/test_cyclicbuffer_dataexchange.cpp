@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-#include <future>
-
-#include "../../cyclic-buffer/process.h"
-
 #include <gtest/gtest.h>
 
 #ifndef MODULE_NAME
@@ -43,7 +39,6 @@ namespace Tests {
         const std::string bufferName {"/tmp/SharedCyclicBuffer"};
 
         constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
-        constexpr uint32_t internalBufferSize = 40;//446;
 
         // https://en.wikipedia.org/wiki/Lorem_ipsum
         #define LOREM_IPSUM_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
