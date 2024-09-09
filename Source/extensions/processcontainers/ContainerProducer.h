@@ -36,16 +36,20 @@ namespace ProcessContainers {
         ContainerProducerRegistrationType& operator=(ContainerProducerRegistrationType&&) = delete;
 
         ContainerProducerRegistrationType()
+            : _producer()
         {
-           ContainerAdministrator::Instance().Announce<PRODUCER>(CONTAINERTYPE);
+           ContainerAdministrator::Instance().Announce(CONTAINERTYPE, &_producer);
         }
 
         ~ContainerProducerRegistrationType()
         {
             ContainerAdministrator::Instance().Revoke(CONTAINERTYPE);
         }
+
+    private:
+        PRODUCER _producer;
     };
 
-}
+} // namespace ProcessContainers
 
 }
