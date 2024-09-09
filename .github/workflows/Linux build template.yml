@@ -26,9 +26,9 @@ jobs:
           sudo apt-spy2 fix --commit --launchpad --country=US
           echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          sudo dpkg --add-architecture i386
+          ${{matrix.architecture == '32' && 'sudo dpkg --add-architecture i386' || ':'}}
           sudo apt-get update
-          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev zlib1g-dev:i386 libssl-dev gcc-11-multilib g++-11-multilib
+          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev bluez libbluetooth-dev {{matrix.architecture == '32' && 'zlib1g-dev:i386 libssl-dev:i386 gcc-11-multilib g++-11-multilib' || 'zlib1g-dev libssl-dev'}}
           sudo pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
