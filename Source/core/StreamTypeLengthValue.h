@@ -423,10 +423,10 @@ POP_WARNING()
         virtual void StateChange()
         {
         }
-        virtual void Send(const typename DATAEXCHANGE::Request& element)
+        virtual void Send(const typename DATAEXCHANGE::Request& element VARIABLE_IS_NOT_USED)
         {
         }
-        virtual void Received(const typename DATAEXCHANGE::Request& element)
+        virtual void Received(const typename DATAEXCHANGE::Request& element VARIABLE_IS_NOT_USED)
         {
         }
 
