@@ -38,7 +38,7 @@ namespace Core {
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-        ThreadClass(volatile bool& threadDone, std::mutex& mutex, std::condition_variable& cv, ::ThreadId parentTid)
+        ThreadClass(volatile bool& threadDone, std::mutex& mutex, std::condition_variable& cv, ::thread_id parentTid)
             : ::Thunder::Core::Thread(::Thunder::Core::Thread::DefaultStackSize(), _T("Test"))
             , _done(threadDone)
             , _threadMutex(mutex)
@@ -66,7 +66,7 @@ namespace Core {
         volatile bool& _done;
         std::mutex& _threadMutex;
         std::condition_variable& _threadCV;
-        ::ThreadId _parentTid;
+        ::thread_id _parentTid;
     };
 
     class Job : public ::Thunder::Core::IDispatch {
@@ -97,7 +97,7 @@ namespace Core {
 
     private:
         static bool _threadDone;
-        static ::ThreadId _parentTPid;
+        static ::thread_id _parentTPid;
 
     public:
         static std::mutex _mutex;
@@ -107,11 +107,11 @@ namespace Core {
     bool Job::_threadDone = false;
     std::mutex Job::_mutex;
     std::condition_variable Job::_cv;
-    ::ThreadId Job::_parentTPid = ::Thunder::Core::Thread::ThreadId();
+    ::thread_id Job::_parentTPid = ::Thunder::Core::Thread::ThreadId();
 
     TEST(Core_Thread, DISABLED_SimpleThread)
     {
-        ::ThreadId parentTid = ::Thunder::Core::Thread::ThreadId();
+        ::thread_id parentTid = ::Thunder::Core::Thread::ThreadId();
         volatile bool threadDone = false;
         std::mutex mutex;
         std::condition_variable cv;
