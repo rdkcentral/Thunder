@@ -117,6 +117,8 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
+        -DBLUETOOTH=ON \
+        -DBROADCAST=ON \
         -DLOCALTRACER=ON \
         -DWARNING_REPORTING=ON \
         -DPROCESSCONTAINERS=ON \
