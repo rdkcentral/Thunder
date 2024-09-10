@@ -1,4 +1,7 @@
 ## What is singleton and why it is used
+
+Hallo Hallo 
+
 The Singleton pattern is a design pattern that restricts the instantiation of a class to a single instance. It ensures that only one instance of the class exists throughout the runtime of the program and provides a global point of access to that instance. In addition, they allow for lazy allocation and initialization, whereas global variables will always consume resources. Examples of using singletons can be found in ThunderClientLibraries repository.
 
 ## Singleton and SingletonType
