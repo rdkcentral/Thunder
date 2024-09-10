@@ -5,7 +5,7 @@ Table of Contents
 =================
 
 1. [Introduction](#Introduction)
-2. [Rule, Recommendation or guideline](#RuleRecommendationOrGuideline)
+2. [Rule, Guideline or Recommendation](#RuleRecommendationGuideline)
 3. [Rules](#Rules)
     1. [Interfaces should not leak implementation details](#InterfacesShouldNotLeakImplementationDetails)
     2. [Comply to the Single Responsibility Principle (SPR)](#ComplyToSingleResponsibilityPrinciple)
@@ -17,7 +17,7 @@ Table of Contents
 5. [Recommendations](#Recommendations)
     1. [State complete interfaces](#StateCompleteInterfaces)
     2. [Return "core::hresult” on methods](#ReturnCorehresultOnMethods)
-    3. [Specifically define the length of the enum to be used](#SpecificallyDefineTheLenthgOfTheEnumToBeUsed)
+    3. [Specifically define the length of the enum to be used](#SpecificallyDefineTheLengthOfTheEnumToBeUsed)
     4. [Be verbose even if there is functionally no need](#BeVerboseEvenIfThereIsFunctionallyNoNeed)
 6. [Mandatory keywords in an interface definition](#MandatoryKeywordsInAnInterfaceDefinition)
 7. [Tags/annotations available for optimizing the generated code](#TagsAnnotationsAvailableForOptimizingTheGeneratedCode)
@@ -42,9 +42,11 @@ Interface-based development offers several advantages:
 
 Overall, interface-based development promotes a modular, flexible, and maintainable codebase that is easier to work with and extend over time.
 
-To exploit these advantages to the fullest, Thunder uses Interfaces definitions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface.
+To exploit these advantages to the fullest, Thunder uses Interfaces definitions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface. 
+With the Thunder interface definitions it is also possible by using the @json tag to (partially) expose the Thunder inter-plugin/internal interface as a JSON-RPC interface. The below Rules, Guidelines and Recommendations apply also to JSON-RPC interfaces. Please see [here](https://rdkcentral.github.io/Thunder/pr-preview/pr-1721/plugin/interfaces/interfaces/) for a more detailed description on how the JSON-RPC interface can be fully generated and documented from the Thunder interface specification without writing a single line of code. Of course deciding if and what part of your interface should be exposed as JSON-RPC interface should also be careful considered. 
 
-Rule, Recommendation or guideline {#RuleRecommendationGuideline}
+
+Rule, Guideline or Recommendation {#RuleRecommendationGuideline}
 =================================
 
 Here are the distinctions between a rule, a recommendation, and a guideline:
@@ -53,14 +55,14 @@ Here are the distinctions between a rule, a recommendation, and a guideline:
     * A rule is a prescribed directive or principle that must be followed strictly. It is typically mandatory and non-negotiable.
     * Rules often have legal or formal implications and violations may lead to consequences or penalties.
     * Rules are usually clear, specific, and binding, leaving little room for interpretation or deviation.
-2. **Recommendation**:
-    * A recommendation is a suggestion or advice on the best course of action, but it is not mandatory.
-    * Recommendations are based on best practices, standards, or guidelines, but individuals or organizations have the freedom to choose whether or not to follow them.
-    * While recommendations are meant to guide decision-making, they allow for flexibility and individual judgment in applying them.
-3. **Guideline**:
-    * A guideline is a set of general principles or rules that provide guidance or direction on how to achieve a particular objective.
+2. **Guideline**:
+    * A guideline is a set of general principles that provide guidance or direction on how to achieve a particular objective.
     * Guidelines are more flexible than rules, as they offer suggestions on the most effective way to accomplish a task or goal.
     * They serve as a framework for good practice and can be adapted or customized based on specific circumstances or requirements.
+3. **Recommendation**:
+    * A recommendation is a suggestion or advice on the best course of action, but it is not mandatory, they offer more freedom than guidelines .
+    * Recommendations are based on best practices, standards, or guidelines, but individuals or organizations have the freedom to choose whether or not to follow them.
+    * While recommendations are meant to guide decision-making, they allow for flexibility and individual judgment in applying them.
 
 In summary, rules are strict, mandatory, and non-negotiable directives, recommendations are suggestions or advice that are not obligatory, and guidelines offer flexible principles for achieving a specific objective.
 
@@ -74,25 +76,27 @@ Interfaces should be designed to provide a clear and concise abstraction of func
 
 * **Encapsulation**: By hiding implementation details, interfaces ensure that the internal workings of a system or component are not exposed to the outside world. This promotes encapsulation, which is a core principle of object-oriented design.
 * **Flexibility and Maintainability**: When interfaces do not expose implementation details, the underlying code can be changed, optimized, or refactored without affecting the code that depends on the interface. This makes the system more adaptable and easier to maintain.
-* **Abstraction**: Interfaces should provide a high-level abstraction that defines what operations can be performed without detailing how they are performed. This allows developers to focus on the "what" rather than the "how," making the system easier to understand and use.
+* **Abstraction**: Interfaces should provide a high-level abstraction that defines what operations can be performed without detailing how they are performed. This allows users of the interface to focus on the "what" rather than the "how," making the system easier to understand and use.
 * **Reduced Coupling**: If implementation details are hidden, components that depend on the interface are less tightly coupled to specific implementations. This helps in reducing dependencies and makes it easier to swap out one implementation for another.
 * **Security**: Hiding implementation details can also enhance security by preventing unauthorized access to sensitive information or potential manipulation of internal processes.
 * **Interchangeability**: When interfaces do not leak implementation details, it becomes easier to interchange different implementations of the same interface. This is particularly useful in scenarios where multiple implementations might be needed, such as testing with mock objects or switching between different service providers.
-* **Simpler API**: A clean interface that hides complexity makes the API simpler and more intuitive to use. Users of the interface do not need to understand the complexities behind the scenes, leading to a better developer experience.
+* **Simpler API**: A clean interface that hides complexity makes the API simpler and more intuitive to use. Users of the interface do not need to understand the complexities behind the scenes, leading to a better experience for the user of the interface.
 
 To achieve these benefits, interfaces should be carefully designed to define clear and minimal contracts for interaction, focusing on what needs to be done rather than how it is done.
 
 Comply to the Single Responsibility Principle (SPR) {#ComplyToSingleResponsibilityPrinciple}
 ---------------------------------------------------
 
-The Single Responsibility Principle (SRP) is a fundamental principle in software development that states that an interface should have only one reason to change, which should also adhere to the idea of having a single, well-defined responsibility. Here are some reasons why interfaces should comply with the Single Responsibility Principle:
+The single-responsibility principle (SRP) is a computer programming principle that states that "A module should be responsible to one, and only one, actor." The term actor refers to a group (consisting of one or more stakeholders or users) that might require a change to the module. In other words a module,class,interface should have only one reason to change, gather together the things that change for the same reasons. Separate those things that change for different reasons. 
+
+SRP is a fundamental principle in software development and also (or perhaps even more strongly) applies to interfaces as well, which should also adhere to the idea of having a single, well-defined responsibility. Here are some reasons why interfaces should comply with the Single Responsibility Principle:
 
 * **Clear and focused functionality**: Interfaces that adhere to the SRP are easier to understand and work with because they have a clear and focused purpose. Developers can quickly grasp what the interface is meant to do and how it should be implemented.
 * **Encourages better design**: By adhering to the SRP, interfaces are more likely to be well-designed and follow best practices in software development. Separating different responsibilities into distinct interfaces helps to create a more modular and maintainable codebase.
-* **Easier to maintain and extend**: When an interface has a single responsibility, changes to that responsibility are less likely to impact other parts of the codebase. This makes it easier to maintain and extend the code without causing unintended consequences or introducing bugs.
+* **Easier to maintain and extend**: When an interface has a single responsibility, changes to that responsibility are less likely to impact other parts of the codebase compared to when the interface would have multiple responsibilities, then it would be more likely to touch different parts of the codebase when changed. This makes it easier to maintain and extend the code without causing unintended consequences or introducing bugs.
 * **Promotes code reusability**: Interfaces that adhere to the SRP are more likely to be reusable in different contexts. Since each interface represents a single responsibility, it can be easily reused in various parts of the codebase without introducing unnecessary complexity.
 * **Improved testability**: Interfaces with a single responsibility are often easier to test because their behavior is well-defined and focused. This makes it simpler to write unit tests for classes that implement the interface and ensures that each component of the software can be tested effectively in isolation.
-* **Enhanced flexibility**: Interfaces that follow the SRP are more flexible and adaptable to changes in requirements. If a new responsibility needs to be added or an existing one modified, it can be done more easily without affecting other parts of the codebase.
+* **Enhanced flexibility**: Interfaces that follow the SRP are more flexible and adaptable to changes in requirements. If a new responsibility needs to be added (so with SRP less likely to influence an existing interface) or an existing one modified, it can be done more easily without affecting other parts of the codebase.
 
 In conclusion, interfaces that comply with the Single Responsibility Principle are easier to understand, maintain, and extend. By keeping interfaces focused on a single responsibility, developers can create more modular, reusable, and robust software systems.
 
@@ -116,7 +120,7 @@ The Observer pattern, is a behavioral design pattern where there is a one-to-man
 
 In software development, this pattern is commonly used to establish communication between different parts of a system without them being directly coupled. The Publisher (or Subject) maintains a list of Subscribers (or Observers) interested in being notified of changes, and when an event occurs or state changes, the Publisher notifies all Subscribers by invoking specific methods on them. This allows for a loosely coupled architecture where changes in one component trigger updates in other components without them having explicit knowledge of each other.
 
-As there is a one-to-many dependency the parent interface requires methods to add and remove the INotification. It is a guideline to call these ```core::hresult Register(INotifcation*)``` and ```core::hresult Unregister(const INotification*);```
+As there is a one-to-many dependency there must be a means to register and unregister the INotification. These must be added to the parent interface and it is a guideline to call these ```core::hresult Register(INotification*)``` and ```core::hresult Unregister(const INotification*);```
 
 ``` c++
 // @json 1.0.0
@@ -163,17 +167,31 @@ struct EXTERNAL IObject : virtual public Core::IUnknown {
 Recommendations {#Recommendations} 
 ===============
 
-State complete interfaces {#StatetCompleteInterfaces}
+State complete interfaces {#StateCompleteInterfaces}
 -------------------------
-If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can ```core::hresult Start() = 0``` the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an ```core::hresult::Abort() = 0``` method. 
+If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can ```core::hresult Start() = 0``` the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an ```core::hresult Abort() = 0``` method. 
 
 Return ```core::hresult``` on methods {#ReturnCorehresultOnMethods}
 ---------------------------------
-As most interfaces are designed to work over process boundaries, it is recommended to cater for issues during the passing of the process boundary, e.g. the other process might have crashed. This means that method calls on interfaces that seem triial but do change the state of an implementation, like ```SetTime()```, may fail due to cross process communication. If the return value of a method is defined as core::hresult, the Thunder COMRPC framework will signal issues with the communication by returning a negative value. The whole positive range from 0-2147483647 (0-0x7FFFFFFF) is free for the implementer to return values.
+As most interfaces are designed to work over process boundaries, it is recommended to cater for issues during the passing of the process boundary, e.g. the other process might have crashed. This means that method calls on interfaces that seem trivial but do change the state of an implementation, like ```SetTime()```, may fail due to cross process communication. If the return value of a method is defined as core::hresult, the Thunder COMRPC framework will signal issues with the communication by returning a negative value. The whole positive range from 0-2147483647 (0-0x7FFFFFFF) is free for the implementer to return values.
 
-Specifically define the length of the enum to be used {#SpecificallyDefineTheLenthgOfTheEnumToBeUsed}
+Specifically define the length of the enum to be used {#SpecificallyDefineTheLengthOfTheEnumToBeUsed}
 -----------------------------------------------------
 To allow for the code generator to optimize for the communication frame, it is recommended to always define the length of an enum if it is used as a parameter. If the enum length is not defined, it is assumed to be 32 bits. If an enum only has less than 256 values, it means 3 bytes are wasted on the line.
+
+``` c++
+   enum SoundModes : uint8_t {
+       UNKNOWN,
+       MONO,
+       STEREO,
+       SURROUND,
+       PASSTHRU,
+       DOLBYDIGITAL,
+       DOLBYDIGITALPLUS,
+       SOUNDMODE_AUTO 
+   };
+```
+
 
 Be verbose even if there is functionally no need {#BeVerboseEvenIfThereIsFunctionallyNoNeed}
 ------------------------------------------------
@@ -185,10 +203,7 @@ core::hresult Logging(const string& cat, bool& enabled /* @out */) const = 0;
 core::hresult Logging(const string& cat, const bool enabled) = 0;
 ```
 
-Although the const bool in the second method has no added value, it is a recommendation to use it, just to indicate clearly that the intend is that the implementation should not and can not change the parameter.
-
-!!! note "TODO"
-    Do we want to promote the use of properties in JSONRPC, requirements for the interface specifications.
+Although the const bool in the second method has no added value, it is a recommendation to use it, just to indicate clearly that the intent is that the implementation should not and can not change the parameter.
 
  Mandatory keywords in an interface definition {#MandatoryKeywordsInAnInterfaceDefinition}
 ==============================================
@@ -201,7 +216,7 @@ struct EXTERNAL IObject : public virtual Core::IUnknown {
 };
 ```
 
-A ***struct*** in the ***C programming language*** (and many derivatives) is a ***composite data type*** (or ***record***) declaration that defines a physically grouped list of variables under one name in a block of memory, allowing the different variables to be accessed via a single ***pointer*** or by the struct declared name which returns the same address. The struct data type can contain other data types so is used for mixed-data-type records such as a hard-drive directory entry (file length, name, extension, physical address, etc.), or other mixed-type records (name, address, telephone, balance, etc.).
+A ***struct*** in the ***C programming language*** (and many derivatives) is a ***composite data type*** (or ***record***) declaration that defines a physically grouped list of variables under one name in a block of memory, allowing the different variables to be accessed via a single ***pointer*** or by the struct declared name which returns the same address. The struct data type can contain other data types so is used for mixed-data-type records such as a hard-drive directory entry (file length, name, extension, physical address, etc.), or other mixed-type records (name, address, telephone, balance, etc.). In C++ a struct is very similar to a class, only difference is that by default the members have public visibility. 
 
 The ```EXTERNAL``` keyword is used for different platforms to define the link type to be used when trying to access this interface. This typically refers to the default constructor/destructors if generated for a struct.
 
@@ -217,6 +232,8 @@ The ID’s are split up in ranges.
 |0x00000080|0x80000000|Public Plugin interfaces|```ThunderInterfaces/interfaces/ids.h```|
 |0x80000000|0xA0000000|Custom Plugin interfaces|```<Custom>```|
 |0xA0000000|0xFFFFFFFF|QA Interfaces|```ThunderInterfaces/interfaces/ids.h```|
+
+The Custom range is to accommodate interfaces that are not publicly published and therefore the ID cannot be guaranteed to be unique, by having this range it is at least guaranteed it will not collide with a Thunder or Public interface. The use of non public interfaces is ill advised.
 
 Tags/annotations available for optimizing the generated code {#TagsAnnotationsAvailableForOptimizingTheGeneratedCode}
 ============================================================
@@ -236,7 +253,7 @@ When designing an interface spend some time thinking on how the interface can be
 As an interface is in principle immutable it is better to spend more time on this before releasing the interface than later on trying to improve the interface or writing a lot of documentation explaining on how to use it in certain situations. 
 
 When designing the interface it is good to use the "less it more" principle when adding methods to it to make sure it can do what should be possible with it. 
-Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. 
+Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. Less methods will also require less testing. 
 
 Let's design an Player Interface as an example. At first one would expect all the following should be possible for a player:
 
@@ -270,6 +287,9 @@ Take both Static and Dynamic behaviour into account {#StaticAndDynamic}
 When designing an interface make sure not only to focus on the static behaviour, meaning what methods and notifications are necessary to make sure the client can use it for its purpose, but also on the dynamic behaviour, meaning how should the interface behave when the methods are called at certain times in a certain order and when certain notifications are sent in between (also see the "Less is more" paragraph above on advise on how to reduce the complexity of the dynamic behaviour). This of course also taking into account that the embedded domain we are operating in with Thunder allows for calls being done from multiple applications and/or threads so any call can happen in parallel with any other or any notification. 
 
 Think about data that needs to be changed and/or read atomically. For example it may look logical in some case to have setters/getters for individual items but if the overall consistency of some items combined needs to be guarded it may make more sense to combine these items in one getter and setter, this prevents one application writing ValueA and then ValueB, while another one reads both A and B in between the two writes and is reading an inconsistent set. 
+See for example in the below sequence diagram. If Client1's intention was to set A to 10 and B to 20 and publish that result to the outside world it failed as Client2 will read 10 for A, but for B the value it had before Client1 set it to 20. If the interface only has individual setters and getters the consistency requirement in this case cannot be met, therefore this should be taken into account when designing the interface and make it possible to get and set values that should be treated as consistent set in one method.
+![Sequence Diagram showing multiple setters and getters](ExampleStaticDynamic1.png)
+
 Sometimes when this gets very complex one may need to revert to some kind of a transaction support, where one first would start a transaction then does a number of actions and then ends the transaction, only then making the result of all actions in the transaction visible to the outside world in one atomic event. Of course this will make use (and implementation) of the interface much more complex so this would only be advisable when a more simple solution would not suffice. 
 
 Also performance may be an important aspect to take into consideration when thinking about the (dynamic) behaviour of the interface. Suppose an interface is created for storing key value pairs and one expects a client to change and/or read a lot of values after one each other and the writing and reading is expected to be quite resource intensive (for example write take some time) it could be a consideration to make it possible to write/read multiple pairs in one call to prevent the client of creating quite a number of parallel calls that queue up in the framework and or plugin if the client for example would do this from multiple threads or would use CURL or a similar solution to do these calls in parallel. Or depending on the situation and expected usage pattern perhaps make the interface asynchronous so the calls itself will return quickly while the implementation can now handle multiple writes more efficiently by combining them (of course still with some maximum to cap the number of maximum parallel requests to prevent a too high of a peak in resource usage).
@@ -277,6 +297,8 @@ In any case make sure to next to the static behaviour of the interface also docu
 
 Also for notifications one should think very carefully how they behave dynamically and what data the notifications do carry. For example a naive idea might be to always sent a notification on a data change event including the new value of the data. Although this may work perfectly if the data does not change much it will have a big influence on the expected behaviour if the data changes often and the consistency of the data read must be guaranteed. 
 Suppose one would just sent out the notification for the data changed **without** locking the possibility another user might in parallel change that value, then when the receiver of the notification handles the data, the value could be different then contained in the notification (or worse suppose it reads a second value in the notification handling code via a getter, also that one might have changed and not have the same value when the data in the event was send which might be important). One could choose to lock the complete component for changes of course until all notifications are sent but although now data consistency is guaranteed the component becomes a big bottleneck in the system if changes are frequent and will lead to more resource usage as requests will pile up. 
+This can be seen in the sequence diagram below. Client1 changes value A to 10 which leads to the plugin sending a notification to all registered listeners. While Client3 is handling this notification Client2 changes the value for A to 20. In the notification Client3 reads the value for A, should it read 10 or 20? It might be obvious there is no single correct answer to this. This depends on the dynamic behaviour you want the interface to have.
+![Sequence Diagram showing Notification after update without locking](ExampleStaticDynamic2.png)
 
 Another example of when thinking about notifications and what data to include in them is very useful is a notification that would include a desired state. Even if the notifications would not happen much having the requested state included might lead to undesired dynamic behaviour. Suppose the notification can request for a transition to state ON and state OFF and the state is in the request. A component could receive a request to change to state ON but in the mean time perhaps a (user) action led to the cancellation of this request before it was handled. If the state was part of the notification the component might start the (expensive) transition to ON because it will only handle the OFF notification after this one, but if the state was not part of the notification but just expressed "StateChange" requested, it would read the requested state via a getter and get the current value which would be OFF in the mean time so it would not unnecessary start the state change to ON. 
 
@@ -356,6 +378,7 @@ Sometimes when designing an interface it can be expected that the implementation
 In such a case (we usually use an expected duration of a few hundred milliseconds as the limit) or when the duration of an action is non deterministic and worse case would take longer than a few hundred milliseconds, it is advised to make the interface asynchronous. The interface will then only pass the data needed to start the action to the component and add a callback to the interface to make it possible for the implementation to return the result asynchronously. The component will handle the action in the background (do not use threads for this but use the Thunder workerpool) and call the provided callback when the action is completed to signal this to the initiator of the action. Not only will this prevent the call to fail because of JSON-RPC or COM-RPC timeouts but it will also make sure the framework is not blocked internally and also the client can continue without being blocked waiting for the result (or needed to reserve a thread for this).
 
 For example an interface that will require user interaction for its action (like asking for the pin to be entered) is a perfect example of one that should be made asynchronous as it is of course completely nondeterministic when the call will return as the successful entering of the PIN could take minutes/hours potentially.
+![Sequence Diagram showing Async example for getting a user PIN](AsyncInterfaceExample.png)
 
 Also note, as was pointed out in the "State complete interfaces" paragraph of this page, that there should also be a means to stop the initiated action before it has completed. This is for example needed when the component that started the action needs to shut down and with this it can signal that the action can be stopped as it is no longer needed and the provided callback is no longer valid and should not longer be called.
 
