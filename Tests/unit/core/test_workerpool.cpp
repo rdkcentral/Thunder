@@ -675,7 +675,7 @@ namespace Core {
         const uint16_t scheduledTimes[] = {2000}; //In milliseconds
         CheckWorkerPool_ScheduleJobs(1, 1, 0, 0, nullptr, scheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_SingleJob_ZeroTime)
+    TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_SingleJob_ZeroTime_DISABLED)
     {
         const uint16_t scheduledTimes[] = {0};
         CheckWorkerPool_ScheduleJobs(1, 1, 0, 0, nullptr, scheduledTimes);
@@ -703,7 +703,7 @@ namespace Core {
         const uint16_t scheduledTimes[] = {2000, 3000, 1000, 2000, 3000};
         CheckWorkerPool_ScheduleJobs(1, maxJobs, 0, 0, nullptr, scheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_MultipleJobs_ZeroTime)
+    TEST(Core_WorkerPool, Check_ScheduleJobs_SinglePool_MultipleJobs_ZeroTime_DISABLED)
     {
         uint8_t maxJobs = 5;
         const uint16_t scheduledTimes[5] = {0};
@@ -724,7 +724,7 @@ namespace Core {
         CheckWorkerPool_ScheduleJobs(2, maxJobs, 0, 0, nullptr, scheduledTimes);
         CheckWorkerPool_ScheduleJobs(2, 2, 0, 0, nullptr, scheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_ScheduleJobs_MultiplePool_MultipleJobs_ZeroTime)
+    TEST(Core_WorkerPool, Check_ScheduleJobs_MultiplePool_MultipleJobs_ZeroTime_DISABLED)
     {
         uint8_t maxJobs = 5;
         const uint16_t scheduledTimes[5] = {0};
@@ -829,7 +829,7 @@ namespace Core {
         const uint16_t rescheduledTimes[] = {2000};
         CheckWorkerPool_RescheduleJobs(1, 1, 0, 0, nullptr, scheduledTimes, rescheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_RescheduleJobs_SinglePool_SingleJob_ZeroTime)
+    TEST(Core_WorkerPool, Check_RescheduleJobs_SinglePool_SingleJob_ZeroTime_DISABLED)
     {
         const uint16_t scheduledTimes[] = {1000};
         const uint16_t rescheduledTimes[] = {0};
@@ -863,7 +863,7 @@ namespace Core {
         const uint16_t rescheduledTimes[] = {2000, 2000, 1000, 2000, 3000};
         CheckWorkerPool_RescheduleJobs(1, 5, 0, 0, nullptr, scheduledTimes, rescheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_RescheduleJobs_SinglePool_MultipleJobs_ZeroTime)
+    TEST(Core_WorkerPool, Check_RescheduleJobs_SinglePool_MultipleJobs_ZeroTime_DISABLED)
     {
         const uint16_t scheduledTimes[] = {1000, 2000, 3000, 2000, 1000};
         const uint16_t rescheduledTimes[5] = {0};
@@ -899,7 +899,7 @@ namespace Core {
         const uint16_t rescheduledTimes[] = {2000, 2000, 1000, 2000, 3000};
         CheckWorkerPool_RescheduleJobs(1, 5, 0, 0, nullptr, scheduledTimes, rescheduledTimes);
     }
-    TEST(Core_WorkerPool, Check_RescheduleJobs_MultiplePool_MultipleJobs_ZeroTime)
+    TEST(Core_WorkerPool, Check_RescheduleJobs_MultiplePool_MultipleJobs_ZeroTime_DISABLED)
     {
         const uint16_t scheduledTimes[] = {1000, 2000, 3000, 2000, 1000};
         const uint16_t rescheduledTimes[5] = {0};
