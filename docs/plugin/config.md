@@ -1,4 +1,4 @@
-In addition to the global Thunder config file (see [here](../introduction/config.md) for more details), each plugin has its own configuration file.
+TestTestTest In addition to the global Thunder config file (see [here](../introduction/config.md) for more details), each plugin has its own configuration file.
 
 This file contains some generic information about the plugin (name of the library, callsign, execution mode etc), but can easily be extended by developers to include their own options. Using this method for configuring plugins ensures consistency between plugins - there is therefore a single place to configure all plugins.
 
