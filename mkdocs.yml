@@ -27,6 +27,7 @@ nav:
     - Interfaces:
       - Interface-Driven Development: plugin/interfaces/interfaces.md
       - Documentation generation: plugin/interfaces/docs.md
+      - Guidelines: plugin/interfaces/guidelines.md
       - Tags: plugin/interfaces/tags.md
     - Configuration: plugin/config.md
     - Error Handling: plugin/errors.md
