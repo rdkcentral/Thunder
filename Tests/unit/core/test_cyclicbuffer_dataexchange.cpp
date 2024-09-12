@@ -19,86 +19,104 @@
 
 #include <gtest/gtest.h>
 
-#include <future>
+#ifndef MODULE_NAME
+#include "../Module.h"
+#endif
 
-#include "../../cyclic-buffer/process.h"
+#include <core/core.h>
 
+#include "../IPTestAdministrator.h"
 
 namespace WPEFramework {
 namespace Core {
 namespace Tests {
 
-#define ASYNC_TIMEOUT_BEGIN                                               \
-    std::promise<bool> promise;                                           \
-    std::future<bool> future = promise.get_future();                      \
-    std::thread([&](std::promise<bool> completed)                         \
-        {   /* Before code that should complete before timeout expires */
+    TEST(Core_CyclicBuffer, DataExchange)
+    {
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 1;
 
-#define ASYNC_TIMEOUT_END(MILLISECONDS /* timeout in milliseconds */, EXPECTATION /* boolean */)                                                \
-            /* After code that should complete timely */                                                                                        \
-            /* completed.set_value(true); */                                                                                                    \
-            completed.set_value_at_thread_exit(true);                                                                                           \
-        }                                                                                                                                       \
-        , std::move(promise)).detach()                                                                                                          \
-    ;                                                                                                                                           \
-    bool result = future.wait_for(std::chrono::milliseconds(MILLISECONDS)) != std::future_status::timeout;  /* Task completed before timeout */ \
-    EXPECT_TRUE(result == EXPECTATION); /* Task completed before timeout */                                                                     \
-    if (!result) {                                                                                                                              \
-        TRACE_L1(_T("Error : Stopping unresposive process."));                                                                                  \
-        killpg(getpgrp(), SIGUSR1); /* Possible 'unresponsive' system, 'unlock' all related 'child' processes, default action is terminate */   \
+        const std::string bufferName {"/tmp/SharedCyclicBuffer"};
+
+        constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
+
+        // https://en.wikipedia.org/wiki/Lorem_ipsum
+        #define LOREM_IPSUM_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        const std::array<uint8_t, sizeof(LOREM_IPSUM_TEXT)> reference { "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." };
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Writer
+            Core::CyclicBuffer buffer {  bufferName
+                                       ,   Core::File::USER_READ  // Not relevant for readers
+                                         | Core::File::USER_WRITE // Open the existing file with write permission
+                                           // Readers normally require readonly but the cyclic buffer administration is updated after read
+//                                       | Core::File::CREATE     // Readers access exisitng underlying memory mapped files
+                                         | Core::File::SHAREABLE  // Updates are visible to other processes, but a reader should not update any content except when read data is (automatically) removed
+                                       , 0 // Readers do not specify sizes
+                                       , false // Overwrite unread data
+                                      };
+
+            ASSERT_TRUE(   buffer.IsValid()
+                        && buffer.Open() // It already should
+                        && buffer.Storage().Name() == bufferName
+                        && Core::File(bufferName).Exists()
+                        && buffer.Storage().Exists()
+                       );
+
+            ASSERT_EQ(buffer.Size(), memoryMappedFileRequestedSize);
+
+            uint32_t written = buffer.Write(reference.data(), std::min(sizeof(LOREM_IPSUM_TEXT), static_cast<size_t>(memoryMappedFileRequestedSize)) - 1);
+            EXPECT_EQ(written, std::min(sizeof(LOREM_IPSUM_TEXT), static_cast<size_t>(memoryMappedFileRequestedSize)) - 1);
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            // Writer
+            Core::CyclicBuffer buffer {   bufferName
+                                        ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
+                                          | Core::File::USER_WRITE // Enable write permission on the underlying file
+                                          | Core::File::CREATE // Create a new underlying memory mapped file
+                                          | Core::File::SHAREABLE  // Allow other processes to access the content of the file
+                                        , memoryMappedFileRequestedSize // Requested size
+                                        , false // Overwrite unread data
+                                     };
+
+            ASSERT_TRUE(   buffer.IsValid()
+                        && buffer.Open() // It already should
+                        && buffer.Storage().Name() == bufferName
+                        && Core::File(bufferName).Exists()
+                        && buffer.Storage().Exists()
+                       );
+
+            ASSERT_EQ(buffer.Size(), memoryMappedFileRequestedSize);
+
+            std::array<uint8_t, sizeof(LOREM_IPSUM_TEXT) + 1> data;
+            data.fill('\0');
+
+            ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            uint32_t read = buffer.Read(data.data(), std::min(sizeof(data), static_cast<size_t>(memoryMappedFileRequestedSize)) - 1);
+            EXPECT_EQ(read, std::min(sizeof(LOREM_IPSUM_TEXT), static_cast<size_t>(memoryMappedFileRequestedSize)) - 1);
+
+            bool result = true;
+            for(size_t index = 0; index < read; index++) {
+                result = result && reference[index] == data[index];
+            }
+
+            EXPECT_TRUE(result);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
     }
-
-TEST(Core_CyclicBuffer, DataExchangeTimeout)
-{
-    constexpr uint8_t maxChildren = 1;
-
-    constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
-    constexpr uint32_t internalBufferSize = 40;//446;
-
-    constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
-
-    constexpr uint32_t totalRuntime = Core::infinite; // Milliseconds
-    constexpr uint32_t timeout = 10000; // Milliseconds
-
-    WPEFramework::Tests::Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
-
-    ASYNC_TIMEOUT_BEGIN; // Avoid leaking resources, eg, children
-
-    EXPECT_TRUE(process.SetTotalRuntime(totalRuntime)
-                  && process.SetNumReservedBlocks(2)
-                  && process.SetParentUsers(0, 0) /* 0 extra writer(s), 0 reader(s) */
-                  && process.SetChildUsers(0, 1) /* 1 writer(s), 1 reader(s) */
-                  && process.Execute()
-               );
-
-    ASYNC_TIMEOUT_END(timeout, false /* expect no timeout */);
-}
-
-TEST(Core_CyclicBuffer, DataExchange)
-{
-    constexpr uint8_t maxChildren = 1;
-
-    constexpr uint32_t memoryMappedFileRequestedSize = 30;//446;
-    constexpr uint32_t internalBufferSize = 40;//446;
-
-    constexpr char fileName[] = "/tmp/SharedCyclicBuffer";
-
-    constexpr uint32_t totalRuntime = 10000; // Milliseconds
-    constexpr uint32_t timeout = totalRuntime + 10000; // Milliseconds
-
-    WPEFramework::Tests::Process<memoryMappedFileRequestedSize, internalBufferSize, maxChildren> process(fileName);
-
-    ASYNC_TIMEOUT_BEGIN; // Avoid leaking resources, eg, children
-
-    EXPECT_TRUE(process.SetTotalRuntime(totalRuntime)
-                  && process.SetNumReservedBlocks(2)
-                  && process.SetParentUsers(0, 0) /* 0 extra writer(s), 0 reader(s) */
-                  && process.SetChildUsers(0, 1) /* 1 writer(s), 1 reader(s) */
-                  && process.Execute()
-               );
-
-    ASYNC_TIMEOUT_END(timeout, true /* expect no timeout */);
-}
 
 } // Tests
 } // Core
