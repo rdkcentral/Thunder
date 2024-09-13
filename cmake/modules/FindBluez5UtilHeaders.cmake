@@ -69,8 +69,7 @@ add_library(Bluez5UtilHeaders INTERFACE)
 
 target_include_directories(Bluez5UtilHeaders
   INTERFACE
-    INTERFACE_INCLUDE_DIRECTORIES ${BLUEZ_INCLUDE_DIRS}
-)
+  ${BLUEZ_INCLUDE_DIRS})
 
 add_library(Bluez5UtilHeaders::Bluez5UtilHeaders ALIAS Bluez5UtilHeaders)
 
