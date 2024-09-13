@@ -52,6 +52,21 @@ list(REMOVE_DUPLICATES BLUEZ_INCLUDE_DIRS)
 
 add_library(Bluez5UtilHeaders INTERFACE)
 
+  #
+  # From Bluez >= v5.64 the mgmt_ltk_info struct is changed due to inclusive language changes.
+  # https://github.com/bluez/bluez/commit/b7d6a7d25628e9b521a29a5c133fcadcedeb2102
+  #
+  include(CheckStructHasMember)
+  check_struct_has_member("struct mgmt_ltk_info" central 
+    "${BLUEZ_INCLUDE_DIRS}/bluetooth/bluetooth.h;${BLUEZ_INCLUDE_DIRS}/bluetooth/mgmt.h" 
+    NO_INCLUSIVE_LANGUAGE 
+    LANGUAGE C)
+    
+  if(${NO_INCLUSIVE_LANGUAGE})
+      message(VERBOSE "Your bluez version does not use inclusive language anymore")
+      target_compile_definitions(Bluez5UtilHeaders INTERFACE NO_INCLUSIVE_LANGUAGE)
+  endif()
+
 target_include_directories(Bluez5UtilHeaders
   INTERFACE
     INTERFACE_INCLUDE_DIRECTORIES ${BLUEZ_INCLUDE_DIRS}
