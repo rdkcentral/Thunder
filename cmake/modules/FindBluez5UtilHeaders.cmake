@@ -25,6 +25,10 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+option(DOWNLOAD_BLUEZ_UTIL_HEADERS "Download bluez5 headers, only for testing or development..." OFF)
+set(DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION "5.78" CACHE STRING "version of the bluez5 headers to download...")
+set(DOWNLOAD_BLUEZ_UTIL_HEADERS_REPO "https://github.com/bluez/bluez.git" CACHE STRING "Repo where to get the bluez5 headers...")
+
 if(Bluez5UtilHeaders_FIND_QUIETLY)
     set(_FIND_MODE QUIET)
 elseif(Bluez5UtilHeaders_FIND_REQUIRED)
@@ -38,19 +42,44 @@ set(NEEDED_BLUEZ_HEADERS
   l2cap.h
 )
 
-set(BLUEZ_INCLUDE_DIRS)
+if(NOT TARGET Bluez5UtilHeaders)
+  set(BLUEZ_INCLUDE_DIRS)
 
-foreach(_header ${NEEDED_BLUEZ_HEADERS})
-  find_path(_header_path  bluetooth/${_header})
-  if(_header_path)
-    message(VERBOSE "Found ${_header} in ${_header_path}")
-    list(APPEND BLUEZ_INCLUDE_DIRS ${_header_path})
+  if(DOWNLOAD_BLUEZ_UTIL_HEADERS AND NOT TARGET DownloadedBluez5Headers)
+      message(STATUS "Downloaded bluez5 headers are used, assuming your \"the expert\"!")
+
+      include(GetExternalCode)
+      include(CreateLink)
+
+      GetExternalCode(
+        GIT_REPOSITORY "${DOWNLOAD_BLUEZ_UTIL_HEADERS_REPO}"
+        GIT_VERSION "${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}"
+        SOURCE_DIR "${CMAKE_BINARY_DIR}/bluez-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}"
+      )
+
+      add_library(DownloadedBluez5Headers INTERFACE)
+
+      #FIX ME: Hack for weird include paths in the source... 
+      CreateLink(
+        LINK "${CMAKE_BINARY_DIR}/bluez/include/bluetooth"
+        TARGET "${CMAKE_BINARY_DIR}/bluez-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}/lib"
+      )
+
+      set(BLUEZ_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/bluez/include")
+  else()
+    foreach(_header ${NEEDED_BLUEZ_HEADERS})
+      find_path(_header_path  bluetooth/${_header})
+      if(_header_path)
+        message(VERBOSE "Found ${_header} in ${_header_path}")
+        list(APPEND BLUEZ_INCLUDE_DIRS ${_header_path})
+      endif()
+    endforeach()
+
+    list(REMOVE_DUPLICATES BLUEZ_INCLUDE_DIRS)
   endif()
-endforeach()
 
-list(REMOVE_DUPLICATES BLUEZ_INCLUDE_DIRS)
-
-add_library(Bluez5UtilHeaders INTERFACE)
+  add_library(Bluez5UtilHeaders INTERFACE)
+  add_library(Bluez5UtilHeaders::Bluez5UtilHeaders ALIAS Bluez5UtilHeaders)
 
   #
   # From Bluez >= v5.64 the mgmt_ltk_info struct is changed due to inclusive language changes.
@@ -67,14 +96,31 @@ add_library(Bluez5UtilHeaders INTERFACE)
       target_compile_definitions(Bluez5UtilHeaders INTERFACE NO_INCLUSIVE_LANGUAGE)
   endif()
 
-target_include_directories(Bluez5UtilHeaders
-  INTERFACE
-  ${BLUEZ_INCLUDE_DIRS})
+  if(DOWNLOAD_BLUEZ_UTIL_HEADERS)
+    target_include_directories(Bluez5UtilHeaders
+      INTERFACE
+        $<BUILD_INTERFACE:${BLUEZ_INCLUDE_DIRS}>  
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/Bluez5UtilHeaders/include>
+    )
 
-add_library(Bluez5UtilHeaders::Bluez5UtilHeaders ALIAS Bluez5UtilHeaders)
+    install(TARGETS Bluez5UtilHeaders EXPORT Bluez5UtilHeadersTargets)
 
-message(TRACE "BLUEZ_INCLUDE_DIRS ${BLUEZ_INCLUDE_DIRS}")
+    file(GLOB Bluez5UtilHeadersFiles "${CMAKE_BINARY_DIR}/bluez-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}/lib/*.h")
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Bluez5UtilHeaders DEFAULT_MSG BLUEZ_INCLUDE_DIRS)
-mark_as_advanced(BLUEZ_INCLUDE_DIRS)
+    install(FILES ${Bluez5UtilHeadersFiles}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/Bluez5UtilHeaders/include/bluetooth COMPONENT ${NAMESPACE}_Development)
+
+    include(HeaderOnlyInstall)
+    HeaderOnlyInstallCMakeConfig(TARGET Bluez5UtilHeaders TREAT_AS_NORMAL)
+  else()
+    target_include_directories(Bluez5UtilHeaders
+    INTERFACE
+      ${BLUEZ_INCLUDE_DIRS})
+  endif()
+
+  message(TRACE "BLUEZ_INCLUDE_DIRS ${BLUEZ_INCLUDE_DIRS}")
+
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(Bluez5UtilHeaders DEFAULT_MSG BLUEZ_INCLUDE_DIRS)
+  mark_as_advanced(BLUEZ_INCLUDE_DIRS)
+endif()
