@@ -283,11 +283,9 @@ void SleepUs(const unsigned int time) {
 
 #if defined(__WINDOWS__)
 
-    void
-    SleepUs(const uint32_t time) {
-    std::this_thread::sleep_for(std::chrono::microseconds(time));
-}
-
+    void SleepUs(const uint32_t time) {
+        std::this_thread::sleep_for(std::chrono::microseconds(time));
+    }
 
 #endif
 #if !defined(__WINDOWS__) && !defined(__APPLE__)

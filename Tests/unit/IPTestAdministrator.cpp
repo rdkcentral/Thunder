@@ -207,7 +207,7 @@ uint32_t IPTestAdministrator::Signal(uint32_t expectedNextHandshakeValue, uint8_
                 break;
     default :   result = ::Thunder::Core::ERROR_NONE;
                 // Atomically replaces the current value by the expected value
-                bool oldHandshakeValue = _sharedData->handshakeValue.exchange(expectedNextHandshakeValue);
+                VARIABLE_IS_NOT_USED bool oldHandshakeValue = _sharedData->handshakeValue.exchange(expectedNextHandshakeValue);
     }
 
     return result;
