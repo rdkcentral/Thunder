@@ -93,7 +93,7 @@ if(NOT TARGET Bluez5UtilHeaders)
     
   if(${NO_INCLUSIVE_LANGUAGE})
       message(VERBOSE "Your bluez version does not use inclusive language anymore")
-      target_compile_definitions(Bluez5UtilHeaders INTERFACE NO_INCLUSIVE_LANGUAGE)
+      target_compile_definitions(Bluez5UtilHeaders PUBLIC NO_INCLUSIVE_LANGUAGE)
   endif()
 
   if(DOWNLOAD_BLUEZ_UTIL_HEADERS)
