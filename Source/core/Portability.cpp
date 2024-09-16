@@ -398,9 +398,6 @@ namespace Core {
 
     TextFragment Demangled(const char name[]) {
 
-        char allocationName[512]; 
-        size_t allocationSize = sizeof(allocationName) - 1; 
-
         #ifdef __LINUX__
             int status;
             char* temp = abi::__cxa_demangle(name, nullptr, nullptr, &status);
@@ -416,6 +413,8 @@ namespace Core {
         #endif
 
         #ifdef __WINDOWS__
+            char allocationName[512]; 
+            size_t allocationSize = sizeof(allocationName) - 1; 
             uint16_t index = 0;
             uint16_t moveTo = 0;
             while ((name[index] != '\0') && (moveTo < (allocationSize - 1))) {
