@@ -98,7 +98,7 @@ if(NOT TARGET Bluez5UtilHeaders)
 
   if(DOWNLOAD_BLUEZ_UTIL_HEADERS)
     target_include_directories(Bluez5UtilHeaders
-      SYSTEM INTERFACE
+      INTERFACE
         $<BUILD_INTERFACE:${BLUEZ_INCLUDE_DIRS}>  
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/Bluez5UtilHeaders/include>
     )
@@ -114,7 +114,7 @@ if(NOT TARGET Bluez5UtilHeaders)
     HeaderOnlyInstallCMakeConfig(TARGET Bluez5UtilHeaders TREAT_AS_NORMAL)
   else()
     target_include_directories(Bluez5UtilHeaders
-    SYSTEM INTERFACE
+    INTERFACE
       ${BLUEZ_INCLUDE_DIRS})
   endif()
 
