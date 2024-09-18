@@ -23,6 +23,10 @@
 #include "UUID.h"
 #include "BluetoothUtils.h"
 
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
+#include <core/bluez/mgmt.h>
+POP_WARNING()
+
 namespace Thunder {
 
 namespace Bluetooth {
