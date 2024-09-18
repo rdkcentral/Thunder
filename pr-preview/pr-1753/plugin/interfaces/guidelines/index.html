@@ -1,0 +1,2470 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/interfaces/guidelines/">
+      
+      
+        <link rel="prev" href="../docs/">
+      
+      
+        <link rel="next" href="../tags/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.35">
+    
+    
+      
+        <title>Guidelines - Thunder</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.35f28582.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#interface-definition" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Thunder
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Guidelines
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/rdkcentral/Thunder/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    rdkcentral/Thunder
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Thunder
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/rdkcentral/Thunder/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    rdkcentral/Thunder
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/intro/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    What is Thunder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/repos/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Repository Structure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/build_linux/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/build_windows/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows Build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Basic Usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/architecture/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3_2" id="__nav_2_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    RPC Protocols
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            RPC Protocols
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON-RPC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COM-RPC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Plugin Development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Plugin Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../execution-modes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Execution Modes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lifecycle/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugin Lifecycle
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../principles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Design Principles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Interfaces
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            Interfaces
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interfaces/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Interface-Driven Development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documentation generation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Guidelines
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tags/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tags
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../errors/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Error Handling
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../messaging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Messaging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../subsystems/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Subsystems
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proxypool/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ProxyPool
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../private-comrpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Private COM-RPC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../split-implementation.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Split Implementation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../composite/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Composite Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Common Utilities
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Common Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/strings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    File Handling
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            File Handling
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/files/files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Filesystem Interface
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/files/observer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    File Observer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/json/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON Parser
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Threading
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Threading
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/threading/worker-pool/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Worker Pool
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/threading/mutex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mutexes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/time/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Time
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/timers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/web/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Requests
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/sockets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sockets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/singletons/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Singletons
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/processes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Processes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Client Development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Client Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../client/intro/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../client/json-rpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON-RPC App
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../client/com-rpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COM-RPC App
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Debugging
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Debugging
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../debugging/debug/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Debug Tips
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../debugging/thundershark/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ThunderShark
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Walkthrough
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Walkthrough
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Hello World
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            Hello World
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../walkthrough/hello-world/setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workspace setup
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../walkthrough/hello-world/guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugin development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1_3" id="__nav_7_1_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Client development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            Client development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JSON-RPC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COM-RPC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Misc
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Misc
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documentation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../references/references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../issuetemplate/issuetemplate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Filing an Issue
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="interface-definition">Interface Definition</h1>
+<h1 id="table-of-contents">Table of Contents</h1>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#RuleRecommendationGuideline">Rule, Guideline or Recommendation</a></li>
+<li><a href="#Rules">Rules</a><ol>
+<li><a href="#InterfacesShouldNotLeakImplementationDetails">Interfaces should not leak implementation details</a></li>
+<li><a href="#ComplyToSingleResponsibilityPrinciple">Comply to the Single Responsibility Principle (SPR)</a></li>
+<li><a href="#InterfacesPublishedCannotChangeOnlyExtend">Interfaces published cannot change, only extend</a></li>
+</ol>
+</li>
+<li><a href="#Guidlines">Guidelines</a><ol>
+<li><a href="#InterfaceMethodsThatAreImplementationInvariantShouldBeMarkedConst">Interface methods that are implementation invariant should be marked const</a></li>
+<li><a href="#UseNestedInotificationNameForOnetomanyDependency">Use nested INotification name for one-to-many dependency</a></li>
+<li><a href="#UseNestedIcallbackNameForOnetooneDependency">Use nested ICallback name for one-to-one dependency</a></li>
+</ol>
+</li>
+<li><a href="#Recommendations">Recommendations</a><ol>
+<li><a href="#StateCompleteInterfaces">State complete interfaces</a></li>
+<li><a href="#ReturnCorehresultOnMethods">Return "core::hresult” on methods</a></li>
+<li><a href="#SpecificallyDefineTheLengthOfTheEnumToBeUsed">Specifically define the length of the enum to be used</a></li>
+<li><a href="#BeVerboseEvenIfThereIsFunctionallyNoNeed">Be verbose even if there is functionally no need</a></li>
+</ol>
+</li>
+<li><a href="#MandatoryKeywordsInAnInterfaceDefinition">Mandatory keywords in an interface definition</a></li>
+<li><a href="#TagsAnnotationsAvailableForOptimizingTheGeneratedCode">Tags/annotations available for optimizing the generated code</a></li>
+<li><a href="#PracticalConsiderations">Practical Considerations</a><ol>
+<li><a href="#LessIsMore">Less is more</a></li>
+<li><a href="#StaticAndDynamic">Static and Dynamic behaviour</a></li>
+<li><a href="#FrequencyVersusQuantity">Frequency versus Quantity</a></li>
+<li><a href="#PreferMultipleInterfaces">Prefer multiple smaller interfaces over one big one</a></li>
+<li><a href="#AsynchronousInterfaces">Asynchronous interfaces</a></li>
+</ol>
+</li>
+</ol>
+<h1 id="Introduction">Introduction</h1>
+<p>Interface-based development offers several advantages:</p>
+<ol>
+<li><strong>Modularity</strong>: By defining interfaces, different modules of a system can interact with each other without necessarily knowing about the implementation details. This promotes a modular design which makes the system easier to understand, maintain, and extend.</li>
+<li><strong>Flexibility</strong>: Interfaces allow for the decoupling of components within a system. This means that components can be swapped out or updated without affecting other parts of the system, as long as they adhere to the defined interface contract.</li>
+<li><strong>Multiple Inheritance</strong>: In languages that support multiple inheritance through interfaces, a class can implement more than one interface, allowing it to inherit behavior from multiple sources. This provides flexibility in defining the functionality of a class.</li>
+<li><strong>Abstraction</strong>: Interfaces allow developers to focus on what needs to be done rather than how it is done. By defining a clear contract in the form of an interface, developers can work independently on different parts of a system without worrying about the internal complexities of other components.</li>
+<li><strong>Interoperability</strong>: Interfaces facilitate interoperability between different components or even different systems. By adhering to a common interface, different parts of a system or different systems altogether can communicate effectively.</li>
+<li><strong>Testing</strong>: Interfaces help in unit testing by allowing developers to create mock objects that implement interfaces. This enables easier testing of individual components in isolation, leading to more robust and reliable code.</li>
+</ol>
+<p>Overall, interface-based development promotes a modular, flexible, and maintainable codebase that is easier to work with and extend over time.</p>
+<p>To exploit these advantages to the fullest, Thunder uses Interfaces definitions between plugins and internally. The interface definitions created for Thunder should adhere to certain rules/recommendations and guidelines. This document describes these Rules/Recommendations and guidelines for designing a good interface and the syntax to be used to describe the interface. 
+With the Thunder interface definitions it is also possible by using the @json tag to (partially) expose the Thunder inter-plugin/internal interface as a JSON-RPC interface. The below Rules, Guidelines and Recommendations apply also to JSON-RPC interfaces. Please see <a href="https://rdkcentral.github.io/Thunder/pr-preview/pr-1721/plugin/interfaces/interfaces/">here</a> for a more detailed description on how the JSON-RPC interface can be fully generated and documented from the Thunder interface specification without writing a single line of code. Of course deciding if and what part of your interface should be exposed as JSON-RPC interface should also be careful considered. </p>
+<h1 id="RuleRecommendationGuideline">Rule, Guideline or Recommendation</h1>
+<p>Here are the distinctions between a rule, a recommendation, and a guideline:</p>
+<ol>
+<li><strong>Rule</strong>:<ul>
+<li>A rule is a prescribed directive or principle that must be followed strictly. It is typically mandatory and non-negotiable.</li>
+<li>Rules often have legal or formal implications and violations may lead to consequences or penalties.</li>
+<li>Rules are usually clear, specific, and binding, leaving little room for interpretation or deviation.</li>
+</ul>
+</li>
+<li><strong>Guideline</strong>:<ul>
+<li>A guideline is a set of general principles that provide guidance or direction on how to achieve a particular objective.</li>
+<li>Guidelines are more flexible than rules, as they offer suggestions on the most effective way to accomplish a task or goal.</li>
+<li>They serve as a framework for good practice and can be adapted or customized based on specific circumstances or requirements.</li>
+</ul>
+</li>
+<li><strong>Recommendation</strong>:<ul>
+<li>A recommendation is a suggestion or advice on the best course of action, but it is not mandatory, they offer more freedom than guidelines .</li>
+<li>Recommendations are based on best practices, standards, or guidelines, but individuals or organizations have the freedom to choose whether or not to follow them.</li>
+<li>While recommendations are meant to guide decision-making, they allow for flexibility and individual judgment in applying them.</li>
+</ul>
+</li>
+</ol>
+<p>In summary, rules are strict, mandatory, and non-negotiable directives, recommendations are suggestions or advice that are not obligatory, and guidelines offer flexible principles for achieving a specific objective.</p>
+<h1 id="Rules">Rules</h1>
+<h2 id="InterfacesShouldNotLeakImplementationDetails">Interfaces should not leak implementation details</h2>
+<p>Interfaces should be designed to provide a clear and concise abstraction of functionality without exposing the underlying implementation details. Here are some reasons why interfaces should not leak implementation details:</p>
+<ul>
+<li><strong>Encapsulation</strong>: By hiding implementation details, interfaces ensure that the internal workings of a system or component are not exposed to the outside world. This promotes encapsulation, which is a core principle of object-oriented design.</li>
+<li><strong>Flexibility and Maintainability</strong>: When interfaces do not expose implementation details, the underlying code can be changed, optimized, or refactored without affecting the code that depends on the interface. This makes the system more adaptable and easier to maintain.</li>
+<li><strong>Abstraction</strong>: Interfaces should provide a high-level abstraction that defines what operations can be performed without detailing how they are performed. This allows users of the interface to focus on the "what" rather than the "how," making the system easier to understand and use.</li>
+<li><strong>Reduced Coupling</strong>: If implementation details are hidden, components that depend on the interface are less tightly coupled to specific implementations. This helps in reducing dependencies and makes it easier to swap out one implementation for another.</li>
+<li><strong>Security</strong>: Hiding implementation details can also enhance security by preventing unauthorized access to sensitive information or potential manipulation of internal processes.</li>
+<li><strong>Interchangeability</strong>: When interfaces do not leak implementation details, it becomes easier to interchange different implementations of the same interface. This is particularly useful in scenarios where multiple implementations might be needed, such as testing with mock objects or switching between different service providers.</li>
+<li><strong>Simpler API</strong>: A clean interface that hides complexity makes the API simpler and more intuitive to use. Users of the interface do not need to understand the complexities behind the scenes, leading to a better experience for the user of the interface.</li>
+</ul>
+<p>To achieve these benefits, interfaces should be carefully designed to define clear and minimal contracts for interaction, focusing on what needs to be done rather than how it is done.</p>
+<h2 id="ComplyToSingleResponsibilityPrinciple">Comply to the Single Responsibility Principle (SPR)</h2>
+<p>The single-responsibility principle (SRP) is a computer programming principle that states that "A module should be responsible to one, and only one, actor." The term actor refers to a group (consisting of one or more stakeholders or users) that might require a change to the module. In other words a module,class,interface should have only one reason to change, gather together the things that change for the same reasons. Separate those things that change for different reasons. </p>
+<p>SRP is a fundamental principle in software development and also (or perhaps even more strongly) applies to interfaces as well, which should also adhere to the idea of having a single, well-defined responsibility. Here are some reasons why interfaces should comply with the Single Responsibility Principle:</p>
+<ul>
+<li><strong>Clear and focused functionality</strong>: Interfaces that adhere to the SRP are easier to understand and work with because they have a clear and focused purpose. Developers can quickly grasp what the interface is meant to do and how it should be implemented.</li>
+<li><strong>Encourages better design</strong>: By adhering to the SRP, interfaces are more likely to be well-designed and follow best practices in software development. Separating different responsibilities into distinct interfaces helps to create a more modular and maintainable codebase.</li>
+<li><strong>Easier to maintain and extend</strong>: When an interface has a single responsibility, changes to that responsibility are less likely to impact other parts of the codebase compared to when the interface would have multiple responsibilities, then it would be more likely to touch different parts of the codebase when changed. This makes it easier to maintain and extend the code without causing unintended consequences or introducing bugs.</li>
+<li><strong>Promotes code reusability</strong>: Interfaces that adhere to the SRP are more likely to be reusable in different contexts. Since each interface represents a single responsibility, it can be easily reused in various parts of the codebase without introducing unnecessary complexity.</li>
+<li><strong>Improved testability</strong>: Interfaces with a single responsibility are often easier to test because their behavior is well-defined and focused. This makes it simpler to write unit tests for classes that implement the interface and ensures that each component of the software can be tested effectively in isolation.</li>
+<li><strong>Enhanced flexibility</strong>: Interfaces that follow the SRP are more flexible and adaptable to changes in requirements. If a new responsibility needs to be added (so with SRP less likely to influence an existing interface) or an existing one modified, it can be done more easily without affecting other parts of the codebase.</li>
+</ul>
+<p>In conclusion, interfaces that comply with the Single Responsibility Principle are easier to understand, maintain, and extend. By keeping interfaces focused on a single responsibility, developers can create more modular, reusable, and robust software systems.</p>
+<h2 id="InterfacesPublishedCannotChangeOnlyExtend">Interfaces published cannot change, only extend</h2>
+<p>When it comes to interfaces, it's important to extend them rather than change them directly to maintain compatibility with existing code. By extending an interface, you can add new functionality without breaking the code that already uses the interface. This allows for a more flexible and scalable design, as different classes can implement the new interface without affecting the existing codebase. Additionally, extending interfaces promotes the principle of "open-closed" in software design, where classes are open for extension but closed for modification. This helps in creating more maintainable and modular code.</p>
+<h1 id="Guidelines">Guidelines</h1>
+<h2 id="InterfaceMethodsThatAreImplementationInvariantShouldBeMarkedConst">Interface methods that are implementation invariants should be marked const</h2>
+<p>If a method on an interface is expected to *not* functionally change anything in the implementation of the interface, mark the method as const. This allows for passing const interfaces in case the interface needs to be passed to users that should not "control" the implementation.</p>
+<h2 id="UseNestedInotificationNameForOnetomanyDependency">Use nested INotification name for one-to-many dependency</h2>
+<p>The Observer pattern, is a behavioral design pattern where there is a one-to-many dependency between the parent interface and the INotification (nested child interface) so that when one parent interface implementation changes state, all its dependents INotification child interface implementations are notified and updated automatically.</p>
+<p>In software development, this pattern is commonly used to establish communication between different parts of a system without them being directly coupled. The Publisher (or Subject) maintains a list of Subscribers (or Observers) interested in being notified of changes, and when an event occurs or state changes, the Publisher notifies all Subscribers by invoking specific methods on them. This allows for a loosely coupled architecture where changes in one component trigger updates in other components without them having explicit knowledge of each other.</p>
+<p>As there is a one-to-many dependency there must be a means to register and unregister the INotification. These must be added to the parent interface and it is a guideline to call these <code>core::hresult Register(INotification*)</code> and <code>core::hresult Unregister(const INotification*);</code></p>
+<div class="highlight"><pre><span></span><code><span class="c1">// @json 1.0.0</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IObject</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_OBJECT</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">    </span><span class="c1">// @event</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_OBJECT_NOTIFICATION</span><span class="w"> </span><span class="p">};</span>
+<span class="w">        </span><span class="cm">/* @brief Object visibility changes */</span>
+<span class="w">        </span><span class="cm">/* @param hidden: Denotes if application is currently hidden */</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">Changed</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">hidden</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">sink</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">sink</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h2 id="UseNestedIcallbackNameForOnetooneDependency">Use nested ICallback name for one-to-one dependency</h2>
+<p>The callback pattern in software development is a programming pattern that allows a function to call another function, typically provided as an argument, at a specified point during its execution. It is different from <a href="#UseNestedInotificationNameForOnetomanyDependency">Use nested INotification name for one-to-many dependency</a> with respect to cardinality. The callback is for a one-to-one dependency.</p>
+<p>In this pattern, a callback function is passed as an argument to a higher-order function, which then invokes the callback function at the appropriate time. Callbacks are commonly used in asynchronous programming to handle responses to events that may not occur immediately. They enable non-blocking behavior by allowing a function to continue executing while waiting for a response, and then invoke the callback function with the result when it becomes available.</p>
+<p>Callbacks are widely used in event-driven architectures, such as in web development for handling user interactions, network requests, and other asynchronous tasks. They provide a flexible way to customize and extend the behavior of functions and enable efficient handling of asynchronous operations in software systems.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// @json 1.0.0</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IObject</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_OBJECT</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="c1">// @event</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">ICallback</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_OBJECT_CALLBACK</span><span class="w"> </span><span class="p">};</span>
+<span class="w">        </span><span class="cm">/* @brief Called if the job has done its work */</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">Completed</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="n">Virtual</span><span class="w"> </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">Process</span><span class="p">(</span><span class="n">ICallback</span><span class="o">*</span><span class="w"> </span><span class="n">sink</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Virtual</span><span class="w"> </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="n">Abort</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h1 id="Recommendations">Recommendations</h1>
+<h2 id="StateCompleteInterfaces">State complete interfaces</h2>
+<p>If a method on the interface can change an implementation into a different state, make sure the interface also has methods to revert the entered state. A good example is an interface that can <code>core::hresult Start() = 0</code> the executions of a job. As the execution of the job has an expected lifespan which is greater that the calls lifespan, make sure there is a method on the interface as well to bring back the interface to the initial, not started state. E.g. an <code>core::hresult Abort() = 0</code> method. </p>
+<h2 id="ReturnCorehresultOnMethods">Return <code>core::hresult</code> on methods</h2>
+<p>As most interfaces are designed to work over process boundaries, it is recommended to cater for issues during the passing of the process boundary, e.g. the other process might have crashed. This means that method calls on interfaces that seem trivial but do change the state of an implementation, like <code>SetTime()</code>, may fail due to cross process communication. If the return value of a method is defined as core::hresult, the Thunder COMRPC framework will signal issues with the communication by returning a negative value. The whole positive range from 0-2147483647 (0-0x7FFFFFFF) is free for the implementer to return values.</p>
+<h2 id="SpecificallyDefineTheLengthOfTheEnumToBeUsed">Specifically define the length of the enum to be used</h2>
+<p>To allow for the code generator to optimize for the communication frame, it is recommended to always define the length of an enum if it is used as a parameter. If the enum length is not defined, it is assumed to be 32 bits. If an enum only has less than 256 values, it means 3 bytes are wasted on the line.</p>
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="k">enum</span><span class="w"> </span><span class="nc">SoundModes</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+<span class="w">       </span><span class="n">UNKNOWN</span><span class="p">,</span>
+<span class="w">       </span><span class="n">MONO</span><span class="p">,</span>
+<span class="w">       </span><span class="n">STEREO</span><span class="p">,</span>
+<span class="w">       </span><span class="n">SURROUND</span><span class="p">,</span>
+<span class="w">       </span><span class="n">PASSTHRU</span><span class="p">,</span>
+<span class="w">       </span><span class="n">DOLBYDIGITAL</span><span class="p">,</span>
+<span class="w">       </span><span class="n">DOLBYDIGITALPLUS</span><span class="p">,</span>
+<span class="w">       </span><span class="n">SOUNDMODE_AUTO</span><span class="w"> </span>
+<span class="w">   </span><span class="p">};</span>
+</code></pre></div>
+<h2 id="BeVerboseEvenIfThereIsFunctionallyNoNeed">Be verbose even if there is functionally no need</h2>
+<p>Describe/define the interface as verbose as possible. This is the contract between two parties, it is better to clearly state what the intention of a parameter is than to leave the intent floating. This means that if a parameter is expected <strong><em>not</em></strong> to be changed by the implementer define it as const, even if from a C/C++ language point of view it does not add value.</p>
+<div class="highlight"><pre><span></span><code><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Logging</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cat</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&amp;</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="cm">/* @out */</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Logging</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cat</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enabled</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</code></pre></div>
+<p>Although the const bool in the second method has no added value, it is a recommendation to use it, just to indicate clearly that the intent is that the implementation should not and can not change the parameter.</p>
+<h1 id="MandatoryKeywordsInAnInterfaceDefinition">Mandatory keywords in an interface definition</h1>
+<p>The following keywords are mandatory in a COMRPC interface definition, which is an interface that can be used over process boundaries. The interface definition complies with the C/C++ standard rules for header file definitions and thus these interfaces can (and will) be used directly in C/C++ code.</p>
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IObject</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_OBJECT</span><span class="w"> </span><span class="p">};</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>A <strong><em>struct</em></strong> in the <strong><em>C programming language</em></strong> (and many derivatives) is a <strong><em>composite data type</em></strong> (or <strong><em>record</em></strong>) declaration that defines a physically grouped list of variables under one name in a block of memory, allowing the different variables to be accessed via a single <strong><em>pointer</em></strong> or by the struct declared name which returns the same address. The struct data type can contain other data types so is used for mixed-data-type records such as a hard-drive directory entry (file length, name, extension, physical address, etc.), or other mixed-type records (name, address, telephone, balance, etc.). In C++ a struct is very similar to a class, only difference is that by default the members have public visibility. </p>
+<p>The <code>EXTERNAL</code> keyword is used for different platforms to define the link type to be used when trying to access this interface. This typically refers to the default constructor/destructors if generated for a struct.</p>
+<p>The <code>Core::IUnknown</code> must always be the base of the interface to allow for interface navigation (<code>QueryInterface</code>) and life-time management of the interface (reference counting). As typical implementations of an interface might implement multiple interface by one implementation it is mandatory to all route back to a single lifetime management/Navigational base class (diamond structure) of the core::IUnknown implementation. This is realized by making sure that all interface inherit <code>virtual</code> from the <code>Core::IUnknown</code>. </p>
+<p>As small-as-it-gets is what Thunder stands for, so identifying an interface by a name (or using a GUID, as Microsoft did) is a bit of overkill. Thunder uses an ID which should be unique. The ID to be assigned to the interface is mandatory and it is defines as <code>enum { ID = &lt;NUMBER&gt; };</code> the number should be unique and thus all ID’s should be registered in <code>ids.h</code> to guarantee uniqueness.</p>
+<p>The ID’s are split up in ranges. </p>
+<table>
+<thead>
+<tr>
+<th>begin</th>
+<th>end</th>
+<th>Owner</th>
+<th>ID storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00000000</td>
+<td>0x00000080</td>
+<td>Thunder internal</td>
+<td><code>Thunder/Source/plugin/ids.h</code></td>
+</tr>
+<tr>
+<td>0x00000080</td>
+<td>0x80000000</td>
+<td>Public Plugin interfaces</td>
+<td><code>ThunderInterfaces/interfaces/ids.h</code></td>
+</tr>
+<tr>
+<td>0x80000000</td>
+<td>0xA0000000</td>
+<td>Custom Plugin interfaces</td>
+<td><code>&lt;Custom&gt;</code></td>
+</tr>
+<tr>
+<td>0xA0000000</td>
+<td>0xFFFFFFFF</td>
+<td>QA Interfaces</td>
+<td><code>ThunderInterfaces/interfaces/ids.h</code></td>
+</tr>
+</tbody>
+</table>
+<p>The Custom range is to accommodate interfaces that are not publicly published and therefore the ID cannot be guaranteed to be unique, by having this range it is at least guaranteed it will not collide with a Thunder or Public interface. The use of non public interfaces is ill advised.</p>
+<h1 id="TagsAnnotationsAvailableForOptimizingTheGeneratedCode">Tags/annotations available for optimizing the generated code</h1>
+<p>Tags/annotations that can be used to optimize the generated code, influence the generated JSON-RPC interface from the interface (if desired at all), or document the interface can be found here:</p>
+<p>See: <a href="https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/">https://rdkcentral.github.io/Thunder/plugin/interfaces/tags</a></p>
+<h1 id="PracticalConsiderations">Practical Considerations</h1>
+<h2 id="LessIsMore">Less is more</h2>
+<p>When designing an interface spend some time thinking on how the interface can be as easy to use, understand and can be consistent without the need of adding a lot of documentation and the need of explaining all the cornercases that can happen when using the interface in a certain way.</p>
+<p>As an interface is in principle immutable it is better to spend more time on this before releasing the interface than later on trying to improve the interface or writing a lot of documentation explaining on how to use it in certain situations. </p>
+<p>When designing the interface it is good to use the "less it more" principle when adding methods to it to make sure it can do what should be possible with it. 
+Less methods will make it easier to understand the interface, less documentation will be needed, it is easier to keep it consistent and there is less need to think or document what will happen if you use the methods in an unexpected order. Less methods will also require less testing. </p>
+<p>Let's design an Player Interface as an example. At first one would expect all the following should be possible for a player:</p>
+<ul>
+<li>Start playback</li>
+<li>Stop Playback</li>
+<li>Pause Playback</li>
+<li>Rewind (with a certain speed perhaps)</li>
+<li>Forward (with a certain speed perhaps)</li>
+</ul>
+<p>So a naive interface could look like this:</p>
+<p><div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IPlayer</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_PLAYER</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Play</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Stop</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Pause</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Rewind</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Forward</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+At first this might seem logical but how would you expect the implementation to respond, if you would do Pause(), before Play()? Or Play() after Rewind() without stopping first? You would need to think about all the different options and specify how the interface should respond in that situation. 
+But if you think of it, what all the different methods do is specify a certain playback speed. So if you have one method with which you could set the player speed (and allow a negative number) it could do all the above while at the same time be consistent, easy to understand and no need to explain what will happen in certain situation as just the last set speed is the one that is current.
+So this is how this was specified in the ISteamer interface <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/a229ea291aa52dc99e9c27839938f4f2af4a6190/interfaces/IStream.h#L105C32-L105C53">here</a></p>
+<h2 id="StaticAndDynamic">Take both Static and Dynamic behaviour into account</h2>
+<p>When designing an interface make sure not only to focus on the static behaviour, meaning what methods and notifications are necessary to make sure the client can use it for its purpose, but also on the dynamic behaviour, meaning how should the interface behave when the methods are called at certain times in a certain order and when certain notifications are sent in between (also see the "Less is more" paragraph above on advise on how to reduce the complexity of the dynamic behaviour). This of course also taking into account that the embedded domain we are operating in with Thunder allows for calls being done from multiple applications and/or threads so any call can happen in parallel with any other or any notification. </p>
+<p>Think about data that needs to be changed and/or read atomically. For example it may look logical in some case to have setters/getters for individual items but if the overall consistency of some items combined needs to be guarded it may make more sense to combine these items in one getter and setter, this prevents one application writing ValueA and then ValueB, while another one reads both A and B in between the two writes and is reading an inconsistent set. 
+See for example in the below sequence diagram. If Client1's intention was to set A to 10 and B to 20 and publish that result to the outside world it failed as Client2 will read 10 for A, but for B the value it had before Client1 set it to 20. If the interface only has individual setters and getters the consistency requirement in this case cannot be met, therefore this should be taken into account when designing the interface and make it possible to get and set values that should be treated as consistent set in one method.
+<img alt="Sequence Diagram showing multiple setters and getters" src="../../../assets/ExampleStaticDynamic1.png" /></p>
+<p>Sometimes when this gets very complex one may need to revert to some kind of a transaction support, where one first would start a transaction then does a number of actions and then ends the transaction, only then making the result of all actions in the transaction visible to the outside world in one atomic event. Of course this will make use (and implementation) of the interface much more complex so this would only be advisable when a more simple solution would not suffice. </p>
+<p>Also performance may be an important aspect to take into consideration when thinking about the (dynamic) behaviour of the interface. Suppose an interface is created for storing key value pairs and one expects a client to change and/or read a lot of values after one each other and the writing and reading is expected to be quite resource intensive (for example write take some time) it could be a consideration to make it possible to write/read multiple pairs in one call to prevent the client of creating quite a number of parallel calls that queue up in the framework and or plugin if the client for example would do this from multiple threads or would use CURL or a similar solution to do these calls in parallel. Or depending on the situation and expected usage pattern perhaps make the interface asynchronous so the calls itself will return quickly while the implementation can now handle multiple writes more efficiently by combining them (of course still with some maximum to cap the number of maximum parallel requests to prevent a too high of a peak in resource usage).
+In any case make sure to next to the static behaviour of the interface also document the expected dynamic behaviour so that both the implementer of the interface as well as the user know what to expect. </p>
+<p>Also for notifications one should think very carefully how they behave dynamically and what data the notifications do carry. For example a naive idea might be to always sent a notification on a data change event including the new value of the data. Although this may work perfectly if the data does not change much it will have a big influence on the expected behaviour if the data changes often and the consistency of the data read must be guaranteed. 
+Suppose one would just sent out the notification for the data changed <strong>without</strong> locking the possibility another user might in parallel change that value, then when the receiver of the notification handles the data, the value could be different then contained in the notification (or worse suppose it reads a second value in the notification handling code via a getter, also that one might have changed and not have the same value when the data in the event was send which might be important). One could choose to lock the complete component for changes of course until all notifications are sent but although now data consistency is guaranteed the component becomes a big bottleneck in the system if changes are frequent and will lead to more resource usage as requests will pile up. 
+This can be seen in the sequence diagram below. Client1 changes value A to 10 which leads to the plugin sending a notification to all registered listeners. While Client3 is handling this notification Client2 changes the value for A to 20. In the notification Client3 reads the value for A, should it read 10 or 20? It might be obvious there is no single correct answer to this. This depends on the dynamic behaviour you want the interface to have.
+<img alt="Sequence Diagram showing Notification after update without locking" src="../../../assets/ExampleStaticDynamic2.png" /></p>
+<p>Another example of when thinking about notifications and what data to include in them is very useful is a notification that would include a desired state. Even if the notifications would not happen much having the requested state included might lead to undesired dynamic behaviour. Suppose the notification can request for a transition to state ON and state OFF and the state is in the request. A component could receive a request to change to state ON but in the mean time perhaps a (user) action led to the cancellation of this request before it was handled. If the state was part of the notification the component might start the (expensive) transition to ON because it will only handle the OFF notification after this one, but if the state was not part of the notification but just expressed "StateChange" requested, it would read the requested state via a getter and get the current value which would be OFF in the mean time so it would not unnecessary start the state change to ON. </p>
+<p>So as a summery there is no simple rule for how to correctly design for the dynamic behaviour of the interface, it really depends on the use case. But it should not be done as an afterthought and should also be documented thoroughly where applicable as it can lead to hard to find and fix issues. </p>
+<h2 id="FrequencyVersusQuantity">Frequency versus Quantity</h2>
+<p>When designing an interface in an embedded environment where memory, processing power and bandwidth might be limited it is also advisable to think about the frequency and quantity of the data exchange. Even if bandwidth itself is not an issue, sending big chunks of data, or small ones with a high frequency will lead to an increase in resource usage (memory and CPU) for sending and/or handling this. </p>
+<p>So when thinking of the data passed to/from a component via a method on the interface take into consideration if all the data is really needed for handling that call or notification. On the other hand sending very small chunks per call while it is expected up front that multiple calls will be needed to combine enough data to be useful for processing is also not very efficient (certainly for an environment where latency is high). So don't make the amount of data per call an afterthought but pass enough data that can be processed in one call but not more.</p>
+<p>As an example when designing an interface to send stored EPG data to a client it probably does not make much sense of sending a month of EPG data for all channels in one call. Probably the client will only display a certain number of channels and a week of data so it would make sense to only send this amount. It also would not make sense to sent it per channel per hour only as that would require multiple calls to combine all information the client is interested in (and might cause additional consistency issues as the data is not retrieved over multiple calls and could change in the mean time).</p>
+<p>A technique that can be considered in these kind of situations are iterators that allow retrieval of only part of the data per call, certainly if the whole dataset needs to be kept consistent (but that might come at the cost of keeping a (partial) copy of the data).</p>
+<p>Also when sending notifications on certain events keep in mind how often these happen and if the client is always interested in receiving all of these (also see the "Static and Dynamic behaviour" section above). 
+If these events happen a lot, the component might become very chatty and it might be a better idea think of solutions on how to reduce the number of events sent (e.g. reduce the number of possible events, make it possible to subscribe to subevents etc.).</p>
+<h2 id="PreferMultipleInterfaces">Prefer multiple smaller interfaces over one big one</h2>
+<p>COM-RPC makes it rather easy to have one component implement multiple interfaces instead of just one and have the user of the interface query if a certain interface is implemented by a component, see the IUnknown QueryInterface method on how to do that.</p>
+<p>to briefly reiterate how that works, suppose a component implements multiple interfaces:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">WebKitImplementation</span><span class="w"> </span><span class="o">:</span><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowser</span><span class="p">,</span>
+<span class="w">                                 </span><span class="k">public</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWebBrowser</span><span class="p">,</span>
+<span class="w">                                 </span><span class="k">public</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IApplication</span><span class="p">,</span>
+<span class="w">                                 </span><span class="k">public</span><span class="w"> </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowserScripting</span><span class="p">,</span>
+<span class="w">   </span><span class="p">...</span>
+</code></pre></div>
+<p>and exposes these interfaces in the interface map:</p>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">BEGIN_INTERFACE_MAP</span><span class="p">(</span><span class="n">WebKitImplementation</span><span class="p">)</span>
+<span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWebBrowser</span><span class="p">)</span>
+<span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowser</span><span class="p">)</span>
+<span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="w"> </span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IApplication</span><span class="p">)</span>
+<span class="w">        </span><span class="n">INTERFACE_ENTRY</span><span class="w"> </span><span class="p">(</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowserScripting</span><span class="p">)</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">        </span><span class="n">END_INTERFACE_MAP</span>
+</code></pre></div>
+<p>then a client that via any of the available methods got access to an interface of a component (which could also just be the IShell of the plugin of course) can query if an interface is available via the QueryInterface method (that is always available on an interface as it is part of IUnknown):</p>
+<p><div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWebBrowser</span><span class="o">*</span><span class="w"> </span><span class="n">webbrowser</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">service</span><span class="p">.</span><span class="n">QueryInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IWebBrowser</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="w"> </span><span class="n">webbrowser</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="p">...</span>
+<span class="w">            </span><span class="n">webbrowser</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowser</span><span class="o">*</span><span class="w"> </span><span class="n">browser</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">service</span><span class="p">.</span><span class="n">QueryInterface</span><span class="o">&lt;</span><span class="n">Exchange</span><span class="o">::</span><span class="n">IBrowser</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="w"> </span><span class="n">browser</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="p">...</span>
+<span class="w">                </span><span class="n">browser</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">...</span>
+</code></pre></div>
+if the component does not expose the requested interface a nullptr will be returned and logic can be created around the availability of the interface.</p>
+<p>This feature of COM-RPC can be used in multiple ways:</p>
+<ul>
+<li>
+<p>When designing an interface make sure to only give it one distinct responsibility per interface. This makes it easier to understand and maintain the interface but now also gives a component the opportunity to only implement one responsibility and not the other if it does not make sense. The client can, using QueryInterface, check if also the extended functionality is available. For example for a Player interface where you could also change the Volume one would  create a separate IPlayer interface as well as an IVolume, instead of only having an IPlayer interface that would provide both. This will also make reuse of an interface easier as it can be used for any component implementing that responsibility , no reason to say it does not fit the component as only some part of the interface applies to what it is trying to achieve.</p>
+</li>
+<li>
+<p>When an interface needs to be extended instead of adding new methods to the existing one, one could add the extended functionality to a new interface. Now the client can also work with components that do not yet implement the new extended functionality (as it can find out with QueryInterface if it is available) while on the other hand you are not forcing an update of all the components that do implement the initial interface, you only update the one(s) for which the extended new functionality makes sense.</p>
+</li>
+</ul>
+<h2 id="AsynchronousInterfaces">Design interfaces to be asynchronous when needed</h2>
+<p>Sometimes when designing an interface it can be expected that the implementation of a certain action can be quite expensive and take some time. </p>
+<p>As a rule anytime the execution of the call will take more than 100 milliseconds or when the duration of an action is non deterministic and worse case would take longer than 100 milliseconds, the interface must be made asynchronous. The interface will then only pass the data needed to start the action to the component and add a callback to the interface to make it possible for the implementation to return the result asynchronously. The component will handle the action in the background (do not use threads for this but use the Thunder workerpool) and call the provided callback when the action is completed to signal this to the initiator of the action. Not only will this prevent the call to fail because of JSON-RPC or COM-RPC timeouts but it will also make sure the framework is not blocked internally and also the client can continue without being blocked waiting for the result (or needed to reserve a thread for this).</p>
+<p>For example an interface that will require user interaction for its action (like asking for the pin to be entered) is a perfect example of one that should be made asynchronous as it is of course completely nondeterministic when the call will return as the successful entering of the PIN could take minutes/hours potentially.
+<img alt="Sequence Diagram showing Async example for getting a user PIN" src="../../../assets/AsyncInterfaceExample.png" /></p>
+<p>Also note, as was pointed out in the "State complete interfaces" paragraph of this page, that there should also be a means to stop the initiated action before it has completed. This is for example needed when the component that started the action needs to shut down and with this it can signal that the action can be stopped as it is no longer needed and the provided callback is no longer valid and should not longer be called.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../docs/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Documentation generation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Documentation generation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../tags/" class="md-footer__link md-footer__link--next" aria-label="Next: Tags">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Tags
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.56dfad97.min.js"></script>
+      
+    
+  </body>
+</html>
