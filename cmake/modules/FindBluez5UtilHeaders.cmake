@@ -42,6 +42,19 @@ set(NEEDED_BLUEZ_HEADERS
   l2cap.h
 )
 
+function(CheckNoInclusiveLanguage)
+  include(CheckStructHasMember)
+
+  set(CMAKE_REQUIRED_FLAGS "-Wno-error")
+
+  check_struct_has_member("struct mgmt_ltk_info" central 
+    "${BLUEZ_INCLUDE_DIRS}/bluetooth/bluetooth.h;${BLUEZ_INCLUDE_DIRS}/bluetooth/mgmt.h" 
+    _NO_INCLUSIVE_LANGUAGE 
+    LANGUAGE C) 
+
+  set(NO_INCLUSIVE_LANGUAGE ${_NO_INCLUSIVE_LANGUAGE} PARENT_SCOPE)
+endfunction()
+
 if(NOT TARGET Bluez5UtilHeaders)
   set(BLUEZ_INCLUDE_DIRS)
 
@@ -86,11 +99,9 @@ if(NOT TARGET Bluez5UtilHeaders)
   # https://github.com/bluez/bluez/commit/b7d6a7d25628e9b521a29a5c133fcadcedeb2102
   #
   include(CheckStructHasMember)
-  check_struct_has_member("struct mgmt_ltk_info" central 
-    "${BLUEZ_INCLUDE_DIRS}/bluetooth/bluetooth.h;${BLUEZ_INCLUDE_DIRS}/bluetooth/mgmt.h" 
-    NO_INCLUSIVE_LANGUAGE 
-    LANGUAGE C)
-    
+
+  CheckNoInclusiveLanguage()
+
   if(${NO_INCLUSIVE_LANGUAGE})
       message(VERBOSE "Your bluez version does not use inclusive language anymore")
       target_compile_definitions(Bluez5UtilHeaders INTERFACE NO_INCLUSIVE_LANGUAGE)
@@ -103,20 +114,20 @@ if(NOT TARGET Bluez5UtilHeaders)
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/Bluez5UtilHeaders/include>
     )
 
-    install(TARGETS Bluez5UtilHeaders EXPORT Bluez5UtilHeadersTargets)
-
     file(GLOB Bluez5UtilHeadersFiles "${CMAKE_BINARY_DIR}/bluez-${DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION}/lib/*.h")
 
     install(FILES ${Bluez5UtilHeadersFiles}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/Bluez5UtilHeaders/include/bluetooth COMPONENT ${NAMESPACE}_Development)
-
-    include(HeaderOnlyInstall)
-    HeaderOnlyInstallCMakeConfig(TARGET Bluez5UtilHeaders TREAT_AS_NORMAL)
   else()
     target_include_directories(Bluez5UtilHeaders
     INTERFACE
       ${BLUEZ_INCLUDE_DIRS})
   endif()
+
+  install(TARGETS Bluez5UtilHeaders EXPORT Bluez5UtilHeadersTargets)
+
+  include(HeaderOnlyInstall)
+  HeaderOnlyInstallCMakeConfig(TARGET Bluez5UtilHeaders TREAT_AS_NORMAL)
 
   message(TRACE "BLUEZ_INCLUDE_DIRS ${BLUEZ_INCLUDE_DIRS}")
 
