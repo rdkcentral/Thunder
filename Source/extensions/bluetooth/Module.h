@@ -26,14 +26,10 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
-
 #include <../include/bluetooth/bluetooth.h>
 #include <../include/bluetooth/hci.h>
 #include <../include/bluetooth/mgmt.h>
 #include <../include/bluetooth/l2cap.h>
-
-POP_WARNING()
 
 #include "Debug.h"
 
