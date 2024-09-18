@@ -46,9 +46,11 @@
 #endif
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
-#include <../include/bluetooth/bluetooth.h>
-#include <../include/bluetooth/hci.h>
-#include <../include/bluetooth/l2cap.h>
+PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
+#include "bluez/bluetooth.h"
+#include "bluez/hci.h"
+#include "bluez/l2cap.h"
+POP_WARNING()
 #else
 #ifndef AF_BLUETOOTH
 #define AF_BLUETOOTH 60000
