@@ -78,9 +78,9 @@ namespace PluginHost
                 std::vector<string>::const_iterator index = all_paths.begin();
                 while ((result == nullptr) && (index != all_paths.end())) {
                     Core::File file(index->c_str());
-                    if (file.Exists())
-                    {
-                        Core::Library resource(index->c_str());
+                    if (file.Exists()) {
+
+                        Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(index->c_str());
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
