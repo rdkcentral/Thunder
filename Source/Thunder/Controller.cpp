@@ -1236,7 +1236,7 @@ namespace Plugin {
                 data.Interface = proxy->InterfaceId();
                 data.Count = proxy->ReferenceCount();
                 data.Name = proxy->Name();
-
+                
                 elements.emplace_back(std::move(data));
             }
 

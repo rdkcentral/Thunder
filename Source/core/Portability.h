@@ -280,7 +280,7 @@ inline void SleepMs(const uint32_t time)
     ::Sleep(time);
 }
 
-EXTERNAL void SleepUs(const uint32_t time);
+EXTERNAL extern void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
@@ -436,10 +436,10 @@ typedef std::string string;
 #define SOCK_CLOEXEC 0
 #define __APPLE_USE_RFC_3542
 
-extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL extern void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 //clock_gettime is available in OSX Darwin >= 10.12
 //int clock_gettime(int, struct timespec*);
-extern "C" EXTERNAL uint64_t gettid();
+extern "C" EXTERNAL extern uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>
@@ -529,9 +529,9 @@ uint64_t ntohll(const uint64_t& value);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL SleepMs(const unsigned int a_Time);
-extern void EXTERNAL SleepUs(const unsigned int a_Time);
-inline void EXTERNAL SleepS(unsigned int a_Time)
+EXTERNAL extern void SleepMs(const unsigned int a_Time);
+EXTERNAL extern void SleepUs(const unsigned int a_Time);
+EXTERNAL inline void SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }
@@ -619,11 +619,10 @@ struct TemplateIntToType {
 
 extern "C" {
 
-DEPRECATED inline EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
+DEPRECATED EXTERNAL inline void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
     return (::memmove(_Dst, _Src, _MaxCount));
 }
-
 
 }
 
@@ -696,8 +695,9 @@ typedef DWORD thread_id;
 #endif
 
 namespace Thunder {
-
 namespace Core {
+
+    class TextFragment;
 
     #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
     #if __CORE_INSTANCE_BITS__ <= 8
@@ -780,9 +780,9 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
-    string EXTERNAL Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
-    void EXTERNAL Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
-    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+    EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+    EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
+    EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
 
     const uint32_t infinite = -1;
     static const string emptyString;
@@ -964,6 +964,11 @@ namespace Core {
     }
 
     #undef ERROR_CODE
+
+    EXTERNAL TextFragment Demangled(const char name[]); 
+    EXTERNAL TextFragment ClassName(const char name[]); 
+    EXTERNAL TextFragment ClassNameOnly(const char name[]); 
+    
 }
 }
 
@@ -981,15 +986,13 @@ namespace NESTED_NAMESPACE { \
 extern "C" {
 
 #ifdef __WINDOWS__
-extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
-extern void EXTERNAL usleep(const uint32_t value);
+EXTERNAL extern int inet_aton(const char* cp, struct in_addr* inp);
+EXTERNAL extern void usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
-uint32_t EXTERNAL GetCallStack(const ::thread_id threadId, void* addresses[], const uint32_t bufferSize);
-
+EXTERNAL void DumpCallStack(const ::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+EXTERNAL uint32_t GetCallStack(const ::thread_id threadId, void* addresses[], const uint32_t bufferSize);
 }
-
 
 #ifndef BUILD_REFERENCE
 #define BUILD_REFERENCE engineering_build_for_debug_purpose_only
