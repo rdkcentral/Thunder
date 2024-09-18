@@ -31,8 +31,6 @@ option(BCM43XX "Select the serial driver for bluetooth modules found on Raspberr
 option(BLUETOOTH_GATT_SUPPORT "Include GATT support" OFF)
 option(BLUETOOTH_AUDIO_SUPPORT "Include audio sink/source support" OFF)
 
-find_package(Bluez5UtilHeaders REQUIRED)
-
 add_library(${TARGET}
     HCISocket.cpp
     UUID.cpp
@@ -62,7 +60,6 @@ target_link_libraries(${TARGET}
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-        Bluez5UtilHeaders::Bluez5UtilHeaders
 )
 
 set_target_properties(${TARGET}
