@@ -3726,6 +3726,9 @@ namespace PluginHost {
                                 response->Message = _T("JSONRPC executed succesfully");
                             }
                             else {
+#ifdef LEGACY_JSONRPCOVERHTTP_ERRORCODE
+                                response->ErrorCode = Web::STATUS_ACCEPTED;
+#endif
                                 response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<int32_t>(body->Error.Code).Text();
                             }
                         }
