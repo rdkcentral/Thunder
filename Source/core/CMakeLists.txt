@@ -213,11 +213,13 @@ if(BLUETOOTH_SUPPORT)
     install(FILES ${Bluez5UtilHeadersFiles}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core/bluez COMPONENT ${NAMESPACE}_Development)
 
-    GetBluez5IncludeDir(Bluez5IncludeDir)
+    GetBluez5IncludeDirs(Bluez5IncludeDirs)
 
+    foreach(path ${Bluez5IncludeDirs})
     target_include_directories(${TARGET}
         PUBLIC
-        $<BUILD_INTERFACE:${Bluez5IncludeDir}>)
+            $<BUILD_INTERFACE:${path}>)        
+    endforeach()
 
     CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
     

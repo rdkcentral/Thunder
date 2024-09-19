@@ -2,7 +2,7 @@ option(DOWNLOAD_BLUEZ_UTIL_HEADERS "Download bluez5 headers" OFF)
 set(DOWNLOAD_BLUEZ_UTIL_HEADERS_VERSION "5.78" CACHE STRING "version of the bluez5 headers to download...")
 set(DOWNLOAD_BLUEZ_UTIL_HEADERS_REPO "https://github.com/bluez/bluez.git" CACHE STRING "Repo where to get the bluez5 headers...")
 
-set(BLUEZ_LOCAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/bluez")
+set(BLUEZ_LOCAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/core/bluez")
 
 include(CreateLink)
 
@@ -44,9 +44,9 @@ function(GetBluez5UtilHeadersFiles var)
   set(${var} ${Bluez5UtilHeadersFiles} PARENT_SCOPE)
 endfunction(GetBluez5UtilHeadersFiles)
 
-function(GetBluez5IncludeDir var)
-  set(${var} ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
-endfunction(GetBluez5IncludeDir)
+function(GetBluez5IncludeDirs var)
+  set(${var} "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/core" PARENT_SCOPE)
+endfunction(GetBluez5IncludeDirs)
 
 #
 # From Bluez >= v5.64 the mgmt_ltk_info struct is changed due to inclusive language changes.
