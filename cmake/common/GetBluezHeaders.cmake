@@ -71,7 +71,7 @@ function(CheckBluez5InclusiveLanguage var)
     LANGUAGE C) 
 
   if(NOT INCLUSIVE_LANGUAGE AND NOT NO_INCLUSIVE_LANGUAGE)
-    message(FATAL_ERROR "Could not determen the usage of inclusive launguage, probaly diue to a compilation error. Please check the cmake error log for details.")
+    message(FATAL_ERROR "Could not determine the usage of inclusive language, probably due to a compilation error. Please check the cmake error log for details.")
   elseif(NO_INCLUSIVE_LANGUAGE)
     set(${var} FALSE PARENT_SCOPE)
   elseif(INCLUSIVE_LANGUAGE)
