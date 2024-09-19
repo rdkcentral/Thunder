@@ -224,8 +224,8 @@ if(BLUETOOTH_SUPPORT)
     CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
     
     if(NOT ${INCLUSIVE_LANGUAGE})
-        #TODO: Rename this define to a more bluez specific one
-        target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE)
+        #TODO: Remove NO_INCLUSIVE_LANGUAGE define when the plugins are synced to BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE
+        target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE)
     endif()
 
     message(STATUS "Enable bluetooth support.")
