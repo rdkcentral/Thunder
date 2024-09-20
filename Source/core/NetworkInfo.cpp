@@ -653,7 +653,7 @@ namespace Core {
         return (result);
     }
 
-    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t length) const
+    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t length VARIABLE_IS_NOT_USED) const
     {
         ASSERT(IsValid());
         AdapterAddresses addresses;
