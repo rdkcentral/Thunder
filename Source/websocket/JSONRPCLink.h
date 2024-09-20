@@ -1257,16 +1257,6 @@ namespace Thunder {
                 }
 
             public:
-                template <typename INBOUND, typename METHOD>
-                uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
-                {
-                    return Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
-                }
-                template <typename INBOUND, typename METHOD, typename REALOBJECT>
-                uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
-                {
-                    return Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
-                }
                 bool IsActivated()
                 {
                     return (_state == ACTIVATED);
