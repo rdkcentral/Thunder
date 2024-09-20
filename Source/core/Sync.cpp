@@ -911,7 +911,7 @@ namespace Core {
                 clock_gettime(CLOCK_MONOTONIC, &currentMonoTime);
 
                 struct timespec jumpTime;
-                jumpTime.tv_sec = (structTime.tv_sec - currentMonoTime.tv_sec) - (referenceTime.tv_sec - currentMonoTime.tv_sec);
+                jumpTime.tv_sec = currentMonoTime.tv_sec - referenceTime.tv_sec;
 
                 if(jumpTime.tv_sec != 0) {
                     result = Core::ERROR_TIMEDOUT;
