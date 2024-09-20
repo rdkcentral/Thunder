@@ -93,6 +93,8 @@
 
 #if defined(__APPLE__) || defined(__clang__)
     #pragma clang system_header
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #elif defined(__GNUC__)
     #pragma GCC system_header
 #endif
