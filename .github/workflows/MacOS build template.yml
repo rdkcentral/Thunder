@@ -2,6 +2,8 @@ name: MacOS build template
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["development/Actions-macOS"]
 
 jobs:
   Thunder:
