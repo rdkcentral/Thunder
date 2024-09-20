@@ -804,17 +804,17 @@ namespace Core {
     {
         ASSERT(storage != nullptr);
     }
-#endif
 
     SharedSemaphore::SharedSemaphore(void *storage, const uint32_t value)
     {
         ASSERT(storage != nullptr);
 
         sem_t* sem = reinterpret_cast<sem_t*>(storage);
+        _semaphore = sem;
         VARIABLE_IS_NOT_USED int result =  sem_init(sem, 1, value); 
         ASSERT(result != -1);
     }
-
+#endif
     SharedSemaphore::~SharedSemaphore()
     {
 #ifdef __WINDOWS__
@@ -885,7 +885,8 @@ namespace Core {
         }
         result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
 
-#elif defined(__MUSL__)
+#elif defined(__MUSL2__)
+
         struct timespec referenceTime = {0,0};
         clock_gettime(CLOCK_MONOTONIC, &referenceTime);
         referenceTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
