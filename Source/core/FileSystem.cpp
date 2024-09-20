@@ -72,17 +72,15 @@ namespace Core {
         Close();
     }
 
-    /* static */ string File::Normalize(const string& location, bool& valid)
+    /* static */ string File::Normalize(const string& location, const bool inScopeOnly, const bool allowDirs)
     {
         string result(location);
-
-        valid = true;
 
         // First see if we are not empy.
         if (result.empty() == false) {
             uint32_t index = 0;
 
-           while (index < result.length()) {
+            while (index < result.length()) {
 
 #ifdef __WINDOWS__
                 if (result[index] == '\\') {
@@ -90,26 +88,37 @@ namespace Core {
                 }
 #endif
 
-                if ((result[index] == '/') && (index >= 1) ) {
+                if ((result[index] == '/') && (index >= 1)) {
                     if (result[index - 1] == '/') {
-                        if (index >= 2) {
-                            // We have a double slash, clear all till the beginning
-                           result = result.substr(index - 1);
-                           index = 1;
-                        }
+                        // We have a double slash, trim it
+                        result.erase(index, 1);
+                        index--;
                     }
                     else if (result[index - 1] == '.') {
                         if ((index == 1) || (result[index - 2] == '/')) {
-                            // It is a dot, remove it...
-                            uint32_t offset = (index == 1 ? 0 : index - 2);
-                            result.erase(offset, 2);
-                            index = offset;
+                            if (result.length() != 2) {
+                                // It is a dot, remove it... but not if it's just ./
+                                result.erase(index - (index == 1 ? 1 : 2), 2);
+                                index -= 2;
+                            }
                         }
                         else if ((result[index - 2] == '.') && ((index == 2) || (result[index - 3] == '/'))) {
-                            if (index <= 3) {
-                                valid = false;
+                            if (index == 2) {
+                                // We're going out of scope!
+                                if (inScopeOnly == true) {
+                                    result.clear();
+                                }
+                            }
+                            else if (index == 3) {
+                                // Going up past / thus invalid
                                 result.clear();
                             }
+#ifdef __WINDOWS__
+                            else if ((index == 5) && (result[1] == ':')) {
+                                // Going up past X:/ thus invalid
+                                result.clear();
+                            }
+#endif
                             else {
                                 // Seems like we are moving up a directory... execute that on the result... if we can...
                                 // there is data we can drop, drop it, drop it till the '/' is found
@@ -117,50 +126,79 @@ namespace Core {
                                 while ((offset > 0) && (result[offset] != '/')) {
                                     offset--;
                                 }
-                                result.erase(offset, index - offset);
-                                index = offset;
+
+                                // ...but don't swallow another ..
+                                if ((result[offset] != '.') && (result[offset + 1] != '.')) {
+                                    result.erase(offset + (result[offset] == '/' ? 1 : 0), index - offset + (result[offset] == '/' ? 0 : -1));
+                                    index = offset;
+                                }
                             }
                         }
                     }
                 }
                 index++;
-           }
+            }
 
-           // It could be that the last slash is not part of the full line, check the last part, assuming there is such a slash, 
-           // normalization rules applyt than as well....
-           if ((result.length() >= 1) && (result[result.length() - 1] == '.')) {
-
-               if (result.length() == 1) {
-                   // We have only a dot...
-                   result.clear();
-               }
-               else if ( (result.length() == 2) && (result[0] == '.') ) {
-                   // We have a ".." and nothing more
-                   valid = false;
-                   result.clear();
-               }
-               else if ((result.length() >= 2) && (result[result.length() - 2] == '/')) {
-                   result = result.substr(0, result.length() - 2);
-               }
-               else if ((result.length() >= 3) && (result[result.length() - 2] == '.') && (result[result.length() - 3] == '/')) {
-                   // How about ThisFile/.., it is valid, but /.. would not be, both end up at an empty string... but the difference
-                   // is the fact that the first, had a length > 3 and the second was exactly 3, so a length of 3 is invalid and empty..
-                   if (result.length() == 3) {
-                       valid = false;
-                       result.clear();
-                   }
-                   else {
-                       // there is data we can drop, drop it, drop it till the '/' is found
-                       uint32_t offset = static_cast<uint32_t>(result.length() - 4);
-
-                        while ((offset > 0) && (result[offset] != '/')) {
-                            offset--;
+            // It could be that the last slash is not part of the full line, check the last part, assuming there is such a slash,
+            // normalization rules apply than as well....
+            if (result.length() >= 1) {
+                if (result[result.length() - 1] == '/') {
+                    if (allowDirs == false) {
+                        result.clear();
+                    }
+                    else if ((result.length() == 1) && (result[0] == '/') && (location[0] == '.')) {
+                        // Correct corner case where .//// ends up as /
+                        result = "./";
+                    }
+                }
+                else if (result[result.length() - 1] == '.') {
+                    if (allowDirs == false) {
+                        result.clear();
+                    }
+                    else if ((result.length() >= 2) && (result[result.length() - 2] == '/')) {
+                        // Ends with /.
+                        result.erase(result.length() - 1, 1);
+                    }
+                    else if ((result.length() >= 3) && (result[result.length() - 2] == '.') && (result[result.length() - 3] == '/')) {
+                        // How about ThisFile/.., it is valid, but /.. would not be, both end up at an empty string... but the difference
+                        // is the fact that the first, had a length > 3 and the second was exactly 3, so a length of 3 is invalid and empty..
+                        if (result.length() == 3) {
+                            // Invalid /..
+                            result.clear();
                         }
-                        result = result.substr(0, offset);
-                   }
-               }
-           }
+#ifdef __WINDOWS__
+                        else if ((result.length() == 5) && (result[1] == ':')) {
+                            // Invalid X:/..
+                            result.clear();
+                        }
+#endif
+                        else {
+                            // there is data we can drop, drop it, drop it till the '/' is found
+                            uint32_t offset = static_cast<uint32_t>(result.length() - 4);
+
+                            while ((offset > 0) && (result[offset] != '/')) {
+                                offset--;
+                            }
+
+                            // again do not swallow another ..
+                            if ((result[offset] != '.') && (result[offset + 1] != '.')) {
+                                result.erase(offset + (result[offset] == '/' ? 1 : 0));
+
+                                if ((result.empty() == true) && (allowDirs == true)) {
+                                    // Collapsed everything, so insert current dir
+                                    result = "./";
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        // We have . or ..
+                        result += '/';
+                    }
+                }
+            }
         }
+
         return (result);
     }
 

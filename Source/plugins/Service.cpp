@@ -76,7 +76,7 @@ namespace PluginHost {
         _notifierLock.Unlock();
     }
 
-    void Service::FileToServe(const string& webServiceRequest, Web::Response& response, bool allowUnsafePath)
+    void Service::FileToServe(const string& webServiceRequest, Web::Response& response, const bool allowUnsafePath)
     {
         Web::MIMETypes result;
         Web::EncodingTypes encoding = Web::ENCODING_UNKNOWN;
@@ -91,10 +91,9 @@ namespace PluginHost {
             response.Body<Web::FileBody>(fileBody);
         } else {
             ASSERT(fileToService.length() >= _webServerFilePath.length());
-            bool safePath = true;
-            string normalizedPath = Core::File::Normalize(fileToService.substr(_webServerFilePath.length()), safePath);
+            string normalizedPath = Core::File::Normalize(fileToService.substr(_webServerFilePath.length()), !allowUnsafePath);
 
-            if (allowUnsafePath || safePath ) {
+            if (normalizedPath.empty() == false) {
                 Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
                 *fileBody = fileToService;
                 response.ContentType = result;

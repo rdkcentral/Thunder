@@ -239,12 +239,12 @@ namespace Plugin {
     Core::hresult Controller::Delete(const string& path)
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-        bool valid;
-        string normalized_path = Core::File::Normalize(path, valid);
 
         ASSERT(_service != nullptr);
 
-        if (valid == false) {
+        const string normalized_path = Core::File::Normalize(path, true /* safe paths only */);
+
+        if (normalized_path.empty() == true) {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
         else {
@@ -681,10 +681,9 @@ namespace Plugin {
                     remainder = index.Remainder().Text();
                 }
 
-                bool valid;
-                string normalized(Core::File::Normalize(remainder, valid));
+                const string normalized(Core::File::Normalize(remainder, true /* safe paths only */));
 
-                if (valid == false) {
+                if (normalized.empty() == true) {
                     result->Message = "incorrect path";
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                 }
