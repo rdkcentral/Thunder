@@ -37,6 +37,8 @@ namespace Core {
         ::Thunder::Core::AdapterIterator adapter("eth0");
         ::Thunder::Core::IPV4AddressIterator result;
 
+        ASSERT_TRUE(adapter.IsValid());
+
         result.Next();
         //EXPECT_EQ(adapters.Index(),adapters.Index()); TODO
         while (adapters.Next() == true) {

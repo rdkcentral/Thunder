@@ -810,6 +810,9 @@ namespace Plugin {
                         result = dispatcher->Invoke(channelId, id, token, method, parameters, response);
 
                         dispatcher->Release();
+                    } else {
+                        TRACE_L1("IDispatcher is not available for %s plugin", callsign.c_str());
+                        result = Core::ERROR_BAD_REQUEST;
                     }
                 }
             }
@@ -1233,7 +1236,7 @@ namespace Plugin {
                 data.Interface = proxy->InterfaceId();
                 data.Count = proxy->ReferenceCount();
                 data.Name = proxy->Name();
-
+                
                 elements.emplace_back(std::move(data));
             }
 

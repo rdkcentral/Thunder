@@ -3717,12 +3717,18 @@ namespace PluginHost {
                         else {
                             response = IFactories::Instance().Response();
                             response->Body(body);
+                            // although there is no definitive approved RFC for this consensus is also on failure we should return a status OK (200)
+                            // e.g. see here:
+                            // https://www.simple-is-better.org/json-rpc/transport_http.html
+                            // https://json-rpc.readthedocs.io/en/latest/exceptions.html
+                            response->ErrorCode = Web::STATUS_OK;
                             if (body->Error.IsSet() == false) {
-                                response->ErrorCode = Web::STATUS_OK;
                                 response->Message = _T("JSONRPC executed succesfully");
                             }
                             else {
+#ifdef LEGACY_JSONRPCOVERHTTP_ERRORCODE
                                 response->ErrorCode = Web::STATUS_ACCEPTED;
+#endif
                                 response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<int32_t>(body->Error.Code).Text();
                             }
                         }
