@@ -18,17 +18,12 @@ jobs:
     steps:
 # --------- Installing packages ---------
     - name: Install necessary packages
-      uses: nick-fields/retry@v3
-      with:
-        timeout_minutes: 10
-        max_attempts: 10
-        command: |
+      run: |
           brew update
           brew upgrade
           brew install ninja zlib
           pipx ensurepath
           pipx install jsonref
-          xcode-select --install
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
