@@ -206,12 +206,12 @@ endif()
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
 
-    include(GetBluezHeaders)
+    include(GetBluez5Headers)
 
     GetBluez5UtilHeadersFiles(Bluez5UtilHeadersFiles)
 
     install(FILES ${Bluez5UtilHeadersFiles}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core/bluez COMPONENT ${NAMESPACE}_Development)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core/bluez5 COMPONENT ${NAMESPACE}_Development)
 
     GetBluez5IncludeDirs(Bluez5IncludeDirs)
 

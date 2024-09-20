@@ -47,9 +47,9 @@
 
 #ifdef __CORE_BLUETOOTH_SUPPORT__
 PUSH_WARNING(DISABLE_WARNING_PEDANTIC)
-#include "bluez/bluetooth.h"
-#include "bluez/hci.h"
-#include "bluez/l2cap.h"
+#include "bluez5/bluetooth.h"
+#include "bluez5/hci.h"
+#include "bluez5/l2cap.h"
 POP_WARNING()
 #else
 #ifndef AF_BLUETOOTH
