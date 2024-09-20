@@ -50,6 +50,7 @@ namespace PluginHost
                     if (file.Exists()) {
 
                         Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
+
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
@@ -68,6 +69,8 @@ namespace PluginHost
                 if (locator.empty() == true) {
                     locator = Locator();
                 }
+                string environments;
+                rootConfig.Environments.ToString(environments);
                 RPC::Object definition(locator,
                     className,
                     Callsign(),
@@ -80,7 +83,8 @@ namespace PluginHost
                     rootConfig.HostType(),
                     SystemRootPath(),
                     rootConfig.RemoteAddress.Value(),
-                    rootConfig.Configuration.Value());
+                    rootConfig.Configuration.Value(),
+                    SubstituteList(environments));
 
                 result = handler->Instantiate(definition, waitTime, pid);
             }

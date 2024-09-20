@@ -114,64 +114,6 @@ namespace PluginHost {
         // Configuration to get a server (PluginHost server) up and running.
         class JSONConfig : public Core::JSON::Container {
         public:
-            class Environment : public Core::JSON::Container {
-            public:
-                Environment()
-                    : Core::JSON::Container()
-                    , Key()
-                    , Value()
-                    , Override(false)
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value);
-                    Add(_T("override"), &Override);
-                }
-                Environment(const Environment& copy)
-                    : Core::JSON::Container()
-                    , Key(copy.Key)
-                    , Value(copy.Value)
-                    , Override(copy.Override)
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value);
-                    Add(_T("override"), &Override);
-                }
-                Environment(Environment&& move) noexcept
-                    : Core::JSON::Container()
-                    , Key(std::move(move.Key))
-                    , Value(std::move(move.Value))
-                    , Override(std::move(move.Override))
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value);
-                    Add(_T("override"), &Override);
-                }
-                ~Environment() override = default;
-                Environment& operator=(const Environment& RHS)
-                {
-                    Key = RHS.Key;
-                    Value = RHS.Value;
-                    Override = RHS.Override;
-
-                    return (*this);
-                }
-                Environment& operator=(Environment&& move) noexcept
-                {
-                    if (this != &move) {
-                        Key = std::move(move.Key);
-                        Value = std::move(move.Value);
-                        Override = std::move(move.Override);
-                    }
-
-                    return (*this);
-                }
-
-            public:
-                Core::JSON::String Key;
-                Core::JSON::String Value;
-                Core::JSON::Boolean Override;
-            };
-
             class ProcessSet : public Core::JSON::Container {
             public:
                 ProcessSet()
@@ -526,7 +468,7 @@ namespace PluginHost {
             Core::JSON::String Configs;
             Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
-            Core::JSON::ArrayType<Environment> Environments;
+            Core::JSON::ArrayType<Plugin::Config::Environment> Environments;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
@@ -773,7 +715,7 @@ namespace PluginHost {
                 }
 
                 bool status = true;
-                Core::JSON::ArrayType<JSONConfig::Environment>::ConstIterator index(static_cast<const JSONConfig&>(config).Environments.Elements());
+                Core::JSON::ArrayType<Plugin::Config::Environment>::ConstIterator index(static_cast<const JSONConfig&>(config).Environments.Elements());
                 while (index.Next() == true) {
                     if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
                         string value = _substituter.Substitute(index.Current().Value.Value(), nullptr);

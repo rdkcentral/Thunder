@@ -65,6 +65,7 @@ namespace RPC {
             , _systemRootPath()
             , _remoteAddress()
             , _configuration()
+            , _environments()
         {
         }
         Object(const Object& copy)
@@ -81,6 +82,7 @@ namespace RPC {
             , _systemRootPath(copy._systemRootPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
+            , _environments(copy._environments)
         {
         }
         Object(Object&& move) noexcept
@@ -97,6 +99,7 @@ namespace RPC {
             , _systemRootPath(std::move(move._systemRootPath))
             , _remoteAddress(std::move(move._remoteAddress))
             , _configuration(std::move(move._configuration))
+            , _environments(std::move(move._environments))
         {
         }
         Object(const string& locator,
@@ -111,7 +114,8 @@ namespace RPC {
             const HostType type,
             const string& systemRootPath,
             const string& remoteAddress,
-            const string& configuration)
+            const string& configuration,
+            const string& environments)
             : _locator(locator)
             , _className(className)
             , _callsign(callsign)
@@ -125,6 +129,7 @@ namespace RPC {
             , _systemRootPath(systemRootPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
+            , _environments(environments)
         {
         }
         ~Object()
@@ -146,6 +151,7 @@ namespace RPC {
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
+            _environments = RHS._environments;
 
             return (*this);
         }
@@ -166,6 +172,7 @@ namespace RPC {
                 _systemRootPath = std::move(move._systemRootPath);
                 _remoteAddress = std::move(move._remoteAddress);
                 _configuration = std::move(move._configuration);
+                _environments = std::move(move._environments);
 
                 move._interface = ~0;
                 move._version = ~0;
@@ -228,6 +235,10 @@ namespace RPC {
         {
             return (_configuration);
         }
+        inline const string& Environments() const
+        {
+            return (_environments);
+        }
 
     private:
         string _locator;
@@ -243,6 +254,7 @@ namespace RPC {
         string _systemRootPath;
         string _remoteAddress;
         string _configuration;
+        string _environments;
     };
 
     class EXTERNAL Config {
@@ -300,7 +312,7 @@ namespace RPC {
             , _linker(copy._linker)
         {
         }
-	Config(Config&& move) noexcept
+        Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -514,6 +526,9 @@ namespace RPC {
                 }
                 if (instance.Threads() > 1) {
                     _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
+                }
+                if (instance.Environments().empty() == false) {
+                    _options.Add(_T("-E")).Add('"' + instance.Environments() + '"');
                 }
                 _priority = instance.Priority();
             }

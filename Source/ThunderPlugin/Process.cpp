@@ -159,7 +159,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:e:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -202,6 +202,7 @@ POP_WARNING()
         string ProxyStubPath;
         string PostMortemPath;
         string SystemRootPath;
+        string Environments;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -249,6 +250,9 @@ POP_WARNING()
                 break;
             case 'S':
                 SystemRootPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'E':
+                Environments = Strip(argument);
                 break;
             case 'v':
                 VolatilePath = Core::Directory::Normalize(Strip(argument));
@@ -588,6 +592,7 @@ int main(int argc, char** argv)
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");
+        printf("        [-e <environment values>...]\n\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-P <post mortem path>]\n\n");
@@ -662,6 +667,22 @@ int main(int argc, char** argv)
 
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
+            }
+
+            if (options.Environments.empty() != true) {
+                Core::JSON::ArrayType<Plugin::Config::Environment> Environments;
+                Environments.FromString(options.Environments);
+                if (Environments.IsSet() == true) {
+                    Core::JSON::ArrayType<Plugin::Config::Environment>::Iterator index(Environments.Elements());
+                    while (index.Next() == true) {
+                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
+                            uint32_t status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), index.Current().Value.Value(), index.Current().Override.Value());
+                            if (status != true) {
+                                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                            }
+                        }
+                    }
+                }
             }
 
             process.Startup(options.Threads, remoteNode, callsign);

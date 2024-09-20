@@ -1277,7 +1277,24 @@ namespace PluginHost {
             string Substitute(const string& input) const override {
                 return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
             }
-           Core::hresult Metadata(string& info /* @out */) const override {
+            string SubstituteList(const string& envList) const override {
+                string envs;
+                Plugin::Config::EnvironmentList environments;
+                environments.FromString(envList);
+                if (environments.IsSet() == true) {
+                    Core::JSON::ArrayType<Plugin::Config::Environment>::Iterator index(environments.Elements());
+                    while (index.Next() == true) {
+                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
+                            index.Current().Value = Substitute(index.Current().Value.Value());
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                        }
+                    }
+                    environments.ToString(envs);
+                }
+                return envs;
+            }
+            Core::hresult Metadata(string& info /* @out */) const override {
                 Metadata::Service result;
                 GetMetadata(result);
                 result.ToString(info);
@@ -1499,7 +1516,9 @@ namespace PluginHost {
                         else {
                             uint32_t pid;
                             Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
-                            
+                            string environments;
+                            PluginHost::Service::Configuration().Root.Environments.ToString(environments);
+
                             RPC::Object definition(locator,
                                 classNameString,
                                 Callsign(),
@@ -1512,7 +1531,8 @@ namespace PluginHost {
                                 PluginHost::Service::Configuration().Root.HostType(),
                                 SystemRootPath(),
                                 PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
-                                PluginHost::Service::Configuration().Root.Configuration.Value());
+                                PluginHost::Service::Configuration().Root.Configuration.Value(),
+                                SubstituteList(environments));
 
                                 newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
                             if (newIF == nullptr) {
@@ -2019,7 +2039,8 @@ namespace PluginHost {
                                     _object.SystemRootPath(),
                                     _object.Threads(),
                                     _object.Priority(),
-                                    _object.Configuration());
+                                    _object.Configuration(),
+                                    _object.Environments());
 
                                 instantiation->Release();
                             }
@@ -2399,7 +2420,8 @@ namespace PluginHost {
                     const string& systemRootPath,
                     const uint8_t threads,
                     const int8_t priority,
-                    const string configuration) override
+                    const string configuration,
+                    const string environments) override
                 {
                     string persistentPath(_comms.PersistentPath());
                     string dataPath(_comms.DataPath());
@@ -2413,7 +2435,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, environments);
 
                     RPC::Communicator::Process process(requestId, config, instance);
 

@@ -56,7 +56,8 @@ namespace PluginHost {
             const string& systemRootPath,
             const uint8_t threads,
             const int8_t priority,
-            const string configuration) = 0;
+            const string configuration,
+            const string environments) = 0;
     };
 }
 }
