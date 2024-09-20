@@ -205,7 +205,7 @@ namespace Core {
                         index = pos;
                     }
 
-                    if (index < pos) {
+                    if (index < pos && isdigit(designator[index])) {
                         result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
                     }
                 }
