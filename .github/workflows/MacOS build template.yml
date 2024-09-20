@@ -23,11 +23,10 @@ jobs:
         timeout_minutes: 10
         max_attempts: 10
         command: |
-          sudo gem install apt-spy2
-          sudo apt-spy2 fix --commit --launchpad --country=US
-          sudo apt-get update
-          sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev
-          sudo pip install jsonref
+          brew update
+          brew install python cmake ninja libusb zlib openssl
+          pip3 install jsonref
+          xcode-select --install
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
