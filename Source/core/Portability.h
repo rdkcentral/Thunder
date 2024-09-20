@@ -91,10 +91,11 @@
   #endif
 #endif
 
-#if defined(__APPLE__) || defined(__clang__)
-    #pragma clang system_header
+#if defined(__APPLE__)
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#else defined(__clang__)
+    #pragma clang system_header
 #elif defined(__GNUC__)
     #pragma GCC system_header
 #endif
