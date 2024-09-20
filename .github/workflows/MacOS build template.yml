@@ -22,8 +22,9 @@ jobs:
           brew update
           brew upgrade
           brew install ninja zlib
-          pipx ensurepath
-          pipx install jsonref
+          python3 -m venv my_venv
+          source my_venv/bin/activate
+          pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
