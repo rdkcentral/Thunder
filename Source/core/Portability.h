@@ -385,6 +385,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <cmath>
 #include <thread>
+#include <limits.h>
 
 #include <string.h>
 #include <termios.h>
@@ -412,8 +413,11 @@ typedef std::string string;
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+#include <sys/inotify.h>
 
 #include <arpa/inet.h>
+
+#define __MUSL__ 1
 
 #ifdef __APPLE__
 #include <pthread_impl.h>

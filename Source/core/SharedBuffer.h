@@ -76,7 +76,7 @@ namespace Core {
         };
 
     public:
-        virtual ~SharedBuffer();
+        ~SharedBuffer() override = default;
 
         // This is the consumer constructor. It should always take place, after, the producer
         // construct. The producer will create the Administration area, and the shared buffer,
@@ -187,8 +187,8 @@ namespace Core {
     private:
         DataElementFile _administrationBuffer;
         Administration* _administration;
-        Core::BinarySemaphore _producer;
-        Core::BinarySemaphore _consumer;
+        Core::SharedSemaphore _producer;
+        Core::SharedSemaphore _consumer;
         uint8_t* _customerAdministration;
     };
 }

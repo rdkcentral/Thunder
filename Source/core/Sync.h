@@ -184,6 +184,45 @@ namespace Core {
     typedef CountingSemaphore Semaphore;
 
     // ===========================================================================
+    // class SharedSemaphore
+    // ===========================================================================
+
+    class EXTERNAL SharedSemaphore {
+    public:
+        SharedSemaphore() = delete;
+        SharedSemaphore(const Semaphore&) = delete;
+        SharedSemaphore& operator=(const SharedSemaphore&) = delete;
+
+#ifdef __WINDOWS__
+        SharedSemaphore(const TCHAR name[]);
+#else
+        SharedSemaphore(sem_t* storage);
+
+        /*
+        If pshared is nonzero, then the semaphore is shared between
+        processes, and should be located in a region of shared memory
+        (see shm_open(3), mmap(2), and shmget(2))
+        Storage should be at least sizeof(sem_t)!
+        */
+        SharedSemaphore(void *storage, const uint32_t value);
+    public:
+#endif
+        ~SharedSemaphore();
+
+    public:
+        uint32_t Lock(const uint32_t waitTime);
+        uint32_t Unlock();
+        bool IsLocked();
+
+    private:
+#ifdef __WINDOWS__
+        HANDLE _semaphore;
+#else
+        sem_t* _semaphore;
+#endif
+    };
+
+    // ===========================================================================
     // class Event
     // ===========================================================================
 

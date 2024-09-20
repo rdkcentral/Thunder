@@ -30,8 +30,13 @@ namespace Core {
         : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
-        , _producer(false)
-        , _consumer(false)
+    #ifdef __WINDOWS__
+        , _producer((string(name) + ".producer").c_str())
+        , _consumer((string(name) + ".consumer").c_str())
+    #else
+        , _producer(&(_administration->_producer))
+        , _consumer(&(_administration->_consumer))
+    #endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {
         Align<uint64_t>();
@@ -40,22 +45,17 @@ namespace Core {
         : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize)
         , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
-        , _producer(false)
-        , _consumer(false)
+    #ifdef __WINDOWS__
+        , _producer((string(name) + ".producer").c_str())
+        , _consumer((string(name) + ".consumer").c_str())
+    #else
+        , _producer(&(_administration->_producer), 1)
+        , _consumer(&(_administration->_consumer), 0)
+#   endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {
-
-#ifndef __WINDOWS__
-        memset(_administration, 0, sizeof(Administration));
-
-        sem_init(&(_administration->_producer), 1, 1); /* Initial value is 1. */
-        sem_init(&(_administration->_consumer), 1, 0); /* Initial value is 0. */
-#endif
+        _administration->_bytesWritten = 0;
         Align<uint64_t>();
-    }
-
-    SharedBuffer::~SharedBuffer()
-    {
     }
 }
 }

@@ -539,11 +539,11 @@ POP_WARNING()
             {
                 return (!operator==(a_RHS));
             }
-            inline bool operator==(const nullptr_t&) const
+            inline bool operator==(const std::nullptr_t&) const
             {
                 return (_refCount == nullptr);
             }
-            inline bool operator!=(const nullptr_t&) const
+            inline bool operator!=(const std::nullptr_t&) const
             {
                 return (_refCount != nullptr);
             }
