@@ -91,10 +91,10 @@
   #endif
 #endif
 
-#if defined(__GNUC__)
-    #pragma GCC system_header
-#elif defined(__clang__)
+#if defined(__APPLE__) || defined(__clang__)
     #pragma clang system_header
+#elif defined(__GNUC__)
+    #pragma GCC system_header
 #endif
 
 #ifdef __WINDOWS__
