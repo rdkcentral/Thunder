@@ -90,18 +90,6 @@ target_compile_options(${TARGET}
         -fdiagnostics-color=always
 )
 
-#
-# From Bluez >= v5.64 the mgmt_ltk_info struct is changed due to inclusive language changes.
-# https://github.com/bluez/bluez/commit/b7d6a7d25628e9b521a29a5c133fcadcedeb2102
-#
-include(CheckStructHasMember)
-check_struct_has_member("struct mgmt_ltk_info" central "../include/bluetooth/bluetooth.h;../include/bluetooth/mgmt.h" NO_INCLUSIVE_LANGUAGE LANGUAGE C)
-
-if(${NO_INCLUSIVE_LANGUAGE})
-    message(STATUS "Your version of bluez don't uses inclusive language anymore")
-    target_compile_definitions(${TARGET} PUBLIC NO_INCLUSIVE_LANGUAGE)
-endif()
-
 install(
     TARGETS ${TARGET}  EXPORT ${TARGET}Targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development

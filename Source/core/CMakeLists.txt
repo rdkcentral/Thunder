@@ -205,6 +205,14 @@ endif()
 
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
+
+    find_package(Bluez5UtilHeaders REQUIRED)
+
+    target_link_libraries(${TARGET}
+        PUBLIC
+            Bluez5UtilHeaders::Bluez5UtilHeaders
+    )
+
     message(STATUS "Enable bluetooth support.")
 endif()
 

@@ -45,9 +45,9 @@ namespace PluginHost
                 string element;
                 while (all_paths->Next(element) == true) {
                     Core::File file(element.c_str());
-                    if (file.Exists())
-                    {
-                        Core::Library resource(element.c_str());
+                    if (file.Exists()) {
+
+                        Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
