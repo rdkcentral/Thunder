@@ -1197,27 +1197,27 @@ namespace PluginHost {
 
         // Break a recursive loop, if it tries to arise ;-)
         if ( (controller != nullptr) && (callsign != controller->Callsign()) ) {
+            if (controller->Callsign().empty() != true)  {
+                ASSERT(callsign.empty() == false);
+                if (event.empty() == false) {
 
-            ASSERT(callsign.empty() == false);
+                    Core::OptionalType<string> eventParams;
+                    if (parameters.empty() == false) {
+                        eventParams = parameters;
+                    }
 
-            if (event.empty() == false) {
+                    Core::OptionalType<string> eventCallsign;
+                    if (callsign.empty() == false) {
+                        eventCallsign = callsign;
+                    }
 
-                Core::OptionalType<string> eventParams;
-                if (parameters.empty() == false) {
-                    eventParams = parameters;
+                    Exchange::Controller::JEvents::Event::ForwardMessage(*controller, event, eventCallsign, eventParams);
                 }
+                else {
+                    string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":") + parameters + _T("}}");
 
-                Core::OptionalType<string> eventCallsign;
-                if (callsign.empty() == false) {
-                    eventCallsign = callsign;
+                    _controller->Notify(EMPTY_STRING, messageString);
                 }
-
-                Exchange::Controller::JEvents::Event::ForwardMessage(*controller, event, eventCallsign, eventParams);
-            }
-            else {
-                string messageString = string(_T("{\"callsign\":\"")) + callsign + _T("\", {\"data\":") + parameters + _T("}}");
-
-                _controller->Notify(EMPTY_STRING, messageString);
             }
         }
     }
