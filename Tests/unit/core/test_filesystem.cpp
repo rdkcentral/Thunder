@@ -120,6 +120,139 @@ namespace Core {
         system("rm -rf home");
     }
 
+    TEST (test_file, directory_normalize_path)
+    {
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(""), "");
+
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/"), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/."), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/././././"), "/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("////"), "/");
+
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./"), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././././././././"), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./././././././."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".////"), "./");
+
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize(".."), "../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("../"), "../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("../../.."), "../../../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("../../../"), "../../../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./../"), "../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././../"), "../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././../.."), "../../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("..///"), "../");
+
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/bar"), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/bar/."), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/.."), "foo/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/bar/./"), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../"), "foo/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/bar/."), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/.////"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/././././bar"), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/quux/../../xyzzy"), "foo/xyzzy/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("../foo/bar/."), "../foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("../foo/bar/.."), "../foo/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/bar/.") , "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("///foo////bar////"), "/foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("././././foo/bar"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./foo/bar"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////././././"), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo////bar////././././."), "foo/bar/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo////bar////././././."), "/foo/bar/");
+
+        // Cases where navigating upwards compacts completely
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../.."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("foo/bar/../.."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./foo/../bar/.."), "./");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("./foo/../bar/../.."), "../");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/../bar/.."), "/");
+
+        // Negative cases navigating past root
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/.."), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/../.."), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/./.."), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/../bar/../.."), "");
+
+#ifdef __WINDOWS__
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\\\bar\\.\\.\\quux\\..\\."), "C:/foo/bar/"); 
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\..\\.."), "C:/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\.."), "C:/foo");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\..\\"), "C:/foo");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\."), "C:/foo/bar");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\.\\"), "C:/foo/bar");
+
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\.\\foo\\bar\\..\\.."), "C:/");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\foo\\bar\\..\\..\\.."), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\.."), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\\\"), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("C:\\..\\.."), "");
+#endif
+    }
+
+    TEST (test_file, file_normalize_path)
+    {
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./foo"), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo"), "../foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo///bar"), "foo/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo///bar"), "/foo/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar"), "bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/../bar"), "/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.././././bar"), "/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../../../.././././././bar"), "../../../bar");
+
+        // Negative test cases, all fail because they point to a directory
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/"), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/././././././"), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/.."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/."), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/bar/"), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/bar///../.."), "");
+    }
+
+    TEST (test_file, file_safe_normalize_path)
+    {
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./foo", true), "foo");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo///bar", true), "foo/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo///bar", true), "/foo/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../bar", true), "bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/../bar", true), "/bar");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.././././bar", true), "/bar");
+
+        // Negative test cases, all fail because they point to a directory
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize(".", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("..", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/././././././", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/..", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/.", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/..", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/.", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("/foo/bar/", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/bar///../..", true), "");
+
+        // Negative test cases, all fail because they point past current dir
+        EXPECT_EQ(::Thunder::Core::File::Normalize("./../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("../../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::File::Normalize("foo/../../bar", true), "");
+
+        // Negative test cases, all fail because they point past root
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/../../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/./../foo", true), "");
+        EXPECT_EQ(::Thunder::Core::Directory::Normalize("/foo/../bar/../../quux", true), "");
+    }
+
+
 } // Core
 } // Tests
 } // Thunder
