@@ -31,11 +31,11 @@ namespace Core {
         , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
-        , _producer((string(name) + ".producer").c_str())
-        , _consumer((string(name) + ".consumer").c_str())
+        , _producer((string(name) + ".producer").c_str(), 1, 1)
+        , _consumer((string(name) + ".consumer").c_str(), 1, 1)
     #else
-        , _producer(&(_administration->_producer))
-        , _consumer(&(_administration->_consumer))
+        , _producer(&(_administration->_producer), 0, 0)
+        , _consumer(&(_administration->_consumer), 0, 0)
     #endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {
@@ -46,11 +46,11 @@ namespace Core {
         , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
-        , _producer((string(name) + ".producer").c_str())
-        , _consumer((string(name) + ".consumer").c_str())
+        , _producer((string(name) + ".producer").c_str(), 1, 1)
+        , _consumer((string(name) + ".consumer").c_str(), 0, 1)
     #else
-        , _producer(&(_administration->_producer), 1)
-        , _consumer(&(_administration->_consumer), 0)
+        , _producer(&(_administration->_producer), 1, 1)
+        , _consumer(&(_administration->_consumer), 0, 1)
 #   endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {

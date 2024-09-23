@@ -46,6 +46,7 @@
 #include <asm/errno.h>
 #include <time.h>
 #include <unistd.h>
+#include <semaphore.h>
 #endif
 #ifdef __APPLE__
 #include <mach/host_info.h>
@@ -794,25 +795,26 @@ namespace Core {
     //----------------------------------------------------------------------------
 
     #ifdef __WINDOWS__
-    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[])
-        : _semaphore(::CreateSemaphore(nullptr, 1, 1, sourceName))
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, const uint32_t maxCount)
+        : _semaphore(::CreateSemaphore(nullptr, initCount, maxCount, sourceName))
     {
+        ASSERT(initCount <= 1);
+        ASSERT(maxCount <= 1);
+        ASSERT(initCount <= maxCount);
     }
 #else
-    SharedSemaphore::SharedSemaphore(sem_t* storage)
+    SharedSemaphore::SharedSemaphore(void *storage, const uint32_t initCount, const uint32_t maxCount)
         : _semaphore(storage)
     {
         ASSERT(storage != nullptr);
-    }
+        ASSERT(initCount <= 1);
+        ASSERT(maxCount <= 1);
+        ASSERT(initCount <= maxCount);
 
-    SharedSemaphore::SharedSemaphore(void *storage, const uint32_t value)
-    {
-        ASSERT(storage != nullptr);
-
-        sem_t* sem = reinterpret_cast<sem_t*>(storage);
-        _semaphore = sem;
-        VARIABLE_IS_NOT_USED int result =  sem_init(sem, 1, value); 
-        ASSERT(result != -1);
+        if(initCount != 0 && maxCount != 0) {
+            VARIABLE_IS_NOT_USED int result =  sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
+            ASSERT(result != -1);
+        }
     }
 #endif
     SharedSemaphore::~SharedSemaphore()
@@ -822,8 +824,17 @@ namespace Core {
             ::CloseHandle(_semaphore);
         }
 #else
-        sem_destroy(_semaphore);
+        sem_destroy(static_cast<sem_t*>(_semaphore));
 #endif
+    }
+
+    size_t SharedSemaphore::Size() {
+        #ifdef __WINDOWS__
+            ASSERT(false)
+            return 0;
+        #else
+            return sizeof(sem_t);
+        #endif
     }
 
     //----------------------------------------------------------------------------
@@ -840,7 +851,7 @@ namespace Core {
             ASSERT(result != FALSE);
         }
 #else
-        VARIABLE_IS_NOT_USED int result = sem_post(_semaphore);
+        VARIABLE_IS_NOT_USED int result = sem_post(static_cast<sem_t*>(_semaphore));
 
         ASSERT((result == 0) || (errno == EOVERFLOW));
 #endif
@@ -860,7 +871,7 @@ namespace Core {
         return (locked);
 #else
         int semValue = 0;
-        sem_getvalue(_semaphore, &semValue);
+        sem_getvalue(static_cast<sem_t*>(_semaphore), &semValue);
         return (semValue == 0);
 #endif
     }
@@ -877,7 +888,7 @@ namespace Core {
 
         uint32_t timeLeft = waitTime;
         int semResult;
-        while (((semResult = sem_trywait(_semaphore)) != 0) && timeLeft > 0) {
+        while (((semResult = sem_trywait(static_cast<sem_t*>(_semaphore))) != 0) && timeLeft > 0) {
             ::SleepMs(100);
             if (timeLeft != Core::infinite) {
                 timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
@@ -885,8 +896,8 @@ namespace Core {
         }
         result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
 
-#elif defined(__MUSL2__)
-
+#elif defined(__MUSL__)
+        std::cout << "musl \n\n\n\n\n\n\n\n\n";
         struct timespec referenceTime = {0,0};
         clock_gettime(CLOCK_MONOTONIC, &referenceTime);
         referenceTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
@@ -900,7 +911,7 @@ namespace Core {
             structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
             structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
-            if (sem_timedwait(_semaphore, &structTime) == 0) {
+            if (sem_timedwait(static_cast<sem_t*>(_semaphore), &structTime) == 0) {
                 result = Core::ERROR_NONE;
             }
             else if ( errno == EINTR ) {
@@ -933,14 +944,14 @@ namespace Core {
 #else
 
         struct timespec structTime = {0,0};
-
+        std::cout << "here" << std::endl;
         clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
         structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
         structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
         do {
-            if (sem_clockwait(_semaphore, CLOCK_MONOTONIC, &structTime) == 0) {
+            if (sem_clockwait(static_cast<sem_t*>(_semaphore), CLOCK_MONOTONIC, &structTime) == 0) {
                 result = Core::ERROR_NONE;
             }
             else if ( errno == EINTR ) {

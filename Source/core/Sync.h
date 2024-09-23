@@ -29,7 +29,6 @@
 
 #ifdef __LINUX__
 #include <pthread.h>
-#include <semaphore.h>
 #endif
 
 namespace Thunder {
@@ -194,31 +193,30 @@ namespace Core {
         SharedSemaphore& operator=(const SharedSemaphore&) = delete;
 
 #ifdef __WINDOWS__
-        SharedSemaphore(const TCHAR name[]);
+        SharedSemaphore(const TCHAR name[], const uint32_t initValue, const uint32_t maxValue);
 #else
-        SharedSemaphore(sem_t* storage);
-
         /*
         If pshared is nonzero, then the semaphore is shared between
         processes, and should be located in a region of shared memory
         (see shm_open(3), mmap(2), and shmget(2))
         Storage should be at least sizeof(sem_t)!
         */
-        SharedSemaphore(void *storage, const uint32_t value);
+        SharedSemaphore(void *storage, const uint32_t initValue, const uint32_t maxValue);
     public:
 #endif
         ~SharedSemaphore();
-
     public:
         uint32_t Lock(const uint32_t waitTime);
         uint32_t Unlock();
         bool IsLocked();
 
+        static size_t Size();
+
     private:
 #ifdef __WINDOWS__
         HANDLE _semaphore;
 #else
-        sem_t* _semaphore;
+        void* _semaphore;
 #endif
     };
 
