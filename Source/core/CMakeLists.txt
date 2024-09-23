@@ -206,12 +206,27 @@ endif()
 if(BLUETOOTH_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __CORE_BLUETOOTH_SUPPORT__)
 
-    find_package(Bluez5UtilHeaders REQUIRED)
+    include(GetBluez5Headers)
 
-    target_link_libraries(${TARGET}
+    GetBluez5UtilHeadersFiles(Bluez5UtilHeadersFiles)
+
+    install(FILES ${Bluez5UtilHeadersFiles}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/core/bluez5 COMPONENT ${NAMESPACE}_Development)
+
+    GetBluez5IncludeDirs(Bluez5IncludeDirs)
+
+    foreach(path ${Bluez5IncludeDirs})
+    target_include_directories(${TARGET}
         PUBLIC
-            Bluez5UtilHeaders::Bluez5UtilHeaders
-    )
+            $<BUILD_INTERFACE:${path}>)        
+    endforeach()
+
+    CheckBluez5InclusiveLanguage(INCLUSIVE_LANGUAGE)
+    
+    if(NOT ${INCLUSIVE_LANGUAGE})
+        #TODO: Remove NO_INCLUSIVE_LANGUAGE define when the plugins are synced to BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE
+        target_compile_definitions(${TARGET} PUBLIC INTERFACE NO_INCLUSIVE_LANGUAGE BLUEZ_HAS_NO_INCLUSIVE_LANGUAGE)
+    endif()
 
     message(STATUS "Enable bluetooth support.")
 endif()
