@@ -728,7 +728,6 @@ namespace PluginHost {
             sink = &_notification;
             sink->AddRef();
 
-//            _callsign.clear();
             _observers.clear();
 
             _adminLock.Unlock();
