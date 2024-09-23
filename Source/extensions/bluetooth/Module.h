@@ -26,11 +26,6 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#include <../include/bluetooth/bluetooth.h>
-#include <../include/bluetooth/hci.h>
-#include <../include/bluetooth/mgmt.h>
-#include <../include/bluetooth/l2cap.h>
-
 #include "Debug.h"
 
 #if defined(__WINDOWS__) && defined(BLUETOOTH_EXPORTS)
