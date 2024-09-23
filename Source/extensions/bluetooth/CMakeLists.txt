@@ -31,8 +31,6 @@ option(BCM43XX "Select the serial driver for bluetooth modules found on Raspberr
 option(BLUETOOTH_GATT_SUPPORT "Include GATT support" OFF)
 option(BLUETOOTH_AUDIO_SUPPORT "Include audio sink/source support" OFF)
 
-find_package(Bluez5UtilHeaders REQUIRED)
-
 add_library(${TARGET}
     HCISocket.cpp
     UUID.cpp
@@ -62,7 +60,6 @@ target_link_libraries(${TARGET}
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-        Bluez5UtilHeaders::Bluez5UtilHeaders
 )
 
 set_target_properties(${TARGET}
@@ -89,18 +86,6 @@ target_compile_options(${TARGET}
         -Wno-psabi
         -fdiagnostics-color=always
 )
-
-#
-# From Bluez >= v5.64 the mgmt_ltk_info struct is changed due to inclusive language changes.
-# https://github.com/bluez/bluez/commit/b7d6a7d25628e9b521a29a5c133fcadcedeb2102
-#
-include(CheckStructHasMember)
-check_struct_has_member("struct mgmt_ltk_info" central "../include/bluetooth/bluetooth.h;../include/bluetooth/mgmt.h" NO_INCLUSIVE_LANGUAGE LANGUAGE C)
-
-if(${NO_INCLUSIVE_LANGUAGE})
-    message(STATUS "Your version of bluez don't uses inclusive language anymore")
-    target_compile_definitions(${TARGET} PUBLIC NO_INCLUSIVE_LANGUAGE)
-endif()
 
 install(
     TARGETS ${TARGET}  EXPORT ${TARGET}Targets
