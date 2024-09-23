@@ -25,8 +25,6 @@ project(${NAMESPACE}BluetoothGATT
 set(TARGET ${PROJECT_NAME})
 message("Setup ${TARGET} v${PROJECT_VERSION}")
 
-find_package(Bluez5UtilHeaders REQUIRED)
-
 set(PUBLIC_HEADERS
     GATTSocket.h
     GATTProfile.h
@@ -45,7 +43,6 @@ target_link_libraries(${TARGET}
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-        Bluez5UtilHeaders::Bluez5UtilHeaders
 )
 
 set_target_properties(${TARGET}
