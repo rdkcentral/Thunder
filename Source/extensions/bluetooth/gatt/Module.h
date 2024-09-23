@@ -26,8 +26,6 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#include <../include/bluetooth/bluetooth.h>
-
 #include "../Debug.h"
 #include "../UUID.h"
 
