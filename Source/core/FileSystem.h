@@ -199,7 +199,7 @@ namespace Core {
             return (*this);
 	}
 
-        static string Normalize(const string& input, bool& valid);
+        static string Normalize(const string& input, const bool inScopeOnly = false, const bool allowDirs = false);
 
     public:
         inline static string FileName(const string& name)
@@ -666,17 +666,16 @@ POP_WARNING()
         ~Directory();
 
     public:
-        static string Normalize(const string& location)
+        static string Normalize(const string& location, const bool inScopeOnly = false)
         {
             string result;
 
             // First see if we are not empy.
             if (location.empty() == false) {
 
-                bool valid;
-                result = File::Normalize(location, valid);
+                result = File::Normalize(location, inScopeOnly, true /* accept directories */);
 
-                if ((valid == true) && ((result.empty() == true) || (result[result.length() - 1] != '/'))) {
+                if ((result.empty() == false) && (result[result.length() - 1] != '/')) {
                     result += '/';
                 }
             }

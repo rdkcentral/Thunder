@@ -27,7 +27,6 @@ message("Setup ${TARGET} v${PROJECT_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-find_package(Bluez5UtilHeaders REQUIRED)
 find_package(SBC REQUIRED)
 
 file(GLOB CODEC_HEADERS codecs/*.h)
@@ -59,7 +58,6 @@ target_link_libraries(${TARGET}
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-        Bluez5UtilHeaders::Bluez5UtilHeaders
         SBC::SBC
 )
 
