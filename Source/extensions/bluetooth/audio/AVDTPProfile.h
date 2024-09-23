@@ -97,7 +97,7 @@ namespace AVDTP {
                 };
 
                 return (Core::Format(_T("%02x '%s' with %d bytes <%s>)"),
-                    _category, categoryLabels[static_cast<uint8_t>(_category)], Params().size(), Params().ToString().c_str()));
+                    _category, categoryLabels[static_cast<uint8_t>(_category)], static_cast<uint32_t>(Params().size()), Params().ToString().c_str()));
             }
 #endif // __DEBUG__
 

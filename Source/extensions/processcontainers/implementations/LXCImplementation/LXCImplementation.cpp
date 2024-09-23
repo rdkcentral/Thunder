@@ -568,10 +568,7 @@ namespace ProcessContainers {
             Core::Directory logDir(dirname.c_str());
             logDir.CreatePath();
 
-            bool valid{};
-            const string filename(Core::File::Normalize(dirname + logFileName, valid));
-
-            ASSERT(valid == true);
+            const string filename(dirname + logFileName);
 
             const std::string file = Core::ToString(filename);
             const std::string level = Core::ToString(loggingOptions);
