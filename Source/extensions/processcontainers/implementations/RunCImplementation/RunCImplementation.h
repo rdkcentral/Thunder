@@ -81,7 +81,7 @@ namespace ProcessContainers {
                                         const string& logpath, const string& configuration) override;
 
         uint32_t Initialize(const string& configuration) override;
-        void Deinitialize() { }
+        void Deinitialize() override { }
     };
 
 } // namespace ProcessContainers
