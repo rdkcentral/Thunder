@@ -465,14 +465,14 @@ namespace ProxyStub {
         template <typename T = INTERFACE>
         typename std::enable_if<std::is_member_function_pointer<decltype(&T::Invoke)>::value>::type
         BringInvoke() {
-                // Calls INTERFACE::Invoke only if it exists.
+                // INTERFACE::Invoke exists, nothing more to do here
         }
 
         // Tries to invoke only if INTERFACE has the Invoke method.
         template <typename T = INTERFACE>
         typename std::enable_if<std::is_member_function_pointer<decltype(&T::Invoke)>::value>::type
         TryBringInvoke() {
-                BringInvoke();
+                BringInvoke<T>();
         }
 
         // Fallback if INTERFACE does not have the Invoke method.
