@@ -153,14 +153,10 @@ namespace RPC {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
                 while (index != _channelProxyMap.end()) {
                     const auto &temp = index -> second;
-                    for (auto proxy : temp) {
-                        proxies.push_back(proxy);
-                    }
+                    proxies.insert(proxies.begin(), temp.begin(), temp.end());
                     index++;
                 }
-                for (auto proxy : _danglingProxies) {
-                    proxies.push_back(proxy);
-                }
+                proxies.insert(proxies.begin(), _danglingProxies.begin(), _danglingProxies.end());
                 found = true;
             }
             else {
