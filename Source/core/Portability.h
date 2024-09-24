@@ -94,9 +94,9 @@
 #if defined(__APPLE__)
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
-#else defined(__clang__)
+#elif defined(__clang__)
     #pragma clang system_header
-#elif defined(__GNUC__)
+#else defined(__GNUC__)
     #pragma GCC system_header
 #endif
 
