@@ -152,7 +152,7 @@ namespace RPC {
             if (id == 0) {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
                 while (index != _channelProxyMap.end()) {
-                    const auto &temp = index -> second;
+                    const auto &temp = index->second;
                     proxies.insert(proxies.end(), temp.begin(), temp.end());
                     index++;
                 }
