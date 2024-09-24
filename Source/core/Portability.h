@@ -438,10 +438,10 @@ typedef std::string string;
 
 #define SOCK_CLOEXEC 0
 
-extern "C" EXTERNAL extern void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 //clock_gettime is available in OSX Darwin >= 10.12
 //int clock_gettime(int, struct timespec*);
-extern "C" EXTERNAL extern uint64_t gettid();
+extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>
