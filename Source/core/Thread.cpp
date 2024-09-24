@@ -469,7 +469,7 @@ POP_WARNING()
     }
 
 #ifdef __DEBUG__
-    int Thread::GetCallstack(void** buffer, int size)
+    int Thread::GetCallstack(void** buffer VARIABLE_IS_NOT_USED, int size VARIABLE_IS_NOT_USED)
     {
 #if defined(THUNDER_BACKTRACE)
         return GetCallStack(m_hThreadInstance, buffer, size);
