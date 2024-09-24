@@ -191,7 +191,7 @@ namespace Core {
         void CreateFactory(const uint32_t initialQueueSize)
         {
             IDENTIFIER label(ACTUALELEMENT::Id());
-            typename std::map<IDENTIFIER, IFactory*>::iterator index(_receptors.find(label));
+            VARIABLE_IS_NOT_USED typename std::map<IDENTIFIER, IFactory*>::iterator index(_receptors.find(label));
 
             // Do not insert the same identifier twice !!!!
             ASSERT(index == _receptors.end());
