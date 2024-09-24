@@ -462,6 +462,12 @@ namespace ProxyStub {
         using IPCMessage = Core::ProxyType<RPC::InvokeMessage>;
 	using INTERFACE::Invoke;
 
+	template <typename T = INTERFACE>
+	typename std::enable_if<std::is_member_function_pointer<decltype(&T::Invoke)>::value>::type
+	BringInvoke() {
+		using INTERFACE::Invoke;
+	}
+
     public:
         UnknownProxyType(UnknownProxyType<INTERFACE>&&) = delete;
         UnknownProxyType(const UnknownProxyType<INTERFACE>&) = delete;
@@ -472,6 +478,7 @@ namespace ProxyStub {
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool outbound)
             : _unknown(channel, implementation, INTERFACE::ID, outbound, *this, typeid(INTERFACE).name())
         {
+		BringInvoke();
         }
         POP_WARNING()
         ~UnknownProxyType() override = default;
