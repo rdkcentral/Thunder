@@ -75,7 +75,7 @@ namespace Thunder {
                         }
 
                     public:
-                        uint64_t Timed(const uint64_t scheduledTime) {
+                        uint64_t Timed(const uint64_t /* scheduledTime */) {
                             return (_client->Timed());
                         }
 
@@ -149,7 +149,7 @@ namespace Thunder {
                             _parent.Inbound(inbound);
                         }
                     }
-                    virtual void Send(Core::ProxyType<INTERFACE>& jsonObject) override
+                    virtual void Send(Core::ProxyType<INTERFACE>& jsonObject VARIABLE_IS_NOT_USED) override
                     {
 #ifdef __DEBUG__
                         string message;
@@ -1301,14 +1301,14 @@ namespace Thunder {
                         }
                     }
                 }
-                void monitor_on(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+                void monitor_on(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* result)
                 {
                     if (result == nullptr) {
                         string method = string("status@") + Base::Callsign();
                         _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                     }
                 }
-                void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+                void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
                 {
                     // See if there are events pending for registration...
                     if (_events.empty() == false) {
