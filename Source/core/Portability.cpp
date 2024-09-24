@@ -68,7 +68,7 @@ extern "C" {
 #ifdef __APPLE__
 extern "C" {
 //@TODO @Pierre implement mremap
-void* mremap(void* old_address, size_t old_size, size_t new_size, int flags)
+void* mremap(void* /* old_address */, size_t /* old_size */, size_t /* new_size */, int /* flags */)
 {
     return (nullptr);
 }
