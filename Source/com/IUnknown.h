@@ -460,6 +460,7 @@ namespace ProxyStub {
     public:
         using BaseClass = UnknownProxyType<INTERFACE>;
         using IPCMessage = Core::ProxyType<RPC::InvokeMessage>;
+	using INTERFACE::Invoke;
 
     public:
         UnknownProxyType(UnknownProxyType<INTERFACE>&&) = delete;
