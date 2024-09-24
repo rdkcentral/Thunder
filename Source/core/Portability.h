@@ -437,7 +437,6 @@ typedef std::string string;
 #endif
 
 #define SOCK_CLOEXEC 0
-#define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL extern void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 //clock_gettime is available in OSX Darwin >= 10.12
