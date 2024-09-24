@@ -76,6 +76,7 @@ else()
         PRIVATE
         CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         -Wl,--whole-archive ${CONTAINERS} -Wl,--no-whole-archive
     )
 endif()
