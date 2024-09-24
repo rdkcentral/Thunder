@@ -68,6 +68,7 @@ if(APPLE)
         PRIVATE
         CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         "-Wl,-force_load" ${CONTAINERS}
     )
 else()
