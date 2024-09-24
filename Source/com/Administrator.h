@@ -150,14 +150,22 @@ namespace RPC {
         bool Allocations(const uint32_t id, Proxies& proxies) const {
             bool found = false;
             if (id == 0) {
+                ChannelMap::const_iterator index(_channelProxyMap.begin());
+                while ((index != _channelProxyMap.end())) {
+                    const auto &temp = index -> second;
+                    for(auto proxy : temp) {
+                        proxies.push_back(proxy);
+                    }
+                    index++;
+                }
+                for(auto proxy : _danglingProxies) {
+                    proxies.push_back(proxy);
+                }
                 found = true;
-                proxies = _danglingProxies;
             }
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
-
                 while ((found == false) && (index != _channelProxyMap.end())) {
-
                     if (index->first != id) {
                         index++;
                     }
@@ -169,6 +177,7 @@ namespace RPC {
             }
             return (found);
         }
+
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
         {
