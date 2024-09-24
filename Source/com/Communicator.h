@@ -1725,7 +1725,7 @@ POP_WARNING()
             return (result);
         }
         template <typename INTERFACE>
-        inline uint32_t Offer(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+        inline uint32_t Offer(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0) VARIABLE_IS_NOT_USED, const uint32_t waitTime = CommunicationTimeOut)
         {
             uint32_t result(Core::ERROR_NONE);
 
@@ -1764,7 +1764,7 @@ POP_WARNING()
             return (result);
         }
         template <typename INTERFACE>
-        inline uint32_t Revoke(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+        inline uint32_t Revoke(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0) VARIABLE_IS_NOT_USED, const uint32_t waitTime = CommunicationTimeOut)
         {
             uint32_t result(Core::ERROR_NONE);
 
