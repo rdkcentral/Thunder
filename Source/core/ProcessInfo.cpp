@@ -252,7 +252,7 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent with a certain name
-    ProcessInfo::Iterator::Iterator(const string& parentname, const string& childname, const bool removepath)
+    ProcessInfo::Iterator::Iterator(const string& parentname VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
         : _pids()
         , _current()
         , _index(0)
