@@ -42,8 +42,10 @@ namespace PluginHost
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
+                ASSERT(all_paths != nullptr);
+
                 string element;
-                while (all_paths->Next(element) == true) {
+                while ((all_paths->Next(element) == true) && (result == nullptr)) {
                     Core::File file(element.c_str());
                     if (file.Exists()) {
 
