@@ -29,6 +29,9 @@ namespace Logging {
     SYSLOG_ANNOUNCE(Crash);
     SYSLOG_ANNOUNCE(Startup);
     SYSLOG_ANNOUNCE(Shutdown);
+    SYSLOG_ANNOUNCE(Activate);
+    SYSLOG_ANNOUNCE(Deactivate);
+    SYSLOG_ANNOUNCE(Hibernate);
     SYSLOG_ANNOUNCE(Fatal);
     SYSLOG_ANNOUNCE(Error);
     SYSLOG_ANNOUNCE(ParsingError);

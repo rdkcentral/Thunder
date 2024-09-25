@@ -29,6 +29,9 @@ namespace Logging {
     // ...but logging controls have to be visible outside of the Messaging lib
     DEFINE_LOGGING_CATEGORY(Startup)
     DEFINE_LOGGING_CATEGORY(Shutdown)
+    DEFINE_LOGGING_CATEGORY(Hibernate)
+    DEFINE_LOGGING_CATEGORY(Activate)
+    DEFINE_LOGGING_CATEGORY(Deactivate)
     DEFINE_LOGGING_CATEGORY(Notification)
     DEFINE_LOGGING_CATEGORY(Error)
     DEFINE_LOGGING_CATEGORY(ParsingError)
