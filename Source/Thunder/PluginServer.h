@@ -1277,22 +1277,26 @@ namespace PluginHost {
             string Substitute(const string& input) const override {
                 return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
             }
-            string SubstituteList(const string& envList) const override {
-                string envs;
+            std::vector<string> SubstituteList(const string& envs) const override {
+
+                std::vector<string> environmentList;;
                 Plugin::Config::EnvironmentList environments;
-                environments.FromString(envList);
+                environments.FromString(envs);
                 if (environments.IsSet() == true) {
                     Core::JSON::ArrayType<Plugin::Config::Environment>::Iterator index(environments.Elements());
                     while (index.Next() == true) {
                         if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
                             index.Current().Value = Substitute(index.Current().Value.Value());
+                            string env = index.Current().Key.Value() + Plugin::Config::EnvFieldSeparator +
+                                         index.Current().Value.Value() + Plugin::Config::EnvFieldSeparator +
+                                         ((index.Current().Override.Value() == true) ? "1" : "0");
+                            environmentList.push_back(env);
                         } else {
                             SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
                         }
                     }
-                    environments.ToString(envs);
                 }
-                return envs;
+                return environmentList;
             }
             Core::hresult Metadata(string& info /* @out */) const override {
                 Metadata::Service result;
@@ -2421,7 +2425,7 @@ namespace PluginHost {
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration,
-                    const string environments) override
+                    const std::vector<string>& environments) override
                 {
                     string persistentPath(_comms.PersistentPath());
                     string dataPath(_comms.DataPath());

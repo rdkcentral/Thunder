@@ -159,7 +159,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:e:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -202,7 +202,7 @@ POP_WARNING()
         string ProxyStubPath;
         string PostMortemPath;
         string SystemRootPath;
-        string Environments;
+        std::vector<string> Environments;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -251,8 +251,8 @@ POP_WARNING()
             case 'S':
                 SystemRootPath = Core::Directory::Normalize(Strip(argument));
                 break;
-            case 'E':
-                Environments = Strip(argument);
+            case 'e':
+                Environments.push_back(Strip(argument));
                 break;
             case 'v':
                 VolatilePath = Core::Directory::Normalize(Strip(argument));
@@ -669,19 +669,28 @@ int main(int argc, char** argv)
                 Core::ProcessCurrent().User(string(options.User));
             }
 
-            if (options.Environments.empty() != true) {
-                Core::JSON::ArrayType<Plugin::Config::Environment> Environments;
-                Environments.FromString(options.Environments);
-                if (Environments.IsSet() == true) {
-                    Core::JSON::ArrayType<Plugin::Config::Environment>::Iterator index(Environments.Elements());
-                    while (index.Next() == true) {
-                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
-                            uint32_t status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), index.Current().Value.Value(), index.Current().Override.Value());
+            for (const string& env : options.Environments) {
+                size_t start = env.find_first_of(Plugin::Config::EnvFieldSeparator);
+                if ((start != string::npos) && (start < env.length())) {
+                    size_t end = env.find_last_of(Plugin::Config::EnvFieldSeparator);
+                    if ((end != string::npos) && (start != end)) {
+                        string key = env.substr(0, start);
+                        string value = env.substr(start + 1, end - (start + 1));
+                        string overrideStr = env.substr(end + 1);
+
+                        bool toOverride = ((overrideStr.size() == 1) && (overrideStr == "1")) ? true: false;
+
+                        if ((key.empty() != true) && (value.empty() != true)) {
+                            uint32_t status = Core::SystemInfo::SetEnvironment(key, value.c_str(), toOverride);
                             if (status != true) {
-                                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), key.c_str(), value.c_str()));
                             }
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Environment key:value fromat is invalid :[%s]:[%s]\n"), key.c_str(), value.c_str()));
                         }
-                    }
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Invalid Enviroment value :[%s]\n"), env.c_str()));
+                   }
                 }
             }
 

@@ -92,6 +92,7 @@ namespace Plugin {
             Core::JSON::Boolean Override;
         };
         using EnvironmentList = Core::JSON::ArrayType<Environment>;
+        static constexpr const TCHAR EnvFieldSeparator = _T(';');
 
         class EXTERNAL RootConfig : public Core::JSON::Container {
         private:

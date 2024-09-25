@@ -57,7 +57,7 @@ namespace PluginHost {
             const uint8_t threads,
             const int8_t priority,
             const string configuration,
-            const string environments) = 0;
+            const std::vector<string>& environments) = 0;
     };
 }
 }

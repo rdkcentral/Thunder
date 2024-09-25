@@ -115,7 +115,7 @@ namespace RPC {
             const string& systemRootPath,
             const string& remoteAddress,
             const string& configuration,
-            const string& environments)
+            const std::vector<string>& environments)
             : _locator(locator)
             , _className(className)
             , _callsign(callsign)
@@ -235,7 +235,7 @@ namespace RPC {
         {
             return (_configuration);
         }
-        inline const string& Environments() const
+        inline const std::vector<string>& Environments() const
         {
             return (_environments);
         }
@@ -254,7 +254,7 @@ namespace RPC {
         string _systemRootPath;
         string _remoteAddress;
         string _configuration;
-        string _environments;
+        std::vector<string> _environments;
     };
 
     class EXTERNAL Config {
@@ -527,8 +527,8 @@ namespace RPC {
                 if (instance.Threads() > 1) {
                     _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
                 }
-                if (instance.Environments().empty() == false) {
-                    _options.Add(_T("-E")).Add('"' + instance.Environments() + '"');
+                for (auto const& env : instance.Environments()) {
+                    _options.Add(_T("-e")).Add('"' + env + '"');
                 }
                 _priority = instance.Priority();
             }
