@@ -1293,7 +1293,7 @@ namespace PluginHost {
                          env.value = Substitute(environment.value);
                          env.key = environment.key;
                          env.overriding = environment.overriding;
-                         environmentList.push_back(environment);
+                         environmentList.push_back(env);
                     } else {
                          SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), environment.key.c_str(), environment.value.c_str()));
                     }

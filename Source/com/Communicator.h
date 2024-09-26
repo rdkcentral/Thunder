@@ -45,7 +45,7 @@ namespace RPC {
 
     class EXTERNAL Object {
     public:
-        static constexpr const TCHAR EnvironmentSeparator = _T(';');
+        static constexpr const TCHAR EnvironmentSeparator = _T('=');
         enum class HostType {
             LOCAL,
             DISTRIBUTED,
@@ -544,7 +544,7 @@ namespace RPC {
                 for (auto const& environment : instance.Environments()) {
                     string env = environment.key + RPC::Object::EnvironmentSeparator +
                                     "\"" + environment.value + "\"";
-                    string option = (environment.overriding == RPC::Object::Environment::Scope::GLOBAL) ? "E" : "e"; 
+                    string option = (environment.overriding == RPC::Object::Environment::Scope::GLOBAL) ? "-E" : "-e";
                     _options.Add(_T(option)).Add('"' + env + '"');
                 }
                 _priority = instance.Priority();

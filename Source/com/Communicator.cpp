@@ -576,11 +576,11 @@ namespace RPC {
 
 }
 
-ENUM_CONVERSION_BEGIN(Plugin::Config::Object::Environment::Scope)
+ENUM_CONVERSION_BEGIN(RPC::Object::Environment::Scope)
 
-    { Plugin::Config::Object::Environment::Scope::LOCAL, _TXT("Local") },
-    { Plugin::Config::Object::Environment::Scope::GLOBAL, _TXT("Global") },
+    { RPC::Object::Environment::Scope::LOCAL, _TXT("Local") },
+    { RPC::Object::Environment::Scope::GLOBAL, _TXT("Global") },
 
-ENUM_CONVERSION_END(Plugin::Config::Object::Environment::Scope)
+ENUM_CONVERSION_END(RPC::Object::Environment::Scope)
 
 }

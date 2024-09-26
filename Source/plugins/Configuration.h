@@ -113,10 +113,10 @@ namespace Plugin {
                     string key = env.substr(0, start);
                     string value = env.substr(start + 1);
 
-                    if ((key.empty() != true) && (value.empty() != true) &&
-                        ((value.at(0) == '\"') && (value.at(value.length()) == '\"'))) {
+                    if ((key.empty() != true) && (value.empty() != true) && (value.length() > 2) &&
+                        ((value.at(0) == '\"') && (value.at(value.length() - 1) == '\"'))) {
                         info.key = key;
-                        info.value = value.substr(1, value.length() - 1);
+                        info.value = value.substr(1, value.length() - 2);
                         info.overriding = overriding;
                     } else {
                         SYSLOG(Logging::Startup, (_T("Environment key:value fromat is invalid :[%s]:[%s]\n"), key.c_str(), value.c_str()));
