@@ -832,7 +832,7 @@ namespace Core {
     size_t SharedSemaphore::Size()
     {
 #ifdef __WINDOWS__
-        ASSERT(false)
+        ASSERT(false);
         return 0;
 #else
         return sizeof(sem_t);
