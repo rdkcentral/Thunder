@@ -109,7 +109,7 @@ public:
     {
         const int32_t deltaRss(mstat.resident - _cache.resident);
         const int32_t deltaVsz(mstat.size - _cache.size);
-        ostream << " PID: " << getpid() << ", RSS: " << mstat.resident << "kB(" << ((deltaRss > 0) ? "+" : "") << deltaRss << "), VSZ: " << mstat.size << "kB (" << ((deltaVsz > 0) ? "+" : "") << deltaVsz << ")";
+        ostream << " PID: " << getpid() << ", RSS: " << mstat.resident << "kB(" << ((deltaRss > 0) ? "+" : "") << deltaRss << "kB), VSZ: " << mstat.size << "kB (" << ((deltaVsz > 0) ? "+" : "") << deltaVsz << "kB)";
     }
 
     static void Dump(std::ostream& ostream)
@@ -317,7 +317,7 @@ protected:
         _cv.wait(lock);
         lock.unlock();
 
-        Printer() << tid << ": Work start: " << MemProber::Dump() << std::endl;
+        Printer()  << "TID: " << tid << ": Work start: " << MemProber::Dump() << std::endl;
 
         uint16_t sum(0);
 
@@ -325,7 +325,7 @@ protected:
             sum = _callback->Work();
         }
 
-        Printer() << tid << ": Work done: " << sum << MemProber::Dump() << std::endl;
+        Printer() << "TID: " << tid << ": Work done: " << sum << MemProber::Dump() << std::endl;
 
         return sum;
     }
@@ -510,7 +510,7 @@ public:
 
         ::memcpy(&sum, md5.Result(), md5.Length);
 
-        Printer() << " - Waiting to be released: " << sum << MemProber::Dump() << std::endl;
+        //Printer() << " - Waiting to be released, md5: " << sum << " " << MemProber::Dump() << std::endl;
 
         // wait until release
         std::unique_lock<std::mutex> lock(_mutex);
