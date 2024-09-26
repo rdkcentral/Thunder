@@ -720,7 +720,7 @@ namespace PluginHost {
                     if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
                         string value = _substituter.Substitute(index.Current().Value.Value(), nullptr);
                         if (value.empty() != true) {
-                            status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, index.Current().Override.Value());
+                            status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, ((index.Current().Override.Value() == RPC::Object::Environment::Scope::GLOBAL) ? true : false));
                             if (status != true) {
                                 SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
                             }

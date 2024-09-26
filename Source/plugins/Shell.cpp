@@ -69,8 +69,6 @@ namespace PluginHost
                 if (locator.empty() == true) {
                     locator = Locator();
                 }
-                string environments;
-                rootConfig.Environments.ToString(environments);
                 RPC::Object definition(locator,
                     className,
                     Callsign(),
@@ -84,7 +82,7 @@ namespace PluginHost
                     SystemRootPath(),
                     rootConfig.RemoteAddress.Value(),
                     rootConfig.Configuration.Value(),
-                    SubstituteList(environments));
+                    Plugin::Config::Environment::List(rootConfig.Environments));
 
                 result = handler->Instantiate(definition, waitTime, pid);
             }

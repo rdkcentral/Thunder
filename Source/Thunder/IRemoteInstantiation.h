@@ -27,6 +27,7 @@ namespace PluginHost {
     struct IRemoteInstantiation : virtual public Core::IUnknown {
 
         enum { ID = RPC::IDS::ID_REMOTE_INSTANTIATION };
+        using IEnvironmentIterator = RPC::IIteratorType<RPC::Object::Environment, RPC::ID_ENVIRONMENT_ITERATOR>;
 
         ~IRemoteInstantiation() override = default;
 
@@ -57,7 +58,7 @@ namespace PluginHost {
             const uint8_t threads,
             const int8_t priority,
             const string configuration,
-            const std::vector<string>& environments) = 0;
+            IEnvironmentIterator* const& environments) = 0;
     };
 }
 }

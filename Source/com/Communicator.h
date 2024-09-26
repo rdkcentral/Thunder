@@ -45,10 +45,21 @@ namespace RPC {
 
     class EXTERNAL Object {
     public:
+        static constexpr const TCHAR EnvironmentSeparator = _T(';');
         enum class HostType {
             LOCAL,
             DISTRIBUTED,
             CONTAINER
+        };
+
+        struct Environment {
+            enum class Scope {
+                LOCAL,
+                GLOBAL
+            };
+            string key;
+            string value;
+            Scope overriding;
         };
 
         Object()
@@ -115,7 +126,7 @@ namespace RPC {
             const string& systemRootPath,
             const string& remoteAddress,
             const string& configuration,
-            const std::vector<string>& environments)
+            const std::vector<Environment>& environments)
             : _locator(locator)
             , _className(className)
             , _callsign(callsign)
@@ -235,9 +246,12 @@ namespace RPC {
         {
             return (_configuration);
         }
-        inline const std::vector<string>& Environments() const
+        inline const std::vector<Environment>& Environments() const
         {
             return (_environments);
+        }
+        inline void Environments(const std::vector<Environment>& environments) {
+            _environments = environments;
         }
 
     private:
@@ -254,7 +268,7 @@ namespace RPC {
         string _systemRootPath;
         string _remoteAddress;
         string _configuration;
-        std::vector<string> _environments;
+        std::vector<Environment> _environments;
     };
 
     class EXTERNAL Config {
@@ -527,8 +541,11 @@ namespace RPC {
                 if (instance.Threads() > 1) {
                     _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
                 }
-                for (auto const& env : instance.Environments()) {
-                    _options.Add(_T("-e")).Add('"' + env + '"');
+                for (auto const& environment : instance.Environments()) {
+                    string env = environment.key + RPC::Object::EnvironmentSeparator +
+                                    "\"" + environment.value + "\"";
+                    string option = (environment.overriding == RPC::Object::Environment::Scope::GLOBAL) ? "E" : "e"; 
+                    _options.Add(_T(option)).Add('"' + env + '"');
                 }
                 _priority = instance.Priority();
             }

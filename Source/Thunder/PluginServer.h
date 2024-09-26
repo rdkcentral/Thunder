@@ -377,6 +377,8 @@ namespace PluginHost {
                 DYNAMIC
             };
 
+            using Services = std::unordered_map<string, Service*>;
+
         private:
             using BaseClass = PluginHost::Service;
             using Jobs = Core::ThrottleQueueType<Core::ProxyType<Core::IDispatch>, ServiceMap&>;
@@ -1277,36 +1279,32 @@ namespace PluginHost {
             string Substitute(const string& input) const override {
                 return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
             }
-            std::vector<string> SubstituteList(const string& envs) const override {
-
-                std::vector<string> environmentList;;
-                Plugin::Config::EnvironmentList environments;
-                environments.FromString(envs);
-                if (environments.IsSet() == true) {
-                    Core::JSON::ArrayType<Plugin::Config::Environment>::Iterator index(environments.Elements());
-                    while (index.Next() == true) {
-                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
-                            index.Current().Value = Substitute(index.Current().Value.Value());
-                            string env = index.Current().Key.Value() + Plugin::Config::EnvFieldSeparator +
-                                         index.Current().Value.Value() + Plugin::Config::EnvFieldSeparator +
-                                         ((index.Current().Override.Value() == true) ? "1" : "0");
-                            environmentList.push_back(env);
-                        } else {
-                            SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
-                        }
-                    }
-                }
-                return environmentList;
-            }
             Core::hresult Metadata(string& info /* @out */) const override {
                 Metadata::Service result;
                 GetMetadata(result);
                 result.ToString(info);
                 return (Core::ERROR_NONE);
             }
+            std::vector<RPC::Object::Environment> SubstituteList(const std::vector<RPC::Object::Environment>& environments) const {
+                std::vector<RPC::Object::Environment> environmentList;
+                for (auto& environment : environments) {
+                    if ((environment.key.empty() != true) && (environment.value.empty() != true)) {
+                         RPC::Object::Environment env;
+                         env.value = Substitute(environment.value);
+                         env.key = environment.key;
+                         env.overriding = environment.overriding;
+                         environmentList.push_back(environment);
+                    } else {
+                         SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), environment.key.c_str(), environment.value.c_str()));
+                    }
+                }
+                return environmentList;
+            }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
                 ASSERT(_connection == nullptr);
+
+                const_cast<RPC::Object&>(object).Environments(SubstituteList(object.Environments()));
 
                 void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), _administrator.Configuration().LinkerPluginPaths()));
 
@@ -1536,7 +1534,7 @@ namespace PluginHost {
                                 SystemRootPath(),
                                 PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
                                 PluginHost::Service::Configuration().Root.Configuration.Value(),
-                                SubstituteList(environments));
+                                Plugin::Config::Environment::List(PluginHost::Service::Configuration().Root.Environments));
 
                                 newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
                             if (newIF == nullptr) {
@@ -2031,6 +2029,10 @@ namespace PluginHost {
                             if (instantiation == nullptr) {
                                 result = Core::ERROR_ILLEGAL_STATE;
                             } else {
+
+                                using Iterator = IRemoteInstantiation::IEnvironmentIterator;
+                                     Iterator* environment = Core::Service<RPC::IteratorType<Iterator>>::Create<Iterator>(_object.Environments());
+
                                 result = instantiation->Instantiate(
                                     RPC::Communicator::RemoteConnection::Id(),
                                     _object.Locator(),
@@ -2044,7 +2046,7 @@ namespace PluginHost {
                                     _object.Threads(),
                                     _object.Priority(),
                                     _object.Configuration(),
-                                    _object.Environments());
+                                    environment);
 
                                 instantiation->Release();
                             }
@@ -2425,7 +2427,7 @@ namespace PluginHost {
                     const uint8_t threads,
                     const int8_t priority,
                     const string configuration,
-                    const std::vector<string>& environments) override
+                    IRemoteInstantiation::IEnvironmentIterator* const& environments) override
                 {
                     string persistentPath(_comms.PersistentPath());
                     string dataPath(_comms.DataPath());
@@ -2437,9 +2439,17 @@ namespace PluginHost {
                         volatilePath += callsign + '/';
                     }
 
+                    std::vector<RPC::Object::Environment> _environmentList;
+                    if (environments != nullptr) {
+                        RPC::Object::Environment environment;
+                        while (environments->Next(environment) == true) {
+                            _environmentList.push_back(environment);
+                        }
+                    }
+
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, environments);
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, _environmentList);
 
                     RPC::Communicator::Process process(requestId, config, instance);
 
@@ -2449,6 +2459,17 @@ namespace PluginHost {
                 BEGIN_INTERFACE_MAP(RemoteInstantiation)
                 INTERFACE_ENTRY(IRemoteInstantiation)
                 END_INTERFACE_MAP
+
+            private:
+                std::vector<RPC::Object::Environment> SubstituteList(const string& callsign, const std::vector<RPC::Object::Environment>& environments) const
+                {
+                    std::vector<RPC::Object::Environment> substitutedList;
+                    Core::ProxyType<Service> service = _parent.GetService(callsign);
+                    if (service.IsValid() == true) {
+                        substitutedList = service->SubstituteList(environments);
+                    }
+                    return substitutedList;
+                }
 
             private:
                 mutable uint32_t _refCount;
@@ -3089,6 +3110,17 @@ namespace PluginHost {
                 }
 
                 _adminLock.Unlock();
+            }
+            inline Core::ProxyType<Service> GetService(const string& callsign)
+            {
+                Core::ProxyType<Service> service;
+                for (std::pair<const string, Core::ProxyType<Service>>& entry : _services) {
+                    if (entry.first == callsign) {
+                        service = entry.second;
+                        break;
+                    }
+                }
+                return service;
             }
             inline Iterator Services()
             {

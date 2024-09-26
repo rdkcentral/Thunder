@@ -235,9 +235,6 @@ namespace PluginHost {
         //! Substituted Config value
         virtual string Substitute(const string& input) const = 0;
 
-        //! Substituted environments list
-        virtual std::vector<string> SubstituteList(const string& environments) const = 0;
-
         virtual bool Resumed() const = 0;
         virtual Core::hresult Resumed(const bool value) = 0;
 
