@@ -150,7 +150,6 @@ namespace RPC {
             return (*this);
         }
 
-
         Object& operator=(Object&& move) noexcept
         {
             if (this != &move) {
@@ -172,9 +171,9 @@ namespace RPC {
                 move._version = ~0;
                 move._threads = 0;
                 move._priority = 0;
-	    }
-	    return (*this);
-	}
+            }
+            return (*this);
+        }
 
     public:
         inline const string& Locator() const
@@ -262,6 +261,7 @@ namespace RPC {
             , _application()
             , _proxyStub()
             , _postMortem()
+            , _linker()
         {
         }
         Config(
@@ -273,7 +273,8 @@ namespace RPC {
             const string& volatilePath,
             const string& applicationPath,
             const string& proxyStubPath,
-            const string& postMortem)
+            const string& postMortem,
+            const std::vector<string>& linker)
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
@@ -283,6 +284,7 @@ namespace RPC {
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
             , _postMortem(postMortem)
+            , _linker(linker)
         {
         }
         Config(const Config& copy)
@@ -295,6 +297,7 @@ namespace RPC {
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
             , _postMortem(copy._postMortem)
+            , _linker(copy._linker)
         {
         }
 	Config(Config&& move) noexcept
@@ -307,6 +310,7 @@ namespace RPC {
             , _application(std::move(move._application))
             , _proxyStub(std::move(move._proxyStub))
             , _postMortem(std::move(move._postMortem))
+            , _linker(std::move(move._linker))
         {
         }
         ~Config()
@@ -350,6 +354,10 @@ namespace RPC {
         {
             return (_postMortem);
         }
+        inline const std::vector<string>& LinkerPaths() const
+        {
+            return (_linker);
+        }
 
     private:
         string _connector;
@@ -361,6 +369,7 @@ namespace RPC {
         string _application;
         string _proxyStub;
         string _postMortem;
+        std::vector<string> _linker;
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
@@ -489,6 +498,9 @@ namespace RPC {
                 }
                 if (config.VolatilePath().empty() == false) {
                     _options.Add(_T("-v")).Add('"' + config.VolatilePath() + '"');
+                }
+                for (auto const& path : config.LinkerPaths()) {
+                    _options.Add(_T("-f")).Add('"' + path + '"');
                 }
                 if (config.ProxyStubPath().empty() == false) {
                     _options.Add(_T("-m")).Add('"' + config.ProxyStubPath() + '"');
@@ -865,7 +877,7 @@ namespace RPC {
                     TRACE_L1("Invalid process container configuration");
                 }
                 else {
-                    std::vector<string> searchPaths(3);
+                    std::vector<string> searchPaths;
 
     #ifdef __DEBUG__
                     if (config.ContainerPath.IsSet() == true) {

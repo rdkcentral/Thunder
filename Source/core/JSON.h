@@ -3190,8 +3190,17 @@ namespace Core {
 
             bool IsNull() const override
             {
-                //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            void Null(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= (UNDEFINED | SET);
+                }
+                else {
+                    _state &= ~(UNDEFINED | SET);
+                }
             }
 
             void Set(const bool enabled)
@@ -3360,33 +3369,40 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == FIND_MARKER) {
-                    _iterator.Reset();
-                    if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                        stream[loaded++] = '[';
-                    }
-                    offset = (_iterator.Next() == false ? ~0 : PARSE);
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
+                if ((_state & modus::UNDEFINED) != 0) {
+                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
+                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
+                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
                 }
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
-                    } else if (offset == BEGIN_MARKER) {
-                        stream[loaded++] = ',';
-                        offset = PARSE;
-                    }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
+                else {
+                    if (offset == FIND_MARKER) {
+                        _iterator.Reset();
                         if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
-                            stream[loaded++] = ']';
+                            stream[loaded++] = '[';
                         }
-                        offset = FIND_MARKER;
-                    } else {
-                        offset = END_MARKER;
+                        offset = (_iterator.Next() == false ? ~0 : PARSE);
+                    } else if (offset == END_MARKER) {
+                        offset = ~0;
+                    }
+                    while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
+                        if (offset >= PARSE) {
+                            offset -= PARSE;
+                            loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                            offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
+                        } else if (offset == BEGIN_MARKER) {
+                            stream[loaded++] = ',';
+                            offset = PARSE;
+                        }
+                    }
+                    if (offset == static_cast<uint32_t>(~0)) {
+                        if (loaded < maxLength) {
+                            if (((_state & modus::EXTRACT) == 0) || (_data.size() != 1)) {
+                                stream[loaded++] = ']';
+                            }
+                            offset = FIND_MARKER;
+                        } else {
+                            offset = END_MARKER;
+                        }
                     }
                 }
 
@@ -3482,34 +3498,42 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
-                    _iterator.Reset();
-                    if (_data.size() <= 15) {
-                        stream[loaded++] = (0x90 | static_cast<uint8_t>(_data.size()));
-                        if (_data.size() > 0) {
+                if ((_state & modus::UNDEFINED) != 0) {
+                    if (offset == 0) {
+                        stream[0] = IMessagePack::NullValue;
+                        loaded = 1;
+                    }
+                }
+                else {
+                    if (offset == 0) {
+                        _iterator.Reset();
+                        if (_data.size() <= 15) {
+                            stream[loaded++] = (0x90 | static_cast<uint8_t>(_data.size()));
+                            if (_data.size() > 0) {
+                                offset = PARSE;
+                            }
+                        } else {
+                            stream[loaded++] = 0xDC;
+                            offset = 1;
+                        }
+                        _iterator.Next();
+                    }
+                    while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                        if (offset == 1) {
+                            stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                            offset = 2;
+                        } else if (offset == 2) {
+                            stream[loaded++] = _data.size() & 0xFF;
                             offset = PARSE;
                         }
-                    } else {
-                        stream[loaded++] = 0xDC;
-                        offset = 1;
                     }
-                    _iterator.Next();
-                }
-                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
-                    if (offset == 1) {
-                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
-                        offset = 2;
-                    } else if (offset == 2) {
-                        stream[loaded++] = _data.size() & 0xFF;
-                        offset = PARSE;
-                    }
-                }
-                while ((loaded < maxLength) && (offset >= PARSE)) {
-                    offset -= PARSE;
-                    loaded += static_cast<const IMessagePack&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                    offset += PARSE;
-                    if ((offset == PARSE) && (_iterator.Next() != true)) {
-                        offset = 0;
+                    while ((loaded < maxLength) && (offset >= PARSE)) {
+                        offset -= PARSE;
+                        loaded += static_cast<const IMessagePack&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset += PARSE;
+                        if ((offset == PARSE) && (_iterator.Next() != true)) {
+                            offset = 0;
+                        }
                     }
                 }
 
@@ -3700,9 +3724,18 @@ namespace Core {
                 return (index != _data.end());
             }
 
+            void Null(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= UNDEFINED;
+                }
+                else {
+                    _state &= ~UNDEFINED;
+                }
+            }
+
             bool IsNull() const override
             {
-                // TODO: Implement null for conrtainers
                 return ((_state & UNDEFINED) != 0);
             }
 
@@ -3741,49 +3774,56 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == FIND_MARKER) {
-                    _iterator = _data.begin();
-                    stream[loaded++] = '{';
-
-                    offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
-                    if (offset == BEGIN_MARKER) {
-                        _fieldName = string(_iterator->first);
-                        _current.json = &_fieldName;
-                        offset = PARSE;
-                    }
-                } else if (offset == END_MARKER) {
-                    offset = ~0;
+                if ((_state & UNDEFINED) != 0) {
+                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
+                    loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
+                    ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
                 }
+                else {
+                    if (offset == FIND_MARKER) {
+                        _iterator = _data.begin();
+                        stream[loaded++] = '{';
 
-                while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
-                    if (offset >= PARSE) {
-                        offset -= PARSE;
-                        loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
-                    } else if (offset == BEGIN_MARKER) {
-                        if (_current.json == &_fieldName) {
-                            stream[loaded++] = ':';
-                            _current.json = _iterator->second;
+                        offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
+                        if (offset == BEGIN_MARKER) {
+                            _fieldName = string(_iterator->first);
+                            _current.json = &_fieldName;
                             offset = PARSE;
-                        } else {
-                            if (FindNext() != false) {
-                                stream[loaded++] = ',';
-                                _fieldName = string(_iterator->first);
-                                _current.json = &_fieldName;
+                        }
+                    } else if (offset == END_MARKER) {
+                        offset = ~0;
+                    }
+
+                    while ((loaded < maxLength) && (offset != static_cast<uint32_t>(~0))) {
+                        if (offset >= PARSE) {
+                            offset -= PARSE;
+                            loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                            offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
+                        } else if (offset == BEGIN_MARKER) {
+                            if (_current.json == &_fieldName) {
+                                stream[loaded++] = ':';
+                                _current.json = _iterator->second;
                                 offset = PARSE;
                             } else {
-                                offset = ~0;
+                                if (FindNext() != false) {
+                                    stream[loaded++] = ',';
+                                    _fieldName = string(_iterator->first);
+                                    _current.json = &_fieldName;
+                                    offset = PARSE;
+                                } else {
+                                    offset = ~0;
+                                }
                             }
                         }
                     }
-                }
-                if (offset == static_cast<uint32_t>(~0)) {
-                    if (loaded < maxLength) {
-                        stream[loaded++] = '}';
-                        offset = FIND_MARKER;
-                        _fieldName.Clear();
-                    } else {
-                        offset = END_MARKER;
+                    if (offset == static_cast<uint32_t>(~0)) {
+                        if (loaded < maxLength) {
+                            stream[loaded++] = '}';
+                            offset = FIND_MARKER;
+                            _fieldName.Clear();
+                        } else {
+                            offset = END_MARKER;
+                        }
                     }
                 }
 
@@ -3952,60 +3992,68 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                uint16_t elementSize = Size();
-                if (offset == 0) {
-                    _iterator = _data.begin();
-                    if (elementSize <= 15) {
-                        stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
-                        if (_iterator != _data.end()) {
+                if ((_state & UNDEFINED) != 0) {
+                    if (offset == 0) {
+                        stream[0] = IMessagePack::NullValue;
+                        loaded = 1;
+                    }
+                }
+                else {
+                    uint16_t elementSize = Size();
+                    if (offset == 0) {
+                        _iterator = _data.begin();
+                        if (elementSize <= 15) {
+                            stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
+                            if (_iterator != _data.end()) {
+                                offset = PARSE;
+                            }
+                        } else {
+                            stream[loaded++] = 0xDE;
+                            offset = 1;
+                        }
+                        if (offset != 0) {
+                            if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
+                                offset = 0;
+                            } else {
+                                _fieldName = string(_iterator->first);
+                            }
+                        }
+                    }
+                    while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                        if (offset == 1) {
+                            stream[loaded++] = (elementSize >> 8) & 0xFF;
+                            offset = 2;
+                        } else if (offset == 2) {
+                            stream[loaded++] = elementSize & 0xFF;
                             offset = PARSE;
                         }
-                    } else {
-                        stream[loaded++] = 0xDE;
-                        offset = 1;
                     }
-                    if (offset != 0) {
-                        if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
-                            offset = 0;
-                        } else {
-                            _fieldName = string(_iterator->first);
-                        }
-                    }
-                }
-                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
-                    if (offset == 1) {
-                        stream[loaded++] = (elementSize >> 8) & 0xFF;
-                        offset = 2;
-                    } else if (offset == 2) {
-                        stream[loaded++] = elementSize & 0xFF;
-                        offset = PARSE;
-                    }
-                }
-                while ((loaded < maxLength) && (offset >= PARSE)) {
-                    offset -= PARSE;
-                    if (_fieldName.IsSet() == true) {
-                        loaded += static_cast<const IMessagePack&>(_fieldName).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        if (offset == 0) {
-                            _fieldName.Clear();
-                        }
-                        offset += PARSE;
-                    } else {
-                        const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
-                        if (element != nullptr) {
-                            loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                    while ((loaded < maxLength) && (offset >= PARSE)) {
+                        offset -= PARSE;
+                        if (_fieldName.IsSet() == true) {
+                            loaded += static_cast<const IMessagePack&>(_fieldName).Serialize(&(stream[loaded]), maxLength - loaded, offset);
                             if (offset == 0) {
                                 _fieldName.Clear();
                             }
+                            offset += PARSE;
                         } else {
-                            stream[loaded++] = IMessagePack::NullValue;
-                        }
-                        offset += PARSE;
-                        if (offset == PARSE) {
-                            if (FindNext() != false) {
-                                _fieldName = string(_iterator->first);
+                            const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
+                            if (element != nullptr) {
+                                loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                                if (offset == 0) {
+                                    _fieldName.Clear();
+                                }
                             } else {
-                               offset = 0;
-                               _fieldName.Clear();
+                                stream[loaded++] = IMessagePack::NullValue;
+                            }
+                            offset += PARSE;
+                            if (offset == PARSE) {
+                                if (FindNext() != false) {
+                                    _fieldName = string(_iterator->first);
+                                } else {
+                                offset = 0;
+                                _fieldName.Clear();
+                                }
                             }
                         }
                     }
