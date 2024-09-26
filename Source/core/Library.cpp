@@ -114,8 +114,6 @@ namespace Core {
                 _refCountedHandle->_name = GlobalSymbols;
                 TRACE_L1("Loaded library with global symbols of the program");
             }
-
-            TRACE_L1("Loaded library: %s", fileName);
         } else {
 #ifdef __LINUX__
             _error = dlerror();
