@@ -794,7 +794,7 @@ namespace Core {
     // CONSTRUCTOR & DESTRUCTOR
     //----------------------------------------------------------------------------
 
-    #ifdef __WINDOWS__
+#ifdef __WINDOWS__
     SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, const uint32_t maxCount)
         : _semaphore(::CreateSemaphore(nullptr, initCount, maxCount, sourceName))
     {
@@ -811,12 +811,13 @@ namespace Core {
         ASSERT(maxCount <= 1);
         ASSERT(initCount <= maxCount);
 
-        if(initCount != 0 && maxCount != 0) {
+        if (initCount != 0 && maxCount != 0) {
             VARIABLE_IS_NOT_USED int result =  sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
             ASSERT(result != -1);
         }
     }
 #endif
+
     SharedSemaphore::~SharedSemaphore()
     {
 #ifdef __WINDOWS__
@@ -828,13 +829,14 @@ namespace Core {
 #endif
     }
 
-    size_t SharedSemaphore::Size() {
-        #ifdef __WINDOWS__
-            ASSERT(false)
-            return 0;
-        #else
-            return sizeof(sem_t);
-        #endif
+    size_t SharedSemaphore::Size()
+    {
+#ifdef __WINDOWS__
+        ASSERT(false)
+        return 0;
+#else
+        return sizeof(sem_t);
+#endif
     }
 
     //----------------------------------------------------------------------------
@@ -847,12 +849,10 @@ namespace Core {
 #ifdef __WINDOWS__
         if (_semaphore != nullptr) {
             BOOL result = ::ReleaseSemaphore(_semaphore, 1, nullptr);
-
             ASSERT(result != FALSE);
         }
 #else
         VARIABLE_IS_NOT_USED int result = sem_post(static_cast<sem_t*>(_semaphore));
-
         ASSERT((result == 0) || (errno == EOVERFLOW));
 #endif
         return ERROR_NONE;
@@ -897,7 +897,6 @@ namespace Core {
         result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
 
 #elif defined(__MUSL__)
-        std::cout << "musl \n\n\n\n\n\n\n\n\n";
         struct timespec referenceTime = {0,0};
         clock_gettime(CLOCK_MONOTONIC, &referenceTime);
         referenceTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
@@ -942,9 +941,7 @@ namespace Core {
             break;
         } while (true);
 #else
-
         struct timespec structTime = {0,0};
-        std::cout << "here" << std::endl;
         clock_gettime(CLOCK_MONOTONIC, &structTime);
         structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
         structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
