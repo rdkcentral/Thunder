@@ -1220,7 +1220,7 @@ namespace Plugin {
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        RPC::Administrator::Proxies collection;
+        RPC::Administrator::ProxyDataVector collection;
 
         // Search for the Dangling proxies
         if (RPC::Administrator::Instance().Allocations(linkId, collection) == true) {
@@ -1229,13 +1229,12 @@ namespace Plugin {
 
             std::list< IMetadata::Data::Proxy> elements;
 
-            for (const ProxyStub::UnknownProxy* proxy : collection) {
+            for (const auto &proxy : collection) {
                 IMetadata::Data::Proxy data;
-                data.Instance = proxy->Implementation();
-                data.Interface = proxy->InterfaceId();
-                data.Count = proxy->ReferenceCount();
-                data.Name = proxy->Name();
-                
+                data.Instance = proxy.Instance;
+                data.Interface = proxy.Interface;
+                data.Count = proxy.Count;
+                data.Name = proxy.Name;
                 elements.emplace_back(std::move(data));
             }
 

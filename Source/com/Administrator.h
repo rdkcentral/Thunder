@@ -124,7 +124,15 @@ namespace RPC {
         };
 
     public:
+        struct ProxyData {
+            uint32_t Interface;
+            string Name;
+            Core::instance_id Instance;
+            uint32_t Count;
+        };
+
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
+        using ProxyDataVector = std::vector<ProxyData>;
         using ChannelMap = std::unordered_map<uint32_t, Proxies>;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
@@ -147,32 +155,8 @@ namespace RPC {
         void DelegatedReleases(const bool enabled) {
             _delegatedReleases = enabled;
         }
-        bool Allocations(const uint32_t id, Proxies& proxies) const {
-            bool found = false;
-            if (id == 0) {
-                ChannelMap::const_iterator index(_channelProxyMap.begin());
-                while (index != _channelProxyMap.end()) {
-                    const auto &temp = index->second;
-                    proxies.insert(proxies.end(), temp.begin(), temp.end());
-                    index++;
-                }
-                proxies.insert(proxies.end(), _danglingProxies.begin(), _danglingProxies.end());
-                found = true;
-            }
-            else {
-                ChannelMap::const_iterator index(_channelProxyMap.begin());
-                while ((found == false) && (index != _channelProxyMap.end())) {
-                    if (index->first != id) {
-                        index++;
-                    }
-                    else {
-                        found = true;
-                        proxies = index->second;
-                    }
-                }
-            }
-            return (found);
-        }
+        
+        bool Allocations(const uint32_t id, ProxyDataVector& proxies) const;
 
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()

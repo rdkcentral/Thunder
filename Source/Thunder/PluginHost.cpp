@@ -712,13 +712,13 @@ POP_WARNING()
                                 printf("Link: %s\n", index.Current().Remote.Value().c_str());
                                 printf("------------------------------------------------------------\n");
 
-                                RPC::Administrator::Proxies proxies;
+                                RPC::Administrator::ProxyDataVector proxies;
 
                                 RPC::Administrator::Instance().Allocations(index.Current().ID.Value(), proxies);
 
-                                for (const ProxyStub::UnknownProxy* proxy : proxies) {
-                                    Core::instance_id instanceId = proxy->Implementation();
-                                    printf("[%s] InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", proxy->Name().c_str(), static_cast<uint64_t>(instanceId), proxy->ReferenceCount(), proxy->InterfaceId(), proxy->InterfaceId());
+                                for (const auto &proxy: proxies) {
+                                    Core::instance_id instanceId = proxy.Instance;
+                                    printf("[%s] InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", proxy.Name.c_str(), static_cast<uint64_t>(instanceId), proxy.Count, proxy.Interface, proxy.Interface);
                                 }
                                 printf("\n");
                             }
