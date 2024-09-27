@@ -192,9 +192,8 @@ namespace Core {
         SharedSemaphore(const Semaphore&) = delete;
         SharedSemaphore& operator=(const SharedSemaphore&) = delete;
 
-#ifdef __WINDOWS__
         SharedSemaphore(const TCHAR name[], const uint32_t initValue, const uint32_t maxValue);
-#else
+#ifndef __WINDOWS__
         /*
         If pshared is nonzero, then the semaphore is shared between
         processes, and should be located in a region of shared memory
@@ -211,12 +210,14 @@ namespace Core {
         bool IsLocked();
 
         static size_t Size();
+        static uint32_t MaxCount();
 
     private:
 #ifdef __WINDOWS__
         HANDLE _semaphore;
 #else
         void* _semaphore;
+        const char* _name;
 #endif
     };
 

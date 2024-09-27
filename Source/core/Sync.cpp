@@ -794,15 +794,22 @@ namespace Core {
     // CONSTRUCTOR & DESTRUCTOR
     //----------------------------------------------------------------------------
 
-#ifdef __WINDOWS__
+
     SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, const uint32_t maxCount)
-        : _semaphore(::CreateSemaphore(nullptr, initCount, maxCount, sourceName))
     {
         ASSERT(initCount <= 1);
         ASSERT(maxCount <= 1);
         ASSERT(initCount <= maxCount);
-    }
+#ifdef __WINDOWS__
+        _semaphore(::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
 #else
+        _name = sourceName;
+        _semaphore = sem_open(sourceName, O_CREAT, O_RDWR, initCount);
+        ASSERT(_semaphore != SEM_FAILED);
+#endif
+    }
+
+#ifndef __WINDOWS__
     SharedSemaphore::SharedSemaphore(void *storage, const uint32_t initCount, const uint32_t maxCount)
         : _semaphore(storage)
     {
@@ -824,8 +831,14 @@ namespace Core {
         if (_semaphore != nullptr) {
             ::CloseHandle(_semaphore);
         }
-#else
-        sem_destroy(static_cast<sem_t*>(_semaphore));
+#else   
+        if(_name != nullptr) {
+            sem_close(static_cast<sem_t*>(_semaphore));
+            sem_unlink(_name);
+        }
+        else { 
+            sem_destroy(static_cast<sem_t*>(_semaphore));
+        }
 #endif
     }
 
@@ -837,6 +850,12 @@ namespace Core {
 #else
         return sizeof(sem_t);
 #endif
+    }
+
+    uint32_t SharedSemaphore::MaxCount() 
+    {
+        // Currently max count is 1, as it is implemented as a binary shared semaphore
+        return 1;
     }
 
     //----------------------------------------------------------------------------
