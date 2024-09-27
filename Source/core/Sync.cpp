@@ -798,31 +798,48 @@ namespace Core {
     SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
     {
         ASSERT(initCount <= 1);
-        ASSERT(maxCount <= 1);
-        ASSERT(initCount <= maxCount);
+        ASSERT(maxCount == 1);
+
 #ifdef __WINDOWS__
         _semaphore = (::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
+        ASSERT(_semaphore != nullptr);
 #else
-        _name = sourceName;
-        _semaphore = sem_open(sourceName, O_CREAT | O_RDWR, 0644,  initCount);
+        _name = "/" + string(sourceName);
+        _semaphore = sem_open(_name.c_str(), O_CREAT | O_RDWR, 0644,  initCount);
         ASSERT(_semaphore != SEM_FAILED);
+#endif
+    }
+
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[]) 
+    {
+#ifdef __WINDOWS__
+        _semaphore = ::OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, sourceName);
+        ASSERT(_semaphore != nullptr);
+#else
+        _semaphore = sem_open(sourceName, 0);
+        ASSERT(_semaphore != nullptr);
 #endif
     }
 
 #ifndef __WINDOWS__
     SharedSemaphore::SharedSemaphore(void* storage, const uint32_t initCount, const uint32_t maxCount)
-        : _semaphore(storage)
+        : _semaphore(storage), _name("")
     {
         ASSERT(storage != nullptr);
         ASSERT(initCount <= 1);
-        ASSERT(maxCount <= 1);
-        ASSERT(initCount <= maxCount);
+        ASSERT(maxCount == 1);
 
         if (initCount != 0 && maxCount != 0) {
             VARIABLE_IS_NOT_USED int result =  sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
             ASSERT(result != -1);
         }
     }
+
+    SharedSemaphore::SharedSemaphore(void* storage) 
+    : _semaphore(storage), _name("")
+    {
+    }
+    
 #endif
 
     SharedSemaphore::~SharedSemaphore()
@@ -832,9 +849,9 @@ namespace Core {
             ::CloseHandle(_semaphore);
         }
 #else   
-        if(_name != nullptr) {
+        if(_name.size() != 0) {
             sem_close(static_cast<sem_t*>(_semaphore));
-            sem_unlink(_name);
+            sem_unlink(_name.c_str());
         }
         else { 
             sem_destroy(static_cast<sem_t*>(_semaphore));

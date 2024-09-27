@@ -193,6 +193,8 @@ namespace Core {
         SharedSemaphore& operator=(const SharedSemaphore&) = delete;
 
         SharedSemaphore(const TCHAR name[], const uint32_t initValue, const uint32_t maxValue);
+        SharedSemaphore(const TCHAR name[]);
+
 #ifndef __WINDOWS__
         /*
         If pshared is nonzero, then the semaphore is shared between
@@ -201,6 +203,8 @@ namespace Core {
         Storage should be at least sizeof(sem_t)!
         */
         SharedSemaphore(void *storage, const uint32_t initValue, const uint32_t maxValue);
+        SharedSemaphore(void *storage);
+
     public:
 #endif
         ~SharedSemaphore();
@@ -217,7 +221,7 @@ namespace Core {
         HANDLE _semaphore;
 #else
         void* _semaphore;
-        const char* _name;
+        string _name;
 #endif
     };
 
