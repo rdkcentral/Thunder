@@ -801,16 +801,16 @@ namespace Core {
         ASSERT(maxCount <= 1);
         ASSERT(initCount <= maxCount);
 #ifdef __WINDOWS__
-        _semaphore(::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
+        _semaphore = (::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
 #else
         _name = sourceName;
-        _semaphore = sem_open(sourceName, O_CREAT, O_RDWR, initCount);
+        _semaphore = sem_open(sourceName, O_CREAT | O_RDWR, 0644,  initCount);
         ASSERT(_semaphore != SEM_FAILED);
 #endif
     }
 
 #ifndef __WINDOWS__
-    SharedSemaphore::SharedSemaphore(void *storage, const uint32_t initCount, const uint32_t maxCount)
+    SharedSemaphore::SharedSemaphore(void* storage, const uint32_t initCount, const uint32_t maxCount)
         : _semaphore(storage)
     {
         ASSERT(storage != nullptr);
