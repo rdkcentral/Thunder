@@ -795,7 +795,7 @@ namespace Core {
     //----------------------------------------------------------------------------
 
 
-    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, const uint32_t maxCount)
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
     {
         ASSERT(initCount <= 1);
         ASSERT(maxCount <= 1);
