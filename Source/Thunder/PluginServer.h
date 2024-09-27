@@ -1285,20 +1285,16 @@ namespace PluginHost {
                 result.ToString(info);
                 return (Core::ERROR_NONE);
             }
-            std::vector<RPC::Object::Environment> SubstituteList(const std::vector<RPC::Object::Environment>& environments) const {
-                std::vector<RPC::Object::Environment> environmentList;
+            std::vector<RPC::Object::Environment>& SubstituteList(const std::vector<RPC::Object::Environment>& environmentList) const {
+                std::vector<RPC::Object::Environment>& environments = const_cast<std::vector<RPC::Object::Environment>&>(environmentList);
                 for (auto& environment : environments) {
                     if ((environment.key.empty() != true) && (environment.value.empty() != true)) {
-                         RPC::Object::Environment env;
-                         env.value = Substitute(environment.value);
-                         env.key = environment.key;
-                         env.overriding = environment.overriding;
-                         environmentList.push_back(env);
+                         environment.value = Substitute(environment.value);
                     } else {
                          SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), environment.key.c_str(), environment.value.c_str()));
                     }
                 }
-                return environmentList;
+                return environments;
             }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId) override
             {
@@ -2449,8 +2445,7 @@ namespace PluginHost {
 
                     uint32_t id;
                     RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
-                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, _environmentList);
-
+                    RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, SubstituteList(callsign, _environmentList));
                     RPC::Communicator::Process process(requestId, config, instance);
 
                     return (process.Launch(id));
@@ -2461,14 +2456,13 @@ namespace PluginHost {
                 END_INTERFACE_MAP
 
             private:
-                std::vector<RPC::Object::Environment> SubstituteList(const string& callsign, const std::vector<RPC::Object::Environment>& environments) const
+                std::vector<RPC::Object::Environment>& SubstituteList(const string& callsign, std::vector<RPC::Object::Environment>& environments) const
                 {
-                    std::vector<RPC::Object::Environment> substitutedList;
                     Core::ProxyType<Service> service = _parent.GetService(callsign);
                     if (service.IsValid() == true) {
-                        substitutedList = service->SubstituteList(environments);
+                        environments = service->SubstituteList(environments);
                     }
-                    return substitutedList;
+                    return environments;
                 }
 
             private:

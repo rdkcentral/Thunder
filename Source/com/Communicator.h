@@ -251,7 +251,7 @@ namespace RPC {
             return (_environments);
         }
         inline void Environments(const std::vector<Environment>& environments) {
-            _environments = environments;
+            _environments = std::move(environments);
         }
 
     private:
