@@ -1287,7 +1287,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), _administrator.Configuration().LinkerPluginPaths()));
 
                 if (result != nullptr) {
                     _connection = _administrator.RemoteConnection(sessionId);
@@ -1373,43 +1373,38 @@ namespace PluginHost {
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
-                std::vector<string> all_paths;
-                const std::vector<string> temp = _administrator.Configuration().LinkerPluginPaths();
-                string rootPath(PluginHost::Service::Configuration().SystemRootPath.Value());
+                std::vector<string> searchPaths;
 
-                if (rootPath.empty() == false) {
-                    rootPath = Core::Directory::Normalize(rootPath);
-                }
+                const string normalized(Core::File::Normalize(locator));
+                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
 
-                if (!temp.empty())
-                {
-                    // additionaly defined user paths
-                    for (const string& s : temp) {
-                        if (rootPath.empty() == true) {
-                            all_paths.push_back(Core::Directory::Normalize(s) + locator);
+                ASSERT_VERBOSE((normalized.empty() == locator.empty()), "path normalization failed");
+                ASSERT_VERBOSE((rootPath.empty() == PluginHost::Service::Configuration().SystemRootPath.Value().empty()), "path normalization failed");
+
+                if (normalized.empty() == false)  {
+                    if (Core::File::IsPathAbsolute(locator) == true) {
+                        searchPaths.push_back(Core::File::Normalize(rootPath + normalized));
+                    }
+                    else {
+                        const std::vector<string>& linkerPaths = _administrator.Configuration().LinkerPluginPaths();
+
+                        if (linkerPaths.empty() == false) {
+                            // override system paths
+                            for (const string& path : linkerPaths) {
+                                searchPaths.push_back(Core::Directory::Normalize(rootPath + path) + normalized);
+                            }
                         }
                         else {
-                            all_paths.push_back(rootPath + Core::Directory::Normalize(s) + locator);
+                            // system configured paths
+                            searchPaths.push_back(Core::Directory::Normalize(rootPath + DataPath()) + normalized);
+                            searchPaths.push_back(Core::Directory::Normalize(rootPath + PersistentPath()) + normalized);
+                            searchPaths.push_back(Core::Directory::Normalize(rootPath + SystemPath()) + normalized);
+                            searchPaths.push_back(Core::Directory::Normalize(rootPath + PluginPath()) + normalized);
                         }
                     }
                 }
-                else if (rootPath.empty() == false)
-                {
-                    // system configured paths
-                    all_paths.push_back(rootPath + DataPath() + locator);
-                    all_paths.push_back(rootPath + PersistentPath() + locator);
-                    all_paths.push_back(rootPath + SystemPath() + locator);
-                    all_paths.push_back(rootPath + PluginPath() + locator);
-                }
-                else {
-                    // system configured paths
-                    all_paths.push_back(DataPath() + locator);
-                    all_paths.push_back(PersistentPath() + locator);
-                    all_paths.push_back(SystemPath() + locator);
-                    all_paths.push_back(PluginPath() + locator);
-                }
 
-                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(all_paths));
+                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
             }
 
             Core::Library LoadLibrary(const string& name) {
@@ -1417,10 +1412,15 @@ namespace PluginHost {
                 Core::Library result;
 
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
+                ASSERT(all_paths != nullptr);
+
                 string element;
                 while((all_paths->Next(element) == true) && (progressedState <= 2)) {
+
+                    TRACE_L1("attempting to load library %s", element.c_str());
+
                     Core::File libraryToLoad(element);
-                    
+
                     if (libraryToLoad.Exists() == true) {
                         if (progressedState == 0) {
                             progressedState = 1;
@@ -2086,6 +2086,7 @@ namespace PluginHost {
                     const string& proxyStubPath,
                     const string& observableProxyStubPath,
                     const string& postMortemPath,
+                    const std::vector<string>& linkerPaths,
                     const uint8_t softKillCheckWaitTime,
                     const uint8_t hardKillCheckWaitTime,
                     const bool delegatedReleases,
@@ -2103,6 +2104,7 @@ namespace PluginHost {
 #else
                     , _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #endif
+                    , _linkerPaths(linkerPaths)
                     , _adminLock()
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
@@ -2141,9 +2143,9 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath, linkerPaths), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -2176,6 +2178,10 @@ namespace PluginHost {
                 const string& Application() const
                 {
                     return (_application);
+                }
+                const std::vector<string>& LinkerPaths() const
+                {
+                    return (_linkerPaths);
                 }
                 void Register(RPC::IRemoteConnection::INotification* sink)
                 {
@@ -2328,6 +2334,7 @@ namespace PluginHost {
                 const string _observableProxyStubPath;
                 const string _postMortemPath;
                 const string _application;
+                std::vector<string> _linkerPaths;
                 mutable Core::CriticalSection _adminLock;
                 Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
@@ -2405,7 +2412,7 @@ namespace PluginHost {
                     }
 
                     uint32_t id;
-                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath());
+                    RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
                     RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration);
 
                     RPC::Communicator::Process process(requestId, config, instance);
@@ -2652,6 +2659,7 @@ namespace PluginHost {
                     server._config.ProxyStubPath(),
                     server._config.ObservableProxyStubPath(),
                     server._config.PostMortemPath(),
+                    server._config.LinkerPluginPaths(),
                     server._config.SoftKillCheckWaitTime(),
                     server._config.HardKillCheckWaitTime(),
                     server._config.DelegatedReleases(),
@@ -2895,9 +2903,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
+            void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
             {
-                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, linkerPaths));
             }
             void Destroy(const uint32_t id) {
                 _processAdministrator.Destroy(id);
