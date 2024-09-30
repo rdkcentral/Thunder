@@ -159,7 +159,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -202,6 +202,7 @@ POP_WARNING()
         string ProxyStubPath;
         string PostMortemPath;
         string SystemRootPath;
+        std::vector<RPC::Object::Environment> Environments;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -250,6 +251,13 @@ POP_WARNING()
             case 'S':
                 SystemRootPath = Core::Directory::Normalize(Strip(argument));
                 break;
+            case 'e':
+            case 'E': {
+                Environments.push_back(Plugin::Config::Environment::Info(Strip(argument), 
+                                       ((option == 'E') ? RPC::Object::Environment::Scope::GLOBAL :
+                                       RPC::Object::Environment::Scope::LOCAL)));
+                break;
+            }
             case 'v':
                 VolatilePath = Core::Directory::Normalize(Strip(argument));
                 break;
@@ -588,6 +596,8 @@ int main(int argc, char** argv)
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");
+        printf("        [-e/-E <environment values>...]\n");
+        printf("        e: means set as local scope, E: means set as global scope\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-P <post mortem path>]\n\n");
@@ -662,6 +672,15 @@ int main(int argc, char** argv)
 
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
+            }
+
+            for (const auto& info : options.Environments) {
+                if ((info.key.empty() != true) && (info.value.empty() != true)) {
+                    uint32_t status = Core::SystemInfo::SetEnvironment(info.key, info.value.c_str(), ((info.overriding == RPC::Object::Environment::Scope::GLOBAL) ? true : false));
+                    if (status != true) {
+                        SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), info.key.c_str(), info.value.c_str()));
+                    }
+                }
             }
 
             process.Startup(options.Threads, remoteNode, callsign);
