@@ -124,13 +124,6 @@ namespace RPC {
         };
 
     public:
-        struct ProxyData {
-            uint32_t Interface;
-            string Name;
-            Core::instance_id Instance;
-            uint32_t Count;
-        };
-
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
         using ChannelMap = std::unordered_map<uint32_t, Proxies>;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
