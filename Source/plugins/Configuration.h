@@ -34,6 +34,106 @@ namespace Plugin {
     */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
+        class Environment : public Core::JSON::Container {
+        public:
+            Environment()
+                : Core::JSON::Container()
+                , Key()
+                , Value()
+                , Override(RPC::Object::Environment::Scope::LOCAL)
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("override"), &Override);
+            }
+            Environment(const Environment& copy)
+                : Core::JSON::Container()
+                , Key(copy.Key)
+                , Value(copy.Value)
+                , Override(copy.Override)
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("override"), &Override);
+            }
+            Environment(Environment&& move) noexcept
+                : Core::JSON::Container()
+                , Key(std::move(move.Key))
+                , Value(std::move(move.Value))
+                , Override(std::move(move.Override))
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("override"), &Override);
+            }
+            ~Environment() override = default;
+            Environment& operator=(const Environment& RHS)
+            {
+                Key = RHS.Key;
+                Value = RHS.Value;
+                Override = RHS.Override;
+
+                return (*this);
+            }
+            Environment& operator=(Environment&& move) noexcept
+            {
+                if (this != &move) {
+                    Key = std::move(move.Key);
+                    Value = std::move(move.Value);
+                    Override = std::move(move.Override);
+                }
+
+                return (*this);
+            }
+            static std::vector<RPC::Object::Environment> List(const Core::JSON::ArrayType<Environment>& environments)
+            {
+                std::vector<RPC::Object::Environment> environmentList;
+
+                if (environments.IsSet() == true) {
+                    Core::JSON::ArrayType<Environment>::ConstIterator index(environments.Elements());
+                    while (index.Next() == true) {
+                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
+                            RPC::Object::Environment env;
+                            env.key = index.Current().Key.Value();
+                            env.value = index.Current().Value.Value();
+                            env.overriding = index.Current().Override.Value();
+                            environmentList.push_back(env);
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                        }
+                    }
+                }
+                return environmentList;
+            }
+            static RPC::Object::Environment Info(const string& env, RPC::Object::Environment::Scope overriding)
+            {
+                RPC::Object::Environment info;
+                size_t start = env.find_first_of(RPC::Object::EnvironmentSeparator);
+                if ((start != string::npos) && (start < env.length())) {
+                    string key = env.substr(0, start);
+                    string value = env.substr(start + 1);
+
+                    if ((key.empty() != true) && (value.empty() != true) && (value.length() > 2) &&
+                        ((value.at(0) == '\"') && (value.at(value.length() - 1) == '\"'))) {
+                        info.key = key;
+                        info.value = value.substr(1, value.length() - 2);
+                        info.overriding = overriding;
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Environment key:value fromat is invalid :[%s]:[%s]\n"), key.c_str(), value.c_str()));
+                    }
+                } else {
+                    SYSLOG(Logging::Startup, (_T("Invalid Enviroment value :[%s]\n"), env.c_str()));
+                }
+                return info;
+            }
+
+        public:
+            Core::JSON::String Key;
+            Core::JSON::String Value;
+            Core::JSON::EnumType<RPC::Object::Environment::Scope> Override;
+        };
+        using EnvironmentList = Core::JSON::ArrayType<Environment>;
+
         class EXTERNAL RootConfig : public Core::JSON::Container {
         private:
             class RootObject : public Core::JSON::Container {
@@ -73,6 +173,7 @@ namespace Plugin {
                 , Mode(ModeType::LOCAL)
                 , RemoteAddress()
                 , Configuration(false)
+                , Environments()
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -83,6 +184,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
             RootConfig(const PluginHost::IShell* info)
                 : Core::JSON::Container()
@@ -95,6 +197,7 @@ namespace Plugin {
                 , Mode(ModeType::LOCAL)
                 , RemoteAddress()
                 , Configuration(false)
+                , Environments()
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -105,6 +208,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
 
                 RootObject config;
                 Core::OptionalType<Core::JSON::Error> error;
@@ -139,6 +243,7 @@ namespace Plugin {
                 , Mode(copy.Mode)
                 , RemoteAddress(copy.RemoteAddress)
                 , Configuration(copy.Configuration)
+                , Environments(copy.Environments)
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -149,6 +254,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
             RootConfig(RootConfig&& move) noexcept
                 : Core::JSON::Container()
@@ -161,6 +267,7 @@ namespace Plugin {
                 , Mode(std::move(move.Mode))
                 , RemoteAddress(std::move(move.RemoteAddress))
                 , Configuration(std::move(move.Configuration))
+                , Environments(std::move(move.Environments))
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -171,6 +278,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
 
             ~RootConfig() override = default;
@@ -186,6 +294,7 @@ namespace Plugin {
                 Mode = RHS.Mode;
                 RemoteAddress = RHS.RemoteAddress;
                 Configuration = RHS.Configuration;
+                Environments = RHS.Environments;
 
                 return (*this);
             }
@@ -202,6 +311,7 @@ namespace Plugin {
                     Mode = std::move(move.Mode);
                     RemoteAddress = std::move(move.RemoteAddress);
                     Configuration = std::move(move.Configuration);
+                    Environments = std::move(move.Environments);
                 }
 
                 return (*this);
@@ -233,6 +343,7 @@ namespace Plugin {
             Core::JSON::EnumType<ModeType> Mode;
             Core::JSON::String RemoteAddress;
             Core::JSON::String Configuration;
+            EnvironmentList Environments;
         };
 
     public:
