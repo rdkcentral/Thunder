@@ -59,56 +59,6 @@ namespace RPC {
         return (systemAdministrator);
     }
 
-    bool Administrator::Allocations(const uint32_t id, ProxyDataVector& proxies) const {
-        bool found = false;
-
-        if (id == 0) {
-            ChannelMap::const_iterator index(_channelProxyMap.begin());
-            while (index != _channelProxyMap.end() && (found == false)) {
-                const auto &temp = index->second;
-                for (const auto &proxy : temp) {
-                    ProxyData UnknownProxyData;
-                    UnknownProxyData.Name = proxy->Name();
-                    UnknownProxyData.Instance = proxy->Implementation();
-                    UnknownProxyData.Interface = proxy->InterfaceId();
-                    UnknownProxyData.Count = proxy->ReferenceCount();
-                    proxies.push_back(UnknownProxyData);
-                }
-                index++;
-            }
-            for (const auto& proxy: _danglingProxies) {
-                ProxyData UnknownProxyData;
-                UnknownProxyData.Name = proxy->Name();
-                UnknownProxyData.Instance = proxy->Implementation();
-                UnknownProxyData.Interface = proxy->InterfaceId();
-                UnknownProxyData.Count = proxy->ReferenceCount();
-                proxies.push_back(UnknownProxyData);
-            }
-            found = true;
-        }
-        else {
-            ChannelMap::const_iterator index(_channelProxyMap.begin());
-            while ((found == false) && (index != _channelProxyMap.end())) {
-                if (index->first != id) {
-                    index++;
-                }
-                else {
-                    found = true;
-                    const auto &temp = index->second;
-                    for (const auto &proxy : temp) {
-                        ProxyData UnknownProxyData;
-                        UnknownProxyData.Name = proxy->Name();
-                        UnknownProxyData.Instance = proxy->Implementation();
-                        UnknownProxyData.Interface = proxy->InterfaceId();
-                        UnknownProxyData.Count = proxy->ReferenceCount();
-                        proxies.push_back(UnknownProxyData);
-                    }
-                }
-            }
-        }
-        return (found);
-    }
-
     void Administrator::AddRef(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..

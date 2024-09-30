@@ -132,7 +132,6 @@ namespace RPC {
         };
 
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-        using ProxyDataVector = std::vector<ProxyData>;
         using ChannelMap = std::unordered_map<uint32_t, Proxies>;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
@@ -156,7 +155,32 @@ namespace RPC {
             _delegatedReleases = enabled;
         }
         
-        bool Allocations(const uint32_t id, ProxyDataVector& proxies) const;
+        template<typename ACTION>
+        bool Allocations(const uint32_t id, ACTION&& action) const {
+            bool found = false;
+            _adminLock.Lock();
+            if (id == 0) {
+                for (const auto& proxy : _channelProxyMap) {
+                    action(proxy.second);
+                }
+                action(_danglingProxies);
+                found = true;
+            } 
+            else {
+                ChannelMap::const_iterator index(_channelProxyMap.begin());
+                while ((found == false) && (index != _channelProxyMap.end())) {
+                    if (index->first != id) {
+                        index++;
+                    }
+                    else {
+                        found = true;
+                        action(index->second);
+                    }
+                }
+            }
+            _adminLock.Unlock();
+            return found;
+        }
 
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
