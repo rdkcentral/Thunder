@@ -68,9 +68,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
             }
 POP_WARNING()
-            ~Sink() override
-            {
-            }
+            ~Sink() override = default;
 
         public:
             void Dispatch() {
@@ -103,7 +101,9 @@ POP_WARNING()
 
     public:
         WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -158,6 +158,12 @@ POP_WARNING()
 
     class ConsoleOptions : public Core::Options {
     public:
+        ConsoleOptions() = delete;
+        ConsoleOptions(ConsoleOptions&&) = delete;
+        ConsoleOptions(const ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
+
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
@@ -182,9 +188,7 @@ POP_WARNING()
         {
             Parse();
         }
-        ~ConsoleOptions()
-        {
-        }
+        ~ConsoleOptions() = default;
 
     public:
         const TCHAR* Locator;

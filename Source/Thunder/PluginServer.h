@@ -402,7 +402,7 @@ namespace PluginHost {
                 }
 
             public:
-                void AquireInterfaces(IPlugin* plugin) {
+                void AcquireInterfaces(IPlugin* plugin) {
                     _composit = plugin->QueryInterface<ICompositPlugin>();
                     if (_composit != nullptr) {
                         // Seems this is a plugin that can be a composition of more plugins..
@@ -1534,7 +1534,7 @@ namespace PluginHost {
                     _webSecurity = newIF->QueryInterface<ISecurity>();
                     _jsonrpc = newIF->QueryInterface<IDispatcher>();
 
-                    _composit.AquireInterfaces(newIF);
+                    _composit.AcquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
                         _webSecurity->AddRef();
@@ -1974,71 +1974,176 @@ namespace PluginHost {
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
                 using Proxies = std::vector<Proxy>;
 
-                class RemoteHost : public RPC::Communicator::RemoteConnection {
+                class DistributedServer {
                 private:
-                    friend Core::ServiceType<RemoteHost>;
+                    // This class keeps track of a plugin instantiated on a different Host. It is a connection that  
+                    // will not pass Messaging information to this instance of Thunder. The plugin will connect to
+                    // This instance directly.
+                    class RemoteLink : public RPC::Communicator::RemoteConnection {
+                    public:
+                        RemoteLink() = delete;
+                        RemoteLink(RemoteLink&&) = delete;
+                        RemoteLink(const RemoteLink&) = delete;
+                        RemoteLink& operator=(RemoteLink&&) = delete;
+                        RemoteLink& operator=(const RemoteLink&) = delete;
 
+                        RemoteLink(DistributedServer& parent, const RPC::Object& instance)
+                            : RemoteConnection()
+                            , _parent(parent)
+                            , _object(instance) {
+                        }
+                        ~RemoteLink() override = default;
+
+                    public:
+                        uint32_t Launch() override
+                        {
+                            return (_parent.Launch(RPC::Communicator::RemoteConnection::Id(), _object));
+                        }
+
+                    private:
+                        DistributedServer& _parent;
+                        const RPC::Object _object;
+                    };
+ 
                 public:
-                    RemoteHost(RemoteHost&&) = delete;
-                    RemoteHost(const RemoteHost&) = delete;
-                    RemoteHost& operator=(RemoteHost&&) = delete;
-                    RemoteHost& operator=(const RemoteHost&) = delete;
-
-                    RemoteHost(const RPC::Object& instance, const RPC::Config& config)
-                        : RemoteConnection()
-                        , _object(instance)
-                        , _config(config)
-                    {
+                    DistributedServer(const Core::NodeId& remoteConnection) 
+                        : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(remoteConnection, Core::ProxyType<Core::IIPCServer>(RPC::WorkerPoolInvokeServer())))
+                        , _remoteServer(_client->Open<IRemoteInstantiation>(_T("DistributedServer"), ~0, 3000)) {
                     }
-                    ~RemoteHost() override = default;
+                    ~DistributedServer() {
+                        if (_remoteServer != nullptr) {
+                            _remoteServer->Release();
+                        }
+                        _client->Close(Core::infinite);
+                    }
 
                 public:
-                    uint32_t Launch() override
+                    RPC::Communicator::RemoteConnection* Client (const RPC::Object& instance) {
+                        // Core::ProxyType<RemoteLink> result = _clients.Instance<RemoteLink>(*this, instance);
+                        // result->AddRef();
+                        // return (result.operator->());
+                        return (Core::ServiceType<RemoteLink>::Create<RPC::Communicator::RemoteConnection>(*this, instance));
+                    }
+
+                private:
+                    uint32_t Launch(const uint32_t id, const RPC::Object& instance) 
                     {
                         uint32_t result = Core::ERROR_INVALID_DESIGNATOR;
 
-                        Core::NodeId remoteNode(_object.RemoteAddress());
+                        if (_remoteServer == nullptr) {
+                            result = Core::ERROR_ILLEGAL_STATE;
+                        } else {
+                            RPC::IEnvironmentIterator* environment = Core::Service<RPC::EnvironmentIterator>::Create<RPC::IEnvironmentIterator>(instance.Environments());
 
-                        if (remoteNode.IsValid() == true) {
-                            Core::ProxyType<Core::IIPCServer> engine(Core::ProxyType<RPC::InvokeServer>::Create(&Core::WorkerPool::Instance()));
-                            Core::ProxyType<RPC::CommunicatorClient> client(
-                                Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, engine));
-
-                            // Oke we have ou selves a COMClient link. Lets see if we can get the proepr interface...
-                            IRemoteInstantiation* instantiation = client->Open<IRemoteInstantiation>(_config.Connector(), ~0, 3000);
-
-                            if (instantiation == nullptr) {
-                                result = Core::ERROR_ILLEGAL_STATE;
-                            } else {
-
-                                RPC::IEnvironmentIterator* environment = Core::Service<RPC::EnvironmentIterator>::Create<RPC::IEnvironmentIterator>(_object.Environments());
-
-                                result = instantiation->Instantiate(
-                                    RPC::Communicator::RemoteConnection::Id(),
-                                    _object.Locator(),
-                                    _object.ClassName(),
-                                    _object.Callsign(),
-                                    _object.Interface(),
-                                    _object.Version(),
-                                    _object.User(),
-                                    _object.Group(),
-                                    _object.SystemRootPath(),
-                                    _object.Threads(),
-                                    _object.Priority(),
-                                    _object.Configuration(),
-                                    environment);
-
-                                instantiation->Release();
+                            result = _remoteServer->Instantiate(
+                                id,
+                                instance.Locator(),
+                                instance.ClassName(),
+                                instance.Callsign(),
+                                instance.Interface(),
+                                instance.Version(),
+                                instance.User(),
+                                instance.Group(),
+                                instance.SystemRootPath(),
+                                instance.Threads(),
+                                instance.Priority(),
+                                instance.Configuration(),
+                                environment);
                             }
+
+                            return (result);
                         }
 
+                private:
+                    Core::ProxyType<RPC::CommunicatorClient> _client;
+                    IRemoteInstantiation* _remoteServer;
+                };
+
+                // This class handles incoming request to instantiate plugins that do *not* have any configuration
+                // here but will be insatntiated on request from a different Thunder plugin somewhere else. This is the 
+                // class that gets called by the RemoteHost instance above!
+                class HostingServer : public IRemoteInstantiation {
+                public:
+                    HostingServer(HostingServer&&) = delete;
+                    HostingServer(const HostingServer&) = delete;
+                    HostingServer& operator=(HostingServer&&) = delete;
+                    HostingServer& operator=(const HostingServer&) = delete;
+
+                    HostingServer(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
+                        : _parent(parent)
+                        , _comms(comms)
+                        , _connector(connector)
+                    {
+                    }
+                    ~HostingServer() override = default;
+
+                public:
+                    uint32_t Instantiate(
+                        const uint32_t requestId,
+                        const string& libraryName,
+                        const string& className,
+                        const string& callsign,
+                        const uint32_t interfaceId,
+                        const uint32_t version,
+                        const string& user,
+                        const string& group,
+                        const string& systemRootPath,
+                        const uint8_t threads,
+                        const int8_t priority,
+                        const string configuration,
+                        RPC::IEnvironmentIterator* const& environments) override
+                    {
+                        uint32_t result = Core::ERROR_BAD_REQUEST;
+
+                        if (callsign.empty() == false) {
+                            Core::ProxyType<Service> service = _parent.GetService(callsign);
+
+                            if (service.IsValid() == false) {
+                                result = Core::ERROR_UNKNOWN_KEY;
+                            }
+                            else {
+                                std::vector<RPC::Object::Environment> environmentList;
+                                string persistentPath(_comms.PersistentPath());
+                                string dataPath(_comms.DataPath());
+                                string volatilePath(_comms.VolatilePath());
+
+                                dataPath += callsign + '/';
+                                persistentPath += callsign + '/';
+                                volatilePath += callsign + '/';
+
+                                if (environments != nullptr) {
+                                    RPC::Environment data;
+                                    while (environments->Next(data) == true) {
+                                        ASSERT (data.Key.empty() == false);
+                                        data.Value = service->Substitute(data.Value);
+                                        environmentList.emplace_back(data);
+                                    }
+                                }
+
+                                uint32_t id;
+                                RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
+                                RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, std::move(environmentList));
+                                RPC::Communicator::Process process(requestId, config, instance);
+
+                                result = process.Launch(id);
+                            }
+                        }
                         return (result);
                     }
+                    uint32_t Kill (const uint32_t /* requestId */) override {
+                        return (Core::ERROR_NONE);
+                    }
+
+                    BEGIN_INTERFACE_MAP(HostingServer)
+                        INTERFACE_ENTRY(IRemoteInstantiation)
+                    END_INTERFACE_MAP
 
                 private:
-                    RPC::Object _object;
-                    const RPC::Config& _config;
+                    ServiceMap& _parent;
+                    const CommunicatorServer& _comms;
+                    const string _connector;
                 };
+ 
                 class ProxyStubObserver : public Core::FileSystemMonitor::ICallback {
                 public:
                     ProxyStubObserver() = delete;
@@ -2116,6 +2221,8 @@ namespace PluginHost {
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
                     , _deadProxies()
+                    , _hostingServer(parent, *this, _T("ToBeFilledIn"))
+                    , _distributedServers()
                     , _job(*this)
                 {
                     // Shall we enable the non-happy day functionality to cleanup Release on behalf of unexpected
@@ -2238,6 +2345,9 @@ namespace PluginHost {
                         _adminLock.Unlock();
                     }
                 }
+                IRemoteInstantiation* Hosting() {
+                    return (reinterpret_cast<IRemoteInstantiation*>(_hostingServer.QueryInterface(IRemoteInstantiation::ID)));
+                }
                 void Dispatch() {
                     // Oke time to notify the destruction of some proxies...
                     _adminLock.Lock();
@@ -2322,7 +2432,13 @@ namespace PluginHost {
                     RPC::Communicator::RemoteConnection* result = nullptr;
 
                     if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
-                        result = Core::ServiceType<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config);
+                        Core::NodeId remoteNode(instance.RemoteAddress());
+                        if (remoteNode.IsValid() == true) {
+                            Core::ProxyType<DistributedServer> connector = _distributedServers.Instance<DistributedServer>(remoteNode, remoteNode);
+                            if (connector.IsValid() == true) {
+                                result = connector->Client(instance);
+                            }
+                        }
                     }
                     else {
                         result = RPC::Communicator::CreateStarter(config, instance);
@@ -2346,116 +2462,9 @@ namespace PluginHost {
                 Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
                 Proxies _deadProxies;
+                Core::SinkType<HostingServer> _hostingServer;
+                Core::ProxyMapType<Core::NodeId, DistributedServer> _distributedServers;
                 Core::WorkerPool::JobType<CommunicatorServer&> _job;
-            };
-            class RemoteInstantiation : public IRemoteInstantiation {
-            private:
-                RemoteInstantiation(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
-                    : _refCount(1)
-                    , _parent(parent)
-                    , _comms(comms)
-                    , _connector(connector)
-                {
-                }
-
-            public:
-                RemoteInstantiation(RemoteInstantiation&&) = delete;
-                RemoteInstantiation(const RemoteInstantiation&) = delete;
-                RemoteInstantiation& operator=(RemoteInstantiation&&) = delete;
-                RemoteInstantiation& operator=(const RemoteInstantiation&) = delete;
-
-                ~RemoteInstantiation() override = default;
-
-            public:
-                static IRemoteInstantiation* Create(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
-                {
-                    return (new RemoteInstantiation(parent, comms, connector));
-                }
-                uint32_t AddRef() const override
-                {
-                    Core::InterlockedIncrement(_refCount);
-                    return (Core::ERROR_NONE);
-                }
-                uint32_t Release() const override
-                {
-                    _parent._adminLock.Lock();
-
-                    if (Core::InterlockedDecrement(_refCount) == 0) {
-                        _parent.Remove(_connector);
-
-                        _parent._adminLock.Unlock();
-
-                        delete this;
-
-                        return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-                    } else {
-                        _parent._adminLock.Unlock();
-                    }
-
-                    return (Core::ERROR_NONE);
-                }
-                uint32_t Instantiate(
-                    const uint32_t requestId,
-                    const string& libraryName,
-                    const string& className,
-                    const string& callsign,
-                    const uint32_t interfaceId,
-                    const uint32_t version,
-                    const string& user,
-                    const string& group,
-                    const string& systemRootPath,
-                    const uint8_t threads,
-                    const int8_t priority,
-                    const string configuration,
-                    RPC::IEnvironmentIterator* const& environments) override
-                {
-                    uint32_t result = Core::ERROR_BAD_REQUEST;
-
-                    if (callsign.empty() == false) {
-                        Core::ProxyType<Service> service = _parent.GetService(callsign);
-
-                        if (service.IsValid() == false) {
-                            result = Core::ERROR_UNKNOWN_KEY;
-                        }
-                        else {
-                            std::vector<RPC::Object::Environment> environmentList;
-                            string persistentPath(_comms.PersistentPath());
-                            string dataPath(_comms.DataPath());
-                            string volatilePath(_comms.VolatilePath());
-
-                            dataPath += callsign + '/';
-                            persistentPath += callsign + '/';
-                            volatilePath += callsign + '/';
-
-                            if (environments != nullptr) {
-                                RPC::Environment data;
-                                while (environments->Next(data) == true) {
-                                    ASSERT (data.Key.empty() == false);
-                                    data.Value = service->Substitute(data.Value);
-                                    environmentList.emplace_back(data);
-                                }
-                            }
-
-                            uint32_t id;
-                            RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
-                            RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, std::move(environmentList));
-                            RPC::Communicator::Process process(requestId, config, instance);
-
-                            result = process.Launch(id);
-                        }
-                    }
-                    return (result);
-                }
-
-                BEGIN_INTERFACE_MAP(RemoteInstantiation)
-                INTERFACE_ENTRY(IRemoteInstantiation)
-                END_INTERFACE_MAP
-
-            private:
-                mutable uint32_t _refCount;
-                ServiceMap& _parent;
-                const CommunicatorServer& _comms;
-                const string _connector;
             };
             class SubSystems : public Core::IDispatch, public SystemInfo {
             private:
@@ -3393,27 +3402,8 @@ namespace PluginHost {
             {
                 void* result = nullptr;
 
-                if ((interfaceId == IRemoteInstantiation::ID) && (version == static_cast<uint32_t>(~0))) {
-
-                    _adminLock.Lock();
-                    // className == Connector..
-                    RemoteInstantiators::iterator index(_instantiators.find(className));
-
-                    if (index == _instantiators.end()) {
-                        IRemoteInstantiation* newIF = RemoteInstantiation::Create(*this, _processAdministrator, className);
-
-                        ASSERT(newIF != nullptr);
-
-                        _instantiators.emplace(std::piecewise_construct,
-                            std::make_tuple(className),
-                            std::make_tuple(newIF));
-
-                        result = newIF;
-                    } else {
-                        result = index->second->QueryInterface(IRemoteInstantiation::ID);
-                    }
-
-                    _adminLock.Unlock();
+                if ((interfaceId == PluginHost::IRemoteInstantiation::ID) && (version == static_cast<uint32_t>(~0))) {
+                    result = _processAdministrator.Hosting();
                 } else {
                     result = QueryInterfaceByCallsign(interfaceId, className);
                 }
