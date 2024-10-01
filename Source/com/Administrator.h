@@ -147,28 +147,34 @@ namespace RPC {
         void DelegatedReleases(const bool enabled) {
             _delegatedReleases = enabled;
         }
-        bool Allocations(const uint32_t id, Proxies& proxies) const {
+        
+        template<typename ACTION>
+        bool Allocations(const uint32_t id, ACTION&& action) const {
             bool found = false;
+            _adminLock.Lock();
             if (id == 0) {
+                for (const auto& proxy : _channelProxyMap) {
+                    action(proxy.second);
+                }
+                action(_danglingProxies);
                 found = true;
-                proxies = _danglingProxies;
-            }
+            } 
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
-
                 while ((found == false) && (index != _channelProxyMap.end())) {
-
                     if (index->first != id) {
                         index++;
                     }
                     else {
                         found = true;
-                        proxies = index->second;
+                        action(index->second);
                     }
                 }
             }
-            return (found);
+            _adminLock.Unlock();
+            return found;
         }
+
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
         {

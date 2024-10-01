@@ -81,7 +81,6 @@ POP_WARNING()
                     TRACE_L1("We still have living object [%d].", instances);
                 }
                 else {
-                    
                     TRACE_L1("All living objects are killed. Time for HaraKiri!!.");
 
                     // Seems there is no more live here, time to signal the
@@ -130,7 +129,6 @@ POP_WARNING()
         }
         void Run()
         {
-
             Core::WorkerPool::Run();
             Core::WorkerPool::Join();
         }
@@ -161,7 +159,7 @@ POP_WARNING()
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -180,6 +178,7 @@ POP_WARNING()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
+            , LinkerPaths()
         {
             Parse();
         }
@@ -203,9 +202,11 @@ POP_WARNING()
         string ProxyStubPath;
         string PostMortemPath;
         string SystemRootPath;
+        std::vector<RPC::Object::Environment> Environments;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
+        std::vector<string> LinkerPaths;
 
     private:
         string Strip(const TCHAR text[]) const
@@ -236,28 +237,35 @@ POP_WARNING()
                 RemoteChannel = argument;
                 break;
             case 'p':
-                PersistentPath = Strip(argument);
+                PersistentPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 's':
-                SystemPath = Strip(argument);
+                SystemPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'd':
-                DataPath = Strip(argument);
+                DataPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'P':
-                PostMortemPath = Strip(argument);
+                PostMortemPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'S':
-                SystemRootPath = Strip(argument);
+                SystemRootPath = Core::Directory::Normalize(Strip(argument));
                 break;
+            case 'e':
+            case 'E': {
+                Environments.push_back(Plugin::Config::Environment::Info(Strip(argument), 
+                                       ((option == 'E') ? RPC::Object::Environment::Scope::GLOBAL :
+                                       RPC::Object::Environment::Scope::LOCAL)));
+                break;
+            }
             case 'v':
-                VolatilePath = Strip(argument);
+                VolatilePath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'a':
-                AppPath = Strip(argument);
+                AppPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'm':
-                ProxyStubPath = Strip(argument);
+                ProxyStubPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'u':
                 User = argument;
@@ -277,6 +285,9 @@ POP_WARNING()
             case 't':
                 Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
                 break;
+            case 'f':
+                LinkerPaths.push_back(Strip(argument));
+                break;
             case 'h':
             default:
                 RequestUsage(true);
@@ -285,52 +296,59 @@ POP_WARNING()
         }
     };
 
-    static void* CheckInstance(const string& path, const TCHAR locator[], const TCHAR className[], const uint32_t ID, const uint32_t version)
+    static void* CheckInstance(const string& path, const ConsoleOptions& options)
     {
         void* result = nullptr;
 
         if (path.empty() == false) {
-            Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
 
-            string libraryPath = locator;
-            if (libraryPath.empty() || (libraryPath[0] != '/')) {
-                // Relative path, prefix with path name.
-                string pathName(Core::Directory::Normalize(path));
-                libraryPath = pathName + locator;
-            }
+            TRACE_L1("Attempting to load '%s' from %s...", options.ClassName, path.c_str());
 
-            Core::Library library(libraryPath.c_str());
+            Core::Library library(path.c_str());
 
             if (library.IsLoaded() == true) {
                 // Instantiate the object
-                result = admin.Instantiate(library, className, version, ID);
+                result = Core::ServiceAdministrator::Instance().Instantiate(library, options.ClassName, options.Version, options.InterfaceId);
             }
         }
 
         return (result);
     }
 
-    static void* AcquireInterfaces(ConsoleOptions& options)
+    static void* AcquireInterfaces(const ConsoleOptions& options)
     {
         void* result = nullptr;
 
         if ((options.Locator != nullptr) && (options.ClassName != nullptr)) {
-            string path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.PersistentPath;
-            result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
-            if (result == nullptr) {
-                path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.SystemPath;
-                result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+            const string rootPath = Core::Directory::Normalize(options.SystemRootPath);
+
+            if (Core::File::IsPathAbsolute(options.Locator) == true) {
+                result = CheckInstance(Core::File::Normalize(rootPath + options.Locator), options);
+            }
+            else if (options.LinkerPaths.empty() == false) {
+                // Linker paths override system paths
+                for (const string& linkerPath : options.LinkerPaths) {
+                    result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + linkerPath) + options.Locator), options);
+
+                    if (result != nullptr) {
+                        break;
+                    }
+                }
+            }
+            else {
+                // System paths
+                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.PersistentPath) + options.Locator), options);
 
                 if (result == nullptr) {
-                    path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + options.DataPath;
-                    result = CheckInstance(path, options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                    result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
 
                     if (result == nullptr) {
-                        string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
+                        result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
 
-                        path = (!options.SystemRootPath.empty() ? options.SystemRootPath : "") + searchPath;
-                        result = CheckInstance((path + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        if (result == nullptr) {
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                        }
                     }
                 }
             }
@@ -577,23 +595,28 @@ int main(int argc, char** argv)
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
+        printf("        [-f <linker_path>...\n");
+        printf("        [-e/-E <environment values>...]\n");
+        printf("        e: means set as local scope, E: means set as global scope\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-P <post mortem path>]\n\n");
         printf("        [-S <system root path>]\n\n");
+        printf("\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
-        printf(" 1) <persistent path>/<locator>\n");
-        printf(" 2) <system path>/<locator>\n");
-        printf(" 3) <data path>/<locator>\n");
-        printf(" 4) <app path>/Plugins/<locator>\n\n");
+        printf(" 1) [system_path/]<persistent path>/<locator>\n");
+        printf(" 2) [system_path/]<system path>/<locator>\n");
+        printf(" 3) [system_path/]<data path>/<locator>\n");
+        printf(" 4) [system_path/]<app path>/Plugins/<locator>\n\n");
+        printf("\n");
+        printf("Alternatively, if linker paths are specified:\n");
+        printf(" 1) [system_path/]<linker_path_1>/locator\n");
+        printf(" 2) [system_path/]<linker_path_2>/locator, ...\n");
+        printf("\n");
         printf("Within the DSO, the system looks for an object with <classname>, this object must implement ");
         printf("the interface, indicated byt the Id <interfaceId>, and if passed, the object should be of ");
         printf("version <version>. All these conditions must met for an object to be instantiated and thus run.\n\n");
-
-        for (uint8_t teller = 0; teller < argc; teller++) {
-            printf("Argument [%02d]: %s\n", teller, argv[teller]);
-        }
     } else {
         string callsign;
         if (options.Callsign != nullptr) {
@@ -640,7 +663,7 @@ int main(int argc, char** argv)
         if (remoteNode.IsValid()) {
             void* base = nullptr;
 
-            TRACE_L1("Spawning a new plugin %s.", options.ClassName);
+            TRACE_L1("Spawning a new plugin %s", options.Callsign);
 
             // Firts make sure we apply the correct rights to our selves..
             if (options.Group != nullptr) {
@@ -649,6 +672,15 @@ int main(int argc, char** argv)
 
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
+            }
+
+            for (const auto& info : options.Environments) {
+                if ((info.key.empty() != true) && (info.value.empty() != true)) {
+                    uint32_t status = Core::SystemInfo::SetEnvironment(info.key, info.value.c_str(), ((info.overriding == RPC::Object::Environment::Scope::GLOBAL) ? true : false));
+                    if (status != true) {
+                        SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), info.key.c_str(), info.value.c_str()));
+                    }
+                }
             }
 
             process.Startup(options.Threads, remoteNode, callsign);

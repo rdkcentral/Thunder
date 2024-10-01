@@ -42,12 +42,15 @@ namespace PluginHost
                 result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
             } else {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
+                ASSERT(all_paths != nullptr);
+
                 string element;
-                while (all_paths->Next(element) == true) {
+                while ((all_paths->Next(element) == true) && (result == nullptr)) {
                     Core::File file(element.c_str());
                     if (file.Exists()) {
 
                         Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
+
                         if (resource.IsLoaded())
                             result = Core::ServiceAdministrator::Instance().Instantiate(
                                 resource,
@@ -78,7 +81,8 @@ namespace PluginHost
                     rootConfig.HostType(),
                     SystemRootPath(),
                     rootConfig.RemoteAddress.Value(),
-                    rootConfig.Configuration.Value());
+                    rootConfig.Configuration.Value(),
+                    Plugin::Config::Environment::List(rootConfig.Environments));
 
                 result = handler->Instantiate(definition, waitTime, pid);
             }

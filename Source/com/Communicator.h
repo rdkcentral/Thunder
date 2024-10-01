@@ -45,10 +45,21 @@ namespace RPC {
 
     class EXTERNAL Object {
     public:
+        static constexpr const TCHAR EnvironmentSeparator = _T('=');
         enum class HostType {
             LOCAL,
             DISTRIBUTED,
             CONTAINER
+        };
+
+        struct Environment {
+            enum class Scope {
+                LOCAL,
+                GLOBAL
+            };
+            string key;
+            string value;
+            Scope overriding;
         };
 
         Object()
@@ -65,6 +76,7 @@ namespace RPC {
             , _systemRootPath()
             , _remoteAddress()
             , _configuration()
+            , _environments()
         {
         }
         Object(const Object& copy)
@@ -81,6 +93,7 @@ namespace RPC {
             , _systemRootPath(copy._systemRootPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
+            , _environments(copy._environments)
         {
         }
         Object(Object&& move) noexcept
@@ -97,6 +110,7 @@ namespace RPC {
             , _systemRootPath(std::move(move._systemRootPath))
             , _remoteAddress(std::move(move._remoteAddress))
             , _configuration(std::move(move._configuration))
+            , _environments(std::move(move._environments))
         {
         }
         Object(const string& locator,
@@ -111,7 +125,8 @@ namespace RPC {
             const HostType type,
             const string& systemRootPath,
             const string& remoteAddress,
-            const string& configuration)
+            const string& configuration,
+            const std::vector<Environment>& environments)
             : _locator(locator)
             , _className(className)
             , _callsign(callsign)
@@ -125,6 +140,7 @@ namespace RPC {
             , _systemRootPath(systemRootPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
+            , _environments(environments)
         {
         }
         ~Object()
@@ -146,10 +162,10 @@ namespace RPC {
             _type = RHS._type;
             _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
+            _environments = RHS._environments;
 
             return (*this);
         }
-
 
         Object& operator=(Object&& move) noexcept
         {
@@ -167,14 +183,15 @@ namespace RPC {
                 _systemRootPath = std::move(move._systemRootPath);
                 _remoteAddress = std::move(move._remoteAddress);
                 _configuration = std::move(move._configuration);
+                _environments = std::move(move._environments);
 
                 move._interface = ~0;
                 move._version = ~0;
                 move._threads = 0;
                 move._priority = 0;
-	    }
-	    return (*this);
-	}
+            }
+            return (*this);
+        }
 
     public:
         inline const string& Locator() const
@@ -229,6 +246,13 @@ namespace RPC {
         {
             return (_configuration);
         }
+        inline const std::vector<Environment>& Environments() const
+        {
+            return (_environments);
+        }
+        inline void Environments(const std::vector<Environment>& environments) {
+            _environments = std::move(environments);
+        }
 
     private:
         string _locator;
@@ -244,6 +268,7 @@ namespace RPC {
         string _systemRootPath;
         string _remoteAddress;
         string _configuration;
+        std::vector<Environment> _environments;
     };
 
     class EXTERNAL Config {
@@ -262,6 +287,7 @@ namespace RPC {
             , _application()
             , _proxyStub()
             , _postMortem()
+            , _linker()
         {
         }
         Config(
@@ -273,7 +299,8 @@ namespace RPC {
             const string& volatilePath,
             const string& applicationPath,
             const string& proxyStubPath,
-            const string& postMortem)
+            const string& postMortem,
+            const std::vector<string>& linker)
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
@@ -283,6 +310,7 @@ namespace RPC {
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
             , _postMortem(postMortem)
+            , _linker(linker)
         {
         }
         Config(const Config& copy)
@@ -295,9 +323,10 @@ namespace RPC {
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
             , _postMortem(copy._postMortem)
+            , _linker(copy._linker)
         {
         }
-	Config(Config&& move) noexcept
+        Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -307,6 +336,7 @@ namespace RPC {
             , _application(std::move(move._application))
             , _proxyStub(std::move(move._proxyStub))
             , _postMortem(std::move(move._postMortem))
+            , _linker(std::move(move._linker))
         {
         }
         ~Config()
@@ -350,6 +380,10 @@ namespace RPC {
         {
             return (_postMortem);
         }
+        inline const std::vector<string>& LinkerPaths() const
+        {
+            return (_linker);
+        }
 
     private:
         string _connector;
@@ -361,6 +395,7 @@ namespace RPC {
         string _application;
         string _proxyStub;
         string _postMortem;
+        std::vector<string> _linker;
     };
 
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
@@ -490,6 +525,9 @@ namespace RPC {
                 if (config.VolatilePath().empty() == false) {
                     _options.Add(_T("-v")).Add('"' + config.VolatilePath() + '"');
                 }
+                for (auto const& path : config.LinkerPaths()) {
+                    _options.Add(_T("-f")).Add('"' + path + '"');
+                }
                 if (config.ProxyStubPath().empty() == false) {
                     _options.Add(_T("-m")).Add('"' + config.ProxyStubPath() + '"');
                 }
@@ -502,6 +540,12 @@ namespace RPC {
                 }
                 if (instance.Threads() > 1) {
                     _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
+                }
+                for (auto const& environment : instance.Environments()) {
+                    string env = environment.key + RPC::Object::EnvironmentSeparator +
+                                    "\"" + environment.value + "\"";
+                    string option = (environment.overriding == RPC::Object::Environment::Scope::GLOBAL) ? "-E" : "-e";
+                    _options.Add(_T(option)).Add('"' + env + '"');
                 }
                 _priority = instance.Priority();
             }
@@ -865,7 +909,7 @@ namespace RPC {
                     TRACE_L1("Invalid process container configuration");
                 }
                 else {
-                    std::vector<string> searchPaths(3);
+                    std::vector<string> searchPaths;
 
     #ifdef __DEBUG__
                     if (config.ContainerPath.IsSet() == true) {
