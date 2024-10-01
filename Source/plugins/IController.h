@@ -70,7 +70,7 @@ namespace Controller {
                 bool Secure /* @brief Secure or not */;
             };
 
-            using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_DISCOVERYRESULTS_ITERATOR>;
+            using IDiscoveryResultsIterator = RPC::IIteratorType<Data::DiscoveryResult, RPC::ID_CONTROLLER_DISCOVERY_RESULTS_ITERATOR>;
         };
 
         // @brief Starts SSDP network discovery
