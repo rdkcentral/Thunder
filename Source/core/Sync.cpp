@@ -862,7 +862,7 @@ namespace Core {
     size_t SharedSemaphore::Size()
     {
 #ifdef __WINDOWS__
-        return HANDLE;
+        return sizeof(HANDLE);
 #else
         return sizeof(sem_t);
 #endif
