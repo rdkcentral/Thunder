@@ -810,7 +810,7 @@ namespace Core {
 #endif
     }
 
-    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[]) 
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[])
     {
 #ifdef __WINDOWS__
         _semaphore = ::OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, sourceName);
@@ -862,14 +862,13 @@ namespace Core {
     size_t SharedSemaphore::Size()
     {
 #ifdef __WINDOWS__
-        ASSERT(false);
-        return 0;
+        return HANDLE;
 #else
         return sizeof(sem_t);
 #endif
     }
 
-    uint32_t SharedSemaphore::MaxCount() 
+    uint32_t SharedSemaphore::MaxCount() const
     {
         // Currently max count is 1, as it is implemented as a binary shared semaphore
         return 1;

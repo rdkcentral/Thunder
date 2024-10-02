@@ -34,8 +34,8 @@ namespace Core {
         , _producer((string(name) + ".producer").c_str())
         , _consumer((string(name) + ".consumer").c_str())
     #else
-        , _producer(&(_administration->_producer))
-        , _consumer(&(_administration->_consumer))
+        , _producer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration))
+        , _consumer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration) + SharedSemaphore::Size())
     #endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {
@@ -43,14 +43,15 @@ namespace Core {
     }
     SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administratorSize)
         : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize)
-        , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
+        , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize + 
+          ((administratorSize % 8 == 0) ? 0 : (8 - (administratorSize % 8))) /* Align buffer on 64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str(), 1, 1)
         , _consumer((string(name) + ".consumer").c_str(), 0, 1)
     #else
-        , _producer(&(_administration->_producer), 1, 1)
-        , _consumer(&(_administration->_consumer), 0, 1)
+        , _producer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration), 1, 1)
+        , _consumer(reinterpret_cast<uint8_t*>(_administration) + sizeof(Administration) + SharedSemaphore::Size(), 0, 1)
 #   endif
         , _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)])))
     {

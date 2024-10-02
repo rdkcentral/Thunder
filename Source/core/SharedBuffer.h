@@ -66,13 +66,7 @@ namespace Core {
 
     private:
         struct Administration {
-
             uint32_t _bytesWritten;
-
-#ifndef __WINDOWS__
-            sem_t _producer;
-            sem_t _consumer;
-#endif
         };
 
     public:

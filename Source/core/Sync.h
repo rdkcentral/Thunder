@@ -214,7 +214,7 @@ namespace Core {
         bool IsLocked();
 
         static size_t Size();
-        static uint32_t MaxCount();
+        uint32_t MaxCount() const;
 
     private:
 #ifdef __WINDOWS__
