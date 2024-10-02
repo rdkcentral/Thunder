@@ -82,7 +82,7 @@ namespace PluginHost
                     SystemRootPath(),
                     rootConfig.RemoteAddress.Value(),
                     rootConfig.Configuration.Value(),
-                    Plugin::Config::Environment::List(rootConfig.Environments));
+                    rootConfig.Environment());
 
                 result = handler->Instantiate(definition, waitTime, pid);
             }

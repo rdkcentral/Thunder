@@ -58,7 +58,7 @@ namespace PluginHost {
             virtual void Unregister(const INotification* sink) = 0;
 
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
+            virtual void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) = 0;
         };
 
         struct EXTERNAL IConnectionServer : virtual public Core::IUnknown {

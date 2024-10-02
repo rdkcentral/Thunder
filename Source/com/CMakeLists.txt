@@ -45,6 +45,8 @@ set(PUBLIC_HEADERS
     Module.h
 )
 
+target_compile_options(${TARGET} PRIVATE -Wno-psabi)
+
 target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
