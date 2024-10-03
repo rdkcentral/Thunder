@@ -838,6 +838,7 @@ namespace Core {
     SharedSemaphore::SharedSemaphore(void* storage) 
     : _semaphore(storage), _name("")
     {
+        ASSERT(storage != nullptr);
     }
     
 #endif
