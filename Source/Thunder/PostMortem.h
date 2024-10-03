@@ -50,7 +50,7 @@ namespace PluginHost {
             Add(_T("module"), &Module);
             Add(_T("line"), &Line);
 
-            Address = PluginHost::Metadata::InstanceId(source.address);
+            Address = reinterpret_cast<Core::instance_id>(source.address);
             Function = source.function;
             if (source.module.empty() == false) {
                 Module = source.module;

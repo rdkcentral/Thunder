@@ -298,25 +298,6 @@ POP_WARNING()
         return deviceId;
     }
 
-    template <typename TYPE>
-    inline typename std::enable_if<(std::is_same<TYPE, void*>::value), void>::type
-    PrintMetaData(const uint8_t index, const TYPE& workerId, const uint32_t runs)
-    {
-        printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(workerId), runs);
-    }
-
-    template <typename TYPE>
-    inline typename std::enable_if<(!std::is_same<TYPE, void*>::value), void>::type
-    PrintMetaData(const uint8_t index, const TYPE workerId, const uint32_t runs)
-    {
-#ifdef __WINDOWS__
-        printf("  Thread%02d|0x%16lX: %10d", (index), workerId, runs);
-#else
-        printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(workerId), runs);
-#endif
-    }
-
-
     extern "C" {
 
 #ifndef __WINDOWS__
@@ -908,7 +889,8 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-                            PrintMetaData(index, metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
+                            printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(Metadata::InstanceId(metaData.Slot[index].WorkerId)), metaData.Slot[index].Runs);
+
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }

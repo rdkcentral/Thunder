@@ -268,13 +268,13 @@ namespace PluginHost {
             return static_cast<Core::instance_id>(id);
         }
 
-        template <typename TYPE>
+        template <typename TYPE = Core::thread_id>
         static typename std::enable_if<(std::is_same<TYPE, void*>::value), Core::thread_id>::type
         ThreadId(Core::instance_id id)
         {
             return reinterpret_cast<TYPE>(id);
         }
-        template <typename TYPE>
+        template <typename TYPE = Core::thread_id>
         static typename std::enable_if<!(std::is_same<TYPE, void*>::value), Core::thread_id>::type
         ThreadId(Core::instance_id id)
         {

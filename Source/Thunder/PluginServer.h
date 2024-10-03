@@ -4600,8 +4600,7 @@ namespace PluginHost {
             while (index.Next() == true) {
 
                 std::list<Core::callstack_info> stackList;
-
-                ::DumpCallStack(PluginHost::Metadata::ThreadId<Core::thread_id>(index.Current().Id.Value()), stackList);
+                ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
