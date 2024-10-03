@@ -44,7 +44,8 @@ namespace Core {
     SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administratorSize)
         : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize)
         , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize + 
-          ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % 8 == 0 ? 0 : (8 - ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % 8))) /* Align buffer on 64 bits boundary */)
+            ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % sizeof(void*) == 0 ?
+            0 : (sizeof(void*) - ((sizeof(Administration) + (SharedSemaphore::Size() * 2) + administratorSize) % sizeof(void*)))) /* Align buffer on 32/64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
     #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str(), 1, 1)
