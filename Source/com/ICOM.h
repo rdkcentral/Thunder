@@ -27,6 +27,18 @@
 namespace Thunder {
     namespace RPC {
 
+        struct EXTERNAL Environment {
+
+            enum scope : uint8_t {
+                LOCAL,
+                GLOBAL
+            };
+
+            string Key;
+            string Value;
+            scope Scope; 
+        };
+
         struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {
             enum { ID = ID_COMCONNECTION };
 
@@ -65,5 +77,6 @@ namespace Thunder {
 
         typedef IIteratorType<string, ID_STRINGITERATOR> IStringIterator;
         typedef IIteratorType<uint32_t, ID_VALUEITERATOR> IValueIterator;
+        typedef IIteratorType<Environment, ID_ENVIRONMENTITERATOR> IEnvironmentIterator;
     }
 }

@@ -68,9 +68,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
             }
 POP_WARNING()
-            ~Sink() override
-            {
-            }
+            ~Sink() override = default;
 
         public:
             void Dispatch() {
@@ -103,7 +101,9 @@ POP_WARNING()
 
     public:
         WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -158,6 +158,12 @@ POP_WARNING()
 
     class ConsoleOptions : public Core::Options {
     public:
+        ConsoleOptions() = delete;
+        ConsoleOptions(ConsoleOptions&&) = delete;
+        ConsoleOptions(const ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
+
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
@@ -182,9 +188,7 @@ POP_WARNING()
         {
             Parse();
         }
-        ~ConsoleOptions()
-        {
-        }
+        ~ConsoleOptions() = default;
 
     public:
         const TCHAR* Locator;
@@ -252,12 +256,11 @@ POP_WARNING()
                 SystemRootPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'e':
-            case 'E': {
-                Environments.push_back(Plugin::Config::Environment::Info(Strip(argument), 
-                                       ((option == 'E') ? RPC::Object::Environment::Scope::GLOBAL :
-                                       RPC::Object::Environment::Scope::LOCAL)));
+                Environments.emplace_back(RPC::Object::Environment(Strip(argument), RPC::Environment::scope::LOCAL));
                 break;
-            }
+            case 'E': 
+                Environments.emplace_back(RPC::Object::Environment(Strip(argument), RPC::Environment::scope::GLOBAL));
+                break;
             case 'v':
                 VolatilePath = Core::Directory::Normalize(Strip(argument));
                 break;
@@ -651,6 +654,14 @@ int main(int argc, char** argv)
 
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_INFO"), parentInfo);
 
+        for (const auto& info : options.Environments) {
+            ASSERT (info.Key().empty() == false);
+            uint32_t status = Core::SystemInfo::SetEnvironment(info.Key(), info.Value().c_str(), ((info.Scope() == RPC::Environment::scope::GLOBAL) ? true : false));
+            if (status != Core::ERROR_NONE) {
+                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s], error: [%d]\n"), info.Key().c_str(), info.Value().c_str(), status));
+            }
+        }
+
         Process::ProcessFlow process;
 
         Core::NodeId remoteNode(options.RemoteChannel);
@@ -672,15 +683,6 @@ int main(int argc, char** argv)
 
             if (options.User != nullptr) {
                 Core::ProcessCurrent().User(string(options.User));
-            }
-
-            for (const auto& info : options.Environments) {
-                if ((info.key.empty() != true) && (info.value.empty() != true)) {
-                    uint32_t status = Core::SystemInfo::SetEnvironment(info.key, info.value.c_str(), ((info.overriding == RPC::Object::Environment::Scope::GLOBAL) ? true : false));
-                    if (status != true) {
-                        SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), info.key.c_str(), info.value.c_str()));
-                    }
-                }
             }
 
             process.Startup(options.Threads, remoteNode, callsign);
