@@ -70,7 +70,7 @@ namespace ProcessContainers {
         }
 
         if (_producers.empty() == true) {
-            TRACE(Trace::Error, (_T("No container runtime systems are available!")));
+            SYSLOG(Logging::Error, (_T("No container runtime systems are available!")));
         }
         else if (_producers.size() == 1) {
             // Since there is only one provider available, make it the default one
@@ -147,7 +147,7 @@ namespace ProcessContainers {
             }
         }
         else {
-            TRACE(Trace::Error, (_T("Configuration error: container runtime system not specified for '%s'"), id.c_str()));
+            TRACE(Trace::Error, (_T("Container runtime system not specified for '%s'"), id.c_str()));
         }
 
         _adminLock.Unlock();
