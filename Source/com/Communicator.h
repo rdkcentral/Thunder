@@ -823,7 +823,7 @@ namespace RPC {
 
                 ContainerConfig()
                     : Core::JSON::Container()
-                    , ContainerType(ProcessContainers::IContainer::LXC)
+                    , ContainerType(ProcessContainers::IContainer::DEFAULT)
 #ifdef __DEBUG__
                     , ContainerPath()
 #endif
