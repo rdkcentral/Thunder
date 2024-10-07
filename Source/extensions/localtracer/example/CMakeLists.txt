@@ -2,6 +2,8 @@ add_executable(local_trace_test
     main.cpp
 )
 
+target_compile_options(local_trace_test PRIVATE -Wno-psabi)
+
 target_link_libraries(local_trace_test PRIVATE
     CompileSettingsDebug::CompileSettingsDebug
     ${NAMESPACE}Core::${NAMESPACE}Core

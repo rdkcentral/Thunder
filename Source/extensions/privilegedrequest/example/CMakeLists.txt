@@ -17,6 +17,8 @@
 
 add_executable(fdpassing main.cpp)
 
+target_compile_options (fdpassing PRIVATE -Wno-psabi)
+
 target_link_libraries(fdpassing PRIVATE
     CompileSettingsDebug::CompileSettingsDebug
     ${NAMESPACE}Core::${NAMESPACE}Core
