@@ -52,14 +52,47 @@ namespace ProcessContainers {
             container.Add(value.Data(), &specific);
             container.FromString(configuration);
 
+            if ((specific.IsSet() == false) && (_producers.size() == 1)) {
+                // Looks like the configuration for this provider is not specified, however there is only one container
+                // system available, so let's forward the entire config (perhaps it's a legacy config file).
+                specific = configuration;
+            }
+
             TRACE(Trace::Information, (_T("Initializing container runtime system '%s'..."), value.Data()));
 
             // Pass the configuration to the runtime
-            const uint32_t initResult = runtime.second->Initialize(specific);
+            const uint32_t initResult = runtime.second->Initialize(specific.Value());
 
             if (initResult != Core::ERROR_NONE) {
                 TRACE(Trace::Error, (_T("Initialization failure")));
                 result = Core::ERROR_GENERAL;
+            }
+        }
+
+        if (_producers.empty() == true) {
+            TRACE(Trace::Error, (_T("No container runtime systems are available!")));
+        }
+        else if (_producers.size() == 1) {
+            // Since there is only one provider available, make it the default one
+            _default = _producers.cbegin()->first;
+        }
+        else {
+            Core::JSON::EnumType<IContainer::containertype> defaultProducer;
+            Core::JSON::Container config;
+            config.Add(_T("default"), &defaultProducer);
+            config.FromString(configuration);
+
+            if (defaultProducer.IsSet() == true) {
+                _default = defaultProducer.Value();
+                ASSERT(_default != IContainer::DEFAULT);
+                ASSERT(_producers.find(_default) != _producers.end());
+
+                const Core::EnumerateType<IContainer::containertype> value(_default);
+                DEBUG_VARIABLE(value);
+                TRACE(Trace::Information, (_T("Default container runtime is '%s'"), value.Data()));
+            }
+            else {
+                TRACE(Trace::Information, (_T("Default container runtime is not set")));
             }
         }
 
@@ -86,27 +119,35 @@ namespace ProcessContainers {
 
         _adminLock.Lock();
 
-        auto it = _producers.find(type);
+        const IContainer::containertype containerType = (type == IContainer::DEFAULT? _default : type);
 
-        const Core::EnumerateType<IContainer::containertype> value(type);
-        DEBUG_VARIABLE(value);
+        if (containerType != IContainer::DEFAULT) {
 
-        ASSERT(value.IsSet() == true);
+            auto it = _producers.find(containerType);
 
-        if (it != _producers.end()) {
+            const Core::EnumerateType<IContainer::containertype> value(containerType);
+            DEBUG_VARIABLE(value);
 
-            auto& runtime = (*it).second;
-            ASSERT(runtime != nullptr);
+            ASSERT(value.IsSet() == true);
 
-            container = runtime->Container(id, searchPaths, logPath, configuration);
+            if (it != _producers.end()) {
 
-            if (container.IsValid() == true) {
-               TRACE(Trace::Information, (_T("Container '%s' created successfully (runtime system '%s')"),
-                        container->Id().c_str(), value.Data()));
+                auto& runtime = (*it).second;
+                ASSERT(runtime != nullptr);
+
+                container = runtime->Container(id, searchPaths, logPath, configuration);
+
+                if (container.IsValid() == true) {
+                    TRACE(Trace::Information, (_T("Container '%s' created successfully (runtime system '%s')"),
+                            container->Id().c_str(), value.Data()));
+                }
+            }
+            else {
+                TRACE(Trace::Error, (_T("Container runtime system '%s' is not enabled!"), value.Data()));
             }
         }
         else {
-            TRACE(Trace::Error, (_T("Container runtime system '%s' is not enabled!"), value.Data()));
+            TRACE(Trace::Error, (_T("Configuration error: container runtime system not specified for '%s'"), id.c_str()));
         }
 
         _adminLock.Unlock();
