@@ -27,7 +27,7 @@ The Thunder documentation was extended with new content, please find the documen
 ### New Feature: Whole plugin OOP (out of process)
 
 It so now possible to run the full plugin out of process (OOP). Before this feature was added a plugin had to be specifically designed to be run OOP and part of it was always in process. The "whole plugin OOP" feature is added mainly as a development/debug option, for example to test leaks and crashes with plugins only designed to run in process. There is also the prerequisite that the plugin must have a JSON-RPC interface, a prerequisite that may be removed in a future Thunder version. 
-You use this feature by adding a mode="local" outside the root config part of the plugin. Any other modes should work as well but have not been tested. 
+You use this feature by adding a mode="Local" outside the root config part of the plugin. Any other modes should work as well but have not been tested. 
 
 ### New Feature: PluginSmartInterfaceType
 
@@ -45,7 +45,7 @@ To use the feature first enable multiple container providers in your build. Then
   }
 ```
 Other valid options are: "runc", "crun", "dobby" and "awc". 
-If in a plugin you want to use another container flavour than the default one you can do so by adding this to the config file of the container (of course the "mode : container" should always be there when you want to run a plugin inside a container):
+If in a plugin you want to use another container flavour than the default one you can do so by adding this to the config file of the container (of course the "mode : Container" should always be there when you want to run a plugin inside a container):
 ```json
 "root":{
    "mode":"Container",
