@@ -40,38 +40,39 @@ namespace Plugin {
                 : Core::JSON::Container()
                 , Key()
                 , Value()
-                , Override(RPC::Object::Environment::Scope::LOCAL)
+                , Scope(RPC::Environment::scope::LOCAL)
             {
                 Add(_T("key"), &Key);
                 Add(_T("value"), &Value);
-                Add(_T("override"), &Override);
+                Add(_T("scope"), &Scope);
             }
             Environment(const Environment& copy)
                 : Core::JSON::Container()
                 , Key(copy.Key)
                 , Value(copy.Value)
-                , Override(copy.Override)
+                , Scope(copy.Scope)
             {
                 Add(_T("key"), &Key);
                 Add(_T("value"), &Value);
-                Add(_T("override"), &Override);
+                Add(_T("scope"), &Scope);
             }
             Environment(Environment&& move) noexcept
                 : Core::JSON::Container()
                 , Key(std::move(move.Key))
                 , Value(std::move(move.Value))
-                , Override(std::move(move.Override))
+                , Scope(std::move(move.Scope))
             {
                 Add(_T("key"), &Key);
                 Add(_T("value"), &Value);
-                Add(_T("override"), &Override);
+                Add(_T("scope"), &Scope);
             }
             ~Environment() override = default;
+
             Environment& operator=(const Environment& RHS)
             {
                 Key = RHS.Key;
                 Value = RHS.Value;
-                Override = RHS.Override;
+                Scope = RHS.Scope;
 
                 return (*this);
             }
@@ -80,59 +81,17 @@ namespace Plugin {
                 if (this != &move) {
                     Key = std::move(move.Key);
                     Value = std::move(move.Value);
-                    Override = std::move(move.Override);
+                    Scope = std::move(move.Scope);
                 }
 
                 return (*this);
-            }
-            static std::vector<RPC::Object::Environment> List(const Core::JSON::ArrayType<Environment>& environments)
-            {
-                std::vector<RPC::Object::Environment> environmentList;
-
-                if (environments.IsSet() == true) {
-                    Core::JSON::ArrayType<Environment>::ConstIterator index(environments.Elements());
-                    while (index.Next() == true) {
-                        if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
-                            RPC::Object::Environment env;
-                            env.key = index.Current().Key.Value();
-                            env.value = index.Current().Value.Value();
-                            env.overriding = index.Current().Override.Value();
-                            environmentList.push_back(env);
-                        } else {
-                            SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
-                        }
-                    }
-                }
-                return environmentList;
-            }
-            static RPC::Object::Environment Info(const string& env, RPC::Object::Environment::Scope overriding)
-            {
-                RPC::Object::Environment info;
-                size_t start = env.find_first_of(RPC::Object::EnvironmentSeparator);
-                if ((start != string::npos) && (start < env.length())) {
-                    string key = env.substr(0, start);
-                    string value = env.substr(start + 1);
-
-                    if ((key.empty() != true) && (value.empty() != true) && (value.length() > 2) &&
-                        ((value.at(0) == '\"') && (value.at(value.length() - 1) == '\"'))) {
-                        info.key = key;
-                        info.value = value.substr(1, value.length() - 2);
-                        info.overriding = overriding;
-                    } else {
-                        SYSLOG(Logging::Startup, (_T("Environment key:value fromat is invalid :[%s]:[%s]\n"), key.c_str(), value.c_str()));
-                    }
-                } else {
-                    SYSLOG(Logging::Startup, (_T("Invalid Enviroment value :[%s]\n"), env.c_str()));
-                }
-                return info;
             }
 
         public:
             Core::JSON::String Key;
             Core::JSON::String Value;
-            Core::JSON::EnumType<RPC::Object::Environment::Scope> Override;
+            Core::JSON::EnumType<RPC::Environment::scope> Scope;
         };
-        using EnvironmentList = Core::JSON::ArrayType<Environment>;
 
         class EXTERNAL RootConfig : public Core::JSON::Container {
         private:
@@ -332,7 +291,19 @@ namespace Plugin {
                 }
                 return result;
             }
+            std::vector<RPC::Object::Environment> Environment() const
+            {
+                std::vector<RPC::Object::Environment> environmentList;
 
+                if (Environments.IsSet() == true) {
+                    Core::JSON::ArrayType<Config::Environment>::ConstIterator index(Environments.Elements());
+                    while (index.Next() == true) {
+                        environmentList.emplace_back(RPC::Object::Environment(index.Current().Key.Value(), index.Current().Value.Value(), index.Current().Scope.Value()));
+                    }
+                }
+                return environmentList;
+            }
+ 
         public:
             Core::JSON::String Locator;
             Core::JSON::String User;
@@ -343,7 +314,7 @@ namespace Plugin {
             Core::JSON::EnumType<ModeType> Mode;
             Core::JSON::String RemoteAddress;
             Core::JSON::String Configuration;
-            EnvironmentList Environments;
+            Core::JSON::ArrayType<Config::Environment> Environments;
         };
 
     public:

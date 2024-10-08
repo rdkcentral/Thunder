@@ -596,7 +596,7 @@ namespace PluginHost {
         Config& operator=(const Config&) = delete;
 
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-            Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
+        Config(Core::File& file, const bool background, Core::OptionalType<Core::JSON::Error>& error)
             : _background(background)
             , _prefix()
             , _webPrefix()
@@ -714,18 +714,15 @@ namespace PluginHost {
                     }
                 }
 
-                bool status = true;
                 Core::JSON::ArrayType<Plugin::Config::Environment>::ConstIterator index(static_cast<const JSONConfig&>(config).Environments.Elements());
                 while (index.Next() == true) {
-                    if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
+                    if (index.Current().Key.IsSet() == false) {
+                        SYSLOG(Logging::Startup, (_T("Failure n setting an environmet variable. Empty key defined!!\n")));
+                    }
+                    else {
                         string value = _substituter.Substitute(index.Current().Value.Value(), nullptr);
-                        if (value.empty() != true) {
-                            status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, ((index.Current().Override.Value() == RPC::Object::Environment::Scope::GLOBAL) ? true : false));
-                            if (status != true) {
-                                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
-                            }
-                        } else {
-                            SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                        if (Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, ((index.Current().Scope.Value() == RPC::Environment::scope::GLOBAL) ? true : false)) != true) {
+                            SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
                         }
                     }
                 }
@@ -736,11 +733,12 @@ namespace PluginHost {
                 _plugins = config.Plugins;
 
                 Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
-                while (itr.Next())
+                while (itr.Next() == true) {
                     _linkerPluginPaths.push_back(itr.Current().Value());
+                }
             }
         }
-POP_WARNING()
+        POP_WARNING()
         ~Config()
         {
             ASSERT(_security != nullptr);
