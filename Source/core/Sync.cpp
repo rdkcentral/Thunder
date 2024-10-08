@@ -799,13 +799,12 @@ namespace Core {
     {
         ASSERT(initCount <= 1);
         ASSERT(maxCount == 1);
-
 #ifdef __WINDOWS__
         _semaphore = (::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
         ASSERT(_semaphore != nullptr);
 #else
         _name = "/" + string(sourceName);
-        _semaphore = sem_open(_name.c_str(), O_CREAT | O_RDWR, 0644,  initCount);
+        _semaphore = sem_open(_name.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644,  initCount);
         ASSERT(_semaphore != SEM_FAILED);
 #endif
     }
@@ -828,11 +827,9 @@ namespace Core {
         ASSERT(storage != nullptr);
         ASSERT(initCount <= 1);
         ASSERT(maxCount == 1);
-
-        if (initCount != 0 && maxCount != 0) {
-            VARIABLE_IS_NOT_USED int result =  sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
-            ASSERT(result != -1);
-        }
+        memset(_semaphore, 0, sizeof(sem_t));
+        VARIABLE_IS_NOT_USED int result = sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
+        ASSERT(result != -1);
     }
 
     SharedSemaphore::SharedSemaphore(void* storage) 

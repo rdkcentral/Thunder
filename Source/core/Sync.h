@@ -194,7 +194,6 @@ namespace Core {
 
         SharedSemaphore(const TCHAR name[], const uint32_t initValue, const uint32_t maxValue);
         SharedSemaphore(const TCHAR name[]);
-
 #ifndef __WINDOWS__
         /*
         If pshared is nonzero, then the semaphore is shared between
@@ -204,7 +203,6 @@ namespace Core {
         */
         SharedSemaphore(void *storage, const uint32_t initValue, const uint32_t maxValue);
         SharedSemaphore(void *storage);
-
     public:
 #endif
         ~SharedSemaphore();
@@ -212,10 +210,8 @@ namespace Core {
         uint32_t Lock(const uint32_t waitTime);
         uint32_t Unlock();
         bool IsLocked();
-
         static size_t Size();
         uint32_t MaxCount() const;
-
     private:
 #ifdef __WINDOWS__
         HANDLE _semaphore;
