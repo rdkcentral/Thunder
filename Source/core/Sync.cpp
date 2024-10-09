@@ -794,6 +794,36 @@ namespace Core {
     // CONSTRUCTOR & DESTRUCTOR
     //----------------------------------------------------------------------------
 
+#ifdef __WINDOWS__
+    class WindowsAPI {
+    public:
+        WindowsAPI(WindowsAPI&&) = delete;
+        WindowsAPI(const WindowsAPI&) = delete;
+        WindowsAPI& operator=(WindowsAPI&&) = delete;
+        WindowsAPI& operator=(const WindowsAPI&) = delete;
+
+        WindowsAPI() {
+            HMODULE ntdll = GetModuleHandle(_T("ntdll.dll"));
+            _ntQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(_T("ntdll.dll")), "NtQuerySemaphore"));
+            ASSERT (_NtQuerySemaphore != nullptr);
+        }
+
+        uint32_t GetSemaphoreCount(HANDLE parameter) {
+            ASSERT (_ntQuerySemaphore != nullptr);
+            SEMAPHORE_BASIC_INFORMATION basicInfo;
+            NTSTATUS status;
+            status = NtQuerySemaphore(parameter, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
+            if (status == ERROR_SUCCESS) {
+                return (basicInfo.CurrentCount);
+            }
+            return(0);
+        }
+
+        _NTQuerySemaphore _ntQuerySemaphore;
+    };
+
+    static WindowsAPI _windowsAPI;
+#endif
 
     SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
     {
@@ -895,18 +925,7 @@ namespace Core {
     SharedSemaphore::Count() const
     {
 #ifdef __WINDOWS__
-    SEMAPHORE_BASIC_INFORMATION basicInfo;
-    NTSTATUS status;
-    auto NtQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(L"ntdll.dll"), "NtQuerySemaphore"));
-    if (NtQuerySemaphore) {
-        status = NtQuerySemaphore(_semaphore, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
-        if (status == ERROR_SUCCESS) {
-            return basicInfo.CurrentCount;
-        }
-    }
-    ASSERT(FALSE);
-    return 0;
-}
+        return (_windowsAPI.GetSemaphoreCount(_semaphore));
 #else
         int semValue = 0;
         sem_getvalue(static_cast<sem_t*>(_semaphore), &semValue);
