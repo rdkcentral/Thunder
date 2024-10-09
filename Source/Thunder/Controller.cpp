@@ -52,7 +52,7 @@ namespace Plugin {
 
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
-    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
+    void Controller::Callstack(const Core::thread_id id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
         std::list<Core::callstack_info> stackList;
 
         ::DumpCallStack(id, stackList);
@@ -1256,7 +1256,7 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 auto const& entry = it.Current();
-                threads.push_back({ entry.Id.Value(), entry.Job.Value(), entry.Runs.Value() });
+                threads.push_back({ PluginHost::Metadata::InstanceId(entry.Id.Value()), entry.Job.Value(), entry.Runs.Value() });
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
