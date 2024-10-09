@@ -812,7 +812,7 @@ namespace Core {
             ASSERT (_ntQuerySemaphore != nullptr);
             SEMAPHORE_BASIC_INFORMATION basicInfo;
             NTSTATUS status;
-            status = NtQuerySemaphore(parameter, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
+            status = _ntQuerySemaphore(parameter, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
             if (status == ERROR_SUCCESS) {
                 return (basicInfo.CurrentCount);
             }
