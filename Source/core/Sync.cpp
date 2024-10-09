@@ -805,7 +805,7 @@ namespace Core {
         WindowsAPI() {
             HMODULE ntdll = GetModuleHandle(_T("ntdll.dll"));
             _ntQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(_T("ntdll.dll")), "NtQuerySemaphore"));
-            ASSERT (_NtQuerySemaphore != nullptr);
+            ASSERT (_ntQuerySemaphore != nullptr);
         }
 
         uint32_t GetSemaphoreCount(HANDLE parameter) {
