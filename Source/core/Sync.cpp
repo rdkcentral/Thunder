@@ -802,23 +802,19 @@ namespace Core {
         WindowsAPI& operator=(WindowsAPI&&) = delete;
         WindowsAPI& operator=(const WindowsAPI&) = delete;
 
+        ~WindowsAPI() = default;
         WindowsAPI() {
-            HMODULE ntdll = GetModuleHandle(_T("ntdll.dll"));
             _ntQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(_T("ntdll.dll")), "NtQuerySemaphore"));
             ASSERT (_ntQuerySemaphore != nullptr);
         }
 
-        uint32_t GetSemaphoreCount(HANDLE parameter) {
-            ASSERT (_ntQuerySemaphore != nullptr);
+        uint32_t GetSemaphoreCount(HANDLE parameter) const {
             SEMAPHORE_BASIC_INFORMATION basicInfo;
             NTSTATUS status;
             status = _ntQuerySemaphore(parameter, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
-            if (status == ERROR_SUCCESS) {
-                return (basicInfo.CurrentCount);
-            }
-            return(0);
+            return (status == ERROR_SUCCESS) ? basicInfo.CurrentCount : 0;
         }
-
+    private:
         _NTQuerySemaphore _ntQuerySemaphore;
     };
 
