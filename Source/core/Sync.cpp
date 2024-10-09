@@ -891,21 +891,26 @@ namespace Core {
         return ERROR_NONE;
     }
 
-    bool 
-    SharedSemaphore::IsLocked()
+    uint32_t 
+    SharedSemaphore::Count() const
     {
 #ifdef __WINDOWS__
-        bool locked = (::WaitForSingleObjectEx(_semaphore, 0, FALSE) != WAIT_OBJECT_0);
-
-        if (locked == false) {
-            ::ReleaseSemaphore(_semaphore, 1, nullptr);
+    SEMAPHORE_BASIC_INFORMATION basicInfo;
+    NTSTATUS status;
+    auto NtQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(L"ntdll.dll"), "NtQuerySemaphore"));
+    if (NtQuerySemaphore) {
+        status = NtQuerySemaphore(_semaphore, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
+        if (status == ERROR_SUCCESS) {
+            return basicInfo.CurrentCount;
         }
-
-        return (locked);
+    }
+    ASSERT(FALSE);
+    return 0;
+}
 #else
         int semValue = 0;
         sem_getvalue(static_cast<sem_t*>(_semaphore), &semValue);
-        return (semValue == 0);
+        return semValue;
 #endif
     }
 

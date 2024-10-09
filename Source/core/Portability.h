@@ -359,6 +359,20 @@ typedef std::string string;
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
 //#endif
 
+// NTQuerySemaphore (undocumented) is used to retrieve current count of a semaphore
+using NTSTATUS = LONG;
+using _NTQuerySemaphore = NTSTATUS(NTAPI*)(
+    HANDLE SemaphoreHandle, 
+    DWORD SemaphoreInformationClass, 
+    PVOID SemaphoreInformation, 
+    ULONG SemaphoreInformationLength,
+    PULONG ReturnLength OPTIONAL
+);
+struct SEMAPHORE_BASIC_INFORMATION {
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+};
+
 #define LITTLE_ENDIAN_PLATFORM 1
 #undef ERROR
 #define __WINDOWS__

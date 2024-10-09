@@ -209,7 +209,7 @@ namespace Core {
     public:
         uint32_t Lock(const uint32_t waitTime);
         uint32_t Unlock();
-        bool IsLocked();
+        uint32_t Count() const;
         static size_t Size();
         uint32_t MaxCount() const;
     private:
