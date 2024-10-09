@@ -1020,8 +1020,8 @@ EXTERNAL extern int inet_aton(const char* cp, struct in_addr* inp);
 EXTERNAL extern void usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const Thunder::Core::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
-uint32_t EXTERNAL GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize);
+EXTERNAL void DumpCallStack(const Thunder::Core::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+EXTERNAL uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize);
 
 }
 
