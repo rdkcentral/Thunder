@@ -97,6 +97,8 @@ namespace Thunder {
             public:
                 void Handle(Core::Messaging::IControl* control) override
                 {
+                    ASSERT(control != nullptr);
+
                     const string& module = control->Metadata().Module();
                     if (std::find(_modules.begin(), _modules.end(), module) == _modules.end()) {
                         _modules.push_back(module);
@@ -312,7 +314,6 @@ namespace Thunder {
                     Messaging::ConsoleStandardOut::Instance().Close();
                 }
                 Core::Messaging::IStore::Set(nullptr);
-                Core::Messaging::IControl::Iterate(handler);
 
                 _adminLock.Lock();
                 _dispatcher.reset(nullptr);
