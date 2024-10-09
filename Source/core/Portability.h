@@ -709,12 +709,6 @@ typedef std::string string;
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
 
-#ifdef __LINUX__
-typedef pthread_t ThreadId;
-#else
-typedef DWORD ThreadId;
-#endif
-
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
@@ -745,6 +739,12 @@ namespace Core {
     #else
     typedef uint32_t instance_id;
     #endif
+    #endif
+
+    #ifdef __LINUX__
+    typedef pthread_t thread_id;
+    #else
+    typedef DWORD thread_id;
     #endif
 
     typedef uint32_t hresult;
@@ -1020,8 +1020,9 @@ EXTERNAL extern int inet_aton(const char* cp, struct in_addr* inp);
 EXTERNAL extern void usleep(const uint32_t value);
 #endif
 
-EXTERNAL void DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
-EXTERNAL uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+void EXTERNAL DumpCallStack(const Thunder::Core::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+uint32_t EXTERNAL GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize);
+
 }
 
 

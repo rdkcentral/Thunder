@@ -177,7 +177,7 @@ namespace Core {
         {
             return (_monitorRuns);
         }
-        ::ThreadId Id() const
+        thread_id Id() const
         {
             return (_monitor != nullptr ? _monitor->Id() : 0);
         }

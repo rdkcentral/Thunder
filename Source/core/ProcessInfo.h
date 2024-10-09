@@ -414,9 +414,9 @@ namespace Core {
     public:
         explicit ProcessTree(const ProcessInfo& processInfo);
 
-        bool ContainsProcess(ThreadId pid) const;
-        void GetProcessIds(std::list<ThreadId>& processIds) const;
-        ThreadId RootId() const;
+        bool ContainsProcess(thread_id pid) const;
+        void GetProcessIds(std::list<thread_id>& processIds) const;
+        thread_id RootId() const;
 
     private:
         std::list<ProcessInfo> _processes;
