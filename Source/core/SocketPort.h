@@ -276,7 +276,9 @@ namespace Thunder {
                 return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : (m_SocketType == SEQUENCED ? SOCK_SEQPACKET : SOCK_RAW)));
             }
             uint16_t Events() override;
+PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
             void Handle(const uint16_t events) override;
+POP_WARNING()
             bool Closed();
             void Opened();
             void Accepted();
