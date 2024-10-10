@@ -181,8 +181,6 @@ namespace Core {
             CHANNEL::Close(Core::infinite);
         }
 
-        using CHANNEL::Handle;
-
         uint32_t Exchange(const uint32_t waitTime, const IOutbound& message)
         {
 
