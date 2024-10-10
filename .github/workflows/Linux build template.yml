@@ -29,9 +29,9 @@ jobs:
           ${{matrix.architecture == '32' && 'sudo dpkg --add-architecture i386' || ':'}}
           sudo apt-get update
           sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev ${{matrix.architecture == '32' && 'zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-11-multilib g++-11-multilib' || 'zlib1g-dev libssl-dev libsbc-dev'}}
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install jsonref
+          sudo python3 -m venv venv
+          sudo source venv/bin/activate
+          sudo pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
@@ -107,7 +107,6 @@ jobs:
     - name: Build Thunder
       run: |
         ${{matrix.architecture == '32' && 'export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig:$PKG_CONFIG_PATH' || 'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH'}}
-        source venv/bin/activate
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
         -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror -m${{matrix.architecture}}" \
