@@ -87,16 +87,18 @@ namespace Thunder {
                     Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize));
                 }
 
-                return Space;
+                return reinterpret_cast<void*>(Space);
             }
             // Somehow Purify gets lost if we do not delete it, overide the delete operator
             void
                 operator delete(
                     void* stAllocateBlock)
             {
-                uint8_t* originalPtr = reinterpret_cast<uint8_t*>(stAllocateBlock) - sizeof(void*);
-                reinterpret_cast<ProxyObject<CONTEXT>*>(originalPtr)->__Destructed();
-                ::free(originalPtr);
+                if (stAllocateBlock != nullptr) {
+                    uint8_t* originalPtr = reinterpret_cast<uint8_t*>(stAllocateBlock) - sizeof(void*);
+                    reinterpret_cast<ProxyObject<CONTEXT>*>(originalPtr)->__Destructed();
+                    ::free(originalPtr);
+                }
             }
 
         public:
