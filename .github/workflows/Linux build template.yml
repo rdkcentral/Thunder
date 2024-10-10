@@ -22,17 +22,12 @@ jobs:
         timeout_minutes: 10
         max_attempts: 10
         command: |
-          sudo gem install apt-spy2
-          sudo apt-spy2 fix --commit --launchpad --country=US
           echo "deb http://archive.ubuntu.com/ubuntu/ jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb http://archive.ubuntu.com/ubuntu/ jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
           ${{matrix.architecture == '32' && 'sudo dpkg --add-architecture i386' || ':'}}
           sudo apt-get update
           sudo apt install python3-pip build-essential cmake ninja-build libusb-1.0-0-dev ${{matrix.architecture == '32' && 'zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-11-multilib g++-11-multilib' || 'zlib1g-dev libssl-dev libsbc-dev'}}
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install jsonref
-          deactivate
+          sudo pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
 # --------- Thunder ----------
