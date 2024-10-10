@@ -102,7 +102,7 @@ namespace Core {
         static IWorkerPool& Instance();
         static bool IsAvailable();
 
-        virtual ::ThreadId Id(const uint8_t index) const = 0;
+        virtual thread_id Id(const uint8_t index) const = 0;
         virtual void Submit(const Core::ProxyType<IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
@@ -384,9 +384,9 @@ POP_WARNING()
             _external.Process();
             _joined = 0;
         }
-        ::ThreadId Id(const uint8_t index) const override
+        thread_id Id(const uint8_t index) const override
         {
-            ::ThreadId result = (::ThreadId)(~0);
+            thread_id result = (thread_id)(~0);
 
             if (index == 0) {
                 result = _timer.ThreadId();
@@ -431,7 +431,7 @@ POP_WARNING()
         ThreadPool::Minion _external;
         Core::TimerType<Timer> _timer;
         mutable Metadata _metadata;
-        ::ThreadId _joined;
+        thread_id _joined;
         #ifdef __CORE_WARNING_REPORTING__
         DispatchedJobMonitor _dispatchedJobMonitor;
         #endif
