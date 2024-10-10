@@ -111,7 +111,6 @@ namespace ProcessContainers {
 
                     // Dobby stop is async - block until we get the notification the container
                     // has actually stopped
-                    // this->InternalLock();
 
                     _stopPromise = std::promise<void>();
                     const void* vp = static_cast<void*>(new std::string(name));
@@ -134,8 +133,6 @@ namespace ProcessContainers {
                             TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
                         }
                     }
-
-                    // this->InternalUnlock();
 
                     // Always make sure we unregister our callback
                     mDobbyProxy->unregisterListener(listenerId);
