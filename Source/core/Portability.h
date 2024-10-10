@@ -359,6 +359,20 @@ typedef std::string string;
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
 //#endif
 
+// NTQuerySemaphore (undocumented) is used to retrieve current count of a semaphore
+using NTSTATUS = LONG;
+using _NTQuerySemaphore = NTSTATUS(NTAPI*)(
+    HANDLE SemaphoreHandle, 
+    DWORD SemaphoreInformationClass, 
+    PVOID SemaphoreInformation, 
+    ULONG SemaphoreInformationLength,
+    PULONG ReturnLength OPTIONAL
+);
+struct SEMAPHORE_BASIC_INFORMATION {
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+};
+
 #define LITTLE_ENDIAN_PLATFORM 1
 #undef ERROR
 #define __WINDOWS__
@@ -385,6 +399,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <cmath>
 #include <thread>
+#include <limits.h>
 
 #include <string.h>
 #include <termios.h>
@@ -412,8 +427,23 @@ typedef std::string string;
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+#include <sys/inotify.h>
 
 #include <arpa/inet.h>
+
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+    #include <features.h>
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+    #undef _GNU_SOURCE /* don't contaminate other includes unnecessarily */
+#else
+    #include <features.h>
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+#endif
 
 #ifdef __APPLE__
 #include <pthread_impl.h>

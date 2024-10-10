@@ -29,7 +29,6 @@
 
 #ifdef __LINUX__
 #include <pthread.h>
-#include <semaphore.h>
 #endif
 
 namespace Thunder {
@@ -112,23 +111,22 @@ namespace Core {
     // ===========================================================================
     // class BinairySemaphore
     // ===========================================================================
-
-    class EXTERNAL BinairySemaphore {
+    class EXTERNAL BinarySemaphore {
     private:
-        BinairySemaphore() = delete;
-        BinairySemaphore(const BinairySemaphore&) = delete;
-        BinairySemaphore& operator=(const BinairySemaphore&) = delete;
+        BinarySemaphore() = delete;
+        BinarySemaphore(const BinarySemaphore&) = delete;
+        BinarySemaphore& operator=(const BinarySemaphore&) = delete;
 
     public: // Methods
-        BinairySemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
-        BinairySemaphore(bool blLocked);
-        ~BinairySemaphore();
+        BinarySemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
+        BinarySemaphore(bool blLocked);
+        ~BinarySemaphore();
 
         uint32_t Lock();
 
         // Time in milliseconds!
         uint32_t Lock(unsigned int nSeconds);
-        void Unlock();
+        uint32_t Unlock();
         bool Locked() const;
 
     protected: // Members
@@ -142,6 +140,9 @@ namespace Core {
         HANDLE m_syncMutex;
 #endif
     };
+
+    // For compatability reaons with old class name 
+    using BinairySemaphore = BinarySemaphore;
 
     // ===========================================================================
     // class CountingSemaphore
@@ -180,6 +181,45 @@ namespace Core {
 
     // For Windows platform compatibility
     typedef CountingSemaphore Semaphore;
+
+    // ===========================================================================
+    // class SharedSemaphore
+    // ===========================================================================
+
+    class EXTERNAL SharedSemaphore {
+    public:
+        SharedSemaphore() = delete;
+        SharedSemaphore(const Semaphore&) = delete;
+        SharedSemaphore& operator=(const SharedSemaphore&) = delete;
+
+        SharedSemaphore(const TCHAR name[], const uint32_t initValue, const uint32_t maxValue);
+        SharedSemaphore(const TCHAR name[]);
+#ifndef __WINDOWS__
+        /*
+        If pshared is nonzero, then the semaphore is shared between
+        processes, and should be located in a region of shared memory
+        (see shm_open(3), mmap(2), and shmget(2))
+        Storage should be at least sizeof(sem_t)!
+        */
+        SharedSemaphore(void *storage, const uint32_t initValue, const uint32_t maxValue);
+        SharedSemaphore(void *storage);
+    public:
+#endif
+        ~SharedSemaphore();
+    public:
+        uint32_t Lock(const uint32_t waitTime);
+        uint32_t Unlock();
+        uint32_t Count() const;
+        static size_t Size();
+        uint32_t MaxCount() const;
+    private:
+#ifdef __WINDOWS__
+        HANDLE _semaphore;
+#else
+        void* _semaphore;
+        string _name;
+#endif
+    };
 
     // ===========================================================================
     // class Event

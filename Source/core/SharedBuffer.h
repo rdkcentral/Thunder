@@ -65,46 +65,12 @@ namespace Core {
         SharedBuffer& operator=(const SharedBuffer&) = delete;
 
     private:
-        class Semaphore {
-        private:
-            Semaphore() = delete;
-            Semaphore(const Semaphore&) = delete;
-            Semaphore& operator=(const Semaphore&) = delete;
-
-        public:
-#ifdef __WINDOWS__
-            Semaphore(const TCHAR name[]);
-#else
-            Semaphore(sem_t* storage);
-            //Semaphore(sem_t* storage, bool initialize) {
-            //}
-#endif
-            ~Semaphore();
-
-        public:
-            uint32_t Lock(const uint32_t waitTime);
-            uint32_t Unlock();
-            bool IsLocked();
-
-        private:
-#ifdef __WINDOWS__
-            HANDLE _semaphore;
-#else
-            sem_t* _semaphore;
-#endif
-        };
         struct Administration {
-
             uint32_t _bytesWritten;
-
-#ifndef __WINDOWS__
-            sem_t _producer;
-            sem_t _consumer;
-#endif
         };
 
     public:
-        virtual ~SharedBuffer();
+        ~SharedBuffer() override = default;
 
         // This is the consumer constructor. It should always take place, after, the producer
         // construct. The producer will create the Administration area, and the shared buffer,
@@ -215,8 +181,8 @@ namespace Core {
     private:
         DataElementFile _administrationBuffer;
         Administration* _administration;
-        Semaphore _producer;
-        Semaphore _consumer;
+        Core::SharedSemaphore _producer;
+        Core::SharedSemaphore _consumer;
         uint8_t* _customerAdministration;
     };
 }
