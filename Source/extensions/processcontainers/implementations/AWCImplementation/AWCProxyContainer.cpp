@@ -3,7 +3,8 @@
 
 #define CHECK(cond) ASSERT((cond))
 
-using namespace Thunder::ProcessContainers;
+namespace Thunder {
+namespace ProcessContainers {
 
 AWCProxyContainer::DBusInterface::DBusInterface(
     AWCProxyContainer *container):
@@ -80,8 +81,6 @@ AWCProxyContainer::~AWCProxyContainer()
     if(IsRunning()) Stop(2000);
     CHECK(client_);
     client_->unbind(dbusInterface_);
-    static_cast<AWCContainerAdministrator&>(
-        AWCContainerAdministrator::Instance()).RemoveContainer(this);
 }
 
 uint32_t AWCProxyContainer::Pid() const
@@ -182,4 +181,7 @@ bool AWCProxyContainer::Stop(const uint32_t timeout /*ms*/ VARIABLE_IS_NOT_USED)
 
     std::unique_lock<std::mutex> lock(mutex_);
     return waitForStateChange(lock, AppState::STOPPED, stopTimeout_ - diff);
+}
+
+} // namespace ProcessContainers
 }
