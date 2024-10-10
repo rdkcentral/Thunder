@@ -4,6 +4,7 @@ option(WORKERPOOL_TEST "WorkerPool stress test" OFF)
 option(FILE_UNLINK_TEST "File unlink test" OFF)
 option(REDIRECT_TEST "Test stream redirection" OFF)
 option(MESSAGEBUFFER_TEST "Test message buffer" OFF)
+option(UNRAVELLER "reveal thread details" OFF)
 
 if(BUILD_TESTS)
     add_subdirectory(unit)
@@ -35,4 +36,8 @@ endif()
 
 if(CYCLICBUFFER_TEST)
     add_subdirectory(cyclic-buffer)
+endif()
+
+if(UNRAVELLER)
+    add_subdirectory(unraveller)
 endif()
