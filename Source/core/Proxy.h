@@ -96,7 +96,7 @@ namespace Thunder {
             {
                 uint8_t* originalPointer = reinterpret_cast<uint8_t*>(stAllocateBlock) - sizeof(void*);
                 reinterpret_cast<ProxyObject<CONTEXT>*>(originalPointer)->__Destructed();
-                ::free(stAllocateBlock);
+                ::free(originalPointer);
             }
 
         public:
