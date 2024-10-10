@@ -1076,7 +1076,6 @@ namespace Thunder {
             return (result);
         }
 
-PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
         void SocketPort::Handle(const uint16_t flagsSet)
         {
             bool breakIssued = ((m_State & SocketPort::WRITESLOT) != 0);
@@ -1137,7 +1136,6 @@ PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
 #endif
             }
         }
-POP_WARNING()
 
         /* virtual */ int32_t SocketPort::Read(uint8_t buffer[], const uint16_t length) const {
             return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, 0));
