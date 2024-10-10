@@ -80,7 +80,6 @@ namespace Thunder {
 
                     if (Space != nullptr) {
                         *(reinterpret_cast<uint32_t*>(&Space[alignedSize])) = AdditionalSize;
-                        Space = reinterpret_cast<uint8_t*>(&Space[sizeof(void*)]);
                     }
                 }
                 else {
@@ -94,9 +93,8 @@ namespace Thunder {
                 operator delete(
                     void* stAllocateBlock)
             {
-                uint8_t* originalPointer = reinterpret_cast<uint8_t*>(stAllocateBlock) - sizeof(void*);
-                reinterpret_cast<ProxyObject<CONTEXT>*>(originalPointer)->__Destructed();
-                ::free(originalPointer);
+                reinterpret_cast<ProxyObject<CONTEXT>*>(stAllocateBlock)->__Destructed();
+                ::free(stAllocateBlock);
             }
 
         public:
