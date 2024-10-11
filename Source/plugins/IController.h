@@ -354,7 +354,7 @@ namespace Controller {
         // @details If callsign is omitted, metadata of all services is returned.
         virtual Core::hresult Services(const Core::OptionalType<string>& callsign /* @index */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 
-        // @property @deprecated
+        // @property
         // @brief Connections list of Thunder connections 
         virtual Core::hresult Links(Data::ILinksIterator*& links /* @out */) const = 0;
 
