@@ -148,6 +148,8 @@ namespace PluginHost {
             };
 
         public:
+            using Core::WorkerPool::Snapshot;
+
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
@@ -4600,12 +4602,7 @@ namespace PluginHost {
             while (index.Next() == true) {
 
                 std::list<Core::callstack_info> stackList;
-
-#ifdef __APPLE__
-                ::DumpCallStack(reinterpret_cast<ThreadId>(index.Current().Id.Value()), stackList);
-#else
-                ::DumpCallStack(static_cast<ThreadId>(index.Current().Id.Value()), stackList);
-#endif
+                ::DumpCallStack(PluginHost::Metadata::ThreadId(index.Current().Id.Value()), stackList);
 
                 PostMortemData::Callstack dump;
                 dump.Id = index.Current().Id.Value();
