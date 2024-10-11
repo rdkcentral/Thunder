@@ -272,7 +272,7 @@ namespace ProxyStub {
         {
             return (&_parent);
         }
-        const Core::SocketPort* Socket() const;
+        string LinkId() const;
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
@@ -426,16 +426,13 @@ namespace ProxyStub {
 
             return (_parent.QueryInterface(id));
         }
-       // The RPC::Administrator uses this to identifiy to what link this 
+        // The RPC::Administrator uses this to identifiy to what link this 
         // proxy belongs. The LinkId is always called within the lock of the
         // RPC::Administrator, and since it is onl used and called from there 
         // and the clearing of the _channel is also only called from there,
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
-        uint32_t Id() const
-        {
-            return (_channel.IsValid() ? _channel->Id() : 0);
-        }
+        uint32_t Id() const;
         void Invalidate() {
             ASSERT(_refCount > 0);
             _adminLock.Lock();

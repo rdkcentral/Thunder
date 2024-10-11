@@ -99,20 +99,33 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
-    const Core::SocketPort* UnknownProxy::Socket() const
+    string UnknownProxy::LinkId() const
     {
-        const Core::SocketPort* result = nullptr;
-
         _adminLock.Lock();
         if (_channel.IsValid() == true) {
             const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(_channel.operator->());
+            ASSERT(comChannel != nullptr);
             if (comchannel != nullptr) {
-                result = &(comchannel->Source());
+                return (comchannel->Extension().Origin());
             }
         }
         _adminLock.Unlock();
 
-        return (result);
+        return (_T("/Dangling"));
+    }
+    uint32_t UnknownProxy::Id() const
+    {
+        uint32_t id = 0;
+        if (_channel.IsValid() == true) {
+            const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(_channel.operator->());
+            ASSERT(comChannel != nullptr);
+            if (comchannel != nullptr) {
+                const Core::IResource* result = &(comchannel->Source());
+                ASSERT(result != nullptr);
+                id = result->Descriptor();
+            }
+        }
+        return (id);
     }
 
     static class UnknownInstantiation {
