@@ -104,7 +104,7 @@ namespace ProxyStub {
         _adminLock.Lock();
         if (_channel.IsValid() == true) {
             const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(_channel.operator->());
-            ASSERT(comChannel != nullptr);
+            ASSERT(comchannel != nullptr);
             if (comchannel != nullptr) {
                 return (comchannel->Extension().Origin());
             }
@@ -118,7 +118,7 @@ namespace ProxyStub {
         uint32_t id = 0;
         if (_channel.IsValid() == true) {
             const RPC::Communicator::Client* comchannel = dynamic_cast<const RPC::Communicator::Client*>(_channel.operator->());
-            ASSERT(comChannel != nullptr);
+            ASSERT(comchannel != nullptr);
             if (comchannel != nullptr) {
                 const Core::IResource* result = &(comchannel->Source());
                 ASSERT(result != nullptr);
