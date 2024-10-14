@@ -148,6 +148,8 @@ namespace PluginHost {
             };
 
         public:
+            using Core::WorkerPool::Snapshot;
+
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
