@@ -41,7 +41,6 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: development/bluetooth-uuid
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
