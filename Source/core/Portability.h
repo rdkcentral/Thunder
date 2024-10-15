@@ -432,7 +432,10 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+
+#ifndef __APPLE__
 #include <sys/inotify.h>
+#endif
 
 #include <arpa/inet.h>
 
