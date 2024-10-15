@@ -132,14 +132,14 @@ namespace Core {
 #endif
     }
 
-    ::ThreadId Thread::ThreadId()
+    thread_id Thread::ThreadId()
     {
 #ifdef __WINDOWS__
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
         return (::GetCurrentThreadId());
 POP_WARNING()
 #else
-        return static_cast<::ThreadId>(pthread_self());
+        return static_cast<thread_id>(pthread_self());
 #endif
     }
 
@@ -469,7 +469,7 @@ POP_WARNING()
     }
 
 #ifdef __DEBUG__
-    int Thread::GetCallstack(void** buffer VARIABLE_IS_NOT_USED, int size VARIABLE_IS_NOT_USED)
+    int Thread::GetCallstack(VARIABLE_IS_NOT_USED void** buffer, VARIABLE_IS_NOT_USED int size)
     {
 #if defined(THUNDER_BACKTRACE)
         return GetCallStack(m_hThreadInstance, buffer, size);

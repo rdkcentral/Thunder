@@ -52,7 +52,7 @@ namespace Plugin {
 
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 
-    void Controller::Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
+    void Controller::Callstack(const Core::thread_id id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const {
         std::list<Core::callstack_info> stackList;
 
         ::DumpCallStack(id, stackList);
@@ -239,12 +239,12 @@ namespace Plugin {
     Core::hresult Controller::Delete(const string& path)
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
-        bool valid;
-        string normalized_path = Core::File::Normalize(path, valid);
 
         ASSERT(_service != nullptr);
 
-        if (valid == false) {
+        const string normalized_path = Core::File::Normalize(path, true /* safe paths only */);
+
+        if (normalized_path.empty() == true) {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
         else {
@@ -681,10 +681,9 @@ namespace Plugin {
                     remainder = index.Remainder().Text();
                 }
 
-                bool valid;
-                string normalized(Core::File::Normalize(remainder, valid));
+                const string normalized(Core::File::Normalize(remainder, true /* safe paths only */));
 
-                if (valid == false) {
+                if (normalized.empty() == true) {
                     result->Message = "incorrect path";
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                 }
@@ -1221,31 +1220,25 @@ namespace Plugin {
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
-        RPC::Administrator::Proxies collection;
-
-        // Search for the Dangling proxies
-        if (RPC::Administrator::Instance().Allocations(linkId, collection) == true) {
-
-            using Iterator = IMetadata::Data::IProxiesIterator;
-
-            std::list< IMetadata::Data::Proxy> elements;
-
-            for (const ProxyStub::UnknownProxy* proxy : collection) {
+        std::vector<IMetadata::Data::Proxy> collection;
+        bool proxySearch = RPC::Administrator::Instance().Allocations(linkId, [&collection](const std::vector<ProxyStub::UnknownProxy*>& proxies) {
+           for (const auto& proxy : proxies) {
                 IMetadata::Data::Proxy data;
+                data.Count = proxy->ReferenceCount();
                 data.Instance = proxy->Implementation();
                 data.Interface = proxy->InterfaceId();
-                data.Count = proxy->ReferenceCount();
                 data.Name = proxy->Name();
-                
-                elements.emplace_back(std::move(data));
-            }
+                collection.emplace_back(std::move(data));
+           }
+        });
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(elements));
+        if (proxySearch == true) {
+            using Iterator = IMetadata::Data::IProxiesIterator;
+
+            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(collection));
             ASSERT(outProxies != nullptr);
-
             result = Core::ERROR_NONE;
         }
-
         return (result);
     }
 
@@ -1263,7 +1256,7 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 auto const& entry = it.Current();
-                threads.push_back({ entry.Id.Value(), entry.Job.Value(), entry.Runs.Value() });
+                threads.push_back({ PluginHost::Metadata::InstanceId(entry.Id.Value()), entry.Job.Value(), entry.Runs.Value() });
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
