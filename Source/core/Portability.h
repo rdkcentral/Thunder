@@ -447,7 +447,9 @@ struct SEMAPHORE_BASIC_INFORMATION {
     #endif
     #undef _GNU_SOURCE /* don't contaminate other includes unnecessarily */
 #else
+    #ifndef __APPLE__
     #include <features.h>
+    #endif
     #ifndef __USE_GNU
         #define __MUSL__
     #endif
