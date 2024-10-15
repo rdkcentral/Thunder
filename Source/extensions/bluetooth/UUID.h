@@ -57,7 +57,9 @@ namespace Bluetooth {
         }
         explicit UUID(const string& uuidStr)
         {
-            FromString(uuidStr);
+            if (FromString(uuidStr) == false) {
+                _uuid[0] = 0;
+            }
         }
         UUID(const UUID& copy)
         {
