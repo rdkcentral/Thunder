@@ -1,21 +1,8 @@
-/*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2020 Metrological
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
+#include "processcontainers/Messaging.h"
+#include "processcontainers/ContainerProducer.h"
+#include "processcontainers/ContainerAdministrator.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 #include "DobbyImplementation.h"
 #include <Dobby/DobbyProxy.h>
@@ -26,31 +13,22 @@
 namespace Thunder {
 
 namespace ProcessContainers {
-    // Container administrator
-    // ----------------------------------
-    IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
-    {
-        static DobbyContainerAdministrator& dobbyContainerAdministrator = Core::SingletonType<DobbyContainerAdministrator>::Instance();
 
-        return dobbyContainerAdministrator;
-    }
-
-    IContainer* DobbyContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration VARIABLE_IS_NOT_USED)
+    Core::ProxyType<IContainer> DobbyContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,
+        const string& logpath, const string& configuration VARIABLE_IS_NOT_USED)
     {
         searchpaths.Reset(0);
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
-            auto createContainer = [&](bool useSpecFile, const string &path) -> IContainer* {
+            auto createContainer = [&](bool useSpecFile, const string &path) -> Core::ProxyType<IContainer> {
                 // Make sure no leftover will interfere...
                 if (ContainerNameTaken(id)) {
                     DestroyContainer(id);
                 }
-                this->InternalLock();
-                DobbyContainer* container = new DobbyContainer(id, path, logpath, useSpecFile);
-                InsertContainer(container);
-                this->InternalUnlock();
 
+                Core::ProxyType<IContainer> container;
+                container = ContainerAdministrator::Instance().Create<DobbyContainer>(*this, id, path, logpath, useSpecFile);
                 return container;
             };
 
@@ -71,17 +49,16 @@ namespace ProcessContainers {
 
         TRACE(Trace::Error, (_T("Could not find suitable container config for %s in any search path"), id.c_str()));
 
-        return nullptr;
+        return Core::ProxyType<IContainer>();
     }
 
-    DobbyContainerAdministrator::DobbyContainerAdministrator()
-        : BaseContainerAdministrator()
+    uint32_t DobbyContainerAdministrator::Initialize(const string& config VARIABLE_IS_NOT_USED)
     {
         mIpcService = AI_IPC::createIpcService("unix:path=/var/run/dbus/system_bus_socket", "org.rdk.dobby.processcontainers");
 
         if (!mIpcService) {
             TRACE(Trace::Error, (_T("Failed to create Dobby IPC service")));
-            return;
+            return Core::ERROR_GENERAL;
         } else {
             // Start the IPCService which kicks off the event dispatcher thread
             mIpcService->start();
@@ -90,15 +67,15 @@ namespace ProcessContainers {
         // Create a DobbyProxy remote service that wraps up the dbus API
         // calls to the Dobby daemon
         mDobbyProxy = std::make_shared<DobbyProxy>(mIpcService, DOBBY_SERVICE, DOBBY_OBJECT);
+
+        return Core::ERROR_NONE;
     }
 
-    DobbyContainerAdministrator::~DobbyContainerAdministrator()
+    void DobbyContainerAdministrator::Deinitialize()
     {
-    }
-
-    void DobbyContainerAdministrator::Logging(const string& logPath VARIABLE_IS_NOT_USED, const string& loggingOptions VARIABLE_IS_NOT_USED)
-    {
-        // Only container-scope logging
+        mDobbyProxy.reset();
+        mIpcService->stop();
+        mIpcService.reset();
     }
 
     void DobbyContainerAdministrator::DestroyContainer(const string& name)
@@ -115,7 +92,6 @@ namespace ProcessContainers {
 
                     // Dobby stop is async - block until we get the notification the container
                     // has actually stopped
-                    this->InternalLock();
 
                     _stopPromise = std::promise<void>();
                     const void* vp = static_cast<void*>(new std::string(name));
@@ -138,8 +114,6 @@ namespace ProcessContainers {
                             TRACE(Trace::Warning, (_T("Timeout waiting for container %s to stop"), name.c_str()));
                         }
                     }
-
-                    this->InternalUnlock();
 
                     // Always make sure we unregister our callback
                     mDobbyProxy->unregisterListener(listenerId);
@@ -186,8 +160,9 @@ namespace ProcessContainers {
 
     // Container
     // ------------------------------------
-    DobbyContainer::DobbyContainer(const string& name, const string& path, const string& logPath, bool useSpecFile)
+    DobbyContainer::DobbyContainer(DobbyContainerAdministrator& admin, const string& name, const string& path, const string& logPath, const bool useSpecFile)
         : _adminLock()
+        , _admin(admin)
         , _name(name)
         , _path(path)
         , _logPath(logPath)
@@ -199,13 +174,9 @@ namespace ProcessContainers {
 
     DobbyContainer::~DobbyContainer()
     {
-        auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
-
-        if (admin.ContainerNameTaken(_name) == true) {
+        if (_admin.ContainerNameTaken(_name) == true) {
             Stop(Core::infinite);
         }
-
-        admin.RemoveContainer(this);
     }
 
     const string& DobbyContainer::Id() const
@@ -216,10 +187,9 @@ namespace ProcessContainers {
     uint32_t DobbyContainer::Pid() const
     {
         uint32_t returnedPid = 0;
-        auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
         if (_pid.IsSet() == false) {
-            std::string containerInfoString = admin.mDobbyProxy->getContainerInfo(_descriptor);
+            std::string containerInfoString = _admin.mDobbyProxy->getContainerInfo(_descriptor);
 
             if (containerInfoString.empty()) {
                 TRACE(Trace::Warning, (_T("Failed to get info for container %s"), _name.c_str()));
@@ -315,10 +285,9 @@ namespace ProcessContainers {
     bool DobbyContainer::IsRunning() const
     {
         bool result = false;
-        auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
         // We got a state back successfully, work out what that means in English
-        switch (static_cast<IDobbyProxyEvents::ContainerState>(admin.mDobbyProxy->getContainerState(_descriptor))) {
+        switch (static_cast<IDobbyProxyEvents::ContainerState>(_admin.mDobbyProxy->getContainerState(_descriptor))) {
         case IDobbyProxyEvents::ContainerState::Invalid:
             result = false;
             break;
@@ -350,8 +319,6 @@ namespace ProcessContainers {
         bool result = false;
 
         _adminLock.Lock();
-        auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
-
         std::list<int> emptyList;
 
         // construct the full command to run with all the arguments
@@ -372,9 +339,9 @@ namespace ProcessContainers {
             std::string containerSpecString = specFileStream.str();
             TRACE(ProcessContainers::ProcessContainerization, (_T("container spec string: %s"), containerSpecString.c_str()));
 
-            _descriptor = admin.mDobbyProxy->startContainerFromSpec(_name, containerSpecString , emptyList, fullCommand);
+            _descriptor = _admin.mDobbyProxy->startContainerFromSpec(_name, containerSpecString , emptyList, fullCommand);
         } else {
-            _descriptor = admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
+            _descriptor = _admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
         }
         // startContainer returns -1 on failure
         if (_descriptor <= 0) {
@@ -395,9 +362,8 @@ namespace ProcessContainers {
         bool result = false;
 
         _adminLock.Lock();
-        auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 
-        bool stoppedSuccessfully = admin.mDobbyProxy->stopContainer(_descriptor, false);
+        bool stoppedSuccessfully = _admin.mDobbyProxy->stopContainer(_descriptor, false);
 
         if (!stoppedSuccessfully) {
             TRACE(Trace::Error, (_T("Failed to stop container, internal Dobby error. id: %s descriptor: %d"), _name.c_str(), _descriptor));
@@ -408,6 +374,9 @@ namespace ProcessContainers {
 
         return result;
     }
+
+    // FACTORY REGISTRATION
+    static ContainerProducerRegistrationType<DobbyContainerAdministrator, IContainer::containertype::DOBBY> registration;
 
 } // namespace ProcessContainers
 
