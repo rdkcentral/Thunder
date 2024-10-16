@@ -570,6 +570,9 @@ namespace RPC {
             {
                 return _id;
             }
+            const string& Origin() const {
+                return (_connectionMap->Origin());
+            }
 
         private:
             // Non ref-counted reference to our parent, of which we are a composit :-)
@@ -1187,6 +1190,9 @@ namespace RPC {
             }
 
         public:
+            const string& Origin() const {
+                return (_parent.Origin());
+            }
             inline void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 ASSERT(sink != nullptr);
@@ -1650,9 +1656,11 @@ POP_WARNING()
         Communicator& operator=(const Communicator&) = delete;
 
         Communicator(
+            const string& source,
             const Core::NodeId& node,
             const string& proxyStubPath);
         Communicator(
+            const string& source,
             const Core::NodeId& node,
             const string& proxyStubPath,
             const Core::ProxyType<Core::IIPCServer>& handler);
@@ -1668,6 +1676,9 @@ POP_WARNING()
         template<typename ACTION>
         void Visit(ACTION&& action) const {
             _ipcServer.Visit(action);
+        }
+        const string& Origin() const {
+            return (_source);
         }
         inline bool IsListening() const
         {
@@ -1753,6 +1764,7 @@ POP_WARNING()
         }
 
     private:
+        const string _source;
         RemoteConnectionMap _connectionMap;
         ChannelServer _ipcServer;
         static uint8_t _softKillCheckWaitTime;

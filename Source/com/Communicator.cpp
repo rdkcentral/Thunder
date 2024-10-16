@@ -362,8 +362,9 @@ namespace RPC {
     uint8_t Communicator::_hardKillCheckWaitTime = 4;
 
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-    Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
-        : _connectionMap(*this)
+    Communicator::Communicator(const string& source, const Core::NodeId& node, const string& proxyStubPath)
+        : _source(source)
+        , _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath) {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);
@@ -374,10 +375,12 @@ namespace RPC {
     }
 
     Communicator::Communicator(
+        const string& source,
         const Core::NodeId& node,
         const string& proxyStubPath,
         const Core::ProxyType<Core::IIPCServer>& handler)
-        : _connectionMap(*this)
+        : _source(source)
+        , _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath, handler) {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);

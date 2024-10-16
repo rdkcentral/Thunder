@@ -224,7 +224,7 @@ namespace Exchange {
             ExternalAccess& operator=(const ExternalAccess &) = delete;
 
             ExternalAccess(const ::Thunder::Core::NodeId & source)
-                : ::Thunder::RPC::Communicator(source, _T(""))
+                : ::Thunder::RPC::Communicator(_T("/test"), source, _T(""))
             {
                 Open(::Thunder::Core::infinite);
             }
