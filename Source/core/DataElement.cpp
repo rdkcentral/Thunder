@@ -94,6 +94,7 @@ namespace Core {
     {
         ASSERT(IsValid());
         ASSERT(buffer != nullptr);
+        ASSERT(std::numeric_limits<uint64_t>::max() - size >= offset);
 
         // Check if we cross a boundary for the read..
         if ((offset + size) <= Size()) {
@@ -101,6 +102,7 @@ namespace Core {
             ::memmove(buffer, &(Buffer()[offset]), size);
         } else {
             // If we want to read more than 4Gb ASSERT !!
+            ASSERT(Size() >= offset);
             ASSERT(Size() - offset < 0xFFFFFFFF);
 
             // oops partial read untill we got it all
@@ -119,6 +121,7 @@ namespace Core {
     {
         ASSERT(IsValid());
         ASSERT(buffer != nullptr);
+        ASSERT(std::numeric_limits<uint64_t>::max() - size >= offset);
 
         // Check if we cross a boundary for the write..
         if ((offset + size) <= Size()) {
@@ -126,6 +129,7 @@ namespace Core {
             ::memmove(&(Buffer()[offset]), buffer, size);
         } else {
             // If we want to write more than 4Gb ASSERT !!
+            ASSERT(Size() >= offset);
             ASSERT(Size() - offset < 0xFFFFFFFF);
 
             // oops partial read untill we got it all
