@@ -1,13 +1,12 @@
 #pragma once
 
-#include "common/BaseRefCount.h"
-#include "processcontainers/ProcessContainer.h"
+#include "processcontainers/ContainerAdministrator.h"
 
 namespace Thunder {
 namespace ProcessContainers {
 
 class AWCContainerBase:
-    public BaseRefCount<IContainer>
+    public IContainer
 {
 private:
     string id_;
