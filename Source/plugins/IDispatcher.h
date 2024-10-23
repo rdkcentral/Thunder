@@ -27,7 +27,7 @@
 namespace Thunder {
 
     namespace PluginHost {
-PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
+
         struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
             ~IDispatcher() override = default;
 
@@ -56,6 +56,5 @@ PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
             // method that all subscribtions for a certain callback can be dropped..
             virtual void Dropped(const ICallback* callback) = 0;
         };
-POP_WARNING()
     }
 }
