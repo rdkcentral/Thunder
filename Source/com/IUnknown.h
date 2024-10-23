@@ -488,10 +488,12 @@ namespace ProxyStub {
         {
             return (_unknown.Message(methodId));
         }
+PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
         uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
             return (_unknown.Invoke(message, waitTime));
         }
+POP_WARNING()
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             return (_unknown.Interface(implementation, id));
