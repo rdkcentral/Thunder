@@ -74,6 +74,7 @@ namespace ProcessContainers {
     struct IContainer {
 
         enum containertype : uint8_t {
+            DEFAULT,
             LXC,
             RUNC,
             CRUN,

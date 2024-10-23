@@ -712,15 +712,13 @@ POP_WARNING()
                                 printf("Link: %s\n", index.Current().Remote.Value().c_str());
                                 printf("------------------------------------------------------------\n");
 
-                                RPC::Administrator::Proxies proxies;
-
-                                RPC::Administrator::Instance().Allocations(index.Current().ID.Value(), proxies);
-
-                                for (const ProxyStub::UnknownProxy* proxy : proxies) {
+                                RPC::Administrator::Instance().Allocations(index.Current().ID.Value(), [](const std::vector<ProxyStub::UnknownProxy*>& proxies) {
+                                    for (const auto& proxy: proxies) {
                                     Core::instance_id instanceId = proxy->Implementation();
                                     printf("[%s] InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X]\n", proxy->Name().c_str(), static_cast<uint64_t>(instanceId), proxy->ReferenceCount(), proxy->InterfaceId(), proxy->InterfaceId());
                                 }
                                 printf("\n");
+                                });
                             }
                         }
                         break;
@@ -891,11 +889,8 @@ POP_WARNING()
                         printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
                         printf("Poolruns:\n");
                         for (uint8_t index = 0; index < metaData.Slots; index++) {
-#ifdef __APPLE__
-                           printf("  Thread%02d|0x%16" PRIxPTR ": %10d", (index), reinterpret_cast<uintptr_t>(metaData.Slot[index].WorkerId), metaData.Slot[index].Runs);
-#else
-                           printf("  Thread%02d|0x%16lX: %10d", (index), metaData.Slot[index].WorkerId, metaData.Slot[index].Runs);
-#endif
+                            printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(Metadata::InstanceId(metaData.Slot[index].WorkerId)), metaData.Slot[index].Runs);
+
                             if (metaData.Slot[index].Job.IsSet() == false) {
                                 printf("\n");
                             }
@@ -985,10 +980,10 @@ POP_WARNING()
                     case '7':
                     case '8': 
                     case '9': {
-                        ThreadId threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
+                        Core::thread_id threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                         printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                         printf("============================================================\n");
-                        if (threadId != (ThreadId)(~0)) {
+                        if (threadId != (Core::thread_id)(~0)) {
                             uint8_t counter = 0;
                             std::list<Core::callstack_info> stackList;
                             ::DumpCallStack(threadId, stackList);

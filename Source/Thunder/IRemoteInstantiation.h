@@ -56,7 +56,10 @@ namespace PluginHost {
             const string& systemRootPath,
             const uint8_t threads,
             const int8_t priority,
-            const string configuration) = 0;
+            const string configuration,
+            RPC::IEnvironmentIterator* const& environments) = 0;
+
+        virtual uint32_t Kill (const uint32_t requestId) = 0;
     };
 }
 }

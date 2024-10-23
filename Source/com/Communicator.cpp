@@ -575,4 +575,12 @@ namespace RPC {
     constexpr uint32_t RPC::ProcessShutdown::DestructionStackSize;
 
 }
+
+ENUM_CONVERSION_BEGIN(RPC::Environment::scope)
+
+    { RPC::Environment::scope::LOCAL, _TXT("Local") },
+    { RPC::Environment::scope::GLOBAL, _TXT("Global") },
+
+ENUM_CONVERSION_END(RPC::Environment::scope)
+
 }

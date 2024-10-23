@@ -190,6 +190,8 @@
 #define DISABLE_WARNING_DELETE_INCOMPLETE
 #define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED
+#define DISABLE_WARNING_FREE_NONHEAP_OBJECT
+#define DISABLE_WARNING_ARRAY_BOUNDS
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -221,6 +223,8 @@
 #define DISABLE_WARNING_DELETE_INCOMPLETE PUSH_WARNING_ARG_("-Wdelete-incomplete")
 #define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE PUSH_WARNING_ARG_("-Winconsistent-missing-override")
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED PUSH_WARNING_ARG_("-Wmaybe-uninitialized")
+#define DISABLE_WARNING_FREE_NONHEAP_OBJECT PUSH_WARNING_ARG_("-Wfree-nonheap-object")
+#define DISABLE_WARNING_ARRAY_BOUNDS PUSH_WARNING_ARG_("-Warray-bounds")
 #endif
 #endif
 
@@ -359,6 +363,20 @@ typedef std::string string;
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
 //#endif
 
+// NTQuerySemaphore (undocumented) is used to retrieve current count of a semaphore
+using NTSTATUS = LONG;
+using _NTQuerySemaphore = NTSTATUS(NTAPI*)(
+    HANDLE SemaphoreHandle, 
+    DWORD SemaphoreInformationClass, 
+    PVOID SemaphoreInformation, 
+    ULONG SemaphoreInformationLength,
+    PULONG ReturnLength OPTIONAL
+);
+struct SEMAPHORE_BASIC_INFORMATION {
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+};
+
 #define LITTLE_ENDIAN_PLATFORM 1
 #undef ERROR
 #define __WINDOWS__
@@ -385,6 +403,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <cmath>
 #include <thread>
+#include <limits.h>
 
 #include <string.h>
 #include <termios.h>
@@ -412,8 +431,23 @@ typedef std::string string;
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+#include <sys/inotify.h>
 
 #include <arpa/inet.h>
+
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+    #include <features.h>
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+    #undef _GNU_SOURCE /* don't contaminate other includes unnecessarily */
+#else
+    #include <features.h>
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+#endif
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -679,12 +713,6 @@ typedef std::string string;
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
 
-#ifdef __LINUX__
-typedef pthread_t ThreadId;
-#else
-typedef DWORD ThreadId;
-#endif
-
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
@@ -715,6 +743,12 @@ namespace Core {
     #else
     typedef uint32_t instance_id;
     #endif
+    #endif
+
+    #ifdef __LINUX__
+    typedef pthread_t thread_id;
+    #else
+    typedef DWORD thread_id;
     #endif
 
     typedef uint32_t hresult;
@@ -990,8 +1024,9 @@ EXTERNAL extern int inet_aton(const char* cp, struct in_addr* inp);
 EXTERNAL extern void usleep(const uint32_t value);
 #endif
 
-EXTERNAL void DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
-EXTERNAL uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+EXTERNAL void DumpCallStack(const Thunder::Core::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+EXTERNAL uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize);
+
 }
 
 

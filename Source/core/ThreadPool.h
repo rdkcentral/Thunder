@@ -51,14 +51,14 @@ namespace Core {
             virtual void Dispatch(IDispatch*) = 0;
         };
         struct EXTERNAL Metadata {
-            ::ThreadId                  WorkerId;
+            thread_id                   WorkerId;
             uint32_t                    Runs;
             Core::OptionalType<string>  Job;
         };
 
         #ifdef __CORE_WARNING_REPORTING__
         struct EXTERNAL DispatchedJobMetaData {
-            ::ThreadId WorkerId;
+            thread_id  WorkerId;
             string     CallSign;
             uint64_t   DispatchedTime;
             uint32_t   ReportRunCount;
@@ -597,7 +597,7 @@ POP_WARNING()
 
             _queue.Unlock();
         }
-        ::ThreadId Id(const uint8_t index) const
+        thread_id Id(const uint8_t index) const
         {
             uint8_t count = 0;
             std::list<Executor>::const_iterator ptr = _units.cbegin();
