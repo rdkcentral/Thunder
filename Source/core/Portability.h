@@ -433,7 +433,14 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
 
-#ifndef __APPLE__
+#if defined(__APPLE__) || defined(__LINUX__)
+#ifdef __APPLE__
+#include <errno.h> // for errno
+#include <fcntl.h> // for O_RDONLY
+#include <string.h> // for strerror()
+#include <sys/event.h> // for kqueue() etc.
+#include <unistd.h> // for close()
+#else
 #include <sys/inotify.h>
 #endif
 
