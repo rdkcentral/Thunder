@@ -1,13 +1,13 @@
+#include <errno.h>
+#include <iostream>
+#include <random>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <thread>
-#include <iostream>
-#include <sstream>
-#include <random>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 #define MODULE_NAME unraveller
 
@@ -27,7 +27,7 @@ public:
 
     struct ICallback {
         virtual ~ICallback() = default;
-        virtual uint32_t Work() = 0;
+        virtual uint32_t Work(uint64_t id) = 0;
     };
 
     virtual uint32_t Run(const uint32_t nThreads) = 0;
@@ -81,9 +81,9 @@ std::mutex Printer::_mutex;
 
 class MemProber {
 public:
-    typedef struct {
+    struct mstat_t {
         unsigned long size, resident, share, text, lib, data, dt;
-    } mstat_t;
+    };
 
     MemProber();
     ~MemProber() = default;
@@ -95,12 +95,23 @@ public:
 
     static bool Probe(mstat_t& mstat)
     {
-        constexpr TCHAR mstatPath[] = _T("/proc/self/statm");
-        bool result;
 
-        FILE* mstatFile = fopen(mstatPath, "r");
-        result = (7 != fscanf(mstatFile, "%ld %ld %ld %ld %ld %ld %ld", &mstat.size, &mstat.resident, &mstat.share, &mstat.text, &mstat.lib, &mstat.data, &mstat.dt));
-        fclose(mstatFile);
+        Core::ProcessInfo info;
+
+        info.MemoryStats();
+
+        uint64_t rss = info.RSS();
+        uint64_t vss = info.VSS();
+
+        // constexpr TCHAR mstatPath[] = _T("/proc/self/statm");
+        bool result(true);
+
+        // FILE* mstatFile = fopen(mstatPath, "r");
+        // result = (7 != fscanf(mstatFile, "%ld %ld %ld %ld %ld %ld %ld", &mstat.size, &mstat.resident, &mstat.share, &mstat.text, &mstat.lib, &mstat.data, &mstat.dt));
+        // fclose(mstatFile);
+
+        mstat.resident = rss;
+        mstat.size = vss;
 
         return result;
     }
@@ -128,7 +139,7 @@ public:
 
     static std::string Dump()
     {
-        std::lock_guard<std::mutex> lock(_mutex); 
+        std::lock_guard<std::mutex> lock(_mutex);
 
         std::stringstream s;
 
@@ -139,19 +150,21 @@ public:
 
         Dump(mstat, s);
 
-        _cache = std::move(mstat); 
+        _cache = std::move(mstat);
 
         return s.str();
     }
-    private:
-        static std::mutex _mutex;
-        static mstat_t _cache;
+
+private:
+    static std::mutex _mutex;
+    static mstat_t _cache;
 };
 
 std::mutex MemProber::_mutex;
 MemProber::mstat_t MemProber::_cache;
 
-MemProber::MemProber(){
+MemProber::MemProber()
+{
     memset(&_cache, 0, sizeof(mstat_t));
 }
 
@@ -317,12 +330,12 @@ protected:
         _cv.wait(lock);
         lock.unlock();
 
-        Printer()  << "TID: " << tid << ": Work start: " << MemProber::Dump() << std::endl;
+        Printer() << "TID: " << tid << ": Work start: " << MemProber::Dump() << std::endl;
 
         uint16_t sum(0);
 
         if ((_callback != nullptr) && (_running == true)) {
-            sum = _callback->Work();
+            sum = _callback->Work(tid);
         }
 
         Printer() << "TID: " << tid << ": Work done: " << sum << MemProber::Dump() << std::endl;
@@ -469,12 +482,10 @@ private:
     {
         ASSERT(context != nullptr);
 
-        const uint64_t tid(static_cast<uint32_t>(std::hash<std::thread::id>()(std::this_thread::get_id())));
+        const uint64_t tid(static_cast<uint64_t>(std::hash<std::thread::id>()(std::this_thread::get_id())));
 
         if (context) {
             const uint16_t sum(context->Work(tid));
-
-
         }
     }
 
@@ -494,30 +505,30 @@ public:
     {
     }
 
-    uint32_t Work()
+    uint32_t Work(uint64_t tid) override
     {
         const uint32_t bytes(_sizeKb * Kilobyte);
 
+        Printer() << "TID: " << tid << " - About to allocate " << bytes << "bytes " << MemProber::Dump() << std::endl;
+
         uint8_t* data = static_cast<uint8_t*>(::alloca(bytes));
 
-        for (uint32_t i = 0; i < (bytes / sizeof(uint32_t)); i++) {
-            data[i * sizeof(uint32_t)] = _random.Generate<uint32_t>();
+        if (data) {
+            for (uint32_t i = 0; i < (bytes / sizeof(uint32_t)); i++) {
+                data[i * sizeof(uint32_t)] = _random.Generate<uint32_t>();
+            }
+        } else {
+            Printer(std::cerr) << "TID: " << tid << " - Failed to allocate stack of " << bytes << " bytes" << std::endl;
         }
 
-        Crypto::MD5 md5(data, _sizeKb);
+        Printer() << "TID: " << tid << " - Waiting to be released, " << MemProber::Dump() << std::endl;
         
-        uint16_t sum;
-
-        ::memcpy(&sum, md5.Result(), md5.Length);
-
-        //Printer() << " - Waiting to be released, md5: " << sum << " " << MemProber::Dump() << std::endl;
-
         // wait until release
         std::unique_lock<std::mutex> lock(_mutex);
         _cv.wait(lock);
         lock.unlock();
 
-        return sum;
+        return Core::ERROR_NONE;
     }
 
     void Arm()
@@ -529,27 +540,6 @@ public:
     {
         _cv.notify_all();
     }
-
-private:
-    // void ReserveBlock(uint16_t kb)
-    // {
-    //     if (kb > 0) {
-    //         uint32_t kBytes[Kilobyte / 4];
-
-    //         for (uint16_t i = 0; i < (Kilobyte / 4); i++) {
-    //             kBytes[i] = _random.Generate<uint32_t>();
-    //         }
-
-    //         ReserveBlock(--kb);
-    //     } else {
-    //         Printer() << "Job finished... " << std::endl;
-    //         // wait until release
-    //         std::unique_lock<std::mutex> lock(_mutex);
-    //         _cv.wait(lock);
-    //         lock.unlock();
-    //         Printer() << "IJSVRIJ!" << std::endl;
-    //     }
-    // }
 
 private:
     const uint16_t _sizeKb;
