@@ -448,6 +448,7 @@ namespace PluginHost {
 			return (result);
         }
 
+
         //
         // Register/Unregister methods for incoming method handling on the "base" handler elements.
         // ------------------------------------------------------------------------------------------------------------------------------
@@ -456,11 +457,17 @@ namespace PluginHost {
         {
             _handlers.front().Property<PARAMETER>(methodName, getter, setter, objectPtr);
         }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         template <typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
             _handlers.front().Register<Core::JSON::VariantContainer, Core::JSON::VariantContainer, METHOD, REALOBJECT>(methodName, method, objectPtr);
         }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
@@ -1001,6 +1008,29 @@ namespace PluginHost {
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
     };
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    public:
+
+        virtual uint32_t OnJSONRPCError(const Core::JSONRPC::Context& context, const string& designator, const string& parameters, string& errormessage) = 0;
+
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+
+            uint32_t result = JSONRPC::Invoke(channelId, id, token, method, parameters, response);
+
+            if(result == Core::ERROR_USER_DEFINED_JSONRPC) {
+                // do we pass the context?
+                Core::JSONRPC::Context context(channelId, id, token);
+                result = OnJSONRPCError(context, method, parameters, response);
+            }
+            return result;
+        }
+
+    };
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
 } // namespace Thunder::PluginHost
 }
