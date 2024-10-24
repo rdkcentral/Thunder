@@ -29,6 +29,29 @@ namespace Thunder {
 
 namespace PluginHost {
 
+    namespace {
+    
+        template<class JSONRPCERRORASSESSORTYPE>
+        uint32_t InvokeOnHandler(Core::JSONRPC::Context context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler) 
+        {
+            uint32_t result = handler.Invoke(context, method, parameters, response);
+            if(result != Core::ERROR_NONE) {
+                result = JSONRPCERRORASSESSORTYPE::OnJSONRPCError(context, method, parameters, response);
+            }
+
+            return result;
+        }
+
+        template<>
+        uint32_t InvokeOnHandler<void>(Core::JSONRPC::Context context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler)
+        {
+            uint32_t result = handler.Invoke(context, method, parameters, response);
+
+            return result;
+        }
+
+    }
+
     class EXTERNAL JSONRPC : public IDispatcher {
     public:
         using SendIfMethod = std::function<bool(const string&)>;
@@ -594,7 +617,14 @@ namespace PluginHost {
 
         // Inherited via IDispatcher
         // ---------------------------------------------------------------------------------
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return InvokeHandler(channelId, id, token, method, parameters, response);
+        }
+
+        template<typename JSONRPCERRORASSESSORTYPE = void>
+        uint32_t InvokeHandler(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) 
+        {
             uint32_t result = Core::ERROR_PARSE_FAILURE;
 
             if (method.empty() == false) {
@@ -656,13 +686,12 @@ namespace PluginHost {
                     }
                     else {
                         Core::JSONRPC::Handler* handler(Handler(realMethod));
-
-                        if (handler == nullptr) {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
-                        else {
+                        
+                        if (handler != nullptr) {
                             Core::JSONRPC::Context context(channelId, id, token);
-                            result = handler->Invoke(context, Core::JSONRPC::Message::FullMethod(method), parameters, response);
+                            result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler);
+                        } else {
+                            result = Core::ERROR_INCORRECT_URL;
                         }
                     }
                 }
@@ -670,6 +699,7 @@ namespace PluginHost {
 
             return (result);
         }
+
         Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator) override
         {
             uint32_t result;
@@ -1011,21 +1041,14 @@ namespace PluginHost {
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
+    template<typename JSONRPCERRORASSESSORTYPE>
     class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
     public:
 
-        virtual uint32_t OnJSONRPCError(const Core::JSONRPC::Context& context, const string& designator, const string& parameters, string& errormessage) = 0;
 
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
-
-            uint32_t result = JSONRPC::Invoke(channelId, id, token, method, parameters, response);
-
-            if(result == Core::ERROR_USER_DEFINED_JSONRPC) {
-                // do we pass the context?
-                Core::JSONRPC::Context context(channelId, id, token);
-                result = OnJSONRPCError(context, method, parameters, response);
-            }
-            return result;
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(channelId, id, token, method, parameters, response);
         }
 
     };
@@ -1034,3 +1057,4 @@ namespace PluginHost {
 
 } // namespace Thunder::PluginHost
 }
+
