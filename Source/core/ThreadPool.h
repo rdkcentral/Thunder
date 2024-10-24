@@ -221,7 +221,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
 POP_WARNING()
             ~JobType()
             {
-                static_assert(_state == IDLE, Identifier());
+                ASSERT (_state == IDLE);
                 _job.CompositRelease();
             }
 
