@@ -5,7 +5,7 @@ LXC (Linux Containers) is a lightweight virtualization method that provides an e
 
 1. Make sure kernel has all the futures needed for containerization. The easiest way to enable them is to use raspberrypi3_wpe_ml_container_defconfig.
 
-2. Enable containers support in Thunder
+2. Enable containers support in Thunder.
 ```
 Thunder -> Extensions -> Process Containers
 ```
@@ -33,8 +33,7 @@ For demo purposes, we will use the OCDM plugin. To run a containerized ThunderNa
 
 # Adjusting Configuration for Thunder
 
-1) Create a file named 'config' under /rootfs/usr/share/Thunder/OCDM/Container and place the below content in it.
-
+1. Create a file named 'config' under /rootfs/usr/share/Thunder/OCDM/Container and place the below content in it.
 ```
 # Template used to create this container: /usr/share/lxc/templates/lxc-download
 # Parameters passed to the template: --no-validate
@@ -71,16 +70,17 @@ lxc.net.0.type = empty
 #lxc.net.0.hwaddr = 00:16:XX:XX:XX:XX
 ```
 
-2) Comment out below line in /usr/share/lxc/config/common.conf:
+2. Comment out below line in /usr/share/lxc/config/common.conf:
+```
+# lxc.seccomp.profile = /usr/share/lxc/config/common.seccomp
+```
 
-`# lxc.seccomp.profile = /usr/share/lxc/config/common.seccomp`
-
-3) In plugin configuration (eg. `/etc/Thunder/plugin/OCDM.json` for OCDM) change 
+3. In plugin configuration (eg. `/etc/Thunder/plugin/OCDM.json` for OCDM) change 
 ```"mode": Local``` 
 to 
 ```"mode": "Container"```
 
-If everything works fine, you should see OCDM working just lie an ordinary OOP plugin
+4. If everything works fine, you should see OCDM working just lie an ordinary OOP plugin.
 
 # Mounting a shared directory between host and LXC container
 
@@ -88,26 +88,19 @@ Most often, we may need to securely share files between the host machine and a c
 
 Example : File logging from a container to a logging system folder located at the host machine.
 
-1) Create a directory in host.
-
+1. Create a directory in host.
 ```
-    mkdir /testshare && chmod 7777 /testshare
+mkdir /testshare && chmod 7770 /testshare
 ```
-
-2) Create a directory in lxc container (eg: OCDM container) 
-
+2. Create a directory in lxc container (eg: OCDM container)
 ```
-    mkdir /usr/share/Thunder/OCDM/Container/rootfs/TestLogging && chmod 7777 /usr/share/Thunder/OCDM/Container/rootfs/TestLogging
+mkdir /usr/share/Thunder/OCDM/Container/rootfs/TestLogging && chmod 7770 /usr/share/Thunder/OCDM/Container/rootfs/TestLogging
 ```
-
-3) Edit container config file (eg: /usr/share/Thunder/OCDM/Container/config)
-
+3. Edit container config file (eg: /usr/share/Thunder/OCDM/Container/config)
 ```
-    lxc.mount.entry = /testshare TestLogging none bind,rw 0 0
+lxc.mount.entry = /testshare TestLogging none bind,rw 0 0
 ```
-
-4) UID/GID mapping
-
+4. UID/GID mapping
 ```
 # Container specific configuration
 #lxc.idmap = u 0 100000 65536
@@ -122,14 +115,13 @@ lxc.idmap = g 1000 1000 1
 lxc.idmap = u 1001 101001 64535
 lxc.idmap = g 1001 101001 64535
 ```
+5. Accessing contents from a shared folder and permissions .
 
-5) Accessing contents from a shared folder and permissions . 
-
-   Use case 1 : Host has created a domain socket within the shared folder.
-                Container running in non-privileged mode (not root mode), trying to write to this domain socket.
- 
-   In this use case, the write operation will fail, if there is NO write permission for "other" user  (eg: 775 instead of 777).
-   So make sure that the domain socket has been created with the required access right.   
+    Use case 1 : 
+        Host has created a domain socket within the shared folder.
+        Container running in non-privileged mode (not root mode), trying to write to this domain socket.  
+        In this use case, the write operation will fail, if there is NO write permission for "other" user  (eg: 775 instead of 777).
+        So make sure that the domain socket has been created with the required access right.
 
 ## Good To Know
 

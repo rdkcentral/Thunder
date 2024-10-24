@@ -41,8 +41,8 @@ There are two ways to do this:
 - [LXC ](https://linuxcontainers.org/)
 - [runc](https://github.com/opencontainers/runc)
 - [crun](https://github.com/containers/crun)
-- [Dobby](https://github.com/rdkcentral/Dobby) (RDK)
-- AWC (Liberty Global)
+- [Dobby](https://github.com/rdkcentral/Dobby) (Maintained by RDK)
+- AWC (Maintained Externally)
 
 To run a plugin in a container, a suitable container configuration must already exist. Thunder does not create container configurations dynamically. Thunder will search for existing container configurations in the following locations, in order of priority:
 
