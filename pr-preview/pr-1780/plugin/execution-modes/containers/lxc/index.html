@@ -2283,7 +2283,7 @@
 <p>Make sure kernel has all the futures needed for containerization. The easiest way to enable them is to use raspberrypi3_wpe_ml_container_defconfig.</p>
 </li>
 <li>
-<p>Enable containers support in Thunder
+<p>Enable containers support in Thunder.
 <div class="highlight"><pre><span></span><code>Thunder -&gt; Extensions -&gt; Process Containers
 </code></pre></div></p>
 </li>
@@ -2304,7 +2304,9 @@
 <p>2) Create another folder named 'rootfs' under /rootfs/usr/share/Thunder/OCDM/Container</p>
 <p>3) Copy the whole rootfs of the sdcard into /rootfs/usr/share/Thunder/OCDM/Container/rootfs</p>
 <h1 id="adjusting-configuration-for-thunder">Adjusting Configuration for Thunder</h1>
-<p>1) Create a file named 'config' under /rootfs/usr/share/Thunder/OCDM/Container and place the below content in it.</p>
+<ol>
+<li>
+<p>Create a file named 'config' under /rootfs/usr/share/Thunder/OCDM/Container and place the below content in it.
 <div class="highlight"><pre><span></span><code># Template used to create this container: /usr/share/lxc/templates/lxc-download
 # Parameters passed to the template: --no-validate
 # Template script checksum (SHA-1): 273c51343604eb85f7e294c8da0a5eb769d648f3
@@ -2338,27 +2340,37 @@ lxc.net.0.type = empty
 #lxc.net.0.link = lxcbr0
 #lxc.net.0.flags = up
 #lxc.net.0.hwaddr = 00:16:XX:XX:XX:XX
-</code></pre></div>
-<p>2) Comment out below line in /usr/share/lxc/config/common.conf:</p>
-<p><code># lxc.seccomp.profile = /usr/share/lxc/config/common.seccomp</code></p>
-<p>3) In plugin configuration (eg. <code>/etc/Thunder/plugin/OCDM.json</code> for OCDM) change 
+</code></pre></div></p>
+</li>
+<li>
+<p>Comment out below line in /usr/share/lxc/config/common.conf:
+<div class="highlight"><pre><span></span><code># lxc.seccomp.profile = /usr/share/lxc/config/common.seccomp
+</code></pre></div></p>
+</li>
+<li>
+<p>In plugin configuration (eg. <code>/etc/Thunder/plugin/OCDM.json</code> for OCDM) change 
 <code>"mode": Local</code> 
 to 
 <code>"mode": "Container"</code></p>
-<p>If everything works fine, you should see OCDM working just lie an ordinary OOP plugin</p>
+</li>
+<li>
+<p>If everything works fine, you should see OCDM working just lie an ordinary OOP plugin.</p>
+</li>
+</ol>
 <h1 id="mounting-a-shared-directory-between-host-and-lxc-container">Mounting a shared directory between host and LXC container</h1>
 <p>Most often, we may need to securely share files between the host machine and a container.</p>
 <p>Example : File logging from a container to a logging system folder located at the host machine.</p>
-<p>1) Create a directory in host.</p>
-<div class="highlight"><pre><span></span><code>    mkdir /testshare &amp;&amp; chmod 7777 /testshare
-</code></pre></div>
-<p>2) Create a directory in lxc container (eg: OCDM container) </p>
-<div class="highlight"><pre><span></span><code>    mkdir /usr/share/Thunder/OCDM/Container/rootfs/TestLogging &amp;&amp; chmod 7777 /usr/share/Thunder/OCDM/Container/rootfs/TestLogging
-</code></pre></div>
-<p>3) Edit container config file (eg: /usr/share/Thunder/OCDM/Container/config)</p>
-<div class="highlight"><pre><span></span><code>    lxc.mount.entry = /testshare TestLogging none bind,rw 0 0
-</code></pre></div>
-<p>4) UID/GID mapping</p>
+<ol>
+<li>Create a directory in host.
+<div class="highlight"><pre><span></span><code>mkdir /testshare &amp;&amp; chmod 7770 /testshare
+</code></pre></div></li>
+<li>Create a directory in lxc container (eg: OCDM container)
+<div class="highlight"><pre><span></span><code>mkdir /usr/share/Thunder/OCDM/Container/rootfs/TestLogging &amp;&amp; chmod 7770 /usr/share/Thunder/OCDM/Container/rootfs/TestLogging
+</code></pre></div></li>
+<li>Edit container config file (eg: /usr/share/Thunder/OCDM/Container/config)
+<div class="highlight"><pre><span></span><code>lxc.mount.entry = /testshare TestLogging none bind,rw 0 0
+</code></pre></div></li>
+<li>UID/GID mapping
 <div class="highlight"><pre><span></span><code># Container specific configuration
 #lxc.idmap = u 0 100000 65536
 #lxc.idmap = g 0 100000 65536
@@ -2371,12 +2383,16 @@ lxc.idmap = u 1000 1000 1
 lxc.idmap = g 1000 1000 1
 lxc.idmap = u 1001 101001 64535
 lxc.idmap = g 1001 101001 64535
-</code></pre></div>
-<p>5) Accessing contents from a shared folder and permissions . </p>
-<p>Use case 1 : Host has created a domain socket within the shared folder.
-                Container running in non-privileged mode (not root mode), trying to write to this domain socket.</p>
-<p>In this use case, the write operation will fail, if there is NO write permission for "other" user  (eg: 775 instead of 777).
-   So make sure that the domain socket has been created with the required access right.   </p>
+</code></pre></div></li>
+<li>
+<p>Accessing contents from a shared folder and permissions .</p>
+<p>Use case 1 : 
+    Host has created a domain socket within the shared folder.
+    Container running in non-privileged mode (not root mode), trying to write to this domain socket.<br />
+    In this use case, the write operation will fail, if there is NO write permission for "other" user  (eg: 775 instead of 777).
+    So make sure that the domain socket has been created with the required access right.</p>
+</li>
+</ol>
 <h2 id="good-to-know">Good To Know</h2>
 <ul>
 <li>lxc API to kill a container is blocking, not guarenteed to work and therefore not used</li>
