@@ -41,6 +41,8 @@ namespace Core {
         /* static */ char IElement::TrueTag[5] = { 't', 'r', 'u', 'e', '\0' };
         /* static */ char IElement::FalseTag[6] = { 'f', 'a', 'l', 's', 'e', '\0' };
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
         {
             std::stringstream ss;
@@ -78,6 +80,10 @@ namespace Core {
                 ss << iterator.Current().GetDebugString(iterator.Label(), indent);
             return ss.str();
         }
+
+#endif //  __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+
     }
 }
 

@@ -752,6 +752,8 @@ namespace Thunder {
                 return (Send(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Generic JSONRPC methods.
             // Anything goes!
             // these objects have no type chacking, will consume more memory and processing takes more time
@@ -783,6 +785,8 @@ namespace Thunder {
             {
                 return InternalInvoke<PARAMETERS>(waitTime, method, parameters, inbound);
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
         private:
             friend CommunicationChannel;
@@ -1452,6 +1456,8 @@ namespace Thunder {
                 return (_connection.Invoke(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Opaque JSON structure methods.
             // Anything goes!
             // ===================================================================================
@@ -1467,6 +1473,10 @@ namespace Thunder {
             {
                 return (_connection.template Get<Core::JSON::VariantContainer>(waitTime, method, object));
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+
             bool IsActivated()
             {
                 return (_connection.IsActivated());
