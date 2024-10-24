@@ -165,10 +165,6 @@ namespace Core {
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
                         Text = _T("Requested service is not available.");
                         break;
-                    case Core::ERROR_USER_DEFINED_JSONRPC:
-                        Code = ApplicationErrorCodeBase - Core::ERROR_USER_DEFINED_JSONRPC;
-                        Text = _T("User defined error reported. (and not handled apparently)");
-                        break;
                     default:
                         Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
                         Text = Core::ErrorToString(frameworkError);
