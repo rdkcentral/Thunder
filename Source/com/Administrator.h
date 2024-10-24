@@ -149,20 +149,26 @@ namespace RPC {
         }
         
         template<typename ACTION>
-        bool Allocations(const uint32_t id, ACTION&& action) const {
+        bool Allocations(const string& linkId, ACTION&& action) const {
             bool found = false;
             _adminLock.Lock();
-            if (id == 0) {
+            if (linkId.empty() == true) {
                 for (const auto& proxy : _channelProxyMap) {
                     action(proxy.second);
                 }
                 action(_danglingProxies);
                 found = true;
             } 
+            else if (linkId == _T("/Dangling")) {
+                action(_danglingProxies);
+                found = true;
+            }
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
                 while ((found == false) && (index != _channelProxyMap.end())) {
-                    if (index->first != id) {
+                    ASSERT(index->second.size() != 0);
+
+                    if (IsRequestedLink(index->second[0], linkId) == true) {
                         index++;
                     }
                     else {
@@ -305,6 +311,7 @@ POP_WARNING()
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
+        bool IsRequestedLink(const ProxyStub::UnknownProxy* proxy, const string& id) const;
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
         void RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);

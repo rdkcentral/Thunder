@@ -328,7 +328,7 @@ namespace Plugin {
 
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
-        Core::hresult Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
+        Core::hresult Proxies(const Core::OptionalType<string>& linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
         Core::hresult Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& services) const override;
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;

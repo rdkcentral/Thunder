@@ -398,6 +398,10 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
+    bool Administrator::IsRequestedLink(const ProxyStub::UnknownProxy* proxy, const string& id) const {
+        return (proxy->LinkId() == id);
+    }
+
     void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies)
     {
         _adminLock.Lock();
