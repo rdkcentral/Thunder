@@ -68,6 +68,10 @@ namespace Plugin {
                     _parent.SubSystems();
                 }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::Plugin::Controller::Sink::Job"));
+            }
+
             private:
                 Controller& _parent;
             };
