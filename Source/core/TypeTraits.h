@@ -22,6 +22,7 @@
 
 #include "Portability.h"
 #include <functional>
+#include <type_traits>
 
 namespace Thunder {
 
@@ -191,14 +192,14 @@ namespace Core {
 // Args: arguments that func should have, note it will also work if overrides of Func are available on T. Note: passing Args&&... itself is also allowed here to allow for variable parameters
 #define IS_MEMBER_AVAILABLE_INHERITANCE_TREE(func, name)                                                                                             \
     template <bool, typename TT>                                                                                                                     \
-    struct name##_IsMemberAvailableCheck : public TT {                                                                                               \
-      using type = TT;                                                                                                                               \
+    struct name##_IsMemberAvailableCheck : public std::remove_reference<TT>::type {                                                                   \
+      using type = typename std::remove_reference<TT>::type;                                                                                         \
       template <typename TTT, typename... Args2>                                                                                                     \
       auto Verify() -> decltype( (TTT::func(std::declval<Args2>()...)));                                                                             \
     };                                                                                                                                               \
     template <typename TT>                                                                                                                           \
-    struct name##_IsMemberAvailableCheck<true, TT> : public TT {                                                                                     \
-      using type = const TT;                                                                                                                         \
+    struct name##_IsMemberAvailableCheck<true, TT> : public std::remove_reference<TT>::type {                                                         \
+      using type = const typename std::remove_reference<TT>::type;                                                                                   \
       template <typename TTT, typename... Args2>                                                                                                     \
       auto Verify() const -> decltype( (TTT::func(std::declval<Args2>()...)));                                                                       \
     };                                                                                                                                               \
@@ -207,12 +208,12 @@ namespace Core {
         typedef char yes[1];                                                                                                                         \
         typedef char no[2];                                                                                                                          \
         template <typename U,                                                                                                                        \
-                  typename RR = decltype(std::declval<name##_IsMemberAvailableCheck<std::is_const<U>::value, U>>().template Verify<U, Args...>()),   \
+                  typename RR = decltype(std::declval<name##_IsMemberAvailableCheck<std::is_const<typename std::remove_reference<U>::type>::value, U>>().template Verify<U, Args...>()), \
                   typename Z = typename std::enable_if<std::is_same<R, RR>::value>::type>                                                            \
         static yes& chk(int);                                                                                                                        \
         template <typename U>                                                                                                                        \
         static no& chk(...);                                                                                                                         \
-        static bool const value = sizeof(chk<T>(0)) == sizeof(yes);                                                                                  \
+        static bool const value = sizeof(chk<typename std::remove_reference<T>::type>(0)) == sizeof(yes);                                             \
     }
 
 
