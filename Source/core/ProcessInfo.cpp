@@ -546,7 +546,8 @@ namespace Core {
             char buffer[bufferSize];
             while (true) {
                 char c;
-                size_t readChars = fread(&c, 1, 1, cmdFile);
+                size_t readChars = 0;
+                fread(&c, 1, 1, cmdFile);
                 if (readChars == 0) {
                     break;
                 }
