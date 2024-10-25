@@ -678,9 +678,16 @@ namespace Core {
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
+            // A server cannot 'end' its life and cleanup if clients are connected
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            multiChannel.Cleanup();
+
             multiChannel.Unregister(TripletResponse::Id());
             multiChannel.Unregister(VoidTriplet::Id());
             multiChannel.Unregister(TextText::Id());
+
+            ASSERT_EQ(multiChannel.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
 
             handler1.Release();
             handler2.Release();
@@ -689,17 +696,6 @@ namespace Core {
             factory->DestroyFactory<TripletResponse>();
             factory->DestroyFactory<VoidTriplet>();
             factory->DestroyFactory<TextText>();
-
-            // Only for internal factories
-//            factory->DestroyFactories();
- 
-            // A server cannot 'end' its life if clients are connected
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            // Do not unregister any / the last handler prior the call of cleanup
-            multiChannel.Cleanup();
-
-            ASSERT_EQ(multiChannel.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
@@ -753,7 +749,7 @@ namespace Core {
 
             ASSERT_EQ(multiChannel.Source().Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
 
-            // Signal the server it can 'end' its life
+            // Signal the server it can 'end' its life and cleanup
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
@@ -822,7 +818,7 @@ namespace Core {
 
             ASSERT_EQ(multiChannel.Source().Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
 
-            // Signal the server it can 'end' its life
+            // Signal the server it can 'end' its life and cleanup
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
         };
 
@@ -852,9 +848,16 @@ namespace Core {
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
             ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
 
+            // A server cannot 'end' its life and cleanup if clients are connected
+            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            multiChannel.Cleanup();
+
             multiChannel.Unregister(TripletResponse::Id());
             multiChannel.Unregister(VoidTriplet::Id());
             multiChannel.Unregister(TextText::Id());
+
+            ASSERT_EQ(multiChannel.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
 
             handler1.Release();
             handler2.Release();
@@ -866,13 +869,6 @@ namespace Core {
 
             // Only for internal factories
 //           factory->DestroyFactories();
-
-            // A server cannot 'end' its life if clients are connected
-            ASSERT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
-
-            multiChannel.Cleanup();
-
-            ASSERT_EQ(multiChannel.Close(maxWaitTime), ::Thunder::Core::ERROR_NONE);
         };
 
         IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
