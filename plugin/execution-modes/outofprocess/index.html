@@ -8,28 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/private-comrpc/">
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/execution-modes/outofprocess/">
       
       
-        <link rel="prev" href="../proxypool/">
+        <link rel="prev" href="../inprocess/">
       
       
-        <link rel="next" href="../composite/">
+        <link rel="next" href="../distrubuted/">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
     
     
       
-        <title>Private COM-RPC - Thunder</title>
+        <title>Out Of Process - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.0253249f.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.0253249f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#out-of-process-oop-plugins" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -107,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Private COM-RPC
+              Out Of Process
             
           </span>
         </div>
@@ -220,7 +225,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -250,7 +255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -310,7 +315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/intro/" class="md-nav__link">
+      <a href="../../../introduction/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -368,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/repos/" class="md-nav__link">
+      <a href="../../../introduction/repos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -389,7 +394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/build_linux/" class="md-nav__link">
+      <a href="../../../introduction/build_linux/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -410,7 +415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/build_windows/" class="md-nav__link">
+      <a href="../../../introduction/build_windows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -431,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/config/" class="md-nav__link">
+      <a href="../../../introduction/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -452,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/usage/" class="md-nav__link">
+      <a href="../../../introduction/usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -518,7 +523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/overview/" class="md-nav__link">
+      <a href="../../../introduction/architecture/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -576,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
+      <a href="../../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -597,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
+      <a href="../../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -683,7 +688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../intro/" class="md-nav__link">
+      <a href="../../intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,6 +706,8 @@
                 
   
   
+    
+  
   
   
     
@@ -709,11 +716,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
@@ -727,7 +734,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             Execution Modes
@@ -741,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/execution-modes/" class="md-nav__link">
+      <a href="../execution-modes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -762,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/inprocess/" class="md-nav__link">
+      <a href="../inprocess/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -780,10 +787,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../execution-modes/outofprocess/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -792,6 +808,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -804,7 +821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/distrubuted/" class="md-nav__link">
+      <a href="../distrubuted/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -862,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/containers/container/" class="md-nav__link">
+      <a href="../containers/container/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -883,7 +900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/containers/runc/" class="md-nav__link">
+      <a href="../containers/runc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -904,7 +921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/containers/lxc/" class="md-nav__link">
+      <a href="../containers/lxc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -941,7 +958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lifecycle/" class="md-nav__link">
+      <a href="../../lifecycle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -962,7 +979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../principles/" class="md-nav__link">
+      <a href="../../principles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1020,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/interfaces/" class="md-nav__link">
+      <a href="../../interfaces/interfaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1041,7 +1058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/docs/" class="md-nav__link">
+      <a href="../../interfaces/docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1062,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/guidelines/" class="md-nav__link">
+      <a href="../../interfaces/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1083,7 +1100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/tags/" class="md-nav__link">
+      <a href="../../interfaces/tags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1112,7 +1129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1133,7 +1150,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../errors/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1154,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../versioning/" class="md-nav__link">
+      <a href="../../versioning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1175,7 +1192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../messaging/" class="md-nav__link">
+      <a href="../../messaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1196,7 +1213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../subsystems/" class="md-nav__link">
+      <a href="../../subsystems/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1217,7 +1234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../proxypool/" class="md-nav__link">
+      <a href="../../proxypool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1235,17 +1252,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../private-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1254,7 +1264,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1267,7 +1276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../split-implementation.md" class="md-nav__link">
+      <a href="../../split-implementation.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1288,7 +1297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../composite/" class="md-nav__link">
+      <a href="../../composite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1356,7 +1365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/strings/" class="md-nav__link">
+      <a href="../../../utils/strings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1414,7 +1423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/files/" class="md-nav__link">
+      <a href="../../../utils/files/files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1435,7 +1444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/observer/" class="md-nav__link">
+      <a href="../../../utils/files/observer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1464,7 +1473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/json/" class="md-nav__link">
+      <a href="../../../utils/json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1522,7 +1531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/worker-pool/" class="md-nav__link">
+      <a href="../../../utils/threading/worker-pool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1543,7 +1552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/mutex/" class="md-nav__link">
+      <a href="../../../utils/threading/mutex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1572,7 +1581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/time/" class="md-nav__link">
+      <a href="../../../utils/time/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1593,7 +1602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/timers/" class="md-nav__link">
+      <a href="../../../utils/timers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1614,7 +1623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/web/" class="md-nav__link">
+      <a href="../../../utils/web/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1635,7 +1644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/sockets/" class="md-nav__link">
+      <a href="../../../utils/sockets/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1656,7 +1665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/singletons/" class="md-nav__link">
+      <a href="../../../utils/singletons/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1677,7 +1686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/processes/" class="md-nav__link">
+      <a href="../../../utils/processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1745,7 +1754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/intro/" class="md-nav__link">
+      <a href="../../../client/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1766,7 +1775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/json-rpc/" class="md-nav__link">
+      <a href="../../../client/json-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1787,7 +1796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/com-rpc/" class="md-nav__link">
+      <a href="../../../client/com-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1855,7 +1864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../debugging/debug/" class="md-nav__link">
+      <a href="../../../debugging/debug/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1876,7 +1885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../debugging/thundershark/" class="md-nav__link">
+      <a href="../../../debugging/thundershark/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1981,7 +1990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/setup/" class="md-nav__link">
+      <a href="../../../walkthrough/hello-world/setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2002,7 +2011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/guide/" class="md-nav__link">
+      <a href="../../../walkthrough/hello-world/guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2060,7 +2069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
+      <a href="../../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2081,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
+      <a href="../../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2165,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/" class="md-nav__link">
+      <a href="../../../docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2186,7 +2195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../references/references/" class="md-nav__link">
+      <a href="../../../references/references/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2207,7 +2216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../issuetemplate/issuetemplate/" class="md-nav__link">
+      <a href="../../../issuetemplate/issuetemplate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2245,6 +2254,8 @@
   
   
   
+    
+  
   
 </nav>
                   </div>
@@ -2262,9 +2273,28 @@
   
 
 
-  <h1>Private COM-RPC</h1>
-
-
+<h1 id="out-of-process-oop-plugins">Out-Of-Process (OOP) Plugins</h1>
+<p>If a plugin is configured to run out-of-process, it will run in its own individual hosting process called <code>ThunderPlugin</code> instead of in the main Thunder process. Each out-of-process plugin will run in a separate ThunderPlugin instance.</p>
+<p>When the plugin is activated, Thunder will automatically spawn a ThunderPlugin instance as a child process. The ThunderPlugin host will load the plugin library and establish a COM-RPC connection between itself and the main Thunder process. This COM-RPC connection is how clients communicating with the main Thunder process are still able to invoke methods on out-of-process plugins. The ThunderPlugin process will be stopped when the plugin is deactivated.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For larger, more complex out-of-process plugins, it is often useful to split a plugin into two separate libraries - see <a href="../split-implementation">here</a> for more details.</p>
+</div>
+<p><strong>Advantages</strong></p>
+<ul>
+<li>Reliability - if a plugin crashes, it will only bring down the ThunderPlugin instance and therefore not affect any other plugin. It can then be restarted as necessary</li>
+<li>Monitoring - by running a plugin in its own process, it becomes easier to monitor the resource usage (memory, CPU etc) of that plugin</li>
+<li>Security - out of process plugins can be run in a different user/group to the main Thunder process (which might be running as root) to reduce the privileges of the plugin and increase security</li>
+<li>Resource control - the size of the thread pool and process priority can be set for the ThunderPlugin host, allowing more custom tuning for specific plugin requirements</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li>Performance - since there is now an additional RPC hop over COM-RPC to invoke methods on the plugin, this can introduce some latency (although COM-RPC is efficient so this is very minimal)<ul>
+<li>It may also take slightly longer to activate the plugin due to the overhead of starting the ThunderPlugin host</li>
+</ul>
+</li>
+<li>Resource usage - potentially increased resource usage from spawning and running a new process</li>
+</ul>
 
 
 
@@ -2300,7 +2330,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../proxypool/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ProxyPool">
+          <a href="../inprocess/" class="md-footer__link md-footer__link--prev" aria-label="Previous: In Process">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2310,20 +2340,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ProxyPool
+                In Process
               </div>
             </div>
           </a>
         
         
           
-          <a href="../composite/" class="md-footer__link md-footer__link--next" aria-label="Next: Composite Plugins">
+          <a href="../distrubuted/" class="md-footer__link md-footer__link--next" aria-label="Next: Distrubuted">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Composite Plugins
+                Distrubuted
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2357,10 +2387,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.83f73b43.min.js"></script>
       
     
   </body>

@@ -85,10 +85,6 @@
          <lastmod>2024-10-25</lastmod>
     </url>
     <url>
-         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/</loc>
-         <lastmod>2024-10-25</lastmod>
-    </url>
-    <url>
          <loc>https://rdkcentral.github.com/Thunder/plugin/intro/</loc>
          <lastmod>2024-10-25</lastmod>
     </url>
@@ -118,6 +114,38 @@
     </url>
     <url>
          <loc>https://rdkcentral.github.com/Thunder/plugin/versioning/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/distrubuted/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/execution-modes/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/inprocess/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/introduction/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/outofprocess/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/containers/container/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/containers/lxc/</loc>
+         <lastmod>2024-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://rdkcentral.github.com/Thunder/plugin/execution-modes/containers/runc/</loc>
          <lastmod>2024-10-25</lastmod>
     </url>
     <url>

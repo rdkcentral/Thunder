@@ -8,28 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/private-comrpc/">
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/plugin/execution-modes/containers/runc/">
       
       
-        <link rel="prev" href="../proxypool/">
+        <link rel="prev" href="../container/">
       
       
-        <link rel="next" href="../composite/">
+        <link rel="next" href="../lxc/">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
     
     
       
-        <title>Private COM-RPC - Thunder</title>
+        <title>Runc - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.0253249f.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.0253249f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#what-is-runc" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -107,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Private COM-RPC
+              Runc
             
           </span>
         </div>
@@ -220,7 +225,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -250,7 +255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -310,7 +315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/intro/" class="md-nav__link">
+      <a href="../../../../introduction/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -368,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/repos/" class="md-nav__link">
+      <a href="../../../../introduction/repos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -389,7 +394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/build_linux/" class="md-nav__link">
+      <a href="../../../../introduction/build_linux/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -410,7 +415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/build_windows/" class="md-nav__link">
+      <a href="../../../../introduction/build_windows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -431,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/config/" class="md-nav__link">
+      <a href="../../../../introduction/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -452,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/usage/" class="md-nav__link">
+      <a href="../../../../introduction/usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -518,7 +523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/overview/" class="md-nav__link">
+      <a href="../../../../introduction/architecture/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -576,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
+      <a href="../../../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -597,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
+      <a href="../../../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -683,7 +688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../intro/" class="md-nav__link">
+      <a href="../../../intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,6 +706,8 @@
                 
   
   
+    
+  
   
   
     
@@ -709,11 +716,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
         
           
           <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
@@ -727,7 +734,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             Execution Modes
@@ -741,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/execution-modes/" class="md-nav__link">
+      <a href="../../execution-modes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -762,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/inprocess/" class="md-nav__link">
+      <a href="../../inprocess/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -783,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/outofprocess/" class="md-nav__link">
+      <a href="../../outofprocess/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -804,7 +811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/distrubuted/" class="md-nav__link">
+      <a href="../../distrubuted/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -822,6 +829,8 @@
                 
   
   
+    
+  
   
   
     
@@ -830,11 +839,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" checked>
         
           
           <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
@@ -848,7 +857,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_2_5">
             <span class="md-nav__icon md-icon"></span>
             Containers
@@ -862,7 +871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/containers/container/" class="md-nav__link">
+      <a href="../container/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -880,10 +889,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../execution-modes/containers/runc/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -892,6 +910,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -904,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../execution-modes/containers/lxc/" class="md-nav__link">
+      <a href="../lxc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -941,7 +960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lifecycle/" class="md-nav__link">
+      <a href="../../../lifecycle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -962,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../principles/" class="md-nav__link">
+      <a href="../../../principles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1020,7 +1039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/interfaces/" class="md-nav__link">
+      <a href="../../../interfaces/interfaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1041,7 +1060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/docs/" class="md-nav__link">
+      <a href="../../../interfaces/docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1062,7 +1081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/guidelines/" class="md-nav__link">
+      <a href="../../../interfaces/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1083,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interfaces/tags/" class="md-nav__link">
+      <a href="../../../interfaces/tags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1112,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
+      <a href="../../../config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1133,7 +1152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../../errors/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1154,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../versioning/" class="md-nav__link">
+      <a href="../../../versioning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1175,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../messaging/" class="md-nav__link">
+      <a href="../../../messaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1196,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../subsystems/" class="md-nav__link">
+      <a href="../../../subsystems/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1217,7 +1236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../proxypool/" class="md-nav__link">
+      <a href="../../../proxypool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1235,17 +1254,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../private-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1254,7 +1266,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1267,7 +1278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../split-implementation.md" class="md-nav__link">
+      <a href="../../../split-implementation.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1288,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../composite/" class="md-nav__link">
+      <a href="../../../composite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1356,7 +1367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/strings/" class="md-nav__link">
+      <a href="../../../../utils/strings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1414,7 +1425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/files/" class="md-nav__link">
+      <a href="../../../../utils/files/files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1435,7 +1446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/files/observer/" class="md-nav__link">
+      <a href="../../../../utils/files/observer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1464,7 +1475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/json/" class="md-nav__link">
+      <a href="../../../../utils/json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1522,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/worker-pool/" class="md-nav__link">
+      <a href="../../../../utils/threading/worker-pool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1543,7 +1554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/threading/mutex/" class="md-nav__link">
+      <a href="../../../../utils/threading/mutex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1572,7 +1583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/time/" class="md-nav__link">
+      <a href="../../../../utils/time/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1593,7 +1604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/timers/" class="md-nav__link">
+      <a href="../../../../utils/timers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1614,7 +1625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/web/" class="md-nav__link">
+      <a href="../../../../utils/web/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1635,7 +1646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/sockets/" class="md-nav__link">
+      <a href="../../../../utils/sockets/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1656,7 +1667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/singletons/" class="md-nav__link">
+      <a href="../../../../utils/singletons/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1677,7 +1688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../utils/processes/" class="md-nav__link">
+      <a href="../../../../utils/processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1745,7 +1756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/intro/" class="md-nav__link">
+      <a href="../../../../client/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1766,7 +1777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/json-rpc/" class="md-nav__link">
+      <a href="../../../../client/json-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1787,7 +1798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../client/com-rpc/" class="md-nav__link">
+      <a href="../../../../client/com-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1855,7 +1866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../debugging/debug/" class="md-nav__link">
+      <a href="../../../../debugging/debug/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1876,7 +1887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../debugging/thundershark/" class="md-nav__link">
+      <a href="../../../../debugging/thundershark/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1981,7 +1992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/setup/" class="md-nav__link">
+      <a href="../../../../walkthrough/hello-world/setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2002,7 +2013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/guide/" class="md-nav__link">
+      <a href="../../../../walkthrough/hello-world/guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2060,7 +2071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
+      <a href="../../../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2081,7 +2092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
+      <a href="../../../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2165,7 +2176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/" class="md-nav__link">
+      <a href="../../../../docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2186,7 +2197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../references/references/" class="md-nav__link">
+      <a href="../../../../references/references/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2207,7 +2218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../issuetemplate/issuetemplate/" class="md-nav__link">
+      <a href="../../../../issuetemplate/issuetemplate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2245,6 +2256,8 @@
   
   
   
+    
+  
   
 </nav>
                   </div>
@@ -2262,9 +2275,273 @@
   
 
 
-  <h1>Private COM-RPC</h1>
-
-
+<h1 id="what-is-runc">What is RunC ?</h1>
+<p>RunC is a CLI tool for spawning and running containers according to the OCI specification. The Open Container Initiative (OCI) is a standardized format for creating a container. It defines a container as a pair of rootfs folder &amp; configuration file in JSON format. </p>
+<h1 id="setup-in-buildrootlithosphere">Setup in Buildroot/Lithosphere</h1>
+<ol>
+<li>
+<p>Make sure kernel has all the futures needed for containerization. The easiest way to enable them is to use raspberrypi3_wpe_ml_container_defconfig.</p>
+</li>
+<li>
+<p>Enable containers support in Thunder
+<div class="highlight"><pre><span></span><code>Thunder -&gt; Extensions -&gt; Process Containers
+</code></pre></div></p>
+</li>
+<li>
+<p>Select RunC as the backend engine for containers. 
+<div class="highlight"><pre><span></span><code>Thunder -&gt; Extensions -&gt; Process Containers -&gt; Containers Backend -&gt; runc
+</code></pre></div></p>
+</li>
+<li>
+<p>(optional) Enable containers plugin for info about running containers
+<div class="highlight"><pre><span></span><code>Thunder -&gt; Plugins -&gt; ProcessContainers
+</code></pre></div></p>
+</li>
+</ol>
+<h1 id="setting-up-runc-container">Setting Up runc Container</h1>
+<p>For demo purposes, we will use the OCDM plugin. To run a containerized ThunderNanoService you will need to create rootfs with all of the dependencies of the nanoservice and ThunderPlugin as executable. For this tutorial rootfs.tar generated by buildroot/lithosphere/yocto will be used as reference roots.</p>
+<ol>
+<li>
+<p>On target platform, create <code>/usr/share/Thunder/&lt;Nanoservice Name&gt;/Container</code>. This will be a directory containing all files defining a container.
+<div class="highlight"><pre><span></span><code>mkdir &lt;SD_CARD&gt;/usr/share/Thunder/OCDM/Container
+</code></pre></div></p>
+</li>
+<li>
+<p>Extract rootfs.tar generated eg. by buildroot into <code>/usr/share/Thunder/&lt;Nanoservice Name&gt;/Container/rootfs</code>. </p>
+</li>
+<li>
+<p>Create a reference configuration. You can either use a reference config file presented later in the instructions or use runc cmdline tool to do it for you, by navigating to <code>/usr/share/Thunder/&lt;Nanoservice Name&gt;/Container</code> and calling <code>runc spec</code>. Be careful - if you do it on the host platform, the "platform" section in config will have to be modified to match the target platform. </p>
+</li>
+</ol>
+<h1 id="adjusting-configuration-for-thunder">Adjusting Configuration for Thunder</h1>
+<p>Default config obtained by <code>runc spec</code> gives you a nice starting point, that you can tailor as you wish. However, there are a few things that need to be set up right to work with Thunder:</p>
+<ol>
+<li>The most important thing is to mount <code>/tmp/communicator</code> pipe inside the container to allow for communication between ThunderPlugin inside a container namespace and Thunder. OCDM plugin that is used in the example also creates another pipe inside /tmp folder, so for tutorial whole /tmp folder is mounted
+<div class="highlight"><pre><span></span><code>&quot;mounts&quot;: [
+        {
+            &quot;source&quot;: &quot;/tmp&quot;,
+            &quot;destination&quot;: &quot;/tmp&quot;,
+            &quot;options&quot;: [&quot;rw&quot;, &quot;bind&quot;]
+        },
+                [...]
+]
+</code></pre></div></li>
+<li>Set terminal to false
+<div class="highlight"><pre><span></span><code>&quot;process&quot;: {
+        &quot;terminal&quot;: false,
+                [...]
+}
+</code></pre></div></li>
+<li>By design, all of the configurations should be passed to Nanoservice by arguments/runtime. However, at the moment, there are some env variables that need to be set. This is considered a temporal solution and won't be needed in future releases. 
+<div class="highlight"><pre><span></span><code>&quot;env&quot;: [
+        &quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;,
+    &quot;TERM=xterm&quot;,
+    &quot;COMMUNICATOR_CONNECTOR=$COMMUNICATOR_CONNECTOR&quot;,
+        &quot;MESSAGE_DISPATCHER_CONFIG=$MESSAGE_DISPATCHER_CONFIG&quot;
+    ],
+</code></pre></div></li>
+<li>Launched process will always be a Nanoservice, so container's args will be overided. You don't acctually need to do anything here, however it's good to have in mind that this option will have no effect.
+<div class="highlight"><pre><span></span><code>&quot;args&quot;: [
+    &quot;sh&quot;,
+]
+</code></pre></div></li>
+</ol>
+<p>is used so we will mount the whole tmp For now, you also need to set up some env variables as presented in the config, however, in future versions, this will no longer be needed.</p>
+<h1 id="configure-plugin-to-run-as-a-containerized-process">Configure plugin to run as a containerized process</h1>
+<p>In plugin configuration (eg. <code>/etc/Thunder/plugin/OCDM.json</code> for OCDM) change 
+<code>"mode": Local</code> 
+to 
+<code>"mode": "Container"</code></p>
+<p>If everything works fine, you should see OCDM working just lie an ordinary OOP plugin</p>
+<h1 id="example-configuration">Example configuration</h1>
+<p>This is an example of config generated by <code>runc spec</code> with the following changes:
+1. <code>/tmp</code> folder mounted inside the container
+2. Env variables set inside the container
+3. terminal was set to false</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;ociVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.2-dev&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;process&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;terminal&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;uid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;gid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;sh&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;TERM=xterm&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;TRACE_FILENAME=/tmp/tracebuffer&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;TRACE_DOORBELL=/tmp/tracebuffer.doorbell&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;COMMUNICATOR_CONNECTOR=/tmp/communicator&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;cwd&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;capabilities&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;bounding&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;CAP_AUDIT_WRITE&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_KILL&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_NET_BIND_SERVICE&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;effective&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;CAP_AUDIT_WRITE&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_KILL&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_NET_BIND_SERVICE&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;permitted&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;CAP_AUDIT_WRITE&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_KILL&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_NET_BIND_SERVICE&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;ambient&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;CAP_AUDIT_WRITE&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_KILL&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;CAP_NET_BIND_SERVICE&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;rlimits&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;hard&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;soft&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1024</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;noNewPrivileges&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rootfs&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;readonly&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;hostname&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;runc&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;mounts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/tmp&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/tmp&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;rw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bind&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proc&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;proc&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;size=65536k&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;mode=0620&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;gid=5&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shm&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;size=65536k&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;nodev&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sysfs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sysfs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;ro&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;destination&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/sys/fs/cgroup&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cgroup&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cgroup&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;relatime&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;ro&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;linux&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;devices&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                    </span><span class="nt">&quot;allow&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">&quot;access&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rwm&quot;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;namespaces&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pid&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;network&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ipc&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uts&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mount&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;maskedPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/keys&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/latency_stats&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/timer_list&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/timer_stats&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/sched_debug&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/sys/firmware&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/scsi&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;readonlyPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/fs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/irq&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/sys&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;/proc/sysrq-trigger&quot;</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 
 
 
@@ -2300,7 +2577,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../proxypool/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ProxyPool">
+          <a href="../container/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2310,20 +2587,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ProxyPool
+                Introduction
               </div>
             </div>
           </a>
         
         
           
-          <a href="../composite/" class="md-footer__link md-footer__link--next" aria-label="Next: Composite Plugins">
+          <a href="../lxc/" class="md-footer__link md-footer__link--next" aria-label="Next: Lxc">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Composite Plugins
+                Lxc
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2357,10 +2634,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.83f73b43.min.js"></script>
       
     
   </body>
