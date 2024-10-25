@@ -227,16 +227,18 @@ namespace Thunder {
                 }
                 void Register(LinkType<INTERFACE>& client)
                 {
+                    _adminLock.Lock();
                     typename std::list<LinkType<INTERFACE>* >::iterator index = std::find(_observers.begin(), _observers.end(), &client);
                     ASSERT(index == _observers.end());
                     if (index == _observers.end()) {
                         _observers.push_back(&client);
                     }
+
+                    _adminLock.Unlock();
+
                     if (_channel.IsOpen() == true) {
                         client.Opened();
                     }
-
-                    _adminLock.Unlock();
                 }
                 void Unregister(LinkType<INTERFACE>& client)
                 {
@@ -246,8 +248,9 @@ namespace Thunder {
                     if (index != _observers.end()) {
                         _observers.erase(index);
                     }
-                    FactoryImpl::Instance().Revoke(&client);
                     _adminLock.Unlock();
+
+                    FactoryImpl::Instance().Revoke(&client);
                 }
                 void Submit(const Core::ProxyType<INTERFACE>& message)
                 {
