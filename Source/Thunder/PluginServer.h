@@ -2449,6 +2449,10 @@ namespace PluginHost {
                     return result;
                 }
 
+                string JobIdentifier() const {
+                    return(_T("Thunder::PluginHost::Server::ServiceMap::CommunicatorServer"));
+                }
+
             private:
                 ServiceMap& _parent;
                 const string _persistentPath;
@@ -2489,7 +2493,7 @@ namespace PluginHost {
                         _parent.Evaluate();
                     }
                     string JobIdentifier() const {
-                        return(_T("PluginServer::SubSystems::Notification"));
+                        return(_T("Thunder::PluginHost::Server::ServiceMap::SubSystems::Job"));
                     }
 
                 private:
@@ -2720,6 +2724,12 @@ namespace PluginHost {
             POP_WARNING()
             ~ServiceMap()
             {
+                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+
+                if (job.IsValid()) {
+                    WorkerPool().Revoke(job);
+                    _job.Revoked();
+                }
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
                 ASSERT(_services.size() == 0);
             }
@@ -3429,6 +3439,11 @@ namespace PluginHost {
             }
 
             friend class Core::ThreadPool::JobType<ServiceMap&>;
+
+            string JobIdentifier() const {
+                return(_T("Thunder::PluginHost::Server::ServiceMap"));
+            }
+
             void Dispatch()
             {
                 _adminLock.Lock();
@@ -4525,8 +4540,9 @@ namespace PluginHost {
             friend class Core::ThreadPool::JobType<ChannelMap&>;
 
             string JobIdentifier() const {
-                return (_T("PluginServer::ChannelMap::Cleanup"));
+                return (_T("Thunder::PluginHost::Server::ChannelMap"));
             }
+
             void Dispatch()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));
