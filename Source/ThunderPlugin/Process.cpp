@@ -94,6 +94,10 @@ POP_WARNING()
                 }
             }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::Process::WorkerPoolImplmenetation::Sink"));
+            }
+
         private:
             WorkerPoolImplementation& _parent;
             Core::ThreadPool::JobType<Sink&> _job;

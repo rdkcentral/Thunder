@@ -4192,6 +4192,8 @@ namespace Core {
             mutable String _fieldName;
         };
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         class VariantContainer;
 
         class EXTERNAL Variant : public JSON::String {
@@ -5089,12 +5091,18 @@ namespace Core {
             }
         };
 
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
     } // namespace JSON
 } // namespace Core
 } // namespace Thunder
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
 using JsonObject = Thunder::Core::JSON::VariantContainer;
 using JsonValue = Thunder::Core::JSON::Variant;
 using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
 #endif // __JSON_H

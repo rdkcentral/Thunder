@@ -227,16 +227,18 @@ namespace Thunder {
                 }
                 void Register(LinkType<INTERFACE>& client)
                 {
+                    _adminLock.Lock();
                     typename std::list<LinkType<INTERFACE>* >::iterator index = std::find(_observers.begin(), _observers.end(), &client);
                     ASSERT(index == _observers.end());
                     if (index == _observers.end()) {
                         _observers.push_back(&client);
                     }
+
+                    _adminLock.Unlock();
+
                     if (_channel.IsOpen() == true) {
                         client.Opened();
                     }
-
-                    _adminLock.Unlock();
                 }
                 void Unregister(LinkType<INTERFACE>& client)
                 {
@@ -246,8 +248,9 @@ namespace Thunder {
                     if (index != _observers.end()) {
                         _observers.erase(index);
                     }
-                    FactoryImpl::Instance().Revoke(&client);
                     _adminLock.Unlock();
+
+                    FactoryImpl::Instance().Revoke(&client);
                 }
                 void Submit(const Core::ProxyType<INTERFACE>& message)
                 {
@@ -752,6 +755,8 @@ namespace Thunder {
                 return (Send(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Generic JSONRPC methods.
             // Anything goes!
             // these objects have no type chacking, will consume more memory and processing takes more time
@@ -783,6 +788,8 @@ namespace Thunder {
             {
                 return InternalInvoke<PARAMETERS>(waitTime, method, parameters, inbound);
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
         private:
             friend CommunicationChannel;
@@ -1452,6 +1459,8 @@ namespace Thunder {
                 return (_connection.Invoke(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Opaque JSON structure methods.
             // Anything goes!
             // ===================================================================================
@@ -1467,6 +1476,10 @@ namespace Thunder {
             {
                 return (_connection.template Get<Core::JSON::VariantContainer>(waitTime, method, object));
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+
             bool IsActivated()
             {
                 return (_connection.IsActivated());
