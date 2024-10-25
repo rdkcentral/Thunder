@@ -36,7 +36,7 @@ namespace PluginHost {
         {
             uint32_t result = handler.Invoke(context, method, parameters, response);
             if(result != Core::ERROR_NONE) {
-                result = errorhandler(context, method, parameters, response);
+                result = errorhandler(context, method, parameters, result, response);
             }
 
             return result;
@@ -45,9 +45,7 @@ namespace PluginHost {
         template<>
         uint32_t InvokeOnHandler<void*>(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, void*)
         {
-            uint32_t result = handler.Invoke(context, method, parameters, response);
-
-            return result;
+            return handler.Invoke(context, method, parameters, response);
         }
 
     }
@@ -1042,8 +1040,8 @@ namespace PluginHost {
 
 namespace JSONRPCErrorAssessorTypes {
 
-        using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, string&);
-        using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, string&)>;
+        using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
+        using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
 }
 
     template<typename JSONRPCERRORASSESSORTYPE>
