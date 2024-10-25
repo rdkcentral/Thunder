@@ -35,6 +35,10 @@ namespace Web {
                 CLOSE = 0x08,
                 PING = 0x09,
                 PONG = 0x0A,
+                // Reserved ranges
+                // 0x3-0x7
+                // 0xB-0xF
+                // Following are outside reseved 4-bit ranges
                 VIOLATION = 0x10, // e.g. a control package without a FIN flag
                 TOO_BIG = 0x20, // Protocol max support for 2^16 message per chunk
                 INCONSISTENT = 0x30 // e.g. Protocol defined as Text, but received a binary.
@@ -182,7 +186,7 @@ namespace Web {
     class WebSocketLinkType {
     public:
         enum EnumlinkState : uint8_t {
-            WEBSERVER = 0x01,
+            WEBSERVICE = 0x01,
             UPGRADING = 0x02,
             WEBSOCKET = 0x04,
             SUSPENDED = 0x08,
@@ -373,7 +377,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 , _handler(binary, masking)
                 , _parent(parent)
                 , _adminLock()
-                , _state(WEBSERVER)
+                , _state(WEBSERVICE)
                 , _serializerImpl(*this, queueSize)
                 , _deserialiserImpl(*this, queueSize)
                 , _path()
@@ -390,7 +394,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 , _handler(binary, masking)
                 , _parent(parent)
                 , _adminLock()
-                , _state(WEBSERVER)
+                , _state(WEBSERVICE)
                 , _serializerImpl(*this, queueSize)
                 , _deserialiserImpl(*this, allocator)
                 , _path()
@@ -419,7 +423,7 @@ POP_WARNING()
             }
             bool IsWebServer() const
             {
-                return ((State() & WEBSERVER) != 0);
+                return ((State() & WEBSERVICE) != 0);
             }
             bool IsUpgrading() const
             {
@@ -472,6 +476,18 @@ POP_WARNING()
                 _adminLock.Lock();
 
                 _handler.Ping();
+
+                _adminLock.Unlock();
+
+                ACTUALLINK::Trigger();
+            }
+            void Pong()
+            {
+                _pingFireTime = Core::Time::Now().Ticks();
+
+                _adminLock.Lock();
+
+                _handler.Pong();
 
                 _adminLock.Unlock();
 
@@ -775,7 +791,7 @@ POP_WARNING()
                     // Multiple message might be coming in, protect the state before we make assumptions on it value.
                     _adminLock.Lock();
 
-                    if ((_state & WEBSERVER) == 0) {
+                    if ((_state & WEBSERVICE) == 0) {
                         _webSocketMessage->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
                         _webSocketMessage->Message = _T("State of the link can not be upgraded.");
                     } else {
@@ -794,7 +810,7 @@ POP_WARNING()
                         _parent.StateChange();
 
                         if (_webSocketMessage->ErrorCode != Web::STATUS_SWITCH_PROTOCOL) {
-                            _state = (_state & 0xF0) | WEBSERVER;
+                            _state = (_state & 0xF0) | WEBSERVICE;
                             _path.clear();
                             _query.clear();
                             _protocol.Clear();
@@ -845,7 +861,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                if ((_state & WEBSERVER) != 0) {
+                if ((_state & WEBSERVICE) != 0) {
                     result = true;
                     _state = (_state & 0xF0) | UPGRADING;
                     _origin = (origin.empty() ? ACTUALLINK::LocalId() : origin);
@@ -1076,6 +1092,10 @@ POP_WARNING()
         {
             _channel.Ping();
         }
+        void Pong()
+        {
+            _channel.Pong();
+        }
         void Trigger()
         {
             _channel.Trigger();
@@ -1272,6 +1292,10 @@ POP_WARNING()
         {
             _channel.Ping();
         }
+        void Pong()
+        {
+            _channel.Pong();
+        }
 
         virtual bool IsIdle() const = 0;
         virtual void StateChange() = 0;
@@ -1429,6 +1453,10 @@ POP_WARNING()
         void Ping()
         {
             _channel.Ping();
+        }
+        void Pong()
+        {
+            _channel.Pong();
         }
 
         virtual bool IsIdle() const = 0;
