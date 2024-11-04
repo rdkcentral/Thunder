@@ -240,12 +240,8 @@ PUSH_WARNING( \
     DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT, \
     DISABLE_WARNING_NO_MATCHING_OPERATOR_DELETE)
 
-#ifdef _WIN64
-#define __SIZEOF_POINTER__ 8
-#else
-#ifdef WIN32
-#define __SIZEOF_POINTER__ 4
-#endif
+#ifndef __SIZEOF_POINTER__
+#define __SIZEOF_POINTER__ (sizeof(void*))
 #endif
 
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
