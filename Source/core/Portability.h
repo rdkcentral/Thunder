@@ -727,6 +727,8 @@ typedef std::string string;
 #define DEBUG_VARIABLE(x)
 #endif
 
+static_assert(sizeof(unsigned long) == 4, "Dupa")
+
 namespace Thunder {
 namespace Core {
 
