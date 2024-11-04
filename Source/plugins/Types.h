@@ -180,7 +180,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
             }
-            void Unavailable(const string& name, PluginHost::IShell* /* plugin */) override
+            void Unavailable(const string& /* name */, PluginHost::IShell* /* plugin */) override
             {
             }
 
