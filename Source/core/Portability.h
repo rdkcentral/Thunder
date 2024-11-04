@@ -246,6 +246,7 @@ PUSH_WARNING( \
 #ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
+#endif
 
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
 #define WIN32_LEAN_AND_MEAN
