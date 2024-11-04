@@ -21,7 +21,15 @@ nav:
         - COM-RPC: introduction/architecture/rpc/comrpc.md
   - Plugin Development:
     - Introduction: plugin/intro.md
-    - Execution Modes: plugin/execution-modes.md
+    - Execution Modes:
+      - Introduction: plugin/execution-modes/execution-modes.md
+      - In Process: plugin/execution-modes/inprocess.md
+      - Out Of Process: plugin/execution-modes/outofprocess.md
+      - Distrubuted: plugin/execution-modes/distrubuted.md
+      - Containers:
+        - Introduction: plugin/execution-modes/containers/container.md
+        - Runc: plugin/execution-modes/containers/runc.md
+        - Lxc: plugin/execution-modes/containers/lxc.md
     - Plugin Lifecycle: plugin/lifecycle.md
     - Design Principles: plugin/principles.md
     - Interfaces:
@@ -83,8 +91,8 @@ markdown_extensions:
   - toc:
       toc_depth: 4
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

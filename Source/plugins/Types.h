@@ -455,6 +455,10 @@ POP_WARNING()
                 _parent.Register();
             }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::RPC::PluginSmartInterfaceType::RegisterJob"));
+            }
+
         private:
             PluginSmartInterfaceType& _parent;
         };

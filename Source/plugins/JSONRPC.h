@@ -29,6 +29,27 @@ namespace Thunder {
 
 namespace PluginHost {
 
+    namespace {
+    
+        template<typename JSONRPCERRORASSESSORTYPE>
+        uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
+        {
+            uint32_t result = handler.Invoke(context, method, parameters, response);
+            if(result != Core::ERROR_NONE) {
+                result = errorhandler(context, method, parameters, result, response);
+            }
+
+            return result;
+        }
+
+        template<>
+        uint32_t InvokeOnHandler<void*>(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, void*)
+        {
+            return handler.Invoke(context, method, parameters, response);
+        }
+
+    }
+
     class EXTERNAL JSONRPC : public IDispatcher {
     public:
         using SendIfMethod = std::function<bool(const string&)>;
@@ -448,6 +469,7 @@ namespace PluginHost {
 			return (result);
         }
 
+
         //
         // Register/Unregister methods for incoming method handling on the "base" handler elements.
         // ------------------------------------------------------------------------------------------------------------------------------
@@ -456,11 +478,17 @@ namespace PluginHost {
         {
             _handlers.front().Property<PARAMETER>(methodName, getter, setter, objectPtr);
         }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         template <typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
             _handlers.front().Register<Core::JSON::VariantContainer, Core::JSON::VariantContainer, METHOD, REALOBJECT>(methodName, method, objectPtr);
         }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
@@ -587,7 +615,13 @@ namespace PluginHost {
 
         // Inherited via IDispatcher
         // ---------------------------------------------------------------------------------
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return InvokeHandler(channelId, id, token, method, parameters, response);
+        }
+
+        template<typename JSONRPCERRORASSESSORTYPE = void*>
+        uint32_t InvokeHandler(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response, JSONRPCERRORASSESSORTYPE errorhandler = nullptr)         {
             uint32_t result = Core::ERROR_PARSE_FAILURE;
 
             if (method.empty() == false) {
@@ -649,13 +683,12 @@ namespace PluginHost {
                     }
                     else {
                         Core::JSONRPC::Handler* handler(Handler(realMethod));
-
-                        if (handler == nullptr) {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
-                        else {
+                        
+                        if (handler != nullptr) {
                             Core::JSONRPC::Context context(channelId, id, token);
-                            result = handler->Invoke(context, Core::JSONRPC::Message::FullMethod(method), parameters, response);
+                            result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
+                        } else {
+                            result = Core::ERROR_INCORRECT_URL;
                         }
                     }
                 }
@@ -663,6 +696,7 @@ namespace PluginHost {
 
             return (result);
         }
+
         Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator) override
         {
             uint32_t result;
@@ -1002,5 +1036,76 @@ namespace PluginHost {
         StatusCallbackMap _observers;
     };
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+namespace JSONRPCErrorAssessorTypes {
+
+        using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
+        using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
+}
+
+    template<typename JSONRPCERRORASSESSORTYPE>
+    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    public:
+
+        JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler) 
+            : JSONRPC()
+            , _errorhandler(errorhandler)
+            {
+            }
+
+        ~JSONRPCErrorAssessor() override = default;
+
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor &operator=(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
+        JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
+
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(channelId, id, token, method, parameters, response, _errorhandler);
+        }
+
+
+        private:
+            JSONRPCERRORASSESSORTYPE _errorhandler;
+    };
+
+    template<>
+    class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
+    public:
+
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler) 
+            : JSONRPC()
+            , _errorhandler(errorhandler)
+            {
+            }
+
+        JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler) 
+            : JSONRPC()
+            , _errorhandler(std::move(errorhandler))
+            {
+            }
+
+        ~JSONRPCErrorAssessor() override = default;
+
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor &operator=(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
+        JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
+
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return JSONRPC::InvokeHandler<const JSONRPCErrorAssessorTypes::StdFunctionCallbackType&>(channelId, id, token, method, parameters, response, _errorhandler);
+        }
+
+
+        private:
+            JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
+    };
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
 } // namespace Thunder::PluginHost
 }
+

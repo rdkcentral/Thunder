@@ -484,6 +484,10 @@ namespace AVDTP {
         }
         ~Socket() = default;
 
+        string JobIdentifier() const {
+            return(_T("Thunder::Bluetooth::AVDTP::Socket"));
+        }
+
     public:
         uint16_t OutputMTU() const {
             return (_omtu);
