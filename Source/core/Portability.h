@@ -241,7 +241,6 @@ PUSH_WARNING( \
     DISABLE_WARNING_NO_MATCHING_OPERATOR_DELETE)
 
 #ifndef __SIZEOF_POINTER__
-#error
 #define __SIZEOF_POINTER__ (sizeof(void*))
 #endif
 
@@ -737,22 +736,17 @@ namespace Core {
     #if __CORE_INSTANCE_BITS__ <= 8
     typedef uint8_t instance_id;
     #elif __CORE_INSTANCE_BITS__ <= 16
-    #error a
     typedef uint16_t instance_id;
     #elif __CORE_INSTANCE_BITS__ <= 32 
-    #error b
     typedef uint32_t instance_id;
     #elif __CORE_INSTANCE_BITS__ <= 64
-    #error c
     typedef uint64_t instance_id;
     #endif
     #else
     #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
     typedef uint64_t instance_id;
-    #error d
     #else
     typedef uint32_t instance_id;
-    #error e
     #endif
     #endif
 
