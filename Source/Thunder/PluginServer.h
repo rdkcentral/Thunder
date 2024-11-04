@@ -1622,7 +1622,7 @@ namespace PluginHost {
             }
 
         private:
-            const mode _mode;
+            VARIABLE_IS_NOT_USED const mode _mode;
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1642,7 +1642,7 @@ namespace PluginHost {
             uint32_t _lastId;
             ControlData _metadata;
             Core::Library _library;
-            void* _hibernateStorage;
+            VARIABLE_IS_NOT_USED void* _hibernateStorage;
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
