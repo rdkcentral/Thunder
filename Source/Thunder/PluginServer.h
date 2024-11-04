@@ -752,7 +752,7 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-                uint8_t _state;
+                VARIABLE_IS_NOT_USED uint8_t _state;
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
