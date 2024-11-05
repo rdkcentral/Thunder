@@ -96,7 +96,7 @@
     #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #elif defined(__clang__)
     #pragma clang system_header
-#else defined(__GNUC__)
+##elif defined(__GNUC__)
     #pragma GCC system_header
 #endif
 
