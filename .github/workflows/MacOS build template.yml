@@ -32,7 +32,6 @@ jobs:
       with:
         path: Thunder
         repository: rdkcentral/Thunder
-        ref: development/Actions-macOS # change to master
 
     - name: Regex Thunder
       if: contains(github.event.pull_request.body, '[DependsOn=Thunder:')
