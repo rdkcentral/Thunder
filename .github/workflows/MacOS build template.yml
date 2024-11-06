@@ -20,8 +20,8 @@ jobs:
           brew update
           brew upgrade
           brew install ninja zlib
-          python3 -m venv my_venv
-          source my_venv/bin/activate
+          python3 -m venv venv
+          source venv/bin/activate
           pip install jsonref
 
 # ----- Checkout & DependsOn regex -----
@@ -78,7 +78,7 @@ jobs:
 # ----- Installing generators & Options regex -----
     - name: Install generators
       run: |
-        source my_venv/bin/activate
+        source venv/bin/activate
         cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
         -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
@@ -97,7 +97,7 @@ jobs:
 # ----- Building & uploading artifacts -----
     - name: Build Thunder
       run: |
-        source my_venv/bin/activate
+        source venv/bin/activate
         cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
         -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
