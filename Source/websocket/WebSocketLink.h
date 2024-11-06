@@ -193,6 +193,8 @@ namespace Web {
             ACTIVITY  = 0x10
         };
 
+        DEPRECATED constexpr static EnumlinkState WEBSERVER { EnumlinkState::WEBSERVICE };
+
         typedef WebSocketLinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR> ParentClass;
 
     private:
@@ -377,7 +379,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 , _handler(binary, masking)
                 , _parent(parent)
                 , _adminLock()
-                , _state(WEBSERVICE)
+                , _state(WEBSERVER)
                 , _serializerImpl(*this, queueSize)
                 , _deserialiserImpl(*this, queueSize)
                 , _path()
