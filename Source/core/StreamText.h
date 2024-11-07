@@ -540,7 +540,7 @@ POP_WARNING()
             }
             return (receivedSize);
         }
-        inline uint16_t SendCharacters(uint8_t* dataFrame, const TCHAR stream[], const uint8_t delta, const uint16_t total)
+        inline uint16_t SendCharacters(uint8_t* dataFrame, const TCHAR stream[], const uint8_t delta VARIABLE_IS_NOT_USED, const uint16_t total)
         {
             // TODO: Align in case we are not a multibyte character string..
             // For now we assume that this never happens, only multibyte support for now.

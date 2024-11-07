@@ -326,7 +326,7 @@ namespace Core {
 #endif
     }
 
-    void SystemInfo::SetTime(const Time& time)
+    void SystemInfo::SetTime(const Time& time VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         ::SetSystemTime(&(time.Handle()));

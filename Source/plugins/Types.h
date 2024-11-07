@@ -161,7 +161,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
             }
-            void Deactivated(const string& name, PluginHost::IShell* plugin) override
+            void Deactivated(const string& name, PluginHost::IShell* /* plugin */) override
             {
                 if (_callsign == name) {
 
@@ -180,7 +180,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
             }
-            void Unavailable(const string& name, PluginHost::IShell* plugin) override
+            void Unavailable(const string& /* name */, PluginHost::IShell* /* plugin */) override
             {
             }
 
@@ -324,7 +324,7 @@ POP_WARNING()
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
-        uint32_t Close(const uint32_t waitTime)
+        uint32_t Close(const uint32_t /* waitTime */)
         {
             if (_controller != nullptr) {
                 _monitor.Unregister(_controller);
@@ -360,7 +360,7 @@ POP_WARNING()
         }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
-        virtual void Operational(const bool upAndRunning)
+        virtual void Operational(const bool /* upAndRunning */)
         {
         }
 
@@ -382,7 +382,7 @@ POP_WARNING()
     private:
         friend Monitor;
 
-        void Activated(INTERFACE* plugin)
+        void Activated(INTERFACE* /* plugin */)
         {
             Operational(true);
         }
@@ -455,6 +455,10 @@ POP_WARNING()
                 _parent.Register();
             }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::RPC::PluginSmartInterfaceType::RegisterJob"));
+            }
+
         private:
             PluginSmartInterfaceType& _parent;
         };
@@ -518,7 +522,7 @@ POP_WARNING()
         }
 
         // Allow a derived class to take action on a new interface, or almost dissapeared interface..
-        virtual void Operational(const bool upAndRunning)
+        virtual void Operational(const bool /* upAndRunning */)
         {
         }
 
@@ -526,7 +530,7 @@ POP_WARNING()
         friend Monitor;
         friend Job;
 
-        void Activated(INTERFACE* plugin)
+        void Activated(INTERFACE* /* plugin */)
         {
             Operational(true);
         }
@@ -596,7 +600,7 @@ POP_WARNING()
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
-        uint32_t Close(const uint32_t waitTime)
+        uint32_t Close(const uint32_t /* waitTime */)
         {
             if (_controller != nullptr) {
                 _controller->Release();

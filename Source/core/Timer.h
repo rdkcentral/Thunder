@@ -329,7 +329,7 @@ namespace Core {
             return (static_cast<uint32_t>(_pendingQueue.size()));
         }
 
-        ::ThreadId ThreadId() const
+        thread_id ThreadId() const
         {
             return (_timerThread.Id());
         }

@@ -1017,7 +1017,6 @@ namespace Core {
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
         typedef NumberType<Core::instance_id, false, BASE_HEXADECIMAL> InstanceId;
-        typedef InstanceId Pointer;
 
         template <class TYPE>
         class FloatType : public IElement, public IMessagePack {
@@ -4193,6 +4192,8 @@ namespace Core {
             mutable String _fieldName;
         };
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
         class VariantContainer;
 
         class EXTERNAL Variant : public JSON::String {
@@ -5090,12 +5091,18 @@ namespace Core {
             }
         };
 
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
     } // namespace JSON
 } // namespace Core
 } // namespace Thunder
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
 using JsonObject = Thunder::Core::JSON::VariantContainer;
 using JsonValue = Thunder::Core::JSON::Variant;
 using JsonArray = Thunder::Core::JSON::ArrayType<JsonValue>;
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
 #endif // __JSON_H

@@ -68,9 +68,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
             }
 POP_WARNING()
-            ~Sink() override
-            {
-            }
+            ~Sink() override = default;
 
         public:
             void Dispatch() {
@@ -96,6 +94,10 @@ POP_WARNING()
                 }
             }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::Process::WorkerPoolImplmenetation::Sink"));
+            }
+
         private:
             WorkerPoolImplementation& _parent;
             Core::ThreadPool::JobType<Sink&> _job;
@@ -103,7 +105,9 @@ POP_WARNING()
 
     public:
         WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
@@ -158,8 +162,14 @@ POP_WARNING()
 
     class ConsoleOptions : public Core::Options {
     public:
+        ConsoleOptions() = delete;
+        ConsoleOptions(ConsoleOptions&&) = delete;
+        ConsoleOptions(const ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (ConsoleOptions&&) = delete;
+        ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
+
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -182,9 +192,7 @@ POP_WARNING()
         {
             Parse();
         }
-        ~ConsoleOptions()
-        {
-        }
+        ~ConsoleOptions() = default;
 
     public:
         const TCHAR* Locator;
@@ -202,6 +210,7 @@ POP_WARNING()
         string ProxyStubPath;
         string PostMortemPath;
         string SystemRootPath;
+        std::vector<RPC::Object::Environment> Environments;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
@@ -249,6 +258,12 @@ POP_WARNING()
                 break;
             case 'S':
                 SystemRootPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'e':
+                Environments.emplace_back(RPC::Object::Environment(Strip(argument), RPC::Environment::scope::LOCAL));
+                break;
+            case 'E': 
+                Environments.emplace_back(RPC::Object::Environment(Strip(argument), RPC::Environment::scope::GLOBAL));
                 break;
             case 'v':
                 VolatilePath = Core::Directory::Normalize(Strip(argument));
@@ -588,6 +603,8 @@ int main(int argc, char** argv)
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");
+        printf("        [-e/-E <environment values>...]\n");
+        printf("        e: means set as local scope, E: means set as global scope\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-P <post mortem path>]\n\n");
@@ -640,6 +657,14 @@ int main(int argc, char** argv)
         }
 
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_INFO"), parentInfo);
+
+        for (const auto& info : options.Environments) {
+            ASSERT (info.Key().empty() == false);
+            uint32_t status = Core::SystemInfo::SetEnvironment(info.Key(), info.Value().c_str(), ((info.Scope() == RPC::Environment::scope::GLOBAL) ? true : false));
+            if (status != Core::ERROR_NONE) {
+                SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s], error: [%d]\n"), info.Key().c_str(), info.Value().c_str(), status));
+            }
+        }
 
         Process::ProcessFlow process;
 

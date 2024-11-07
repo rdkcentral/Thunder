@@ -252,7 +252,7 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent with a certain name
-    ProcessInfo::Iterator::Iterator(const string& parentname, const string& childname, const bool removepath)
+    ProcessInfo::Iterator::Iterator(const string& parentname VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
         : _pids()
         , _current()
         , _index(0)
@@ -276,7 +276,7 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent pid
-    ProcessInfo::Iterator::Iterator(const process_t parentPID, const string& childname, const bool removepath)
+    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
         : _pids()
         , _current()
         , _index(0)
@@ -297,7 +297,7 @@ namespace Core {
     }
 
     // Get the Children of the given PID.
-    ProcessInfo::Iterator::Iterator(const process_t parentPID)
+    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -507,7 +507,7 @@ namespace Core {
         return (Core::File::FileName(ExecutableName(_pid)));
 #endif
     }
-    void ProcessInfo::Name(const string& name)
+    void ProcessInfo::Name(const string& name VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         if (GetCurrentProcessId() == _pid) {
@@ -581,7 +581,7 @@ namespace Core {
     }
 #endif
 
-    /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
+    /* static */ void ProcessInfo::FindByName(const string& name VARIABLE_IS_NOT_USED, const bool exact VARIABLE_IS_NOT_USED, std::list<ProcessInfo>& processInfos VARIABLE_IS_NOT_USED)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
         std::list<uint32_t> pidList;
@@ -623,7 +623,7 @@ namespace Core {
         return (result);
     }
 
-    void ProcessCurrent::SupplementryGroups(const string& userName)
+    void ProcessCurrent::SupplementryGroups(const string& userName VARIABLE_IS_NOT_USED)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
         struct passwd* pwd = getpwnam(userName.c_str());
@@ -686,30 +686,30 @@ namespace Core {
         EnumerateChildProcesses(processInfo, _processes);
     }
 
-    bool ProcessTree::ContainsProcess(ThreadId pid) const
+    bool ProcessTree::ContainsProcess(thread_id pid) const
     {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        auto comparator = [pid](const ProcessInfo& processInfo) { return ((ThreadId)(processInfo.Id()) == pid); };
+        auto comparator = [pid](const ProcessInfo& processInfo) { return ((thread_id)(processInfo.Id()) == pid); };
 POP_WARNING()
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
     }
 
-    void ProcessTree::GetProcessIds(std::list<ThreadId>& processIds) const
+    void ProcessTree::GetProcessIds(std::list<thread_id>& processIds) const
     {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-            processIds.push_back((ThreadId)(process.Id()));
+            processIds.push_back((thread_id)(process.Id()));
 POP_WARNING()
         }
     }
 
-    ThreadId ProcessTree::RootId() const
+    thread_id ProcessTree::RootId() const
     {
 PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
-        return (ThreadId)(_processes.front().Id());
+        return (thread_id)(_processes.front().Id());
 POP_WARNING()
     }
 

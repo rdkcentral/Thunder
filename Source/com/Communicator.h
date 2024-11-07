@@ -40,8 +40,11 @@
 #include "../warningreporting/WarningReportingUnit.h"
 #endif
 
+#include "IteratorType.h"
+
 namespace Thunder {
 namespace RPC {
+
 
     class EXTERNAL Object {
     public:
@@ -49,6 +52,115 @@ namespace RPC {
             LOCAL,
             DISTRIBUTED,
             CONTAINER
+        };
+
+        class EXTERNAL Environment  : public RPC::Environment {
+        public:
+            static constexpr const TCHAR EnvironmentSeparator = _T('=');
+
+            Environment (const string& keyValue, const RPC::Environment::scope scoping) {
+                RPC::Environment::Scope = scoping;
+                RPC::Environment::Key.clear();
+                RPC::Environment::Value.clear();
+
+                size_t start = keyValue.find_first_of(EnvironmentSeparator);
+                if ((start != string::npos) && (start < keyValue.length())) {
+                    string key = keyValue.substr(0, start);
+                    string value = keyValue.substr(start + 1);
+
+                    if ((key.empty() != true) && (value.empty() != true) && (value.length() > 2) &&
+                        ((value.at(0) == '\'') && (value.at(value.length() - 1) == '\''))) {
+                        RPC::Environment::Key = std::move(key);
+                        RPC::Environment::Value = value.substr(1, value.length() - 2);
+
+                        start = 0;
+                        // Remove all escaping
+                        while ( (start = RPC::Environment::Value.find_first_of('\'', start)) != string::npos ) {
+                           if ( (start > 0) && (RPC::Environment::Value[start-1] == '\\') ) {
+                               if ( (start < 3) || (RPC::Environment::Value[start-2] != '\\') || (RPC::Environment::Value[start-3] != '\\') ) {
+                                   // We escaped the single quote (\'), so unescape it.. (')
+                                   RPC::Environment::Value.erase(start-1, 1);
+                               }
+                               else {
+                                   // We escaped the escaped quote (\\\'), so unescape it.. (\')
+                                   RPC::Environment::Value.erase(start-2, 2);
+                                   start -= 1;
+                               }
+                           }
+                           else {
+                               // Jump the quote, move on to the next
+                               start += 1;
+                           }
+                        }
+                    }
+                }
+            }
+            Environment (const RPC::Environment& info) {
+                RPC::Environment::Key = info.Key;
+                RPC::Environment::Value = info.Value;
+                RPC::Environment::Scope = info.Scope;
+            }
+            Environment (const string& key, const string& value, const RPC::Environment::scope scoping) {
+                RPC::Environment::Key = key;
+                RPC::Environment::Value = value;
+                RPC::Environment::Scope = scoping;
+            }
+            Environment(Environment&& move) {
+                RPC::Environment::Key = std::move(move.RPC::Environment::Key);
+                RPC::Environment::Value = std::move(move.RPC::Environment::Value);
+                RPC::Environment::Scope = std::move(move.RPC::Environment::Scope);
+            }
+            Environment(const Environment& copy) {
+                RPC::Environment::Key = copy.Key();
+                RPC::Environment::Value = copy.Value();
+                RPC::Environment::Scope = copy.Scope();
+            }
+            ~Environment() = default;
+
+            Environment& operator= (Environment&& move) {
+                RPC::Environment::Key = std::move(move.RPC::Environment::Key);
+                RPC::Environment::Value = std::move(move.RPC::Environment::Value);
+                RPC::Environment::Scope = std::move(move.RPC::Environment::Scope);
+                return (*this);
+            }
+            Environment& operator= (const Environment& copy) {
+                RPC::Environment::Key = copy.Key();
+                RPC::Environment::Value = copy.Value();
+                RPC::Environment::Scope = copy.Scope();
+                return (*this);
+            }
+ 
+        public:
+            const string& Key() const {
+                return (RPC::Environment::Key);
+            }
+            const string& Value() const {
+                return (RPC::Environment::Value);
+            }
+            RPC::Environment::scope Scope() const {
+                return (RPC::Environment::Scope);
+            }
+            string KeyValue() const {
+                string result = RPC::Environment::Key + EnvironmentSeparator + '\'';
+                size_t start  = result.length();;
+                result += RPC::Environment::Value;
+
+                // Now see if we need to escape the quotes in the string..
+                while ( (start = result.find_first_of('\'', start)) != string::npos ) {
+                    if ((start == 0) || (result[start-1] != '\\')) {
+                        // We need to escape the quote
+                        result.insert(start, 1, '\\');
+                        start += 2;
+                    }
+                    else {
+                        // We are escaping an escaped quote
+                        result.insert(start, 2, '\\');
+                        start += 3;
+                    }
+                }
+                result += '\'';
+                return (result);
+            }
         };
 
         Object()
@@ -65,6 +177,7 @@ namespace RPC {
             , _systemRootPath()
             , _remoteAddress()
             , _configuration()
+            , _environments()
         {
         }
         Object(const Object& copy)
@@ -81,6 +194,7 @@ namespace RPC {
             , _systemRootPath(copy._systemRootPath)
             , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
+            , _environments(copy._environments)
         {
         }
         Object(Object&& move) noexcept
@@ -97,6 +211,7 @@ namespace RPC {
             , _systemRootPath(std::move(move._systemRootPath))
             , _remoteAddress(std::move(move._remoteAddress))
             , _configuration(std::move(move._configuration))
+            , _environments(std::move(move._environments))
         {
         }
         Object(const string& locator,
@@ -111,7 +226,8 @@ namespace RPC {
             const HostType type,
             const string& systemRootPath,
             const string& remoteAddress,
-            const string& configuration)
+            const string& configuration,
+            std::vector<Environment>&& environments)
             : _locator(locator)
             , _className(className)
             , _callsign(callsign)
@@ -125,27 +241,29 @@ namespace RPC {
             , _systemRootPath(systemRootPath)
             , _remoteAddress(remoteAddress)
             , _configuration(configuration)
+            , _environments(std::move(environments))
         {
         }
-        ~Object()
-        {
-        }
+        ~Object() = default;
 
         Object& operator=(const Object& RHS)
         {
-            _locator = RHS._locator;
-            _className = RHS._className;
-            _callsign = RHS._callsign;
-            _interface = RHS._interface;
-            _version = RHS._version;
-            _user = RHS._user;
-            _group = RHS._group;
-            _threads = RHS._threads;
-            _priority = RHS._priority;
-            _systemRootPath = RHS._systemRootPath;
-            _type = RHS._type;
-            _remoteAddress = RHS._remoteAddress;
-            _configuration = RHS._configuration;
+            if (this != &RHS) {
+                _locator = RHS._locator;
+                _className = RHS._className;
+                _callsign = RHS._callsign;
+                _interface = RHS._interface;
+                _version = RHS._version;
+                _user = RHS._user;
+                _group = RHS._group;
+                _threads = RHS._threads;
+                _priority = RHS._priority;
+                _systemRootPath = RHS._systemRootPath;
+                _type = RHS._type;
+                _remoteAddress = RHS._remoteAddress;
+                _configuration = RHS._configuration;
+                _environments = RHS._environments;
+            }
 
             return (*this);
         }
@@ -166,6 +284,7 @@ namespace RPC {
                 _systemRootPath = std::move(move._systemRootPath);
                 _remoteAddress = std::move(move._remoteAddress);
                 _configuration = std::move(move._configuration);
+                _environments = std::move(move._environments);
 
                 move._interface = ~0;
                 move._version = ~0;
@@ -228,6 +347,13 @@ namespace RPC {
         {
             return (_configuration);
         }
+        inline const std::vector<Environment>& Environments() const
+        {
+            return (_environments);
+        }
+        inline void Environments(const std::vector<Environment>& environments) {
+            _environments = std::move(environments);
+        }
 
     private:
         string _locator;
@@ -243,6 +369,7 @@ namespace RPC {
         string _systemRootPath;
         string _remoteAddress;
         string _configuration;
+        std::vector<Environment> _environments;
     };
 
     class EXTERNAL Config {
@@ -300,7 +427,7 @@ namespace RPC {
             , _linker(copy._linker)
         {
         }
-	Config(Config&& move) noexcept
+        Config(Config&& move) noexcept
             : _connector(std::move(move._connector))
             , _hostApplication(std::move(move._hostApplication))
             , _persistent(std::move(move._persistent))
@@ -514,6 +641,9 @@ namespace RPC {
                 }
                 if (instance.Threads() > 1) {
                     _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
+                }
+                for (auto const& environment : instance.Environments()) {
+                    _options.Add(environment.Scope() == RPC::Environment::scope::GLOBAL ? _T("-E") : _T("-e")).Add(environment.KeyValue());
                 }
                 _priority = instance.Priority();
             }
@@ -835,7 +965,7 @@ namespace RPC {
 
                 ContainerConfig()
                     : Core::JSON::Container()
-                    , ContainerType(ProcessContainers::IContainer::LXC)
+                    , ContainerType(ProcessContainers::IContainer::DEFAULT)
 #ifdef __DEBUG__
                     , ContainerPath()
 #endif
@@ -1737,7 +1867,7 @@ POP_WARNING()
             return (result);
         }
         template <typename INTERFACE>
-        inline uint32_t Offer(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+        inline uint32_t Offer(INTERFACE* offer, const uint32_t version VARIABLE_IS_NOT_USED = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
         {
             uint32_t result(Core::ERROR_NONE);
 
@@ -1776,7 +1906,7 @@ POP_WARNING()
             return (result);
         }
         template <typename INTERFACE>
-        inline uint32_t Revoke(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+        inline uint32_t Revoke(INTERFACE* offer, const uint32_t version VARIABLE_IS_NOT_USED = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
         {
             uint32_t result(Core::ERROR_NONE);
 
@@ -1876,6 +2006,9 @@ POP_WARNING()
         Core::Event _announceEvent;
         uint32_t _connectionId;
     };
+
+    using EnvironmentIterator = IteratorType<IEnvironmentIterator>;
+
 }
 }
 

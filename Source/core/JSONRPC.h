@@ -1063,7 +1063,7 @@ namespace Core {
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // context
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
-                Register(methodName, [method](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                Register(methodName, [method](const Context& context, const string&, const string& /* parameters */, string& /* result */) -> uint32_t {
                     return (InternalRegisterImpl<METHOD>(method, context));
                 });
             }
@@ -1139,7 +1139,7 @@ namespace Core {
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
-                Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                Register(methodName, [method](const Context&, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
                     return (InternalRegisterImpl<METHOD>(method, Message::InstanceId(methodName)));
                 });
             }
@@ -1222,7 +1222,7 @@ namespace Core {
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT> // context
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                Register(methodName, [method, objectPtr](const Context& context, const string&, const string& parameters, string& result) -> uint32_t {
+                Register(methodName, [method, objectPtr](const Context& context, const string&, const string& /* parameters */, string& /* result */) -> uint32_t {
                     return (InternalRegisterImpl(std::bind(method, objectPtr, std::placeholders::_1), context));
                 });
             }
@@ -1298,7 +1298,7 @@ namespace Core {
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT> // id
             void InternalRegister(const ::TemplateIntToType<4>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                Register(methodName, [method, objectPtr](const Context&, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
                     return (InternalRegisterImpl(std::bind(method, objectPtr, std::placeholders::_1), Message::InstanceId(methodName)));
                 });
             }

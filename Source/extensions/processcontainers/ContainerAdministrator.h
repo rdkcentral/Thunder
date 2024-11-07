@@ -34,6 +34,9 @@ namespace ProcessContainers {
 
         ContainerAdministrator()
             : _adminLock()
+            , _producers()
+            , _containers()
+            , _default(IContainer::DEFAULT)
         {
         }
 
@@ -107,6 +110,7 @@ namespace ProcessContainers {
         mutable Core::CriticalSection _adminLock;
         std::map<IContainer::containertype, IContainerProducer*> _producers;
         Core::ProxyListType<IContainer> _containers;
+        IContainer::containertype _default;
     };
 
 } // namespace ProcessContainers
