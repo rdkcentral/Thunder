@@ -63,12 +63,23 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-target_link_libraries(${TARGET}
+if(APPLE)
+    target_link_libraries(${TARGET}
         PRIVATE
         CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+        "-Wl,-force_load" ${CONTAINERS}
+    )
+else()
+    target_link_libraries(${TARGET}
+        PRIVATE
+        CompileSettingsDebug
+        ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         -Wl,--whole-archive ${CONTAINERS} -Wl,--no-whole-archive
-        )
+    )
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11

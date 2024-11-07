@@ -302,6 +302,9 @@ namespace Web {
     template <typename JSONOBJECT>
     class JSONBodyType : public JSONOBJECT, public IBody {
     public:
+        using JSONOBJECT::Serialize;
+        using JSONOBJECT::Deserialize;
+
         JSONBodyType(JSONBodyType<JSONOBJECT>&&) = delete;
         JSONBodyType(const JSONBodyType<JSONOBJECT>&) = delete;
         JSONBodyType<JSONOBJECT>& operator=(JSONBodyType<JSONOBJECT>&&) = delete;

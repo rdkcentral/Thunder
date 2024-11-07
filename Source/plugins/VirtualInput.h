@@ -912,7 +912,7 @@ POP_WARNING()
         };
 
     public:
-        void Initialize(const type t, const string& locator, const bool enabled)
+        void Initialize(const type t VARIABLE_IS_NOT_USED, const string& locator, const bool enabled)
         {
             ASSERT(_keyHandler == nullptr);
 #if defined(__WINDOWS__) || defined(__APPLE__)

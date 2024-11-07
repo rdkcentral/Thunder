@@ -91,10 +91,13 @@
   #endif
 #endif
 
-#if defined(__GNUC__)
-    #pragma GCC system_header
+#if defined(__APPLE__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #elif defined(__clang__)
     #pragma clang system_header
+#elif defined(__GNUC__)
+    #pragma GCC system_header
 #endif
 
 #ifdef __WINDOWS__
@@ -431,19 +434,26 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
+
+#ifndef __APPLE__
 #include <sys/inotify.h>
+#endif
 
 #include <arpa/inet.h>
 
 #ifndef _GNU_SOURCE
     #define _GNU_SOURCE
-    #include <features.h>
+    #ifndef __APPLE__
+        #include <features.h>
+    #endif
     #ifndef __USE_GNU
         #define __MUSL__
     #endif
     #undef _GNU_SOURCE /* don't contaminate other includes unnecessarily */
 #else
-    #include <features.h>
+    #ifndef __APPLE__
+        #include <features.h>
+    #endif
     #ifndef __USE_GNU
         #define __MUSL__
     #endif
@@ -468,12 +478,11 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #endif
 
 #define SOCK_CLOEXEC 0
-#define __APPLE_USE_RFC_3542
 
-extern "C" EXTERNAL extern void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 //clock_gettime is available in OSX Darwin >= 10.12
 //int clock_gettime(int, struct timespec*);
-extern "C" EXTERNAL extern uint64_t gettid();
+extern "C" EXTERNAL uint64_t gettid();
 #else
 #include <linux/input.h>
 #include <linux/types.h>

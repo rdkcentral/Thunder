@@ -501,7 +501,6 @@ POP_WARNING()
         static const TCHAR* ToString(const type value);
         static void ToString(const Request& realObject, string& text)
         {
-            uint16_t fillCount = 0;
             bool ready = false;
             class SerializerImpl : public Serializer {
             public:
@@ -532,8 +531,6 @@ POP_WARNING()
                 uint16_t loaded = serializer.Serialize(buffer, sizeof(buffer));
 
                 ASSERT(loaded <= sizeof(buffer));
-
-                fillCount += loaded;
 
                 text += string(reinterpret_cast<char*>(&buffer[0]), loaded);
             }

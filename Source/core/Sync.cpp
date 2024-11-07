@@ -49,6 +49,7 @@
 #include <semaphore.h>
 #endif
 #ifdef __APPLE__
+#include <semaphore.h>
 #include <mach/host_info.h>
 #include <mach/mach_host.h>
 #include <mach/mach_time.h>

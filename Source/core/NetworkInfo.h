@@ -206,7 +206,7 @@ namespace Core {
         uint32_t Close();
 
     private:
-        INotification* _callback;
+        VARIABLE_IS_NOT_USED INotification* _callback;
     };
 
 #if defined(__WINDOWS__) || defined(__APPLE__)

@@ -191,10 +191,9 @@ namespace Core {
         void CreateFactory(const uint32_t initialQueueSize)
         {
             IDENTIFIER label(ACTUALELEMENT::Id());
-            typename std::map<IDENTIFIER, IFactory*>::iterator index(_receptors.find(label));
 
             // Do not insert the same identifier twice !!!!
-            ASSERT(index == _receptors.end());
+            ASSERT(_receptors.find(label) == _receptors.end());
 
             _receptors.insert(std::pair<IDENTIFIER, IFactory*>(label, new InternalFactoryType<ACTUALELEMENT>(initialQueueSize)));
         }

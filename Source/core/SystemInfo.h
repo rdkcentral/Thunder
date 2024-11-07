@@ -239,7 +239,7 @@ namespace Core {
         mutable uint64_t m_freeswap;
         mutable uint64_t m_cpuload;
         mutable uint64_t m_cpuloadavg[3];
-        mutable time_t m_lastUpdateCpuStats;
+        VARIABLE_IS_NOT_USED mutable time_t m_lastUpdateCpuStats;
 
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
