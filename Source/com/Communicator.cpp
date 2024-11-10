@@ -362,8 +362,8 @@ namespace RPC {
     uint8_t Communicator::_hardKillCheckWaitTime = 4;
 
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-    Communicator::Communicator(const string& source, const Core::NodeId& node, const string& proxyStubPath)
-        : _source(source)
+    Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath, const TCHAR* sourceName)
+        : _source(sourceName == nullptr ? _T("UnknownServer") : sourceName)
         , _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath) {
         if (proxyStubPath.empty() == false) {
@@ -375,11 +375,11 @@ namespace RPC {
     }
 
     Communicator::Communicator(
-        const string& source,
-        const Core::NodeId& node,
+        const Core::NodeId& node, 
         const string& proxyStubPath,
-        const Core::ProxyType<Core::IIPCServer>& handler)
-        : _source(source)
+        const Core::ProxyType<Core::IIPCServer>& handler,
+        const TCHAR* sourceName)
+        : _source(sourceName == nullptr ? _T("UnknownServer") : sourceName)
         , _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath, handler) {
         if (proxyStubPath.empty() == false) {
@@ -419,7 +419,7 @@ namespace RPC {
     PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode)
-        : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
+        : BaseClass(remoteNode, CommunicationBufferSize)
         , _announceMessage()
         , _announceEvent(false, true)
         , _connectionId(~0)
@@ -435,7 +435,7 @@ namespace RPC {
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode,
         const Core::ProxyType<Core::IIPCServer>& handler)
-        : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
+        : BaseClass(remoteNode, CommunicationBufferSize)
         , _announceMessage()
         , _announceEvent(false, true)
         , _connectionId(~0)

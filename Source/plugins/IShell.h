@@ -85,10 +85,10 @@ namespace PluginHost {
 
         // State of the IPlugin interface associated with this shell.
         enum state : uint8_t {
-            UNAVAILABLE,
-            DEACTIVATED,
+            UNAVAILABLE = startmode::UNAVAILABLE,
+            DEACTIVATED = startmode::DEACTIVATED,
+            ACTIVATED = startmode::ACTIVATED,
             DEACTIVATION,
-            ACTIVATED,
             ACTIVATION,
             PRECONDITION,
             HIBERNATED,

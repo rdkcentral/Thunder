@@ -1221,13 +1221,16 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         std::vector<IMetadata::Data::Proxy> collection;
-        bool proxySearch = RPC::Administrator::Instance().Allocations(linkId.IsSet() ? linkId.Value() : EMPTY_STRING, [&collection](const std::vector<ProxyStub::UnknownProxy*>& proxies) {
+        bool proxySearch = RPC::Administrator::Instance().Allocations(linkId.IsSet() ? linkId.Value() : EMPTY_STRING, [&collection, &linkId](const string& origin, const std::vector<ProxyStub::UnknownProxy*>& proxies) {
            for (const auto& proxy : proxies) {
                 IMetadata::Data::Proxy data;
                 data.Count = proxy->ReferenceCount();
                 data.Instance = proxy->Implementation();
                 data.Interface = proxy->InterfaceId();
                 data.Name = proxy->Name();
+                if (linkId.IsSet() == false) {
+                    data.Origin = Core::NumberType<uint32_t>(proxy->ChannelId()).Text() + '@' + origin;
+                }
                 collection.emplace_back(std::move(data));
            }
         });

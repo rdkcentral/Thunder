@@ -281,6 +281,7 @@ namespace Controller {
                 string Name /* @brief The fully qualified name of the interface */;
                 Core::instance_id Instance /* @brief Instance ID */;
                 uint32_t Count /* @brief Reference count */;
+                Core::OptionalType<string> Origin /* @brief The Origin of the assocated connection */;
             };
 
             struct Link {

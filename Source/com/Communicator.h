@@ -105,7 +105,7 @@ namespace RPC {
                 RPC::Environment::Value = value;
                 RPC::Environment::Scope = scoping;
             }
-            Environment(Environment&& move) {
+            Environment(Environment&& move) noexcept {
                 RPC::Environment::Key = std::move(move.RPC::Environment::Key);
                 RPC::Environment::Value = std::move(move.RPC::Environment::Value);
                 RPC::Environment::Scope = std::move(move.RPC::Environment::Scope);
@@ -117,7 +117,7 @@ namespace RPC {
             }
             ~Environment() = default;
 
-            Environment& operator= (Environment&& move) {
+            Environment& operator= (Environment&& move) noexcept {
                 RPC::Environment::Key = std::move(move.RPC::Environment::Key);
                 RPC::Environment::Value = std::move(move.RPC::Environment::Value);
                 RPC::Environment::Scope = std::move(move.RPC::Environment::Scope);
@@ -351,7 +351,7 @@ namespace RPC {
         {
             return (_environments);
         }
-        inline void Environments(const std::vector<Environment>& environments) {
+        inline void Environments(std::vector<Environment>&& environments) {
             _environments = std::move(environments);
         }
 
@@ -568,9 +568,9 @@ namespace RPC {
             }
             uint32_t Id() const
             {
-                return _id;
+                return (_channel.Descriptor());
             }
-            const string& Origin() const {
+            string Origin() const {
                 return (_connectionMap->Origin());
             }
 
@@ -1656,15 +1656,15 @@ POP_WARNING()
         Communicator& operator=(const Communicator&) = delete;
 
         Communicator(
-            const string& source,
-            const Core::NodeId& node,
-            const string& proxyStubPath);
-        Communicator(
-            const string& source,
             const Core::NodeId& node,
             const string& proxyStubPath,
-            const Core::ProxyType<Core::IIPCServer>& handler);
-        virtual ~Communicator();
+            const TCHAR* sourceName = nullptr);
+        Communicator(
+            const Core::NodeId& node,
+            const string& proxyStubPath,
+            const Core::ProxyType<Core::IIPCServer>& handler,
+            const TCHAR* sourceName = nullptr);
+            virtual ~Communicator();
 
     public:
         // void action(const Client& client)
@@ -1771,9 +1771,38 @@ POP_WARNING()
         static uint8_t _hardKillCheckWaitTime;
     };
 
-    class EXTERNAL CommunicatorClient : public Core::IPCChannelClientType<Core::Void, false, true>, public Core::IDispatchType<Core::IIPC> {
+    class EXTERNAL ClientMetadata {
+    public:
+        ClientMetadata() = delete;
+        ClientMetadata(ClientMetadata&&) = delete;
+        ClientMetadata(const ClientMetadata&) = delete;
+        ClientMetadata& operator=(ClientMetadata&&) = delete;
+        ClientMetadata& operator=(const ClientMetadata&) = delete;
+
+        ClientMetadata(Core::IPCChannelType<Core::SocketPort, ClientMetadata>* channel)
+            : _socketPort(channel->Source())
+        {
+        }
+        ~ClientMetadata() = default;
+
+    public:
+        uint32_t Id() const
+        {
+            return (_socketPort.Descriptor());
+        }
+        string Origin() const {
+            return (_socketPort.RemoteId());
+        }
+
     private:
-        typedef Core::IPCChannelClientType<Core::Void, false, true> BaseClass;
+        // Non ref-counted reference to our parent, of which we are a composit :-)
+        Core::SocketPort& _socketPort;
+    };
+
+
+    class EXTERNAL CommunicatorClient : public Core::IPCChannelClientType<ClientMetadata, false, true>, public Core::IDispatchType<Core::IIPC> {
+    private:
+        using BaseClass = Core::IPCChannelClientType<ClientMetadata, false, true>;
 
         class AnnounceHandler : public Core::IIPCServer {
         public:

@@ -760,6 +760,7 @@ POP_WARNING()
         }
 
         virtual uint32_t Id() const = 0;
+        virtual string Origin() const = 0;
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
     private:
@@ -923,6 +924,10 @@ POP_WARNING()
         uint32_t Id() const override {
             return (__Id());
         }
+        string Origin() const override {
+            return (__Origin());
+        }
+
         uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
             // We got the event, start the invoke, wait for the event to be set again..
@@ -966,6 +971,23 @@ POP_WARNING()
             __Id() const
         {
             return (0);
+        }
+
+        IS_MEMBER_AVAILABLE(Origin, hasOrigin);
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<hasOrigin<const T, string> ::value, string>::type
+            __Origin() const
+        {
+            return (_extension.Origin());
+        }
+
+        template <typename T = EXTENSION>
+        typename Core::TypeTraits::enable_if<!hasOrigin<const T, string> ::value, string>::type
+            __Origin() const
+        {
+            static string unknown(_T("Unknown"));
+            return (unknown);
         }
 
         uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override

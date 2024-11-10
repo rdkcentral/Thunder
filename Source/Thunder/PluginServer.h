@@ -532,11 +532,11 @@ namespace PluginHost {
                 ExternalAccess& operator=(const ExternalAccess&) = delete;
 
                 ExternalAccess(
-                    const string& sourceName,
                     const Core::NodeId& sourceNode,
                     const string& proxyStubPath,
-                    const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(sourceName, sourceNode, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    const Core::ProxyType<RPC::InvokeServer>& handler,
+                    const string& sourceName)
+                    : RPC::Communicator(sourceNode, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler), sourceName.c_str())
                     , _plugin(nullptr) {
                 }
                 ~ExternalAccess() override = default;
@@ -823,7 +823,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata(plugin.MaxRequests.Value())
                 , _library()
-                , _external('/' + Callsign(), PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
+                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler, '/' + Callsign())
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
@@ -2209,7 +2209,7 @@ namespace PluginHost {
                     const uint8_t hardKillCheckWaitTime,
                     const bool delegatedReleases,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(_T("/"), node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler))
+                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler), _T("/"))
                     , _parent(parent)
                     , _persistentPath(persistentPath)
                     , _systemPath(systemPath)

@@ -124,8 +124,10 @@ namespace RPC {
         };
 
     public:
+        static const string DanglingId;
+
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-        using ChannelMap = std::unordered_map<uint32_t, Proxies>;
+        using ChannelMap = std::unordered_map<uint32_t, std::pair<string, Proxies > >;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
@@ -154,26 +156,26 @@ namespace RPC {
             _adminLock.Lock();
             if (linkId.empty() == true) {
                 for (const auto& proxy : _channelProxyMap) {
-                    action(proxy.second);
+                    action(proxy.second.first, proxy.second.second);
                 }
-                action(_danglingProxies);
+                action(DanglingId, _danglingProxies);
                 found = true;
             } 
-            else if (linkId == _T("/Dangling")) {
-                action(_danglingProxies);
+            else if (linkId == DanglingId) {
+                action(DanglingId, _danglingProxies);
                 found = true;
             }
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
                 while ((found == false) && (index != _channelProxyMap.end())) {
-                    ASSERT(index->second.size() != 0);
+                    ASSERT(index->second.second.size() != 0);
 
-                    if (IsRequestedLink(index->second[0], linkId) == true) {
+                    if (index->second.first != linkId) {
                         index++;
                     }
                     else {
                         found = true;
-                        action(index->second);
+                        action(index->second.first, index->second.second);
                     }
                 }
             }
@@ -311,7 +313,6 @@ POP_WARNING()
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
-        bool IsRequestedLink(const ProxyStub::UnknownProxy* proxy, const string& id) const;
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
         void RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);

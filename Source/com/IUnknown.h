@@ -272,7 +272,6 @@ namespace ProxyStub {
         {
             return (&_parent);
         }
-        string LinkId() const;
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
@@ -286,6 +285,12 @@ namespace ProxyStub {
         inline const Core::instance_id& Implementation() const
         {
             return (_implementation);
+        }
+        inline uint32_t ChannelId() const
+        {
+            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+
+            return (_channel.IsValid() ? _channel->Id() : ~0);
         }
         // Required by proxystubs!
         const Core::ProxyType<Core::IPCChannel>& Channel() const {
