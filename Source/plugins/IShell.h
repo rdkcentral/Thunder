@@ -77,22 +77,22 @@ namespace PluginHost {
             virtual void Unregister(const INotification* sink) = 0;
         };
 
-        enum class startmode : uint8_t {
-            UNAVAILABLE,
-            DEACTIVATED,
-            ACTIVATED
-        };
-
         // State of the IPlugin interface associated with this shell.
         enum state : uint8_t {
-            UNAVAILABLE = startmode::UNAVAILABLE,
-            DEACTIVATED = startmode::DEACTIVATED,
-            ACTIVATED = startmode::ACTIVATED,
+            UNAVAILABLE,
+            DEACTIVATED,
+            ACTIVATED,
             DEACTIVATION,
             ACTIVATION,
             PRECONDITION,
             HIBERNATED,
             DESTROYED
+        };
+
+        enum class startmode : uint8_t {
+            UNAVAILABLE = static_cast<uint8_t>(state::UNAVAILABLE),
+            DEACTIVATED = static_cast<uint8_t>(state::DEACTIVATED),
+            ACTIVATED   = static_cast<uint8_t>(state::ACTIVATED)
         };
 
         enum reason : uint8_t {
