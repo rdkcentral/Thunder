@@ -19,9 +19,12 @@
 
 #include "Administrator.h"
 #include "IUnknown.h"
+#include "Communicator.h"
 
 namespace Thunder {
 namespace RPC {
+
+    /* static */ const string Administrator::DanglingId("/Dangling");
 
     Administrator::Administrator()
         : _adminLock()
@@ -122,17 +125,17 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(proxy.Id()));
 
         if (index != _channelProxyMap.end()) {
-            Proxies::iterator entry(index->second.begin());
-            while ((entry != index->second.end()) && ((*entry) != &proxy)) {
+            Proxies::iterator entry(index->second.second.begin());
+            while ((entry != index->second.second.end()) && ((*entry) != &proxy)) {
                 entry++;
             }
 
-            ASSERT(entry != index->second.end());
+            ASSERT(entry != index->second.second.end());
 
-            if (entry != index->second.end()) {
-                index->second.erase(entry);
+            if (entry != index->second.second.end()) {
+                index->second.second.erase(entry);
                 removed = true;
-                if (index->second.size() == 0) {
+                if (index->second.second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
             }
@@ -228,11 +231,11 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(channel->Id()));
 
         if (index != _channelProxyMap.end()) {
-            Proxies::iterator entry(index->second.begin());
-            while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
+            Proxies::iterator entry(index->second.second.begin());
+            while ((entry != index->second.second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
                 entry++;
             }
-            if (entry != index->second.end()) {
+            if (entry != index->second.second.end()) {
                 interface = (*entry)->QueryInterface(id);
                 if (interface != nullptr) {
                     result = (*entry);
@@ -261,11 +264,11 @@ namespace RPC {
                 ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
                 if (index != _channelProxyMap.end()) {
-                    Proxies::iterator entry(index->second.begin());
-                    while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
+                    Proxies::iterator entry(index->second.second.begin());
+                    while ((entry != index->second.second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
                         entry++;
                     }
-                    if (entry != index->second.end()) {
+                    if (entry != index->second.second.end()) {
                         interface = (*entry)->Acquire(outbound, id);
 
                         // The implementation could be found, but the current implemented proxy is not
@@ -287,7 +290,18 @@ namespace RPC {
                         ASSERT(result != nullptr);
 
                         // Register it as it is remotely registered :-)
-                        _channelProxyMap[channelId].push_back(result);
+                        ChannelMap::iterator channelIndex(_channelProxyMap.find(channelId));
+
+                        if (channelIndex != _channelProxyMap.end()) {
+                            channelIndex->second.second.push_back(result);
+                        }
+                        else {
+                            Proxies baseList;
+                            baseList.emplace_back(result);
+                            _channelProxyMap.emplace(std::piecewise_construct,
+                                std::forward_as_tuple(channelId),
+                                std::forward_as_tuple(std::pair<string, Proxies>(channel->Origin(), baseList)));
+                        }
 
                         // This will increment the reference count to 2 (one in the ChannelProxyMap and one in the QueryInterface ).
                         interface = result->QueryInterface(id);
@@ -431,7 +445,7 @@ namespace RPC {
         ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
         if (index != _channelProxyMap.end()) {
-            for (auto entry : index->second) {
+            for (auto entry : index->second.second) {
                 entry->Invalidate();
                 _danglingProxies.emplace_back(entry);
 
@@ -444,7 +458,7 @@ namespace RPC {
             // the pendingProxies. The receiver of pendingProxies has to take
             // care of releasing the last reference we, as administration layer
             // hold upon this..
-            pendingProxies = std::move(index->second);
+            pendingProxies = std::move(index->second.second);
             _channelProxyMap.erase(index);
         }
 

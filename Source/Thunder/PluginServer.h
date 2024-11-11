@@ -532,10 +532,11 @@ namespace PluginHost {
                 ExternalAccess& operator=(const ExternalAccess&) = delete;
 
                 ExternalAccess(
-                    const Core::NodeId& source,
+                    const Core::NodeId& sourceNode,
                     const string& proxyStubPath,
-                    const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(source, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    const Core::ProxyType<RPC::InvokeServer>& handler,
+                    const string& sourceName)
+                    : RPC::Communicator(sourceNode, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler), sourceName.c_str())
                     , _plugin(nullptr) {
                 }
                 ~ExternalAccess() override = default;
@@ -822,7 +823,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata(plugin.MaxRequests.Value())
                 , _library()
-                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
+                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler, '/' + Callsign())
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
@@ -855,6 +856,9 @@ namespace PluginHost {
             }
 
         public:
+            inline const RPC::Communicator& COMServer() const {
+                return (_external);
+            }
             inline void Submit(Core::ProxyType<Core::IDispatch>&& job) {
                 _jobs.Push(std::move(job));
             }
@@ -2205,7 +2209,7 @@ namespace PluginHost {
                     const uint8_t hardKillCheckWaitTime,
                     const bool delegatedReleases,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler))
+                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler), _T("/"))
                     , _parent(parent)
                     , _persistentPath(persistentPath)
                     , _systemPath(systemPath)
@@ -3203,10 +3207,24 @@ namespace PluginHost {
 
                         entry.Activity = element.Source().IsOpen();
                         entry.State = Metadata::Channel::state::COMRPC;
-                        entry.Name = string("/" EXPAND_AND_QUOTE(APPLICATION_NAME) "/Communicator");
+                        entry.Name = element.Extension().Origin();
                         entry.Remote = element.Source().RemoteId();
                     });
-                    _adminLock.Unlock();
+
+                for (const auto& entry : _services) {
+                    entry.second->COMServer().Visit([&](const RPC::Communicator::Client& element)
+                        {
+                            Metadata::Channel& entry = metaData.Add();
+                            entry.ID = element.Extension().Id();
+
+                            entry.Activity = element.Source().IsOpen();
+                            entry.State = Metadata::Channel::state::COMRPC;
+                            entry.Name = element.Extension().Origin();
+                            entry.Remote = element.Source().RemoteId();
+                        });
+                }
+
+                _adminLock.Unlock();
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {

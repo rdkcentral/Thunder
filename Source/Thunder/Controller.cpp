@@ -1216,21 +1216,26 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
+    Core::hresult Controller::Proxies(const Core::OptionalType<string>& linkId, IMetadata::Data::IProxiesIterator*& outProxies) const
     {
         Core::hresult result = Core::ERROR_UNKNOWN_KEY;
 
         std::vector<IMetadata::Data::Proxy> collection;
-        bool proxySearch = RPC::Administrator::Instance().Allocations(linkId, [&collection](const std::vector<ProxyStub::UnknownProxy*>& proxies) {
+        bool proxySearch = RPC::Administrator::Instance().Allocations(linkId.IsSet() ? linkId.Value() : EMPTY_STRING, [&collection, &linkId](const string& origin, const std::vector<ProxyStub::UnknownProxy*>& proxies) {
            for (const auto& proxy : proxies) {
                 IMetadata::Data::Proxy data;
                 data.Count = proxy->ReferenceCount();
                 data.Instance = proxy->Implementation();
                 data.Interface = proxy->InterfaceId();
                 data.Name = proxy->Name();
+                if (linkId.IsSet() == false) {
+                    data.Origin = Core::NumberType<uint32_t>(proxy->ChannelId()).Text() + '@' + origin;
+                }
                 collection.emplace_back(std::move(data));
            }
         });
+
+        TRACE(Trace::Information, (_T("Found %d proxies to be listed and the search = [%s]"), collection.size(), proxySearch ? _T("true") : _T("false")));
 
         if (proxySearch == true) {
             using Iterator = IMetadata::Data::IProxiesIterator;
@@ -1439,6 +1444,8 @@ namespace Plugin {
         #ifdef THREADPOOL_COUNT
             buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
         #endif
+
+        buildInfo.COMRPCTimeOut = RPC::CommunicationTimeOut;
 
         return (Core::ERROR_NONE);
     }

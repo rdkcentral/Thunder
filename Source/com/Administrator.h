@@ -124,8 +124,10 @@ namespace RPC {
         };
 
     public:
+        static const string DanglingId;
+
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-        using ChannelMap = std::unordered_map<uint32_t, Proxies>;
+        using ChannelMap = std::unordered_map<uint32_t, std::pair<string, Proxies > >;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
@@ -149,25 +151,31 @@ namespace RPC {
         }
         
         template<typename ACTION>
-        bool Allocations(const uint32_t id, ACTION&& action) const {
+        bool Allocations(const string& linkId, ACTION&& action) const {
             bool found = false;
             _adminLock.Lock();
-            if (id == 0) {
+            if (linkId.empty() == true) {
                 for (const auto& proxy : _channelProxyMap) {
-                    action(proxy.second);
+                    action(proxy.second.first, proxy.second.second);
                 }
-                action(_danglingProxies);
+                action(DanglingId, _danglingProxies);
                 found = true;
             } 
+            else if (linkId == DanglingId) {
+                action(DanglingId, _danglingProxies);
+                found = true;
+            }
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
                 while ((found == false) && (index != _channelProxyMap.end())) {
-                    if (index->first != id) {
+                    ASSERT(index->second.second.size() != 0);
+
+                    if (index->second.first != linkId) {
                         index++;
                     }
                     else {
                         found = true;
-                        action(index->second);
+                        action(index->second.first, index->second.second);
                     }
                 }
             }

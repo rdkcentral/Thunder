@@ -3,16 +3,16 @@
   "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "C:/ThunderWin/artifacts/Persistent",
-  "volatilepath": "C:/ThunderWin/artifacts/temp",
-  "datapath": "C:/ThunderWin/artifacts/Debug/Plugins",
-  "systempath": "C:/ThunderWin/artifacts/Debug",
-  "proxystubpath": "C:/ThunderWin/artifacts/ProxyStubs/Debug",
+  "persistentpath": "D:/domotica/artifacts/Persistent",
+  "volatilepath": "D:/domotica//artifacts/temp",
+  "datapath": "D:/domotica/artifacts/Debug/Plugins",
+  "systempath": "D:/domotica/artifacts/Debug",
+  "proxystubpath": "D:/domotica/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "observe": {
-    "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
-    "configpath": "C:/ThunderWin/artifacts/dynamic/config"
+    "proxystubpath": "D:/domotica/artifacts/dynamic/proxystubs",
+    "configpath": "D:/domotica/artifacts/dynamic/config"
   },
   "messaging": {
     "port": 63000,
@@ -137,7 +137,7 @@
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
-      "startmode": "Activated"
+      "startmode": "Deactivated"
     },
     {
       "callsign": "ZigbeeControl",
@@ -154,10 +154,10 @@
       "callsign": "ZWaveControl",
       "locator": "libZWaveControl.so",
       "classname": "ZWaveControl",
-      "startmode": "Activated",
+      "startmode": "Deactivated",
       "configuration": {
         "port": "\\\\.\\COM4",
-        "key":  "ba:09:87:65:43:21:de:ad:be:ef:12:34:56:78:90:ab"
+        "key": "ba:09:87:65:43:21:de:ad:be:ef:12:34:56:78:90:ab"
       }
     },
     {
@@ -401,7 +401,7 @@
         "sleep": "5",
         "single": false,
         "crash": true,
-        "leak":  true,
+        "leak": true,
         "root": {
           "mode": "Local"
         }
@@ -458,7 +458,7 @@
       "callsign": "WebServer",
       "locator": "libWebServer.so",
       "classname": "WebServer",
-      "startmode": "Deactivated",
+      "startmode": "Activated",
       "communicator": "127.0.0.1:2349",
       "configuration": {
         "port": 8080,
@@ -570,12 +570,6 @@
       "locator": "libmessagecontrol.so",
       "classname": "MessageControl",
       "startmode": "Activated"
-    },
-    {
-      "callsign": "TraceControl",
-      "locator": "libtracecontrol.so",
-      "classname": "TraceControl",
-      "startmode": "Deactivated"
     },
     {
       "callsign": "RemoteControl",

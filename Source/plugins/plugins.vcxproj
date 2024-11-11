@@ -50,6 +50,10 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::Exchange::Controller -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
     </CustomBuild>
     <ClInclude Include="IDispatcher.h">
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)json/JDispatcher.h</Outputs>
