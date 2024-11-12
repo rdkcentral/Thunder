@@ -532,10 +532,11 @@ namespace PluginHost {
                 ExternalAccess& operator=(const ExternalAccess&) = delete;
 
                 ExternalAccess(
-                    const Core::NodeId& source,
+                    const Core::NodeId& sourceNode,
                     const string& proxyStubPath,
-                    const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(source, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
+                    const Core::ProxyType<RPC::InvokeServer>& handler,
+                    const string& sourceName)
+                    : RPC::Communicator(sourceNode, proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler), sourceName.c_str())
                     , _plugin(nullptr) {
                 }
                 ~ExternalAccess() override = default;
@@ -752,7 +753,7 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-                uint8_t _state;
+                VARIABLE_IS_NOT_USED uint8_t _state;
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
@@ -822,7 +823,7 @@ namespace PluginHost {
                 , _lastId(0)
                 , _metadata(plugin.MaxRequests.Value())
                 , _library()
-                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler)
+                , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler, '/' + Callsign())
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
@@ -855,6 +856,9 @@ namespace PluginHost {
             }
 
         public:
+            inline const RPC::Communicator& COMServer() const {
+                return (_external);
+            }
             inline void Submit(Core::ProxyType<Core::IDispatch>&& job) {
                 _jobs.Push(std::move(job));
             }
@@ -1622,7 +1626,7 @@ namespace PluginHost {
             }
 
         private:
-            const mode _mode;
+            VARIABLE_IS_NOT_USED const mode _mode;
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1642,7 +1646,7 @@ namespace PluginHost {
             uint32_t _lastId;
             ControlData _metadata;
             Core::Library _library;
-            void* _hibernateStorage;
+            VARIABLE_IS_NOT_USED void* _hibernateStorage;
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
@@ -2205,7 +2209,7 @@ namespace PluginHost {
                     const uint8_t hardKillCheckWaitTime,
                     const bool delegatedReleases,
                     const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler))
+                    : RPC::Communicator(node, ProxyStubPathCreator(proxyStubPath, observableProxyStubPath), Core::ProxyType<Core::IIPCServer>(handler), _T("/"))
                     , _parent(parent)
                     , _persistentPath(persistentPath)
                     , _systemPath(systemPath)
@@ -2449,6 +2453,10 @@ namespace PluginHost {
                     return result;
                 }
 
+                string JobIdentifier() const {
+                    return(_T("Thunder::PluginHost::Server::ServiceMap::CommunicatorServer"));
+                }
+
             private:
                 ServiceMap& _parent;
                 const string _persistentPath;
@@ -2489,7 +2497,7 @@ namespace PluginHost {
                         _parent.Evaluate();
                     }
                     string JobIdentifier() const {
-                        return(_T("PluginServer::SubSystems::Notification"));
+                        return(_T("Thunder::PluginHost::Server::ServiceMap::SubSystems::Job"));
                     }
 
                 private:
@@ -2720,6 +2728,12 @@ namespace PluginHost {
             POP_WARNING()
             ~ServiceMap()
             {
+                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+
+                if (job.IsValid()) {
+                    WorkerPool().Revoke(job);
+                    _job.Revoked();
+                }
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
                 ASSERT(_services.size() == 0);
             }
@@ -3193,10 +3207,24 @@ namespace PluginHost {
 
                         entry.Activity = element.Source().IsOpen();
                         entry.State = Metadata::Channel::state::COMRPC;
-                        entry.Name = string("/" EXPAND_AND_QUOTE(APPLICATION_NAME) "/Communicator");
+                        entry.Name = element.Extension().Origin();
                         entry.Remote = element.Source().RemoteId();
                     });
-                    _adminLock.Unlock();
+
+                for (const auto& entry : _services) {
+                    entry.second->COMServer().Visit([&](const RPC::Communicator::Client& element)
+                        {
+                            Metadata::Channel& entry = metaData.Add();
+                            entry.ID = element.Extension().Id();
+
+                            entry.Activity = element.Source().IsOpen();
+                            entry.State = Metadata::Channel::state::COMRPC;
+                            entry.Name = element.Extension().Origin();
+                            entry.Remote = element.Source().RemoteId();
+                        });
+                }
+
+                _adminLock.Unlock();
             }
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
@@ -3429,6 +3457,11 @@ namespace PluginHost {
             }
 
             friend class Core::ThreadPool::JobType<ServiceMap&>;
+
+            string JobIdentifier() const {
+                return(_T("Thunder::PluginHost::Server::ServiceMap"));
+            }
+
             void Dispatch()
             {
                 _adminLock.Lock();
@@ -4525,8 +4558,9 @@ namespace PluginHost {
             friend class Core::ThreadPool::JobType<ChannelMap&>;
 
             string JobIdentifier() const {
-                return (_T("PluginServer::ChannelMap::Cleanup"));
+                return (_T("Thunder::PluginHost::Server::ChannelMap"));
             }
+
             void Dispatch()
             {
                 TRACE(Activity, (string(_T("Cleanup job running..\n"))));

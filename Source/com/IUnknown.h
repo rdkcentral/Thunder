@@ -272,7 +272,6 @@ namespace ProxyStub {
         {
             return (&_parent);
         }
-        const Core::SocketPort* Socket() const;
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             void* result = nullptr;
@@ -286,6 +285,12 @@ namespace ProxyStub {
         inline const Core::instance_id& Implementation() const
         {
             return (_implementation);
+        }
+        inline uint32_t ChannelId() const
+        {
+            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+
+            return (_channel.IsValid() ? _channel->Id() : ~0);
         }
         // Required by proxystubs!
         const Core::ProxyType<Core::IPCChannel>& Channel() const {
@@ -426,16 +431,13 @@ namespace ProxyStub {
 
             return (_parent.QueryInterface(id));
         }
-       // The RPC::Administrator uses this to identifiy to what link this 
+        // The RPC::Administrator uses this to identifiy to what link this 
         // proxy belongs. The LinkId is always called within the lock of the
         // RPC::Administrator, and since it is onl used and called from there 
         // and the clearing of the _channel is also only called from there,
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
-        uint32_t Id() const
-        {
-            return (_channel.IsValid() ? _channel->Id() : 0);
-        }
+        uint32_t Id() const;
         void Invalidate() {
             ASSERT(_refCount > 0);
             _adminLock.Lock();
@@ -488,10 +490,12 @@ namespace ProxyStub {
         {
             return (_unknown.Message(methodId));
         }
+PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
         uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
         {
             return (_unknown.Invoke(message, waitTime));
         }
+POP_WARNING()
         void* Interface(const Core::instance_id& implementation, const uint32_t id) const
         {
             return (_unknown.Interface(implementation, id));

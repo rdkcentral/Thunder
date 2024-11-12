@@ -424,7 +424,7 @@ POP_WARNING()
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
-        _ValidateHash(const Core::OptionalType<Signature>& signature) const
+        _ValidateHash(const Core::OptionalType<Signature>& /* signature */) const
         {
             return (true);
         }
@@ -442,7 +442,7 @@ POP_WARNING()
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _LoadHash(const Crypto::Context& context)
+        _LoadHash(const Crypto::Context& /* context */)
         {
         }
 
@@ -597,7 +597,7 @@ POP_WARNING()
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _CalculateHash(Web::Response& request)
+        _CalculateHash(Web::Response& /* request */)
         {
         }
 
@@ -613,7 +613,7 @@ POP_WARNING()
 
         template <typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, bool>::type
-        _ValidateHash(const Core::OptionalType<Signature>& signature) const
+        _ValidateHash(const Core::OptionalType<Signature>& /* signature */) const
         {
             return (true);
         }
