@@ -402,7 +402,9 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             {
             }
 POP_WARNING()
-            ~HandlerType() override = default;
+            ~HandlerType() override {
+                ACTUALLINK::Close(Core::infinite);
+            }
 
         public:
             bool IsOpen() const
