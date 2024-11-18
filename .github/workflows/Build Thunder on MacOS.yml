@@ -19,22 +19,18 @@ jobs:
   Thunder:
     uses: rdkcentral/Thunder/.github/workflows/MacOS build template.yml@master
 
-  # ThunderInterfaces:
-  #   needs: Thunder
-  #   uses: rdkcentral/ThunderInterfaces/.github/workflows/Linux build template.yml@master
+  ThunderInterfaces:
+    needs: Thunder
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/MacOS build template.yml@master
 
-  # ThunderLibraries:
-  #   needs: Thunder
-  #   uses: WebPlatformForEmbedded/ThunderLibraries/.github/workflows/Linux build template.yml@main
+  ThunderClientLibraries:
+    needs: ThunderInterfaces
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/MacOS build template.yml@master
 
-  # ThunderClientLibraries:
-  #   needs: ThunderInterfaces
-  #   uses: rdkcentral/ThunderClientLibraries/.github/workflows/Linux build template.yml@master
+  ThunderNanoServices:
+    needs: ThunderInterfaces
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/MacOS build template.yml@master
 
-  # ThunderNanoServices:
-  #   needs: ThunderInterfaces
-  #   uses: rdkcentral/ThunderNanoServices/.github/workflows/Linux build template.yml@master
-
-  # ThunderNanoServicesRDK:
-  #   needs: ThunderInterfaces
-  #   uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/Linux build template.yml@master
+  ThunderNanoServicesRDK:
+    needs: ThunderInterfaces
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/MacOS build template.yml@master
