@@ -753,7 +753,9 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-                VARIABLE_IS_NOT_USED uint8_t _state;
+PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+                uint8_t _state;
+POP_WARNING()
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
@@ -1626,7 +1628,9 @@ namespace PluginHost {
             }
 
         private:
-            VARIABLE_IS_NOT_USED const mode _mode;
+PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+            const mode _mode;
+POP_WARNING()
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1646,7 +1650,9 @@ namespace PluginHost {
             uint32_t _lastId;
             ControlData _metadata;
             Core::Library _library;
-            VARIABLE_IS_NOT_USED void* _hibernateStorage;
+PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+            void* _hibernateStorage;
+POP_WARNING()
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
