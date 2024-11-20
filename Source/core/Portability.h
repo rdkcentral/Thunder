@@ -230,12 +230,16 @@
 #define DISABLE_WARNING_ARRAY_BOUNDS PUSH_WARNING_ARG_("-Warray-bounds")
 #endif
 
+#if defined(__clang__)
+#define DISABLE_WARNING_UNUSED_PRIVATE_FIELD PUSH_WARNING_ARG_("-Wunused-private-field")
+#else
+#define DISABLE_WARNING_UNUSED_PRIVATE_FIELD
+#endif
+
 #if !(defined(__clang__)) && (__GNUC__ >= 4)
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
-#define DISABLE_WARNING_UNUSED_PRIVATE_FIELD
 #else
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD
-#define DISABLE_WARNING_UNUSED_PRIVATE_FIELD PUSH_WARNING_ARG_("-Wunused-private-field")
 #endif
 
 #endif
