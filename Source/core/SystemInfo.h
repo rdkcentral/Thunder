@@ -239,8 +239,9 @@ namespace Core {
         mutable uint64_t m_freeswap;
         mutable uint64_t m_cpuload;
         mutable uint64_t m_cpuloadavg[3];
-        VARIABLE_IS_NOT_USED mutable time_t m_lastUpdateCpuStats;
-
+PUSH_WARNING(DISABLE_WARNING_UNUSED_VARIABLES)
+        mutable time_t m_lastUpdateCpuStats;
+POP_WARNING()
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
 
