@@ -206,7 +206,7 @@ namespace Core {
         uint32_t Close();
 
     private:
-PUSH_WARNING(DISABLE_WARNING_UNUSED_VARIABLES)
+PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
         INotification* _callback;
 POP_WARNING()
     };
