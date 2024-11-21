@@ -239,9 +239,6 @@ namespace Core {
         mutable uint64_t m_freeswap;
         mutable uint64_t m_cpuload;
         mutable uint64_t m_cpuloadavg[3];
-#ifdef __LINUX__
-        mutable time_t m_lastUpdateCpuStats;
-#endif
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
 
@@ -251,6 +248,8 @@ namespace Core {
         mutable uint64_t m_prevCpuSystemTicks;
         mutable uint64_t m_prevCpuUserTicks;
         mutable uint64_t m_prevCpuIdleTicks;
+#elif defined(__LINUX__)
+        mutable time_t m_lastUpdateCpuStats;
 #endif
     }; // class SystemInfo
 } // namespace Core
