@@ -105,7 +105,7 @@ namespace Crypto {
 
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
-                if (IsOpen() && _context != nullptr) { // Initialize may not yet have happened
+                if (IsOpen() && _context == nullptr) { // Initialize may not yet have happened
                     Initialize();
                 }
 
