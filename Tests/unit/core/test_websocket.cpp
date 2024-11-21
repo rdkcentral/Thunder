@@ -62,7 +62,9 @@ namespace Core {
 
         ~CustomSocketStream()
         {
+#ifdef _VERBOSE
             std::cout.flush();
+#endif
         }
 
         // Raw TCP data
