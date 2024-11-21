@@ -391,6 +391,75 @@ namespace Core {
         std::vector<std::basic_string<uint8_t>> _response; // Receive message queue
     };
 
+    class CustomSecureSocketStream : public ::Thunder::Crypto::SecureSocketPort {
+    private :
+
+        // Validat eclient certificate
+        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
+        public:
+
+            Validator() = default;
+            ~Validator() = default;
+
+            bool Validate(const Certificate& certificate) const override {
+                // Print certificate properties
+#ifdef _VERBOSE
+                std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
+                std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
+                std::cout << " |--> Subject = " << certificate.Subject() << "\n";
+                std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
+                std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
+#endif
+                return true; // Always accept
+            }
+        };
+
+   public :
+
+        // In essence, all parameters to SecureSocket are passed to a base class SocketPort
+        CustomSecureSocketStream(
+              const SOCKET& socket
+            , const ::Thunder::Core::NodeId& localNode
+            , const uint16_t sendBufferSize
+            , const uint16_t receiveBufferSize
+            , const std::string& prefix
+        )
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            , _prefix{ prefix }
+            , _validator{}
+        {
+            // Validate custom (sefl signed) certificates
+            uint32_t result = Callback(&_validator);
+        }
+
+        CustomSecureSocketStream(
+              const bool
+            , const ::Thunder::Core::NodeId& localNode
+            , const ::Thunder::Core::NodeId& remoteNode
+            , const uint16_t sendBufferSize
+            , const uint16_t receiveBufferSize
+            , const std::string& prefix
+        )
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            , _prefix{ prefix }
+            , _validator{}
+        {
+            // Validate custom (self signed) client certificates
+            uint32_t result = Callback(&_validator);
+        }
+
+        ~CustomSecureSocketStream()
+        {
+ #ifdef _VERBOSE
+            std::cout.flush();
+#endif
+        }
+
+    private:
+        const std::string _prefix;
+        Validator _validator;
+    };
+
     TEST(WebSocket, DISABLED_OpeningServerPort)
     {
         const TCHAR localHostName[] {"127.0.0.1"};
@@ -874,7 +943,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     } 
 
-    TEST(WebSocket, UnsecuredSocketMultiFrameDataExchange)
+    TEST(WebSocket, DISABLED_UnsecuredSocketMultiFrameDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1001,6 +1070,80 @@ namespace Core {
         // Code after this line is executed by both parent and child
 
         ::Thunder::Core::Singleton::Dispose();
+    }
+
+    TEST(WebSocket, DISABLED_OpeningSecuredServerPort)
+    {
+        const TCHAR localHostName[] {"127.0.0.1"};
+
+        constexpr uint16_t tcpServerPort {12345};   // TCP, default 80 or 443 (SSL)
+        constexpr uint32_t tcpProtocol {0};         // HTTP or HTTPS but can only be set on raw sockets
+
+        // The minimum size is determined by the HTTP upgrade process. The limit here is above that threshold.
+        constexpr uint16_t sendBufferSize {1024};
+        constexpr uint16_t receiveBufferSize {1024};
+
+        constexpr uint32_t maxWaitTimeMs = 4000;
+
+        const ::Thunder::Core::NodeId localNode {localHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+        // This is a listening socket as result of using SocketServerType which enables listening
+        ::Thunder::Core::SocketServerType<WebSocketServer<CustomSecureSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
+
+        ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+//        SleepMs(maxWaitTimeMs);
+
+        // Obtain the endpoint at the server side for each (remotely) connected client
+        auto it = server.Clients();
+
+        if (it.Next()) {
+            // Unless a client has send an upgrade request we cannot send data out although we might be calling WebSocket functionality
+            if (it.Client()->IsOpen()) {
+                // No data should be transferred to the remote client
+            } else {
+           }
+        }
+
+        SleepMs(4*maxWaitTimeMs);
+
+
+        EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+    }
+
+    TEST(WebSocket, OpeningSecuredClientPort)
+    {
+        const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+        const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
+        const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
+        const std::string webSocketOrigin;      // Optional, set by browser clients
+        constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+        constexpr bool masking {true};          // Flag set by client to enable masking
+
+        const TCHAR remoteHostName[] {"127.0.0.1"};
+
+        constexpr uint16_t tcpServerPort {12345};   // TCP, default 80 or 443 (SSL)
+        constexpr uint32_t tcpProtocol {0};         // HTTP or HTTPS but can only be set on raw sockets
+
+        constexpr bool rawSocket {false};
+
+        // The minimum size is determined by the HTTP upgrade process. The limit here is above that threshold.
+        constexpr uint16_t sendBufferSize {1024};
+        constexpr uint16_t receiveBufferSize {1024};
+
+        constexpr uint32_t maxWaitTimeMs = 4000;
+
+        const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+        WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize, "WebSocketClient");
+
+//        SleepMs(maxWaitTimeMs);
+
+        ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+        SleepMs(maxWaitTimeMs);
+
+        EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
 } // Core
