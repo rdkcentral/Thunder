@@ -141,9 +141,6 @@ namespace Core {
 
     SystemInfo::SystemInfo()
         : m_HostName(ConstructHostname())
-#ifdef __LINUX__
-        , m_lastUpdateCpuStats(0)
-#endif
     {
 #ifdef __LINUX__
 #ifdef __APPLE__
@@ -173,6 +170,7 @@ namespace Core {
         m_cpuloadavg[0]=info.loads[0];
         m_cpuloadavg[1]=info.loads[1];
         m_cpuloadavg[2]=info.loads[2];
+        m_lastUpdateCpuStats = 0;
 #endif
 #endif
 
