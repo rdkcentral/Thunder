@@ -239,9 +239,9 @@ namespace Core {
         mutable uint64_t m_freeswap;
         mutable uint64_t m_cpuload;
         mutable uint64_t m_cpuloadavg[3];
-PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+#ifdef __LINUX__
         mutable time_t m_lastUpdateCpuStats;
-POP_WARNING()
+#endif
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
 
