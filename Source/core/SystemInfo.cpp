@@ -141,7 +141,9 @@ namespace Core {
 
     SystemInfo::SystemInfo()
         : m_HostName(ConstructHostname())
+#ifdef __LINUX__
         , m_lastUpdateCpuStats(0)
+#endif
     {
 #ifdef __LINUX__
 #ifdef __APPLE__
