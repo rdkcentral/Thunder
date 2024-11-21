@@ -676,7 +676,6 @@ namespace PluginHost {
                 ControlData(const uint32_t maxRequests)
                     : _isExtended(false)
                     , _maxRequests(maxRequests)
-                    , _state(0)
                     , _major(~0)
                     , _minor(~0)
                     , _patch(~0)
