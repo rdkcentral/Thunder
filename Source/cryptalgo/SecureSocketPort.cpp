@@ -151,16 +151,25 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
-    int32_t result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+    int32_t result = 0;
 
-    if (_handShaking != CONNECTED) {
-        const_cast<Handler&>(*this).Update();
+    if (_handShaking == CONNECTED) {
+        int value = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+        result = (value > 0 ? value : 0);
     }
+
     return (result);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
-    return (SSL_write(static_cast<SSL*>(_ssl), buffer, length));
+    int32_t result = 0;
+
+    if (_handShaking == CONNECTED) {
+        int value = (SSL_write(static_cast<SSL*>(_ssl), buffer, length));
+        result = (value > 0 ? value : 0);
+    }
+
+    return (result);
 }
 
 
