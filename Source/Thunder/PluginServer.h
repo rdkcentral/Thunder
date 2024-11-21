@@ -753,9 +753,6 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
-                uint8_t _state;
-POP_WARNING()
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
@@ -805,9 +802,8 @@ POP_WARNING()
             Service& operator=(Service&&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode /* type */, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
-                , _mode(type)
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -1628,9 +1624,6 @@ POP_WARNING()
             }
 
         private:
-PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
-            const mode _mode;
-POP_WARNING()
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1650,9 +1643,9 @@ POP_WARNING()
             uint32_t _lastId;
             ControlData _metadata;
             Core::Library _library;
-PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+#ifdef HIBERNATE_SUPPORT_ENABLED
             void* _hibernateStorage;
-POP_WARNING()
+#endif
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
