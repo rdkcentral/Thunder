@@ -131,20 +131,16 @@ SecureSocketPort::Handler::~Handler() {
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
-    uint32_t success = Core::ERROR_NONE;
+    uint32_t success = Core::ERROR_GENERAL;
 
-    _context = SSL_CTX_new(TLS_method());
-
-    if (_context != nullptr) {
+    if ((_context = SSL_CTX_new(TLS_method())) != nullptr) {
         if (   // Returns bit-mask after adding options
                ((SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3) & (SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3))  == (SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3))
             && // Trust the same certificates as any other application
                (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
-           ) {
-            _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
-
-            SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
-
+            && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
+            && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
+        ) {
             success = Core::SocketPort::Initialize();
         } else {
             TRACE_L1("OpenSSL failed to set protocol level or load certificate store");
