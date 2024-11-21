@@ -105,10 +105,14 @@ namespace Crypto {
 
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
+                if (IsOpen() && _context != nullptr) { // Initialize may not yet have happened
+                    Initialize();
+                }
 
-                ASSERT(_context != nullptr);
-                Update();
-            };
+                if (_ssl != nullptr) {
+                    Update();
+                }
+           };
             inline uint32_t Callback(IValidator* callback) {
                 uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
