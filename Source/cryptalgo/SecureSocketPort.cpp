@@ -226,29 +226,26 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 }
 
 void SecureSocketPort::Handler::Update() {
-    if (IsOpen() == true) {
-        int result;
-
+    if (IsOpen() == true && _ssl != nullptr) {
         if (_handShaking == IDLE) {
-            SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().HostName().c_str());
-            result = SSL_connect(static_cast<SSL*>(_ssl));
-            if (result == 1) {
+            int result{0};
+
+            if(  (result = SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().HostName().c_str()) == 1)
+               && (result = SSL_connect(static_cast<SSL*>(_ssl)) == 1)
+              ) {
                 ValidateHandShake();
-            }
-            else {
+            } else { // Support non-blocking SocketPorts, result taken from SSL_connect
                 result = SSL_get_error(static_cast<SSL*>(_ssl), result);
                 if ((result == SSL_ERROR_WANT_READ) || (result == SSL_ERROR_WANT_WRITE)) {
                     _handShaking = EXCHANGE;
                 }
             }
-        }
-        else if (_handShaking == EXCHANGE) {
+        } else if (_handShaking == EXCHANGE) {
             if (SSL_do_handshake(static_cast<SSL*>(_ssl)) == 1) {
                 ValidateHandShake();
             }
         }
-    }
-    else if (_ssl != nullptr) {
+    } else if (_ssl != nullptr) {
         _handShaking = IDLE;
         _parent.StateChange();
     }
