@@ -96,6 +96,8 @@ namespace Plugin {
             }
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
+                //ASSERT(false);
+                std::cout << "Called activated in sink class" << std::endl;
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
 
                 // Make sure the resumes 
@@ -104,11 +106,23 @@ namespace Plugin {
             }
             void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
             {
+                //ASSERT(false);
+
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
             }
             void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
             {
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
+            }
+
+            void Suspended(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::SUSPENDED, plugin->Reason());
+            }
+
+            void Resumed(const string& callsign, PluginHost::IShell* plugin) override
+            {
+                _parent.NotifyStateChange(callsign, PluginHost::IShell::RESUMED, plugin->Reason());
             }
 
             BEGIN_INTERFACE_MAP(Sink)

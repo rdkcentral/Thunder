@@ -513,6 +513,18 @@ namespace PluginHost {
                     ASSERT(plugin != nullptr);
                     _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
+                void Suspended(const string& callsign, PluginHost::IShell* plugin) {
+                    const string link = _parent.Callsign();
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent._administrator.Suspended(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                }
+                void Resumed(const string& callsign, PluginHost::IShell* plugin) {
+                    const string link = _parent.Callsign();
+                    ASSERT(_plugins.find(callsign) != _plugins.end());
+                    ASSERT(plugin != nullptr);
+                    _parent._administrator.Resumed(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
+                }
 
                 BEGIN_INTERFACE_MAP(Composit)
                     INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
@@ -1337,11 +1349,13 @@ namespace PluginHost {
             Core::hresult Activate(const reason) override;
             Core::hresult Deactivate(const reason) override;
             Core::hresult Unavailable(const reason) override;
+            Core::hresult Suspend(const reason) override;
+            Core::hresult Resume(const reason) override;
 
             Core::hresult Hibernate(const uint32_t timeout = 10000 /*ms*/) override;
 
-            uint32_t Suspend(const reason why);
-            uint32_t Resume(const reason why);
+            //uint32_t Suspend(const reason why);
+            //uint32_t Resume(const reason why);
 
             reason Reason() const override
             {
@@ -2831,7 +2845,13 @@ namespace PluginHost {
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
+                /*
                 _notificationLock.Lock();
+
+                for (auto each : _notifiers) {
+                    std::cout << each << std::endl;
+                }
+                */
 
                 Notifiers::iterator index(_notifiers.begin());
 
@@ -2863,6 +2883,32 @@ namespace PluginHost {
 
                 while (index != _notifiers.end()) {
                     (*index)->Unavailable(callsign, entry);
+                    index++;
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Resumed(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                Notifiers::iterator index(_notifiers.begin());
+
+                while (index != _notifiers.end()) {
+                    (*index)->Resumed(callsign, entry);
+                    index++;
+                }
+
+                _notificationLock.Unlock();
+            }
+            void Suspended(const string& callsign, PluginHost::IShell* entry)
+            {
+                _notificationLock.Lock();
+
+                Notifiers::iterator index(_notifiers.begin());
+
+                while (index != _notifiers.end()) {
+                    (*index)->Suspended(callsign, entry);
                     index++;
                 }
 

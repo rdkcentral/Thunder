@@ -476,12 +476,13 @@ namespace PluginHost {
         return (result);
     }
 
-    uint32_t Server::Service::Resume(const reason why) /* override */ {
+    Core::hresult Server::Service::Resume(const reason why) /* override */ {
         uint32_t result = Core::ERROR_NONE;
-
+        std::cout << "int32_t Server::Service::Resume(const reason why) /* override */ {" << std::endl;
         Lock();
 
         IShell::state currentState(State());
+        const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
         if (currentState == IShell::state::ACTIVATION) {
             result = Core::ERROR_INPROGRESS;
@@ -502,6 +503,7 @@ namespace PluginHost {
                 // We have a StateControl interface, so at least start resuming, if not already resumed :-)
                 if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
                     result = stateControl->Request(PluginHost::IStateControl::RESUME);
+                    _administrator.Resumed(callSign, this);
                 }
                 stateControl->Release();
             }
@@ -619,7 +621,7 @@ namespace PluginHost {
         return (result);
     }
 
-    uint32_t Server::Service::Suspend(const reason why) {
+    Core::hresult Server::Service::Suspend(const reason why) {
 
         uint32_t result = Core::ERROR_NONE;
 
@@ -631,6 +633,8 @@ namespace PluginHost {
             Lock();
 
             IShell::state currentState(State());
+            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+            std::cout << "PluginServer.cpp suspend method";
 
             if (currentState == IShell::state::DEACTIVATION) {
                 result = Core::ERROR_INPROGRESS;
@@ -646,6 +650,7 @@ namespace PluginHost {
                     // We have a StateControl interface, so at least start suspending, if not already suspended :-)
                     if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
                         result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
+                        _administrator.Suspended(callSign, this);
                     }
                     stateControl->Release();
                 }
