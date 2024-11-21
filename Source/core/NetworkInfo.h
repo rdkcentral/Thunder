@@ -206,9 +206,9 @@ namespace Core {
         uint32_t Close();
 
     private:
-PUSH_WARNING(DISABLE_WARNING_UNUSED_PRIVATE_FIELD)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         INotification* _callback;
-POP_WARNING()
+#endif
     };
 
 #if defined(__WINDOWS__) || defined(__APPLE__)
