@@ -138,22 +138,23 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     // Client and server use
     _context = SSL_CTX_new(TLS_method());
 
-    ASSERT(_context != nullptr)
+    ASSERT(_context != nullptr);
 
-    _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
-    SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
-    SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), SSL_OP_ALL | SSL_OP_NO_SSLv2);
+    constexpr uint64_t options = SSL_OP_ALL | SSL_OP_NO_SSLv2;
+
+    VARIABLE_IS_NOT_USED uint64_t bitmask = SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), options);
+
+    ASSERT((bitmask & options) == options);
 
     // Trust the same certificates as any other application
-    if (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1) {
+    if (    // Trust the same certificates as any other application
+            (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
+         && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
+         && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
+       ) {
         success = Core::SocketPort::Initialize();
-
-        if (success == Core::ERROR_NONE) {
-            SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().HostName().c_str());
-        }
-    }
-    else {
-        TRACE_L1("OpenSSL failed to load certificate store");
+    } else {
+        TRACE_L1("OpenSSL failed to initialize: ssl structure / certificate store");
         success = Core::ERROR_GENERAL;
     }
 
