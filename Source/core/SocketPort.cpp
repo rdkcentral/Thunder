@@ -496,9 +496,15 @@ namespace Thunder {
             m_SendOffset = 0;
 
             if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
-                // Open up an accepted socket, but not yet added to the monitor.
-                m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);
-                nStatus = Core::ERROR_NONE;
+
+                if (Initialize() != Core::ERROR_NONE) {
+                    nStatus = Core::ERROR_ABORTED;
+                }
+                else {
+                    // Open up an accepted socket, but not yet added to the monitor.
+                    m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);
+                    nStatus = Core::ERROR_INPROGRESS;
+                }
             }
             else {
                 ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
