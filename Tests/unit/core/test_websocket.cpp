@@ -424,7 +424,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -440,7 +440,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -451,6 +451,75 @@ namespace Core {
         ~CustomSecureSocketStream()
         {
  #ifdef _VERBOSE
+            std::cout.flush();
+#endif
+        }
+
+    private:
+        const std::string _prefix;
+        Validator _validator;
+    };
+
+    class CustomSecureServerSocketStream : public ::Thunder::Crypto::SecureSocketPort {
+    private :
+
+        // Validat eclient certificate
+        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
+        public:
+
+            Validator() = default;
+            ~Validator() = default;
+
+            bool Validate(const Certificate& certificate) const override {
+                // Print certificate properties
+#ifdef _VERBOSE
+                std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
+                std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
+                std::cout << " |--> Subject = " << certificate.Subject() << "\n";
+                std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
+                std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
+#endif
+                return true; // Always accept
+            }
+        };
+
+   public :
+
+        // In essence, all parameters to SecureSocket are passed to a base class SocketPort
+        CustomSecureServerSocketStream(
+              const SOCKET& socket
+            , const ::Thunder::Core::NodeId& localNode
+            , const uint16_t sendBufferSize
+            , const uint16_t receiveBufferSize
+            , const std::string& prefix
+        )
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            , _prefix{ prefix }
+            , _validator{}
+        {
+            // Validate custom (sefl signed) certificates
+            uint32_t result = Callback(&_validator);
+        }
+
+        CustomSecureServerSocketStream(
+              const bool
+            , const ::Thunder::Core::NodeId& localNode
+            , const ::Thunder::Core::NodeId& remoteNode
+            , const uint16_t sendBufferSize
+            , const uint16_t receiveBufferSize
+            , const std::string& prefix
+        )
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            , _prefix{ prefix }
+            , _validator{}
+        {
+            // Validate custom (self signed) client certificates
+            uint32_t result = Callback(&_validator);
+        }
+
+        ~CustomSecureServerSocketStream()
+        {
+#ifdef _VERBOSE
             std::cout.flush();
 #endif
         }
@@ -1088,7 +1157,7 @@ namespace Core {
         const ::Thunder::Core::NodeId localNode {localHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
 
         // This is a listening socket as result of using SocketServerType which enables listening
-        ::Thunder::Core::SocketServerType<WebSocketServer<CustomSecureSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
+        ::Thunder::Core::SocketServerType<WebSocketServer<CustomSecureServerSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
 
         ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
@@ -1138,8 +1207,7 @@ namespace Core {
         WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize, "WebSocketClient");
 
 //        SleepMs(maxWaitTimeMs);
-
-        ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
         SleepMs(maxWaitTimeMs);
 

@@ -72,19 +72,26 @@ namespace Crypto {
             };
 
         public:
+            // Type of underlying socket
+            enum class sockettype_t : uint8_t {
+                   CLIENT_SOCKET
+                ,  SERVER_SOCKET
+            };
+
             Handler(Handler&&) = delete;
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
 
             template <typename... Args>
-            Handler(SecureSocketPort& parent, Args&&... args)
+            Handler(SecureSocketPort& parent, sockettype_t type, Args&&... args)
                 : Core::SocketPort(args...)
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
                 , _callback(nullptr)
-                , _handShaking(CONNECTING) {
-            }
+                , _handShaking(type == sockettype_t::CLIENT_SOCKET ? CONNECTING : ACCEPTING)
+                , _type{type}
+            {}
             ~Handler();
 
         public:
@@ -107,7 +114,7 @@ namespace Crypto {
 
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
-                ASSERT(_context != nullptr && _ssl != nullptr);
+//                ASSERT(_context != nullptr && _ssl != nullptr);
                 Update();
             };
             inline uint32_t Callback(IValidator* callback) {
@@ -136,6 +143,7 @@ namespace Crypto {
             void* _ssl;
             IValidator* _callback;
             mutable state _handShaking;
+            const sockettype_t _type;
         };
 
     public:
@@ -143,10 +151,23 @@ namespace Crypto {
         SecureSocketPort(const SecureSocketPort&) = delete;
         SecureSocketPort& operator=(const SecureSocketPort&) = delete;
 
+    protected:
+        // Operational context
+        enum class context_t : uint8_t {
+              CLIENT_CONTEXT
+            , SERVER_CONTEXT
+        };
+
+        template <typename... Args>
+        SecureSocketPort(context_t context, Args&&... args)
+            : _handler(*this, context == context_t:: SERVER_CONTEXT ? Handler::sockettype_t::SERVER_SOCKET : Handler::sockettype_t::CLIENT_SOCKET, args...)
+        {}
+
+    public:
         template <typename... Args>
         SecureSocketPort(Args&&... args)
-            : _handler(*this, args...) {
-        }
+            : SecureSocketPort(context_t::CLIENT_CONTEXT, args...)
+        {}
         ~SecureSocketPort() override {
         }
 

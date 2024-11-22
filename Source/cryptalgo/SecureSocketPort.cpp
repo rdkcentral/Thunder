@@ -146,9 +146,16 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 
     ASSERT((bitmask & options) == options);
 
-    // Trust the same certificates as any other application
-    if (    // Trust the same certificates as any other application
-            (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
+    if ( ( (    (_handShaking == ACCEPTING)
+              // Load server certifiate and private key
+             && (SSL_CTX_load_verify_locations(static_cast<SSL_CTX*>(_context), "RootCA.pem", nullptr) == 1)
+             && (SSL_CTX_use_certificate_chain_file(static_cast<SSL_CTX*>(_context), "localhost.pem") == 1)
+             && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), "localhost.key", SSL_FILETYPE_PEM) == 1)
+           )
+           || (_handShaking == CONNECTING)
+         )
+           // Default location from which CA certificates are loaded
+         && (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
          && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
          && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
        ) {
@@ -162,15 +169,17 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
-    ASSERT(_handShaking != CONNECTED);
+    int result = 0;
 
-    int result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+    if (_handShaking == CONNECTED) { // Avoid reading while still in CONNECTING or ACCEPTING
+        result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+    }
 
     return (result > 0 ? result : 0);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
-    ASSERT(_handShaking != CONNECTED);
+    ASSERT(_handShaking == CONNECTED);
 
     int result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
 
@@ -238,20 +247,25 @@ void SecureSocketPort::Handler::Update() {
 
         ASSERT(_ssl != nullptr);
 
+        // Client
         if (_handShaking == CONNECTING) {
             if ((result = SSL_connect(static_cast<SSL*>(_ssl))) == 1) {
-                _handShaking = EXCHANGE;
+                _handShaking = CONNECTED;
+                // If server has sent a certificate, and, we want to do 'our' own check
+                ValidateHandShake();
             }
-        }
+        } // Server
         else if (_handShaking == ACCEPTING) {
             if ((result = SSL_accept(static_cast<SSL*>(_ssl))) == 1) {
-                _handShaking = EXCHANGE;
+                _handShaking = CONNECTED;
+                // Client has sent a certificate (optional, on request only)
+                ValidateHandShake();
             }
-        }
-        
+        } // Re-initialie a previous session
         if (_handShaking == EXCHANGE) {
             if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
                 ValidateHandShake();
+                _handShaking = CONNECTED;
             }
         }
 
@@ -266,6 +280,7 @@ void SecureSocketPort::Handler::Update() {
         }
     }
     else {
+        /// _handShaking = CLOSED
         _parent.StateChange();
     }
 }
