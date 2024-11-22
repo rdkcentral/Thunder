@@ -260,6 +260,7 @@ namespace Controller {
                 uint8_t InstanceIDBits /* @brief Core instance bits */;
                 Core::OptionalType<uint8_t> TraceLevel /* @brief Trace level */;
                 uint8_t ThreadPoolCount /* Number of configured threads on the threadpool */;
+                uint32_t COMRPCTimeOut /* The number of milliseconds a COMRPC call can take before it is assumed to fail */;
             };
             
             struct CallStack {
@@ -280,6 +281,7 @@ namespace Controller {
                 string Name /* @brief The fully qualified name of the interface */;
                 Core::instance_id Instance /* @brief Instance ID */;
                 uint32_t Count /* @brief Reference count */;
+                Core::OptionalType<string> Origin /* @brief The Origin of the assocated connection */;
             };
 
             struct Link {
@@ -294,9 +296,9 @@ namespace Controller {
 
                 string Remote /* @brief IP address (or FQDN) of the other side of the connection */;
                 state State /* @brief State of the link */;
-                Core::OptionalType<string> Name /* @brief Name of the connection */;
                 uint32_t Id /* @brief A unique number identifying the connection */;
                 bool Activity /* @brief Denotes if there was any activity on this connection */;
+                Core::OptionalType<string> Name /* @brief Name of the connection */;
             };
 
             struct Service {
@@ -354,12 +356,12 @@ namespace Controller {
         virtual Core::hresult Services(const Core::OptionalType<string>& callsign /* @index */, Data::IServicesIterator*& services /* @out @extract */) const = 0;
 
         // @property
-        // @brief Connections list
+        // @brief Connections list of Thunder connections 
         virtual Core::hresult Links(Data::ILinksIterator*& links /* @out */) const = 0;
 
         // @property
         // @brief Proxies list
-        virtual Core::hresult Proxies(const uint32_t linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
+        virtual Core::hresult Proxies(const Core::OptionalType<string>& linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
         // @brief Framework version

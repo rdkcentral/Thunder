@@ -108,7 +108,6 @@ namespace Crypto {
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
                 ASSERT(_context != nullptr && _ssl != nullptr);
-
                 Update();
             };
             inline uint32_t Callback(IValidator* callback) {
