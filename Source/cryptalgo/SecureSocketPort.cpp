@@ -130,13 +130,15 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     uint32_t success = Core::ERROR_NONE;
 
     if (IsOpen() == true) {
-        _context = SSL_CTX_new(TLS_server_method());
         _handShaking = ACCEPTING;
-    }
-    else {
-        _context = SSL_CTX_new(TLS_method());
+    } else {
         _handShaking = CONNECTING;
     }
+
+    // Client and server use
+    _context = SSL_CTX_new(TLS_method());
+
+    ASSERT(_context != nullptr)
 
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
     SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
