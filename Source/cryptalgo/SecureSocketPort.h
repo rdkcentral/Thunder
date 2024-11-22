@@ -64,9 +64,11 @@ namespace Crypto {
         class EXTERNAL Handler : public Core::SocketPort {
         private:
             enum state : uint8_t {
-                IDLE,
+                ACCEPTING,
+                CONNECTING,
                 EXCHANGE,
-                CONNECTED
+                CONNECTED,
+                ERROR
             };
 
         public:
@@ -81,7 +83,7 @@ namespace Crypto {
                 , _context(nullptr)
                 , _ssl(nullptr)
                 , _callback(nullptr)
-                , _handShaking(IDLE) {
+                , _handShaking(CONNECTING) {
             }
             ~Handler();
 
@@ -105,8 +107,6 @@ namespace Crypto {
 
             // Signal a state change, Opened, Closed or Accepted
             void StateChange() override {
-
-                ASSERT(_context != nullptr);
                 Update();
             };
             inline uint32_t Callback(IValidator* callback) {
