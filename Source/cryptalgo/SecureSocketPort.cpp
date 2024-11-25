@@ -206,37 +206,52 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 }
 
 void SecureSocketPort::Handler::ValidateHandShake() {
-    // Step 1: verify a server certificate was presented during the negotiation
-    X509* x509cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
-    if (x509cert != nullptr) {
-        Core::SocketPort::Lock();
-
-        Certificate certificate(x509cert, static_cast<SSL*>(_ssl));
-
-        // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
-        // certificates are needed :-)
-        string validationError;
-        if (_callback && _callback->Validate(certificate) == true) {
-            _handShaking = CONNECTED;
-            Core::SocketPort::Unlock();
-            _parent.StateChange();
-        } else if (certificate.Verify(validationError) && certificate.ValidHostname(RemoteNode().HostName())) {
-            _handShaking = CONNECTED;
-            Core::SocketPort::Unlock();\
-            _parent.StateChange();
-        } else {
-            if (!validationError.empty()) {
-                TRACE_L1("OpenSSL certificate validation error for %s: %s", certificate.Subject().c_str(), validationError.c_str());
-            }
-            _handShaking = ERROR;
-            Core::SocketPort::Unlock();
-            SetError();
-        }
-
-        X509_free(x509cert);
-    } else {
+    // SSL handshake does an implicit verification, its result is:
+    if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) {
         _handShaking = ERROR;
         SetError();
+    } else if (   (SSL_CTX_get_verify_mode(static_cast<SSL_CTX*>(_context)) != SSL_VERIFY_NONE)
+               && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != nullptr)
+               && (SSL_get_verify_mode(static_cast<SSL*>(_ssl)) != SSL_VERIFY_NONE)
+               && (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != nullptr)
+              )
+    {
+        // Only relevant if the server has sent a client certificate request
+        // AND
+        // No callback has been set to do this job for us
+
+        // Step 1: verify a certificate was presented during the negotiation
+        X509* x509cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
+        if (x509cert != nullptr) {
+            Core::SocketPort::Lock();
+
+            Certificate certificate(x509cert, static_cast<SSL*>(_ssl));
+
+            // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
+            // certificates are needed :-)
+            string validationError;
+            if (_callback && _callback->Validate(certificate) == true) {
+                _handShaking = CONNECTED;
+                Core::SocketPort::Unlock();
+                _parent.StateChange();
+            } else if (certificate.Verify(validationError) && certificate.ValidHostname(RemoteNode().HostName())) {
+                _handShaking = CONNECTED;
+                Core::SocketPort::Unlock();\
+                _parent.StateChange();
+            } else {
+                if (!validationError.empty()) {
+                    TRACE_L1("OpenSSL certificate validation error for %s: %s", certificate.Subject().c_str(), validationError.c_str());
+                }
+                _handShaking = ERROR;
+                Core::SocketPort::Unlock();
+                SetError();
+            }
+
+            X509_free(x509cert);
+        } else {
+            _handShaking = ERROR;
+            SetError();
+        }
     }
 }
 
@@ -271,11 +286,15 @@ void SecureSocketPort::Handler::Update() {
 
         if (result != 1) {
             result = SSL_get_error(static_cast<SSL*>(_ssl), result);
-            if ((result != SSL_ERROR_WANT_READ) && (result != SSL_ERROR_WANT_WRITE)) {
-                _handShaking = ERROR;
-            }
-            else if (result == SSL_ERROR_WANT_WRITE) {
+
+            if ((result == SSL_ERROR_WANT_READ) || (result == SSL_ERROR_WANT_WRITE)) {
+                // Non-blocking I/O: select may be used to check if condition has changed
+                ValidateHandShake();
+                _handShaking = CONNECTED;
                 Trigger();
+            }
+            else {
+                _handShaking = ERROR;
             }
         }
     }
