@@ -1094,7 +1094,7 @@ namespace PluginHost {
             _security = nullptr;
         }
 
-        Close(0);
+        Close(Core::infinite);
     }
 
     //
