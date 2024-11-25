@@ -1863,8 +1863,10 @@ namespace Core {
 
 #endif
 
-    AdapterObserver::AdapterObserver(INotification* callback)
+    AdapterObserver::AdapterObserver(INotification* callback VARIABLE_IS_NOT_USED)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         : _callback(callback)
+#endif
     {
 #ifdef __WINDOWS__
         //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
