@@ -129,12 +129,6 @@ SecureSocketPort::Handler::~Handler() {
 uint32_t SecureSocketPort::Handler::Initialize() {
     uint32_t success = Core::ERROR_NONE;
 
-    if (IsOpen() == true) {
-        _handShaking = ACCEPTING;
-    } else {
-        _handShaking = CONNECTING;
-    }
-
     // Client and server use
     _context = SSL_CTX_new(TLS_method());
 
@@ -206,6 +200,8 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 }
 
 void SecureSocketPort::Handler::ValidateHandShake() {
+    ASSERT(_ssl != nullptr && _context != nullptr);
+
     // SSL handshake does an implicit verification, its result is:
     if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) {
         _handShaking = ERROR;
@@ -256,7 +252,6 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 }
 
 void SecureSocketPort::Handler::Update() {
-
     if (IsOpen() == true) {
         int result;
 
@@ -279,8 +274,8 @@ void SecureSocketPort::Handler::Update() {
         } // Re-initialie a previous session
         if (_handShaking == EXCHANGE) {
             if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
-                ValidateHandShake();
                 _handShaking = CONNECTED;
+                ValidateHandShake();
             }
         }
 
@@ -299,7 +294,6 @@ void SecureSocketPort::Handler::Update() {
         }
     }
     else {
-        /// _handShaking = CLOSED
         _parent.StateChange();
     }
 }
