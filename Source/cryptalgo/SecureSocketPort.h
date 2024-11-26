@@ -81,6 +81,7 @@ namespace Crypto {
             Handler(Handler&&) = delete;
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
+            Handler& operator=(Handler&&) = delete;
 
             template <typename... Args>
             Handler(SecureSocketPort& parent, sockettype_t type, Args&&... args)
