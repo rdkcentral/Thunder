@@ -284,8 +284,8 @@ void SecureSocketPort::Handler::Update() {
 
             if ((result == SSL_ERROR_WANT_READ) || (result == SSL_ERROR_WANT_WRITE)) {
                 // Non-blocking I/O: select may be used to check if condition has changed
-                ValidateHandShake();
                 _handShaking = CONNECTED;
+                ValidateHandShake();
                 Trigger();
             }
             else {
