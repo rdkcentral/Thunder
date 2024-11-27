@@ -96,33 +96,17 @@ namespace Plugin {
             }
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                //ASSERT(false);
-                std::cout << "Called activated in sink class" << std::endl;
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
-
                 // Make sure the resumes 
                 _parent.StartupResume(callsign, plugin);
-
             }
             void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
             {
-                //ASSERT(false);
-
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::DEACTIVATED, plugin->Reason());
             }
             void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
             {
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::UNAVAILABLE, plugin->Reason());
-            }
-
-            void Suspended(const string& callsign, PluginHost::IShell* plugin) override
-            {
-                _parent.NotifyStateChange(callsign, PluginHost::IShell::SUSPENDED, plugin->Reason());
-            }
-
-            void Resumed(const string& callsign, PluginHost::IShell* plugin) override
-            {
-                _parent.NotifyStateChange(callsign, PluginHost::IShell::RESUMED, plugin->Reason());
             }
 
             BEGIN_INTERFACE_MAP(Sink)
@@ -395,6 +379,7 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
+        void NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state);
 
     private:
         Core::CriticalSection _adminLock;

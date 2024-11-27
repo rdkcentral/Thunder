@@ -589,55 +589,7 @@ namespace Plugin {
                             result->Message = _T("There is no callsign: ") + callSign;
                         }
                     }
-                }
-            } else if (index.Current() == _T("Suspend")) {
-                std::cout << "In putmethod suspend" << std::endl;
-                if (index.Next()) {
-                    const string callSign(index.Current().Text());
-                    if (callSign == _service->Callsign()) {
-                        result->ErrorCode = Web::STATUS_FORBIDDEN;
-                        result->Message = _T("The PluginHost Controller can not be suspended.");
-                    } else {
-                        Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
-
-                        if (pluginInfo.IsValid()) {
-                            if (pluginInfo->State() == PluginHost::IShell::ACTIVATED) {
-                                // Deactivate the plugin.
-                                if (pluginInfo->Suspend(PluginHost::IShell::REQUESTED) != Core::ERROR_NONE) {
-                                    result->ErrorCode = Web::STATUS_NOT_MODIFIED;
-                                    result->Message = _T("Suspend already in progress.");
-                                }
-                            }
-                        } else {
-                            result->ErrorCode = Web::STATUS_NOT_FOUND;
-                            result->Message = _T("There is no callsign: ") + callSign;
-                        }
-                    }
-                }
-            } else if (index.Current() == _T("Resume")) {
-                std::cout << "In putmethod resume" << std::endl;
-                if (index.Next()) {
-                    const string callSign(index.Current().Text());
-                    if (callSign == _service->Callsign()) {
-                        result->ErrorCode = Web::STATUS_FORBIDDEN;
-                        result->Message = _T("The PluginHost Controller can not be resumed.");
-                    } else {
-                        Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
-
-                        if (pluginInfo.IsValid()) {
-                            if (pluginInfo->State() == PluginHost::IShell::DEACTIVATED) {
-                                // Deactivate the plugin.
-                                if (pluginInfo->Resume(PluginHost::IShell::REQUESTED) != Core::ERROR_NONE) {
-                                    result->ErrorCode = Web::STATUS_NOT_MODIFIED;
-                                    result->Message = _T("Suspend already in progress.");
-                                }
-                            }
-                        } else {
-                            result->ErrorCode = Web::STATUS_NOT_FOUND;
-                            result->Message = _T("There is no callsign: ") + callSign;
-                        }
-                    }
-                }
+                }    
             } else if (index.Current() == _T("Unavailable")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
@@ -929,7 +881,6 @@ namespace Plugin {
 
     Core::hresult Controller::Activate(const string& callsign)
     {
-        std::cout << "called activate controller" << std::endl;
         Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
@@ -967,7 +918,6 @@ namespace Plugin {
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
                 result = service->Deactivate(PluginHost::IShell::REQUESTED);
-
                 // Normalise return code
                 if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
                     result = Core::ERROR_CLOSING_FAILED;
@@ -1013,10 +963,9 @@ namespace Plugin {
 
     Core::hresult Controller::Suspend(const string& callsign)
     {
-        std::cout << "Called suspend method in controller";
         Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
-
+        
         if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::IShell> service;
 
@@ -1024,15 +973,12 @@ namespace Plugin {
                 ASSERT(service.IsValid());
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
-                ASSERT(service.IsValid());
-                result = service->Suspend(PluginHost::IShell::REQUESTED);
-
                 if (stateControl == nullptr) {
                     result = Core::ERROR_UNAVAILABLE;
                 }
                 else {
-                    //result = service->Suspend(PluginHost::IShell::SUSPENDED);
                     result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
+                    NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::SUSPENDED);
                     stateControl->Release();
                 }
             }
@@ -1043,13 +989,11 @@ namespace Plugin {
         else {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
-        std::cout << "suspend return value: " << result << std::endl;
         return result;
     }
 
     Core::hresult Controller::Resume(const string& callsign)
     {
-        std::cout << "Called resume method in controller";
         Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
 
@@ -1065,6 +1009,7 @@ namespace Plugin {
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
+                    NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
                     stateControl->Release();
                 }
             }
@@ -1402,14 +1347,11 @@ namespace Plugin {
 
         return (Core::ERROR_NONE);
     }
-
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         _adminLock.Lock();
-        std::cout << "Calling NotifyStateChange with state as: " << state << std::endl;
 
         LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-
         while(index != _lifeTimeObservers.end()) {
             (*index)->StateChange(callsign, state, reason);
             index++;
@@ -1418,6 +1360,21 @@ namespace Plugin {
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+    }
+
+    void Controller::NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
+    {
+       _adminLock.Lock();
+
+        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
+        while(index != _lifeTimeObservers.end()) {
+            (*index)->SuspendResumeStateChange(callsign, state);
+            index++;
+        }
+
+        _adminLock.Unlock();
+        // also notify the JSON RPC listeners (if any)
+        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, callsign, state); 
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const

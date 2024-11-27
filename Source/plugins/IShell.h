@@ -87,8 +87,6 @@ namespace PluginHost {
             PRECONDITION,
             HIBERNATED,
             DESTROYED,
-            SUSPENDED,
-            RESUMED
         };
 
         enum class startmode : uint8_t {
@@ -275,8 +273,6 @@ namespace PluginHost {
         virtual Core::hresult Deactivate(const reason) = 0;
         virtual Core::hresult Unavailable(const reason) = 0;
         virtual Core::hresult Hibernate(const uint32_t timeout) = 0;
-        virtual Core::hresult Suspend(const reason) = 0;
-        virtual Core::hresult Resume(const reason) = 0;
         virtual reason Reason() const = 0;
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
