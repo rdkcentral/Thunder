@@ -78,13 +78,15 @@ namespace Crypto {
             Handler& operator=(Handler&&) = delete;
 
             template <typename... Args>
-            Handler(SecureSocketPort& parent, bool clientSocketType, Args&&... args)
-                : Core::SocketPort(args...)
+            Handler(SecureSocketPort& parent, bool isClientSocketType, const std::string& certPath, const std::string& keyPath, Args&&... args)
+                : Core::SocketPort(std::forward<Args>(args)...)
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
                 , _callback(nullptr)
-                , _handShaking{clientSocketType ? CONNECTING : ACCEPTING}
+                , _handShaking{isClientSocketType ? CONNECTING : ACCEPTING}
+                , _certificatePath{certPath}
+                , _privateKeyPath{keyPath}
             {}
             ~Handler();
 
@@ -136,6 +138,8 @@ namespace Crypto {
             void* _ssl;
             IValidator* _callback;
             mutable state _handShaking;
+            const std::string _certificatePath; // (PEM formatted chain, including root CA) certificate file path
+            const std::string _privateKeyPath; // (PEM formatted) Private key file path
         };
 
     public:
@@ -151,14 +155,19 @@ namespace Crypto {
         };
 
         template <typename... Args>
-        SecureSocketPort(context_t context, Args&&... args)
-            : _handler(*this, context == context_t::CLIENT_CONTEXT, args...)
+        SecureSocketPort(context_t context,  Args&&... args)
+            : SecureSocketPort(context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{""}), static_cast<const std::string&>(std::string{""}), std::forward<Args>(args)...)
+        {}
+
+        template <typename... Args>
+        SecureSocketPort(context_t context, const std::string& certPath, const std::string& keyPath,  Args&&... args)
+            : _handler(*this, context == context_t::CLIENT_CONTEXT, certPath, keyPath, std::forward<Args>(args)...)
         {}
 
     public:
         template <typename... Args>
         SecureSocketPort(Args&&... args)
-            : SecureSocketPort(context_t::CLIENT_CONTEXT, args...)
+            : SecureSocketPort(context_t::CLIENT_CONTEXT, std::forward<Args>(args)...)
         {}
         ~SecureSocketPort() override {
         }

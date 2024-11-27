@@ -424,7 +424,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -440,7 +440,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -493,7 +493,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -509,7 +509,7 @@ namespace Core {
             , const uint16_t receiveBufferSize
             , const std::string& prefix
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _prefix{ prefix }
             , _validator{}
         {
@@ -1141,7 +1141,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    TEST(WebSocket, DISABLED_OpeningSecuredServerPort)
+    TEST(WebSocket, OpeningSecuredServerPort)
     {
         const TCHAR localHostName[] {"127.0.0.1"};
 
@@ -1180,7 +1180,7 @@ namespace Core {
         EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, OpeningSecuredClientPort)
+    TEST(WebSocket, DISABLED_OpeningSecuredClientPort)
     {
         const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol

@@ -142,9 +142,10 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 
     if ( ( (    (_handShaking == ACCEPTING)
               // Load server certifiate and private key
-             && (SSL_CTX_load_verify_locations(static_cast<SSL_CTX*>(_context), "RootCA.pem", nullptr) == 1)
-             && (SSL_CTX_use_certificate_chain_file(static_cast<SSL_CTX*>(_context), "localhost.pem") == 1)
-             && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), "localhost.key", SSL_FILETYPE_PEM) == 1)
+             && !_certificatePath.empty()
+             && (SSL_CTX_use_certificate_chain_file(static_cast<SSL_CTX*>(_context), _certificatePath.c_str()) == 1)
+             && !_privateKeyPath.empty()
+             && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), _privateKeyPath.c_str(), SSL_FILETYPE_PEM) == 1)
            )
            || (_handShaking == CONNECTING)
          )
