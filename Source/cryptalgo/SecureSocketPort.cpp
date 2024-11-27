@@ -147,9 +147,25 @@ uint32_t SecureSocketPort::Handler::Initialize() {
              && !_privateKeyPath.empty()
              && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), _privateKeyPath.c_str(), SSL_FILETYPE_PEM) == 1)
            )
-           || (_handShaking == CONNECTING)
+           || 
+           (    (_handShaking == CONNECTING)
+             && (
+                  _certificatePath.empty()
+                  ||
+                  (    !_certificatePath.empty()
+                    && (SSL_CTX_use_certificate_file(static_cast<SSL_CTX*>(_context), _certificatePath.c_str(), SSL_FILETYPE_PEM) == 1)
+                  ) 
+                )
+             && (
+                  _privateKeyPath.empty()
+                  ||
+                  (   !_privateKeyPath.empty()
+                   && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), _privateKeyPath.c_str(), SSL_FILETYPE_PEM) == 1)
+                  )
+                )
+           )
          )
-           // Default location from which CA certificates are loaded
+            // Default location from which CA certificates are loaded
          && (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
          && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
          && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
