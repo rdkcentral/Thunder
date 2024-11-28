@@ -146,6 +146,7 @@ uint32_t SecureSocketPort::Handler::Initialize() {
              && (SSL_CTX_use_certificate_chain_file(static_cast<SSL_CTX*>(_context), _certificatePath.c_str()) == 1)
              && !_privateKeyPath.empty()
              && (SSL_CTX_use_PrivateKey_file(static_cast<SSL_CTX*>(_context), _privateKeyPath.c_str(), SSL_FILETYPE_PEM) == 1)
+             && (EnableClientCertificateRequest() == Core::ERROR_NONE)
            )
            || 
            (    (_handShaking == CONNECTING)
@@ -266,6 +267,47 @@ void SecureSocketPort::Handler::ValidateHandShake() {
             SetError();
         }
     }
+}
+
+uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
+{
+    uint32_t result{Core::ERROR_NONE};
+
+    if (_requestCertificate) {
+        STACK_OF(X509_NAME)* nameList = _certificatePath.empty() ? nullptr : SSL_load_client_CA_file(_certificatePath.c_str());
+        const std::string paths = X509_get_default_cert_dir();
+
+        std::string::size_type head = paths.empty() ? std::string::npos : 0;
+
+        const char* separator = OPENSSL_info(OPENSSL_INFO_LIST_SEPARATOR);
+
+        while (head != std::string::npos && separator != nullptr) {
+            std::string::size_type tail = paths.find(separator[0], head);
+
+            std::string path = paths.substr(head, tail != std::string::npos ? tail - 1 : tail);
+
+            if ( !(   nameList != nullptr
+                   && !path.empty()
+                   && (SSL_add_dir_cert_subjects_to_stack(nameList, path.c_str()) == 1)
+               ) )
+            {
+                result = Core::ERROR_GENERAL;
+                break;
+            }
+
+            head = tail == std::string::npos ? tail : tail + 1;
+        }
+
+        if (nameList != nullptr && result == Core::ERROR_NONE) {
+            // Takes ownership of nameList
+            SSL_CTX_set_client_CA_list(static_cast<SSL_CTX*>(_context), nameList);
+            SSL_CTX_set_verify(static_cast<SSL_CTX*>(_context), SSL_VERIFY_PEER, /* cb_verify_callback */ nullptr);
+        } else if (nameList != nullptr) {
+            sk_X509_NAME_pop_free(nameList, X509_NAME_free);
+        }
+    }
+
+    return result;
 }
 
 void SecureSocketPort::Handler::Update() {
