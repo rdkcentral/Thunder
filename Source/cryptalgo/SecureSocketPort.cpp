@@ -22,6 +22,8 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 
+#include <unordered_map>
+
 #ifndef __WINDOWS__
 namespace {
 
@@ -82,6 +84,81 @@ namespace Crypto {
         return (result);
     }
 
+
+// Placeholder for custom data 'appended' to SSL structures and sharing within the OpenSSL API
+class ApplicationData {
+public :
+
+    ApplicationData(const ApplicationData&) = delete;
+    ApplicationData( ApplicationData&&) = delete;
+
+    ApplicationData& operator=(const ApplicationData&) = delete;
+    ApplicationData& operator=(ApplicationData&&) = delete;
+
+    static ApplicationData& Instance()
+    {
+        static ApplicationData data;
+        return data;
+    }
+
+    int Index(const SSL* const ssl, int index)
+    {
+        ASSERT(index != -1 && ssl != nullptr);
+
+        int result = -1;
+
+        _lock.Lock();
+
+        result = _map.insert({ssl, index}).second ? index : -1;
+
+        _lock.Unlock();
+
+        return result;
+    }
+
+    int Index(const SSL* const ssl) const
+    {
+        ASSERT(ssl != nullptr);
+
+        int result = -1;
+
+        _lock.Lock();
+
+        auto it = _map.find(ssl);
+
+        result = it != _map.end() ? it->second : -1;
+
+        _lock.Unlock();
+
+        return result;
+    }
+
+    bool Reset(const SSL* const ssl)
+    {
+        ASSERT(ssl != nullptr);
+
+        bool result = false;
+
+        _lock.Lock();
+
+        result = _map.erase(ssl) == 1;
+
+        _lock.Unlock();
+
+        return result;
+    }
+
+private :
+
+    ApplicationData()
+    {}
+    ~ApplicationData() = default;
+
+    std::unordered_map<const SSL*, int> _map;
+
+    mutable Core::CriticalSection _lock;
+};
+
 string SecureSocketPort::Certificate::Issuer() const {
     char buffer[1024];
     buffer[0] = '\0';
@@ -140,6 +217,8 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 
     ASSERT((bitmask & options) == options);
 
+    int exDataIndex = -1;
+
     if ( ( (    (_handShaking == ACCEPTING)
               // Load server certifiate and private key
              && !_certificatePath.empty()
@@ -168,10 +247,17 @@ uint32_t SecureSocketPort::Handler::Initialize() {
          )
             // Default location from which CA certificates are loaded
          && (SSL_CTX_set_default_verify_paths(static_cast<SSL_CTX*>(_context)) == 1)
+            // Create a new SSL connection structure for storing the custom certification method for use in the available callback mechanism
          && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
          && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
+         && ((exDataIndex = SSL_get_ex_new_index(/* number of callback arguments */ 0, /* pointer to callback arguments */ nullptr, /* allocation and initialization of exdata */ nullptr, /* duplication of exdata in copy operations */ nullptr, /* deallocaton of exdata */ nullptr)) != -1)
+            // The custom method to do validation of certificates with issues
+         && (SSL_set_ex_data(static_cast<SSL*>(_ssl), exDataIndex, _callback) == 1)
        ) {
-        success = Core::SocketPort::Initialize();
+            // Placeholder to refer to the validation method within the context of SSL connection
+            ApplicationData::Instance().Index(static_cast<SSL*>(_ssl), exDataIndex);
+
+            success = Core::SocketPort::Initialize();
     } else {
         TRACE_L1("OpenSSL failed to initialize: ssl structure / certificate store");
         success = Core::ERROR_GENERAL;
@@ -207,6 +293,9 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
     if (_ssl != nullptr) {
         SSL_shutdown(static_cast<SSL*>(_ssl));
         SSL_free(static_cast<SSL*>(_ssl));
+
+        /* bool */ ApplicationData::Instance().Reset(static_cast<SSL*>(_ssl));
+
         _ssl = nullptr;
     }
     if (_context != nullptr) {
@@ -221,59 +310,71 @@ void SecureSocketPort::Handler::ValidateHandShake() {
     ASSERT(_ssl != nullptr && _context != nullptr);
 
     // SSL handshake does an implicit verification, its result is:
-    if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) {
+    if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) { // this is what remains because our callback can also return, actually it is the smae as verify_cb!
         _handShaking = ERROR;
         SetError();
-    } else if (   (SSL_CTX_get_verify_mode(static_cast<SSL_CTX*>(_context)) != SSL_VERIFY_NONE)
-               && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != nullptr)
-               && (SSL_get_verify_mode(static_cast<SSL*>(_ssl)) != SSL_VERIFY_NONE)
-               && (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != nullptr)
-              )
-    {
-        // Only relevant if the server has sent a client certificate request
-        // AND
-        // No callback has been set to do this job for us
-
-        // Step 1: verify a certificate was presented during the negotiation
-        X509* x509cert = SSL_get_peer_certificate(static_cast<SSL*>(_ssl));
-        if (x509cert != nullptr) {
-            Core::SocketPort::Lock();
-
-            Certificate certificate(x509cert, static_cast<SSL*>(_ssl));
-
-            // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
-            // certificates are needed :-)
-            string validationError;
-            if (_callback && _callback->Validate(certificate) == true) {
-                _handShaking = CONNECTED;
-                Core::SocketPort::Unlock();
-                _parent.StateChange();
-            } else if (certificate.Verify(validationError) && certificate.ValidHostname(RemoteNode().HostName())) {
-                _handShaking = CONNECTED;
-                Core::SocketPort::Unlock();\
-                _parent.StateChange();
-            } else {
-                if (!validationError.empty()) {
-                    TRACE_L1("OpenSSL certificate validation error for %s: %s", certificate.Subject().c_str(), validationError.c_str());
-                }
-                _handShaking = ERROR;
-                Core::SocketPort::Unlock();
-                SetError();
-            }
-
-            X509_free(x509cert);
-        } else {
-            _handShaking = ERROR;
-            SetError();
-        }
     }
+}
+
+extern "C"
+{
+int VerifyCallbackWrapper(int checkOK, X509_STORE_CTX* ctx);
+int PeerCertificateCallbackWrapper(X509_STORE_CTX* ctx, void* arg);
+}
+
+int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
+{ // This is callled for certificates with issues to allow a custom validation
+    int result { verifyStatus };
+
+    switch(verifyStatus) {
+    case 0  :   {
+                    X509* x509Cert = nullptr;
+                    int exDataIndex = -1;
+                    SSL* ssl = nullptr;
+                    SecureSocketPort::IValidator* validator = nullptr;
+
+                    // Retireve and call the registered callback
+
+                    if (   ctx != nullptr
+                         && (exDataIndex = SSL_get_ex_data_X509_STORE_CTX_idx()) != -1
+                         && (ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, exDataIndex))) != nullptr
+                         && (exDataIndex = ApplicationData::Instance().Index(static_cast<SSL*>(ssl))) != -1
+                         && (validator =  static_cast<SecureSocketPort::IValidator*>(SSL_get_ex_data(ssl, exDataIndex))) != nullptr
+                         && (x509Cert = X509_STORE_CTX_get_current_cert(ctx)) != nullptr
+                       ) {
+                        X509_up_ref(x509Cert);
+
+                        SecureSocketPort::Certificate certificate(x509Cert, static_cast<SSL*>(ssl));
+
+                        result = validator->Validate(certificate);
+
+                        X509_free(x509Cert);
+                    }
+
+                    break;
+                }
+    case 1  :   // No error
+                break;
+    default :   ASSERT(false); // Not within set of defined values
+    }
+
+    return result; // 0 - Failurre, 1 - OK
+}
+
+int PeerCertificateCallbackWrapper(X509_STORE_CTX* ctx, void* arg)
+{ // This is called if the complete certificate validation procedure has its custom implementation
+  // This is typically not what is intended or required, and, a complex to do right
+
+    ASSERT(false);
+
+    return 0; // 0 - Failurre, 1 - OK
 }
 
 uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 {
     uint32_t result{Core::ERROR_NONE};
 
-    if (_requestCertificate) {
+    if (_requestCertificate || true) {
         STACK_OF(X509_NAME)* nameList = _certificatePath.empty() ? nullptr : SSL_load_client_CA_file(_certificatePath.c_str());
         const std::string paths = X509_get_default_cert_dir();
 
@@ -301,7 +402,12 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
         if (nameList != nullptr && result == Core::ERROR_NONE) {
             // Takes ownership of nameList
             SSL_CTX_set_client_CA_list(static_cast<SSL_CTX*>(_context), nameList);
-            SSL_CTX_set_verify(static_cast<SSL_CTX*>(_context), SSL_VERIFY_PEER, /* cb_verify_callback */ nullptr);
+
+            // Callback is triggered if certiifcates have errors
+            SSL_CTX_set_verify(static_cast<SSL_CTX*>(_context), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, VerifyCallbackWrapper);
+
+            // Typically, SSL_CTX_set_cert_verify_callback is the most complex as it should replace the complete verification process procedure
+//            SSL_CTX_set_cert_verify_callback(static_cast<SSL_CTX*>(_context), PeerCertificateCallbackWrapper, static_cast<void*>(_ssl));
         } else if (nameList != nullptr) {
             sk_X509_NAME_pop_free(nameList, X509_NAME_free);
         }
