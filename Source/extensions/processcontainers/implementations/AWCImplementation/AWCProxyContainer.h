@@ -23,21 +23,20 @@ class AWCProxyContainer: public AWCContainerBase
         void onStateChange(int, AppState) override final;
     public:
         DBusInterface(AWCProxyContainer *);
-        ~DBusInterface() override final;
+        ~DBusInterface() override;
     };
 
     using SharedDBusInterface = std::shared_ptr<DBusInterface>;
 
-    friend class AWCContainerAdministrator;
-
-    AWCProxyContainer(const string &name, const PluginConfig &, dbus::Client *);
-
     bool waitForStateChange(Lock &, AppState, milliseconds);
+
 public:
+    AWCProxyContainer(const string &name, const PluginConfig &, dbus::Client *);
     AWCProxyContainer(const AWCProxyContainer&) = delete;
-    ~AWCProxyContainer() override final;
+    ~AWCProxyContainer() override;
     AWCProxyContainer& operator=(const AWCProxyContainer&) = delete;
 
+    containertype Type() const override { return IContainer::AWC; }
     uint32_t Pid() const override final;
     bool IsRunning() const override final;
     bool Start(const string &, ProcessContainers::IStringIterator &) override final;
