@@ -676,7 +676,6 @@ namespace PluginHost {
                 ControlData(const uint32_t maxRequests)
                     : _isExtended(false)
                     , _maxRequests(maxRequests)
-                    , _state(0)
                     , _major(~0)
                     , _minor(~0)
                     , _patch(~0)
@@ -753,7 +752,6 @@ namespace PluginHost {
             private:
                 bool _isExtended;
                 uint32_t _maxRequests;
-                VARIABLE_IS_NOT_USED uint8_t _state;
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
@@ -803,9 +801,8 @@ namespace PluginHost {
             Service& operator=(Service&&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode /* type */, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
-                , _mode(type)
                 , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
@@ -1626,7 +1623,6 @@ namespace PluginHost {
             }
 
         private:
-            VARIABLE_IS_NOT_USED const mode _mode;
             mutable Core::CriticalSection _pluginHandling;
 
             // The handlers that implement the actual logic behind the service
@@ -1646,7 +1642,9 @@ namespace PluginHost {
             uint32_t _lastId;
             ControlData _metadata;
             Core::Library _library;
-            VARIABLE_IS_NOT_USED void* _hibernateStorage;
+#ifdef HIBERNATE_SUPPORT_ENABLED
+            void* _hibernateStorage;
+#endif
             ExternalAccess _external;
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
