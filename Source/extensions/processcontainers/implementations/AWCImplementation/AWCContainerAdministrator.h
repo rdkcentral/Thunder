@@ -3,11 +3,12 @@
 #include <mutex>
 #include <vector>
 
-
 #include "AWC.h"
 #include "dbus/Client.h"
-#include "processcontainers/common/BaseAdministrator.h"
 #include "core/JSON.h"
+
+#include "processcontainers/Messaging.h"
+#include "processcontainers/ContainerAdministrator.h"
 
 namespace Thunder {
 namespace ProcessContainers {
@@ -25,22 +26,24 @@ struct PluginConfig: public Core::JSON::Container
 
 
 class AWCContainerAdministrator:
-    public BaseContainerAdministrator<IContainer>,
+    public IContainerProducer,
     public AWCStateChangeNotifier
 {
-    friend class AWCContainer;
-    friend class Core::SingletonType<AWCContainerAdministrator>;
 private:
     awc::AWCClient * awcClient_;
     std::shared_ptr<AWCListener> awcClientListener_;
     dbus::Client dbusClient_;
-    AWCContainerAdministrator();
+
 public:
+    AWCContainerAdministrator();
     AWCContainerAdministrator(const AWCContainerAdministrator&) = delete;
     AWCContainerAdministrator& operator=(const AWCContainerAdministrator&) = delete;
     ~AWCContainerAdministrator() override;
-    IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
-    void Logging(const string& globalLogDir, const string& loggingOptions) override {};
+
+    uint32_t Initialize(const string& config) override;
+    void Deinitialize() override;
+    Core::ProxyType<IContainer> Container(const string& name, IStringIterator& searchpaths,
+        const string& containerLogDir, const string& configuration) override;
 };
 
 } /* ProcessContainers */
