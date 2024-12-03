@@ -21,6 +21,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <openssl/crypto.h>
 
 #include <unordered_map>
 
