@@ -226,7 +226,7 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 void SecureSocketPort::Handler::Update() {
 
     if (IsOpen() == true) {
-        int result;
+        int result = 1;
 
         ASSERT(_ssl != nullptr);
 
