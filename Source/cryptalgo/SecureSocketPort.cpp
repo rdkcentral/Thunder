@@ -88,7 +88,7 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
-        int result;
+        int result = 1;
 
         if (_handShaking == IDLE) {
             result = SSL_connect(static_cast<SSL*>(_ssl));
