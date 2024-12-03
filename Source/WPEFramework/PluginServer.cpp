@@ -955,7 +955,7 @@ namespace PluginHost
             _security = nullptr;
         }
 
-        Close(0);
+        Close(Core::infinite);
     }
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
