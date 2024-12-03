@@ -381,6 +381,15 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 
         std::string::size_type head = paths.empty() ? std::string::npos : 0;
 
+        // OPENSSL_info requires at least version 3.0
+
+        static_assert(   ((OPENSSL_VERSION_NUMBER >> 28) & 0xF) >= 3  // Major
+                      && ((OPENSSL_VERSION_NUMBER >> 20) & 0xFF) >= 0 // Minor
+                      && ((OPENSSL_VERSION_NUMBER >> 4) & 0xF) >= 0   // Patch
+                      && ((OPENSSL_VERSION_NUMBER) & 0xF) >= 0        // Pre-release
+                      , "OpenSSL version (pre-release) unsupported"
+                     );
+
         const char* separator = OPENSSL_info(OPENSSL_INFO_LIST_SEPARATOR);
 
         while (head != std::string::npos && separator != nullptr) {
