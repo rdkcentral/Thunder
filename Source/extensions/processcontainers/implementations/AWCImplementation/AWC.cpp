@@ -2,11 +2,8 @@
 
 #include <algorithm>
 
-#include "Tracing.h"
-
-
-using namespace Thunder::ProcessContainers;
-
+namespace Thunder {
+namespace ProcessContainers {
 
 AWCStateChangeNotifier::AWCStateChangeNotifier() : _listeners(), _mutex() {};
 
@@ -58,4 +55,7 @@ void AWCListener::notifyServiceReady()
 {
     TRACE_L3("%s", _TRACE_FUNCTION_);
     // no action
+}
+
+} // namespace ProcessContainers
 }

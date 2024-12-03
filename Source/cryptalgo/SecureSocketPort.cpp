@@ -419,7 +419,7 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
-        int result;
+        int result = 1;
 
         ASSERT(_ssl != nullptr);
 
