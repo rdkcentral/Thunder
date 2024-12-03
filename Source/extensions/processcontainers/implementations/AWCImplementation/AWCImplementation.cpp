@@ -1,28 +1,10 @@
-/*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2020 Metrological
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 #include "AWCContainerAdministrator.h"
 #include "AWCImplementation.h"
-#include "processcontainers/Tracing.h"
 
 
-using namespace Thunder::ProcessContainers;
+namespace Thunder {
+namespace ProcessContainers {
 
 AWCContainer::AWCContainer(const string& id, awc::AWCClient * client, AWCStateChangeNotifier * notifier):
     AWCContainerBase(id)
@@ -41,8 +23,6 @@ AWCContainer::~AWCContainer()
     }
     _notifier->removeListener(this);
     TRACE(ProcessContainerization, (_T("Container [%s] released"), Id().c_str()));
-
-    static_cast<AWCContainerAdministrator &>(AWCContainerAdministrator::Instance()).RemoveContainer(this);
 }
 
 uint32_t AWCContainer::Pid() const
@@ -199,4 +179,7 @@ void AWCContainer::notifyStateChange(int req_id, awc::awc_app_state_t app_state,
             _cv.notify_one();
         }
     }
+}
+
+} // namespace ProcessContainers
 }
