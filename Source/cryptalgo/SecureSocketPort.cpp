@@ -374,7 +374,7 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 {
     uint32_t result{Core::ERROR_NONE};
 
-    if (_requestCertificate || true) {
+    if (_requestCertificate) {
         STACK_OF(X509_NAME)* nameList = _certificatePath.empty() ? nullptr : SSL_load_client_CA_file(_certificatePath.c_str());
         const std::string paths = X509_get_default_cert_dir();
 
