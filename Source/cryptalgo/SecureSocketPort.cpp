@@ -387,7 +387,7 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
                       && ((OPENSSL_VERSION_NUMBER >> 20) & 0xFF) >= 0 // Minor
                       && ((OPENSSL_VERSION_NUMBER >> 4) & 0xF) >= 0   // Patch
                       && ((OPENSSL_VERSION_NUMBER) & 0xF) >= 0        // Pre-release
-                      , "OpenSSL version (pre-release) unsupported"
+                      , "OpenSSL version unsupported. Expected version 3.0.0.0 and higher"
                      );
 
         const char* separator = OPENSSL_info(OPENSSL_INFO_LIST_SEPARATOR);
