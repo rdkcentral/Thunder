@@ -144,6 +144,7 @@ set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fex
 target_compile_definitions(${TEST_RUNNER_NAME}
    PRIVATE
         BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
+        SECURESOCKETS_ENABLED=1
         VOLATILE_PATH=${CMAKE_INSTALL_PREFIX}/${VOLATILE_PATH}
 )
 
