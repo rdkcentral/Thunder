@@ -29,6 +29,14 @@
 
 #include "../IPTestAdministrator.h"
 
+#ifdef VOLATILE_PATH
+#define XSTR(s) STR(s)
+#define STR(s) #s "/"
+#else
+#define XSTR(s)
+#define STR(s)
+#endif
+
 namespace Thunder {
 namespace Tests {
 namespace Core {
@@ -386,6 +394,8 @@ namespace Core {
     class CustomSecureSocketStream : public ::Thunder::Crypto::SecureSocketPort {
     private :
 
+        static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
+
         // Validat eclient certificate
         class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
         public:
@@ -415,7 +425,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Validate custom (sefl signed) certificates
@@ -429,7 +439,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Validate custom (self signed) client certificates
@@ -448,7 +458,13 @@ namespace Core {
         Validator _validator;
     };
 
+    /* static */  constexpr char CustomSecureSocketStream::volatilePath[];
+
     class CustomSecureServerSocketStream : public ::Thunder::Crypto::SecureSocketPort {
+    private :
+
+        static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
+
     public :
 
         // In essence, all parameters to SecureSocket are passed to a base class SocketPort
@@ -458,7 +474,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
         {}
 
         CustomSecureServerSocketStream(
@@ -468,7 +484,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
         {}
 
         ~CustomSecureServerSocketStream()
@@ -479,8 +495,12 @@ namespace Core {
         }
     };
 
+    /* static */  constexpr char CustomSecureServerSocketStream::volatilePath[];
+
     class CustomSecureServerSocketStreamClientValidation : public ::Thunder::Crypto::SecureSocketPort {
     private :
+
+        static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
 
         // Validat eclient certificate
         class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
@@ -511,7 +531,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), true, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Validate custom (sefl signed) certificates
@@ -525,7 +545,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{"localhost.pem"}), static_cast<const std::string&>(std::string{"localhost.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), true, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Validate custom (self signed) client certificates
@@ -543,6 +563,8 @@ namespace Core {
         const std::string _prefix;
         Validator _validator;
     };
+
+    /* static */ constexpr char CustomSecureServerSocketStreamClientValidation::volatilePath[];
 
     TEST(WebSocket, DISABLED_OpeningServerPort)
     {
@@ -1249,7 +1271,7 @@ namespace Core {
 
         ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
-//        SleepMs(maxWaitTimeMs);
+        SleepMs(maxWaitTimeMs);
 
         // Obtain the endpoint at the server side for each (remotely) connected client
         auto it = server.Clients();
@@ -1258,8 +1280,7 @@ namespace Core {
             // Unless a client has send an upgrade request we cannot send data out although we might be calling WebSocket functionality
             if (it.Client()->IsOpen()) {
                 // No data should be transferred to the remote client
-            } else {
-           }
+            }
         }
 
         SleepMs(maxWaitTimeMs);
@@ -1267,7 +1288,7 @@ namespace Core {
         EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, OpeningSecuredClientPortCertificateRequest)
+    TEST(WebSocket, DISABLED_OpeningSecuredClientPortCertificateRequest)
     {
         const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
@@ -1294,7 +1315,7 @@ namespace Core {
         WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
 
 //        SleepMs(maxWaitTimeMs);
-        EXPECT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        EXPECT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE); // Fails in non-websocket server context
 
         SleepMs(maxWaitTimeMs);
 
@@ -1304,3 +1325,8 @@ namespace Core {
 } // Core
 } // Tests
 } // Thunder
+
+#ifdef VOLATILE_PATH
+#undef STR
+#undef XSTR
+#endif

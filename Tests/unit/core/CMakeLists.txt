@@ -77,6 +77,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
+   test_websocket.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
    test_workerpool.cpp
@@ -141,7 +142,9 @@ endif()
 set_source_files_properties(test_systeminfo.cpp PROPERTIES COMPILE_OPTIONS "-fexceptions")
 
 target_compile_definitions(${TEST_RUNNER_NAME}
-   PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
+   PRIVATE
+        BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
+        VOLATILE_PATH=${CMAKE_INSTALL_PREFIX}/${VOLATILE_PATH}
 )
 
 target_compile_definitions(${TEST_RUNNER_NAME}
@@ -162,6 +165,11 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
     ${NAMESPACE}Messaging::${NAMESPACE}Messaging
     ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+)
+
+# SSL certifictaes for testing
+install(FILES localhostClient.pem localhostClient.key localhostServer.pem localhostServer.key rootCA.pem
+    DESTINATION ${VOLATILE_PATH}
 )
 
 install(
