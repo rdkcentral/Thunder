@@ -27,6 +27,10 @@
 #include <websocket/websocket.h>
 #include <cryptalgo/cryptalgo.h>
 
+#ifndef SECURESOCKETS_ENABLED
+#error "This unit test requires SecureSocketPort"
+#endif 
+
 #include "../IPTestAdministrator.h"
 
 #ifdef VOLATILE_PATH
