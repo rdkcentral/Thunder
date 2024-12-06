@@ -478,7 +478,6 @@ namespace PluginHost {
 
     uint32_t Server::Service::Resume(const reason why) /* override */ {
         uint32_t result = Core::ERROR_NONE;
-
         Lock();
 
         IShell::state currentState(State());
