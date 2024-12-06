@@ -41,6 +41,8 @@
 #define STR(s)
 #endif
 
+//#define _VERBOSE
+
 namespace Thunder {
 namespace Tests {
 namespace Core {
@@ -990,9 +992,9 @@ namespace Core {
 
             const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
 
-            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
-
             EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
 
             ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
@@ -1013,7 +1015,7 @@ namespace Core {
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // A small delay so the child can be set up
-//            SleepMs(maxInitTime);
+            SleepMs(maxInitTime);
 
             EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
@@ -1085,9 +1087,9 @@ namespace Core {
 
             const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
 
-            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
-
             EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
 
             ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
@@ -1116,7 +1118,7 @@ namespace Core {
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // A small delay so the child can be set up
-//            SleepMs(maxInitTime);
+            SleepMs(maxInitTime);
 
             EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
@@ -1248,6 +1250,7 @@ namespace Core {
         WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
 
 //        SleepMs(maxWaitTimeMs);
+
         EXPECT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
         SleepMs(maxWaitTimeMs);
