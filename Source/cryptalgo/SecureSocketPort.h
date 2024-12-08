@@ -23,6 +23,7 @@
 
 struct ssl_st;
 struct ssl_ctx_st;
+struct ssl_method_st;
 struct x509_st;
 struct evp_pkey_st;
 struct x509_store_st;
@@ -89,9 +90,8 @@ namespace Crypto {
         ~CertificateStore();
 
     public:
-        static CertificateStore& Default() {
-            static CertificateStore defaultStore(_default);
-            return (defaultStore);
+        static CertificateStore Default() {
+            return (CertificateStore(_default));
         }
         void Add(const Certificate& cert);
         inline operator const x509_store_st* () const {
@@ -132,39 +132,9 @@ namespace Crypto {
                 const Core::NodeId& localNode,
                 const Core::NodeId& remoteNode,
                 const uint16_t sendBufferSize,
-                const uint16_t receiveBufferSize) 
-                : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize)
-                , _parent(parent)
-                , _callback(nullptr)
-                , _handShaking(EXCHANGE) {
-                CreateContext(false);
-            }
-            Handler(SecureSocketPort& parent, 
-                const enumType socketType,
-                const Core::NodeId& localNode,
-                const Core::NodeId& remoteNode,
-                const uint16_t sendBufferSize,
                 const uint16_t receiveBufferSize,
                 const uint32_t socketSendBufferSize,
-                const uint32_t socketReceiveBufferSize) 
-                : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
-                , _parent(parent)
-                , _callback(nullptr)
-                , _handShaking(EXCHANGE) {
-                CreateContext(false);
-            }
-            Handler(SecureSocketPort& parent, 
-                const enumType socketType,
-                const SOCKET& connector,
-                const Core::NodeId& remoteNode,
-                const uint16_t sendBufferSize,
-                const uint16_t receiveBufferSize)
-                : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize)
-                , _parent(parent)
-                , _callback(nullptr)
-                , _handShaking(EXCHANGE) {
-                CreateContext(true);
-            }
+                const uint32_t socketReceiveBufferSize);
             Handler(SecureSocketPort& parent,
                 const enumType socketType,
                 const SOCKET& connector,
@@ -172,13 +142,7 @@ namespace Crypto {
                 const uint16_t sendBufferSize,
                 const uint16_t receiveBufferSize,
                 const uint32_t socketSendBufferSize,
-                const uint32_t socketReceiveBufferSize)
-                : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
-                , _parent(parent)
-                , _callback(nullptr)
-                , _handShaking(EXCHANGE) {
-                CreateContext(true);
-            }
+                const uint32_t socketReceiveBufferSize);
             ~Handler();
 
         public:
@@ -217,7 +181,7 @@ namespace Crypto {
         private:
             void Update();
             void ValidateHandShake();
-            void CreateContext(const bool server);
+            void CreateContext(const struct ssl_method_st* method);
  
         private:
             SecureSocketPort& _parent;
@@ -233,10 +197,43 @@ namespace Crypto {
         SecureSocketPort& operator=(SecureSocketPort&&) = delete;
         SecureSocketPort& operator=(const SecureSocketPort&) = delete;
 
-        template <typename... Args>
-        SecureSocketPort(Args&&... args)
-            : _handler(*this, args...) {
+        SecureSocketPort(
+            const Core::SocketPort::enumType socketType,
+            const Core::NodeId& localNode,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize)
+            : _handler(*this, socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize) {
         }
+        SecureSocketPort(
+            const Core::SocketPort::enumType socketType,
+            const Core::NodeId& localNode,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : _handler(*this, socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize) {
+        }
+        SecureSocketPort(
+            const Core::SocketPort::enumType socketType,
+            const SOCKET& connector,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize)
+            : _handler(*this, socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize) {
+        }
+        SecureSocketPort(
+            const Core::SocketPort::enumType socketType,
+            const SOCKET& connector,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : _handler(*this, socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize) {
+        }
+
         ~SecureSocketPort() override;
 
     public:

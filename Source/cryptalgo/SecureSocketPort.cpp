@@ -305,22 +305,52 @@ void CertificateStore::Add(const Certificate& certificate) {
 // -----------------------------------------------------------------------------
 // class SecureSocketPort::Handler
 // -----------------------------------------------------------------------------
+SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
+    const enumType socketType,
+    const Core::NodeId& localNode,
+    const Core::NodeId& remoteNode,
+    const uint16_t sendBufferSize,
+    const uint16_t receiveBufferSize,
+    const uint32_t socketSendBufferSize,
+    const uint32_t socketReceiveBufferSize)
+    : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
+    , _parent(parent)
+    , _callback(nullptr)
+    , _handShaking(EXCHANGE) {
+    CreateContext(TLS_method());
+}
+
+SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
+    const enumType socketType,
+    const SOCKET& connector,
+    const Core::NodeId& remoteNode,
+    const uint16_t sendBufferSize,
+    const uint16_t receiveBufferSize,
+    const uint32_t socketSendBufferSize,
+    const uint32_t socketReceiveBufferSize)
+    : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
+    , _parent(parent)
+    , _callback(nullptr)
+    , _handShaking(EXCHANGE) {
+    CreateContext(TLS_server_method());
+}
+
 SecureSocketPort::Handler::~Handler() {
     ASSERT(IsClosed() == true);
     Close(0);
 
     if (_ssl != nullptr) {
-        SSL_free(static_cast<SSL*>(_ssl));
+        SSL_free(_ssl);
         _ssl = nullptr;
     }
     if (_context != nullptr) {
-        SSL_CTX_free(static_cast<SSL_CTX*>(_context));
+        SSL_CTX_free(_context);
         _context = nullptr;
     }
 }
 
-void SecureSocketPort::Handler::CreateContext(const bool server) {
-    _context = SSL_CTX_new(server ? TLS_server_method() : TLS_method());
+void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method) {
+    _context = SSL_CTX_new(method);
     if (_context != nullptr) {
         _ssl = SSL_new(_context);
 
@@ -334,13 +364,6 @@ void SecureSocketPort::Handler::CreateContext(const bool server) {
             VARIABLE_IS_NOT_USED unsigned long bitmask = SSL_CTX_set_options(_context, options);
 
             ASSERT((bitmask & options) == options);
-
-            if (server == true) {
-                SSL_set_accept_state(_ssl);
-            }
-            else {
-                SSL_set_connect_state(_ssl);
-            }
         }
     }
 }
@@ -351,8 +374,15 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     ASSERT(_context != nullptr);
     ASSERT(_ssl != nullptr);
 
-    if (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
+    if (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
         SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
+        if (IsOpen() == true) {
+            SSL_set_accept_state(_ssl);
+        }
+        else {
+            SSL_set_connect_state(_ssl);
+        }
+
         initialized =  Core::SocketPort::Initialize();
     }
 
@@ -367,18 +397,20 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
         const_cast<Handler&>(*this).Update();
     }
  
-    return (SSL_read(static_cast<SSL*>(_ssl), buffer, length));
+    return (SSL_read(_ssl, buffer, length));
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
 
     ASSERT(_handShaking != ERROR);
 
+    uint32_t result = SSL_write(_ssl, buffer, length);
+
     if (_handShaking != OPEN) {
         Update();
     }
 
-    return (SSL_write(_ssl, buffer, length));
+    return (result);
 }
 
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
@@ -387,7 +419,7 @@ uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
 
 uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
     ASSERT(_ssl != nullptr);
-    SSL_shutdown(static_cast<SSL*>(_ssl));
+    SSL_shutdown(_ssl);
 
     return(Core::SocketPort::Close(waitTime));
 }
