@@ -1258,6 +1258,101 @@ namespace Core {
         EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
+    TEST(WebSocket, SecuredSocketDataExchange)
+    {
+        const TCHAR hostName[] {"127.0.0.1"};
+
+        // Some aliases
+        const auto& remoteHostName = hostName;
+        const auto& localHostName = hostName;
+
+        constexpr uint16_t tcpServerPort {12346};   // TCP, default 80 or 443 (SSL)
+        constexpr uint32_t tcpProtocol {0};         // HTTP or HTTPS but can only be set on raw sockets
+
+        // The minimum size is determined by the HTTP upgrade process. The limit here is above that threshold.
+        constexpr uint16_t sendBufferSize {1024};
+        constexpr uint16_t receiveBufferSize {1024};
+
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 10;
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
+            const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
+            const std::string webSocketOrigin;      // Optional, set by browser clients
+            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            constexpr bool masking {true};          // Flag set by client to enable masking
+
+            constexpr bool rawSocket {false};
+
+            const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
+
+            EXPECT_EQ(client.Open(4*maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            // Avoid  premature shutdown() at the other side
+            SleepMs(2*maxWaitTimeMs);
+
+            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            const ::Thunder::Core::NodeId localNode {localHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            // This is a listening socket as result of using SocketServerType which enables listening
+            ::Thunder::Core::SocketServerType<WebSocketServer<CustomSecureServerSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
+
+            EXPECT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // A small delay so the child can be set up
+            SleepMs(2*maxInitTime);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Obtain the endpoint at the server side for each (remotely) connected client
+            auto it = server.Clients();
+
+            constexpr uint8_t data[] = { 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9, 0x8, 0x7, 0x6, 0x5, 0x3, 0x2, 0x1, 0x0 };
+
+            if (it.Next()) {
+                // Unless a client has send an upgrade request we cannot send data out although we might be calling WebSocket functionality
+
+                if (it.Client()->IsOpen()) {
+                    /* bool */ it.Client()->Submit(std::basic_string<uint8_t>{ data, sizeof(data) });
+                }
+            }
+
+            // Allow some time to receive the response
+            SleepMs(maxWaitTimeMs);
+
+            std::basic_string<uint8_t> response{ data, sizeof(data) };
+            std::reverse(response.begin(), response.end());
+
+            // A simple poll to keep it simple
+            EXPECT_TRUE(   it.IsValid()
+                        && (it.Client()->Response() == response)
+            );
+
+            EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
+    } 
+
+
+
     TEST(WebSocket, DISABLED_SecuredServerPortCertificateRequest)
     {
         const TCHAR localHostName[] {"127.0.0.1"};
