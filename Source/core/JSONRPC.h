@@ -270,7 +270,9 @@ namespace Core {
                     method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
                 }
 
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
                 ToCamelCase(method);
+POP_WARNING()
 
                 return (method);
             }
@@ -426,7 +428,7 @@ namespace Core {
             Info Error;
 
         private:
-            static void ToCamelCase(string& source)
+            DEPRECATED static void ToCamelCase(string& source)
             {
                 // speed optimized, does not care for locale settings
 
