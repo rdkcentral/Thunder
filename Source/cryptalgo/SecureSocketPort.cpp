@@ -268,13 +268,11 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
-    int result = 0;
+    ASSERT(_handShaking == CONNECTED);
 
-    if (_handShaking == CONNECTED) { // Avoid reading while still in CONNECTING or ACCEPTING
-        result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
-    }
+    int result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
 
-    return (result > 0 ? result : 0);
+    return (result > 0 ? result : /* error */ -1);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
@@ -282,7 +280,7 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 
     int result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
 
-    return (result > 0 ? result : 0);
+    return (result > 0 ? result : /* error */ -1);
 }
 
 
@@ -447,7 +445,7 @@ void SecureSocketPort::Handler::Update() {
                 ValidateHandShake();
             }
         } // Re-initialie a previous session
-        if (_handShaking == EXCHANGE) {
+        else if (_handShaking == EXCHANGE) {
             if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
                 _handShaking = CONNECTED;
                 ValidateHandShake();
@@ -461,16 +459,14 @@ void SecureSocketPort::Handler::Update() {
                 // Non-blocking I/O: select may be used to check if condition has changed
                 _handShaking = CONNECTED;
                 ValidateHandShake();
-                Trigger();
             }
             else {
                 _handShaking = ERROR;
             }
         }
     }
-    else {
-        _parent.StateChange();
-    }
+
+    _parent.StateChange();
 }
 
 } } // namespace Thunder::Crypto
