@@ -30,9 +30,9 @@ namespace Thunder {
 namespace PluginHost {
 
     namespace {
-    
+
         template<typename JSONRPCERRORASSESSORTYPE>
-        uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
+        uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler)
         {
             uint32_t result = handler.Invoke(context, method, parameters, response);
             if(result != Core::ERROR_NONE) {
@@ -460,7 +460,7 @@ namespace PluginHost {
             while ((index != _handlers.end()) && (result == nullptr)) {
                 if (index->HasVersionSupport(version) == true) {
                     result = &(*index);
-				} 
+				}
 				else {
                     index++;
                 }
@@ -509,8 +509,8 @@ namespace PluginHost {
         {
             _handlers.front().Register<INBOUND, METHOD>(methodName, method);
         }
-        void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda) 
-        { 
+        void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda)
+        {
             _handlers.front().Register(methodName, lambda);
         }
         void Register(const string& methodName, const Core::JSONRPC::CallbackFunction& lambda)
@@ -615,7 +615,7 @@ namespace PluginHost {
 
         // Inherited via IDispatcher
         // ---------------------------------------------------------------------------------
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override
         {
             return InvokeHandler(channelId, id, token, method, parameters, response);
         }
@@ -683,7 +683,7 @@ namespace PluginHost {
                     }
                     else {
                         Core::JSONRPC::Handler* handler(Handler(realMethod));
-                        
+
                         if (handler != nullptr) {
                             Core::JSONRPC::Context context(channelId, id, token);
                             result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
@@ -804,7 +804,7 @@ namespace PluginHost {
                 std::vector<uint8_t> versions({ version });
                 _handlers.emplace_front(versions);
                 index = _handlers.begin();
-            } 
+            }
             index->Register(methodName, Core::JSONRPC::InvokeFunction());
 
             _adminLock.Unlock();
@@ -1048,7 +1048,7 @@ namespace JSONRPCErrorAssessorTypes {
     class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
     public:
 
-        JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler) 
+        JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
             {
@@ -1061,7 +1061,7 @@ namespace JSONRPCErrorAssessorTypes {
         JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
         JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
 
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override
         {
             return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(channelId, id, token, method, parameters, response, _errorhandler);
         }
@@ -1075,13 +1075,13 @@ namespace JSONRPCErrorAssessorTypes {
     class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
 
-        JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler) 
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
             {
             }
 
-        JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler) 
+        JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler)
             : JSONRPC()
             , _errorhandler(std::move(errorhandler))
             {
@@ -1094,7 +1094,7 @@ namespace JSONRPCErrorAssessorTypes {
         JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
         JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
 
-        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        uint32_t Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override
         {
             return JSONRPC::InvokeHandler<const JSONRPCErrorAssessorTypes::StdFunctionCallbackType&>(channelId, id, token, method, parameters, response, _errorhandler);
         }
@@ -1105,6 +1105,120 @@ namespace JSONRPCErrorAssessorTypes {
     };
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    template<typename T, typename ID>
+    class LookupStorageType {
+    public:
+        LookupStorageType()
+            : _storage()
+            , _nextId(1)
+        {
+        }
+        ~LookupStorageType() = default;
+
+        LookupStorageType(const LookupStorageType&) = delete;
+        LookupStorageType(LookupStorageType&&) = delete;
+        LookupStorageType& operator=(const LookupStorageType&) = delete;
+        LookupStorageType& operator=(LookupStorageType&&) = delete;
+
+    public:
+        uint32_t Store(T* obj, const Core::JSONRPC::Context& context)
+        {
+            ID id = 0;
+
+            ASSERT(obj != nullptr);
+
+            if (obj != nullptr) {
+
+                obj->AddRef();
+
+                id = _nextId++;
+
+                _storage.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(id),
+                    std::forward_as_tuple(context.ChannelId(), obj));
+
+            }
+
+            return (id);
+        }
+
+        T* Lookup(const Core::JSONRPC::Context& context, const ID id)
+        {
+            T* obj{};
+
+            auto it = _storage.find(id);
+
+            if ((it != _storage.end()) && ((*it).second.first == context.ChannelId())) {
+                obj = (*it).second.second;
+                obj->AddRef();
+            }
+
+            return (obj);
+        }
+
+        const T* Lookup(const Core::JSONRPC::Context& context, const ID id) const
+        {
+            const T* obj{};
+
+            auto const it = _storage.cfind(id);
+
+            if ((it != _storage.cend()) && ((*it).second.first == context.ChannelId())) {
+                obj = (*it).second.second;
+                obj->AddRef();
+            }
+
+            return (obj);
+        }
+
+        T* Dispose(const Core::JSONRPC::Context& context, const ID id)
+        {
+            T* obj{};
+
+            auto it = _storage.find(id);
+
+            if (it != _storage.end() && ((*it).second.first == context.ChannelId())) {
+                obj = (*it).second.second;
+                _storage.erase(it);
+            }
+
+            return (obj);
+        }
+
+    public:
+        using OnCloseCallback = std::function<void(const ID, const uint32_t, T*)>;
+        void Closed(const uint32_t& channel, const OnCloseCallback& callback = nullptr)
+        {
+            auto it = _storage.begin();
+
+            while (it != _storage.end()) {
+                if ((*it).second.first == channel) {
+
+                    T* obj = (*it).second.second;
+                    ASSERT(obj != nullptr);
+
+                    if (callback) {
+                        callback((*it).first, T::ID, obj);
+                    }
+
+                    obj->Release();
+                    it = _storage.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+        }
+
+        void Closed(const Core::JSONRPC::Context& context, const std::function<void(ID, T*)>& callback = nullptr)
+        {
+            Closed(context.ChannelId());
+        }
+
+    private:
+        std::map<ID, std::pair<uint32_t, T*>> _storage;
+        ID _nextId;
+    };
 
 } // namespace Thunder::PluginHost
 }
