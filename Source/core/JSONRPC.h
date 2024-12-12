@@ -260,14 +260,21 @@ namespace Core {
                 size_t end = designator.find_last_of('@');
                 size_t begin = designator.find_last_of('.', end);
                 size_t lookup = designator.find_first_of('#', begin+1);
+                string method;
 
                 if (lookup != string::npos) {
                     size_t ns = designator.find_first_of(':', lookup + 1);
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{}));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
                  }
                 else {
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1)));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
                 }
+
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                ToCamelCase(method);
+POP_WARNING()
+
+                return (method);
             }
             static string FullMethod(const string& designator)
             {
@@ -419,6 +426,30 @@ namespace Core {
             Core::JSON::String Parameters;
             Core::JSON::String Result;
             Info Error;
+
+        private:
+            DEPRECATED static void ToCamelCase(string& source)
+            {
+                // speed optimized, does not care for locale settings
+
+                char* raw = &source[0];
+
+                auto const isup = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'A') <= 25);
+                };
+
+                auto const islow = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'a') <= 25);
+                };
+
+                if (isup(raw[0])) {
+                    *raw++ |= 32;
+
+                    while (isup(raw[0]) && !islow(raw[1])) {
+                        *raw++ |= 32;
+                    }
+                }
+            }
 
         private:
             string _implicitCallsign;
