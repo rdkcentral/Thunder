@@ -270,6 +270,7 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
     ASSERT(_handShaking == CONNECTED);
 
+    ASSERT(_ssl != nullptr);
     int result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
 
     return (result > 0 ? result : /* error */ -1);
@@ -278,6 +279,7 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
     ASSERT(_handShaking == CONNECTED);
 
+    ASSERT(_ssl != nullptr);
     int result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
 
     return (result > 0 ? result : /* error */ -1);

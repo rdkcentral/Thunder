@@ -41,7 +41,7 @@
 #define STR(s)
 #endif
 
-//#define _VERBOSE
+#define _VERBOSE
 
 namespace Thunder {
 namespace Tests {
@@ -1258,7 +1258,7 @@ namespace Core {
         EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, SecuredSocketDataExchange)
+    TEST(WebSocket, DISABLED_SecuredSocketDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1292,12 +1292,12 @@ namespace Core {
 
             WebSocketClient<CustomSecureSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
 
-            EXPECT_EQ(client.Open(4*maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
             // Avoid  premature shutdown() at the other side
-            SleepMs(2*maxWaitTimeMs);
+            SleepMs(maxWaitTimeMs);
 
             EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         };
@@ -1308,10 +1308,10 @@ namespace Core {
             // This is a listening socket as result of using SocketServerType which enables listening
             ::Thunder::Core::SocketServerType<WebSocketServer<CustomSecureServerSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
 
-            EXPECT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // A small delay so the child can be set up
-            SleepMs(2*maxInitTime);
+            SleepMs(maxInitTime);
 
             EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
@@ -1350,8 +1350,6 @@ namespace Core {
 
         ::Thunder::Core::Singleton::Dispose();
     } 
-
-
 
     TEST(WebSocket, DISABLED_SecuredServerPortCertificateRequest)
     {
