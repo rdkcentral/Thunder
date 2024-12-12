@@ -1234,7 +1234,7 @@ namespace JSONRPCErrorAssessorTypes {
 
         void Closed(const Core::JSONRPC::Context& context, const OnCloseCallback& callback = nullptr)
         {
-            Closed(context.ChannelId());
+            Closed(context.ChannelId(), callback);
         }
 
     private:
