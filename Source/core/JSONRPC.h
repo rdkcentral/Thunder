@@ -39,8 +39,15 @@ namespace Core {
             // this magical value as a base for Thunder error codes (0..999).
             // These error codes are *not* related to the JSONRPC transport
             // layer but relate to the application layer.
-            // Seems the spec is expecting a value > -32767, so with a value
-            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            // Seems the spec is expecting a value > -32000, so with a value
+            // range of 0-499 Thunder non COMRPC error codes and 500-999 COMRPC errors, 
+            // so -31000 as base should be oke :-)
+            // Please note: do NOT change the base number as there might be external 
+            //              code depending on this number to get to a certain error 
+            //              value for JSON RPC, so changing this number will break 
+            //              backwards compatibility not only for code below but
+            //              also external code.
+
             static constexpr int32_t ApplicationErrorCodeBase = -31000;
 
             class Info : public Core::JSON::Container {
@@ -166,7 +173,11 @@ namespace Core {
                         Text = _T("Requested service is not available.");
                         break;
                     default:
-                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        if ((frameworkError & 0x80000000) == 0) {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        } else {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        }
                         Text = Core::ErrorToString(frameworkError);
                         break;
                     }
