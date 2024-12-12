@@ -1110,7 +1110,8 @@ namespace JSONRPCErrorAssessorTypes {
     class LookupStorageType {
     public:
         LookupStorageType()
-            : _storage()
+            : _lock()
+            , _storage()
             , _nextId(1)
         {
         }
@@ -1132,12 +1133,15 @@ namespace JSONRPCErrorAssessorTypes {
 
                 obj->AddRef();
 
+                _lock.Lock();
+
                 id = _nextId++;
 
                 _storage.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(context.ChannelId(), obj));
 
+                _lock.Unlock();
             }
 
             return (id);
@@ -1147,12 +1151,16 @@ namespace JSONRPCErrorAssessorTypes {
         {
             T* obj{};
 
+            _lock.Lock();
+
             auto it = _storage.find(id);
 
             if ((it != _storage.end()) && ((*it).second.first == context.ChannelId())) {
                 obj = (*it).second.second;
                 obj->AddRef();
             }
+
+            _lock.Unlock();
 
             return (obj);
         }
@@ -1161,12 +1169,16 @@ namespace JSONRPCErrorAssessorTypes {
         {
             const T* obj{};
 
+            _lock.Lock();
+
             auto const it = _storage.cfind(id);
 
             if ((it != _storage.cend()) && ((*it).second.first == context.ChannelId())) {
                 obj = (*it).second.second;
                 obj->AddRef();
             }
+
+            _lock.Unlock();
 
             return (obj);
         }
@@ -1175,6 +1187,8 @@ namespace JSONRPCErrorAssessorTypes {
         {
             T* obj{};
 
+            _lock.Lock();
+
             auto it = _storage.find(id);
 
             if (it != _storage.end() && ((*it).second.first == context.ChannelId())) {
@@ -1182,13 +1196,18 @@ namespace JSONRPCErrorAssessorTypes {
                 _storage.erase(it);
             }
 
+            _lock.Unlock();
+
             return (obj);
         }
 
     public:
         using OnCloseCallback = std::function<void(const ID, const uint32_t, T*)>;
-        void Closed(const uint32_t& channel, const OnCloseCallback& callback = nullptr)
+
+        void Closed(const uint32_t channel, const OnCloseCallback& callback = nullptr)
         {
+            _lock.Lock();
+
             auto it = _storage.begin();
 
             while (it != _storage.end()) {
@@ -1208,14 +1227,18 @@ namespace JSONRPCErrorAssessorTypes {
                     ++it;
                 }
             }
+
+            _lock.Unlock();
+
         }
 
-        void Closed(const Core::JSONRPC::Context& context, const std::function<void(ID, T*)>& callback = nullptr)
+        void Closed(const Core::JSONRPC::Context& context, const OnCloseCallback& callback = nullptr)
         {
             Closed(context.ChannelId());
         }
 
     private:
+        mutable Core::CriticalSection _lock;
         std::map<ID, std::pair<uint32_t, T*>> _storage;
         ID _nextId;
     };
