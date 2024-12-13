@@ -93,7 +93,8 @@ namespace RPC {
         ID_SYSTEM_METADATA                         = (ID_OFFSET_INTERNAL + 0x0071),
 
         ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x0080),
-        ID_EXTERNAL_QA_INTERFACE_OFFSET            = (ID_OFFSET_INTERNAL + 0xA000)
+        ID_EXTERNAL_QA_INTERFACE_OFFSET            = (0xA000),
+        ID_EXTERNAL_CC_INTERFACE_OFFSET            = (0xCC00) // ends on 0xDFFF
     };
 }
 }
