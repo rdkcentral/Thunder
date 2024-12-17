@@ -722,6 +722,13 @@ namespace Thunder {
                     return (_channel.IsOpen());
                 }
 
+                void Validate()
+                {
+                    if ((IsValid() == false) && (MessageDataBuffer::Validate() == true)) {
+                        _channel.Open(Core::infinite);
+                    }
+                }
+
                 /**
                  * @brief Exchanges metadata with the server. Reader needs to register for notifications to recevie this message.
                  *        Passed buffer will be filled with data from the other side
