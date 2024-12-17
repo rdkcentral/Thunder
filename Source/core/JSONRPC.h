@@ -39,8 +39,15 @@ namespace Core {
             // this magical value as a base for Thunder error codes (0..999).
             // These error codes are *not* related to the JSONRPC transport
             // layer but relate to the application layer.
-            // Seems the spec is expecting a value > -32767, so with a value
-            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            // Seems the spec is expecting a value > -32000, so with a value
+            // range of 0-499 Thunder non COMRPC error codes and 500-999 COMRPC errors, 
+            // so -31000 as base should be oke :-)
+            // Please note: do NOT change the base number as there might be external 
+            //              code depending on this number to get to a certain error 
+            //              value for JSON RPC, so changing this number will break 
+            //              backwards compatibility not only for code below but
+            //              also external code.
+
             static constexpr int32_t ApplicationErrorCodeBase = -31000;
 
             class Info : public Core::JSON::Container {
@@ -166,7 +173,11 @@ namespace Core {
                         Text = _T("Requested service is not available.");
                         break;
                     default:
-                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        if ((frameworkError & 0x80000000) == 0) {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        } else {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        }
                         Text = Core::ErrorToString(frameworkError);
                         break;
                     }
@@ -260,14 +271,21 @@ namespace Core {
                 size_t end = designator.find_last_of('@');
                 size_t begin = designator.find_last_of('.', end);
                 size_t lookup = designator.find_first_of('#', begin+1);
+                string method;
 
                 if (lookup != string::npos) {
                     size_t ns = designator.find_first_of(':', lookup + 1);
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{}));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
                  }
                 else {
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1)));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
                 }
+
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                ToCamelCase(method);
+POP_WARNING()
+
+                return (method);
             }
             static string FullMethod(const string& designator)
             {
@@ -419,6 +437,30 @@ namespace Core {
             Core::JSON::String Parameters;
             Core::JSON::String Result;
             Info Error;
+
+        private:
+            DEPRECATED static void ToCamelCase(string& source)
+            {
+                // speed optimized, does not care for locale settings
+
+                char* raw = &source[0];
+
+                auto const isup = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'A') <= 25);
+                };
+
+                auto const islow = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'a') <= 25);
+                };
+
+                if (isup(raw[0])) {
+                    *raw++ |= 32;
+
+                    while (isup(raw[0]) && !islow(raw[1])) {
+                        *raw++ |= 32;
+                    }
+                }
+            }
 
         private:
             string _implicitCallsign;

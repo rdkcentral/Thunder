@@ -1,4 +1,4 @@
-/*
+/* 
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -206,7 +206,6 @@ static int passwd_callback(char* buffer, int size, int /* flags */, void* passwo
 Key::Key(const string& fileName, const string& password) 
     : _key(nullptr) {
     BIO* bio_key = BIO_new_file(fileName.c_str(), "rb");
-    FILE* file = ::fopen(fileName.c_str(), "rt");
 
     if (bio_key != nullptr) {
         _key = PEM_read_bio_PrivateKey(bio_key, NULL, passwd_callback, const_cast<void*>(static_cast<const void*>(password.c_str())));
