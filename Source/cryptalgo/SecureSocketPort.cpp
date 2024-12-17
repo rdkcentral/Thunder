@@ -264,23 +264,86 @@ uint32_t SecureSocketPort::Handler::Initialize() {
         success = Core::ERROR_GENERAL;
     }
 
+    ASSERT(success == 0);
+
     return success;
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
     ASSERT(_handShaking == CONNECTED);
-
     ASSERT(_ssl != nullptr);
-    int result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+
+    int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+
+    ASSERT(fd >= 0);
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+// TODO: extract from Open()
+    struct timeval tv {5, 0};
+
+    int result = -1;
+
+    switch (SSL_want(static_cast<SSL*>(_ssl))) {
+    case SSL_NOTHING            :   // No data to be written or read
+                                    result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+                                    break;
+    case SSL_WRITING            :   // More data to be written to complete
+                                    result = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_read(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_READING            :   // More data to be read to complete
+                                    result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_read(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+    default                     :   // Error not processed
+                                    result = -1;
+    }
 
     return (result > 0 ? result : /* error */ -1);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
     ASSERT(_handShaking == CONNECTED);
-
     ASSERT(_ssl != nullptr);
-    int result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
+    ASSERT(length > 0);
+
+    int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+
+    ASSERT(fd >= 0);
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+// TODO: extract from Open()
+    struct timeval tv {5, 0};
+
+    int result = -1;
+
+    switch (SSL_want(static_cast<SSL*>(_ssl))) {
+    case SSL_NOTHING            :   // No data to be written or read
+                                    result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
+                                    break;
+    case SSL_WRITING            :   // More data to be written to complete
+                                    result = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_write(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_READING            :   // More data to be read to complete
+                                    result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_write(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+    default                     :   // Error not processed
+                                    result = -1;
+    }
 
     return (result > 0 ? result : /* error */ -1);
 }
@@ -455,20 +518,33 @@ void SecureSocketPort::Handler::Update() {
         }
 
         if (result != 1) {
-            result = SSL_get_error(static_cast<SSL*>(_ssl), result);
+            int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
 
-            if ((result == SSL_ERROR_WANT_READ) || (result == SSL_ERROR_WANT_WRITE)) {
-                // Non-blocking I/O: select may be used to check if condition has changed
-                _handShaking = CONNECTED;
-                ValidateHandShake();
-            }
-            else {
-                _handShaking = ERROR;
+            ASSERT(fd >= 0);
+
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(fd, &fds);
+// TODO: extract from Open()
+            struct timeval tv {5, 0};
+
+            switch (SSL_get_error(static_cast<SSL*>(_ssl), result)) {
+            case SSL_ERROR_WANT_READ  : // Wait until ready to read
+                                        _handShaking = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? CONNECTED : ERROR;
+                                        ValidateHandShake();
+                                        break;
+            case SSL_ERROR_WANT_WRITE : // Wait until ready to write
+                                        _handShaking = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? CONNECTED : ERROR;
+                                        ValidateHandShake();
+                                        break;
+            default                   : // Error not processed
+                                        _handShaking = ERROR;
+                                        ASSERT(false);
             }
         }
-    }
 
-    _parent.StateChange();
+        _parent.StateChange();
+    }
 }
 
 } } // namespace Thunder::Crypto
