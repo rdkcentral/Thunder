@@ -820,9 +820,13 @@ POP_WARNING()
             {
                 using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
                 using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
+                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
+                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
+                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
+                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
 
                 InternalRegister<INBOUND, OUTBOUND, METHOD>(
-                    ::TemplateIntToType<std::is_same<ARG0, Context>::value | (std::is_same<ARG0, string>::value << 1) | (std::is_same<ARG1, string>::value << 1) | (std::is_same<ARG0, uint32_t>::value << 2)>(),
+                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -833,9 +837,13 @@ POP_WARNING()
             {
                 using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
                 using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
+                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
+                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
+                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
+                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
 
                 InternalRegister<INBOUND, OUTBOUND, METHOD, REALOBJECT>(
-                    ::TemplateIntToType<std::is_same<ARG0, Context>::value | (std::is_same<ARG0, string>::value << 1) | (std::is_same<ARG1, string>::value << 1) | (std::is_same<ARG0, uint32_t>::value << 2)>(),
+                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -1071,6 +1079,10 @@ POP_WARNING()
                 Register(methodName, implementation);
             }
 
+            // To reduce the number of possible permutations parameters to the native implementation method are always expected in particular order:
+            //  - context, instance id, property index, json parameters, json result (all optional).
+            // If index is used then either parameters or result must be present.
+
          private:
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
@@ -1208,6 +1220,36 @@ POP_WARNING()
             }
 
         private:
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
+                    return (InternalRegisterImpl<METHOD>(method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+outbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound+outbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+
+        private:
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+index+inbound
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
@@ -1227,6 +1269,29 @@ POP_WARNING()
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
                     return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+
+        private:
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+inbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+outbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+inbound+outbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
