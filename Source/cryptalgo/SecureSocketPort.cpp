@@ -491,30 +491,28 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
-        int result = 1;
-
         ASSERT(_ssl != nullptr);
 
-        // Client
-        if (_handShaking == CONNECTING) {
-            if ((result = SSL_connect(static_cast<SSL*>(_ssl))) == 1) {
-                _handShaking = CONNECTED;
-                // If server has sent a certificate, and, we want to do 'our' own check
-                ValidateHandShake();
-            }
-        } // Server
-        else if (_handShaking == ACCEPTING) {
-            if ((result = SSL_accept(static_cast<SSL*>(_ssl))) == 1) {
-                _handShaking = CONNECTED;
-                // Client has sent a certificate (optional, on request only)
-                ValidateHandShake();
-            }
-        } // Re-initialie a previous session
-        else if (_handShaking == EXCHANGE) {
-            if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
-                _handShaking = CONNECTED;
-                ValidateHandShake();
-            }
+        switch (_handShaking) {
+        case CONNECTING :   // Client
+                            SSL_set_connect_state(static_cast<SSL*>(_ssl));
+                            break;
+        case ACCEPTING  :  // Server
+                            SSL_set_accept_state(static_cast<SSL*>(_ssl));
+                            break;
+        case EXCHANGE   :   // Re-initialie a previous session
+                            break;
+        default         :   ASSERT(false);
+        }
+
+        int result = 1;
+
+        if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
+            _handShaking = CONNECTED;
+            // If server has sent a certificate, and, we want to do 'our' own check
+            // or
+            // Client has sent a certificate (optional, on request only)
+            ValidateHandShake();
         }
 
         if (result != 1) {
@@ -528,18 +526,29 @@ void SecureSocketPort::Handler::Update() {
 // TODO: extract from Open()
             struct timeval tv {5, 0};
 
-            switch (SSL_get_error(static_cast<SSL*>(_ssl), result)) {
-            case SSL_ERROR_WANT_READ  : // Wait until ready to read
-                                        _handShaking = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? CONNECTED : ERROR;
-                                        ValidateHandShake();
-                                        break;
-            case SSL_ERROR_WANT_WRITE : // Wait until ready to write
-                                        _handShaking = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? CONNECTED : ERROR;
-                                        ValidateHandShake();
-                                        break;
-            default                   : // Error not processed
-                                        _handShaking = ERROR;
-                                        ASSERT(false);
+            switch (result = SSL_get_error(static_cast<SSL*>(_ssl), result)) {
+            case SSL_ERROR_WANT_READ            :   // Wait until ready to read
+            case SSL_ERROR_WANT_WRITE           :   // Wait until ready to write
+                                                    if (   (select(fd + 1, &fds, &fds, nullptr, &tv) > 0)
+                                                        && FD_ISSET(fd, &fds)
+                                                        && (SSL_do_handshake(static_cast<SSL*>(_ssl)) == 1)
+                                                    ) {
+                                                        _handShaking = CONNECTED;
+                                                        ValidateHandShake();
+                                                        break;
+                                                    }
+            case SSL_ERROR_SYSCALL              :   result = errno;
+            case SSL_ERROR_NONE                 :
+            case SSL_ERROR_ZERO_RETURN          :
+            case SSL_ERROR_WANT_CONNECT         :
+            case SSL_ERROR_WANT_ACCEPT          :
+            case SSL_ERROR_WANT_ASYNC           :
+            case SSL_ERROR_WANT_ASYNC_JOB       :
+            case SSL_ERROR_WANT_CLIENT_HELLO_CB :
+            case SSL_ERROR_SSL                  :
+            default                             :   // Error
+                                                    _handShaking = ERROR;
+                                                    ASSERT(false);
             }
         }
 
