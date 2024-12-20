@@ -40,7 +40,7 @@ namespace Thunder {
             static constexpr uint16_t MetadataBufferSize = 4 * 1024;
             static constexpr uint16_t TempMetadataBufferSize = 128;
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
-            static constexpr uint16_t TempDataBufferSize = 1024;
+            static constexpr uint16_t TempDataBufferSize = 8 * 1024;
 
             enum metadataFrameProtocol : uint8_t {
                 UPDATE      = 0,
@@ -364,6 +364,7 @@ namespace Thunder {
                         , Tracing()
                         , Logging()
                         , Reporting()
+                        , Assertion()
                         , Port(0)
                         , Path(_T("MessageDispatcher"))
                         , Flush(false)
@@ -374,6 +375,7 @@ namespace Thunder {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
                         Add(_T("reporting"), &Reporting);
+                        Add(_T("assertion"), &Assertion);
                         Add(_T("path"), &Path);
                         Add(_T("port"), &Port);
                         Add(_T("flush"), &Flush);
@@ -389,6 +391,7 @@ namespace Thunder {
                     Section Tracing;
                     Section Logging;
                     Section Reporting;
+                    Section Assertion;
                     Core::JSON::DecUInt16 Port;
                     Core::JSON::String Path;
                     Core::JSON::Boolean Flush;
@@ -616,7 +619,7 @@ namespace Thunder {
                                 string category = iterator.Current().Text();
                                 if (iterator.Next() == true) {
                                     string enabled = iterator.Current().Text();
-                                    if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::REPORTING) &&
+                                    if ((type >= Core::Messaging::Metadata::type::TRACING) && (type <= Core::Messaging::Metadata::type::ASSERT) &&
                                         (enabled.length() == 1) &&
                                         ((enabled[0] == '0') || (enabled[0] == '1'))) {
                                         _settings.emplace_back(Core::Messaging::Metadata(static_cast<Core::Messaging::Metadata::type>(type), category, module), (enabled[0] == '1'));
@@ -660,6 +663,14 @@ namespace Thunder {
                         }
                     }
 
+                    if (config.Assertion.IsSet() == true) {
+                        auto it = config.Assertion.Settings.Elements();
+                        while (it.Next() == true) {
+                            Core::Messaging::Metadata info(Core::Messaging::Metadata::type::ASSERT, it.Current().Category.Value(), it.Current().Module.Value());
+                            _settings.emplace_back(info, it.Current().Enabled.Value());
+                        }
+                    }
+
                     _adminLock.Unlock();
                 }
 
@@ -668,6 +679,7 @@ namespace Thunder {
                     config.Tracing.Settings.Clear();
                     config.Logging.Settings.Clear();
                     config.Reporting.Settings.Clear();
+                    config.Assertion.Settings.Clear();
 
                     _adminLock.Lock();
 
@@ -680,6 +692,9 @@ namespace Thunder {
                         }
                         else if (it->Type() == Core::Messaging::Metadata::type::REPORTING) {
                             config.Reporting.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
+                        }
+                        else if (it->Type() == Core::Messaging::Metadata::type::ASSERT) {
+                            config.Assertion.Settings.Add(Config::Section::Entry(it->Category(), it->Module(), it->Enabled()));
                         }
                     }
 
@@ -720,6 +735,13 @@ namespace Thunder {
             public:
                 bool IsValid() const {
                     return (_channel.IsOpen());
+                }
+
+                void Validate()
+                {
+                    if ((IsValid() == false) && (MessageDataBuffer::Validate() == true)) {
+                        _channel.Open(Core::infinite);
+                    }
                 }
 
                 /**
