@@ -21,9 +21,13 @@
 
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <openssl/x509.h>
 #include <openssl/crypto.h>
+#include <openssl/err.h>
 
 #include <unordered_map>
+
+#include <core/Time.h>
 
 #ifndef __WINDOWS__
 namespace {
@@ -272,6 +276,7 @@ uint32_t SecureSocketPort::Handler::Initialize() {
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
     ASSERT(_handShaking == CONNECTED);
     ASSERT(_ssl != nullptr);
+    ASSERT(length > 0);
 
     int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
 
@@ -281,8 +286,10 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-// TODO: extract from Open()
-    struct timeval tv {5, 0};
+    struct timeval tv {
+      _waitTime / (Core::Time::MilliSecondsPerSecond)
+    , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+    };
 
     int result = -1;
 
@@ -321,8 +328,10 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-// TODO: extract from Open()
-    struct timeval tv {5, 0};
+    struct timeval tv {
+      _waitTime / (Core::Time::MilliSecondsPerSecond)
+    , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+    };
 
     int result = -1;
 
@@ -350,6 +359,8 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 
 
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
+    _waitTime = waitTime;
+
     return (Core::SocketPort::Open(waitTime));
 }
 
@@ -373,8 +384,8 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 void SecureSocketPort::Handler::ValidateHandShake() {
     ASSERT(_ssl != nullptr && _context != nullptr);
 
-    // SSL handshake does an implicit verification, its result is:
-    if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) { // this is what remains because our callback can also return, actually it is the smae as verify_cb!
+    // Internal (partial) validation result if no callback is set
+    if (SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) {
         _handShaking = ERROR;
         SetError();
     }
@@ -397,7 +408,7 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
                     SSL* ssl = nullptr;
                     SecureSocketPort::IValidator* validator = nullptr;
 
-                    // Retireve and call the registered callback
+                    // Retrieve and call the registered callback
 
                     if (   ctx != nullptr
                          && (exDataIndex = SSL_get_ex_data_X509_STORE_CTX_idx()) != -1
@@ -412,6 +423,13 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
 
                         result = validator->Validate(certificate);
 
+                        // Reflect the verification result in the error member of X509_STORE_CTX
+                        if (result) {
+                            X509_STORE_CTX_set_error(ctx, X509_V_OK);
+
+                           ASSERT(X509_STORE_CTX_get_error(ctx) == X509_V_OK);
+                        }
+
                         X509_free(x509Cert);
                     }
 
@@ -422,12 +440,12 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
     default :   ASSERT(false); // Not within set of defined values
     }
 
-    return result; // 0 - Failurre, 1 - OK
+    return result; // 0 - Failure, 1 - OK
 }
 
 int PeerCertificateCallbackWrapper(X509_STORE_CTX* ctx, void* arg)
 { // This is called if the complete certificate validation procedure has its custom implementation
-  // This is typically not what is intended or required, and, a complex to do right
+  // This is typically not what is intended or required, and, a complex process to do correct
 
     ASSERT(false);
 
@@ -476,7 +494,7 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
             // Takes ownership of nameList
             SSL_CTX_set_client_CA_list(static_cast<SSL_CTX*>(_context), nameList);
 
-            // Callback is triggered if certiifcates have errors
+            // Callback is triggered if certificates have errors
             SSL_CTX_set_verify(static_cast<SSL_CTX*>(_context), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, VerifyCallbackWrapper);
 
             // Typically, SSL_CTX_set_cert_verify_callback is the most complex as it should replace the complete verification process procedure
@@ -491,7 +509,14 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
 
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
+        errno = 0;
+
         ASSERT(_ssl != nullptr);
+
+        const char* file = nullptr, *func = nullptr, *data = nullptr;
+        int line = 0, flag = 0;
+
+        ASSERT(ERR_get_error_all(&file, &line, &func, &data, &flag) == 0);
 
         switch (_handShaking) {
         case CONNECTING :   // Client
@@ -505,40 +530,55 @@ void SecureSocketPort::Handler::Update() {
         default         :   ASSERT(false);
         }
 
-        int result = 1;
+        const int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
 
-        if ((result = SSL_do_handshake(static_cast<SSL*>(_ssl))) == 1) {
-            _handShaking = CONNECTED;
-            // If server has sent a certificate, and, we want to do 'our' own check
-            // or
-            // Client has sent a certificate (optional, on request only)
-            ValidateHandShake();
-        }
+        ASSERT(fd >= 0);
 
-        if (result != 1) {
-            int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
 
-            ASSERT(fd >= 0);
+        struct timeval tv {
+          _waitTime / (Core::Time::MilliSecondsPerSecond)
+        , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+        };
 
-            fd_set fds;
-            FD_ZERO(&fds);
-            FD_SET(fd, &fds);
-// TODO: extract from Open()
-            struct timeval tv {5, 0};
+        do {
+            int result = SSL_do_handshake(static_cast<SSL*>(_ssl));
 
-            switch (result = SSL_get_error(static_cast<SSL*>(_ssl), result)) {
+            switch (SSL_get_error(static_cast<SSL*>(_ssl), result)) {
+            case SSL_ERROR_NONE                 :   _handShaking = CONNECTED;
+                                                    break;
+            case SSL_ERROR_SYSCALL              :   // Some syscall failed
+                                                    if (errno != EAGAIN) {
+                                                        // Last error without removing it from the queue
+                                                       unsigned long result = 0;
+
+#ifdef VERBOSE
+                                                        if ((result = ERR_peek_last_error_all(&file, &line, &func, &data, &flag)) != 0) {
+                                                            int lib = ERR_GET_LIB(result);
+                                                            int reason = ERR_GET_REASON(result);
+
+                                                            TRACE_L1(_T("ERROR: OpenSSL SYSCALL error in LIB %d with REASON %d"), lib, reason);
+                                                        }
+#endif
+                                                    }
+                                                    // Fallthrough for select
             case SSL_ERROR_WANT_READ            :   // Wait until ready to read
             case SSL_ERROR_WANT_WRITE           :   // Wait until ready to write
-                                                    if (   (select(fd + 1, &fds, &fds, nullptr, &tv) > 0)
-                                                        && FD_ISSET(fd, &fds)
-                                                        && (SSL_do_handshake(static_cast<SSL*>(_ssl)) == 1)
-                                                    ) {
-                                                        _handShaking = CONNECTED;
-                                                        ValidateHandShake();
-                                                        break;
+                                                    switch (select(fd + 1, &fds, &fds, nullptr, &tv)) {
+                                                    default :   if (!FD_ISSET(fd, &fds)) {
+                                                                    // Only file descriptors in the set should be set
+                                                                    _handShaking = ERROR;
+                                                                    break;
+                                                                }
+                                                    case 0  :   // Timeout
+// TODO: redo SSL_do_handshake or consider it an error?
+                                                                continue;
+                                                    case -1 :   // Select failed, consider it an error
+                                                                _handShaking = ERROR;
                                                     }
-            case SSL_ERROR_SYSCALL              :   result = errno;
-            case SSL_ERROR_NONE                 :
+                                                    break;
             case SSL_ERROR_ZERO_RETURN          :
             case SSL_ERROR_WANT_CONNECT         :
             case SSL_ERROR_WANT_ACCEPT          :
@@ -548,8 +588,24 @@ void SecureSocketPort::Handler::Update() {
             case SSL_ERROR_SSL                  :
             default                             :   // Error
                                                     _handShaking = ERROR;
-                                                    ASSERT(false);
             }
+
+            ASSERT(_handShaking != ERROR);
+
+        } while (_handShaking != CONNECTED);
+
+        // If server has sent a certificate, and, we want to do 'our' own check
+        // or
+        // Client has sent a certificate (optional, on request only)
+
+        // Only if a callback has not been set
+        if (   /*(_callback == nullptr)
+            &&*/ (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != nullptr)
+            && (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != &VerifyCallbackWrapper)
+            && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != nullptr)
+            && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != &VerifyCallbackWrapper)
+        ) {
+            ValidateHandShake();
         }
 
         _parent.StateChange();

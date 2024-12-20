@@ -88,6 +88,7 @@ namespace Crypto {
                 , _certificatePath{certPath}
                 , _privateKeyPath{keyPath}
                 , _requestCertificate{requestCert}
+                , _waitTime{0}
             {}
             ~Handler();
 
@@ -143,6 +144,7 @@ namespace Crypto {
             const std::string _certificatePath; // (PEM formatted chain, including root CA) certificate file path
             const std::string _privateKeyPath; // (PEM formatted) Private key file path
             const bool _requestCertificate;
+            mutable uint32_t _waitTime; // Extracted from Open for use in I/O blocking operations
         };
 
     public:
