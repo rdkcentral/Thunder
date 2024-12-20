@@ -28,6 +28,7 @@
 #include <plugins/plugins.h>
 #include <websocket/websocket.h>
 #include <messaging/messaging.h>
+#include <assertion/assertion.h>
 
 #ifdef __CORE_WARNING_REPORTING__
 #include <warningreporting/warningreporting.h>
