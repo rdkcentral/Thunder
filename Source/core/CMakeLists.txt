@@ -26,6 +26,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINAR
 message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
 
 add_library(${TARGET}
+        AssertionControl.cpp
         Module.cpp
         DoorBell.cpp
         CyclicBuffer.cpp
@@ -36,6 +37,7 @@ add_library(${TARGET}
         JSON.cpp
         JSONRPC.cpp
         Library.cpp
+        Messaging.cpp
         Netlink.cpp
         NetworkInfo.cpp
         NodeId.cpp
@@ -64,6 +66,7 @@ add_library(${TARGET}
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
         ASN1.h
+        AssertionControl.h
         DoorBell.h
         Config.h
         core.h
@@ -77,6 +80,7 @@ set(PUBLIC_HEADERS
         FileObserver.h
         Frame.h
         IAction.h
+        IAssertionControl.h
         IIterator.h
         IObserver.h
         IPCMessage.h
@@ -84,6 +88,7 @@ set(PUBLIC_HEADERS
         IPCChannel.h
         IPCConnector.h
         ISO639.h
+        IWarningReportingControl.h
         JSON.h
         JSONRPC.h
         KeyValue.h
@@ -93,6 +98,7 @@ set(PUBLIC_HEADERS
         Measurement.h
         Media.h
         MessageException.h
+        Messaging.h
         Module.h
         Netlink.h
         NetworkInfo.h
@@ -140,7 +146,6 @@ set(PUBLIC_HEADERS
         ValueRecorder.h
         XGetopt.h
         WorkerPool.h
-        IWarningReportingControl.h
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
