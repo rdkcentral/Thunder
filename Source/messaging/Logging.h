@@ -21,8 +21,6 @@
 
 #include "Module.h"
 #include "Control.h"
-#include "TextMessage.h"
-#include "BaseCategory.h"
 #include "MessageUnit.h"
 
 namespace Thunder {
@@ -33,9 +31,9 @@ namespace Logging {
     void EXTERNAL DumpSystemFiles(const Core::process_t pid);
 
     template <typename CATEGORY>
-    class BaseLoggingType : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {
+    class BaseLoggingType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {
     public:
-        using BaseClass = Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING>;
+        using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING>;
         using Control = Messaging::ControlType<CATEGORY, &Core::Messaging::MODULE_LOGGING, Core::Messaging::Metadata::type::LOGGING>;
 
         BaseLoggingType(const BaseLoggingType&) = delete;
@@ -72,36 +70,35 @@ namespace Logging {
 
 #ifdef __WINDOWS__
 
-#define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
-    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
+#define DEFINE_LOGGING_CATEGORY(CATEGORY) DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
 
 #else
 
-#define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                         \
-    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                         \
-    template<>                                                                                                                                    \
+#define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                   \
+    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                        \
+    template<>                                                                                                                              \
     EXTERNAL typename Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control;
 
 #endif
 
 #define SYSLOG_ANNOUNCE(CATEGORY) template<> Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control(true)
 
-#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                              \
-    do {                                                                                                                                          \
-        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls");  \
-        if (CATEGORY::IsEnabled() == true) {                                                                                                      \
-            CATEGORY __data__ PARAMETERS;                                                                                                         \
-            Thunder::Core::Messaging::MessageInfo __info__(                                                                                  \
-                CATEGORY::Metadata(),                                                                                                             \
-                Thunder::Core::Time::Now().Ticks()                                                                                           \
-            );                                                                                                                                    \
-            Thunder::Core::Messaging::IStore::Logging __log__(__info__);                                                                     \
-            Thunder::Messaging::TextMessage __message__(__data__.Data());                                                                    \
-            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                         \
-        }                                                                                                                                         \
+#define SYSLOG(CATEGORY, PARAMETERS)                                                                                                        \
+    do {                                                                                                                                    \
+        static_assert(std::is_base_of<Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY>::value, "SYSLOG() only for Logging controls"); \
+        if (CATEGORY::IsEnabled() == true) {                                                                                                \
+            CATEGORY __data__ PARAMETERS;                                                                                                   \
+            Thunder::Core::Messaging::MessageInfo __info__(                                                                                 \
+                CATEGORY::Metadata(),                                                                                                       \
+                Thunder::Core::Time::Now().Ticks()                                                                                          \
+            );                                                                                                                              \
+            Thunder::Core::Messaging::IStore::Logging __log__(__info__);                                                                    \
+            Thunder::Core::Messaging::TextMessage __message__(__data__.Data());                                                             \
+            Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);                                                        \
+        }                                                                                                                                   \
     } while(false)
 
-#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                       \
-    _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                           \
+#define SYSLOG_GLOBAL(CATEGORY, PARAMETERS)                                                                                                 \
+    _Pragma ("GCC warning \"'SYSLOG_GLOBAL' macro is deprecated, use SYSLOG instead\"")                                                     \
     SYSLOG(CATEGORY, PARAMETERS)
 
