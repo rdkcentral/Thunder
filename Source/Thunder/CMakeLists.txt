@@ -66,6 +66,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+          ${NAMESPACE}Assertion::${NAMESPACE}Assertion
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
