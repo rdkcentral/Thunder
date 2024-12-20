@@ -219,6 +219,7 @@ map()
     key(logging)
     key(tracing)
     key(reporting)
+    key(assertion)
 end()
 ans(MESSAGING_SETTINGS)
 
@@ -238,6 +239,11 @@ map()
     key(settings)
 end()
 ans(MESSAGING_REPORTING_SETTINGS)
+
+map()
+    key(settings)
+end()
+ans(MESSAGING_ASSERTION_SETTINGS)
 
 if(MESSAGING)
     map()
@@ -264,6 +270,12 @@ if(MESSAGING)
     end()
     ans(PLUGIN_ANY_CATEGORY_REPORTING)
 
+    map()
+        kv(category "AnyCategory")
+        kv(enabled false)
+    end()
+    ans(PLUGIN_ANY_CATEGORY_ASSERTION)
+
     map_append(${MESSAGING_SETTINGS} logging ${MESSAGING_LOGGING_SETTINGS})
     map_append(${MESSAGING_LOGGING_SETTINGS} settings ___array___)
     map_append(${MESSAGING_LOGGING_SETTINGS} settings ${PLUGIN_ANY_CATEGORY_LOGGING})
@@ -274,10 +286,13 @@ if(MESSAGING)
     map_append(${MESSAGING_TRACING_SETTINGS} settings ${PLUGIN_ANY_CATEGORY_TRACING})
     map_append(${MESSAGING_TRACING_SETTINGS} settings ${PLUGIN_ANY_PLUGIN_TRACING})
 
-
     map_append(${MESSAGING_SETTINGS} reporting ${MESSAGING_REPORTING_SETTINGS})
     map_append(${MESSAGING_REPORTING_SETTINGS} settings ___array___)
     map_append(${MESSAGING_REPORTING_SETTINGS} settings ${PLUGIN_ANY_CATEGORY_REPORTING})
+
+    map_append(${MESSAGING_SETTINGS} assertion ${MESSAGING_ASSERTION_SETTINGS})
+    map_append(${MESSAGING_ASSERTION_SETTINGS} settings ___array___)
+    map_append(${MESSAGING_ASSERTION_SETTINGS} settings ${PLUGIN_ANY_CATEGORY_ASSERTION})
 endif()
 
 map_append(${PLUGIN_CONTROLLER} configuration ${PLUGIN_CONTROLLER_CONFIGURATION})
