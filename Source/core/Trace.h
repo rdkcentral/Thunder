@@ -22,6 +22,9 @@
 
 #include "Module.h"
 #include "Portability.h"
+#include "AssertionControl.h"
+
+#include <sstream>
 
 #ifndef __WINDOWS__
 #include <syslog.h>
@@ -154,50 +157,75 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
+#if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
+
+    #define ASSERT_METADATA                                                                                 \
+        Thunder::Core::Messaging::MessageInfo __messageInfo__(                                              \
+            Thunder::Assertion::BaseAssertType::Metadata());                                                \
+        std::list<Thunder::Core::callstack_info> __entries__;                                               \
+        DumpCallStack(0, __entries__);                                                                      \
+        std::ostringstream __output__;                                                                      \
+        for (const Thunder::Core::callstack_info& entry : __entries__) {                                    \
+            __output__ << "[" << entry.module << "]:[" << entry.function << "]:[" << entry.line << "]\n";   \
+        }                                                                                                   \
+        std::string __callstack__ = __output__.str();                                                       \
+        Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                        \
+            __messageInfo__,                                                                                \
+            TRACE_PROCESS_ID,                                                                               \
+            program_invocation_short_name,                                                                  \
+            __FILE__,                                                                                       \
+            __LINE__,                                                                                       \
+            __callstack__);
+
+    #define ASSERT_SENT                                                                                     \
+        Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
+            __assertMetadata__,                                                                             \
+            __message__);
+
 #ifdef __DEBUG__
-
-#define ASSERT(expr)                                                                                            \
-    do {                                                                                                        \
-        if (!(expr)) {                                                                                          \
-            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-            std::list<Thunder::Core::callstack_info> entries;                                              \
-            DumpCallStack(0, entries);                                                                          \
-            for(const Thunder::Core::callstack_info& entry : entries) {                                    \
-                fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
-            }                                                                                                   \
-            fflush(stderr);                                                                                     \
-            abort();                                                                                            \
-        }                                                                                                       \
-    } while(0)
-
-#define ASSERT_VERBOSE(expr, format, ...)                                                                                                            \
-    do {                                                                                                                                             \
-        if (!(expr)) {                                                                                                                               \
-            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-            std::list<Thunder::Core::callstack_info> entries;                                                                                   \
-            DumpCallStack(0, entries);                                                                                                               \
-            for(const Thunder::Core::callstack_info& entry : entries) {                                                                         \
-                fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);                                       \
-            }                                                                                                                                        \
-            fflush(stderr);                                                                                                                          \
-            abort();                                                                                                                                 \
-        }                                                                                                                                            \
-    } while(0)
-
-#define VERIFY(expr) ASSERT(expr)
+    #define ASSERT_ABORT abort();
 #else
-#define ASSERT(x)
+    #define ASSERT_ABORT  
+#endif
 
-#define VERIFY(expr)                                                                                                   \
-    do {                                                                                                               \
-        if(!(expr)) {                                                                                                  \
-            ASSERT_LOGGER("===== $$ [%d]: VERIFY FAILED [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-       }                                                                                                               \
-    } while(0)
+    #define ASSERT(expr)                                                                                    \
+        do {                                                                                                \
+            if (!(expr)) {                                                                                  \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    ASSERT_METADATA                                                                         \
+                    Thunder::Core::Messaging::TextMessage __message__(#expr);                               \
+                    ASSERT_SENT                                                                             \
+                }                                                                                           \
+                ASSERT_ABORT                                                                                \
+            }                                                                                               \
+        } while(0)
 
+    #define ASSERT_VERBOSE(expr, format, ...)                                                               \
+        do {                                                                                                \
+            if (!(expr)) {                                                                                  \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
+                    ASSERT_METADATA                                                                         \
+                    char __buffer__[256];                                                                   \
+                    std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);    \
+                    Thunder::Core::Messaging::TextMessage __message__(__buffer__);                          \
+                    ASSERT_SENT                                                                             \
+                }                                                                                           \
+                ASSERT_ABORT                                                                                \
+            }                                                                                               \
+        } while(0)
 
+    #define VERIFY(expr) ASSERT(expr)
+#else
+    #define ASSERT(x)
 
-#define ASSERT_VERBOSE(x, y, ...)
+    #define ASSERT_VERBOSE(x, y, ...)
+
+    #define VERIFY(expr)                                                                                                   \
+        do {                                                                                                               \
+            if(!(expr)) {                                                                                                  \
+                ASSERT_LOGGER("===== $$ [%d]: VERIFY FAILED [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+        }                                                                                                                  \
+        } while(0)
 #endif
 
 #define LOG(LEVEL, MESSAGE)                                                         \
