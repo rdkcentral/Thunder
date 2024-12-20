@@ -41,8 +41,6 @@ set(PUBLIC_HEADERS
         DirectOutput.h
         Module.h
         TraceFactory.h
-        TextMessage.h
-        BaseCategory.h
         ConsoleStreamRedirect.h
         OperationalCategories.h)
 
