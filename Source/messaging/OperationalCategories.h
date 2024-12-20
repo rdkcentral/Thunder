@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "BaseCategory.h"
 #include "Control.h"
 
 #ifdef __WINDOWS__
@@ -47,9 +46,9 @@ namespace Thunder {
 namespace OperationalStream {
 
     template <typename CATEGORY>
-    class BaseOperationalType : public Messaging::BaseCategoryType<Core::Messaging::Metadata::type::OPERATIONAL_STREAM> {
+    class BaseOperationalType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::OPERATIONAL_STREAM> {
     public:
-        using BaseClass = Messaging::BaseCategoryType<Core::Messaging::Metadata::type::OPERATIONAL_STREAM>;
+        using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::OPERATIONAL_STREAM>;
         using Control = Messaging::ControlType<CATEGORY, &Core::Messaging::MODULE_OPERATIONAL_STREAM, Core::Messaging::Metadata::type::OPERATIONAL_STREAM>;
 
         BaseOperationalType(const BaseOperationalType&) = delete;
