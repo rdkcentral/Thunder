@@ -819,7 +819,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         EXPECT_GT(bufferSize, sizeof(testTextMessage.size()));
 
-        ::Thunder::Messaging::TextMessage tm(testTextMessage);
+        ::Thunder::Core;:Messaging::TextMessage tm(testTextMessage);
         auto serialized = tm.Serialize(buffer, sizeof(buffer));
         EXPECT_GT(serialized, 0);
 
@@ -839,7 +839,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         EXPECT_LT(bufferSize, sizeof(testTextMessage.size()));
 
-        ::Thunder::Messaging::TextMessage tm(testTextMessage);
+        ::Thunder::Core::Messaging::TextMessage tm(testTextMessage);
         auto serialized = tm.Serialize(buffer, sizeof(buffer));
         EXPECT_GT(serialized, 0);
 
@@ -964,7 +964,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         client.AddInstance(0); //we are in framework
 
         //factory should be added before attempting to pop data
-        ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
+        ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Core::Messaging::TextMessage> factory;
         client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
 
         ::Thunder::Core::Messaging::Metadata metadata(::Thunder::Core::Messaging::Metadata::type::TRACING, _T("some_category"), EXPAND_AND_QUOTE(MODULE_NAME));
@@ -972,7 +972,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
         client.Enable(metadata, true);
 
         const string traceMessage = _T("some trace");
-        ::Thunder::Messaging::TextMessage tm(traceMessage);
+        ::Thunder::Core::Messaging::TextMessage tm(traceMessage);
 
         ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
 
@@ -1029,7 +1029,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
             client.AddInstance(0);
 
-            ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Messaging::TextMessage> factory;
+            ::Thunder::Messaging::TraceFactoryType<::Thunder::Core::Messaging::IStore::Tracing, ::Thunder::Core::Messaging::TextMessage> factory;
             client.AddFactory(::Thunder::Core::Messaging::Metadata::type::TRACING, &factory);
 
             client.Enable(metadata, true);
@@ -1064,7 +1064,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
 
-            ::Thunder::Messaging::TextMessage tm(traceMessage);
+            ::Thunder::Core::Messaging::TextMessage tm(traceMessage);
 
             ::Thunder::Core::Messaging::IStore::Tracing info(::Thunder::Core::Messaging::MessageInfo(metadata, ::Thunder::Core::Time::Now().Ticks()), _T("some_file"), 1337, EXPAND_AND_QUOTE(MODULE_NAME));
 
