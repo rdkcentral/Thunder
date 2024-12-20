@@ -51,6 +51,7 @@ target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+          ${NAMESPACE}Assertion::${NAMESPACE}Assertion
           CompileSettingsDebug::CompileSettingsDebug
         )
 

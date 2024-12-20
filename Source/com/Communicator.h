@@ -35,6 +35,7 @@
 #include <processcontainers/processcontainers.h>
 #endif
 
+#include "../assertion/AssertionUnit.h"
 
 #if defined(WARNING_REPORTING_ENABLED)
 #include "../warningreporting/WarningReportingUnit.h"
@@ -550,28 +551,31 @@ namespace RPC {
             ~ChannelLink() = default;
 
         public:
-            void Link(RemoteConnectionMap& connectionMap, const uint32_t id)
+            inline void Link(RemoteConnectionMap& connectionMap, const uint32_t id)
             {
                 _connectionMap = &connectionMap;
                 _id = id;
             }
-            void StateChange()
+            inline void StateChange()
             {
                 // If the connection closes, we need to clean up....
                 if ((_channel.IsOpen() == false) && (_connectionMap != nullptr)) {
                     _connectionMap->Closed(_id);
                 }
             }
-            bool IsRegistered() const
+            inline bool IsRegistered() const
             {
                 return (_connectionMap != nullptr);
             }
-            uint32_t Id() const
+            inline uint32_t Id() const
             {
                 return (_channel.Descriptor());
             }
-            string Origin() const {
+            inline string Origin() const {
                 return (_connectionMap->Origin());
+            }
+            inline uint32_t ExchangeId() const {
+                return (_id);
             }
 
         private:
@@ -1565,7 +1569,7 @@ namespace RPC {
 
                         void* result = _parent.Announce(proxyChannel, message->Parameters(), message->Response());
 
-                        message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
+                        message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().ExchangeId(), _parent.ProxyStubPath(), jsonDefaultMessagingSettings, jsonDefaultWarningReportingSettings);
 
                         // We are done, report completion
                         channel.ReportResponse(data);
