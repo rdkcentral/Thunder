@@ -90,6 +90,16 @@ namespace Controller {
         // @brief Stores all configuration to the persistent memory
         virtual Core::hresult Persist() = 0;
 
+        // @omit
+//        Core::hresult Persist() { return Persist(Core::OptionalType<string>()); }
+
+
+        // @ alt storeconfig
+        // @ brief Stores configuration to the persistent memory
+        //virtual Core::hresult Persist(const Core::OptionalType<string>& callsign) = 0;
+        // @ brief Resttores configuration back to default
+        //virtual Core::hresult Restore(const Core::OptionalType<string>& callsign) = 0;
+
         // @property
         // @brief Service configuration
         virtual Core::hresult Configuration(const Core::OptionalType<string>& callsign /* @index */, string& configuration /* @out @opaque */) const = 0;
