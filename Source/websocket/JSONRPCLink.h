@@ -328,6 +328,7 @@ namespace Thunder {
                         : _signal(false, true)
                         , _response()
                     {
+                        printf("[SERXIONE-6193] [%s:%d] Sync Ctor\n", __FILE__, __LINE__);
                     }
                     Core::Event _signal;
                     Core::ProxyType<Core::JSONRPC::Message> _response;
@@ -337,6 +338,7 @@ namespace Thunder {
                         : _waitTime(Core::Time::Now().Add(waitTime).Ticks())
                         , _completed(completed)
                     {
+                        printf("[SERXIONE-6193] [%s:%d] Async Ctor\n", __FILE__, __LINE__);
                     }
                     uint64_t _waitTime;
                     CallbackFunction _completed;
@@ -371,10 +373,12 @@ namespace Thunder {
                 bool Signal(const Core::ProxyType<Core::JSONRPC::Message>& response)
                 {
                     if (_synchronous == true) {
+                        printf("[SERXIONE-6193] [%s:%d] sync: TRUE\n", __FILE__, __LINE__);
                         _info.sync._response = response;
                         _info.sync._signal.SetEvent();
                     }
                     else {
+                        printf("[SERXIONE-6193] [%s:%d] sync: FALSE\n", __FILE__, __LINE__);
                         _info.async._completed(*response);
                     }
 
@@ -460,6 +464,154 @@ namespace Thunder {
             using PendingMap = std::unordered_map<uint32_t, Entry>;
             using InvokeFunction = Core::JSONRPC::InvokeFunction;
 
+            class Handler {
+                public:
+                using HandlerMap = std::unordered_map<string, InvokeFunction>;
+                    // class EventIterator {
+                    // public:
+                    //     EventIterator()
+                    //         : _container(nullptr)
+                    //         , _index()
+                    //         , _position(~0)
+                    //     {
+                    //     }
+                    //     EventIterator(const HandlerMap& container)
+                    //         : _container(&container)
+                    //         , _index()
+                    //         , _position(~0)
+                    //     {
+                    //     }
+                    //     EventIterator(const EventIterator& copy)
+                    //         : _container(copy._container)
+                    //         , _index(copy._index)
+                    //         , _position(copy._position)
+                    //     {
+                    //     }
+                    //     EventIterator(EventIterator&& move) noexcept
+                    //         : _container(move._container)
+                    //         , _index(std::move(move._index))
+                    //         , _position(move._position)
+                    //     {
+                    //         move._container = nullptr;
+                    //         move._position = ~0;
+                    //     }
+                    //     ~EventIterator() = default;
+
+                    //     EventIterator& operator=(const EventIterator& rhs)
+                    //     {
+                    //         _container = rhs._container;
+                    //         _index = rhs._index;
+                    //         _position = rhs._position;
+
+                    //         return (*this);
+                    //     }
+                    //     EventIterator& operator=(EventIterator&& move) noexcept
+                    //     {
+                    //         if (this != &move) {
+                    //             _container = move._container;
+                    //             _index = std::move(move._index);
+                    //             _position = move._position;
+
+                    //             move._container = nullptr;
+                    //             move._position = ~0;
+                    //         }
+                    //         return (*this);
+                    //     }
+                    // public:
+                    //     bool IsValid() const
+                    //     {
+                    //         return ((_container != nullptr) && (_position < _container->size()));
+                    //     }
+                    //     void Reset()
+                    //     {
+                    //         _position = ~0;
+                    //     }
+                    //     bool Next()
+                    //     {
+                    //         if (_position == static_cast<uint16_t>(~0)) {
+                    //             if (_container != nullptr) {
+                    //                 _position = 0;
+                    //                 _index = _container->cbegin();
+                    //             }
+                    //         } else if (_index != _container->cend()) {
+                    //             _index++;
+                    //             _position++;
+                    //         }
+                    //         return (IsValid());
+                    //     }
+                    //     const string& Event() const
+                    //     {
+                    //         ASSERT(IsValid());
+                    //         return (_index->first);
+                    //     }
+
+                    // private:
+                    //     const HandlerMap* _container;
+                    //     HandlerMap::const_iterator _index;
+                    //     uint16_t _position;
+                    // };
+
+                public:
+                    Handler():_adminLock(),_invokeMap(){}
+                    Handler(const Handler&) = delete;
+                    Handler& operator=(const Handler&) = delete;
+                    ~Handler() = default;
+                    void Register(const string& methodName, const InvokeFunction& lambda)
+                    {
+                        printf("[SERXIONE-6193] [%s:%d] Calling register in new Handler\n", __FILE__, __LINE__);
+                        // Due to versioning, we do allow to overwrite methods that have been registered.
+                        // These are typically methods that are different from the preferred interface..
+                        _adminLock.Lock();
+                        auto retval = _invokeMap.emplace(std::piecewise_construct,
+                                            std::make_tuple(methodName),
+                                            std::make_tuple(lambda));
+
+                        if ( retval.second == false ) {
+                            retval.first->second = lambda;
+                        }
+                        _adminLock.Unlock();
+                    }
+                    void Unregister(const string& methodName)
+                    {
+                        printf("[SERXIONE-6193] [%s:%d] Calling UnRegister in new Handler\n", __FILE__, __LINE__);
+                        _adminLock.Lock();
+                        HandlerMap::iterator index = _invokeMap.find(methodName);
+
+                        ASSERT((index != _invokeMap.end()) && _T("Do not unregister methods that are not registered!!!"));
+
+                        if (index != _invokeMap.end()) {
+                            _invokeMap.erase(index);
+                        }
+                        _adminLock.Unlock();
+                    }
+                    // inline EventIterator Events() const
+                    // {
+                    //     return (EventIterator(_invokeMap));
+                    // }
+                    uint32_t Invoke(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response)
+                    {
+                        uint32_t result = Core::ERROR_UNKNOWN_METHOD;
+                        printf("[SERXIONE-6193] [%s:%d] Calling Invoke in new Handler\n", __FILE__, __LINE__);
+
+                        response.clear();
+
+                        _adminLock.Lock();
+                        printf("[SERXIONE-6193] [%s:%d] Searching for invoke method: %s \n", __FILE__, __LINE__, method.c_str());
+                        HandlerMap::iterator index = _invokeMap.find(Core::JSONRPC::Message::Method(method));
+                        if (index != _invokeMap.end()) {
+                            printf("[SERXIONE-6193] [%s:%d] Before Calling registered invoke method: %s \n", __FILE__, __LINE__, method.c_str());
+                            result = index->second(context, method, parameters, response);
+                            printf("[SERXIONE-6193] [%s:%d] After Calling registered invoke method: %s\n", __FILE__, __LINE__, method.c_str());
+                        }
+                        printf("[SERXIONE-6193] [%s:%d] After Searching for invoke method: %s \n", __FILE__, __LINE__, method.c_str());
+                        _adminLock.Unlock();
+                        return (result);
+                    }
+                private:
+                    mutable Core::CriticalSection _adminLock;
+                    HandlerMap _invokeMap;
+            };
+
         protected:
             static constexpr uint32_t DefaultWaitTime = 10000;
 
@@ -467,7 +619,8 @@ namespace Thunder {
                 : _adminLock()
                 , _connectId(RemoteNodeId())
                 , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign, query))
-                , _handler({ DetermineVersion(callsign) })
+                // , _handler({ DetermineVersion(callsign) })
+                , _handler()
                 , _callsign(callsign.empty() ? string() : Core::JSONRPC::Message::Callsign(callsign + '.'))
                 , _localSpace()
                 , _pendingQueue()
@@ -524,10 +677,11 @@ namespace Thunder {
             {
                 return (_callsign);
             }
-            Core::JSONRPC::Handler::EventIterator Events() const
-            {
-                return (_handler.Events());
-            }
+            // Core::JSONRPC::Handler::EventIterator Events() const
+            // {
+            //     printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
+            //     return (_handler.Events());
+            // }
             template <typename INBOUND, typename METHOD>
             void Assign(const string& eventName, const METHOD& method)
             {
@@ -540,6 +694,7 @@ namespace Thunder {
                     return (Core::ERROR_NONE);
                 };
 
+                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Register(eventName, implementation);
             }
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
@@ -554,10 +709,12 @@ namespace Thunder {
                     result.clear();
                     return (Core::ERROR_NONE);
                 };
+                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Register(eventName, implementation);
             }
             void Revoke(const string& eventName)
             {
+                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Unregister(eventName);
             }
             template <typename INBOUND, typename METHOD>
@@ -566,11 +723,13 @@ namespace Thunder {
                 Assign<INBOUND, METHOD>(eventName, method);
 
                 const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
+                printf("[SERXIONE-6193] [%s:%d] Sending sub req with params: %s\n", __FILE__, __LINE__, parameters.c_str());
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 uint32_t result = Send(waitTime, "register", parameters, response);
 
                 if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
+                    printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                     _handler.Unregister(eventName);
                     if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
                         result = response->Error.Code.Value();
@@ -584,11 +743,13 @@ namespace Thunder {
             {
                 Assign<INBOUND, METHOD, REALOBJECT>(eventName, method, objectPtr);
                 const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
+                printf("[SERXIONE-6193] [%s:%d] Sending sub req with params: %s\n", __FILE__, __LINE__, parameters.c_str());
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 uint32_t result = Send(waitTime, "register", parameters, response);
 
                 if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
+                    printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                     _handler.Unregister(eventName);
                     if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
                         result = response->Error.Code.Value();
@@ -604,6 +765,7 @@ namespace Thunder {
 
                 Send(waitTime, "unregister", parameters, response);
 
+                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Unregister(eventName);
             }
 
@@ -642,6 +804,9 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
+                printf("[SERXIONE-6193] [%s:%d] Dispatch 1\n", __FILE__, __LINE__);
+                static_assert(std::is_same<PARAMETERS, void>::value, "PARAMETERS is not void");
+                static_assert(std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value, "HANDLER classtype is not void");
 
                 string emptyString(EMPTY_STRING);
                 return (InternalInvoke<string, HANDLER>(
@@ -655,6 +820,7 @@ namespace Thunder {
             inline typename std::enable_if<!(std::is_same<PARAMETERS, void>::value&& std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
                 Dispatch(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
             {
+                printf("[SERXIONE-6193] [%s:%d] Dispatch 2\n", __FILE__, __LINE__);
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
 
                 return (InternalInvoke<PARAMETERS, HANDLER>(
@@ -669,6 +835,7 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
+                printf("[SERXIONE-6193] [%s:%d] Dispatch 3\n", __FILE__, __LINE__);
 
                 string emptyString(EMPTY_STRING);
                 return (InternalInvoke<string, HANDLER, REALOBJECT>(
@@ -684,6 +851,7 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
+                printf("[SERXIONE-6193] [%s:%d] Dispatch 4\n", __FILE__, __LINE__);
 
                 return (InternalInvoke<PARAMETERS, HANDLER, REALOBJECT>(
                     ::TemplateIntToType<std::is_same<ERRORCODE, Core::JSONRPC::Error*>::value>(),
@@ -823,6 +991,7 @@ namespace Thunder {
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
             {
                 Core::ProxyType<Core::JSONRPC::Message> response;
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 1\n", __FILE__, __LINE__);
                 uint32_t result = Send(waitTime, method, parameters, response);
                 if (result == Core::ERROR_NONE) {
                     if (response->Error.IsSet() == true) {
@@ -840,6 +1009,7 @@ namespace Thunder {
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
             {
                 Core::ProxyType<Core::JSONRPC::Message> response;
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 2\n", __FILE__, __LINE__);
                 uint32_t result = Send(waitTime, method, parameters, response);
                 if (result == Core::ERROR_NONE) {
                     if (response->Error.IsSet() == true) {
@@ -853,6 +1023,7 @@ namespace Thunder {
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 3\n", __FILE__, __LINE__);
                 CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                     typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                     if (inbound.Error.IsSet() == false) {
@@ -868,6 +1039,7 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<1>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 5\n", __FILE__, __LINE__);
 
                 CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                     typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
@@ -888,6 +1060,7 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<1>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 6\n", __FILE__, __LINE__);
 
                 std::function<void(RESPONSE)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1);
                 CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
@@ -907,6 +1080,7 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<0>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
+                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 7\n", __FILE__, __LINE__);
 
                 std::function<void(RESPONSE, const Core::JSONRPC::Message::Info* result)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1, std::placeholders::_2);
                 CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
@@ -963,6 +1137,11 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+                    printf("[SERXIONE-6193] [%s:%d] Actual Send Message: id: %d designator:%s parameters: %s\n"
+                    , __FILE__, __LINE__, 
+                    message->Id.Value(),
+                    message->Designator.Value().c_str(),
+                    message->Parameters.Value().c_str());
 
                     _adminLock.Lock();
 
@@ -977,6 +1156,7 @@ namespace Thunder {
 
                         _adminLock.Unlock();
 
+                        printf("[SERXIONE-6193] [%s:%d] Sending message via channel\n", __FILE__, __LINE__);
                         _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                         message.Release();
@@ -1027,6 +1207,11 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
+                    printf("[SERXIONE-6193] [%s:%d] Actual Send Message: id: %d designator:%s parameters: %s\n"
+                    , __FILE__, __LINE__, 
+                    message->Id.Value(),
+                    message->Designator.Value().c_str(),
+                    message->Parameters.Value().c_str());
 
                     _adminLock.Lock();
 
@@ -1035,10 +1220,12 @@ namespace Thunder {
                         std::forward_as_tuple(waitTime, response));
                     ASSERT(newElement.second == true);
 
+                    
                     if (newElement.second == true) {
                         uint64_t expiry = newElement.first->second.Expiry();
                         _adminLock.Unlock();
 
+                        printf("[SERXIONE-6193] [%s:%d] Sending message via channel\n", __FILE__, __LINE__);
                         _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                         result = Core::ERROR_NONE;
@@ -1053,16 +1240,18 @@ namespace Thunder {
 
                     _adminLock.Unlock();
                 }
-
+                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 return (result);
             }
             uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
             {
+                // printf("[SERXIONE-6193] [%s:%d] Enter Inbound\n", __FILE__, __LINE__);
                 uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
                 ASSERT(inbound.IsValid() == true);
 
                 if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
+                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
                     // Looks like this is a response..
                     ASSERT(inbound->Parameters.IsSet() == false);
                     ASSERT(inbound->Designator.IsSet() == false);
@@ -1073,6 +1262,7 @@ namespace Thunder {
                     typename PendingMap::iterator index = _pendingQueue.find(inbound->Id.Value());
 
                     if (index != _pendingQueue.end()) {
+                        // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                         if (index->second.Signal(inbound) == true) {
                             _pendingQueue.erase(index);
@@ -1080,11 +1270,13 @@ namespace Thunder {
 
                         result = Core::ERROR_NONE;
                     }
+                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                     _adminLock.Unlock();
                 }
                 else {
                     // check if we understand this message (correct callsign?)
+                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
                     string callsign(inbound->Callsign());
                     string version(inbound->VersionAsString());
                     if (version.empty() == false) {
@@ -1094,14 +1286,17 @@ namespace Thunder {
                         callsign += version;
                     }
 
+                    // printf("[SERXIONE-6193] [%s:%d] callsign: %s\n", __FILE__, __LINE__, callsign.c_str());
                     if (callsign == _localSpace) {
                         // Looks like this is an event.
                         ASSERT(inbound->Id.IsSet() == false);
 
                         string response;
+                        // printf("[SERXIONE-6193] [%s:%d] Calling Invoke in handler\n", __FILE__, __LINE__);
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
                     }
                 }
+                // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                 return (result);
             }
@@ -1153,7 +1348,9 @@ namespace Thunder {
             Core::CriticalSection _adminLock;
             Core::NodeId _connectId;
             Core::ProxyType< CommunicationChannel > _channel;
-            Core::JSONRPC::Handler _handler;
+            // Core::JSONRPC::Handler _handler;
+            Handler _handler;
+            Handler _invokeHandler;
             string _callsign;
             string _localSpace;
             PendingMap _pendingQueue;
@@ -1253,6 +1450,8 @@ namespace Thunder {
                     : Base(callsign, string(), localCallsign, query)
                     , _monitor(string(), false)
                     , _parent(parent)
+                    , _adminLock()
+                    , _subscribed(true)
                     , _state(UNKNOWN)
                 {
                     _monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
@@ -1269,17 +1468,53 @@ namespace Thunder {
                     return (_state == ACTIVATED);
                 }
 
+            template <typename INBOUND, typename METHOD>
+            uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
+            {
+                _adminLock.Lock();
+                _events.emplace(eventName);
+                _adminLock.Unlock();
+                return Base::template Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
+            }
+            void Unsubscribe(const uint32_t waitTime, const string& eventName)
+            {
+                _adminLock.Lock();
+                auto iter = _events.find(eventName);
+                _events.erase(iter);
+                _adminLock.Unlock();
+                return Base::Unsubscribe(waitTime, eventName);
+            }
+
             private:
                 void SetState(const JSONRPC::JSONPluginState value)
                 {
                     if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                         if ((_state != ACTIVATED) && (_state != LOADING)) {
                             _state = state::LOADING;
-                            auto index(Base::Events());
-                            while (index.Next() == true) {
-                                _events.push_back(index.Event());
+                            // auto index(Base::Events());
+                            // while (index.Next() == true) {
+                            //     _events.push_back(index.Event());
+                            // }
+                            // next_event(Core::JSON::String(), nullptr);
+
+                            if(!_subscribed) {
+                                printf("[SERXIONE-6193] [%s:%d] Subscribing for events\n", __FILE__, __LINE__);
+                                for (auto iter: _events) {
+                                    const string parameters("{ \"event\": \"" + iter + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                                    printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                                    // LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                                    // LinkType<INTERFACE>::Invoke(DefaultWaitTime, _T("register"), parameters);
+                                    Core::ProxyType<Core::JSONRPC::Message> response;
+                                    // uint32_t result = _monitor.Send(DefaultWaitTime, "register", parameters, response);
+                                    // Base::template Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::next_event, this);
+                                    Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
+                                    // if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
+                                    //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+
+                                    // }
+                                }
                             }
-                            next_event(Core::JSON::String(), nullptr);
+                            SetState(JSONRPC::JSONPluginState::ACTIVATED);
                         }
                         else if (_state == LOADING) {
                             _state = state::ACTIVATED;
@@ -1290,6 +1525,7 @@ namespace Thunder {
                     else if (value == JSONRPC::JSONPluginState::DEACTIVATED) {
                         if (_state != DEACTIVATED) {
                             _state = DEACTIVATED;
+                            _subscribed = false;
                             _parent.StateChange();
                         }
                     }
@@ -1317,16 +1553,20 @@ namespace Thunder {
                 }
                 void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
                 {
-                    // See if there are events pending for registration...
-                    if (_events.empty() == false) {
-                        const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
-                        _events.pop_front();
-                        LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
-                    }
-                    else {
-                        SetState(JSONRPC::JSONPluginState::ACTIVATED);
-                    }
+                    printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 }
+                // void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
+                // {
+                //     // See if there are events pending for registration...
+                //     if (_events.empty() == false) {
+                //         const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                //         // _events.pop_front();
+                //         LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                //     }
+                //     else {
+                //         SetState(JSONRPC::JSONPluginState::ACTIVATED);
+                //     }
+                // }
 
                 void Opened() override
                 {
@@ -1339,7 +1579,9 @@ namespace Thunder {
             private:
                 LinkType<INTERFACE> _monitor;
                 SmartLinkType<INTERFACE>& _parent;
-                std::list<string> _events;
+                Core::CriticalSection _adminLock;
+                std::unordered_set<string> _events;
+                bool _subscribed;
                 state _state;
             };
 
@@ -1348,6 +1590,7 @@ namespace Thunder {
             SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
                 : _connection(*this, remoteCallsign, localCallsign, query)
                 , _callsign(remoteCallsign)
+                , _subscriptions()
             {
             }
             POP_WARNING()
@@ -1405,7 +1648,7 @@ namespace Thunder {
             template <typename PARAMETERS, typename HANDLER>
             inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
-                return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
+                return (_connection.template Dispatch<string, HANDLER>(waitTime, method, "", callback));
             }
             template <typename PARAMETERS, typename HANDLER, typename REALOBJECT = typename Core::TypeTraits::func_traits<HANDLER>::classtype>
             inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
@@ -1492,6 +1735,7 @@ namespace Thunder {
         private:
             Connection _connection;
             string _callsign;
+            std::vector<string> _subscriptions;
         };
     }
 } // namespace Thunder::JSONRPC
