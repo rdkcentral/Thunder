@@ -396,6 +396,8 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #endif
 
 #ifdef __LINUX__
+#include <ctype.h> // must be first for inline ::tolower() etc.
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

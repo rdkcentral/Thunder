@@ -23,7 +23,6 @@ namespace Thunder {
 namespace Core {
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
-#ifndef __CORE_NO_WCHAR_SUPPORT__
     void ToString(const wchar_t realString[], std::string& result)
     {
 #if defined(__WINDOWS__) || defined(__LINUX__)
@@ -81,6 +80,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         result = std::wstring(convertedText);
     }
 
+#ifndef __CORE_NO_WCHAR_SUPPORT__
     string ToString(const wchar_t realString[], unsigned int length)
     {
 #ifdef _UNICODE

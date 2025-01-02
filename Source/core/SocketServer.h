@@ -281,7 +281,7 @@ namespace Core {
 
                 _lock.Unlock();
             }
-            virtual void Accept(SOCKET& newClient, const NodeId& remoteId)
+            void Accept(SOCKET& newClient, const NodeId& remoteId) override
             {
                 ProxyType<HANDLECLIENT> client = ProxyType<HANDLECLIENT>::Create(newClient, remoteId, &_parent);
 

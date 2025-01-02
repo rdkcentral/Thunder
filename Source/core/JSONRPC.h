@@ -39,8 +39,15 @@ namespace Core {
             // this magical value as a base for Thunder error codes (0..999).
             // These error codes are *not* related to the JSONRPC transport
             // layer but relate to the application layer.
-            // Seems the spec is expecting a value > -32767, so with a value
-            // range of 0-999 Thunder codes, -31000 should be oke :-)
+            // Seems the spec is expecting a value > -32000, so with a value
+            // range of 0-499 Thunder non COMRPC error codes and 500-999 COMRPC errors, 
+            // so -31000 as base should be oke :-)
+            // Please note: do NOT change the base number as there might be external 
+            //              code depending on this number to get to a certain error 
+            //              value for JSON RPC, so changing this number will break 
+            //              backwards compatibility not only for code below but
+            //              also external code.
+
             static constexpr int32_t ApplicationErrorCodeBase = -31000;
 
             class Info : public Core::JSON::Container {
@@ -166,7 +173,11 @@ namespace Core {
                         Text = _T("Requested service is not available.");
                         break;
                     default:
-                        Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        if ((frameworkError & 0x80000000) == 0) {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+                        } else {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        }
                         Text = Core::ErrorToString(frameworkError);
                         break;
                     }
@@ -260,14 +271,21 @@ namespace Core {
                 size_t end = designator.find_last_of('@');
                 size_t begin = designator.find_last_of('.', end);
                 size_t lookup = designator.find_first_of('#', begin+1);
+                string method;
 
                 if (lookup != string::npos) {
                     size_t ns = designator.find_first_of(':', lookup + 1);
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{}));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
                  }
                 else {
-                    return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1)));
+                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
                 }
+
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                ToCamelCase(method);
+POP_WARNING()
+
+                return (method);
             }
             static string FullMethod(const string& designator)
             {
@@ -419,6 +437,30 @@ namespace Core {
             Core::JSON::String Parameters;
             Core::JSON::String Result;
             Info Error;
+
+        private:
+            DEPRECATED static void ToCamelCase(string& source)
+            {
+                // speed optimized, does not care for locale settings
+
+                char* raw = &source[0];
+
+                auto const isup = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'A') <= 25);
+                };
+
+                auto const islow = [](const char ch) {
+                    return (static_cast<uint8_t>(ch - 'a') <= 25);
+                };
+
+                if (isup(raw[0])) {
+                    *raw++ |= 32;
+
+                    while (isup(raw[0]) && !islow(raw[1])) {
+                        *raw++ |= 32;
+                    }
+                }
+            }
 
         private:
             string _implicitCallsign;
@@ -778,9 +820,13 @@ namespace Core {
             {
                 using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
                 using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
+                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
+                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
+                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
+                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
 
                 InternalRegister<INBOUND, OUTBOUND, METHOD>(
-                    ::TemplateIntToType<std::is_same<ARG0, Context>::value | (std::is_same<ARG0, string>::value << 1) | (std::is_same<ARG1, string>::value << 1) | (std::is_same<ARG0, uint32_t>::value << 2)>(),
+                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -791,9 +837,13 @@ namespace Core {
             {
                 using ARG0 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<0>::type>::type;
                 using ARG1 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<1>::type>::type;
+                using ARG2 = typename std::decay<typename TypeTraits::func_traits<METHOD>::template argument<2>::type>::type;
+                constexpr auto HAS_CONTEXT = std::is_same<ARG0, Context>::value;
+                constexpr auto HAS_INDEX = (std::is_same<ARG0, string>::value | std::is_same<ARG1, string>::value | std::is_same<ARG2, string>::value);
+                constexpr auto HAS_INSTANCEID = (std::is_same<ARG0, uint32_t>::value | std::is_same<ARG1, uint32_t>::value);
 
                 InternalRegister<INBOUND, OUTBOUND, METHOD, REALOBJECT>(
-                    ::TemplateIntToType<std::is_same<ARG0, Context>::value | (std::is_same<ARG0, string>::value << 1) | (std::is_same<ARG1, string>::value << 1) | (std::is_same<ARG0, uint32_t>::value << 2)>(),
+                    ::TemplateIntToType<HAS_CONTEXT | (HAS_INDEX << 1) | (HAS_INSTANCEID << 2)>(),
                     ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
                     ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
@@ -1029,6 +1079,10 @@ namespace Core {
                 Register(methodName, implementation);
             }
 
+            // To reduce the number of possible permutations parameters to the native implementation method are always expected in particular order:
+            //  - context, instance id, property index, json parameters, json result (all optional).
+            // If index is used then either parameters or result must be present.
+
          private:
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
@@ -1166,6 +1220,36 @@ namespace Core {
             }
 
         private:
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& /* parameters */, string& /* result */) -> uint32_t {
+                    return (InternalRegisterImpl<METHOD>(method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+outbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+inbound+outbound
+            void InternalRegister(const ::TemplateIntToType<5>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName)));
+                });
+            }
+
+        private:
             template <typename INBOUND, typename OUTBOUND, typename METHOD> // id+index+inbound
             void InternalRegister(const ::TemplateIntToType<6>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
@@ -1185,6 +1269,29 @@ namespace Core {
             {
                 Register(methodName, [method](const Context&, const string& methodName, const string& parameters, string& result) -> uint32_t {
                     return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+
+        private:
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+inbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<INBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+outbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string&, string& result) -> uint32_t {
+                    return (InternalRegisterImpl<OUTBOUND, METHOD>(result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
+                });
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD> // context+id+index+inbound+outbound
+            void InternalRegister(const ::TemplateIntToType<7>&, const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                Register(methodName, [method](const Context& context, const string& methodName, const string& parameters, string& result) -> uint32_t {
+                    return (InternalRegisterImplIO<INBOUND, OUTBOUND, METHOD>(parameters, result, method, context, Message::InstanceId(methodName), Message::Index(methodName)));
                 });
             }
 
