@@ -381,8 +381,11 @@ int PasswdCallback(char* buffer, int size, int rw, void* password)
     size_t copied = std::min(strlen(static_cast<const char*>(password)), static_cast<size_t>(size));
     /* void* */ memcpy(buffer, password, copied);
 
+//    using common_t = std::common_type<int, size_t>::type;
+//    static_assert(static_cast<common_t>(std::numeric_limits<int>::max()) <= static_cast<size_t>(std::numeric_limits<size_t>::max()));
+
     // 0 - error, 0> - number of characaters in passphrase
-    return copied;
+    return static_cast<int>(copied);
 }
 }
 
