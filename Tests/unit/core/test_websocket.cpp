@@ -411,13 +411,13 @@ namespace Core {
 
             bool Validate(const ::Thunder::Crypto::Certificate& certificate) const override {
                 // Print certificate properties
-#ifdef _VERBOSE
+//#ifdef _VERBOSE
                 std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
                 std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
                 std::cout << " |--> Subject = " << certificate.Subject() << "\n";
                 std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
                 std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
-#endif
+//#endif
                 return true; // Always accept
             }
         };
@@ -579,6 +579,9 @@ namespace Core {
             result = store.Add(certificateCA);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
+            result = store.Add(certificate);
+            result = store.Remove(certificate);
+
             result = CustomStore(store);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
@@ -608,6 +611,9 @@ namespace Core {
 
             result = store.Add(certificateCA);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            result = store.Add(certificate);
+            result = store.Remove(certificate);
 
             result = CustomStore(store);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
