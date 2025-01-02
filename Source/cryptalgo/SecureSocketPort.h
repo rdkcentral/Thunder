@@ -19,43 +19,96 @@
 
 #pragma once
 
-#include "Module.h"
+#include <string>
 
-struct x509_store_ctx_st;
-struct x509_st;
-struct ssl_st;
+#include <openssl/ssl.h>
+
+#include "Module.h"
 
 namespace Thunder {
 namespace Crypto {
 
+    class EXTERNAL Certificate {
+    public:
+        Certificate() = delete;
+        Certificate& operator=(Certificate&&) = delete;
+        Certificate& operator=(const Certificate&) = delete;
+
+        Certificate(const std::string& fileName);
+        Certificate(Certificate&& move) noexcept;
+        Certificate(const Certificate& copy);
+        ~Certificate();
+
+    public:
+        const std::string Issuer() const;
+        const std::string Subject() const;
+        Core::Time ValidFrom() const;
+        Core::Time ValidTill() const;
+        bool ValidHostname(const std::string& expectedHostname) const;
+
+    protected:
+        Certificate(const X509* certificate);
+        operator const X509* () const;
+
+    private:
+        mutable X509* _certificate;
+    };
+
+    class EXTERNAL Key {
+    public:
+        Key() = delete;
+        Key& operator=(Key&&) = delete;
+        Key& operator=(const Key&) = delete;
+
+        Key(const string& fileName);
+        Key(const string& fileName, const string& password);
+        Key(Key&& move) noexcept;
+        Key(const Key& copy);
+        ~Key();
+
+    protected:
+        Key(const EVP_PKEY* key);
+        operator const EVP_PKEY* () const;
+
+    private:
+        mutable EVP_PKEY* _key;
+    };
+ 
+    class EXTERNAL CertificateStore {
+    public:
+        CertificateStore() = delete;
+        CertificateStore& operator=(CertificateStore&&) = delete;
+        CertificateStore& operator=(const CertificateStore&) = delete;
+
+        CertificateStore(bool defaultStore);
+        CertificateStore(CertificateStore&&) noexcept;
+        CertificateStore(const CertificateStore&);
+        ~CertificateStore();
+
+    public:
+        uint32_t Add(const Certificate& certificate);
+        uint32_t Remove(const Certificate& certificate);
+
+        bool IsDefaultStore() const;
+
+    protected:
+
+        operator X509_STORE* () const;
+        operator STACK_OF(X509_NAME)* () const;
+
+    private:
+        uint32_t CreateDefaultStore();
+
+        // (Extra) added certificates
+        std::vector<Crypto::Certificate> _list;
+
+        const bool _defaultStore;
+    };
+
     class EXTERNAL SecureSocketPort : public Core::IResource {
     public:
-        class EXTERNAL Certificate {
-        public:
-            Certificate() = delete;
-            Certificate(Certificate&&) = delete;
-            Certificate(const Certificate&) = delete;
-
-            Certificate(x509_st* certificate, const ssl_st* context)
-                : _certificate(certificate)
-                , _context(context) {
-            }
-            ~Certificate() = default;
-
-        public:
-            string Issuer() const;
-            string Subject() const;
-            Core::Time ValidFrom() const;
-            Core::Time ValidTill() const;
-            bool ValidHostname(const string& expectedHostname) const;
-            bool Verify(string& errorMsg) const;
-
-        private:
-            x509_st* _certificate;
-            const ssl_st* _context;
-        };
-        struct IValidator {
-            virtual ~IValidator() = default;
+        struct IValidate {
+            virtual ~IValidate() = default;
 
             virtual bool Validate(const Certificate& certificate) const = 0;
         };
@@ -78,17 +131,18 @@ namespace Crypto {
             Handler& operator=(Handler&&) = delete;
 
             template <typename... Args>
-            Handler(SecureSocketPort& parent, bool isClientSocketType, const std::string& certPath, const std::string& keyPath, bool requestCert, Args&&... args)
+            Handler(SecureSocketPort& parent, bool isClientSocketType, bool requestCert, Args&&... args)
                 : Core::SocketPort(std::forward<Args>(args)...)
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
                 , _callback(nullptr)
                 , _handShaking{isClientSocketType ? CONNECTING : ACCEPTING}
-                , _certificatePath{certPath}
-                , _privateKeyPath{keyPath}
+                , _certificate{""}
+                , _privateKey{""}
                 , _requestCertificate{requestCert}
                 , _waitTime{0}
+                , _store{ true }
             {}
             ~Handler();
 
@@ -114,7 +168,7 @@ namespace Crypto {
             void StateChange() override {
                 Update();
             }
-            inline uint32_t Callback(IValidator* callback) {
+            inline uint32_t Callback(IValidate* callback) {
                 uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                 Core::SocketPort::Lock();
@@ -129,6 +183,8 @@ namespace Crypto {
 
                 return (result);
             }
+            uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key);
+            uint32_t CustomStore( const CertificateStore& store);
 
         private:
             void Update();
@@ -139,12 +195,13 @@ namespace Crypto {
             SecureSocketPort& _parent;
             void* _context;
             void* _ssl;
-            IValidator* _callback;
+            IValidate* _callback;
             mutable state _handShaking;
-            const std::string _certificatePath; // (PEM formatted chain, including root CA) certificate file path
-            const std::string _privateKeyPath; // (PEM formatted) Private key file path
+            mutable Crypto::Certificate _certificate; // (PEM formatted ccertificate (chain)
+            mutable Crypto::Key _privateKey; // (PEM formatted) private key
             const bool _requestCertificate;
             mutable uint32_t _waitTime; // Extracted from Open for use in I/O blocking operations
+            CertificateStore _store;
         };
 
     public:
@@ -160,18 +217,13 @@ namespace Crypto {
         };
 
         template <typename... Args>
-        SecureSocketPort(context_t, Args&&... args)
-            : SecureSocketPort(context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{""}), static_cast<const std::string&>(std::string{""}), false, std::forward<Args>(args)...)
+        SecureSocketPort(context_t context, Args&&... args)
+            : SecureSocketPort(context, false, std::forward<Args>(args)...)
         {}
 
         template <typename... Args>
-        SecureSocketPort(context_t context, const std::string& certPath, const std::string& keyPath, Args&&... args)
-            : SecureSocketPort(context, certPath, keyPath, false, std::forward<Args>(args)...)
-        {}
-
-        template <typename... Args>
-        SecureSocketPort(context_t context, const std::string& certPath, const std::string& keyPath, bool requestPeerCert, Args&&... args)
-            : _handler(*this, context == context_t::CLIENT_CONTEXT, certPath, keyPath, requestPeerCert && context == context_t::SERVER_CONTEXT, std::forward<Args>(args)...)
+        SecureSocketPort(context_t context, bool requestPeerCert, Args&&... args)
+            : _handler(*this, context == context_t::CLIENT_CONTEXT, requestPeerCert && context == context_t::SERVER_CONTEXT, std::forward<Args>(args)...)
         {}
 
     public:
@@ -228,8 +280,14 @@ namespace Crypto {
         inline void Trigger() {
             _handler.Trigger();
         }
-        inline uint32_t Callback(IValidator* callback) {
+        inline uint32_t Callback(IValidate* callback) {
             return (_handler.Callback(callback));
+        }
+        inline uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
+            return (_handler.Certificate(certificate, key));
+        }
+        inline uint32_t CustomStore(const CertificateStore& store) {
+            return (_handler.CustomStore(store));
         }
 
         //

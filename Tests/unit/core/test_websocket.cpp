@@ -312,13 +312,13 @@ namespace Core {
 
                 /* void* */ memcpy(dataFrame, message.data(), count);
 
-#ifdef _VERBOSE
+//#ifdef _VERBOSE
                 std::cout << " |--> dataFrame (" << count << " ) = ";
                 for (int32_t index = 0; index < count; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
                 std::cout << "\n";
-#endif
+//#endif
 
                 if (count == message.size()) {
                     /* iterator */ _post.erase(_post.begin());
@@ -342,13 +342,13 @@ namespace Core {
             if (receivedSize > 0) {
                 _response.emplace_back(std::basic_string<uint8_t>{ dataFrame, receivedSize });
 
-#ifdef _VERBOSE
+//#ifdef _VERBOSE
                 std::cout << " |--> dataFrame ( " << receivedSize << " ) = ";
                 for (int32_t index = 0; index < receivedSize; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
                 std::cout << "\n";
-#endif
+//#endif
             }
 
             return receivedSize;
@@ -402,14 +402,14 @@ namespace Core {
 
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
 
-        // Validat eclient certificate
-        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
+        // Validate client certificate
+        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidate {
         public:
 
             Validator() = default;
             ~Validator() = default;
 
-            bool Validate(const Certificate& certificate) const override {
+            bool Validate(const ::Thunder::Crypto::Certificate& certificate) const override {
                 // Print certificate properties
 #ifdef _VERBOSE
                 std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
@@ -431,11 +431,18 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
+            // Support client certificate request
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key").c_str());
+
+            uint32_t result = Certificate(certificate, privateKey);
+
+
             // Validate custom (sefl signed) certificates
-            uint32_t result = Callback(&_validator);
+            /* uint32_t */ result = Callback(&_validator);
         }
 
         CustomSecureSocketStream(
@@ -445,11 +452,17 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostClient.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
+            // Support client certificate request
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key").c_str());
+
+            uint32_t result = Certificate(certificate, privateKey);
+
             // Validate custom (self signed) client certificates
-            uint32_t result = Callback(&_validator);
+            /* uint32_t */  result = Callback(&_validator);
         }
 
         ~CustomSecureSocketStream()
@@ -480,8 +493,15 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
-        {}
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+        {   
+            // Server identification
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+
+            uint32_t result = Certificate(certificate, privateKey);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+        }
 
         CustomSecureServerSocketStream(
               const bool
@@ -490,8 +510,15 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
-        {}
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {   
+            // Server identification
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+
+            uint32_t result = Certificate(certificate, privateKey);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+        }
 
         ~CustomSecureServerSocketStream()
         {
@@ -509,21 +536,21 @@ namespace Core {
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
 
         // Validat eclient certificate
-        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidator {
+        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidate {
         public:
 
             Validator() = default;
             ~Validator() = default;
 
-            bool Validate(const Certificate& certificate) const override {
+            bool Validate(const ::Thunder::Crypto::Certificate& certificate) const override {
                 // Print certificate properties
-#ifdef _VERBOSE
+//#ifdef _VERBOSE
                 std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
                 std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
                 std::cout << " |--> Subject = " << certificate.Subject() << "\n";
                 std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
                 std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
-#endif
+//#endif
                 return true; // Always accept
             }
         };
@@ -537,11 +564,27 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), true, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, true, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
-            // Validate custom (sefl signed) certificates
-            uint32_t result = Callback(&_validator);
+            // Server identification
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem").c_str());
+            ::Thunder::Crypto::CertificateStore store{ false };
+
+            uint32_t result = Certificate(certificate, privateKey);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            result = store.Add(certificateCA);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            result = CustomStore(store);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            // Validate custom (self signed) client certificates
+            result = Callback(&_validator);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
         }
 
         CustomSecureServerSocketStreamClientValidation(
@@ -551,11 +594,27 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.pem"}), static_cast<const std::string&>(std::string{volatilePath} + std::string{"localhostServer.key"}), true, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, true, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
+            // Server identification
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem").c_str());
+            ::Thunder::Crypto::CertificateStore store{ false };
+
+            uint32_t result = Certificate(certificate, privateKey);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            result = store.Add(certificateCA);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
+            result = CustomStore(store);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
+
             // Validate custom (self signed) client certificates
-            uint32_t result = Callback(&_validator);
+            result = Callback(&_validator);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
         }
 
         ~CustomSecureServerSocketStreamClientValidation()
@@ -1475,7 +1534,7 @@ namespace Core {
             ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
 
             // A small delay so the child can be set up
-            SleepMs(maxInitTime);
+ //           SleepMs(maxInitTime);
 
             EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
