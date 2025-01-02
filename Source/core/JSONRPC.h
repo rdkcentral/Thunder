@@ -269,16 +269,16 @@ namespace Core {
             static string Method(const string& designator)
             {
                 size_t end = designator.find_last_of('@');
-                size_t begin = designator.find_last_of('.', end);
-                size_t lookup = designator.find_first_of('#', begin+1);
+                size_t begin = designator.find_last_of('.', end) + 1;
+                size_t lookup = designator.find_first_of('#', begin);
                 string method;
 
                 if (lookup != string::npos) {
-                    size_t ns = designator.find_first_of(':', lookup + 1);
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
+                    size_t prefix = designator.find_first_of(':', lookup + 1);
+                    method = (designator.substr(begin, lookup - begin) + designator.substr(prefix, end - prefix));
                  }
                 else {
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
+                    method = designator.substr(begin, end - begin);
                 }
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
@@ -286,6 +286,20 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the
 POP_WARNING()
 
                 return (method);
+            }
+            static string Prefix(const string& designator)
+            {
+                string prefix;
+
+                size_t end = designator.find_first_of(':');
+
+                if (end != string::npos) {
+                    size_t begin = designator.find_last_of('.', end) + 1;
+                    size_t lookup = designator.find_first_of('#', begin);
+                    prefix = designator.substr(begin, std::min(lookup,end) - begin);
+                }
+
+                return (prefix);
             }
             static string FullMethod(const string& designator)
             {
