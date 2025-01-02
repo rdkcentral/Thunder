@@ -45,6 +45,9 @@ namespace Core {
 #endif
     }
 
+    EXTERNAL void ToString(const wchar_t realstring[], std::string& result);
+    EXTERNAL void ToString(const char realstring[], std::wstring& result);
+
 #ifndef __CORE_NO_WCHAR_SUPPORT__
     inline int ToCharacter(const wchar_t* character, TCHAR converted[], unsigned int /* DUMMY JUST TO HAVE THE SAME IF */)
     {
@@ -63,8 +66,6 @@ POP_WARNING()
 #endif
     }
     EXTERNAL string ToString(const wchar_t realstring[], const unsigned int length);
-    EXTERNAL void ToString(const wchar_t realstring[], std::string& result);
-    EXTERNAL void ToString(const char realstring[], std::wstring& result);
 
     inline void ToString(const wchar_t realstring[], std::wstring& result)
     {
