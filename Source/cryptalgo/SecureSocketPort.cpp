@@ -683,8 +683,8 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    using common_time_t = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
 #ifdef _STATIC_CAST_TIME
     static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
     static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
@@ -735,8 +735,8 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    using common_time_t = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
 #ifdef _STATIC_CAST_TIME
     static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
     static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
@@ -975,14 +975,14 @@ void SecureSocketPort::Handler::Update() {
         FD_SET(fd, &rfds);
         FD_SET(fd, &wfds);
 
-    using common_time_t = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+        using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
+        using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
 #ifdef _STATIC_CAST_TIME
-    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
-    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+        static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+        static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
 #else
-    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
-    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+        ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
+        ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
 #endif
 
         struct timeval tv {
