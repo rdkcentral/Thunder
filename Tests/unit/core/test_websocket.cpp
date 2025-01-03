@@ -435,8 +435,8 @@ namespace Core {
             , _validator{}
         {
             // Support client certificate request
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
 
@@ -456,8 +456,8 @@ namespace Core {
             , _validator{}
         {
             // Support client certificate request
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostClient.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
 
@@ -496,8 +496,8 @@ namespace Core {
             : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
         {   
             // Server identification
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
@@ -513,8 +513,8 @@ namespace Core {
             : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
         {   
             // Server identification
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
@@ -568,9 +568,9 @@ namespace Core {
             , _validator{}
         {
             // Server identification
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
-            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key"));
+            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem"));
             ::Thunder::Crypto::CertificateStore store{ false };
 
             uint32_t result = Certificate(certificate, privateKey);
@@ -601,9 +601,9 @@ namespace Core {
             , _validator{}
         {
             // Server identification
-            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem").c_str());
-            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key").c_str());
-            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem").c_str());
+            ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
+            ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostServer.key"));
+            ::Thunder::Crypto::Certificate certificateCA(std::string(volatilePath).append("rootCA.pem"));
             ::Thunder::Crypto::CertificateStore store{ false };
 
             uint32_t result = Certificate(certificate, privateKey);

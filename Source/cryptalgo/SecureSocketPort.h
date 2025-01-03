@@ -47,11 +47,11 @@ namespace Crypto {
         bool ValidHostname(const std::string& expectedHostname) const;
 
     protected:
-        Certificate(const X509* certificate);
-        operator const X509* () const;
+        Certificate(const void* certificate);
+        operator const void* () const;
 
     private:
-        mutable X509* _certificate;
+        mutable void* _certificate;
     };
 
     class EXTERNAL Key {
@@ -138,8 +138,8 @@ namespace Crypto {
                 , _ssl(nullptr)
                 , _callback(nullptr)
                 , _handShaking{isClientSocketType ? CONNECTING : ACCEPTING}
-                , _certificate{""}
-                , _privateKey{""}
+                , _certificate{std::string{""}}
+                , _privateKey{std::string{""}}
                 , _requestCertificate{requestCert}
                 , _waitTime{0}
                 , _store{ true }

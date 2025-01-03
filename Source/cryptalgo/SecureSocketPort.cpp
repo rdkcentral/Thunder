@@ -70,7 +70,7 @@ public:
 
     operator const X509* () const
     {
-        return Certificate::operator const X509* ();
+        return static_cast<const X509*>(Certificate::operator const void* ());
     }
 };
 
@@ -216,11 +216,11 @@ static Core::Time ASN1_ToTime(const ASN1_TIME* input)
 // -----------------------------------------------------------------------------
 // class Certificate
 // -----------------------------------------------------------------------------
-Certificate::Certificate(const X509* certificate)
-    : _certificate{ const_cast<x509_st*>(certificate) }
+Certificate::Certificate(const void* certificate)
+    : _certificate{ const_cast<void*>(certificate) }
 {
     if (certificate != nullptr) {
-        VARIABLE_IS_NOT_USED int result = X509_up_ref(_certificate);
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
         ASSERT(result == 1);
     }
 }
@@ -247,7 +247,7 @@ Certificate::Certificate(const Certificate& certificate)
     : _certificate{ certificate._certificate }
 {
     if (_certificate != nullptr) {
-        VARIABLE_IS_NOT_USED int result = X509_up_ref(_certificate);
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
         ASSERT(result == 1);
     }
 }
@@ -255,7 +255,7 @@ Certificate::Certificate(const Certificate& certificate)
 Certificate::~Certificate()
 {
     if (_certificate != nullptr) {
-        X509_free(_certificate);
+        X509_free(static_cast<X509*>(_certificate));
     }
 }
 
@@ -267,7 +267,7 @@ const std::string Certificate::Issuer() const
     char* buffer = nullptr; 
 
     // Do not free
-    X509_NAME* name = X509_get_issuer_name(_certificate);
+    X509_NAME* name = X509_get_issuer_name(static_cast<X509*>(_certificate));
 
     if ((buffer = X509_NAME_oneline(name, nullptr, 0)) != nullptr) {
         result = buffer;
@@ -286,7 +286,7 @@ const std::string Certificate::Subject() const
     char* buffer = nullptr; 
 
     // Do not free
-    X509_NAME* name = X509_get_subject_name(_certificate);
+    X509_NAME* name = X509_get_subject_name(static_cast<X509*>(_certificate));
 
     if ((buffer = X509_NAME_oneline(name, nullptr, 0)) != nullptr) {
         result = buffer;
@@ -302,7 +302,7 @@ Core::Time Certificate::ValidFrom() const
     ASSERT(_certificate != nullptr);
 
     // Do not free
-    return (ASN1_ToTime(X509_get0_notBefore(_certificate)));
+    return (ASN1_ToTime(X509_get0_notBefore(static_cast<X509*>(_certificate))));
 }
 
 Core::Time Certificate::ValidTill() const
@@ -310,20 +310,20 @@ Core::Time Certificate::ValidTill() const
     ASSERT(_certificate != nullptr);
 
     // Do not free
-    return (ASN1_ToTime(X509_get0_notAfter(_certificate)));
+    return (ASN1_ToTime(X509_get0_notAfter(static_cast<X509*>(_certificate))));
 }
 
 bool Certificate::ValidHostname(const std::string& expectedHostname) const
 {
     ASSERT(_certificate != nullptr);
 
-    return (X509_check_host(_certificate, expectedHostname.c_str(), expectedHostname.size(), 0, nullptr) == 1);
+    return (X509_check_host(static_cast<X509*>(_certificate), expectedHostname.c_str(), expectedHostname.size(), 0, nullptr) == 1);
 }
 
-Certificate::operator const X509* () const
+Certificate::operator const void* () const
 {
     if (_certificate != nullptr) {
-        int result = X509_up_ref(_certificate);
+        int result = X509_up_ref(static_cast<X509*>(_certificate));
         ASSERT(result == 1);
     }
 
@@ -524,7 +524,7 @@ uint32_t CertificateStore::CreateDefaultStore()
         while (path.Next()) {
             const Certificate certificate{ Certificate{ path.Current() } };
 
-            if (X509Certificate { certificate } != nullptr) {
+            if (X509Certificate { certificate }.operator const X509* () != nullptr) {
                 result = Add(certificate);
             }
 
