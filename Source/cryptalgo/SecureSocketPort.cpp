@@ -90,7 +90,7 @@ public :
 
     operator const EVP_PKEY* () const
     {
-        return Key::operator const EVP_PKEY* ();
+        return static_cast<const EVP_PKEY*>(Key::operator const void* ());
     }
 };
 
@@ -103,20 +103,57 @@ public:
 
     operator X509_STORE* () const
     {
-        VARIABLE_IS_NOT_USED X509_STORE* store = CertificateStore::operator X509_STORE* ();
+        const std::vector<Certificate>* list { static_cast<const std::vector<Certificate>*>(CertificateStore::operator const void* ()) };
 
-        ASSERT(store != nullptr);
+        X509_STORE* store{ list != nullptr ? X509_STORE_new() : nullptr };
 
-        return store;
+        if (store != nullptr) {
+            for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
+                // Do not X509_free
+                X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
+
+                if (   certificate == nullptr
+                    || X509_STORE_add_cert(store, certificate) != 1
+                   ) {
+                    X509_STORE_free(store);
+
+                    store = nullptr;
+
+                    break;
+                }
+            }
+        }
+
+        return (store);
     }
 
     operator STACK_OF(X509_NAME)* () const
     {
-        VARIABLE_IS_NOT_USED STACK_OF(X509_NAME)* store = CertificateStore::operator STACK_OF(X509_NAME)* ();
+        const std::vector<Certificate>* list { static_cast<const std::vector<Certificate>*>(CertificateStore::operator const void* ()) };
 
-        ASSERT(store != nullptr);
+        STACK_OF(X509_NAME)* store{ list != nullptr ? sk_X509_NAME_new_null() : nullptr };
 
-        return store;
+        if (store != nullptr) {
+            for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
+                // Do not X509_free
+                X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
+
+                // name must not be freed
+                X509_NAME* name = certificate != nullptr ? X509_get_subject_name(certificate) : nullptr;
+
+                if (   certificate == nullptr
+                    || sk_X509_NAME_push(store, name) == 0
+                   ) {
+                    sk_X509_NAME_free(store);
+
+                    store = nullptr;
+
+                    break;
+                }
+            }
+        }
+
+        return (store);
     }
 };
 
@@ -327,21 +364,21 @@ bool Certificate::ValidHostname(const std::string& expectedHostname) const
 Certificate::operator const void* () const
 {
     if (_certificate != nullptr) {
-        int result = X509_up_ref(static_cast<X509*>(_certificate));
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
         ASSERT(result == 1);
     }
 
-    return _certificate;
+    return (_certificate);
 }
 
 // -----------------------------------------------------------------------------
 // class Key
 // -----------------------------------------------------------------------------
-Key::Key(const EVP_PKEY* key)
-    : _key{ const_cast<EVP_PKEY*>(key) }
+Key::Key(const void* key)
+    : _key{ const_cast<void*>(key) }
 {
     if (_key != nullptr) {
-        VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(_key);
+        VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(static_cast<EVP_PKEY*>(_key));
         ASSERT(result == 1);
     }
 }
@@ -356,7 +393,8 @@ Key::Key(const Key& key)
     : _key{ key._key }
 {
     if (_key != nullptr) {
-        EVP_PKEY_up_ref(_key);
+        VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(static_cast<EVP_PKEY*>(_key));
+        ASSERT(result == 1);
     }
 }
 
@@ -374,7 +412,7 @@ Key::Key(const string& fileName)
 
 extern "C"
 {
-int PasswdCallback(char* buffer, int size, int rw, void* password)
+int PasswdCallback(char* buffer, int size, VARIABLE_IS_NOT_USED int rw, void* password)
 {
     // if rw == 0 then request to supply passphrase
     // if rw == 1, something else, possibly verify the supplied passphrase in a second prompt
@@ -408,13 +446,13 @@ Key::Key(const string& fileName, const string& password)
 Key::~Key()
 {
     if (_key != nullptr) {
-        EVP_PKEY_free(_key);
+        EVP_PKEY_free(static_cast<EVP_PKEY*>(_key));
     }
 }
 
-Key::operator const EVP_PKEY* () const
+Key::operator const void* () const
 {
-    return _key;
+    return (_key);
 }
 
 // -----------------------------------------------------------------------------
@@ -544,55 +582,9 @@ uint32_t CertificateStore::CreateDefaultStore()
     return (result);
 }
 
-CertificateStore::operator X509_STORE* () const
+CertificateStore::operator const void* () const
 {
-    X509_STORE* store { X509_STORE_new() };
-
-    if (store != nullptr) {
-        for (auto head = _list.begin(), index = head, tail = _list.end(); index != tail; index++) {
-            // Do not X509_free
-            X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
-
-            if (   certificate == nullptr
-                || X509_STORE_add_cert(store, certificate) != 1
-               ) {
-                X509_STORE_free(store);
-
-                store = nullptr;
-
-                break;
-            }
-        }
-    }
-
-    return (store);
-}
-
-CertificateStore::operator STACK_OF(X509_NAME)* () const
-{
-    STACK_OF(X509_NAME)* store = sk_X509_NAME_new_null();
-
-    if (store != nullptr) {
-        for (auto head = _list.begin(), index = head, tail = _list.end(); index != tail; index++) {
-            // Do not X509_free
-            X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
-
-            // name must not be freed
-            X509_NAME* name = certificate != nullptr ? X509_get_subject_name(certificate) : nullptr;
-
-            if (   certificate == nullptr
-                || sk_X509_NAME_push(store, name) == 0
-               ) {
-                sk_X509_NAME_free(store);
-
-                store = nullptr;
-
-                break;
-            }
-        }
-    }
-
-    return (store);
+    return &_list;
 }
 
 bool CertificateStore::IsDefaultStore() const
@@ -693,8 +685,13 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
 
     using common_time_t = std::common_type<time_t, uint32_t>::type;
     using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
-    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) > static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()));
-    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) > static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()));
+#ifdef _STATIC_CAST_TIME
+    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+#else
+    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
+    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+#endif
 
     struct timeval tv {
       static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
@@ -740,8 +737,13 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 
     using common_time_t = std::common_type<time_t, uint32_t>::type;
     using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
-    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) > static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()));
-    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) > static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()));
+#ifdef _STATIC_CAST_TIME
+    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+#else
+    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
+    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+#endif
 
     struct timeval tv {
       static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
@@ -967,13 +969,25 @@ void SecureSocketPort::Handler::Update() {
 
         ASSERT(fd >= 0);
 
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(fd, &fds);
+        fd_set rfds, wfds;
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
+        FD_SET(fd, &rfds);
+        FD_SET(fd, &wfds);
+
+    using common_time_t = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+#ifdef _STATIC_CAST_TIME
+    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()), "Possible narrowing");
+#else
+    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
+    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+#endif
 
         struct timeval tv {
-          _waitTime / (Core::Time::MilliSecondsPerSecond)
-        , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+          static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+        , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
         };
 
         do {
@@ -985,9 +999,9 @@ void SecureSocketPort::Handler::Update() {
             case SSL_ERROR_SYSCALL              :   // Some syscall failed
                                                     if (errno != EAGAIN) {
                                                         // Last error without removing it from the queue
+#ifdef VERBOSE
                                                        unsigned long result = 0;
 
-#ifdef VERBOSE
                                                         if ((result = ERR_peek_last_error_all(&file, &line, &func, &data, &flag)) != 0) {
                                                             int lib = ERR_GET_LIB(result);
                                                             int reason = ERR_GET_REASON(result);
@@ -1001,8 +1015,10 @@ void SecureSocketPort::Handler::Update() {
             case SSL_ERROR_WANT_WRITE           :   _FALLTHROUGH; // Wait until ready to write
             case SSL_ERROR_WANT_CONNECT         :   _FALLTHROUGH; // Operation did not complete. Redo if the connection has been established
             case SSL_ERROR_WANT_ACCEPT          :   // Idem
-                                                    switch (select(fd + 1, &fds, &fds, nullptr, &tv)) {
-                                                    default :   if (!FD_ISSET(fd, &fds)) {
+                                                    switch (select(fd + 1, &rfds, &wfds, nullptr, &tv)) {
+                                                    default :   if (   !FD_ISSET(fd, &rfds)
+                                                                    && !FD_ISSET(fd, &wfds)
+                                                                   ) {
                                                                     // Only file descriptors in the set should be set
                                                                     _handShaking = ERROR;
             ASSERT(_handShaking != ERROR);
@@ -1051,7 +1067,5 @@ void SecureSocketPort::Handler::Update() {
 } // namespace Thunder::Crypto
 
 #ifdef _FALLTHROUGH
-#undef _FALLTHROUGH;
+#undef _FALLTHROUGH
 #endif
-
-

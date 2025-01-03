@@ -21,8 +21,6 @@
 
 #include <string>
 
-#include <openssl/ssl.h>
-
 #include "Module.h"
 
 namespace Thunder {
@@ -67,11 +65,11 @@ namespace Crypto {
         ~Key();
 
     protected:
-        Key(const EVP_PKEY* key);
-        operator const EVP_PKEY* () const;
+        Key(const void* key);
+        operator const void* () const;
 
     private:
-        mutable EVP_PKEY* _key;
+        mutable void* _key;
     };
  
     class EXTERNAL CertificateStore {
@@ -92,9 +90,7 @@ namespace Crypto {
         bool IsDefaultStore() const;
 
     protected:
-
-        operator X509_STORE* () const;
-        operator STACK_OF(X509_NAME)* () const;
+        operator const void* () const;
 
     private:
         uint32_t CreateDefaultStore();

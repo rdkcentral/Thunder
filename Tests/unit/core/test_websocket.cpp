@@ -314,7 +314,7 @@ namespace Core {
 
 //#ifdef _VERBOSE
                 std::cout << " |--> dataFrame (" << count << " ) = ";
-                for (int32_t index = 0; index < count; index++) {
+                for (size_t index = 0; index < count; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
                 std::cout << "\n";
@@ -439,10 +439,11 @@ namespace Core {
             ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
-
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
             // Validate custom (sefl signed) certificates
             /* uint32_t */ result = Callback(&_validator);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
         }
 
         CustomSecureSocketStream(
@@ -460,9 +461,11 @@ namespace Core {
             ::Thunder::Crypto::Key privateKey(std::string(volatilePath).append("localhostClient.key"));
 
             uint32_t result = Certificate(certificate, privateKey);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
             // Validate custom (self signed) client certificates
             /* uint32_t */  result = Callback(&_validator);
+            ASSERT(result == ::Thunder::Core::ERROR_NONE);
         }
 
         ~CustomSecureSocketStream()
@@ -579,9 +582,6 @@ namespace Core {
             result = store.Add(certificateCA);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
-            result = store.Add(certificate);
-            result = store.Remove(certificate);
-
             result = CustomStore(store);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
 
@@ -611,9 +611,6 @@ namespace Core {
 
             result = store.Add(certificateCA);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
-
-            result = store.Add(certificate);
-            result = store.Remove(certificate);
 
             result = CustomStore(store);
             ASSERT(result == ::Thunder::Core::ERROR_NONE);
@@ -681,8 +678,8 @@ namespace Core {
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
         const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
         const std::string webSocketOrigin;      // Optional, set by browser clients
-        constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-        constexpr bool masking {true};          // Flag set by client to enable masking
+        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+        VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
         const TCHAR remoteHostName[] {"127.0.0.1"};
 
@@ -725,7 +722,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {1024};
         constexpr uint16_t receiveBufferSize {1024};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -733,8 +730,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -799,7 +796,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {1024};
         constexpr uint16_t receiveBufferSize {1024};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -807,8 +804,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -882,7 +879,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {1024};
         constexpr uint16_t receiveBufferSize {1024};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -890,8 +887,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -965,7 +962,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {1024};
         constexpr uint16_t receiveBufferSize {1024};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -973,8 +970,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -1042,7 +1039,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {1024};
         constexpr uint16_t receiveBufferSize {1024};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -1050,8 +1047,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -1145,8 +1142,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -1294,8 +1291,8 @@ namespace Core {
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
         const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
         const std::string webSocketOrigin;      // Optional, set by browser clients
-        constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-        constexpr bool masking {true};          // Flag set by client to enable masking
+        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+        VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
         const TCHAR remoteHostName[] {"127.0.0.1"};
 
@@ -1346,8 +1343,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
@@ -1459,8 +1456,8 @@ namespace Core {
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
         const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
         const std::string webSocketOrigin;      // Optional, set by browser clients
-        constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
-        constexpr bool masking {true};          // Flag set by client to enable masking
+        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
+        VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
         const TCHAR remoteHostName[] {"127.0.0.1"};
 
@@ -1502,7 +1499,7 @@ namespace Core {
         constexpr uint16_t sendBufferSize {4096};
         constexpr uint16_t receiveBufferSize {4096};
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -1510,8 +1507,8 @@ namespace Core {
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
-            constexpr bool masking {true};          // Flag set by client to enable masking
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
 
