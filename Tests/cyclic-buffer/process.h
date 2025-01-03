@@ -319,7 +319,7 @@ public :
               fileName
             ,   Core::File::USER_READ  // Enable read permissions on the underlying file for other users
               | Core::File::USER_WRITE // Enable write permission on the underlying file
-              | (requiredSharedBufferSize ? Core::File::CREATE : 0) // Create a new underlying memory mapped file
+              | (requiredSharedBufferSize ? static_cast<std::underlying_type<Core::File::Mode>::type>(Core::File::CREATE) : 0) // Create a new underlying memory mapped file
               | Core::File::SHAREABLE  // Allow other processes to access the content of the file
             , requiredSharedBufferSize // Requested size
             , false // Overwrite unread data
@@ -826,7 +826,7 @@ private :
                         }
             case 0  :   // Child
                         {
-                            const struct timespec timeout = {.tv_sec = _setupTime, .tv_nsec = 0};
+                            const struct timespec timeout{ _setupTime,  0};
 
                             std::array<status, 2> flags = {status::uninitialized, status::initialized};
 
@@ -924,7 +924,7 @@ private :
 
                 TRACE_L1(_T("Parent %ld has woken up %ld child(ren)."), gettid(), retval);
 
-                const struct timespec timeout = {.tv_sec = _setupTime, .tv_nsec = 0};
+                const struct timespec timeout{_setupTime, 0};
 
                 flags = {status::initialized, status::ready};
 
@@ -1015,8 +1015,8 @@ private :
     std::array<uint8_t, 2> _childUsersSet;
     std::array<uint8_t, 2> _parentUsersSet;
 
-    uint32_t _runTime; // Milliseconds
     uint32_t _setupTime; // Seconds
+    uint32_t _runTime; // Milliseconds
 
     uint8_t _numReservedBlocks;
 };

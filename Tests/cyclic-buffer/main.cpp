@@ -40,7 +40,7 @@
     }                                                                                                                                           \
     RESULT = future.get();
 
-int main(int argc, char* argv[])
+int main(VARIABLE_IS_NOT_USED int argc, VARIABLE_IS_NOT_USED char* argv[])
 {
     using namespace WPEFramework::Core;
 
