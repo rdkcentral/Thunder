@@ -29,6 +29,10 @@
 
 #include <core/Time.h>
 
+#ifndef _FALLTHROUGH
+#define _FALLTHROUGH while(false){};
+#endif
+
 #ifndef __WINDOWS__
 namespace {
 
@@ -687,9 +691,14 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
+    using common_time_t = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) > static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()));
+    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) > static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()));
+
     struct timeval tv {
-      _waitTime / (Core::Time::MilliSecondsPerSecond)
-    , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+      static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+    , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
     };
 
     int result = -1;
@@ -704,11 +713,11 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     case SSL_READING            :   // More data to be read to complete
                                     result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_read(static_cast<SSL*>(_ssl), buffer, length) : -1;
                                     break;
-    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
-    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
-    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
-    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
-    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+    case SSL_X509_LOOKUP        :   _FALLTHROUGH; // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+    case SSL_RETRY_VERIFY       :   _FALLTHROUGH; // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   _FALLTHROUGH; // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   _FALLTHROUGH; // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   _FALLTHROUGH; // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
     default                     :   // Error not processed
                                     result = -1;
     }
@@ -729,9 +738,14 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
+    using common_time_t = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t = std::common_type<suseconds_t, uint32_t>::type;
+    static_assert(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) > static_cast<common_time_t>(std::numeric_limits<uint32_t>::max()));
+    static_assert(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) > static_cast<common_sec_t>(std::numeric_limits<uint32_t>::max()));
+
     struct timeval tv {
-      _waitTime / (Core::Time::MilliSecondsPerSecond)
-    , (_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond)
+      static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+    , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
     };
 
     int result = -1;
@@ -746,11 +760,11 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     case SSL_READING            :   // More data to be read to complete
                                     result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_write(static_cast<SSL*>(_ssl), buffer, length) : -1;
                                     break;
-    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
-    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
-    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
-    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
-    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+    case SSL_X509_LOOKUP        :   _FALLTHROUGH; // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+    case SSL_RETRY_VERIFY       :   _FALLTHROUGH; // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   _FALLTHROUGH; // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   _FALLTHROUGH; // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   _FALLTHROUGH; // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
     default                     :   // Error not processed
                                     result = -1;
     }
@@ -886,7 +900,7 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
     return result; // 0 - Failure, 1 - OK
 }
 
-int PeerCertificateCallbackWrapper(X509_STORE_CTX* ctx, void* arg)
+int PeerCertificateCallbackWrapper(VARIABLE_IS_NOT_USED X509_STORE_CTX* ctx, VARIABLE_IS_NOT_USED void* arg)
 { // This is called if the complete certificate validation procedure has its custom implementation
   // This is typically not what is intended or required, and, a complex process to do correct
 
@@ -930,8 +944,8 @@ void SecureSocketPort::Handler::Update() {
             /* void */ SSL_CTX_set_cert_store(static_cast<SSL_CTX*>(_context), X509CertificateStore{ _store });
         }
 
-        const char* file = nullptr, *func = nullptr, *data = nullptr;
-        int line = 0, flag = 0;
+//        const char* file = nullptr, *func = nullptr, *data = nullptr;
+//        int line = 0, flag = 0;
 
 //        ASSERT(ERR_get_error_all(&file, &line, &func, &data, &flag) == 0);
 
@@ -983,9 +997,9 @@ void SecureSocketPort::Handler::Update() {
 #endif
                                                     }
                                                     // Fallthrough for select
-            case SSL_ERROR_WANT_READ            :   // Wait until ready to read
-            case SSL_ERROR_WANT_WRITE           :   // Wait until ready to write
-            case SSL_ERROR_WANT_CONNECT         :   // Operation did not complete. Redo if the connection has been established
+            case SSL_ERROR_WANT_READ            :   _FALLTHROUGH; // Wait until ready to read
+            case SSL_ERROR_WANT_WRITE           :   _FALLTHROUGH; // Wait until ready to write
+            case SSL_ERROR_WANT_CONNECT         :   _FALLTHROUGH; // Operation did not complete. Redo if the connection has been established
             case SSL_ERROR_WANT_ACCEPT          :   // Idem
                                                     switch (select(fd + 1, &fds, &fds, nullptr, &tv)) {
                                                     default :   if (!FD_ISSET(fd, &fds)) {
@@ -1002,11 +1016,11 @@ void SecureSocketPort::Handler::Update() {
             ASSERT(_handShaking != ERROR);
                                                     }
                                                     break;
-            case SSL_ERROR_ZERO_RETURN          :
-            case SSL_ERROR_WANT_ASYNC           :
-            case SSL_ERROR_WANT_ASYNC_JOB       :
-            case SSL_ERROR_WANT_CLIENT_HELLO_CB :
-            case SSL_ERROR_SSL                  :   // Unrecoverable error
+            case SSL_ERROR_ZERO_RETURN          :   _FALLTHROUGH; 
+            case SSL_ERROR_WANT_ASYNC           :   _FALLTHROUGH; 
+            case SSL_ERROR_WANT_ASYNC_JOB       :   _FALLTHROUGH; 
+            case SSL_ERROR_WANT_CLIENT_HELLO_CB :   _FALLTHROUGH;
+            case SSL_ERROR_SSL                  :   _FALLTHROUGH;   // Unrecoverable error
             default                             :   // Error
                                                     _handShaking = ERROR;
             }
@@ -1035,3 +1049,9 @@ void SecureSocketPort::Handler::Update() {
 }
 
 } // namespace Thunder::Crypto
+
+#ifdef _FALLTHROUGH
+#undef _FALLTHROUGH;
+#endif
+
+
