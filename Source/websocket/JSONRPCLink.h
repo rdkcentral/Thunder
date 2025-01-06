@@ -1440,9 +1440,9 @@ namespace Thunder {
                 return Base::Unsubscribe(waitTime, eventName);
             }
 
-            // void Dispatch() {
-            //     printf("[SERXIONE-6193] [%s:%d] Job triggered\n", __FILE__, __LINE__);
-            // }
+            void Dispatch() {
+                printf("[SERXIONE-6193] [%s:%d] Job triggered\n", __FILE__, __LINE__);
+            }
 
             private:
                 void SetState(const JSONRPC::JSONPluginState value)
@@ -1628,24 +1628,12 @@ namespace Thunder {
             // A-Synchronous invoke methods
             // -------------------------------------------------------------------------------------------
             template <typename PARAMETERS, typename HANDLER>
-            inline typename std::enable_if<(std::is_same<PARAMETERS, void>::value&& std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
-            Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
+            inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
+                // return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
+                // return (_connection.template Dispatch<string, HANDLER>(waitTime, method, "", callback));
                 return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
             }
-
-            template <typename PARAMETERS, typename HANDLER>
-            inline typename std::enable_if<!(std::is_same<PARAMETERS, void>::value&& std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
-            Dispatch(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
-            {
-                return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, parameters, callback));
-            }
-                
-            // template <typename PARAMETERS, typename HANDLER>
-            // inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
-            // {
-            //     return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
-            // }
             template <typename PARAMETERS, typename HANDLER, typename REALOBJECT = typename Core::TypeTraits::func_traits<HANDLER>::classtype>
             inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
             {
