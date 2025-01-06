@@ -538,7 +538,7 @@ namespace Core {
             loadFromSystem[2] = Round(loadFromSystem[2], 2);
 
             uint64_t* cpuLoadAvg = ::Thunder::Core::SystemInfo::Instance().GetCpuLoadAvg();
-            double loadFromThunder[3];
+            VARIABLE_IS_NOT_USED double loadFromThunder[3];
 #ifndef __APPLE__
             // Fixed point arithmetic
             EXPECT_DOUBLE_EQ(loadFromSystem[0], cpuLoadAvg[0] / (1 << SI_LOAD_SHIFT));
