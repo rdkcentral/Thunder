@@ -111,7 +111,7 @@ namespace Core {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 6, maxWaitTimeMs = 6000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 20;
 
-        constexpr uint16_t administrationSize = 64;
+        VARIABLE_IS_NOT_USED constexpr uint16_t administrationSize = 64;
         constexpr uint32_t bufferSize = 8 * 1024;
 
         const std::string bufferName {"testbuffer02"} ;
@@ -147,7 +147,7 @@ namespace Core {
 
             uint16_t administrationSize = 64;
             uint32_t bufferSize = 8 * 1024;
-            uint32_t result;
+            VARIABLE_IS_NOT_USED uint32_t result;
 
             ::Thunder::Core::SharedBuffer buff01(bufferName.c_str(),
                 ::Thunder::Core::File::USER_READ    |

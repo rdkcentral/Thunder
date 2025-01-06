@@ -83,7 +83,7 @@ namespace Core {
             _dataReceived.clear();
         }
 
-        virtual void Send(const string& text)
+        virtual void Send(VARIABLE_IS_NOT_USED const string& text)
         {
         }
 
