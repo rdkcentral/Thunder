@@ -328,7 +328,6 @@ namespace Thunder {
                         : _signal(false, true)
                         , _response()
                     {
-                        printf("[SERXIONE-6193] [%s:%d] Sync Ctor\n", __FILE__, __LINE__);
                     }
                     Core::Event _signal;
                     Core::ProxyType<Core::JSONRPC::Message> _response;
@@ -338,7 +337,6 @@ namespace Thunder {
                         : _waitTime(Core::Time::Now().Add(waitTime).Ticks())
                         , _completed(completed)
                     {
-                        printf("[SERXIONE-6193] [%s:%d] Async Ctor\n", __FILE__, __LINE__);
                     }
                     uint64_t _waitTime;
                     CallbackFunction _completed;
@@ -373,12 +371,10 @@ namespace Thunder {
                 bool Signal(const Core::ProxyType<Core::JSONRPC::Message>& response)
                 {
                     if (_synchronous == true) {
-                        printf("[SERXIONE-6193] [%s:%d] sync: TRUE\n", __FILE__, __LINE__);
                         _info.sync._response = response;
                         _info.sync._signal.SetEvent();
                     }
                     else {
-                        printf("[SERXIONE-6193] [%s:%d] sync: FALSE\n", __FILE__, __LINE__);
                         _info.async._completed(*response);
                     }
 
@@ -475,9 +471,6 @@ namespace Thunder {
                     ~Handler() = default;
                     void Register(const string& methodName, const InvokeFunction& lambda)
                     {
-                        printf("[SERXIONE-6193] [%s:%d] Calling register in new Handler\n", __FILE__, __LINE__);
-                        // Due to versioning, we do allow to overwrite methods that have been registered.
-                        // These are typically methods that are different from the preferred interface..
                         _adminLock.Lock();
                         auto retval = _invokeMap.emplace(std::piecewise_construct,
                                             std::make_tuple(methodName),
@@ -490,7 +483,6 @@ namespace Thunder {
                     }
                     void Unregister(const string& methodName)
                     {
-                        printf("[SERXIONE-6193] [%s:%d] Calling UnRegister in new Handler\n", __FILE__, __LINE__);
                         _adminLock.Lock();
                         HandlerMap::iterator index = _invokeMap.find(methodName);
 
@@ -505,19 +497,14 @@ namespace Thunder {
                     uint32_t Invoke(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response)
                     {
                         uint32_t result = Core::ERROR_UNKNOWN_METHOD;
-                        printf("[SERXIONE-6193] [%s:%d] Calling Invoke in new Handler\n", __FILE__, __LINE__);
 
                         response.clear();
 
                         _adminLock.Lock();
-                        printf("[SERXIONE-6193] [%s:%d] Searching for invoke method: %s \n", __FILE__, __LINE__, method.c_str());
                         HandlerMap::iterator index = _invokeMap.find(Core::JSONRPC::Message::Method(method));
                         if (index != _invokeMap.end()) {
-                            printf("[SERXIONE-6193] [%s:%d] Before Calling registered invoke method: %s \n", __FILE__, __LINE__, method.c_str());
                             result = index->second(context, method, parameters, response);
-                            printf("[SERXIONE-6193] [%s:%d] After Calling registered invoke method: %s\n", __FILE__, __LINE__, method.c_str());
                         }
-                        printf("[SERXIONE-6193] [%s:%d] After Searching for invoke method: %s \n", __FILE__, __LINE__, method.c_str());
                         _adminLock.Unlock();
                         return (result);
                     }
@@ -603,7 +590,6 @@ namespace Thunder {
                     return (Core::ERROR_NONE);
                 };
 
-                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Register(eventName, implementation);
             }
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
@@ -618,12 +604,10 @@ namespace Thunder {
                     result.clear();
                     return (Core::ERROR_NONE);
                 };
-                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Register(eventName, implementation);
             }
             void Revoke(const string& eventName)
             {
-                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Unregister(eventName);
             }
             template <typename INBOUND, typename METHOD>
@@ -632,13 +616,11 @@ namespace Thunder {
                 Assign<INBOUND, METHOD>(eventName, method);
 
                 const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
-                printf("[SERXIONE-6193] [%s:%d] Sending sub req with params: %s\n", __FILE__, __LINE__, parameters.c_str());
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 uint32_t result = Send(waitTime, "register", parameters, response);
 
                 if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
-                    printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                     _handler.Unregister(eventName);
                     if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
                         result = response->Error.Code.Value();
@@ -652,13 +634,11 @@ namespace Thunder {
             {
                 Assign<INBOUND, METHOD, REALOBJECT>(eventName, method, objectPtr);
                 const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
-                printf("[SERXIONE-6193] [%s:%d] Sending sub req with params: %s\n", __FILE__, __LINE__, parameters.c_str());
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 uint32_t result = Send(waitTime, "register", parameters, response);
 
                 if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
-                    printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                     _handler.Unregister(eventName);
                     if ((result == Core::ERROR_NONE) && (response->Error.IsSet() == true)) {
                         result = response->Error.Code.Value();
@@ -674,7 +654,6 @@ namespace Thunder {
 
                 Send(waitTime, "unregister", parameters, response);
 
-                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 _handler.Unregister(eventName);
             }
 
@@ -713,7 +692,6 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
-                printf("[SERXIONE-6193] [%s:%d] Dispatch 1 param: Void, classtype: Void\n", __FILE__, __LINE__);
                 static_assert(std::is_same<PARAMETERS, void>::value, "PARAMETERS is not void");
                 static_assert(std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value, "HANDLER classtype is not void");
 
@@ -729,7 +707,6 @@ namespace Thunder {
             inline typename std::enable_if<!(std::is_same<PARAMETERS, void>::value&& std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
                 Dispatch(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
             {
-                printf("[SERXIONE-6193] [%s:%d] Dispatch 2 - param: Not void classtype: Void\n", __FILE__, __LINE__);
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
 
                 return (InternalInvoke<PARAMETERS, HANDLER>(
@@ -744,7 +721,6 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
-                printf("[SERXIONE-6193] [%s:%d] Dispatch 3 - param: Void classtype: Not Void\n", __FILE__, __LINE__);
 
                 string emptyString(EMPTY_STRING);
                 return (InternalInvoke<string, HANDLER, REALOBJECT>(
@@ -760,7 +736,6 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
-                printf("[SERXIONE-6193] [%s:%d] Dispatch 4 - param: Not Void classtype: Not Void\n", __FILE__, __LINE__);
 
                 return (InternalInvoke<PARAMETERS, HANDLER, REALOBJECT>(
                     ::TemplateIntToType<std::is_same<ERRORCODE, Core::JSONRPC::Error*>::value>(),
@@ -900,7 +875,6 @@ namespace Thunder {
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
             {
                 Core::ProxyType<Core::JSONRPC::Message> response;
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 1\n", __FILE__, __LINE__);
                 uint32_t result = Send(waitTime, method, parameters, response);
                 if (result == Core::ERROR_NONE) {
                     if (response->Error.IsSet() == true) {
@@ -918,7 +892,6 @@ namespace Thunder {
             uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
             {
                 Core::ProxyType<Core::JSONRPC::Message> response;
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 2\n", __FILE__, __LINE__);
                 uint32_t result = Send(waitTime, method, parameters, response);
                 if (result == Core::ERROR_NONE) {
                     if (response->Error.IsSet() == true) {
@@ -932,7 +905,6 @@ namespace Thunder {
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 3\n", __FILE__, __LINE__);
                 CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                     typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                     if (inbound.Error.IsSet() == false) {
@@ -948,7 +920,6 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<1>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 5\n", __FILE__, __LINE__);
 
                 CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                     typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
@@ -969,7 +940,6 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<1>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 6\n", __FILE__, __LINE__);
 
                 std::function<void(RESPONSE)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1);
                 CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
@@ -989,7 +959,6 @@ namespace Thunder {
             uint32_t InternalInvoke(const ::TemplateIntToType<0>&, const uint32_t waitTime, const string& method, const PARAMETERS& parameters, const HANDLER& callback, REALOBJECT* objectPtr)
             {
                 using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
-                printf("[SERXIONE-6193] [%s:%d] InternalInvoke 7\n", __FILE__, __LINE__);
 
                 std::function<void(RESPONSE, const Core::JSONRPC::Message::Info* result)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1, std::placeholders::_2);
                 CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
@@ -1046,11 +1015,6 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
-                    printf("[SERXIONE-6193] [%s:%d] Actual Send Message: id: %d designator:%s parameters: %s\n"
-                    , __FILE__, __LINE__, 
-                    message->Id.Value(),
-                    message->Designator.Value().c_str(),
-                    message->Parameters.Value().c_str());
 
                     _adminLock.Lock();
 
@@ -1065,7 +1029,6 @@ namespace Thunder {
 
                         _adminLock.Unlock();
 
-                        printf("[SERXIONE-6193] [%s:%d] Sending message via channel\n", __FILE__, __LINE__);
                         _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                         message.Release();
@@ -1116,11 +1079,6 @@ namespace Thunder {
                         message->Designator = method;
                     }
                     ToMessage(parameters, message);
-                    printf("[SERXIONE-6193] [%s:%d] Actual Send Message: id: %d designator:%s parameters: %s\n"
-                    , __FILE__, __LINE__, 
-                    message->Id.Value(),
-                    message->Designator.Value().c_str(),
-                    message->Parameters.Value().c_str());
 
                     _adminLock.Lock();
 
@@ -1134,7 +1092,6 @@ namespace Thunder {
                         uint64_t expiry = newElement.first->second.Expiry();
                         _adminLock.Unlock();
 
-                        printf("[SERXIONE-6193] [%s:%d] Sending message via channel\n", __FILE__, __LINE__);
                         _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                         result = Core::ERROR_NONE;
@@ -1149,49 +1106,16 @@ namespace Thunder {
 
                     _adminLock.Unlock();
                 }
-                printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                 return (result);
             }
             uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
             {
-                // printf("[SERXIONE-6193] [%s:%d] Enter Inbound\n", __FILE__, __LINE__);
                 uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
                 ASSERT(inbound.IsValid() == true);
-                printf("[SERXIONE-6193] Inbound Message: {\n");
-                if (inbound->Id.IsSet()) {
-                    printf("\tid: %d, \n", inbound->Id.Value());
-                }
-                if (inbound->JSONRPC.IsSet()) {
-                    printf("\tjsonrpc: %s, \n", inbound->JSONRPC.Value().c_str());
-                }
-                if (inbound->Designator.IsSet()) {
-                    printf("\tdesignator: %s, \n", inbound->Designator.Value().c_str());
-                }
-                if (inbound->Parameters.IsSet()) {
-                    printf("\tparameters: %s, \n", inbound->Parameters.Value().c_str());
-                }
-                if (inbound->Result.IsSet()) {
-                    printf("\tresult: %s, \n", inbound->Result.Value().c_str());
-                }
-                if (inbound->Error.IsSet()) {
-                    printf("\terror: { \n");
-                    if(inbound->Error.Code.IsSet()){
-                        printf("\t\t code: %d,\n", inbound->Error.Code.Value());
-                    }
-                    if(inbound->Error.Text.IsSet()){
-                        printf("\t\t text: %s,", inbound->Error.Text.Value().c_str());
-                    }
-                    if(inbound->Error.Data.IsSet()){
-                        printf("\t\t data: %s,", inbound->Error.Data.Value().c_str());
-                    }
-                    printf("\t} \n");
-                }
-                printf("}\n");
 
 
                 if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
-                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
                     // Looks like this is a response..
                     ASSERT(inbound->Parameters.IsSet() == false);
                     ASSERT(inbound->Designator.IsSet() == false);
@@ -1202,7 +1126,6 @@ namespace Thunder {
                     typename PendingMap::iterator index = _pendingQueue.find(inbound->Id.Value());
 
                     if (index != _pendingQueue.end()) {
-                        // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                         if (index->second.Signal(inbound) == true) {
                             _pendingQueue.erase(index);
@@ -1210,13 +1133,11 @@ namespace Thunder {
 
                         result = Core::ERROR_NONE;
                     }
-                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                     _adminLock.Unlock();
                 }
                 else {
                     // check if we understand this message (correct callsign?)
-                    // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
                     string callsign(inbound->Callsign());
                     string version(inbound->VersionAsString());
                     if (version.empty() == false) {
@@ -1226,17 +1147,14 @@ namespace Thunder {
                         callsign += version;
                     }
 
-                    printf("[SERXIONE-6193] [%s:%d] _localSpace: %s callsign: %s version: %s\n", __FILE__, __LINE__, _localSpace.c_str(), callsign.c_str(), version.c_str());
                     if (callsign == _localSpace) {
                         // Looks like this is an event.
                         ASSERT(inbound->Id.IsSet() == false);
 
                         string response;
-                        printf("[SERXIONE-6193] [%s:%d] Calling Invoke in handler FullMethod: %s\n", __FILE__, __LINE__, inbound->FullMethod().c_str());
                         _handler.Invoke(Core::JSONRPC::Context(), inbound->FullMethod(), inbound->Parameters.Value(), response);
                     }
                 }
-                // printf("[SERXIONE-6193] [%s:%d] Inbound\n", __FILE__, __LINE__);
 
                 return (result);
             }
@@ -1288,9 +1206,7 @@ namespace Thunder {
             Core::CriticalSection _adminLock;
             Core::NodeId _connectId;
             Core::ProxyType< CommunicationChannel > _channel;
-            // Core::JSONRPC::Handler _handler;
             Handler _handler;
-            Handler _invokeHandler;
             string _callsign;
             string _localSpace;
             PendingMap _pendingQueue;
@@ -1391,7 +1307,6 @@ namespace Thunder {
                     , _monitor(string(), false)
                     , _parent(parent)
                     , _adminLock()
-                    // , _job(*this)
                     , _subscriptions()
                     , _state(UNKNOWN)
                 {
@@ -1440,9 +1355,6 @@ namespace Thunder {
                 return Base::Unsubscribe(waitTime, eventName);
             }
 
-            void Dispatch() {
-                printf("[SERXIONE-6193] [%s:%d] Job triggered\n", __FILE__, __LINE__);
-            }
 
             private:
                 void SetState(const JSONRPC::JSONPluginState value)
@@ -1450,36 +1362,14 @@ namespace Thunder {
                     if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                         if ((_state != ACTIVATED) && (_state != LOADING)) {
                             _state = state::LOADING;
-                            // auto index(Base::Events());
-                            // while (index.Next() == true) {
-                            //     _events.push_back(index.Event());
-                            // }
-                            // next_event(Core::JSON::String(), nullptr);
-
-                                printf("[SERXIONE-6193] [%s:%d] Subscribing for events\n", __FILE__, __LINE__);
-                                if (_subscriptions.size() > 0) {
-                                    _adminLock.Lock();
-                                    auto iter = _subscriptions.begin();
-                                    const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
-                                    iter->second = true;
-                                    _adminLock.Unlock();
-                                    LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
-                                }
-                                // for (auto iter: _subscriptions) {
-                                //     const string parameters("{ \"event\": \"" + iter.first + "\", \"id\": \"" + Base::Namespace() + "\"}");
-                                //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
-                                //     Core::ProxyType<Core::JSONRPC::Message> response;
-                                //     LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
-                                //     // _job.Submit();
-                                //     // Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
-                                //     // if ((response.IsValid() == false) || (response->Error.IsSet() == true)) {
-                                //     //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
-                                //     //     iter.second = false;
-                                //     // } else {
-                                        
-                                //     //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
-                                //     // }
-                                // }
+                            if (_subscriptions.size() > 0) {
+                                _adminLock.Lock();
+                                auto iter = _subscriptions.begin();
+                                const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                                iter->second = true;
+                                _adminLock.Unlock();
+                                LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::subscribe_event, this);
+                            }
                         }
                         else if (_state == LOADING) {
                             _state = state::ACTIVATED;
@@ -1518,36 +1408,21 @@ namespace Thunder {
                         _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                     }
                 }
-                void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
+                void subscribe_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
                 {
-                    printf("[SERXIONE-6193] [%s:%d] next_event: parameters: \n", __FILE__, __LINE__);
                     _adminLock.Lock();
                     auto iter = std::find_if(_subscriptions.begin(), _subscriptions.end(), [](std::pair<string, bool> elem) { return !elem.second;});
                     if (iter != _subscriptions.end()){
                         auto iter = _subscriptions.begin();
                         const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
-                        printf("[SERXIONE-6193] [%s:%d] Subscribing for event :%s \n", __FILE__, __LINE__, iter->first.c_str());
                         iter->second = true;
-                        LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                        LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::subscribe_event, this);
 
                     } else {
-                        printf("[SERXIONE-6193] [%s:%d] All subscriptions are done\n", __FILE__, __LINE__);
                         SetState(JSONRPC::JSONPluginState::ACTIVATED);
                     }
                     _adminLock.Unlock();
                 }
-                // void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
-                // {
-                //     // See if there are events pending for registration...
-                //     if (_events.empty() == false) {
-                //         const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Base::Namespace() + "\"}");
-                //         // _events.pop_front();
-                //         LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
-                //     }
-                //     else {
-                //         SetState(JSONRPC::JSONPluginState::ACTIVATED);
-                //     }
-                // }
 
                 void Opened() override
                 {
@@ -1561,8 +1436,6 @@ namespace Thunder {
                 LinkType<INTERFACE> _monitor;
                 SmartLinkType<INTERFACE>& _parent;
                 Core::CriticalSection _adminLock;
-                //std::unordered_set<string> _events;
-                // Core::ThreadPool::JobType<Connection&> _job;
                 std::unordered_map<string, bool> _subscriptions;
                 state _state;
             };
@@ -1572,7 +1445,6 @@ namespace Thunder {
             SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
                 : _connection(*this, remoteCallsign, localCallsign, query)
                 , _callsign(remoteCallsign)
-                // , _subscriptions()
             {
             }
             POP_WARNING()
@@ -1719,7 +1591,6 @@ namespace Thunder {
         private:
             Connection _connection;
             string _callsign;
-            // std::vector<string> _subscriptions;
         };
     }
 } // namespace Thunder::JSONRPC

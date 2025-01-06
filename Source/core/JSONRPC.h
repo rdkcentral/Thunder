@@ -618,7 +618,6 @@ POP_WARNING()
                     uint32_t result;
 
                     if (_asynchronous == true) {
-                        printf("[SERXIONE-6193] [%s:%d] Async\n", __FILE__, __LINE__);
                         Core::OptionalType<Core::JSON::Error> report;
                         _info._callback(context, parameters, report);
                         if (report.IsSet() == false) {
@@ -629,7 +628,6 @@ POP_WARNING()
                             response = report.Value().Message();
                         }
                     } else {
-                        printf("[SERXIONE-6193] [%s:%d] Sync\n", __FILE__, __LINE__);
                         result = _info._invoke(context, method, parameters, response);
                     }
                     return (result);
