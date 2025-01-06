@@ -2597,8 +2597,8 @@ Connected<span class="w"> </span><span class="o">(</span>press<span class="w"> <
 <span class="k">[Service]</span>
 <span class="na">PIDFile</span><span class="o">=</span><span class="s">/var/run/Thunder.pid</span>
 <span class="na">Environment</span><span class="o">=</span><span class="s">&quot;WAYLAND_DISPLAY=wayland-0&quot;</span>
-<span class="na">Environment</span><span class="o">=</span><span class="s">&quot;XDG_RUNTIME_DIR=/run&quot;</span>
-<span class="na">ExecStart</span><span class="o">=</span><span class="s">-/usr/bin/Thunder -b</span>
+<span class="s">Environment=&quot;XDG_RUNTIME_DIR=/run&quot;</span>
+<span class="err">ExecStart=-/usr/bin/Thunder -b</span>
 <span class="na">ExecStop</span><span class="o">=</span><span class="s">/bin/kill $MAINPID</span>
 
 <span class="k">[Install]</span>
