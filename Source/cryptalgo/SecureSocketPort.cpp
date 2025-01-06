@@ -104,6 +104,8 @@ public:
         X509_STORE* store{ list != nullptr ? X509_STORE_new() : nullptr };
 
         if (store != nullptr) {
+            CertificateStore::_lock.Lock();
+
             for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
                 // Do not X509_free
                 X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
@@ -118,6 +120,8 @@ public:
                     break;
                 }
             }
+
+            CertificateStore::_lock.Unlock();
         }
 
         return (store);
@@ -130,6 +134,8 @@ public:
         STACK_OF(X509_NAME)* store{ list != nullptr ? sk_X509_NAME_new_null() : nullptr };
 
         if (store != nullptr) {
+            CertificateStore::_lock.Lock();
+
             for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
                 // Do not X509_free
                 X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
@@ -147,6 +153,8 @@ public:
                     break;
                 }
             }
+
+            CertificateStore::_lock.Unlock();
         }
 
         return (store);
@@ -478,6 +486,8 @@ uint32_t CertificateStore::Add(const Certificate& certificate)
 
     const X509* x509Certificate = X509Certificate{ certificate };
 
+    _lock.Lock();
+
     if (   x509Certificate != nullptr
         && std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate item){
                                                                                                    const X509* x509 = item;
@@ -490,7 +500,9 @@ uint32_t CertificateStore::Add(const Certificate& certificate)
         result = Core::ERROR_NONE;
     }
 
-    return result;
+    _lock.Unlock();
+
+    return (result);
 }
 
 uint32_t CertificateStore::Remove(const Certificate& certificate)
@@ -500,6 +512,8 @@ uint32_t CertificateStore::Remove(const Certificate& certificate)
     std::vector<Certificate>::iterator it;
 
     const X509* x509Certificate = X509Certificate{ certificate };
+
+    _lock.Lock();
 
     if ((it = std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate item){
                                                                                                       const X509* x509 = item;
@@ -523,6 +537,8 @@ uint32_t CertificateStore::Remove(const Certificate& certificate)
 
         result = Core::ERROR_NONE;
     }
+
+    _lock.Unlock();
 
     return (result);
 }

@@ -92,6 +92,8 @@ namespace Crypto {
     protected:
         operator const void* () const;
 
+        mutable Core::CriticalSection _lock;
+
     private:
         uint32_t CreateDefaultStore();
 
