@@ -33,7 +33,7 @@ namespace Tests {
 
     TEST(Core_CyclicBuffer, DataExchange)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string bufferName {"/tmp/SharedCyclicBuffer"};

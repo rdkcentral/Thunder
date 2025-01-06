@@ -124,7 +124,7 @@ namespace Core {
             this->Submit(jsonObject);
         }
 
-        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
+        virtual void Send(VARIABLE_IS_NOT_USED ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
         {
 	    }
 
@@ -182,7 +182,7 @@ namespace Core {
             EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
         }
 
-        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
+        virtual void Send(VARIABLE_IS_NOT_USED ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& jsonObject)
 	    {
         }
 
@@ -219,7 +219,7 @@ namespace Core {
 
     TEST(WebSocket, Json)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, VARIABLE_IS_NOT_USED maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string connector {"/tmp/wpewebsocketjson0"};
