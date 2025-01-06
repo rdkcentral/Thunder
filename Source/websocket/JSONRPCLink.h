@@ -493,7 +493,7 @@ namespace Thunder {
                         }
                         _adminLock.Unlock();
                     }
-                    
+
                     uint32_t Invoke(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response)
                     {
                         uint32_t result = Core::ERROR_UNKNOWN_METHOD;
@@ -577,7 +577,7 @@ namespace Thunder {
             {
                 return (_callsign);
             }
-            
+
             template <typename INBOUND, typename METHOD>
             void Assign(const string& eventName, const METHOD& method)
             {
@@ -692,8 +692,6 @@ namespace Thunder {
                 Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
                 using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
-                static_assert(std::is_same<PARAMETERS, void>::value, "PARAMETERS is not void");
-                static_assert(std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value, "HANDLER classtype is not void");
 
                 string emptyString(EMPTY_STRING);
                 return (InternalInvoke<string, HANDLER>(
@@ -1087,7 +1085,7 @@ namespace Thunder {
                         std::forward_as_tuple(waitTime, response));
                     ASSERT(newElement.second == true);
 
-                    
+
                     if (newElement.second == true) {
                         uint64_t expiry = newElement.first->second.Expiry();
                         _adminLock.Unlock();
@@ -1502,8 +1500,6 @@ namespace Thunder {
             template <typename PARAMETERS, typename HANDLER>
             inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
             {
-                // return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
-                // return (_connection.template Dispatch<string, HANDLER>(waitTime, method, "", callback));
                 return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
             }
             template <typename PARAMETERS, typename HANDLER, typename REALOBJECT = typename Core::TypeTraits::func_traits<HANDLER>::classtype>
