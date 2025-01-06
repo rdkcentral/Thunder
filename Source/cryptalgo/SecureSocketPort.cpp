@@ -683,11 +683,6 @@ int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
-    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
-    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
-
     struct timeval tv {
       static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
     , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
@@ -730,11 +725,6 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
-    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
-    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
-
     struct timeval tv {
       static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
     , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
@@ -765,6 +755,12 @@ int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t 
 }
 
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
+    // Users of tsruct timeval should not exhibit overflow
+    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
+    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
+    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
+    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+
     _waitTime = waitTime;
 
     return (Core::SocketPort::Open(waitTime));
@@ -964,11 +960,6 @@ void SecureSocketPort::Handler::Update() {
         FD_ZERO(&wfds);
         FD_SET(fd, &rfds);
         FD_SET(fd, &wfds);
-
-        using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
-        using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
-        ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
-        ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
 
         struct timeval tv {
           static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
