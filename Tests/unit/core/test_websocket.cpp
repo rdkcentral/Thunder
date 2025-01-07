@@ -312,13 +312,13 @@ namespace Core {
 
                 /* void* */ memcpy(dataFrame, message.data(), count);
 
-//#ifdef _VERBOSE
+#ifdef _VERBOSE
                 std::cout << " |--> dataFrame (" << count << " ) = ";
                 for (size_t index = 0; index < count; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
                 std::cout << "\n";
-//#endif
+#endif
 
                 if (count == message.size()) {
                     /* iterator */ _post.erase(_post.begin());
@@ -342,13 +342,13 @@ namespace Core {
             if (receivedSize > 0) {
                 _response.emplace_back(std::basic_string<uint8_t>{ dataFrame, receivedSize });
 
-//#ifdef _VERBOSE
+#ifdef _VERBOSE
                 std::cout << " |--> dataFrame ( " << receivedSize << " ) = ";
                 for (int32_t index = 0; index < receivedSize; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
                 std::cout << "\n";
-//#endif
+#endif
             }
 
             return receivedSize;
@@ -409,15 +409,15 @@ namespace Core {
             Validator() = default;
             ~Validator() = default;
 
-            bool Validate(const ::Thunder::Crypto::Certificate& certificate) const override {
+            bool Validate(VARIABLE_IS_NOT_USED const ::Thunder::Crypto::Certificate& certificate) const override {
                 // Print certificate properties
-//#ifdef _VERBOSE
+#ifdef _VERBOSE
                 std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
                 std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
                 std::cout << " |--> Subject = " << certificate.Subject() << "\n";
                 std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
                 std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
-//#endif
+#endif
                 return true; // Always accept
             }
         };
@@ -545,15 +545,15 @@ namespace Core {
             Validator() = default;
             ~Validator() = default;
 
-            bool Validate(const ::Thunder::Crypto::Certificate& certificate) const override {
+            bool Validate(VARIABLE_IS_NOT_USED const ::Thunder::Crypto::Certificate& certificate) const override {
                 // Print certificate properties
-//#ifdef _VERBOSE
+#ifdef _VERBOSE
                 std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
                 std::cout << " |--> Issuer = " << certificate.Issuer() << "\n";
                 std::cout << " |--> Subject = " << certificate.Subject() << "\n";
                 std::cout << " |--> Valid from = " << certificate.ValidFrom().ToRFC1123() << "\n";
                 std::cout << " |--> Valid until = " << certificate.ValidTill().ToRFC1123() << "\n";
-//#endif
+#endif
                 return true; // Always accept
             }
         };
