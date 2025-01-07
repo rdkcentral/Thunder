@@ -159,6 +159,12 @@ namespace Thunder {
 
 #if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
+#ifdef __APPLE__
+    #define PROGRAM_NAME getprogname()
+#else
+    #define PROGRAM_NAME program_invocation_short_name
+#endif
+
     #define ASSERT_METADATA                                                                                 \
         Thunder::Core::Messaging::MessageInfo __messageInfo__(                                              \
             Thunder::Assertion::BaseAssertType::Metadata());                                                \
@@ -172,7 +178,7 @@ namespace Thunder {
         Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                        \
             __messageInfo__,                                                                                \
             TRACE_PROCESS_ID,                                                                               \
-            program_invocation_short_name,                                                                  \
+            PROGRAM_NAME,                                                                                   \
             __FILE__,                                                                                       \
             __LINE__,                                                                                       \
             __callstack__);
