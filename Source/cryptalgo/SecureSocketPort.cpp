@@ -782,36 +782,10 @@ POP_WARNING()
     return (result > 0 ? result : /* error */ -1);
 }
 
-namespace
-{
-    template<typename V, typename W>
-    constexpr typename std::enable_if<!std::is_same<V, W>::value, bool>::type IsNarrowing(V v, W w)
-    {
-        using common_t VARIABLE_IS_NOT_USED = typename std::common_type<V, W>::type;
-
-        return static_cast<common_t>(v) > static_cast<common_t>(w);
-    }
-
-    template<typename T>
-    constexpr typename std::enable_if<true, bool>::type IsNarrowing(VARIABLE_IS_NOT_USED T v, VARIABLE_IS_NOT_USED T w)
-    {
-        return false;
-    }
-}
-
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
     // Users of struct timeval should not exhibit overflow
-
-    using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
-    using common_seconds_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
-
-    ASSERT(    !IsNarrowing(std::numeric_limits<uint32_t>::max(), std::numeric_limits<time_t>::max())
-           && (static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(waitTime))
-          );
-
-    ASSERT(    !IsNarrowing(std::numeric_limits<uint32_t>::max(), std::numeric_limits<suseconds_t>::max())
-           && (static_cast<common_time_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_time_t>(waitTime))
-          );
+    // Opposed to coverity false positives event tags
+    ASSERT(waitTime != Core::infinite);
 
     _waitTime = waitTime;
 
