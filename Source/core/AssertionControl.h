@@ -137,7 +137,7 @@ namespace Assertion {
         }
 
     private:
-        static AssertionControl _control;
+        static EXTERNAL AssertionControl _control;
     };
 
 } // namespace Assertion
