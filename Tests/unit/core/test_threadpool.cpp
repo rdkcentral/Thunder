@@ -741,7 +741,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -749,6 +749,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, static_cast<uint32_t>(queueSize + additionalJobs));
 
         threadPool.Stop();
@@ -824,7 +827,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -832,6 +835,8 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+        delete[] info;
+
         EXPECT_EQ(totalRuns, queueSize + additionalJobs - 1);
 
         threadPool.Stop();
@@ -881,7 +886,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -889,6 +894,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, queueSize + additionalJobs);
 
         threadPool.Stop();
@@ -1033,7 +1041,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1041,6 +1049,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, queueSize + additionalJobs - cancelJobsCount);
 
         threadPool.Stop();
@@ -1149,7 +1160,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1157,6 +1168,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, queueSize + additionalJobs - cancelJobsCount);
 
         threadPool.Stop();
@@ -1260,7 +1274,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1268,6 +1282,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, (queueSize + additionalJobs - cancelJobsCount) * 2);
 
         threadPool.Stop();
@@ -1357,7 +1374,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1365,6 +1382,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
 
         threadPool.Stop();
@@ -1420,7 +1440,7 @@ namespace Core {
 
         uint8_t totalRuns = 0;
 
-        ::Thunder::Core::ThreadPool::Metadata info[threadCount];
+        ::Thunder::Core::ThreadPool::Metadata* info = new ::Thunder::Core::ThreadPool::Metadata[threadCount];
         std::vector<string> jobsStrings;
 
         threadPool.Snapshot(threadCount, info, jobsStrings);
@@ -1428,6 +1448,9 @@ namespace Core {
         for (uint8_t i = 0; i < threadCount; ++i) {
             totalRuns += info[i].Runs;
         }
+
+        delete[] info;
+
         EXPECT_EQ(totalRuns, (queueSize + additionalJobs) * 2);
 
         threadPool.Stop();

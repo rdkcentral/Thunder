@@ -36,7 +36,7 @@ namespace Core {
         // Do not change the signal handshake value unless you use a timed loop and repeatedly check.
         // Wait may return early with an error if it expect a different value.
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 0;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -98,7 +98,7 @@ namespace Core {
         // Do not change the signal handshake value unless you use a timed loop and repeatedly check.
         // Wait may return early with an error if it expect a different value.
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 2;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
@@ -135,7 +135,7 @@ namespace Core {
         // Do not change the signal handshake value unless you use a timed loop and repeatedly check.
         // Wait may return early with an error if it expect a different value.
 
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 15; // Approximately 150%  maxWaitTimePeriod
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {

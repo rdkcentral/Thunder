@@ -3,11 +3,13 @@
 #include "AWCContainerAdministrator.h"
 #include "AWCImplementation.h"
 #include "AWCProxyContainer.h"
-#include "processcontainers/Tracing.h"
 
-using namespace Thunder::ProcessContainers;
-using namespace Thunder::Core;
+#include "processcontainers/ContainerProducer.h"
 
+namespace Thunder {
+namespace ProcessContainers {
+
+using namespace Core;
 
 PluginConfig::PluginConfig(const std::string &path):
     JSON::Container()
@@ -44,27 +46,40 @@ PluginConfig::PluginConfig(const std::string &path):
 }
 
 AWCContainerAdministrator::AWCContainerAdministrator()
-    : BaseContainerAdministrator()
 {
     TRACE_L1("%p", this);
     awcClient_ = awc::AWCClient::getInstance();
-    if (awcClient_) {
-        awcClientListener_ = std::make_shared<AWCListener>(this);
-        awcClient_->setListener(awcClientListener_);
-    }
 }
 
 AWCContainerAdministrator::~AWCContainerAdministrator()
 {
     TRACE_L1("%p", this);
+}
+
+uint32_t AWCContainerAdministrator::Initialize(const string& configuration VARIABLE_IS_NOT_USED)
+{
+    uint32_t result = Core::ERROR_GENERAL;
+
+    if (awcClient_) {
+        awcClientListener_ = std::make_shared<AWCListener>(this);
+        awcClient_->setListener(awcClientListener_);
+        result = Core::ERROR_NONE;
+    }
+
+    return (result);
+}
+
+void AWCContainerAdministrator::Deinitialize()
+{
     if (awcClient_ && awcClientListener_) {
         awcClient_->removeListener(awcClientListener_);
+        awcClientListener_.reset();
     }
 }
 
-IContainer* AWCContainerAdministrator::Container(
+Core::ProxyType<IContainer> AWCContainerAdministrator::Container(
     const string& name,
-    IStringIterator& searchpaths,
+    IStringIterator& searchpaths VARIABLE_IS_NOT_USED,
     const string& containerLogDir,
     const string& configuration)
 {
@@ -81,30 +96,24 @@ IContainer* AWCContainerAdministrator::Container(
 
     const PluginConfig cfg{configuration};
 
-    IContainer* container = Get(name);
-    const auto append = !container;
+    Core::ProxyType<IContainer> container;
 
-    if(!container && cfg.useProxy)
-    {
-        container = new AWCProxyContainer(name, cfg, &dbusClient_);
+    if(cfg.useProxy) {
+        container = ContainerAdministrator::Instance().Create<AWCProxyContainer>(name, cfg, &dbusClient_);
     }
-    else if(!container)
-    {
-        container = new AWCContainer(name, awcClient_, this);
-    }
-    if(append)
-    {
-        this->InternalLock();
-        InsertContainer(container);
-        this->InternalUnlock();
+    else {
+        container = ContainerAdministrator::Instance().Create<AWCContainer>(name, awcClient_, this);
     }
 
-    if(!container) TRACE_L1("not supported container type: %s", name.c_str());
+    if(container.IsValid() == false) {
+        TRACE_L1("not supported container type: %s", name.c_str());
+    }
+
     return container;
 }
 
-IContainerAdministrator& IContainerAdministrator::Instance()
-{
-    static AWCContainerAdministrator& myAWCContainerAdministrator = Core::SingletonType<AWCContainerAdministrator>::Instance();
-    return myAWCContainerAdministrator;
+// FACTORY REGISTRATION
+static ContainerProducerRegistrationType<AWCContainerAdministrator, IContainer::containertype::AWC> registration;
+
+} // namespace ProcessContainers
 }

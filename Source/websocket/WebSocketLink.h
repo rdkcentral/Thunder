@@ -409,6 +409,10 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             }
 POP_WARNING()
             ~HandlerType() override {
+                // If this assert fires, it means the socket was not closed
+                // by the one who opened it. That is unexpected. The creater
+                // of this link, should (besides opening it) also close it.
+                ASSERT(ACTUALLINK::IsClosed() == true);
                 ACTUALLINK::Close(Core::infinite);
             }
 

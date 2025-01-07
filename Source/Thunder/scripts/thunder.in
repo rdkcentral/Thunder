@@ -14,6 +14,8 @@ start() {
     echo -n "Starting Thunder: "
     start-stop-daemon -S -q -b -m -p @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid --exec @CMAKE_INSTALL_FULL_BINDIR@/Thunder -- -b </dev/null >/dev/null 2>&1
     [ $? == 0 ] && echo "OK" || echo "FAIL"
+    sleep 8
+    echo 1 > /sys/class/graphics/fb0/blank
 }
 stop() {
     echo -n "Stopping Thunder: "

@@ -776,16 +776,18 @@ namespace Core {
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
 
         // Try overwrite with size of Free()
-        uint8_t data3[buffer.Free()];
-        memset(&data3, 'C', sizeof(data3));
-        size = sizeof(data3) + 2;
+        uint32_t count = buffer.Free();
+        uint8_t* data3 = new uint8_t[count];
+        memset(data3, 'C', count);
+        size = count + 2;
         reserved = buffer.Reserve(size);
         if (reserved == size) {
             buffer.Write(reinterpret_cast<const uint8_t*>(&size), 2);
-            buffer.Write(reinterpret_cast<uint8_t*>(&data3), sizeof(data3));
+            buffer.Write(data3, count);
         }
         EXPECT_EQ(buffer.Used(), size);
         EXPECT_EQ(buffer.Free(), static_cast<uint32_t>(cyclicBufferSize - size));
+        delete[] data3;
 
         // Flush to start from beginning
         buffer.Flush();
@@ -832,7 +834,7 @@ namespace Core {
     static int ClonedProcessFunc(void* arg) {
         Data* data = static_cast<Data*>(arg);
         uint32_t cyclicBufferSize = 10;
-        uint32_t shareableFlag = (data->shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
+        uint32_t shareableFlag = (data->shareable == true) ? static_cast<std::underlying_type<::Thunder::Core::File::Mode>::type>(::Thunder::Core::File::Mode::SHAREABLE) : 0;
 
        ::Thunder::Core::CyclicBuffer buffer(data->bufferName.c_str(),
             ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE | ::Thunder::Core::File::Mode::USER_EXECUTE |
@@ -874,7 +876,7 @@ namespace Core {
         SetSharePermissionsFromClonedProcess(bufferName, shareable);
 
         uint32_t cyclicBufferSize = 0;
-        uint32_t shareableFlag = (shareable == true) ? ::Thunder::Core::File::Mode::SHAREABLE : 0;
+        uint32_t shareableFlag = (shareable == true) ? static_cast<std::underlying_type<::Thunder::Core::File::Mode>::type>(::Thunder::Core::File::Mode::SHAREABLE) : 0;
 
        ::Thunder::Core::CyclicBuffer buffer(bufferName.c_str(),
             ::Thunder::Core::File::Mode::USER_READ | ::Thunder::Core::File::Mode::USER_WRITE |
@@ -907,7 +909,7 @@ namespace Core {
     }
     void SetSharePermissionsFromForkedProcessAndVerify(bool shareable, bool usingDataElementFile = false, uint32_t offset = 0)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string bufferName {"cyclicbuffer01"};
@@ -920,7 +922,7 @@ namespace Core {
                                | ::Thunder::Core::File::Mode::USER_EXECUTE
                                | ::Thunder::Core::File::Mode::GROUP_READ
                                | ::Thunder::Core::File::Mode::GROUP_WRITE
-                               | (shareable ? ::Thunder::Core::File::Mode::SHAREABLE : 0)
+                               | (shareable ? static_cast<std::underlying_type<::Thunder::Core::File::Mode>::type>(::Thunder::Core::File::Mode::SHAREABLE) : 0)
                               );
 
         const struct Data data{shareable, usingDataElementFile, mode, offset, bufferName.c_str()};
@@ -1095,7 +1097,7 @@ namespace Core {
     }
     TEST(Core_CyclicBuffer, WithoutOverwriteUsingForksReversed)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string bufferName {"cyclicbuffer02"};
@@ -1228,7 +1230,7 @@ namespace Core {
     }
     TEST(Core_CyclicBuffer, WithOverWriteUsingFork)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string bufferName {"cyclicbuffer03"};
@@ -1343,7 +1345,7 @@ namespace Core {
     }
     TEST(Core_CyclicBuffer, WithOverwriteUsingForksReversed)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string bufferName {"cyclicbuffer03"};
@@ -1371,13 +1373,15 @@ namespace Core {
             uint16_t size;
             EXPECT_EQ(buffer.Read(reinterpret_cast<uint8_t*>(&size), 2), 2);
 
-            uint8_t loadBuffer[size + 1];
+            uint8_t* loadBuffer = new uint8_t[size + 1];
 
             ASSERT_GE(size, 2);
 
             uint32_t result = buffer.Read(loadBuffer, size - 2);
             loadBuffer[result] = '\0';
             EXPECT_EQ(result, size - 2);
+
+            delete[] loadBuffer;
 
             ASSERT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
 
@@ -1542,12 +1546,12 @@ namespace Core {
     
     TEST(Core_CyclicBuffer, DISABLED_LockUnLock_FromParentAndForks)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
+        VARIABLE_IS_NOT_USED constexpr uint8_t maxRetries = 1;
  
         std::string bufferName {"cyclicbuffer04"};
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_child = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
@@ -1581,9 +1585,10 @@ namespace Core {
             uint32_t result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
             EXPECT_EQ(result, data.size());
             EXPECT_EQ(buffer.Used(), data.size() * 2);
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            uint8_t* loadBuffer = new uint8_t[cyclicBufferSize + 1];
             result = buffer.Peek(loadBuffer, buffer.Used());
             loadBuffer[result] = '\0';
+            delete[] loadBuffer;
 //            testAdmin.Sync("server wrote and peeked");
 
 //            testAdmin.Sync("client unlocked");
@@ -1592,7 +1597,7 @@ namespace Core {
 //            testAdmin.Sync("client read");
         };
 
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_parent = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
 
@@ -1634,10 +1639,11 @@ namespace Core {
             EXPECT_EQ(buffer.LockPid(), 0u);
 //            testAdmin.Sync("client unlocked");
 
-            uint8_t loadBuffer[cyclicBufferSize + 1];
+            uint8_t* loadBuffer = new uint8_t[cyclicBufferSize + 1];
             result = buffer.Read(loadBuffer, 4);
             loadBuffer[result] = '\0';
             EXPECT_STREQ((char*)loadBuffer, "jklm");
+            delete[] loadBuffer;
 
 //            testAdmin.Sync("client read");
 
@@ -1653,12 +1659,12 @@ namespace Core {
 //TODO: revisit these test cases after fixing the issues with cyclicbuffer lock/unlock sequence
     TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_WithDataPresent)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
+        VARIABLE_IS_NOT_USED constexpr uint8_t maxRetries = 1;
 
         std::string bufferName {"cyclicbuffer05"};
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_child = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
@@ -1747,7 +1753,7 @@ namespace Core {
             EXPECT_EQ(buffer.LockPid(), 0u);
         };
 
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_parent = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
 //            testAdmin.Sync("setup server");
 
             uint32_t cyclicBufferSize = 0;
@@ -1847,12 +1853,12 @@ namespace Core {
     }
     TEST(Core_CyclicBuffer, DISABLED_LockUnlock_FromParentAndForks_UsingAlert)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 1;
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, maxInitTime = 2000;
+        VARIABLE_IS_NOT_USED constexpr uint8_t maxRetries = 1;
 
         std::string bufferName {"cyclicbuffer05"};
 
-        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_child = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
             uint32_t cyclicBufferSize = 20;
 
             const uint32_t mode =
@@ -1893,7 +1899,7 @@ namespace Core {
             EXPECT_EQ(buffer.LockPid(), 0u);
         };
 
-        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+        IPTestAdministrator::Callback callback_parent = [&](VARIABLE_IS_NOT_USED IPTestAdministrator& testAdmin) {
             // a small delay so the child can be set up
             SleepMs(maxInitTime);
 

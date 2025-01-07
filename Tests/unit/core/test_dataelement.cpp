@@ -88,7 +88,7 @@ namespace Core {
     TEST(test_linkeddata, simple_linkeddata)
     {
         uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};
-        uint8_t arr1[] ={};
+        uint8_t arr1[sizeof(arr)/sizeof(arr[0])];
         const uint64_t offset= 0;
         ::Thunder::Core::DataElement objt1(10,arr);
         ::Thunder::Core::LinkedDataElement ob1;
