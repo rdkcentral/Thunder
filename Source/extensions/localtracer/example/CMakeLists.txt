@@ -7,6 +7,7 @@ target_compile_options(local_trace_test PRIVATE -Wno-psabi)
 target_link_libraries(local_trace_test PRIVATE
     CompileSettingsDebug::CompileSettingsDebug
     ${NAMESPACE}Core::${NAMESPACE}Core
+    ${NAMESPACE}Messaging::${NAMESPACE}Messaging
     ${NAMESPACE}LocalTracer::${NAMESPACE}LocalTracer)
 
 if(EXAMPLE_LOCALTRACER)
