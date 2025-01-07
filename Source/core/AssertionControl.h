@@ -54,7 +54,7 @@ namespace Assertion {
         Core::CriticalSection* _adminLock;
     };
 
-    class EXTERNAL BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
+    class BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
     public:
         using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT>;
 
@@ -147,7 +147,7 @@ namespace Assertion {
     DEFINE_MESSAGING_CATEGORY(Thunder::Assertion::BaseAssertType, ASSERT_CATEGORY)
 
 #define ANNOUNCE_ASSERT_CONTROL \
-    Thunder::Assertion::BaseAssertType::AssertionControl Thunder::Assertion::BaseAssertType::_control;
+    EXTERNAL Thunder::Assertion::BaseAssertType::AssertionControl Thunder::Assertion::BaseAssertType::_control;
 
 namespace Thunder {
 namespace Assertion {
