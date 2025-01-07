@@ -21,8 +21,6 @@ stop() {
     echo -n "Stopping Thunder: "
     start-stop-daemon -K -q -p @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid
     [ $? == 0 ] && echo "OK" || echo "FAIL"
-    sleep 8
-    echo 1 > /sys/class/graphics/fb0/blank
     rm -rf @CMAKE_INSTALL_FULL_RUNSTATEDIR@/Thunder.pid
 }
 restart() {
