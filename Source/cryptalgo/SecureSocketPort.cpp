@@ -60,6 +60,10 @@ namespace Crypto {
 
 class X509Certificate : public Certificate {
 public:
+    X509Certificate() = delete;
+    X509Certificate& operator=(Certificate&&) = delete;
+    X509Certificate& operator=(const Certificate&) = delete;
+ 
     X509Certificate(const Certificate& certificate)
         : Certificate{ certificate }
     {}
@@ -76,6 +80,10 @@ public:
 
 class X509Key : public Key {
 public :
+    X509Key() = delete;
+    X509Key& operator=(Key&&) = delete;
+    X509Key& operator=(const Key&) = delete;
+
     X509Key(const Key& key)
         : Key{ key}
     {}
@@ -93,6 +101,10 @@ public :
 
 class X509CertificateStore : public CertificateStore {
 public:
+    X509CertificateStore() = delete;
+    X509CertificateStore& operator=(CertificateStore&&) = delete;
+    X509CertificateStore& operator=(const CertificateStore&) = delete;
+
     X509CertificateStore(const CertificateStore& store)
         : CertificateStore{ store }
     {}
@@ -770,12 +782,36 @@ POP_WARNING()
     return (result > 0 ? result : /* error */ -1);
 }
 
+namespace
+{
+    template<typename V, typename W>
+    constexpr typename std::enable_if<!std::is_same<V, W>::value, bool>::type IsNarrowing(V v, W w)
+    {
+        using common_t VARIABLE_IS_NOT_USED = typename std::common_type<V, W>::type;
+
+        return static_cast<common_t>(v) > static_cast<common_t>(w);
+    }
+
+    template<typename T>
+    constexpr typename std::enable_if<true, bool>::type IsNarrowing(VARIABLE_IS_NOT_USED T v, VARIABLE_IS_NOT_USED T w)
+    {
+        return false;
+    }
+}
+
 uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
-    // Users of tsruct timeval should not exhibit overflow
+    // Users of struct timeval should not exhibit overflow
+
     using common_time_t VARIABLE_IS_NOT_USED = std::common_type<time_t, uint32_t>::type;
-    using common_sec_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
-    ASSERT(static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(_waitTime));
-    ASSERT(static_cast<common_sec_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_sec_t>(_waitTime));
+    using common_seconds_t VARIABLE_IS_NOT_USED = std::common_type<suseconds_t, uint32_t>::type;
+
+    ASSERT(    !IsNarrowing(std::numeric_limits<uint32_t>::max(), std::numeric_limits<time_t>::max())
+           && (static_cast<common_time_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_time_t>(waitTime))
+          );
+
+    ASSERT(    !IsNarrowing(std::numeric_limits<uint32_t>::max(), std::numeric_limits<suseconds_t>::max())
+           && (static_cast<common_time_t>(std::numeric_limits<suseconds_t>::max()) >= static_cast<common_time_t>(waitTime))
+          );
 
     _waitTime = waitTime;
 
@@ -800,7 +836,7 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
 }
 
 uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
-    // Load server / client certificate and private key
+// Load server / client certificate and private key
 
     uint32_t result = Core::ERROR_BAD_REQUEST;
 
@@ -862,7 +898,7 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
 { // This is callled for certificates with issues to allow a custom validation
     int result { verifyStatus };
 
-    switch(verifyStatus) {
+    switch (verifyStatus) {
     case 0  :   {
                     X509* x509Cert = nullptr;
                     int exDataIndex = -1;
@@ -938,7 +974,6 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
     return result;
 }
 
-//PUSH_WARNING(DISABLE_WARNING_IMPLICIT_FALLTHROUGH)
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
         ASSERT(_ssl != nullptr);
@@ -1058,7 +1093,6 @@ POP_WARNING()
         _parent.StateChange();
     }
 }
-//POP_WARNING()
 
 }
 
