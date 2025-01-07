@@ -373,6 +373,7 @@ namespace Thunder {
                     if (_synchronous == true) {
                         _info.sync._response = response;
                         _info.sync._signal.SetEvent();
+                        printf("[SERXIONE-6193] [%s:%d] After sync: TRUE\n", __FILE__, __LINE__);
                     }
                     else {
                         _info.async._completed(*response);
@@ -1039,10 +1040,13 @@ namespace Thunder {
                             if (response.IsValid() == true) {
                                 result = Core::ERROR_NONE;
                             }
+                            printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                         }
                         else {
+                            printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
                             result = Core::ERROR_TIMEDOUT;
                         }
+                        printf("[SERXIONE-6193] [%s:%d]\n", __FILE__, __LINE__);
 
                         _adminLock.Lock();
 
@@ -1225,6 +1229,24 @@ namespace Thunder {
             class Connection : public LinkType<INTERFACE> {
             private:
                 using Base = LinkType<INTERFACE>;
+                class EventSubscriber {
+                    public:
+                        EventSubscriber () = delete;
+                        EventSubscriber(Connection& parent, string event): _parent(parent), _event(event) {}
+                        ~EventSubscriber() = default;
+                        uint64_t Timed(const uint64_t scheduledTime)
+                        {
+                            uint64_t reschedulePeriod = 0;
+                            auto result = _parent.SendSubscribeRequest(_event);
+                            if (result != Core::ERROR_NONE) {
+                                reschedulePeriod = DefaultWaitTime;
+                            }
+                            return reschedulePeriod;
+                        }
+                    private:
+                        Connection& _parent;
+                        string _event;
+                };
             public:
                 static constexpr uint32_t DefaultWaitTime = Base::DefaultWaitTime;
             private:
@@ -1306,6 +1328,7 @@ namespace Thunder {
                     , _parent(parent)
                     , _adminLock()
                     , _subscriptions()
+                    , _eventSubscriber(Thunder::Core::Thread::DefaultStackSize(), _T("SmartLinkTypeEventSubscriber"))
                     , _state(UNKNOWN)
                 {
                     _monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
@@ -1355,19 +1378,72 @@ namespace Thunder {
 
 
             private:
+                uint32_t SendSubscribeRequest(string eventName) {
+                    uint32_t retVal = Core::ERROR_UNAVAILABLE;
+                    Core::ProxyType<Core::JSONRPC::Message> response;
+                    const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                    auto result = Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
+                    if ((response.IsValid() == false) || (response->Error.IsSet() == true)) {
+                        printf("[SERXIONE-6193] [%s:%d] Error in Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                    } else {
+                        printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                        retVal = Core::ERROR_NONE;
+                    }
+                    return retVal;
+
+                }
                 void SetState(const JSONRPC::JSONPluginState value)
                 {
+                    printf("[SERXIONE-6193] [%s:%d] START SetState\n", __FILE__, __LINE__);
                     if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                         if ((_state != ACTIVATED) && (_state != LOADING)) {
                             _state = state::LOADING;
-                            if (_subscriptions.size() > 0) {
+                            /*if (_subscriptions.size() > 0) {
                                 _adminLock.Lock();
                                 auto iter = _subscriptions.begin();
                                 const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
                                 iter->second = true;
                                 _adminLock.Unlock();
                                 LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::subscribe_event, this);
-                            }
+                            }*/
+                            // auto index(Base::Events());
+                            // while (index.Next() == true) {
+                            //     _events.push_back(index.Event());
+                            // }
+                            // next_event(Core::JSON::String(), nullptr);
+
+                                printf("[SERXIONE-6193] [%s:%d] Subscribing for events\n", __FILE__, __LINE__);
+                                /*********************/
+                                // if (_subscriptions.size() > 0) {
+                                //     _adminLock.Lock();
+                                //     auto iter = _subscriptions.begin();
+                                //     const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                                //     iter->second = true;
+                                //     _adminLock.Unlock();
+                                //     LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                                // }
+                                /*********************/
+                                // for (auto iter: _subscriptions) {
+                                //     const string parameters("{ \"event\": \"" + iter.first + "\", \"id\": \"" + Base::Namespace() + "\"}");
+                                //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                                //     Core::ProxyType<Core::JSONRPC::Message> response;
+                                //     LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
+                                //     // _job.Submit();
+                                //     // Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
+                                //     // if ((response.IsValid() == false) || (response->Error.IsSet() == true)) {
+                                //     //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                                //     //     iter.second = false;
+                                //     // } else {
+                                        
+                                //     //     printf("[SERXIONE-6193] [%s:%d] Subscribing for events :%s\n", __FILE__, __LINE__, parameters.c_str());
+                                //     // }
+                                // }
+                                for (auto iter: _subscriptions) {
+                                    printf("[SERXIONE-6193][%s:%d] trying to schedule subscribe eventName:%s\n", __FILE__, __LINE__, iter.first.c_str());
+                                    _eventSubscriber.Schedule(Thunder::Core::Time::Now(), EventSubscriber(*this, iter.first));
+                                    printf("[SERXIONE-6193][%s:%d] after scheduling subscribe eventName:%s\n", __FILE__, __LINE__, iter.first.c_str());
+                                }
+                                SetState(JSONRPC::JSONPluginState::ACTIVATED);
                         }
                         else if (_state == LOADING) {
                             _state = state::ACTIVATED;
@@ -1384,6 +1460,7 @@ namespace Thunder {
                             _parent.StateChange();
                         }
                     }
+                    printf("[SERXIONE-6193] [%s:%d] END SetState\n", __FILE__, __LINE__);
                 }
                 void state_change(const Statechange& info)
                 {
@@ -1414,12 +1491,14 @@ namespace Thunder {
                         auto iter = _subscriptions.begin();
                         const string parameters("{ \"event\": \"" + iter->first + "\", \"id\": \"" + Base::Namespace() + "\"}");
                         iter->second = true;
-                        LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::subscribe_event, this);
+                        _adminLock.Unlock();
+                        LinkType<INTERFACE>::Dispatch(DefaultWaitTime, _T("register"), parameters, &Connection::next_event, this);
 
                     } else {
+                        printf("[SERXIONE-6193] [%s:%d] All subscriptions are done\n", __FILE__, __LINE__);
+                        _adminLock.Unlock();
                         SetState(JSONRPC::JSONPluginState::ACTIVATED);
                     }
-                    _adminLock.Unlock();
                 }
 
                 void Opened() override
@@ -1435,6 +1514,7 @@ namespace Thunder {
                 SmartLinkType<INTERFACE>& _parent;
                 Core::CriticalSection _adminLock;
                 std::unordered_map<string, bool> _subscriptions;
+                Core::TimerType<EventSubscriber> _eventSubscriber;
                 state _state;
             };
 
