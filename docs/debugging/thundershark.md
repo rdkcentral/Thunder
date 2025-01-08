@@ -30,7 +30,7 @@ LuaGenerator.bat [<Thunder_dir> <ThunderInterfaces_dir>]
 ```
 
 The tool will produce a ```protocol-thunder-comrpc.data``` file that holds all interface definitions combined and converted to Lua data tables. This file must be
-placed in the same folder as ```protocol-thunder-comrpc.lua``` file (i.e. *Wireshark*'s plugins folder). This step should be repeated each time there is a change in the interfaces.
+placed in the same folder as [```protocol-thunder-comrpc.lua```](https://github.com/WebPlatformForEmbedded/ThunderShark) file (i.e. *Wireshark*'s plugins folder). This step should be repeated each time there is a change in the interfaces.
 
 > No instrumentation (code changes) of *Thunder* core or plugins is required!
 
