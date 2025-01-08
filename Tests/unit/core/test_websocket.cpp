@@ -403,7 +403,7 @@ namespace Core {
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
 
         // Validate client certificate
-        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidate {
+        class Validator : public ::Thunder::Crypto::CertificateStore::IValidate {
         public:
 
             Validator() = default;
@@ -539,7 +539,7 @@ namespace Core {
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
 
         // Validat eclient certificate
-        class Validator : public ::Thunder::Crypto::SecureSocketPort::IValidate {
+        class Validator : public ::Thunder::Crypto::CertificateStore::IValidate {
         public:
 
             Validator() = default;

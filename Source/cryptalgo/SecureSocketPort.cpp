@@ -877,7 +877,7 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
                     X509* x509Cert = nullptr;
                     int exDataIndex = -1;
                     SSL* ssl = nullptr;
-                    SecureSocketPort::IValidate* validator = nullptr;
+                    CertificateStore::IValidate* validator = nullptr;
 
                     // Retrieve and call the registered callback
 
@@ -885,7 +885,7 @@ int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
                          && (exDataIndex = SSL_get_ex_data_X509_STORE_CTX_idx()) != -1
                          && (ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, exDataIndex))) != nullptr
                          && (exDataIndex = ApplicationData::Instance().Index(static_cast<SSL*>(ssl))) != -1
-                         && (validator =  static_cast<SecureSocketPort::IValidate*>(SSL_get_ex_data(ssl, exDataIndex))) != nullptr
+                         && (validator =  static_cast<CertificateStore::IValidate*>(SSL_get_ex_data(ssl, exDataIndex))) != nullptr
                          && (x509Cert = X509_STORE_CTX_get_current_cert(ctx)) != nullptr
                        ) {
                         X509_up_ref(x509Cert);

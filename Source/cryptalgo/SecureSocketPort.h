@@ -89,6 +89,12 @@ namespace Crypto {
 
         bool IsDefaultStore() const;
 
+        struct IValidate {
+            virtual ~IValidate() = default;
+
+            virtual bool Validate(const Certificate& certificate) const = 0;
+        };
+
     protected:
         operator const void* () const;
 
@@ -104,13 +110,6 @@ namespace Crypto {
     };
 
     class EXTERNAL SecureSocketPort : public Core::IResource {
-    public:
-        struct IValidate {
-            virtual ~IValidate() = default;
-
-            virtual bool Validate(const Certificate& certificate) const = 0;
-        };
-
     private:
         class EXTERNAL Handler : public Core::SocketPort {
         private:
@@ -166,7 +165,7 @@ namespace Crypto {
             void StateChange() override {
                 Update();
             }
-            inline uint32_t Callback(IValidate* callback) {
+            inline uint32_t Callback(CertificateStore::IValidate* callback) {
                 uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                 Core::SocketPort::Lock();
@@ -193,7 +192,7 @@ namespace Crypto {
             SecureSocketPort& _parent;
             void* _context;
             void* _ssl;
-            IValidate* _callback;
+            CertificateStore::IValidate* _callback;
             mutable state _handShaking;
             mutable Crypto::Certificate _certificate; // (PEM formatted ccertificate (chain)
             mutable Crypto::Key _privateKey; // (PEM formatted) private key
@@ -278,7 +277,7 @@ namespace Crypto {
         inline void Trigger() {
             _handler.Trigger();
         }
-        inline uint32_t Callback(IValidate* callback) {
+        inline uint32_t Callback(Crypto::CertificateStore::IValidate* callback) {
             return (_handler.Callback(callback));
         }
         inline uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
