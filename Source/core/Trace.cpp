@@ -58,5 +58,23 @@ namespace Core {
 
         return (ss.str());
     }
+#ifdef __WINDOWS__
+    const std::string& GetProgramName()
+    {
+        static std::string programName;
+
+        if (programName.empty()) {
+
+            char buffer[MAX_PATH];
+
+            if (::GetModuleFileName(NULL, buffer, MAX_PATH)) {
+                programName = FileNameOnly(buffer);
+            } else {
+                programName = "Unknown";
+            }
+        }
+        return (programName);
+    }
+#endif
 }
 } // namespace Core
