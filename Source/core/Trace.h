@@ -161,6 +161,25 @@ namespace Thunder {
 
 #ifdef __APPLE__
     #define PROGRAM_NAME getprogname()
+#elif defined(__WINDOWS__)
+    const std::string& GetProgramName()
+    {
+        static std::string programName;
+
+        if (programName.empty()) {
+
+            char buffer[MAX_PATH];
+
+            if (::GetModuleFileName(NULL, buffer, MAX_PATH)) {
+                programName = ::PathFindFileName(buffer);
+            }
+            else {
+                programName = "Unknown";
+            }
+        }
+        return (programName);
+    }
+    #define PROGRAM_NAME GetProgramName()
 #else
     #define PROGRAM_NAME program_invocation_short_name
 #endif
