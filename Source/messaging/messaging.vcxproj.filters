@@ -33,9 +33,6 @@
     <ClInclude Include="Control.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BaseCategory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LoggingCategories.h">
       <Filter>Header Files</Filter>
     </ClInclude>
