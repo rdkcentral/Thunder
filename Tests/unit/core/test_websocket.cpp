@@ -397,7 +397,7 @@ namespace Core {
         std::vector<std::basic_string<uint8_t>> _response; // Receive message queue
     };
 
-    class CustomSecureSocketStream : public ::Thunder::Crypto::SecureSocketPort {
+    class CustomSecureSocketStream : public ::Thunder::Crypto::SecureSocketPortClientType {
     private :
 
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
@@ -431,7 +431,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortClientType(::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Support client certificate request
@@ -453,7 +453,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::CLIENT_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortClientType(::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Support client certificate request
@@ -482,7 +482,7 @@ namespace Core {
 
     /* static */  constexpr char CustomSecureSocketStream::volatilePath[];
 
-    class CustomSecureServerSocketStream : public ::Thunder::Crypto::SecureSocketPort {
+    class CustomSecureServerSocketStream : public ::Thunder::Crypto::SecureSocketPortServerType {
     private :
 
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
@@ -496,7 +496,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortServerType(false, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
         {   
             // Server identification
             ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
@@ -513,7 +513,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortServerType(false, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
         {   
             // Server identification
             ::Thunder::Crypto::Certificate certificate(std::string(volatilePath).append("localhostServer.pem"));
@@ -533,7 +533,7 @@ namespace Core {
 
     /* static */  constexpr char CustomSecureServerSocketStream::volatilePath[];
 
-    class CustomSecureServerSocketStreamClientValidation : public ::Thunder::Crypto::SecureSocketPort {
+    class CustomSecureServerSocketStreamClientValidation : public ::Thunder::Crypto::SecureSocketPortServerType {
     private :
 
         static constexpr char volatilePath[] = XSTR(VOLATILE_PATH);
@@ -567,7 +567,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, true, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortServerType(true, ::Thunder::Core::SocketPort::STREAM, socket, localNode, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Server identification
@@ -597,7 +597,7 @@ namespace Core {
             , const uint16_t sendBufferSize
             , const uint16_t receiveBufferSize
         )
-            : ::Thunder::Crypto::SecureSocketPort(::Thunder::Crypto::SecureSocketPort::context_t::SERVER_CONTEXT, true, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+            : ::Thunder::Crypto::SecureSocketPortServerType(true, ::Thunder::Core::SocketPort::STREAM, localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
             , _validator{}
         {
             // Server identification

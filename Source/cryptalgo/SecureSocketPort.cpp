@@ -616,12 +616,14 @@ bool CertificateStore::IsDefaultStore() const
     return _defaultStore;
 }
 
-SecureSocketPort::Handler::~Handler() {
+template <typename TYPE>
+SecureSocketPortImproved<TYPE>::Handler::~Handler() {
     ASSERT(IsClosed() == true);
     Close(0);
 }
 
-uint32_t SecureSocketPort::Handler::Initialize() {
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Initialize() {
     ASSERT(_context == nullptr);
 
     uint32_t success = Core::ERROR_NONE;
@@ -694,7 +696,8 @@ uint32_t SecureSocketPort::Handler::Initialize() {
     return success;
 }
 
-int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
+template <typename TYPE>
+int32_t SecureSocketPortImproved<TYPE>::Handler::Read(uint8_t buffer[], const uint16_t length) const {
     ASSERT(_handShaking == CONNECTED);
     ASSERT(_ssl != nullptr);
     ASSERT(length > 0);
@@ -738,7 +741,8 @@ POP_WARNING()
     return (result > 0 ? result : /* error */ -1);
 }
 
-int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
+template <typename TYPE>
+int32_t SecureSocketPortImproved<TYPE>::Handler::Write(const uint8_t buffer[], const uint16_t length) {
     ASSERT(_handShaking == CONNECTED);
     ASSERT(_ssl != nullptr);
     ASSERT(length > 0);
@@ -782,7 +786,8 @@ POP_WARNING()
     return (result > 0 ? result : /* error */ -1);
 }
 
-uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Open(const uint32_t waitTime) {
     // Users of struct timeval should not exhibit overflow
     // Opposed to coverity false positives event tags
     ASSERT(waitTime != Core::infinite);
@@ -792,7 +797,8 @@ uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
     return (Core::SocketPort::Open(waitTime));
 }
 
-uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Close(const uint32_t waitTime) {
     if (_ssl != nullptr) {
         SSL_shutdown(static_cast<SSL*>(_ssl));
         SSL_free(static_cast<SSL*>(_ssl));
@@ -809,7 +815,8 @@ uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
     return(Core::SocketPort::Close(waitTime));
 }
 
-uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
 // Load server / client certificate and private key
 
     uint32_t result = Core::ERROR_BAD_REQUEST;
@@ -842,7 +849,8 @@ uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certi
     return (result);
 }
 
-uint32_t SecureSocketPort::Handler::CustomStore(const CertificateStore& certStore)
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::CustomStore(const CertificateStore& certStore)
 {
     static_assert(!std::has_virtual_destructor<CertificateStore>::value, "new placement without support for virtual base classes");
 
@@ -852,7 +860,8 @@ uint32_t SecureSocketPort::Handler::CustomStore(const CertificateStore& certStor
     return (Core::ERROR_NONE);
 }
 
-void SecureSocketPort::Handler::ValidateHandShake() {
+template <typename TYPE>
+void SecureSocketPortImproved<TYPE>::Handler::ValidateHandShake() {
     ASSERT(_ssl != nullptr && _context != nullptr);
 
     // Internal (partial) validation result if no callback is set
@@ -923,7 +932,8 @@ int PeerCertificateCallbackWrapper(VARIABLE_IS_NOT_USED X509_STORE_CTX* ctx, VAR
     return 0; // 0 - Failurre, 1 - OK
 }
 
-uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
+    template <typename TYPE = std::false_type>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::EnableClientCertificateRequest()
 {
     uint32_t result{Core::ERROR_NONE};
 
@@ -948,7 +958,8 @@ uint32_t SecureSocketPort::Handler::EnableClientCertificateRequest()
     return result;
 }
 
-void SecureSocketPort::Handler::Update() {
+template <typename TYPE>
+void SecureSocketPortImproved<TYPE>::Handler::Update() {
     if (IsOpen() == true) {
         ASSERT(_ssl != nullptr);
         ASSERT(_context != nullptr);
@@ -1067,6 +1078,10 @@ POP_WARNING()
         _parent.StateChange();
     }
 }
+
+// Explicit instantiation
+template class SecureSocketPortImproved<std::false_type>;
+template class SecureSocketPortImproved<std::true_type>;
 
 }
 

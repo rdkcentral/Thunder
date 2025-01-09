@@ -109,7 +109,8 @@ namespace Crypto {
         const bool _defaultStore;
     };
 
-    class EXTERNAL SecureSocketPort : public Core::IResource {
+    template <typename TYPE = std::true_type>
+    class EXTERNAL SecureSocketPortImproved : public Core::IResource {
     private:
         class EXTERNAL Handler : public Core::SocketPort {
         private:
@@ -127,14 +128,14 @@ namespace Crypto {
             Handler& operator=(const Handler&) = delete;
             Handler& operator=(Handler&&) = delete;
 
-            template <typename... Args>
-            Handler(SecureSocketPort& parent, bool isClientSocketType, bool requestCert, Args&&... args)
+            template <typename HANDLERTYPE = TYPE, typename... Args>
+            Handler(SecureSocketPortImproved& parent, bool requestCert, Args&&... args)
                 : Core::SocketPort(std::forward<Args>(args)...)
                 , _parent(parent)
                 , _context(nullptr)
                 , _ssl(nullptr)
                 , _callback(nullptr)
-                , _handShaking{isClientSocketType ? CONNECTING : ACCEPTING}
+                , _handShaking{HANDLERTYPE::value ? CONNECTING : ACCEPTING}
                 , _certificate{std::string{""}}
                 , _privateKey{std::string{""}}
                 , _requestCertificate{requestCert}
@@ -189,7 +190,7 @@ namespace Crypto {
             uint32_t EnableClientCertificateRequest();
  
         private:
-            SecureSocketPort& _parent;
+            SecureSocketPortImproved& _parent;
             void* _context;
             void* _ssl;
             CertificateStore::IValidate* _callback;
@@ -202,33 +203,20 @@ namespace Crypto {
         };
 
     public:
-        SecureSocketPort(SecureSocketPort&&) = delete;
-        SecureSocketPort(const SecureSocketPort&) = delete;
-        SecureSocketPort& operator=(const SecureSocketPort&) = delete;
+        SecureSocketPortImproved(SecureSocketPortImproved&&) = delete;
+        SecureSocketPortImproved(const SecureSocketPortImproved&) = delete;
+        SecureSocketPortImproved& operator=(const SecureSocketPortImproved&) = delete;
 
-    protected:
-        // Operational context
-        enum class context_t : uint8_t {
-              CLIENT_CONTEXT
-            , SERVER_CONTEXT
-        };
-
-        template <typename... Args>
-        SecureSocketPort(context_t context, Args&&... args)
-            : SecureSocketPort(context, false, std::forward<Args>(args)...)
+        template <typename TOKEN = TYPE, typename... Args, typename = typename std::enable_if<!TOKEN::value, void>::type> 
+        SecureSocketPortImproved(bool requestPeerCert, Args&&... args)
+            : _handler(*this, requestPeerCert, std::forward<Args>(args)...)
         {}
 
-        template <typename... Args>
-        SecureSocketPort(context_t context, bool requestPeerCert, Args&&... args)
-            : _handler(*this, context == context_t::CLIENT_CONTEXT, requestPeerCert && context == context_t::SERVER_CONTEXT, std::forward<Args>(args)...)
+        template <typename TOKEN = TYPE, typename... Args, typename = typename std::enable_if<TOKEN::value, void>::type> 
+        SecureSocketPortImproved(Args&&... args)
+            : _handler(*this, false, std::forward<Args>(args)...)
         {}
-
-    public:
-        template <typename... Args>
-        SecureSocketPort(Args&&... args)
-            : SecureSocketPort(context_t::CLIENT_CONTEXT, std::forward<Args>(args)...)
-        {}
-        ~SecureSocketPort() override {
+        ~SecureSocketPortImproved() override {
         }
 
     public:
@@ -313,5 +301,43 @@ namespace Crypto {
     private:
         Handler _handler;
     };
+
+    using SecureSocketPort = SecureSocketPortImproved<>;
+
+    class SecureSocketPortClientType : public SecureSocketPortImproved<std::true_type>
+    {
+    public:
+        SecureSocketPortClientType() = delete;
+        SecureSocketPortClientType(const SecureSocketPortClientType&) = delete;
+        SecureSocketPortClientType(SecureSocketPortClientType&&) = delete;
+        SecureSocketPortClientType& operator=(const SecureSocketPortClientType&) = delete;
+        SecureSocketPortClientType& operator=(SecureSocketPortClientType&) = delete;
+
+        template <typename... Args>
+        SecureSocketPortClientType(Args&&... args)
+            : SecureSocketPortImproved(std::forward<Args>(args)...)
+        {}
+
+        ~SecureSocketPortClientType()
+        {}
+    };
+
+    class SecureSocketPortServerType : public SecureSocketPortImproved<std::false_type>
+    {
+    public:
+        SecureSocketPortServerType() = delete;
+        SecureSocketPortServerType(const SecureSocketPortServerType&) = delete;
+        SecureSocketPortServerType(SecureSocketPortServerType&&) = delete;
+        SecureSocketPortServerType& operator=(const SecureSocketPortServerType&) = delete;
+        SecureSocketPortServerType& operator=(SecureSocketPortServerType&) = delete;
+
+        template <typename... Args>
+        SecureSocketPortServerType(bool requestPeerCert, Args&&... args)
+            : SecureSocketPortImproved(requestPeerCert, std::forward<Args>(args)...)
+        {} 
+        ~SecureSocketPortServerType()
+        {}
+    };
+
 }
 }
