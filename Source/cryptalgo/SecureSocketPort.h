@@ -123,8 +123,9 @@ namespace Crypto {
             };
 
         public:
-            Handler(Handler&&) = delete;
+            Handler() = delete;
             Handler(const Handler&) = delete;
+            Handler(Handler&&) = delete;
             Handler& operator=(const Handler&) = delete;
             Handler& operator=(Handler&&) = delete;
 
