@@ -1144,11 +1144,11 @@ namespace Thunder {
         }
 
         /* virtual */ int32_t SocketPort::Read(uint8_t buffer[], const uint16_t length) const {
-            return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, 0));
+            return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, MSG_NOSIGNAL));
         }
 
         /* virtual */ int32_t SocketPort::Write(const uint8_t buffer[], const uint16_t length) {
-            return (::send(m_Socket, reinterpret_cast<const char*>(buffer), length, 0));
+            return (::send(m_Socket, reinterpret_cast<const char*>(buffer), length, MSG_NOSIGNAL));
         }
 
         void SocketPort::Write()
@@ -1178,7 +1178,7 @@ namespace Thunder {
 
                         sendSize = ::sendto(m_Socket,
                             reinterpret_cast<const char*>(&(m_SendBuffer[m_SendOffset])),
-                            m_SendBytes - m_SendOffset, 0,
+                            m_SendBytes - m_SendOffset, MSG_NOSIGNAL,
                             static_cast<const NodeId&>(m_RemoteNode),
                             m_RemoteNode.Size());
 
