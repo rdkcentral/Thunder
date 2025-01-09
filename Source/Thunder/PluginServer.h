@@ -513,7 +513,6 @@ namespace PluginHost {
                     ASSERT(plugin != nullptr);
                     _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
-
                 BEGIN_INTERFACE_MAP(Composit)
                     INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
                 END_INTERFACE_MAP
@@ -2825,6 +2824,7 @@ namespace PluginHost {
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
+                
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(_notifiers.begin());
