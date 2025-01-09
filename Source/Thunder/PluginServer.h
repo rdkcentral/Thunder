@@ -2725,12 +2725,8 @@ namespace PluginHost {
             POP_WARNING()
             ~ServiceMap()
             {
-                Core::ProxyType<Core::IDispatch> job(_job.Revoke());
+                _job.Revoke();
 
-                if (job.IsValid()) {
-                    WorkerPool().Revoke(job);
-                    _job.Revoked();
-                }
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);
                 ASSERT(_services.size() == 0);
             }
@@ -3500,7 +3496,7 @@ namespace PluginHost {
             ChannelObservers _channelObservers;
             Channels _opened;
             Channels _closed;
-            Core::ThreadPool::JobType<ServiceMap&> _job;
+            Core::WorkerPool::JobType<ServiceMap&> _job;
         };
 
         // Connection handler is the listening socket and keeps track of all open

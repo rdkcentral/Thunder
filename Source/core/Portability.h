@@ -195,6 +195,8 @@
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED
 #define DISABLE_WARNING_FREE_NONHEAP_OBJECT
 #define DISABLE_WARNING_ARRAY_BOUNDS
+// Code Analysis - Unannotated fallthrough between switch labels
+#define DISABLE_WARNING_IMPLICIT_FALLTHROUGH PUSH_WARNING_ARG_(26819)
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -227,6 +229,8 @@
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED PUSH_WARNING_ARG_("-Wmaybe-uninitialized")
 #define DISABLE_WARNING_FREE_NONHEAP_OBJECT PUSH_WARNING_ARG_("-Wfree-nonheap-object")
 #define DISABLE_WARNING_ARRAY_BOUNDS PUSH_WARNING_ARG_("-Warray-bounds")
+#define DISABLE_WARNING_IMPLICIT_FALLTHROUGH PUSH_WARNING_ARG_("-Wimplicit-fallthrough")
+
 #endif
 
 #if !(defined(__clang__)) && (__GNUC__ >= 4)
@@ -396,6 +400,8 @@ struct SEMAPHORE_BASIC_INFORMATION {
 #endif
 
 #ifdef __LINUX__
+#include <ctype.h> // must be first for inline ::tolower() etc.
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

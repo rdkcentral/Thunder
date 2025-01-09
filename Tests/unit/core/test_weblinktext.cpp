@@ -168,7 +168,7 @@ namespace Core {
 
     TEST(WebLink, Text)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, VARIABLE_IS_NOT_USED maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string connector {"127.0.0.1"};

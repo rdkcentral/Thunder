@@ -43,7 +43,7 @@ namespace Core {
         }
 
     public:
-        uint64_t Timed(const uint64_t scheduledTime)
+        uint64_t Timed(VARIABLE_IS_NOT_USED const uint64_t scheduledTime)
         {
             constexpr uint32_t time = 100; // 0.1 second
 
