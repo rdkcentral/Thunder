@@ -196,7 +196,7 @@ namespace Crypto {
             void* _ssl;
             CertificateStore::IValidate* _callback;
             mutable state _handShaking;
-            mutable Crypto::Certificate _certificate; // (PEM formatted ccertificate (chain)
+            mutable Crypto::Certificate _certificate; // (PEM formatted) ccertificate (chain)
             mutable Crypto::Key _privateKey; // (PEM formatted) private key
             const bool _requestCertificate;
             mutable uint32_t _waitTime; // Extracted from Open for use in I/O blocking operations

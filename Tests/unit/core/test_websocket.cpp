@@ -137,13 +137,24 @@ namespace Core {
             , Args&&... args
         )
             : ::Thunder::Web::WebSocketClientType<STREAM>(path, protocol, query, origin, binary, masking, /* <Arguments SocketStream> */ std::forward<Args>(args)... /*</Arguments SocketStream>*/)
+            , _post{}
+            , _guard{}
         {
         }
 
         ~WebSocketClient() override = default;
 
         // Non-idle then data available to send
-        bool IsIdle() const override { return _post.size() == 0; }
+        bool IsIdle() const override
+        {
+            _guard.Lock();
+
+            bool result = _post.size() == 0;
+
+            _guard.Unlock();
+
+            return result;
+        }
 
         // Allow for eventfull state updates in this class
         void StateChange() override
@@ -184,6 +195,8 @@ namespace Core {
                 && ::Thunder::Web::WebSocketClientType<STREAM>::IsWebSocket() // Redundant, covered by IsOpen
                 && ::Thunder::Web::WebSocketClientType<STREAM>::IsCompleted()
                ) {
+                _guard.Lock();
+
                 std::basic_string<uint8_t>& message = _post.front();
 
                 count = std::min(message.size(), static_cast<size_t>(maxSendSize));
@@ -206,6 +219,8 @@ namespace Core {
                     // Trigger a call to SendData for remaining data
                     ::Thunder::Web::WebSocketClientType<STREAM>::Link().Trigger();
                 }
+
+                _guard.Unlock();
             }
 
             return count;
@@ -237,18 +252,26 @@ namespace Core {
 
         bool Submit(const std::basic_string<uint8_t>& message)
         {
+            _guard.Lock();
+
             size_t count = _post.size();
 
             _post.emplace_back(message);
 
+            bool result = count < _post.size();
+
+            _guard.Unlock();
+
             ::Thunder::Web::WebSocketClientType<STREAM>::Link().Trigger();
 
-            return count < _post.size();
+            return result;
         }
 
     private:
 
         std::vector<std::basic_string<uint8_t>> _post; // Send message queue
+
+        mutable ::Thunder::Core::CriticalSection _guard;
     };
 
     template <typename STREAM, size_t SENDBUFFERSIZE, size_t RECEIVEBUFFERSIZE>
@@ -259,13 +282,25 @@ namespace Core {
         WebSocketServer(const SOCKET& socket, const ::Thunder::Core::NodeId remoteNode, ::Thunder::Core::SocketServerType<WebSocketServer<STREAM, SENDBUFFERSIZE, RECEIVEBUFFERSIZE>>*)
             // Initially this should be defined as a regular TCP socket
             : ::Thunder::Web::WebSocketServerType<STREAM>(false /* binary*/, false /*masking */, socket, remoteNode, SENDBUFFERSIZE /* send buffer size */, RECEIVEBUFFERSIZE /* receive buffer size */)
+            , _post{}
+            , _response{}
+            , _guard{}
         {
         }
 
         ~WebSocketServer() override = default;
 
         // Non-idle then data available to send
-        bool IsIdle() const override { return _post.size() == 0; }
+        bool IsIdle() const override
+        {
+            _guard.Lock();
+
+            bool result = _post.size() == 0;
+
+            _guard.Unlock();
+
+            return result;
+        }
 
         // Allow for eventfull state updates in this class
         void StateChange() override
@@ -306,6 +341,8 @@ namespace Core {
                 && ::Thunder::Web::WebSocketServerType<STREAM>::IsWebSocket() // Redundant, covered by IsOpen
                 && ::Thunder::Web::WebSocketServerType<STREAM>::IsCompleted()
                ) {
+                _guard.Lock();
+
                 std::basic_string<uint8_t>& message = _post.front();
 
                 count = std::min(message.size(), static_cast<size_t>(maxSendSize));
@@ -328,6 +365,8 @@ namespace Core {
                     // Trigger a call to SendData for remaining data
                     ::Thunder::Web::WebSocketServerType<STREAM>::Link().Trigger();
                 }
+
+                _guard.Unlock();
             }
 
             return count;
@@ -340,7 +379,11 @@ namespace Core {
 #endif
 
             if (receivedSize > 0) {
+                _guard.Lock();
+
                 _response.emplace_back(std::basic_string<uint8_t>{ dataFrame, receivedSize });
+
+                _guard.Unlock();
 
 #ifdef _VERBOSE
                 std::cout << " |--> dataFrame ( " << receivedSize << " ) = ";
@@ -357,14 +400,20 @@ namespace Core {
         // Put data in the queue to send (to the (connected) client)
         bool Submit(const std::basic_string<uint8_t>& message)
         {
+            _guard.Lock();
+
             size_t count = _post.size();
 
             _post.emplace_back(message);
 
+            bool result =  count < _post.size();
+
+            _guard.Unlock();
+
             // Trigger a call to SendData
             ::Thunder::Web::WebSocketServerType<STREAM>::Link().Trigger();
 
-            return count < _post.size();
+            return result;
         }
 
         std::basic_string<uint8_t> Response()
@@ -374,6 +423,8 @@ namespace Core {
 #endif
 
             std::basic_string<uint8_t> message;
+
+            _guard.Lock();
 
             if (_response.size() > 0) {
                 message = _response.front();
@@ -388,6 +439,8 @@ namespace Core {
 #endif
             } 
 
+            _guard.Unlock();
+
             return message;
         }
 
@@ -395,6 +448,8 @@ namespace Core {
 
         std::vector<std::basic_string<uint8_t>> _post; // Send message queue
         std::vector<std::basic_string<uint8_t>> _response; // Receive message queue
+
+        mutable ::Thunder::Core::CriticalSection _guard;
     };
 
     class CustomSecureSocketStream : public ::Thunder::Crypto::SecureSocketPortClientType {
