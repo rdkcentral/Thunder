@@ -932,7 +932,7 @@ int PeerCertificateCallbackWrapper(VARIABLE_IS_NOT_USED X509_STORE_CTX* ctx, VAR
     return 0; // 0 - Failurre, 1 - OK
 }
 
-    template <typename TYPE = std::false_type>
+template <typename TYPE>
 uint32_t SecureSocketPortImproved<TYPE>::Handler::EnableClientCertificateRequest()
 {
     uint32_t result{Core::ERROR_NONE};
