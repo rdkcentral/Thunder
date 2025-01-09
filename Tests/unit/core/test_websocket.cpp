@@ -762,7 +762,7 @@ namespace Core {
         EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketUpgrade)
+    TEST(WebSocket, UnsecuredSocketUpgrade)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -836,7 +836,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketServerPingClientPong)
+    TEST(WebSocket, UnsecuredSocketServerPingClientPong)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -919,7 +919,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketServerUnsollicitedPong)
+    TEST(WebSocket, UnsecuredSocketServerUnsollicitedPong)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1002,7 +1002,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketClientUnsollicitedPong)
+    TEST(WebSocket, UnsecuredSocketClientUnsollicitedPong)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1079,7 +1079,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     } 
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketDataExchange)
+    TEST(WebSocket, UnsecuredSocketDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1172,7 +1172,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     } 
 
-    TEST(WebSocket, DISABLED_UnsecuredSocketMultiFrameDataExchange)
+    TEST(WebSocket, UnsecuredSocketMultiFrameDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
@@ -1375,7 +1375,7 @@ namespace Core {
         EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, DISABLED_SecuredSocketDataExchange)
+    TEST(WebSocket, SecuredSocketDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
 
