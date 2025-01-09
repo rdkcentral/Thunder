@@ -1383,7 +1383,7 @@ namespace Thunder {
                     Core::JSONRPC::Message response;
                     const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     auto result = Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
-                    if (response.Error.IsSet() != true) {
+                    if (result == Core::ERROR_NONE && response.Error.IsSet() != true) {
                         retVal = Core::ERROR_NONE;
                         _adminLock.Lock();
                         auto iter = _subscriptions.find(eventName);
