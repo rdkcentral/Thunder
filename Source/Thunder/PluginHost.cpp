@@ -512,7 +512,8 @@ POP_WARNING()
     void test() {
 
         uint16_t* t = new uint16_t(10);
-           //delete t;
+        delete t;
+        t = nullptr;
     }
 
 #ifdef __WINDOWS__
