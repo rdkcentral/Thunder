@@ -16,7 +16,7 @@ interface definitions to a format understandable by the plugin. *ThunderShark* i
 
 ## Prerequisites
 
-Firstly, the file ```protocol-thunder-comrpc.lua``` file needs to be placed in *Wireshark*'s plugins folder. In Windows this is typically ```%APPDATA%\Wireshark\plugins```
+Firstly, the file [```protocol-thunder-comrpc.lua```](https://github.com/WebPlatformForEmbedded/ThunderShark) file needs to be placed in *Wireshark*'s plugins folder. In Windows this is typically ```%APPDATA%\Wireshark\plugins```
 or ```%APPDATA%\Roaming\Wireshark\plugins``` folder, while on Linux it's the ```~/.local/lib/wireshark/plugins``` folder.
 
 Secondly, using the [*LuaGanerator*](https://github.com/rdkcentral/ThunderTools/tree/master/LuaGenerator) tool, interface definitions need to be created. 
@@ -30,7 +30,7 @@ LuaGenerator.bat [<Thunder_dir> <ThunderInterfaces_dir>]
 ```
 
 The tool will produce a ```protocol-thunder-comrpc.data``` file that holds all interface definitions combined and converted to Lua data tables. This file must be
-placed in the same folder as ```protocol-thunder-comrpc.lua``` file (i.e. *Wireshark*'s plugins folder). This step should be repeated each time there is a change in the interfaces.
+placed in the same folder as [```protocol-thunder-comrpc.lua```](https://github.com/WebPlatformForEmbedded/ThunderShark) file (i.e. *Wireshark*'s plugins folder). This step should be repeated each time there is a change in the interfaces.
 
 > No instrumentation (code changes) of *Thunder* core or plugins is required!
 
