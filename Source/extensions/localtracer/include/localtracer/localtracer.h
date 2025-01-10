@@ -197,8 +197,8 @@ namespace Messaging {
 
         WorkerThread _worker;
         MessageClient _client;
-        TraceFactoryType<Core::Messaging::IStore::Tracing, Messaging::TextMessage> _tracingFactory;
-        TraceFactoryType<Core::Messaging::IStore::Logging, Messaging::TextMessage> _loggingFactory;
+        TraceFactoryType<Core::Messaging::IStore::Tracing, Core::Messaging::TextMessage> _tracingFactory;
+        TraceFactoryType<Core::Messaging::IStore::Logging, Core::Messaging::TextMessage> _loggingFactory;
 
         ICallback* _callback;
     };

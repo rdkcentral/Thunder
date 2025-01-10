@@ -29,9 +29,7 @@
 #include "DirectOutput.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
-#include "Control.h"
 #include "TraceFactory.h"
-#include "TextMessage.h"
 #include "ConsoleStreamRedirect.h"
 #include "OperationalCategories.h"
 

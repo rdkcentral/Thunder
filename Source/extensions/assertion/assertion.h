@@ -20,18 +20,13 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME COM
+#error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
-#include <core/core.h>
-#include <messaging/messaging.h>
-#include <assertion/assertion.h>
+#include "AssertionUnit.h"
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
+#ifdef __WINDOWS__
+#pragma comment(lib, "assertion.lib")
 #endif
 
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Assertion)

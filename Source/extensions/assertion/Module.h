@@ -20,18 +20,13 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME COM
+#define MODULE_NAME Assertion
 #endif
 
 #include <core/core.h>
 #include <messaging/messaging.h>
-#include <assertion/assertion.h>
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
+#if defined(__WINDOWS__) && defined(ASSERTION_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
 #endif

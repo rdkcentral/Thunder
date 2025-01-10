@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASN1.h" />
+    <ClInclude Include="AssertionControl.h" />
     <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
@@ -34,6 +35,7 @@
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="IAction.h" />
+    <ClInclude Include="IAssertionControl.h" />
     <ClInclude Include="IIterator.h" />
     <ClInclude Include="IObserver.h" />
     <ClInclude Include="IPCChannel.h" />
@@ -52,6 +54,7 @@
     <ClInclude Include="Media.h" />
     <ClInclude Include="MessageException.h" />
     <ClInclude Include="MessageStore.h" />
+    <ClInclude Include="Messaging.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Netlink.h" />
     <ClInclude Include="NetworkInfo.h" />
@@ -102,6 +105,7 @@
     <ClInclude Include="XGetopt.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssertionControl.cpp" />
     <ClCompile Include="CallsignTLS.cpp" />
     <ClCompile Include="CyclicBuffer.cpp" />
     <ClCompile Include="DataElement.cpp" />
@@ -114,6 +118,7 @@
     <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageStore.cpp" />
+    <ClCompile Include="Messaging.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
     <ClCompile Include="NodeId.cpp" />

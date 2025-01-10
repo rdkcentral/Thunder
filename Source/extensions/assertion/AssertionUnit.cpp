@@ -17,21 +17,30 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "AssertionUnit.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME COM
-#endif
+namespace Thunder {
+namespace Assertion {
 
-#include <core/core.h>
-#include <messaging/messaging.h>
-#include <assertion/assertion.h>
+    AssertionUnit::AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(this);
+    }
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
+    AssertionUnit& AssertionUnit::Instance()
+    {
+        return (Core::SingletonType<AssertionUnit>::Instance());
+    }
 
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+    AssertionUnit::~AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(nullptr);
+    }
+
+    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
+    {
+        metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
+        Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message);
+    }
+}
+}

@@ -1,4 +1,4 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -19,19 +19,16 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME COM
-#endif
+#include "Module.h"
+#include "Messaging.h"
 
-#include <core/core.h>
-#include <messaging/messaging.h>
-#include <assertion/assertion.h>
+namespace Thunder {
+namespace Assertion {
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
+    struct EXTERNAL IAssertionUnit {
+        virtual ~IAssertionUnit() = default;
+        virtual void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message) = 0;
+    };
 
-#if defined(__WINDOWS__) && defined(COM_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+}
+}

@@ -473,6 +473,8 @@ POP_WARNING()
             }
         }
         else {
+            Assertion::AssertionUnit::Instance();
+
             #ifdef __CORE_WARNING_REPORTING__
             class GlobalConfig : public Core::JSON::Container {
             public:

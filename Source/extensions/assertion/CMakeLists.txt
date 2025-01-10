@@ -15,40 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TARGET ${NAMESPACE}Messaging)
+set(TARGET ${NAMESPACE}Assertion)
 
-add_library(${TARGET} 
+add_library(${TARGET} SHARED
         Module.cpp
-        MessageClient.cpp
-        MessageUnit.cpp
-        TraceCategories.cpp
-        Logging.cpp
-        DirectOutput.cpp
-        ConsoleStreamRedirect.cpp
-        OperationalCategories.cpp)
+        AssertionUnit.cpp
+        )
 
 set(PUBLIC_HEADERS
+        AssertionUnit.h
+        assertion.h
         Module.h
-        MessageClient.h
-        messaging.h
-        MessageDispatcher.h
-        MessageUnit.h
-        TraceCategories.h
-        TraceControl.h
-        Control.h
-        Logging.h
-        LoggingCategories.h
-        DirectOutput.h
-        Module.h
-        TraceFactory.h
-        ConsoleStreamRedirect.h
-        OperationalCategories.h)
-
-target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
+        )
 
 target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
+        PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
 
@@ -79,29 +63,8 @@ install(
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
         FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/messaging COMPONENT ${NAMESPACE}_Development
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/assertion COMPONENT ${NAMESPACE}_Development
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
 InstallCMakeConfig(TARGETS ${TARGET})
-
-option(LEGACY_TRACING_SUPPORT "Enable backward compatibilaty support for the Tracing" ON)
-
-if(LEGACY_TRACING_SUPPORT)
-include(CreateLink)
-
-InstallCompatibleCMakeConfig( 
-        TARGET ${TARGET}
-        LEGACY_TARGET ${NAMESPACE}Tracing
-        LEGACY_INCLUDE_DIR  "${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}"
-        LEGACY_PUBLIC_HEADER_LOCATION "${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/tracing") 
-
-createlink(
-        LINK ${CMAKE_CURRENT_BINARY_DIR}/tracing.h
-        TARGET messaging.h
-       )
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/tracing.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/tracing/
-       )
-endif()

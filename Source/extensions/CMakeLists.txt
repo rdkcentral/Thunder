@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+option(ASSERTION
+        "Include asserts library in the build." ON)
 option(BLUETOOTH
         "Include bluetooth library in the build." OFF)
 option(BROADCAST
@@ -29,6 +31,10 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
+
+if(ASSERTION)
+    add_subdirectory(assertion)
+endif()
 
 if(BLUETOOTH)
     add_subdirectory(bluetooth)

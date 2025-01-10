@@ -54,6 +54,11 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+target_link_libraries(${TARGET}
+PUBLIC
+        ${NAMESPACE}Assertion::${NAMESPACE}Assertion
+)
+
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}
 PUBLIC

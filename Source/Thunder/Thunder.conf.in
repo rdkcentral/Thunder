@@ -99,6 +99,11 @@ if boolean('@MESSAGING@'):
        "enabled" : False
       }
 
+  __assertion = {
+       "category" : "AnyCategory",
+       "enabled" : False
+      }
+
   __logging_settings = []
   __logging_settings.append(__notification)
   
@@ -137,3 +142,11 @@ if boolean('@MESSAGING@'):
   __reporting.add("settings", __reporting_settings)
 
   messaging.add("reporting", __reporting)
+
+  __assertion_settings = []
+  __assertion_settings.append(__assertion)
+
+  __assertion = JSON()
+  __assertion.add("settings", __assertion_settings)
+
+  messaging.add("assertion", __assertion)

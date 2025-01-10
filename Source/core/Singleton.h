@@ -133,7 +133,7 @@ namespace Core {
                 g_AdminLock.Unlock();
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            // ASSERT(g_TypedSingleton != nullptr);
 
             return *(g_TypedSingleton);
         }

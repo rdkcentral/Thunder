@@ -21,6 +21,8 @@
 
 #include "Module.h"
 
+#define ASSERT_CATEGORY General
+
 namespace Thunder {
 
 namespace Core {
@@ -30,6 +32,7 @@ namespace Core {
         extern EXTERNAL const char* MODULE_LOGGING;
         extern EXTERNAL const char* MODULE_REPORTING;
         extern EXTERNAL const char* MODULE_OPERATIONAL_STREAM;
+        extern EXTERNAL const char* MODULE_ASSERT;
 
         struct EXTERNAL IEvent {
             virtual ~IEvent() = default;
@@ -49,7 +52,8 @@ namespace Core {
                 TRACING             = 1,
                 LOGGING             = 2,
                 REPORTING           = 3,
-                OPERATIONAL_STREAM  = 4
+                OPERATIONAL_STREAM  = 4,
+                ASSERT              = 5
             };
 
 // @stop
@@ -158,6 +162,11 @@ namespace Core {
                 , _timeStamp()
             {
             }
+            MessageInfo(const Metadata& metadata)
+                : Metadata(metadata)
+                , _timeStamp()
+            {
+            }
             MessageInfo(const Metadata& metadata, const uint64_t timeStamp)
                 : Metadata(metadata)
                 , _timeStamp(timeStamp)
@@ -168,6 +177,9 @@ namespace Core {
         public:
             uint64_t TimeStamp() const {
                 return (_timeStamp);
+            }
+            void TimeStamp(const uint64_t timeStamp) {
+                _timeStamp = timeStamp;
             }
 
         public:
@@ -312,6 +324,70 @@ namespace Core {
                 }
                 ~OperationalStream() = default;
             };
+
+            /**
+            * @brief Data-Carrier, extended information about the assert-type message
+            */
+            class EXTERNAL Assert : public MessageInfo {
+            public:
+                Assert(const Assert&) = default;
+                Assert& operator=(const Assert&) = default;
+                Assert(Assert&&) = default;
+                Assert& operator=(Assert&&) = default;
+
+                Assert()
+                    : MessageInfo()
+                    , _processId(0)
+                    , _processName()
+                    , _fileName()
+                    , _lineNumber(0)
+                    , _callstack()
+                {
+                }
+                Assert(const MessageInfo& messageInfo, const uint16_t processId, const string& processName, const string& fileName, const uint16_t lineNumber, const string& callstack)
+                    : MessageInfo(messageInfo)
+                    , _processId(processId)
+                    , _processName(processName)
+                    , _fileName(fileName)
+                    , _lineNumber(lineNumber)
+                    , _callstack(callstack)
+                {
+                }
+                ~Assert() = default;
+
+            public:
+                uint16_t ProcessId() const {
+                    return (_processId);
+                }
+
+                const string& ProcessName() const {
+                    return (_processName);
+                }
+
+                const string& FileName() const {
+                    return (_fileName);
+                }
+
+                uint16_t LineNumber() const {
+                    return (_lineNumber);
+                }
+
+                const string& Callstack() const {
+                    return (_callstack);
+                }
+
+            public:
+                uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override;
+                uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override;
+                string ToString(const abbreviate abbreviate) const override;
+
+            private:
+                uint16_t _processId;
+                string _processName;
+                string _fileName;
+                uint16_t _lineNumber;
+                string _callstack;
+        };
 
             public:
             virtual ~IStore() = default;

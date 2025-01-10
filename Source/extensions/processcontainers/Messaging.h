@@ -24,8 +24,8 @@
 namespace Thunder {
 namespace ProcessContainers {
 
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, ProcessContainerization)
-    DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Debug)
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, ProcessContainerization)
+    DEFINE_MESSAGING_CATEGORY(Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Debug)
 
 } // ProcessContainers
 }
