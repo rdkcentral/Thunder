@@ -508,12 +508,22 @@ POP_WARNING()
         }
     }
 
+
+    void test() {
+
+        uint16_t* t = new uint16_t(10);
+           //delete t;
+    }
+
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
     int main(int argc, char** argv)
 #endif
     {
+
+        test();
+
 #ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));
