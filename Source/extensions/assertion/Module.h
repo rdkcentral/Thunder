@@ -26,7 +26,7 @@
 #include <core/core.h>
 #include <messaging/messaging.h>
 
-#if defined(__WINDOWS__)
+#if defined(__WINDOWS__) && defined(ASSERTION_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
 #endif
