@@ -516,8 +516,6 @@ POP_WARNING()
     int main(int argc, char** argv)
 #endif
     {
-        Thunder::Assertion::BaseAssertType::EnsureControlInitialized();
-
 #ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));

@@ -120,24 +120,25 @@ namespace Assertion {
 
         using BaseClass::BaseClass;
 
+        static AssertionControl& Instance() {
+            static BaseAssertType instance;
+            return (instance._control);
+        }
+
         inline static void Announce() {
             IsEnabled();
         }
 
         inline static bool IsEnabled() {
-            return (_control.IsEnabled());
+            return (Instance().IsEnabled());
         }
 
         inline static void Enable(const bool enable) {
-            _control.Enable(enable);
+            Instance().Enable(enable);
         }
         
         inline static const Core::Messaging::Metadata& Metadata() {
-            return (_control.Metadata());
-        }
-
-        static void EnsureControlInitialized() {
-            (void)_control;
+            return (Instance().Metadata());
         }
 
     private:
