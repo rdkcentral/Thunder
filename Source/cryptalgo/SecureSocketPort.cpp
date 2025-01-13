@@ -480,7 +480,7 @@ CertificateStore::CertificateStore(bool defaultStore)
 {}
 
 CertificateStore::CertificateStore(CertificateStore&& move) noexcept
-    : _list { move._list }
+    : _list { std::move(move._list) }
     , _defaultStore{ move._defaultStore }
 {}
 
