@@ -501,7 +501,7 @@ uint32_t CertificateStore::Add(const Certificate& certificate)
     _lock.Lock();
 
     if (   x509Certificate != nullptr
-        && std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate item){
+        && std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate& item){
                                                                                                    const X509* x509 = item;
                                                                                                    return X509_cmp(x509Certificate, x509) == 0;
                                                                                                   }
@@ -527,11 +527,11 @@ uint32_t CertificateStore::Remove(const Certificate& certificate)
 
     _lock.Lock();
 
-    if ((it = std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate item){
+    if ((it = std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate& item){
                                                                                                       const X509* x509 = item;
                                                                                                       return X509_cmp(x509Certificate, x509) == 0;
                                                                                                      }
-                       )) == _list.end()
+                       )) != _list.end()
        ) {
         size_t position = std::distance(_list.begin(), it);
 
