@@ -136,6 +136,8 @@ namespace Assertion {
             return (_control.Metadata());
         }
 
+        static AssertionControl& Instance();
+
     private:
         static AssertionControl _control;
     };
@@ -147,7 +149,7 @@ namespace Assertion {
     DEFINE_MESSAGING_CATEGORY(Thunder::Assertion::BaseAssertType, ASSERT_CATEGORY)
 
 #define ANNOUNCE_ASSERT_CONTROL \
-    Thunder::Assertion::BaseAssertType::IsEnabled();
+    Thunder::Assertion::BaseAssertType::AssertionControl Thunder::Assertion::BaseAssertType::_control;
 
 namespace Thunder {
 namespace Assertion {
