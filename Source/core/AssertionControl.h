@@ -54,12 +54,12 @@ namespace Assertion {
         Core::CriticalSection* _adminLock;
     };
 
-    class EXTERNAL BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
+    class BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
     public:
         using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT>;
 
     private:
-        class AssertionControl : public Core::Messaging::IControl {
+        class EXTERNAL AssertionControl : public Core::Messaging::IControl {
         public:
             AssertionControl(const AssertionControl&) = delete;
             AssertionControl& operator=(const AssertionControl&) = delete;
@@ -121,12 +121,8 @@ namespace Assertion {
         using BaseClass::BaseClass;
 
         static AssertionControl& Instance() {
-            static BaseAssertType instance;
-            return (instance._control);
-        }
-
-        inline static void Announce() {
-            IsEnabled();
+            static AssertionControl control;
+            return (control);
         }
 
         inline static bool IsEnabled() {
@@ -140,9 +136,6 @@ namespace Assertion {
         inline static const Core::Messaging::Metadata& Metadata() {
             return (Instance().Metadata());
         }
-
-    private:
-        static AssertionControl _control;
     };
 
 } // namespace Assertion
@@ -152,7 +145,7 @@ namespace Assertion {
     DEFINE_MESSAGING_CATEGORY(Thunder::Assertion::BaseAssertType, ASSERT_CATEGORY)
 
 #define ANNOUNCE_ASSERT_CONTROL \
-    Thunder::Assertion::BaseAssertType::AssertionControl Thunder::Assertion::BaseAssertType::_control;
+    Thunder::Assertion::BaseAssertType::Instance();
 
 namespace Thunder {
 namespace Assertion {

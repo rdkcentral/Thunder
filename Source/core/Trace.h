@@ -193,7 +193,7 @@ namespace Thunder {
 #ifdef __DEBUG__
     #define ASSERT_ABORT abort();
 #else
-    #define ASSERT_ABORT  
+    #define ASSERT_ABORT
 #endif
 
     #define ASSERT(expr)                                                                                    \
