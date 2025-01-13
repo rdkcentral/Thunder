@@ -26,10 +26,6 @@ namespace Assertion {
     // Announce upfront the general Assert category..
     ANNOUNCE_ASSERT_CONTROL
 
-    BaseAssertType::AssertionControl& BaseAssertType::Instance() {
-        return (_control);
-    }
-
     AssertionUnitProxy::AssertionUnitProxy()
         : _handler(nullptr)
         , _adminLock(new Core::CriticalSection())

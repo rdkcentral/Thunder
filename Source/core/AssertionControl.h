@@ -136,7 +136,9 @@ namespace Assertion {
             return (_control.Metadata());
         }
 
-        static AssertionControl& Instance();
+        static void EnsureControlInitialized() {
+            (void)_control;
+        }
 
     private:
         static AssertionControl _control;

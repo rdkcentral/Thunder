@@ -199,7 +199,7 @@ namespace Thunder {
     #define ASSERT(expr)                                                                                    \
         do {                                                                                                \
             if (!(expr)) {                                                                                  \
-                if (Thunder::Assertion::BaseAssertType::Instance().IsEnabled()) {                           \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
                     ASSERT_METADATA                                                                         \
                     Thunder::Core::Messaging::TextMessage __message__(#expr);                               \
                     ASSERT_SENT                                                                             \
@@ -211,7 +211,7 @@ namespace Thunder {
     #define ASSERT_VERBOSE(expr, format, ...)                                                               \
         do {                                                                                                \
             if (!(expr)) {                                                                                  \
-                if (Thunder::Assertion::BaseAssertType::Instance().IsEnabled()) {                           \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                      \
                     ASSERT_METADATA                                                                         \
                     char __buffer__[256];                                                                   \
                     std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);    \
