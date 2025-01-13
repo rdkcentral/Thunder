@@ -789,7 +789,6 @@ POP_WARNING()
 template <typename TYPE>
 uint32_t SecureSocketPortImproved<TYPE>::Handler::Open(const uint32_t waitTime) {
     // Users of struct timeval should not exhibit overflow
-    // Opposed to coverity false positives event tags
     ASSERT(waitTime != Core::infinite);
 
     _waitTime = waitTime;
