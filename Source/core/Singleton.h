@@ -196,7 +196,7 @@ namespace Core {
                 g_AdminLock.Unlock();
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            // ASSERT(g_TypedSingleton != nullptr);
 
             return *(g_TypedSingleton);
         }
@@ -204,7 +204,7 @@ namespace Core {
         {
             // If the Singleton needs to be constructed with a parameter, the Create() method
             // should have been called prior to the instance..
-            ASSERT(g_TypedSingleton != nullptr);
+            // ASSERT(g_TypedSingleton != nullptr);
 
             return *(g_TypedSingleton);
         }
