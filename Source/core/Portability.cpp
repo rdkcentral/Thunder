@@ -68,7 +68,7 @@ extern "C" {
 #ifdef __APPLE__
 extern "C" {
 //@TODO @Pierre implement mremap
-void* mremap(void* old_address, size_t old_size, size_t new_size, int flags)
+void* mremap(void* /* old_address */, size_t /* old_size */, size_t /* new_size */, int /* flags */)
 {
     return (nullptr);
 }
@@ -147,7 +147,7 @@ static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* in
     }
 }
 
-uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
+uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize)
 {
     uint32_t result = 0;
 
@@ -159,7 +159,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
             }
             --result;
         }
-    } else if (threadId != (::ThreadId)(~0)) {
+    } else if (threadId != (Thunder::Core::thread_id)(~0)) {
         while (std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire))
             ; // spin until acquired
 
@@ -196,7 +196,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 extern "C" {
 
-void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
+void DumpCallStack(const Thunder::Core::thread_id threadId VARIABLE_IS_NOT_USED, std::list<Thunder::Core::callstack_info>& stackList VARIABLE_IS_NOT_USED)
 {
 #if defined(THUNDER_BACKTRACE)
     void* callstack[32];
@@ -224,23 +224,8 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
                 entry.line = ~0;
             }
             else {
-                char* demangled;
-                int status = -1;
-
-                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-
-                if ( (demangled == nullptr) || (status != 0) || (demangled[0] == '\0') ) {
-                    entry.function = string(info.dli_sname);
-                }
-                else {
-                    entry.function = string(demangled);
-                }
-                
+                entry.function = Core::ClassName(info.dli_sname).Text();
                 entry.line = (char*)callstack[i] - (char*)info.dli_saddr;
-
-                if (demangled != nullptr) {
-                    free(demangled);
-                }
             }
         }
 
@@ -255,7 +240,10 @@ void DumpCallStack(const ThreadId threadId VARIABLE_IS_NOT_USED, std::list<Thund
 
 #endif
 }
-}
+
+} // extern c
+
+
 
 #ifdef __LINUX__
 
@@ -295,14 +283,11 @@ void SleepUs(const unsigned int time) {
 
 #if defined(__WINDOWS__)
 
-void SleepUs(const uint32_t time) {
-    std::this_thread::sleep_for(std::chrono::microseconds(time));
-}
+    void SleepUs(const uint32_t time) {
+        std::this_thread::sleep_for(std::chrono::microseconds(time));
+    }
 
 #endif
-
-
-
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 
 uint64_t htonll(const uint64_t& value)
@@ -410,5 +395,67 @@ namespace Core {
     {
         toString(dst, format, ap);
     }
-}
-}
+
+    TextFragment Demangled(const char name[]) {
+
+        #ifdef __LINUX__
+            int status;
+            char* temp = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+            std::string newName;
+
+            // Check for, and deal with, error.
+            if (temp != nullptr) {
+                newName = temp;
+                ::free(temp);
+            } else {
+                newName = name;
+            }
+        #endif
+
+        #ifdef __WINDOWS__
+            char allocationName[512]; 
+            size_t allocationSize = sizeof(allocationName) - 1; 
+            uint16_t index = 0;
+            uint16_t moveTo = 0;
+            while ((name[index] != '\0') && (moveTo < (allocationSize - 1))) {
+                if ((name[index] == 'c') && (name[index + 1] == 'l') && (name[index + 2] == 'a') && (name[index + 3] == 's') && (name[index + 4] == 's') && (name[index + 5] == ' ')) {
+                    // we need to skip class :-)
+                    index += 6;
+                } else if ((name[index] == 's') && (name[index + 1] == 't') && (name[index + 2] == 'r') && (name[index + 3] == 'u') && (name[index + 4] == 'c') && (name[index + 5] == 't') && (name[index + 6] == ' ')) {
+                    // We need to skip struct
+                    index += 7;
+                } else if ((name[index] == 'e') && (name[index + 1] == 'n') && (name[index + 2] == 'u') && (name[index + 3] == 'm') && (name[index + 4] == ' ')) {
+                    // We need to skip enum
+                    index += 5;
+                } else {
+                    allocationName[moveTo++] = name[index++];
+                }
+            }
+            allocationName[moveTo] = '\0';
+            std::string newName(allocationName, moveTo);
+        #endif
+
+        return (TextFragment(newName));
+    }
+
+    TextFragment ClassName(const char name[]) {
+        return(Demangled(name));
+    }
+
+    TextFragment ClassNameOnly(const char name[]) {
+
+        TextFragment result(Demangled(name));
+        uint16_t index = 0;
+        uint16_t lastIndex = static_cast<uint16_t>(~0);
+
+        while ((index < result.Length()) && (result[index] != '<')) {
+            if (result[index] == ':') {
+                lastIndex = index;
+            }
+            index++;
+        }
+
+        return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
+    }
+} // namespace Core
+} // namespace Thunder

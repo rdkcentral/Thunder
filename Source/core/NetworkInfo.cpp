@@ -653,7 +653,7 @@ namespace Core {
         return (result);
     }
 
-    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t length) const
+    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t /* length */) const
     {
         ASSERT(IsValid());
         AdapterAddresses addresses;
@@ -693,31 +693,28 @@ namespace Core {
         return (Core::ERROR_NOT_SUPPORTED);
     }
 
-    uint32_t AdapterIterator::Add(const IPNode& address)
+    uint32_t AdapterIterator::Add(const IPNode& /* address */)
     {
         uint32_t result = Core::ERROR_NONE;
         return (result);
     }
 
-    uint32_t AdapterIterator::Delete(const IPNode& address)
+    uint32_t AdapterIterator::Delete(const IPNode& /* address */)
     {
-
         uint32_t result = Core::ERROR_NONE;
         return (result);
     }
 
-    uint32_t AdapterIterator::Gateway(const IPNode& network, const NodeId& gateway)
+    uint32_t AdapterIterator::Gateway(const IPNode& /* network */, const NodeId& /* gateway */)
     {
-
         //TODO: Needs implementation
         ASSERT(false);
 
         return (Core::ERROR_BAD_REQUEST);
     }
 
-    uint32_t AdapterIterator::Broadcast(const Core::NodeId& address)
+    uint32_t AdapterIterator::Broadcast(const Core::NodeId& /* address */)
     {
-
         //TODO: Needs implementation
         ASSERT(false);
 
@@ -1866,8 +1863,10 @@ namespace Core {
 
 #endif
 
-    AdapterObserver::AdapterObserver(INotification* callback)
+    AdapterObserver::AdapterObserver(INotification* callback VARIABLE_IS_NOT_USED)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
         : _callback(callback)
+#endif
     {
 #ifdef __WINDOWS__
         //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);

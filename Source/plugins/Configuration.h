@@ -34,6 +34,65 @@ namespace Plugin {
     */
     class EXTERNAL Config : public Core::JSON::Container {
     public:
+        class Environment : public Core::JSON::Container {
+        public:
+            Environment()
+                : Core::JSON::Container()
+                , Key()
+                , Value()
+                , Scope(RPC::Environment::scope::LOCAL)
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("scope"), &Scope);
+            }
+            Environment(const Environment& copy)
+                : Core::JSON::Container()
+                , Key(copy.Key)
+                , Value(copy.Value)
+                , Scope(copy.Scope)
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("scope"), &Scope);
+            }
+            Environment(Environment&& move) noexcept
+                : Core::JSON::Container()
+                , Key(std::move(move.Key))
+                , Value(std::move(move.Value))
+                , Scope(std::move(move.Scope))
+            {
+                Add(_T("key"), &Key);
+                Add(_T("value"), &Value);
+                Add(_T("scope"), &Scope);
+            }
+            ~Environment() override = default;
+
+            Environment& operator=(const Environment& RHS)
+            {
+                Key = RHS.Key;
+                Value = RHS.Value;
+                Scope = RHS.Scope;
+
+                return (*this);
+            }
+            Environment& operator=(Environment&& move) noexcept
+            {
+                if (this != &move) {
+                    Key = std::move(move.Key);
+                    Value = std::move(move.Value);
+                    Scope = std::move(move.Scope);
+                }
+
+                return (*this);
+            }
+
+        public:
+            Core::JSON::String Key;
+            Core::JSON::String Value;
+            Core::JSON::EnumType<RPC::Environment::scope> Scope;
+        };
+
         class EXTERNAL RootConfig : public Core::JSON::Container {
         private:
             class RootObject : public Core::JSON::Container {
@@ -73,6 +132,7 @@ namespace Plugin {
                 , Mode(ModeType::LOCAL)
                 , RemoteAddress()
                 , Configuration(false)
+                , Environments()
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -83,6 +143,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
             RootConfig(const PluginHost::IShell* info)
                 : Core::JSON::Container()
@@ -95,6 +156,7 @@ namespace Plugin {
                 , Mode(ModeType::LOCAL)
                 , RemoteAddress()
                 , Configuration(false)
+                , Environments()
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -105,6 +167,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
 
                 RootObject config;
                 Core::OptionalType<Core::JSON::Error> error;
@@ -139,6 +202,7 @@ namespace Plugin {
                 , Mode(copy.Mode)
                 , RemoteAddress(copy.RemoteAddress)
                 , Configuration(copy.Configuration)
+                , Environments(copy.Environments)
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -149,6 +213,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
             RootConfig(RootConfig&& move) noexcept
                 : Core::JSON::Container()
@@ -161,6 +226,7 @@ namespace Plugin {
                 , Mode(std::move(move.Mode))
                 , RemoteAddress(std::move(move.RemoteAddress))
                 , Configuration(std::move(move.Configuration))
+                , Environments(std::move(move.Environments))
             {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
@@ -171,6 +237,7 @@ namespace Plugin {
                 Add(_T("mode"), &Mode);
                 Add(_T("remoteaddress"), &RemoteAddress);
                 Add(_T("configuration"), &Configuration);
+                Add(_T("environments"), &Environments);
             }
 
             ~RootConfig() override = default;
@@ -186,6 +253,7 @@ namespace Plugin {
                 Mode = RHS.Mode;
                 RemoteAddress = RHS.RemoteAddress;
                 Configuration = RHS.Configuration;
+                Environments = RHS.Environments;
 
                 return (*this);
             }
@@ -202,6 +270,7 @@ namespace Plugin {
                     Mode = std::move(move.Mode);
                     RemoteAddress = std::move(move.RemoteAddress);
                     Configuration = std::move(move.Configuration);
+                    Environments = std::move(move.Environments);
                 }
 
                 return (*this);
@@ -222,7 +291,19 @@ namespace Plugin {
                 }
                 return result;
             }
+            std::vector<RPC::Object::Environment> Environment() const
+            {
+                std::vector<RPC::Object::Environment> environmentList;
 
+                if (Environments.IsSet() == true) {
+                    Core::JSON::ArrayType<Config::Environment>::ConstIterator index(Environments.Elements());
+                    while (index.Next() == true) {
+                        environmentList.emplace_back(RPC::Object::Environment(index.Current().Key.Value(), index.Current().Value.Value(), index.Current().Scope.Value()));
+                    }
+                }
+                return environmentList;
+            }
+ 
         public:
             Core::JSON::String Locator;
             Core::JSON::String User;
@@ -233,6 +314,7 @@ namespace Plugin {
             Core::JSON::EnumType<ModeType> Mode;
             Core::JSON::String RemoteAddress;
             Core::JSON::String Configuration;
+            Core::JSON::ArrayType<Config::Environment> Environments;
         };
 
     public:

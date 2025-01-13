@@ -93,7 +93,7 @@ namespace Core {
 
     private:
         template <typename U>
-        void InitValue(U* value, const std::string& name)
+        void InitValue(VARIABLE_IS_NOT_USED U* value, VARIABLE_IS_NOT_USED const std::string& name)
         {
         }
 

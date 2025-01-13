@@ -250,6 +250,10 @@ namespace Thunder {
             NodeId Accept();
             void Listen();
             SOCKET Accept(NodeId& remoteId);
+            IResource::handle Descriptor() const override
+            {
+                return (static_cast<IResource::handle>(m_Socket));
+            }
 
         protected:
             virtual uint32_t Initialize();
@@ -267,16 +271,14 @@ namespace Thunder {
 
         private:
             string Identifier(const NodeId& node) const;
-            IResource::handle Descriptor() const override
-            {
-                return (static_cast<IResource::handle>(m_Socket));
-            }
             inline uint32_t SocketMode() const
             {
                 return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : (m_SocketType == SEQUENCED ? SOCK_SEQPACKET : SOCK_RAW)));
             }
             uint16_t Events() override;
+PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
             void Handle(const uint16_t events) override;
+POP_WARNING()
             bool Closed();
             void Opened();
             void Accepted();

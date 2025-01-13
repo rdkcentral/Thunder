@@ -77,40 +77,41 @@ The table below lists configuration options of the plugin.
 
 This plugin implements the following interfaces:
 
-- Controller::ISystem ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- Controller::IDiscovery ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- Controller::IConfiguration ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-extended format)
-- Controller::ILifeTime ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- Controller::ISubsystems ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-collapsed format)
-- Controller::IEvents ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
-- Controller::IMetadata ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- ISystem ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- IDiscovery ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- IConfiguration ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-extended format)
+- ILifeTime ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- ISubsystems ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (uncompliant-collapsed format)
+- IEvents ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
+- IMetadata ([IController.h](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/IController.h)) (version 1.0.0) (compliant format)
 
 <a name="head.Methods"></a>
 # Methods
 
 The following methods are provided by the Controller plugin:
 
-Controller System interface methods:
+System interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
 | [reboot](#method.reboot) / [harakiri](#method.reboot) | Reboots the device |
 | [delete](#method.delete) | Removes contents of a directory from the persistent storage |
 | [clone](#method.clone) | Creates a clone of given plugin with a new callsign |
+| [destroy](#method.destroy) | Destroy given plugin |
 
-Controller Discovery interface methods:
+Discovery interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
 | [startdiscovery](#method.startdiscovery) | Starts SSDP network discovery |
 
-Controller Configuration interface methods:
+Configuration interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
 | [persist](#method.persist) / [storeconfig](#method.persist) | Stores all configuration to the persistent memory |
 
-Controller LifeTime interface methods:
+LifeTime interface methods:
 
 | Method | Description |
 | :-------- | :-------- |
@@ -249,6 +250,49 @@ Creates a clone of given plugin with a new callsign.
   "jsonrpc": "2.0",
   "id": 42,
   "result": "..."
+}
+```
+
+<a name="method.destroy"></a>
+## *destroy [<sup>method</sup>](#head.Methods)*
+
+Destroy given plugin.
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| params | object | *...* |
+| params.callsign | string | Callsign of the plugin |
+
+### Result
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| result | null | Always null |
+
+### Example
+
+#### Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.destroy",
+  "params": {
+    "callsign": "..."
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
 }
 ```
 
@@ -629,31 +673,31 @@ This is a more intelligent method, compared to *activate*, to move a plugin to a
 
 The following properties are provided by the Controller plugin:
 
-Controller System interface properties:
+System interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
 | [environment](#property.environment) (read-only) | Environment variable value |
 
-Controller Discovery interface properties:
+Discovery interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
 | [discoveryresults](#property.discoveryresults) (read-only) | SSDP network discovery results |
 
-Controller Configuration interface properties:
+Configuration interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
 | [configuration](#property.configuration) | Service configuration |
 
-Controller Subsystems interface properties:
+Subsystems interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
 | [subsystems](#property.subsystems) (read-only) | Subsystems status |
 
-Controller Metadata interface properties:
+Metadata interface properties:
 
 | Property | Description |
 | :-------- | :-------- |
@@ -664,6 +708,7 @@ Controller Metadata interface properties:
 | [threads](#property.threads) (read-only) | Workerpool threads |
 | [pendingrequests](#property.pendingrequests) (read-only) | Pending requests |
 | [callstack](#property.callstack) (read-only) | Thread callstack |
+| [buildinfo](#property.buildinfo) (read-only) | Build information |
 
 <a name="property.environment"></a>
 ## *environment [<sup>property</sup>](#head.Properties)*
@@ -1276,6 +1321,67 @@ Provides access to the thread callstack.
 }
 ```
 
+<a name="property.buildinfo"></a>
+## *buildinfo [<sup>property</sup>](#head.Properties)*
+
+Provides access to the build information.
+
+> This property is **read-only**.
+
+### Value
+
+### Result
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| result | object | Build information |
+| result.systemtype | string | System type (must be one of the following: *Linux, MacOS, Windows*) |
+| result.buildtype | string | Build type (must be one of the following: *Debug, DebugOptimized, Production, Release, ReleaseWithDebugInfo*) |
+| result?.extensions | array | <sup>*(optional)*</sup> *...* |
+| result?.extensions[#] | string | <sup>*(optional)*</sup> *...* (must be one of the following: *Bluetooth, Hiberbate, ProcessContainers, WarningReporting*) |
+| result.messaging | boolean | Denotes whether Messaging is enabled |
+| result.exceptioncatching | boolean | Denotes whether there is an exception |
+| result.deadlockdetection | boolean | Denotes whether deadlock detection is enabled |
+| result.wcharsupport | boolean | *...* |
+| result.instanceidbits | integer | Core instance bits |
+| result?.tracelevel | integer | <sup>*(optional)*</sup> Trace level |
+| result.threadpoolcount | integer | *...* |
+
+### Example
+
+#### Get Request
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "Controller.1.buildinfo"
+}
+```
+
+#### Get Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": {
+    "systemtype": "Windows",
+    "buildtype": "Debug",
+    "extensions": [
+      "WarningReporting"
+    ],
+    "messaging": false,
+    "exceptioncatching": false,
+    "deadlockdetection": false,
+    "wcharsupport": false,
+    "instanceidbits": 0,
+    "tracelevel": 0,
+    "threadpoolcount": 0
+  }
+}
+```
+
 <a name="head.Notifications"></a>
 # Notifications
 
@@ -1283,19 +1389,19 @@ Notifications are autonomous events triggered by the internals of the implementa
 
 The following events are provided by the Controller plugin:
 
-Controller LifeTime interface events:
+LifeTime interface events:
 
 | Notification | Description |
 | :-------- | :-------- |
 | [statechange](#notification.statechange) | Notifies of a plugin state change |
 
-Controller Subsystems interface events:
+Subsystems interface events:
 
 | Notification | Description |
 | :-------- | :-------- |
 | [subsystemchange](#notification.subsystemchange) | Notifies a subsystem change |
 
-Controller Events interface events:
+Events interface events:
 
 | Notification | Description |
 | :-------- | :-------- |

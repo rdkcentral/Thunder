@@ -91,10 +91,13 @@
   #endif
 #endif
 
-#if defined(__GNUC__)
-    #pragma GCC system_header
+#if defined(__APPLE__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #elif defined(__clang__)
     #pragma clang system_header
+#elif defined(__GNUC__)
+    #pragma GCC system_header
 #endif
 
 #ifdef __WINDOWS__
@@ -190,6 +193,10 @@
 #define DISABLE_WARNING_DELETE_INCOMPLETE
 #define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED
+#define DISABLE_WARNING_FREE_NONHEAP_OBJECT
+#define DISABLE_WARNING_ARRAY_BOUNDS
+// Code Analysis - Unannotated fallthrough between switch labels
+#define DISABLE_WARNING_IMPLICIT_FALLTHROUGH PUSH_WARNING_ARG_(26819)
 
 #else
 #define DISABLE_WARNING_CONDITIONAL_EXPRESSION_IS_CONSTANT
@@ -213,7 +220,6 @@
 #define DISABLE_WARNING_DEPRECATED_COPY PUSH_WARNING_ARG_("-Wdeprecated-copy")
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
 #define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
-#define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
 #define DISABLE_WARNING_PEDANTIC PUSH_WARNING_ARG_("-Wpedantic")
 #define DISABLE_WARNING_OVERLOADED_VIRTUALS PUSH_WARNING_ARG_("-Woverloaded-virtual")
 #define DISABLE_WARNING_CONVERSION_TO_GREATERSIZE PUSH_WARNING_ARG_("-Wint-to-pointer-cast")
@@ -221,7 +227,18 @@
 #define DISABLE_WARNING_DELETE_INCOMPLETE PUSH_WARNING_ARG_("-Wdelete-incomplete")
 #define DISABLE_WARNING_INCONSISTENT_MISSING_OVERRIDE PUSH_WARNING_ARG_("-Winconsistent-missing-override")
 #define DISABLE_WARNING_MAYBE_UNINITIALIZED PUSH_WARNING_ARG_("-Wmaybe-uninitialized")
+#define DISABLE_WARNING_FREE_NONHEAP_OBJECT PUSH_WARNING_ARG_("-Wfree-nonheap-object")
+#define DISABLE_WARNING_ARRAY_BOUNDS PUSH_WARNING_ARG_("-Warray-bounds")
+#define DISABLE_WARNING_IMPLICIT_FALLTHROUGH PUSH_WARNING_ARG_("-Wimplicit-fallthrough")
+
 #endif
+
+#if !(defined(__clang__)) && (__GNUC__ >= 4)
+#define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
+#else
+#define DISABLE_WARNING_STRING_OPERATION_OVERREAD
+#endif
+
 #endif
 
 #if defined WIN32 || defined _WINDOWS
@@ -280,7 +297,7 @@ inline void SleepMs(const uint32_t time)
     ::Sleep(time);
 }
 
-EXTERNAL void SleepUs(const uint32_t time);
+EXTERNAL extern void SleepUs(const uint32_t time);
 
 #ifdef _UNICODE
 typedef std::wstring string;
@@ -359,6 +376,20 @@ typedef std::string string;
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
 //#endif
 
+// NTQuerySemaphore (undocumented) is used to retrieve current count of a semaphore
+using NTSTATUS = LONG;
+using _NTQuerySemaphore = NTSTATUS(NTAPI*)(
+    HANDLE SemaphoreHandle, 
+    DWORD SemaphoreInformationClass, 
+    PVOID SemaphoreInformation, 
+    ULONG SemaphoreInformationLength,
+    PULONG ReturnLength OPTIONAL
+);
+struct SEMAPHORE_BASIC_INFORMATION {
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+};
+
 #define LITTLE_ENDIAN_PLATFORM 1
 #undef ERROR
 #define __WINDOWS__
@@ -369,6 +400,8 @@ typedef std::string string;
 #endif
 
 #ifdef __LINUX__
+#include <ctype.h> // must be first for inline ::tolower() etc.
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -385,6 +418,7 @@ typedef std::string string;
 #include <typeinfo>
 #include <cmath>
 #include <thread>
+#include <limits.h>
 
 #include <string.h>
 #include <termios.h>
@@ -413,7 +447,29 @@ typedef std::string string;
 #include <sys/wait.h>
 #include <sys/mman.h> // memfd_create in Messaging/ConsoleRedirect.h
 
+#ifndef __APPLE__
+#include <sys/inotify.h>
+#endif
+
 #include <arpa/inet.h>
+
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+    #ifndef __APPLE__
+        #include <features.h>
+    #endif
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+    #undef _GNU_SOURCE /* don't contaminate other includes unnecessarily */
+#else
+    #ifndef __APPLE__
+        #include <features.h>
+    #endif
+    #ifndef __USE_GNU
+        #define __MUSL__
+    #endif
+#endif
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -434,7 +490,6 @@ typedef std::string string;
 #endif
 
 #define SOCK_CLOEXEC 0
-#define __APPLE_USE_RFC_3542
 
 extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 //clock_gettime is available in OSX Darwin >= 10.12
@@ -529,9 +584,9 @@ uint64_t ntohll(const uint64_t& value);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL SleepMs(const unsigned int a_Time);
-extern void EXTERNAL SleepUs(const unsigned int a_Time);
-inline void EXTERNAL SleepS(unsigned int a_Time)
+EXTERNAL extern void SleepMs(const unsigned int a_Time);
+EXTERNAL extern void SleepUs(const unsigned int a_Time);
+EXTERNAL inline void SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }
@@ -619,11 +674,10 @@ struct TemplateIntToType {
 
 extern "C" {
 
-DEPRECATED inline EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
+DEPRECATED EXTERNAL inline void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
     return (::memmove(_Dst, _Src, _MaxCount));
 }
-
 
 }
 
@@ -680,12 +734,6 @@ typedef std::string string;
 #define STRLEN(STATIC_TEXT) ((sizeof(STATIC_TEXT) / sizeof(TCHAR)) - 1)
 #define EMPTY_STRING _T("")
 
-#ifdef __LINUX__
-typedef pthread_t ThreadId;
-#else
-typedef DWORD ThreadId;
-#endif
-
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
 
@@ -696,8 +744,9 @@ typedef DWORD ThreadId;
 #endif
 
 namespace Thunder {
-
 namespace Core {
+
+    class TextFragment;
 
     #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
     #if __CORE_INSTANCE_BITS__ <= 8
@@ -715,6 +764,12 @@ namespace Core {
     #else
     typedef uint32_t instance_id;
     #endif
+    #endif
+
+    #ifdef __LINUX__
+    typedef pthread_t thread_id;
+    #else
+    typedef DWORD thread_id;
     #endif
 
     typedef uint32_t hresult;
@@ -780,9 +835,9 @@ namespace Core {
         std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
     }
 
-    string EXTERNAL Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
-    void EXTERNAL Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
-    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+    EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+    EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
+    EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
 
     const uint32_t infinite = -1;
     static const string emptyString;
@@ -964,6 +1019,11 @@ namespace Core {
     }
 
     #undef ERROR_CODE
+
+    EXTERNAL TextFragment Demangled(const char name[]); 
+    EXTERNAL TextFragment ClassName(const char name[]); 
+    EXTERNAL TextFragment ClassNameOnly(const char name[]); 
+    
 }
 }
 
@@ -981,12 +1041,12 @@ namespace NESTED_NAMESPACE { \
 extern "C" {
 
 #ifdef __WINDOWS__
-extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
-extern void EXTERNAL usleep(const uint32_t value);
+EXTERNAL extern int inet_aton(const char* cp, struct in_addr* inp);
+EXTERNAL extern void usleep(const uint32_t value);
 #endif
 
-void EXTERNAL DumpCallStack(const ThreadId threadId, std::list<Thunder::Core::callstack_info>& stack);
-uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
+EXTERNAL void DumpCallStack(const Thunder::Core::thread_id threadId, std::list<Thunder::Core::callstack_info>& stack);
+EXTERNAL uint32_t GetCallStack(const Thunder::Core::thread_id threadId, void* addresses[], const uint32_t bufferSize);
 
 }
 

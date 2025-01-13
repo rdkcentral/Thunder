@@ -10,6 +10,7 @@ namespace ProcessContainers {
 
 class AWCStateChangeListener {
 public:
+    virtual ~AWCStateChangeListener() {}
     virtual void notifyStateChange(int req_id, awc::awc_app_state_t app_state, int status, unsigned int pid) = 0;
 };
 

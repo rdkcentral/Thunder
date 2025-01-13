@@ -224,7 +224,7 @@ namespace Exchange {
             ExternalAccess& operator=(const ExternalAccess &) = delete;
 
             ExternalAccess(const ::Thunder::Core::NodeId & source)
-                : ::Thunder::RPC::Communicator(source, _T(""))
+                : ::Thunder::RPC::Communicator(source, _T(""), _T("@test"))
             {
                 Open(::Thunder::Core::infinite);
             }
@@ -235,7 +235,7 @@ namespace Exchange {
             }
 
         private:
-            virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            virtual void* Acquire(VARIABLE_IS_NOT_USED const string& className, const uint32_t interfaceId, VARIABLE_IS_NOT_USED const uint32_t versionId)
             {
                 void* result = nullptr;
 

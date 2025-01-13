@@ -94,7 +94,9 @@ namespace Thunder {
                     void* stAllocateBlock)
             {
                 reinterpret_cast<ProxyObject<CONTEXT>*>(stAllocateBlock)->__Destructed();
+PUSH_WARNING(DISABLE_WARNING_FREE_NONHEAP_OBJECT)
                 ::free(stAllocateBlock);
+POP_WARNING()
             }
 
         public:
@@ -539,11 +541,11 @@ POP_WARNING()
             {
                 return (!operator==(a_RHS));
             }
-            inline bool operator==(const nullptr_t&) const
+            inline bool operator==(const std::nullptr_t&) const
             {
                 return (_refCount == nullptr);
             }
-            inline bool operator!=(const nullptr_t&) const
+            inline bool operator!=(const std::nullptr_t&) const
             {
                 return (_refCount != nullptr);
             }

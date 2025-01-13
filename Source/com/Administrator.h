@@ -124,8 +124,10 @@ namespace RPC {
         };
 
     public:
+        static const string DanglingId;
+
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
-        using ChannelMap = std::unordered_map<uint32_t, Proxies>;
+        using ChannelMap = std::unordered_map<uint32_t, std::pair<string, Proxies > >;
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
@@ -147,28 +149,40 @@ namespace RPC {
         void DelegatedReleases(const bool enabled) {
             _delegatedReleases = enabled;
         }
-        bool Allocations(const uint32_t id, Proxies& proxies) const {
+        
+        template<typename ACTION>
+        bool Allocations(const string& linkId, ACTION&& action) const {
             bool found = false;
-            if (id == 0) {
+            _adminLock.Lock();
+            if (linkId.empty() == true) {
+                for (const auto& proxy : _channelProxyMap) {
+                    action(proxy.second.first, proxy.second.second);
+                }
+                action(DanglingId, _danglingProxies);
                 found = true;
-                proxies = _danglingProxies;
+            } 
+            else if (linkId == DanglingId) {
+                action(DanglingId, _danglingProxies);
+                found = true;
             }
             else {
                 ChannelMap::const_iterator index(_channelProxyMap.begin());
-
                 while ((found == false) && (index != _channelProxyMap.end())) {
+                    ASSERT(index->second.second.size() != 0);
 
-                    if (index->first != id) {
+                    if (index->second.first != linkId) {
                         index++;
                     }
                     else {
                         found = true;
-                        proxies = index->second;
+                        action(index->second.first, index->second.second);
                     }
                 }
             }
-            return (found);
+            _adminLock.Unlock();
+            return found;
         }
+
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
         {

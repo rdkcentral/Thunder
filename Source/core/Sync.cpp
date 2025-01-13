@@ -46,8 +46,10 @@
 #include <asm/errno.h>
 #include <time.h>
 #include <unistd.h>
+#include <semaphore.h>
 #endif
 #ifdef __APPLE__
+#include <semaphore.h>
 #include <mach/host_info.h>
 #include <mach/mach_host.h>
 #include <mach/mach_time.h>
@@ -271,7 +273,7 @@ namespace Core {
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
-    // BinairySemaphore class
+    // BinarySemaphore class
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -283,12 +285,12 @@ namespace Core {
     // sets the inital count an the maximum count. This way, on platform changes,
     // only the declaration/definition of the synchronisation object has to be defined
     // as being Binairy, not the coding.
-    BinairySemaphore::BinairySemaphore(unsigned int nInitialCount, unsigned int nMaxCount)
+    BinarySemaphore::BinarySemaphore(unsigned int nInitialCount, unsigned int nMaxCount)
     {
         DEBUG_VARIABLE(nMaxCount);
         ASSERT((nInitialCount == 0) || (nInitialCount == 1));
 
-        TRACE_L5("Constructor BinairySemaphore (int, int)  <%p>", (this));
+        TRACE_L5("Constructor BinarySemaphore (int, int)  <%p>", (this));
 
 #ifdef __POSIX__
         m_blLocked = (nInitialCount == 0);
@@ -323,12 +325,12 @@ namespace Core {
 #endif
     }
 
-    BinairySemaphore::BinairySemaphore(bool blLocked)
+    BinarySemaphore::BinarySemaphore(bool blLocked)
 #ifdef __POSIX__
         : m_blLocked(blLocked)
 #endif
     {
-        TRACE_L5("Constructor BinairySemaphore <%p>", (this));
+        TRACE_L5("Constructor BinarySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         pthread_condattr_t attr;
@@ -360,9 +362,9 @@ namespace Core {
 #endif
     }
 
-    BinairySemaphore::~BinairySemaphore()
+    BinarySemaphore::~BinarySemaphore()
     {
-        TRACE_L5("Destructor BinairySemaphore <%p>", (this));
+        TRACE_L5("Destructor BinarySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         // If we really create it, we really have to destroy it.
@@ -380,7 +382,7 @@ namespace Core {
     //----------------------------------------------------------------------------
 
     uint32_t
-    BinairySemaphore::Lock()
+    BinarySemaphore::Lock()
     {
 
 #ifdef __WINDOWS__
@@ -423,7 +425,7 @@ namespace Core {
     }
 
     uint32_t
-    BinairySemaphore::Lock(unsigned int nTime)
+    BinarySemaphore::Lock(unsigned int nTime)
     {
 #ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncMutex, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
@@ -482,8 +484,8 @@ namespace Core {
 #endif
     }
 
-    void
-    BinairySemaphore::Unlock()
+    uint32_t
+    BinarySemaphore::Unlock()
     {
 
 #ifdef __POSIX__
@@ -505,6 +507,7 @@ namespace Core {
 #ifdef __WINDOWS__
         ::ReleaseMutex(m_syncMutex);
 #endif
+        return ERROR_NONE;
     }
 
     //----------------------------------------------------------------------------
@@ -780,6 +783,241 @@ namespace Core {
 #endif
 
         return (nResult);
+    }
+
+    //----------------------------------------------------------------------------
+    //----------------------------------------------------------------------------
+    // SharedSemaphore class
+    //----------------------------------------------------------------------------
+    //----------------------------------------------------------------------------
+
+    //----------------------------------------------------------------------------
+    // CONSTRUCTOR & DESTRUCTOR
+    //----------------------------------------------------------------------------
+
+#ifdef __WINDOWS__
+    class WindowsAPI {
+    public:
+        WindowsAPI(WindowsAPI&&) = delete;
+        WindowsAPI(const WindowsAPI&) = delete;
+        WindowsAPI& operator=(WindowsAPI&&) = delete;
+        WindowsAPI& operator=(const WindowsAPI&) = delete;
+
+        ~WindowsAPI() = default;
+        WindowsAPI() {
+            _ntQuerySemaphore = reinterpret_cast<_NTQuerySemaphore>(GetProcAddress(GetModuleHandle(_T("ntdll.dll")), "NtQuerySemaphore"));
+            ASSERT (_ntQuerySemaphore != nullptr);
+        }
+
+        uint32_t GetSemaphoreCount(HANDLE parameter) const {
+            SEMAPHORE_BASIC_INFORMATION basicInfo;
+            NTSTATUS status;
+            status = _ntQuerySemaphore(parameter, 0, &basicInfo, sizeof(SEMAPHORE_BASIC_INFORMATION), nullptr);
+            return (status == ERROR_SUCCESS) ? basicInfo.CurrentCount : 0;
+        }
+    private:
+        _NTQuerySemaphore _ntQuerySemaphore;
+    };
+
+    static WindowsAPI _windowsAPI;
+#endif
+
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[], const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
+    {
+        ASSERT(initCount <= 1);
+        ASSERT(maxCount == 1);
+#ifdef __WINDOWS__
+        _semaphore = (::CreateSemaphore(nullptr, initCount, maxCount, sourceName));
+        ASSERT(_semaphore != nullptr);
+#else
+        _name = "/" + string(sourceName);
+        _semaphore = sem_open(_name.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644,  initCount);
+        ASSERT(_semaphore != SEM_FAILED);
+#endif
+    }
+
+    SharedSemaphore::SharedSemaphore(const TCHAR sourceName[])
+    {
+#ifdef __WINDOWS__
+        _semaphore = ::OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, sourceName);
+        ASSERT(_semaphore != nullptr);
+#else
+        _semaphore = sem_open(sourceName, 0);
+        ASSERT(_semaphore != nullptr);
+#endif
+    }
+
+#ifndef __WINDOWS__
+    SharedSemaphore::SharedSemaphore(void* storage, const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
+        : _semaphore(storage), _name("")
+    {
+        ASSERT(storage != nullptr);
+        ASSERT(initCount <= 1);
+        ASSERT(maxCount == 1);
+        memset(_semaphore, 0, sizeof(sem_t));
+        VARIABLE_IS_NOT_USED int result = sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
+        ASSERT(result != -1);
+    }
+
+    SharedSemaphore::SharedSemaphore(void* storage) 
+    : _semaphore(storage), _name("")
+    {
+        ASSERT(storage != nullptr);
+    }
+    
+#endif
+
+    SharedSemaphore::~SharedSemaphore()
+    {
+#ifdef __WINDOWS__
+        if (_semaphore != nullptr) {
+            ::CloseHandle(_semaphore);
+        }
+#else   
+        if(_name.size() != 0) {
+            sem_close(static_cast<sem_t*>(_semaphore));
+            sem_unlink(_name.c_str());
+        }
+        else { 
+            sem_destroy(static_cast<sem_t*>(_semaphore));
+        }
+#endif
+    }
+
+    size_t SharedSemaphore::Size()
+    {
+#ifdef __WINDOWS__
+        return sizeof(HANDLE);
+#else
+        return sizeof(sem_t);
+#endif
+    }
+
+    uint32_t SharedSemaphore::MaxCount() const
+    {
+        // Currently max count is 1, as it is implemented as a binary shared semaphore
+        return 1;
+    }
+
+    //----------------------------------------------------------------------------
+    // PUBLIC METHODS
+    //----------------------------------------------------------------------------
+
+    uint32_t 
+    SharedSemaphore::Unlock()
+    {
+#ifdef __WINDOWS__
+        if (_semaphore != nullptr) {
+            BOOL result = ::ReleaseSemaphore(_semaphore, 1, nullptr);
+            ASSERT(result != FALSE);
+        }
+#else
+        VARIABLE_IS_NOT_USED int result = sem_post(static_cast<sem_t*>(_semaphore));
+        ASSERT((result == 0) || (errno == EOVERFLOW));
+#endif
+        return ERROR_NONE;
+    }
+
+    uint32_t 
+    SharedSemaphore::Count() const
+    {
+#ifdef __WINDOWS__
+        return (_windowsAPI.GetSemaphoreCount(_semaphore));
+#else
+        int semValue = 0;
+        sem_getvalue(static_cast<sem_t*>(_semaphore), &semValue);
+        return semValue;
+#endif
+    }
+
+    uint32_t 
+    SharedSemaphore::Lock(const uint32_t waitTime)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+#ifdef __WINDOWS__
+        if (_semaphore != nullptr) {
+            return (::WaitForSingleObjectEx(_semaphore, waitTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+        }
+#elif defined(__APPLE__)
+
+        uint32_t timeLeft = waitTime;
+        int semResult;
+        while (((semResult = sem_trywait(static_cast<sem_t*>(_semaphore))) != 0) && timeLeft > 0) {
+            ::SleepMs(100);
+            if (timeLeft != Core::infinite) {
+                timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
+            }
+        }
+        result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
+
+#elif defined(__MUSL__)
+        struct timespec referenceTime = {0,0};
+        clock_gettime(CLOCK_MONOTONIC, &referenceTime);
+        referenceTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+        referenceTime.tv_sec += (waitTime / 1000) + (referenceTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+        referenceTime.tv_nsec = referenceTime.tv_nsec % 1000000000;
+        do {
+             
+            struct timespec structTime = {0,0};
+            clock_gettime(CLOCK_REALTIME, &structTime);
+            structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+            structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+            structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+
+            if (sem_timedwait(static_cast<sem_t*>(_semaphore), &structTime) == 0) {
+                result = Core::ERROR_NONE;
+            }
+            else if ( errno == EINTR ) {
+                continue;
+            }
+            else if ( errno == ETIMEDOUT ) {
+                struct timespec currentMonoTime;
+                clock_gettime(CLOCK_MONOTONIC, &currentMonoTime);
+
+                struct timespec jumpTime;
+                jumpTime.tv_sec = currentMonoTime.tv_sec - referenceTime.tv_sec;
+
+                if(jumpTime.tv_sec != 0) {
+                    result = Core::ERROR_TIMEDOUT;
+                    break;
+                }
+
+                if(referenceTime.tv_sec < currentMonoTime.tv_sec || (referenceTime.tv_sec == currentMonoTime.tv_sec && 
+                   referenceTime.tv_nsec < currentMonoTime.tv_nsec))
+                {
+                    result = Core::ERROR_TIMEDOUT;
+                    break;            
+                }
+            }
+            else {
+                ASSERT(false);
+            }
+            break;
+        } while (true);
+#else
+        struct timespec structTime = {0,0};
+        clock_gettime(CLOCK_MONOTONIC, &structTime);
+        structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+        structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+        structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+
+        do {
+            if (sem_clockwait(static_cast<sem_t*>(_semaphore), CLOCK_MONOTONIC, &structTime) == 0) {
+                result = Core::ERROR_NONE;
+            }
+            else if ( errno == EINTR ) {
+                continue;
+            }
+            else if ( errno == ETIMEDOUT ) {
+                result = Core::ERROR_TIMEDOUT;
+            }
+            else {
+                ASSERT(false);
+            }
+            break;
+        } while (true);
+#endif
+        return (result);
     }
 
     //----------------------------------------------------------------------------

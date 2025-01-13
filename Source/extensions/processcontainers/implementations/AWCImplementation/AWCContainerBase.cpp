@@ -1,6 +1,12 @@
+
 #include "AWCContainerBase.h"
 
-using namespace Thunder::ProcessContainers;
+#include "processcontainers/common/BaseRefCount.h"
+#include "processcontainers/IProcessContainers.h"
+
+
+namespace Thunder {
+namespace ProcessContainers {
 
 struct AWCMemoryInfo : public BaseRefCount<IMemoryInfo> {
     AWCMemoryInfo()
@@ -60,4 +66,7 @@ INetworkInterfaceIterator* AWCContainerBase::NetworkInterfaces() const
 {
     TRACE_L3("%s", _TRACE_FUNCTION_);
     return nullptr;
+}
+
+} // namespace ProcessContainers
 }

@@ -68,6 +68,10 @@ namespace Plugin {
                     _parent.SubSystems();
                 }
 
+            string JobIdentifier() const {
+                return(_T("Thunder::Plugin::Controller::Sink::Job"));
+            }
+
             private:
                 Controller& _parent;
             };
@@ -324,7 +328,7 @@ namespace Plugin {
 
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
-        Core::hresult Proxies(const uint32_t linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
+        Core::hresult Proxies(const Core::OptionalType<string>& linkId, IMetadata::Data::IProxiesIterator*& proxies) const override;
         Core::hresult Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& services) const override;
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
@@ -368,7 +372,7 @@ namespace Plugin {
         void WorkerPoolMetadata(PluginHost::Metadata::Server& data) const {
             _pluginServer->WorkerPool().Snapshot(data);
         }
-        void Callstack(const ThreadId id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
+        void Callstack(const Core::thread_id id, Core::JSON::ArrayType<PluginHost::CallstackData>& response) const;
         void SubSystems();
         uint32_t Clone(const string& basecallsign, const string& newcallsign);
         void Proxies(Core::JSON::ArrayType<PluginHost::Metadata::COMRPC>& info) const;

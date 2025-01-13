@@ -167,7 +167,7 @@ namespace Core {
             }
         }
 
-        virtual void Send(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
+        virtual void Send(VARIABLE_IS_NOT_USED ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
         {
         }
 

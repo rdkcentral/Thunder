@@ -264,8 +264,8 @@ namespace Messaging {
             return (_dataBuffer.IsValid());
         }
 
-        void Validate() {
-            _dataBuffer.Open();
+        bool Validate() {
+            return (_dataBuffer.Open());
         }
 
         const string& MetadataName() const {

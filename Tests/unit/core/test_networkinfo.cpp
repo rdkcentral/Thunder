@@ -120,7 +120,7 @@ namespace Core {
 
     TEST(DISABLED_test_adapterobserver, simple_adapterobserver)
     {
-        ::Thunder::Core::AdapterObserver::INotification* callback;
+        ::Thunder::Core::AdapterObserver::INotification* callback{ nullptr };
         ::Thunder::Core::AdapterObserver observer(callback);
 
         ::Thunder::Core::Singleton::Dispose();

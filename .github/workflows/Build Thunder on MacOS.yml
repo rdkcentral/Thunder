@@ -1,0 +1,36 @@
+name: Build Thunder on MacOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+    paths-ignore:
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+  pull_request:
+    branches: ["master"]
+    paths-ignore:
+      - 'doc/**'
+      - 'docs/**'
+      - 'ReleaseNotes/**'
+
+jobs:
+  Thunder_MacOS:
+    uses: rdkcentral/Thunder/.github/workflows/MacOS build template.yml@master
+
+  ThunderInterfaces_MacOS:
+    needs: Thunder_MacOS
+    uses: rdkcentral/ThunderInterfaces/.github/workflows/MacOS build template.yml@master
+
+  ThunderClientLibraries_MacOS:
+    needs: ThunderInterfaces_MacOS
+    uses: rdkcentral/ThunderClientLibraries/.github/workflows/MacOS build template.yml@master
+
+  ThunderNanoServices_MacOS:
+    needs: ThunderInterfaces_MacOS
+    uses: rdkcentral/ThunderNanoServices/.github/workflows/MacOS build template.yml@master
+
+  ThunderNanoServicesRDK_MacOS:
+    needs: ThunderInterfaces_MacOS
+    uses: WebPlatformForEmbedded/ThunderNanoServicesRDK/.github/workflows/MacOS build template.yml@master

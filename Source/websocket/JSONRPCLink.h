@@ -75,7 +75,7 @@ namespace Thunder {
                         }
 
                     public:
-                        uint64_t Timed(const uint64_t scheduledTime) {
+                        uint64_t Timed(const uint64_t /* scheduledTime */) {
                             return (_client->Timed());
                         }
 
@@ -149,7 +149,7 @@ namespace Thunder {
                             _parent.Inbound(inbound);
                         }
                     }
-                    virtual void Send(Core::ProxyType<INTERFACE>& jsonObject) override
+                    virtual void Send(Core::ProxyType<INTERFACE>& jsonObject VARIABLE_IS_NOT_USED) override
                     {
 #ifdef __DEBUG__
                         string message;
@@ -227,16 +227,18 @@ namespace Thunder {
                 }
                 void Register(LinkType<INTERFACE>& client)
                 {
+                    _adminLock.Lock();
                     typename std::list<LinkType<INTERFACE>* >::iterator index = std::find(_observers.begin(), _observers.end(), &client);
                     ASSERT(index == _observers.end());
                     if (index == _observers.end()) {
                         _observers.push_back(&client);
                     }
+
+                    _adminLock.Unlock();
+
                     if (_channel.IsOpen() == true) {
                         client.Opened();
                     }
-
-                    _adminLock.Unlock();
                 }
                 void Unregister(LinkType<INTERFACE>& client)
                 {
@@ -246,8 +248,9 @@ namespace Thunder {
                     if (index != _observers.end()) {
                         _observers.erase(index);
                     }
-                    FactoryImpl::Instance().Revoke(&client);
                     _adminLock.Unlock();
+
+                    FactoryImpl::Instance().Revoke(&client);
                 }
                 void Submit(const Core::ProxyType<INTERFACE>& message)
                 {
@@ -752,6 +755,8 @@ namespace Thunder {
                 return (Send(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Generic JSONRPC methods.
             // Anything goes!
             // these objects have no type chacking, will consume more memory and processing takes more time
@@ -783,6 +788,8 @@ namespace Thunder {
             {
                 return InternalInvoke<PARAMETERS>(waitTime, method, parameters, inbound);
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
         private:
             friend CommunicationChannel;
@@ -1257,16 +1264,6 @@ namespace Thunder {
                 }
 
             public:
-                template <typename INBOUND, typename METHOD>
-                uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
-                {
-                    return Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
-                }
-                template <typename INBOUND, typename METHOD, typename REALOBJECT>
-                uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
-                {
-                    return Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
-                }
                 bool IsActivated()
                 {
                     return (_state == ACTIVATED);
@@ -1311,14 +1308,14 @@ namespace Thunder {
                         }
                     }
                 }
-                void monitor_on(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+                void monitor_on(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* result)
                 {
                     if (result == nullptr) {
                         string method = string("status@") + Base::Callsign();
                         _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                     }
                 }
-                void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+                void next_event(const Core::JSON::String& /* parameters */, const Core::JSONRPC::Error* /* result */)
                 {
                     // See if there are events pending for registration...
                     if (_events.empty() == false) {
@@ -1462,6 +1459,8 @@ namespace Thunder {
                 return (_connection.Invoke(waitTime, method, parameters, response));
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             // Opaque JSON structure methods.
             // Anything goes!
             // ===================================================================================
@@ -1477,6 +1476,10 @@ namespace Thunder {
             {
                 return (_connection.template Get<Core::JSON::VariantContainer>(waitTime, method, object));
             }
+
+#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+
             bool IsActivated()
             {
                 return (_connection.IsActivated());

@@ -581,26 +581,28 @@ namespace PluginHost {
 
                 Lock();
 
-                if (_jsonrpc != nullptr) {
-                    PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
-                    _jsonrpc->Detach(sink);
-                    if (sink != nullptr) {
-                        Unregister(sink);
-                        sink->Release();
-                    }
+                if (currentState != IShell::state::ACTIVATION) {
+                    SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+
+#ifdef THUNDER_RESTFULL_API
+                    Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+#endif
+                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
 
                 if (_external.Connector().empty() == false) {
                     _external.Close(0);
                 }
 
-                if (currentState != IShell::state::ACTIVATION) {
-                    SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                if (_jsonrpc != nullptr) {
+                    PluginHost::IShell::IConnectionServer::INotification* sink = nullptr;
 
-                    #ifdef THUNDER_RESTFULL_API
-                    Notify(EMPTY_STRING, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-                    #endif
-                    Notify(_T("statechange"), string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+                    _jsonrpc->Detach(sink);
+
+                    if (sink != nullptr) {
+                        Unregister(sink);
+                        sink->Release();
+                    }
                 }
             }
 
@@ -1092,7 +1094,7 @@ namespace PluginHost {
             _security = nullptr;
         }
 
-        Close(0);
+        Close(Core::infinite);
     }
 
     //

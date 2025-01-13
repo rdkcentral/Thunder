@@ -141,7 +141,6 @@ namespace Core {
 
     SystemInfo::SystemInfo()
         : m_HostName(ConstructHostname())
-        , m_lastUpdateCpuStats(0)
     {
 #ifdef __LINUX__
 #ifdef __APPLE__
@@ -171,6 +170,7 @@ namespace Core {
         m_cpuloadavg[0]=info.loads[0];
         m_cpuloadavg[1]=info.loads[1];
         m_cpuloadavg[2]=info.loads[2];
+        m_lastUpdateCpuStats = 0;
 #endif
 #endif
 
@@ -326,7 +326,7 @@ namespace Core {
 #endif
     }
 
-    void SystemInfo::SetTime(const Time& time)
+    void SystemInfo::SetTime(const Time& time VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         ::SetSystemTime(&(time.Handle()));
