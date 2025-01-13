@@ -350,7 +350,7 @@ namespace Core {
                 /* void* */ memcpy(dataFrame, message.data(), count);
 
 #ifdef _VERBOSE
-                std::cout << " |--> dataFrame (" << count << " ) = ";
+                std::cout << " |--> dataFrame (" << std::dec << count << " ) = ";
                 for (size_t index = 0; index < count; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
@@ -386,7 +386,7 @@ namespace Core {
                 _guard.Unlock();
 
 #ifdef _VERBOSE
-                std::cout << " |--> dataFrame ( " << receivedSize << " ) = ";
+                std::cout << " |--> dataFrame ( " << std::dec << receivedSize << " ) = ";
                 for (int32_t index = 0; index < receivedSize; index++) {
                     std::cout << std::hex << static_cast<int>(dataFrame[index]) << " ";
                 }
@@ -400,9 +400,21 @@ namespace Core {
         // Put data in the queue to send (to the (connected) client)
         bool Submit(const std::basic_string<uint8_t>& message)
         {
+#ifdef _VERBOSE
+            std::cout << std::dec << __LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
+#endif
+
             _guard.Lock();
 
             size_t count = _post.size();
+
+#ifdef _VERBOSE
+            std::cout << " |--> message ( " << std::dec << message.size() << " ) = ";
+            for (size_t index = 0; index < message.size(); index++) {
+                std::cout << std::hex << static_cast<int>(message[index]) << " ";
+            }
+            std::cout << "\n";
+#endif
 
             _post.emplace_back(message);
 
@@ -431,8 +443,8 @@ namespace Core {
                 _response.erase(_response.begin());
 
 #ifdef _VERBOSE
-                std::cout << " |--> message ( " << message.size() << " ) = ";
-                for (int32_t index = 0; index < message.size(); index++) {
+                std::cout << " |--> message ( " << std::dec << message.size() << " ) = ";
+                for (size_t index = 0; index < message.size(); index++) {
                     std::cout << std::hex << static_cast<int>(message[index]) << " ";
                 }
                 std::cout << "\n";
@@ -729,11 +741,11 @@ namespace Core {
 
     TEST(WebSocket, DISABLED_OpeningClientPort)
     {
-        const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+        const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
         const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
         const std::string webSocketOrigin;      // Optional, set by browser clients
-        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
         VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
         const TCHAR remoteHostName[] {"127.0.0.1"};
@@ -781,11 +793,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -855,11 +867,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -938,11 +950,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -1021,11 +1033,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -1098,11 +1110,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -1172,6 +1184,11 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     } 
 
+    // Payload tests
+    // Payload 0-125
+    // Payload 126, next 2 bytes 16 bit (unsigned) length
+    // Payload 127, next 4 bytes 32 bit (unsigned) length
+
     TEST(WebSocket, UnsecuredSocketMultiFrameDataExchange)
     {
         const TCHAR hostName[] {"127.0.0.1"};
@@ -1193,11 +1210,11 @@ namespace Core {
         constexpr uint16_t nagglesTimeoutMs = 250; // Typical is 200 milliseconds
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -1255,9 +1272,8 @@ namespace Core {
 
                 if (it.Client()->IsOpen()) {
                     // Construct a message larger than the buffer size to force use of continuation frames
+                    // Payload == 90
                     size_t count = (it.Client()->Link().SendBufferSize() / sizeof(data) + 1 ) * sizeof(data);
-
-                    ASSERT_LE(count, message.max_size());
 
                     message.resize(count);
 
@@ -1266,6 +1282,276 @@ namespace Core {
                     }
 
                     /* bool */ it.Client()->Submit(std::basic_string<uint8_t>{ message.data(), count });
+                }
+            }
+
+            // Allow some time to receive the response
+            SleepMs(maxWaitTimeMs);
+
+            std::reverse(message.begin(), message.end());
+
+            std::basic_string<uint8_t> response;
+
+            response.reserve( message.size() );
+
+            // A simple poll to keep it simple
+            for (int8_t retry = 0; retry < maxRetries; ++retry) {
+                SleepMs(nagglesTimeoutMs); // Naggle's typical delay, perhaps a bit more
+
+                if (it.IsValid()) {
+                    response = it.Client()->Response() + response;
+                }
+            }
+
+            EXPECT_TRUE(   response.size() == message.size()
+                        && response == message
+                       );
+
+            EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    TEST(WebSocket, UnsecuredSocketeDataExchangePayload125)
+    {
+        const TCHAR hostName[] {"127.0.0.1"};
+
+        // Some aliases
+        const auto& remoteHostName = hostName;
+        const auto& localHostName = hostName;
+
+        constexpr uint16_t tcpServerPort {12346};   // TCP, default 80 or 443 (SSL)
+        constexpr uint32_t tcpProtocol {0};         // HTTP or HTTPS but can only be set on raw sockets
+
+        // The minimum size is determined by the HTTP upgrade process. The limit here is above that threshold.
+        constexpr uint16_t sendBufferSize {150};
+        constexpr uint16_t receiveBufferSize {150};
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 10;
+
+        constexpr uint16_t nagglesTimeoutMs = 250; // Typical is 200 milliseconds
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
+            const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
+            const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
+            const std::string webSocketOrigin;      // Optional, set by browser clients
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
+
+            constexpr bool rawSocket {false};
+
+            const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+#ifdef _VERBOSE
+            std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
+            std::cout << " |--> SendBufferSize = " << client.Link().SendBufferSize() << "\n";
+            std::cout << " |--> ReceiveBufferSize  = " << client.Link().ReceiveBufferSize() << "\n";
+            std::cout << " |--> SocketSendBufferSize = " << client.Link().SocketSendBufferSize() << "\n";
+            std::cout << " |--> SocketReceiveBufferSize = " << client.Link().SocketReceiveBufferSize() << "\n";
+#endif
+
+            // Avoid  premature shutdown() at the other side
+            SleepMs(maxWaitTimeMs);
+
+            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            const ::Thunder::Core::NodeId localNode {localHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            // This is a listening socket as result of using SocketServerType which enables listening
+            ::Thunder::Core::SocketServerType<WebSocketServer<CustomSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // A small delay so the child can be set up
+            SleepMs(maxInitTime);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Obtain the endpoint at the server side for each (remotely) connected client
+            auto it = server.Clients();
+
+            // Do not use '\0' as a marker as std::basic_strng<> assumes it is an end of string
+
+            constexpr uint8_t data[] = { 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9, 0x8, 0x7, 0x6, 0x5, 0x3, 0x2, 0x1, 0x10 };
+
+            std::basic_string<uint8_t> message;
+
+            if (it.Next()) {
+                // Unless a client has send an upgrade request we cannot send data out although we might be calling WebSocket functionality
+
+                if (it.Client()->IsOpen()) {
+                    // Construct a message larger than the buffer size to force use of continuation frames
+                    // Payload len == 125
+                    constexpr size_t length = 125;
+
+                    ASSERT_GT(it.Client()->Link().SendBufferSize(), length);
+
+                    const size_t count = (length / sizeof(data) + 1 ) * sizeof(data);
+
+                    message.resize(count);
+
+                    for (size_t index = 0; index < count; index += sizeof(data) ) {
+                        message.replace(index, sizeof(data), data);
+                    }
+
+                    message.resize(length);
+
+                    ASSERT_EQ(message.size(), length);
+                    /* bool */ it.Client()->Submit(std::basic_string<uint8_t>{ message.data(), length });
+                }
+            }
+
+            // Allow some time to receive the response
+            SleepMs(maxWaitTimeMs);
+
+            std::reverse(message.begin(), message.end());
+
+            std::basic_string<uint8_t> response;
+
+            response.reserve( message.size() );
+
+            // A simple poll to keep it simple
+            for (int8_t retry = 0; retry < maxRetries; ++retry) {
+                SleepMs(nagglesTimeoutMs); // Naggle's typical delay, perhaps a bit more
+
+                if (it.IsValid()) {
+                    response = it.Client()->Response() + response;
+                }
+            }
+
+            EXPECT_TRUE(   response.size() == message.size()
+                        && response == message
+                       );
+
+            EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator testAdmin(callback_parent, callback_child, initHandshakeValue, maxWaitTime);
+
+        // Code after this line is executed by both parent and child
+
+        ::Thunder::Core::Singleton::Dispose();
+    }
+
+    TEST(WebSocket, UnsecuredSocketMultiFrameDataExchangePayload140)
+    {
+        const TCHAR hostName[] {"127.0.0.1"};
+
+        // Some aliases
+        const auto& remoteHostName = hostName;
+        const auto& localHostName = hostName;
+
+        constexpr uint16_t tcpServerPort {12346};   // TCP, default 80 or 443 (SSL)
+        constexpr uint32_t tcpProtocol {0};         // HTTP or HTTPS but can only be set on raw sockets
+
+        // The minimum size is determined by the HTTP upgrade process. The limit here is above that threshold.
+        constexpr uint16_t sendBufferSize {150};
+        constexpr uint16_t receiveBufferSize {150};
+
+        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 8, maxWaitTimeMs = 8000, maxInitTime = 2000;
+        constexpr uint8_t maxRetries = 10;
+
+        constexpr uint16_t nagglesTimeoutMs = 250; // Typical is 200 milliseconds
+
+        IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
+            const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
+            const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
+            const std::string webSocketOrigin;      // Optional, set by browser clients
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
+            VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
+
+            constexpr bool rawSocket {false};
+
+            const ::Thunder::Core::NodeId remoteNode {remoteHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            WebSocketClient<CustomSocketStream> client(webSocketURIPath, webSocketProtocol, webSocketURIQuery, webSocketOrigin, false, true, rawSocket, remoteNode.AnyInterface(), remoteNode, sendBufferSize, receiveBufferSize);
+
+            ASSERT_EQ(client.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+#ifdef _VERBOSE
+            std::cout << std::dec <<__LINE__ << " : " << __PRETTY_FUNCTION__ << "\n";
+            std::cout << " |--> SendBufferSize = " << client.Link().SendBufferSize() << "\n";
+            std::cout << " |--> ReceiveBufferSize  = " << client.Link().ReceiveBufferSize() << "\n";
+            std::cout << " |--> SocketSendBufferSize = " << client.Link().SocketSendBufferSize() << "\n";
+            std::cout << " |--> SocketReceiveBufferSize = " << client.Link().SocketReceiveBufferSize() << "\n";
+#endif
+
+            // Avoid  premature shutdown() at the other side
+            SleepMs(maxWaitTimeMs);
+
+            EXPECT_EQ(client.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+        };
+
+        IPTestAdministrator::Callback callback_parent = [&](IPTestAdministrator& testAdmin) {
+            const ::Thunder::Core::NodeId localNode {localHostName, tcpServerPort, ::Thunder::Core::NodeId::TYPE_IPV4, tcpProtocol};
+
+            // This is a listening socket as result of using SocketServerType which enables listening
+            ::Thunder::Core::SocketServerType<WebSocketServer<CustomSocketStream, sendBufferSize, receiveBufferSize>> server(localNode /* listening node*/);
+
+            ASSERT_EQ(server.Open(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
+
+            // A small delay so the child can be set up
+            SleepMs(maxInitTime);
+
+            EXPECT_EQ(testAdmin.Signal(initHandshakeValue, maxRetries), ::Thunder::Core::ERROR_NONE);
+
+            EXPECT_EQ(testAdmin.Wait(initHandshakeValue), ::Thunder::Core::ERROR_NONE);
+
+            // Obtain the endpoint at the server side for each (remotely) connected client
+            auto it = server.Clients();
+
+            // Do not use '\0' as a marker as std::basic_strng<> assumes it is an end of string
+
+            constexpr uint8_t data[] = { 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9, 0x8, 0x7, 0x6, 0x5, 0x3, 0x2, 0x1, 0x10 };
+
+            std::basic_string<uint8_t> message;
+
+            if (it.Next()) {
+                // Unless a client has send an upgrade request we cannot send data out although we might be calling WebSocket functionality
+
+                if (it.Client()->IsOpen()) {
+                    // Construct a message larger than the buffer size to force use of continuation frames
+                    // Payload len == 126
+                    constexpr size_t length = 140;
+
+                    ASSERT_GT(it.Client()->Link().SendBufferSize(), length);
+
+                    const size_t count = (length / sizeof(data) + 1 ) * sizeof(data);
+
+                    message.resize(count);
+
+                    for (size_t index = 0; index < count; index += sizeof(data) ) {
+                        message.replace(index, sizeof(data), data);
+                    }
+
+                    message.resize(length);
+
+                    ASSERT_EQ(message.size(),length);
+
+                    /* bool */ it.Client()->Submit(std::basic_string<uint8_t>{ message.data(), length });
                 }
             }
 
@@ -1342,11 +1628,11 @@ namespace Core {
 
     TEST(WebSocket, DISABLED_OpeningSecuredClientPort)
     {
-        const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+        const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
         const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
         const std::string webSocketOrigin;      // Optional, set by browser clients
-        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+        VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
         VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
         const TCHAR remoteHostName[] {"127.0.0.1"};
@@ -1394,11 +1680,11 @@ namespace Core {
         constexpr uint8_t maxRetries = 10;
 
         IPTestAdministrator::Callback callback_child = [&](IPTestAdministrator& testAdmin) {
-            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed 
+            const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
             const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
             const std::string webSocketURIQuery;    // HTTP URI part, absent query allowe
             const std::string webSocketOrigin;      // Optional, set by browser clients
-            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)  
+            VARIABLE_IS_NOT_USED constexpr bool binary {false};          // Flag to indicate WebSocket opcode 0x1 (test frame) or 0x2 (binary frame)
             VARIABLE_IS_NOT_USED constexpr bool masking {true};          // Flag set by client to enable masking
 
             constexpr bool rawSocket {false};
@@ -1505,7 +1791,7 @@ namespace Core {
         EXPECT_EQ(server.Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
     }
 
-    TEST(WebSocket, DISABLED_OpeningSecuredSocketClientCertificateRequest)
+    TEST(WebSocket, DISABLED_SecuredSocketClientCertificateRequest)
     {
         const std::string webSocketURIPath;     // HTTP URI part, empty path allowed
         const std::string webSocketProtocol;    // Optional HTTP field, WebSocket SubProtocol, ie, Sec-WebSocket-Protocol
