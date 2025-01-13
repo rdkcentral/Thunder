@@ -23,8 +23,21 @@
 namespace Thunder {
 namespace Assertion {
 
-    // Announce upfront the general Assert category..
-    ANNOUNCE_ASSERT_CONTROL
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
+
+    namespace {
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                ANNOUNCE_ASSERT_CONTROL
+            }
+        } AssertControlRegistration;
+
+    }
 
     AssertionUnitProxy::AssertionUnitProxy()
         : _handler(nullptr)

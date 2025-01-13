@@ -147,7 +147,7 @@ namespace Assertion {
     DEFINE_MESSAGING_CATEGORY(Thunder::Assertion::BaseAssertType, ASSERT_CATEGORY)
 
 #define ANNOUNCE_ASSERT_CONTROL \
-    Thunder::Assertion::BaseAssertType::AssertionControl Thunder::Assertion::BaseAssertType::_control;
+    Thunder::Assertion::BaseAssertType::IsEnabled();
 
 namespace Thunder {
 namespace Assertion {
