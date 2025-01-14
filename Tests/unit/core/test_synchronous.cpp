@@ -156,7 +156,7 @@ namespace Core {
             EXPECT_EQ(::Thunder::Core::SynchronousChannelType<::Thunder::Core::SocketPort>::Close(maxWaitTimeMs), ::Thunder::Core::ERROR_NONE);
         }
 
-        virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
+        virtual uint16_t Deserialize(VARIABLE_IS_NOT_USED const uint8_t* dataFrame, VARIABLE_IS_NOT_USED const uint16_t availableData)
         {
             return 1;
         }

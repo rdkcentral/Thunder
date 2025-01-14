@@ -235,7 +235,7 @@ namespace Exchange {
             }
 
         private:
-            virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            virtual void* Acquire(VARIABLE_IS_NOT_USED const string& className, const uint32_t interfaceId, VARIABLE_IS_NOT_USED const uint32_t versionId)
             {
                 void* result = nullptr;
 

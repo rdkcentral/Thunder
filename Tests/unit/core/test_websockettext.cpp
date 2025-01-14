@@ -68,7 +68,7 @@ namespace Core {
             Submit(text);
         }
 
-        virtual void Send(const string& text)
+        virtual void Send(VARIABLE_IS_NOT_USED const string& text)
         {
         }
 
@@ -116,7 +116,7 @@ namespace Core {
             EXPECT_EQ(_dataPending.Unlock(), ::Thunder::Core::ERROR_NONE);
 	    }
 
-        virtual void Send(const string& text)
+        virtual void Send(VARIABLE_IS_NOT_USED const string& text)
         {
         }
 
@@ -142,7 +142,7 @@ namespace Core {
 
     TEST(WebSocket, Text)
     {
-        constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
+        constexpr uint32_t initHandshakeValue = 0, VARIABLE_IS_NOT_USED maxWaitTime = 4, maxWaitTimeMs = 4000, maxInitTime = 2000;
         constexpr uint8_t maxRetries = 1;
 
         const std::string connector {"/tmp/wpewebsockettext0"};

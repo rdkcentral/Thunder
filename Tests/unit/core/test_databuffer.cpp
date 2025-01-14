@@ -35,9 +35,10 @@ namespace Core {
 
         ::Thunder::Core::ScopedStorage<blocksize> storage;
 
+PUSH_WARNING(DISABLE_WARNING_MAYBE_UNINITIALIZED)
         EXPECT_EQ(storage.Size(), blocksize);
-
         EXPECT_NE(storage.Buffer(), nullptr);
+POP_WARNING()
     }
 
 } // Core
