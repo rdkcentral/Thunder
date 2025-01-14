@@ -85,6 +85,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}Assertion::${NAMESPACE}Assertion
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )

@@ -28,6 +28,8 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
+target_compile_definitions(${TARGET} PRIVATE ASSERTION_EXPORTS)
+
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
