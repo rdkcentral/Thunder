@@ -819,7 +819,7 @@ PRINT_MODULES(__PRETTY_FUNCTION__, modules);
 
         EXPECT_GT(bufferSize, sizeof(testTextMessage.size()));
 
-        ::Thunder::Core;:Messaging::TextMessage tm(testTextMessage);
+        ::Thunder::Core::Messaging::TextMessage tm(testTextMessage);
         auto serialized = tm.Serialize(buffer, sizeof(buffer));
         EXPECT_GT(serialized, 0);
 
