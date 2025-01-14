@@ -61,6 +61,8 @@ nav:
     - Sockets: utils/sockets.md
     - Singletons: utils/singletons.md
     - Processes: utils/processes.md
+    - Protocols:
+      - WebSocket: rfc/websocket.md
   - Client Development:
     - Introduction: client/intro.md
     - JSON-RPC App: client/json-rpc.md
