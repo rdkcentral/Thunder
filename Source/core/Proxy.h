@@ -1448,7 +1448,7 @@ POP_WARNING()
 
                     Core::ProxyType<ContainerElement>::template CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
                     _queue.emplace_back(std::move(newElement));
-                    // ASSERT(_queue.back().IsValid() == true);
+                    ASSERT(_queue.back().IsValid() == true);
                 }
             }
             ~ProxyPoolType()

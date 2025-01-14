@@ -64,13 +64,11 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
         public:
             void Announce(Core::Messaging::IControl* control)
             {
-                // these asserts have to be changed to something else liek ASSERT_L1 so that the AssertControl doesn't call itself
-                // let's first see if this is what Coverity saw - comment them out for now
-                // ASSERT(control != nullptr);
+                ASSERT(control != nullptr);
 
                 _adminLock.Lock();
 
-                // ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
+                ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
 
                 _adminLock.Unlock();
