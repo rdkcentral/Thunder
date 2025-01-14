@@ -555,7 +555,7 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
 
-            // Assertion::AssertionUnit::Instance();
+            Assertion::AssertionUnit::Instance();
 
 #if defined(WARNING_REPORTING_ENABLED)
             string jsonDefaultWarningCategories(announceMessage->Response().WarningReportingCategories());
