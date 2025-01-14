@@ -35,7 +35,7 @@
 #include <processcontainers/processcontainers.h>
 #endif
 
-#include <assertion/AssertionUnit.h>
+// #include <assertion/AssertionUnit.h>
 
 #if defined(WARNING_REPORTING_ENABLED)
 #include <warningreporting/WarningReportingUnit.h>
