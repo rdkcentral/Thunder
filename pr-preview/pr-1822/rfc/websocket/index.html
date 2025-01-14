@@ -8,28 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/introduction/architecture/rpc/jsonrpc/">
+        <link rel="canonical" href="https://rdkcentral.github.com/Thunder/rfc/websocket/">
       
       
-        <link rel="prev" href="../../overview/">
+        <link rel="prev" href="../../utils/processes/">
       
       
-        <link rel="next" href="../comrpc/">
+        <link rel="next" href="../../client/intro/">
       
       
-      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>JSON-RPC - Thunder</title>
+        <title>WebSocket - Thunder</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#websocket-communication" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-header__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -107,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              JSON-RPC
+              WebSocket
             
           </span>
         </div>
@@ -220,7 +225,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
+    <a href="../.." title="Thunder" class="md-nav__button md-logo" aria-label="Thunder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -250,7 +255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -267,8 +272,6 @@
       
   
   
-    
-  
   
   
     
@@ -280,11 +283,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -298,7 +301,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Introduction
@@ -312,7 +315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../intro/" class="md-nav__link">
+      <a href="../../introduction/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -370,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../repos/" class="md-nav__link">
+      <a href="../../introduction/repos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -391,7 +394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../build_linux/" class="md-nav__link">
+      <a href="../../introduction/build_linux/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -412,7 +415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../build_windows/" class="md-nav__link">
+      <a href="../../introduction/build_windows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -433,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../config/" class="md-nav__link">
+      <a href="../../introduction/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -454,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../usage/" class="md-nav__link">
+      <a href="../../introduction/usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -480,8 +483,6 @@
                 
   
   
-    
-  
   
   
     
@@ -490,11 +491,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
           <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
@@ -508,7 +509,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -522,7 +523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../overview/" class="md-nav__link">
+      <a href="../../introduction/architecture/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -540,8 +541,6 @@
                 
   
   
-    
-  
   
   
     
@@ -550,11 +549,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_2" >
         
           
           <label class="md-nav__link" for="__nav_2_3_2" id="__nav_2_3_2_label" tabindex="0">
@@ -568,7 +567,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_3_2">
             <span class="md-nav__icon md-icon"></span>
             RPC Protocols
@@ -579,17 +578,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../introduction/architecture/rpc/jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -598,7 +590,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -611,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../comrpc/" class="md-nav__link">
+      <a href="../../introduction/architecture/rpc/comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -695,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/intro/" class="md-nav__link">
+      <a href="../../plugin/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -753,7 +744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/execution-modes/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/execution-modes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -774,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/inprocess/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/inprocess/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -795,7 +786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/outofprocess/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/outofprocess/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -816,7 +807,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/distrubuted/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/distrubuted/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -874,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/containers/container/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/containers/container/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -895,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/containers/runc/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/containers/runc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -916,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/execution-modes/containers/lxc/" class="md-nav__link">
+      <a href="../../plugin/execution-modes/containers/lxc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -953,7 +944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/lifecycle/" class="md-nav__link">
+      <a href="../../plugin/lifecycle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -974,7 +965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/principles/" class="md-nav__link">
+      <a href="../../plugin/principles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1032,7 +1023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/interfaces/" class="md-nav__link">
+      <a href="../../plugin/interfaces/interfaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1053,7 +1044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/docs/" class="md-nav__link">
+      <a href="../../plugin/interfaces/docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1074,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/guidelines/" class="md-nav__link">
+      <a href="../../plugin/interfaces/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1095,7 +1086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/interfaces/tags/" class="md-nav__link">
+      <a href="../../plugin/interfaces/tags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1124,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/config/" class="md-nav__link">
+      <a href="../../plugin/config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1145,7 +1136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/errors/" class="md-nav__link">
+      <a href="../../plugin/errors/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1166,7 +1157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/versioning/" class="md-nav__link">
+      <a href="../../plugin/versioning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1187,7 +1178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/messaging/" class="md-nav__link">
+      <a href="../../plugin/messaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1208,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/subsystems/" class="md-nav__link">
+      <a href="../../plugin/subsystems/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1229,7 +1220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/proxypool/" class="md-nav__link">
+      <a href="../../plugin/proxypool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1250,7 +1241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/private-comrpc/" class="md-nav__link">
+      <a href="../../plugin/private-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1271,7 +1262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/split-implementation.md" class="md-nav__link">
+      <a href="../../plugin/split-implementation.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1292,7 +1283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../plugin/composite/" class="md-nav__link">
+      <a href="../../plugin/composite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1317,8 +1308,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -1328,11 +1321,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -1346,7 +1339,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Common Utilities
@@ -1360,7 +1353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/strings/" class="md-nav__link">
+      <a href="../../utils/strings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1418,7 +1411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/files/files/" class="md-nav__link">
+      <a href="../../utils/files/files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1439,7 +1432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/files/observer/" class="md-nav__link">
+      <a href="../../utils/files/observer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1468,7 +1461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/json/" class="md-nav__link">
+      <a href="../../utils/json/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1526,7 +1519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/threading/worker-pool/" class="md-nav__link">
+      <a href="../../utils/threading/worker-pool/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1547,7 +1540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/threading/mutex/" class="md-nav__link">
+      <a href="../../utils/threading/mutex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1576,7 +1569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/time/" class="md-nav__link">
+      <a href="../../utils/time/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1597,7 +1590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/timers/" class="md-nav__link">
+      <a href="../../utils/timers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1618,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/web/" class="md-nav__link">
+      <a href="../../utils/web/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1639,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/sockets/" class="md-nav__link">
+      <a href="../../utils/sockets/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1660,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/singletons/" class="md-nav__link">
+      <a href="../../utils/singletons/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1681,7 +1674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../utils/processes/" class="md-nav__link">
+      <a href="../../utils/processes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1699,6 +1692,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1707,11 +1702,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_11" checked>
         
           
           <label class="md-nav__link" for="__nav_4_11" id="__nav_4_11_label" tabindex="0">
@@ -1725,7 +1720,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_11_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_11_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_11">
             <span class="md-nav__icon md-icon"></span>
             Protocols
@@ -1736,10 +1731,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../rfc/websocket/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    WebSocket
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1748,6 +1763,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-operation-single-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Detailed operation single connection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxied-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proxied operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-upgrade-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP Upgrade request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-upgrade-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP Upgrade response
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#message-defragmentation-and-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Message (de)fragmentation and encoding
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-exchange-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Data exchange) error handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#base64-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base64 encoding
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1815,7 +1922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/intro/" class="md-nav__link">
+      <a href="../../client/intro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1836,7 +1943,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/json-rpc/" class="md-nav__link">
+      <a href="../../client/json-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1857,7 +1964,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../client/com-rpc/" class="md-nav__link">
+      <a href="../../client/com-rpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1925,7 +2032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../debugging/debug/" class="md-nav__link">
+      <a href="../../debugging/debug/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1946,7 +2053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../debugging/thundershark/" class="md-nav__link">
+      <a href="../../debugging/thundershark/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2051,7 +2158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/setup/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2072,7 +2179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/guide/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2130,7 +2237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/client-jsonrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2151,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
+      <a href="../../walkthrough/hello-world/client-comrpc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2235,7 +2342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/" class="md-nav__link">
+      <a href="../../docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2256,7 +2363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../references/references/" class="md-nav__link">
+      <a href="../../references/references/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2277,7 +2384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../issuetemplate/issuetemplate/" class="md-nav__link">
+      <a href="../../issuetemplate/issuetemplate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2315,6 +2422,88 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-operation-single-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Detailed operation single connection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxied-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proxied operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-upgrade-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP Upgrade request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-upgrade-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP Upgrade response
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#message-defragmentation-and-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Message (de)fragmentation and encoding
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-exchange-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      (Data exchange) error handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#base64-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base64 encoding
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -2332,9 +2521,534 @@
   
 
 
-  <h1>JSON-RPC</h1>
+<h1 id="websocket-communication">WebSocket Communication</h1>
+<p>The WebSocket protocol is an independent TCP protocol on top of exisiting infrastructure. It uses a regular or tunneled (TLS) TCP connection after a successful upgrade has been estasblished. The upgrade has in common with the HTTP protocol that its handshake is interpreted by HTTP servers. Hence, the default TCP ports are 80 and 443 (TLS tunneled). </p>
+<h2 id="basic-operation">Basic operation</h2>
+<pre class="mermaid"><code>---
+title: Basic operation
+---
+sequenceDiagram
+    autonumber
 
+    participant Client
+    participant Server
 
+    Note over Client,Server: No connection
+
+    loop
+        critical Establish connection
+            alt
+                Client-&gt;&gt;Server: Connect to port (default 80)
+            else
+                Client-&gt;&gt;Server: Connect to port (default 443)
+
+                Note over Client,Server: TLS handshake
+            end
+        end
+
+        Note over Client,Server: (TLS enabled) TCP established
+        Note over Client,Server: HTTP upgrade request
+
+        opt
+            par
+                alt
+                    Note over Client,Server: Additional client authentication
+                else
+                    Note over Client,Server: Redirection
+                end
+            end
+        end
+
+        Note over Client,Server: HTTP response
+    end
+
+    Note over Client,Server: Exchange WebSocket messages
+
+    loop
+        Note over Client,Server: Close TCP
+    end</code></pre>
+<h2 id="detailed-operation-single-connection">Detailed operation single connection</h2>
+<pre class="mermaid"><code>---
+title: Detailed operation single connection
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Server
+
+    critical Establish connection
+        Client-&gt;&gt;Server: Set up TCP
+    end
+
+    Note over Client,Server: Use TLS connection if selected
+
+    critical Opening handshake
+        Client-&gt;&gt;Server: HTTP upgrade request
+        Server-&gt;&gt;Server: Validate request
+        Server-&gt;&gt;Client: HTTP response
+        Client-&gt;&gt;Client: Validate response
+    end
+
+    opt Exchange WebSocket message
+        loop Frames of message
+            alt
+                Client-&gt;&gt;Client: Mask frame
+                Client-&gt;&gt;Server: Frame
+            else
+                Server-&gt;&gt;Client: Frame
+            else Interleave control frame not being close or ping frame
+                alt
+                    Client--&gt;Client: Mask control frame
+                    Client-&gt;&gt;Server: Unfragmented control frame
+                else
+                    Server-&gt;&gt;Client: Unfragmented control frame
+                end
+            else Interleave control ping frame
+                alt 
+                    Client-&gt;&gt;Client: Mask ping frame
+                    Client-&gt;&gt;Server: Unfragmented ping frame
+                    Server-&gt;&gt;Client: Unfragmented pong frame
+                else
+                    Server-&gt;&gt;Client: Unfragmented ping frame
+                    Client-&gt;&gt;Client: Mask pong frame
+                    Client-&gt;&gt;Server: Unfragmented pong frame
+                end
+            else Interleave unsollicited control pong frame
+                alt
+                    Client-&gt;&gt;Client: Mask pong frame
+                    Client-&gt;&gt;Server: Unfragmented pong frame
+                else
+                    Server-&gt;&gt;Client: Unfragmented pong frame
+                end
+            end
+        end
+    end
+
+    critical Close connection
+    par
+        alt
+            Client-&gt;&gt;Server: Close frame
+            Server-&gt;&gt;Client: Close frame
+            Client-&gt;&gt;Client: Close TCP
+        else
+            Server-&gt;&gt;Client: Close frame
+            Client-&gt;&gt;Server: Close frame
+            Server-&gt;&gt;Server: Close TCP
+        end
+    end
+    end</code></pre>
+<h2 id="proxied-operation">Proxied operation</h2>
+<pre class="mermaid"><code>---
+title: Proxied operation
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Proxy
+    participant Server
+
+    Note over Client,Proxy: No connection
+    Note over Proxy,Server: No connection
+
+    Client -&gt;&gt; Proxy: HTTP CONNECT request
+
+    Note over Proxy,Server: Establish single connection
+    Note over Proxy,Server: Use TLS connection if selected
+    Note over Proxy,Server: Opening handshake
+
+    Proxy-&gt;&gt;Client: HTTP 2XX response
+
+    opt Exchange WebSocket message
+        alt
+            Client -&gt;&gt; Proxy: Frame
+            Proxy -&gt;&gt; Server: Forward frame 
+        else
+            Server -&gt;&gt; Proxy: Frame
+            Proxy -&gt;&gt; Client: Forward frame 
+        end
+    end
+
+    critical Close connection
+        alt
+            Client -&gt;&gt; Proxy: Close Frame
+            Proxy -&gt;&gt; Server: Forward Close frame 
+            Server -&gt;&gt; Proxy: Close Frame
+            Proxy -&gt;&gt; Client: Forward Close frame 
+            Client -&gt;&gt;Client: Close TCP
+        else
+            Server -&gt;&gt; Proxy: Close Frame
+            Proxy -&gt;&gt; Client: Forward Close frame 
+            Client -&gt;&gt; Proxy: Close Frame
+            Proxy -&gt;&gt; Server: Forward Close frame 
+            Server -&gt;&gt; Server: Close TCP
+        end
+    end</code></pre>
+<h2 id="http-upgrade-request">HTTP Upgrade request</h2>
+<pre class="mermaid"><code>---
+title: HTTP Upgrade request, client side
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Server
+
+    critical Assemble HTTP GET
+        Note over Client,Server: At least version 1.1
+
+        loop All HTTP header fields
+            alt
+                Client-&gt;&gt;Client: Request-URI field
+            else
+                Client-&gt;&gt;Client: HOST field
+            else
+                Client-&gt;&gt;Client: Upgrade field
+            else
+                Client-&gt;&gt;Client: Connection field
+            else
+                Client-&gt;&gt;Client: Sec-WebSocket-Key field
+            else
+                Client-&gt;&gt;Client: Sec-WebSocket-Version field
+            else
+                opt Browsers only
+                    Client-&gt;&gt;Client: Origin field
+                end
+            else
+                opt
+                    Client-&gt;&gt;Client: Sec-WebSocket-Protocol field
+                end
+            else
+                opt
+                    Client-&gt;&gt;Client: Sec-WebSocket-Extentions field
+                end
+            else
+                opt
+                    Client-&gt;&gt;Client: Not-listed HTTP header field
+                end
+            end
+        end
+    end
+
+    Note over Client,Server: Use TLS connection if selected
+
+    Client-&gt;&gt;Server: HTTP request</code></pre>
+<ul>
+<li>URIs do not contain unescaped character '#'; the may contain %23</li>
+<li>URIs have the format
+    ws(s) // host [: port] path [? query]<ul>
+<li>host represents a hostname or IP address</li>
+<li>[] represent optional elements</li>
+<li>path is / if empty</li>
+<li>default port 80, 443 for ws, wss respectively </li>
+</ul>
+</li>
+<li>Fragment identifier, unencoded '#', are not allowed, escaped character %23 is</li>
+<li>Sec-Websocket-Key appears only once, and, random 16-bit nonce base64 encoded</li>
+</ul>
+<pre class="mermaid"><code>---
+title: HTTP Upgrade request, server side
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Server
+
+    Note over Client,Server: Use TLS connection if selected
+
+    Client-&gt;&gt;Server: HTTP request
+
+    critical Validate HTTP GET
+        Note over Client,Server: At least version 1.1
+
+        loop All HTTP header fields
+            alt
+                Server-&gt;&gt;Server: Request-URI field
+            else
+                Server-&gt;&gt;Server: HOST field
+            else
+                Server-&gt;&gt;Server: Upgrade field
+            else
+                Server-&gt;&gt;Server: Connection field
+            else
+                Server-&gt;&gt;Server: Sec-WebSocket-Key field
+            else
+                Server-&gt;&gt;Server: Sec-WebSocket-Version field
+            else
+                opt Browsers only
+                    Server-&gt;&gt;Server: Origin field
+                end
+            else
+                opt
+                    Server-&gt;&gt;Server: Sec-WebSocket-Protocol field
+                end
+            else
+                opt
+                    Server-&gt;&gt;Server: Sec-WebSocket-Extentions field
+                end
+            else
+                opt
+                    Server-&gt;&gt;Server: Not-listed HTTP header field
+                end
+            end
+        end
+    end
+
+    Note over Client,Server: Use TLS connection if selected
+
+    Server-&gt;&gt;Client: HTTP response</code></pre>
+<pre class="mermaid"><code>---
+title: HTTP Upgrade response, server side
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Server
+
+    critical Construct HTTP response
+        loop All header fields 
+            alt
+                Server-&gt;&gt;Server: Status line
+            else
+                Server-&gt;&gt;Server: Upgrade field
+            else
+                Server-&gt;&gt;Server: Connection field
+            else
+                Server-&gt;&gt;Server: Sec-WebScoket-Accept field
+            else
+                opt 
+                    Server-&gt;&gt;Server: Sec-WebSocket-Extensions field
+                end
+            else
+                opt
+                    Server-&gt;&gt;Server: Sec-WebSocket-Protocol field
+                end
+            end
+        end
+    end
+
+    Note over Client,Server: Use TLS connection if selected
+
+    Server-&gt;&gt;Client: HTTP response</code></pre>
+<ul>
+<li>Sec-WebSocket-Accept 4base64 encoded SHA-1 of Sec-WebSocket-Key concatenated with 258EAFA5-E914-47DA-95CA-C5AB0DC85B11 padded to 20 bytes<ul>
+<li>Padded with = for 3base64</li>
+<li>Padded with == for 2base64</li>
+</ul>
+</li>
+<li>Sec-WebSocket-Key appears only once in the request</li>
+<li>Sec-WebSocket-Version, fixed value 13, appears only once in the request</li>
+</ul>
+<h2 id="http-upgrade-response">HTTP Upgrade response</h2>
+<pre class="mermaid"><code>---
+title: HTTP Upgrade response, client side
+---
+sequenceDiagram
+    autonumber
+
+    participant Client
+    participant Server
+
+    Note over Client,Server: Use TLS connection if selected
+
+    Server-&gt;&gt;Client: HTTP response
+
+    critical Validate HTTP response
+        loop All header fields 
+            alt
+                Client-&gt;&gt;Client: Status code
+            else
+                Client-&gt;&gt;Client: Upgrade field
+            else
+                Client-&gt;&gt;Client: Connection field
+            else
+                Client-&gt;&gt;Client: Sec-WebScoket-Accept field
+            else
+                opt 
+                    Client-&gt;&gt;Client: Sec-WebSocket-Extensions field
+                end
+            else
+                opt
+                    Client-&gt;&gt;Client: Sec-WebSocket-Protocol field
+                end
+            end
+        end
+    end</code></pre>
+<ul>
+<li>Sec-WebSocket-Extension appears only once in the response</li>
+<li>Sec-WebSocket-Accept appears only once in the response</li>
+<li>Sec-WebSocket-Protocol appears only once in the response</li>
+</ul>
+<h2 id="message-defragmentation-and-encoding">Message (de)fragmentation and encoding</h2>
+<pre class="mermaid"><code>---
+title: Message (de)fragmentation
+---
+flowchart TB
+
+    A["Input frame"] --&gt; B{"Frame N==0 of message"}
+
+    B -- yes --&gt; C{"FIN set"}
+    B -- no --&gt; D{"FIN set"}
+
+    C -- yes --&gt; E{"Opcode == 0"}
+    C -- no --&gt; F{"Opcode in 0x1,0x2"}
+
+    D -- yes --&gt; G{"Opcode == 0"}
+    D -- no --&gt; H{"Opcode == 0"}
+
+    E -- yes --&gt; I["Error"]
+    E -- no --&gt; J{"Opcode in 0x1,0x2"}
+
+    F -- yes --&gt; K["Error"]
+    F -- no --&gt; L["Initial frame fragmented message"]
+
+    G -- no --&gt; N{"Opcode in 0x8,0x9,0xA"}
+    G -- yes --&gt; M["Termination frame fragmented message"] 
+
+    H -- yes --&gt; O["Continuation frame fragmented message"]
+    H -- no --&gt; P["Error"]
+
+    J -- yes --&gt; S["Unfragmented message"]
+    J -- no --&gt; N
+
+    N -- yes --&gt; U["(Interleaved) control frame"]
+    N -- no --&gt; V["Error"]</code></pre>
+<pre class="mermaid"><code>---
+title: Message encoding
+---
+flowchart TB
+
+    A["Frame"] --&gt; B{"Client to Server"} 
+
+    B -- yes --&gt; C["Mask = 1, Extra 32-bit Masking-Key field"]
+    B -- no --&gt; D["Mask = 0"]
+
+    C --&gt; E{"Control message"}
+    D --&gt; E
+
+    E -- yes --&gt; F["SRV = 0, Opcode in 0x8,09,0xA, Payload &lt;= 125"]
+    E -- no --&gt; G{"Extension"}
+
+    F --&gt; H["Optional (masked) payload data"]
+
+    H --&gt; I["FIN = 1"]
+
+    G -- yes --&gt; J["SRV != 0 "] 
+    G -- no --&gt; K["SRV = 0"]
+
+    J --&gt; L{"Extended Payload"}
+    K --&gt; L
+
+    L -- Payload = 0-125 --&gt; M["No extra length field"]
+    L -- Payload = 126 --&gt; N["Extra 2 bytes length field "]
+    L -- Payload = 127 --&gt; O["Extra 8 bytes length field"]
+
+    M --&gt; P["(Masked) payload data = extension data + application data"]
+    N --&gt; P
+    O --&gt; P
+
+    P --&gt; Q{"Multiframe"}
+
+    Q -- Initial frame --&gt; R["FIN = 1, Opcode in 0x1,0x2"]
+    Q -- Continuation frame --&gt; S["FIN = 0, Opcode = 0x0"]
+    Q -- Termination frame --&gt; T["FIN = 1 , Opcode in 0x0"]</code></pre>
+<ul>
+<li>Applied after regular payload data formatting</li>
+<li>Unique 32-bit masking key per frame</li>
+<li>Masked Payload data = Key (payload)<ul>
+<li>i is index in payload data</li>
+<li>output octet j = (key octet i mod 4) XOR input octet i </li>
+</ul>
+</li>
+<li>Opcodes 0x0, 0x1, 0x2, 0x8, 0x9, 0xA are defined</li>
+<li>Opcodes 0x3-0x7, 0xB-0xF are reserved</li>
+<li>Text frame (0x1): payload data is encoded in UTF-8</li>
+<li>Binary frame: payload data encoded by agreement between applications</li>
+<li>Control Close (0x8) frame may contain optional status data<ul>
+<li>2 bytes status code (networking order)<ul>
+<li>1000-2999: used by this protocol<ul>
+<li>1004, 1005, 1006, 1015 cannot be used by Close control frame</li>
+</ul>
+</li>
+<li>4000-4999: private use and agreed between applications</li>
+<li>1003 applies to opcode 0x2 only</li>
+</ul>
+</li>
+<li>Followed by optional appended UTF-8 encoded value/reason</li>
+</ul>
+</li>
+<li>Control messages may contain payload <ul>
+<li>A pong frame contains the application data of the ping frame</li>
+</ul>
+</li>
+<li>Frame boundaries do not exist unless extension defines it</li>
+<li>Extensions are registered<ul>
+<li>Opcodes 0x3-0x7 and 0xB-0xF can be used with extensions</li>
+</ul>
+</li>
+<li>Suprotocols are registered</li>
+</ul>
+<h2 id="data-exchange-error-handling">(Data exchange) error handling</h2>
+<pre class="mermaid"><code>---
+title: (Data exchange) error handling
+---
+
+flowchart TB
+
+    A["Prior WebSocket handshake"] --&gt; B{"Error"}
+
+    B -- yes --&gt; C["Endpoint (may) drop(s) TCP"]
+    B -- no --&gt; D["During WebSocket handshake"]
+
+    D --&gt; E{"Error"}
+
+    E -- yes --&gt; F{"Server"}
+    E -- no --&gt; G["After successfull WebSocket handhake"]
+
+    F -- no --&gt; C
+    F -- yes --&gt; H["Return HTTP status code"]
+
+    G --&gt; I{"Error"}
+
+    H --&gt; C
+
+    I -- yes --&gt; J["Sent control Close frame"]
+    I -- no --&gt; G
+
+    J --&gt; K["Receive control Close frame"]
+
+    K --&gt; C</code></pre>
+<ul>
+<li>An endpoint may try to recover from abnormal TCP closure<ul>
+<li>Increasing timeout for subsequent attempts</li>
+</ul>
+</li>
+</ul>
+<h2 id="base64-encoding">Base64 encoding</h2>
+<ul>
+<li>Input consists of octets (8 bits). </li>
+<li>Convert input in 24 bits segments</li>
+<li>4base64<ul>
+<li>4 groups of 6 bits of input</li>
+<li>Each group encoded into a character</li>
+</ul>
+</li>
+<li>3base64<ul>
+<li>Remainder consist of 8 bits</li>
+<li>Append 12 0-bits as padding to obtain 24 bits</li>
+<li>The appended 12 0-bits are represented by 2 characters =</li>
+</ul>
+</li>
+<li>2base64<ul>
+<li>Remainder consist of 16 bits</li>
+<li>Append 8 0-bits as padding to obtain 24 bits</li>
+<li>The appended 12 0-bits are represented by 1 character =</li>
+</ul>
+</li>
+</ul>
 
 
 
@@ -2370,7 +3084,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../../utils/processes/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Processes">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2380,20 +3094,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                Processes
               </div>
             </div>
           </a>
         
         
           
-          <a href="../comrpc/" class="md-footer__link md-footer__link--next" aria-label="Next: COM-RPC">
+          <a href="../../client/intro/" class="md-footer__link md-footer__link--next" aria-label="Next: Introduction">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                COM-RPC
+                Introduction
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2427,10 +3141,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.footer", "navigation.sections", "toc.follow", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>
