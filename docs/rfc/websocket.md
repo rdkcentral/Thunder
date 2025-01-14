@@ -1,4 +1,6 @@
-# The WebSocket Protocol
+# WebSocket Communication
+
+The WebSocket protocol is an independent TCP protocol on top of exisiting infrastructure. It uses a regular or tunneled (TLS) TCP connection after a successful upgrade has been estasblished. The upgrade has in common with the HTTP protocol that its handshake is interpreted by HTTP servers. Hence, the default TCP ports are 80 and 443 (TLS tunneled). 
 
 ## Basic operation
 
