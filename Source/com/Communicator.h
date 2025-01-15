@@ -35,6 +35,10 @@
 #include <processcontainers/processcontainers.h>
 #endif
 
+#if defined(WARNING_REPORTING_ENABLED)
+#include <warningreporting/WarningReportingUnit.h>
+#endif
+
 #include "IteratorType.h"
 
 namespace Thunder {
