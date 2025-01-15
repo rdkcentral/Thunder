@@ -29,7 +29,7 @@
 #ifdef BUILD_SHARED_LIBS
     #include <assertion/assertion.h>
 
-    #ifdef __CORE_WARNING_REPORTING__
+    #ifdef WARNING_REPORTING_ENABLED
         #include <warningreporting/warningreporting.h>
     #endif
 #endif
