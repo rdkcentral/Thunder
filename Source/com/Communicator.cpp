@@ -555,15 +555,13 @@ namespace RPC {
         if (announceMessage->Response().IsSet() == true) {
             string jsonMessagingCategories(announceMessage->Response().MessagingCategories());
 
-#ifdef BUILD_SHARED_LIBS
             Assertion::AssertionUnit::Instance();
 
-    #if defined(WARNING_REPORTING_ENABLED)
+#if defined(WARNING_REPORTING_ENABLED)
             string jsonDefaultWarningCategories(announceMessage->Response().WarningReportingCategories());
             if(jsonDefaultWarningCategories.empty() == false){
                 WarningReporting::WarningReportingUnit::Instance().Defaults(jsonDefaultWarningCategories);
             }
-    #endif
 #endif
             _connectionId = announceMessage->Response().SequenceNumber();
 
