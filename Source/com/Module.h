@@ -25,10 +25,13 @@
 
 #include <core/core.h>
 #include <messaging/messaging.h>
-#include <assertion/assertion.h>
 
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
+#ifdef BUILD_SHARED_LIBS
+    #include <assertion/assertion.h>
+
+    #ifdef __CORE_WARNING_REPORTING__
+        #include <warningreporting/warningreporting.h>
+    #endif
 #endif
 
 #if defined(__WINDOWS__) && defined(COM_EXPORTS)
