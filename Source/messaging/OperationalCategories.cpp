@@ -23,9 +23,22 @@ namespace Thunder {
 
 namespace OperationalStream {
 
-    // Announce upfront all OperationalStream categories...
-    OPERATIONAL_STREAM_ANNOUNCE(StandardOut);
-    OPERATIONAL_STREAM_ANNOUNCE(StandardError);
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
+
+    namespace {
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                OPERATIONAL_STREAM_ANNOUNCE(StandardOut)
+                OPERATIONAL_STREAM_ANNOUNCE(StandardError)
+            }
+        } ControlsRegistration;
+
+    }
 
 }
 }

@@ -25,14 +25,27 @@ namespace Thunder {
 
 namespace Logging {
 
-    // Announce upfront all SYSLOG categories...
-    SYSLOG_ANNOUNCE(Crash);
-    SYSLOG_ANNOUNCE(Startup);
-    SYSLOG_ANNOUNCE(Shutdown);
-    SYSLOG_ANNOUNCE(Fatal);
-    SYSLOG_ANNOUNCE(Error);
-    SYSLOG_ANNOUNCE(ParsingError);
-    SYSLOG_ANNOUNCE(Notification);
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
+
+    namespace {
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                SYSLOG_ANNOUNCE(Crash)
+                SYSLOG_ANNOUNCE(Startup)
+                SYSLOG_ANNOUNCE(Shutdown)
+                SYSLOG_ANNOUNCE(Fatal)
+                SYSLOG_ANNOUNCE(Error)
+                SYSLOG_ANNOUNCE(ParsingError)
+                SYSLOG_ANNOUNCE(Notification)
+            }
+        } ControlsRegistration;
+
+    }
 
     static const TCHAR* UnknownCallsign = {_T("NoTLSCallsign") };
 

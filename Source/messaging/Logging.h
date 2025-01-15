@@ -49,39 +49,32 @@ namespace Logging {
             IsEnabled();
         }
 
+        static Control& Instance() {
+            static Control control(true);
+            return (control);
+        }
+
         inline static bool IsEnabled() {
-            return (_control.IsEnabled());
+            return (Instance().IsEnabled());
         }
 
         inline static void Enable(const bool enable) {
-            _control.Enable(enable);
+            Instance().Enable(enable);
         }
         
         inline static const Core::Messaging::Metadata& Metadata() {
-            return (_control.Metadata());
+            return (Instance().Metadata());
         }
-
-    private:
-        static Control _control;
     };
 
 } // namespace Logging
 }
 
-#ifdef __WINDOWS__
+#define DEFINE_LOGGING_CATEGORY(CATEGORY) \
+    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
 
-#define DEFINE_LOGGING_CATEGORY(CATEGORY) DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)
-
-#else
-
-#define DEFINE_LOGGING_CATEGORY(CATEGORY)                                                                                                   \
-    DEFINE_MESSAGING_CATEGORY(Thunder::Logging::BaseLoggingType<CATEGORY>, CATEGORY)                                                        \
-    template<>                                                                                                                              \
-    EXTERNAL typename Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control;
-
-#endif
-
-#define SYSLOG_ANNOUNCE(CATEGORY) template<> Thunder::Logging::BaseLoggingType<CATEGORY>::Control Thunder::Logging::BaseLoggingType<CATEGORY>::_control(true)
+#define SYSLOG_ANNOUNCE(CATEGORY) \
+    Thunder::Logging::BaseLoggingType<CATEGORY>::Instance();
 
 #define SYSLOG(CATEGORY, PARAMETERS)                                                                                                        \
     do {                                                                                                                                    \

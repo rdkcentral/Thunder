@@ -22,24 +22,11 @@
 #include "Module.h"
 #include "Control.h"
 
-#ifdef __WINDOWS__
-
-#define DEFINE_OPERATIONAL_CATEGORY(CATEGORY)                                                           \
+#define DEFINE_OPERATIONAL_CATEGORY(CATEGORY) \
     DEFINE_MESSAGING_CATEGORY(Thunder::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY)
 
-#else
-
-#define DEFINE_OPERATIONAL_CATEGORY(CATEGORY)                                                           \
-    DEFINE_MESSAGING_CATEGORY(Thunder::OperationalStream::BaseOperationalType<CATEGORY>, CATEGORY) \
-    template<>                                                                                          \
-    EXTERNAL typename Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Control           \
-                      Thunder::OperationalStream::BaseOperationalType<CATEGORY>::_control;
-
-#endif
-
-#define OPERATIONAL_STREAM_ANNOUNCE(CATEGORY)                                                           \
-        template<> Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Control              \
-        Thunder::OperationalStream::BaseOperationalType<CATEGORY>::_control(true)
+#define OPERATIONAL_STREAM_ANNOUNCE(CATEGORY) \
+    Thunder::OperationalStream::BaseOperationalType<CATEGORY>::Instance();
 
 namespace Thunder {
 
@@ -64,20 +51,22 @@ namespace OperationalStream {
             IsEnabled();
         }
 
+        static Control& Instance() {
+            static Control control(true);
+            return (control);
+        }
+
         inline static bool IsEnabled() {
-            return (_control.IsEnabled());
+            return (Instance().IsEnabled());
         }
 
         inline static void Enable(const bool enable) {
-            _control.Enable(enable);
+            Instance().Enable(enable);
         }
         
         inline static const Core::Messaging::Metadata& Metadata() {
-            return (_control.Metadata());
+            return (Instance().Metadata());
         }
-
-    private:
-        static Control _control;
     };
 
     DEFINE_OPERATIONAL_CATEGORY(StandardOut)
