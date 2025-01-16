@@ -57,12 +57,12 @@ target_link_libraries(${TARGET}
 
 if (WARNING_REPORTING)
 target_compile_definitions(${TARGET}
-PRIVATE
+PUBLIC
         WARNING_REPORTING_ENABLED
 )
 
 target_link_libraries(${TARGET}
-PRIVATE
+PUBLIC
         ${NAMESPACE}WarningReporting::${NAMESPACE}WarningReporting
 )
 endif()
