@@ -37,12 +37,10 @@ namespace Core {
         if (index > 0) {
             do {
                 index--;
-
                 found = ((fileName[index] == '\\') || (fileName[index] == '/'));
 
             } while ((found == false) && (index != 0));
         }
-
         return (found == false ? fileName : &fileName[index + 1]);
     }
 
