@@ -158,11 +158,11 @@ namespace Core {
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
-                        Text = _T("Registration already done!!!.");
+                        Text = _T("Registration failed.");
                         break;
                     case Core::ERROR_FAILED_UNREGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_UNREGISTERED;
-                        Text = _T("Unregister was already done!!!.");
+                        Text = _T("Unregister failed.");
                         break;
                     case Core::ERROR_HIBERNATED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
@@ -250,6 +250,164 @@ namespace Core {
             ~Message() override = default;
 
         public:
+            static string Join(const string& callsign, const string& version, const string& prefix, const string& instanceId, const string& method, const string& index)
+            {
+                string out;
+
+                if (callsign.empty() == false) {
+                    out += callsign;
+                    out += TCHAR('.');
+                }
+
+                if (version.empty() == false) {
+                    out += version;
+                    out += TCHAR('.');
+                }
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+
+                    if (instanceId.empty() == false) {
+                        out += TCHAR('#');
+                        out += instanceId;
+                    }
+
+                    out += _T("::");
+                }
+
+                out += method;
+
+                if (index.empty() == false) {
+                    out += TCHAR('@');
+                    out += index;
+                }
+
+                return (out);
+            }
+            static string Join(const string& prefix, const string& instanceId, const string& method)
+            {
+                string out;
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+
+                    if (instanceId.empty() == false) {
+                        out += TCHAR('#');
+                        out += instanceId;
+                    }
+
+                    out += _T("::");
+                }
+
+                out += method;
+
+                return (out);
+            }
+            static string Join(const string& prefix, const string& method)
+            {
+                string out;
+
+                if (prefix.empty() == false) {
+                    out += prefix;
+                    out += _T("::");
+                }
+
+                out += method;
+
+                return (out);
+            }
+            static void Split(const string& val, string* outCallsign, string* outVersion, string* outPrefix, string* outInstanceId, string* outMethod, string* outIndex)
+            {
+                // [Callsign.][version.][prefix[#instanceid]::]method[@index]
+
+                size_t idx = val.find(TCHAR('.'));
+                size_t idx0 = 0;
+                size_t idxV = 0;
+
+                if (idx != string::npos) {
+
+                    for (idxV = 0; (idxV< idx) && (::isdigit(val[idxV])); idxV++)
+                        /* continue */;
+
+                    if (idxV == idx) {
+                        // It is a version number.
+                        if (outVersion != nullptr) {
+                            (*outVersion) = val.substr(0, idx);
+                        }
+                    }
+                    else {
+                        if (outCallsign != nullptr) {
+                            (*outCallsign) = val.substr(0, idx);
+                        }
+                    }
+
+                    idx0 = idx + 1;
+                }
+
+                if (idxV != idx) {
+                    idx = val.find(TCHAR('.'), idx0);
+
+                    if (idx != string::npos) {
+
+                        for (idxV = idx0; (idxV < idx) && (::isdigit(val[idxV])); idxV++)
+                            /* continue */;
+
+                        if (idxV == idx) {
+                            // It indeed is a version number.
+
+                            if (outVersion != nullptr) {
+                                (*outVersion) = val.substr(idx0, idx - idx0);
+                            }
+
+                            idx0 = idx + 1;
+                        }
+                    }
+                }
+
+                string method;
+                const size_t idxI = val.find(TCHAR('@'), idx0);
+
+                if ((idxI != string::npos) && (val.size() > idxI)) {
+                    if (outIndex != nullptr) {
+                        (*outIndex) = val.substr(idxI + 1);
+                    }
+
+                    method = val.substr(idx0, (idxI - idx0));
+                }
+                else {
+                    method = val.substr(idx0);
+                }
+
+                if (method.empty() == false) {
+                    idx0 = method.find(TCHAR(':'));
+
+                    if (method.size() < (idx0 + 2)) {
+                        idx0 = string::npos;
+                    }
+
+                    if (idx0 != string::npos) {
+                        idx = method.find(TCHAR('#'));
+
+                        if ((outInstanceId != nullptr) && (idx != string::npos) && (method.size() > idx)) {
+                            (*outInstanceId) = method.substr((idx + 1), (idx0 - idx - 1));
+                        }
+
+                        if (outPrefix != nullptr) {
+                            (*outPrefix) = method.substr(0, std::min(idx0, idx));
+                        }
+
+                        idx0++;
+                    }
+
+                    if (outMethod != nullptr) {
+                        (*outMethod) = method.substr(idx0 + 1);
+
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                        ToCamelCase(*outMethod);
+POP_WARNING()
+                    }
+                }
+            }
             static string Callsign(const string& designator)
             {
                 size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
@@ -269,16 +427,16 @@ namespace Core {
             static string Method(const string& designator)
             {
                 size_t end = designator.find_last_of('@');
-                size_t begin = designator.find_last_of('.', end);
-                size_t lookup = designator.find_first_of('#', begin+1);
+                size_t begin = designator.find_last_of('.', end) + 1;
+                size_t lookup = designator.find_first_of('#', begin);
                 string method;
 
                 if (lookup != string::npos) {
-                    size_t ns = designator.find_first_of(':', lookup + 1);
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, lookup - begin - 1) + (ns != string::npos? designator.substr(ns, end - ns) : string{});
+                    size_t prefix = designator.find_first_of(':', lookup + 1);
+                    method = (designator.substr(begin, lookup - begin) + designator.substr(prefix, end - prefix));
                  }
                 else {
-                    method = designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1));
+                    method = designator.substr(begin, end - begin);
                 }
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
@@ -286,6 +444,20 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the
 POP_WARNING()
 
                 return (method);
+            }
+            static string Prefix(const string& designator)
+            {
+                string prefix;
+
+                size_t end = designator.find_first_of(':');
+
+                if (end != string::npos) {
+                    size_t begin = designator.find_last_of('.', end) + 1;
+                    size_t lookup = designator.find_first_of('#', begin);
+                    prefix = designator.substr(begin, std::min(lookup,end) - begin);
+                }
+
+                return (prefix);
             }
             static string FullMethod(const string& designator)
             {
@@ -381,7 +553,7 @@ POP_WARNING()
                 const size_t pos = designator.find_first_of('#');
                 uint32_t val = 0;
 
-                if (pos != string::npos) {
+                if ((pos != string::npos) && (designator.size() > pos)) {
                     Core::FromString(designator.substr(pos + 1, (designator.find_first_of(":@", pos) - (pos + 1))), val);
                 }
 
