@@ -58,7 +58,7 @@ namespace Core {
 
         return (ss.str());
     }
-#ifdef __WINDOWS__
+#if defined(__CORE_MESSAGING__) && defined(__WINDOWS__)
     const std::string& GetProgramName()
     {
         static std::string programName;
