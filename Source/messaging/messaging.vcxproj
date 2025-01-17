@@ -22,6 +22,7 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssertionUnit.h" />
     <ClInclude Include="Control.h" />
     <ClInclude Include="DirectOutput.h" />
     <ClInclude Include="Logging.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="messaging.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssertionUnit.cpp" />
     <ClCompile Include="ConsoleStreamRedirect.cpp" />
     <ClCompile Include="DirectOutput.cpp" />
     <ClCompile Include="Logging.cpp" />
