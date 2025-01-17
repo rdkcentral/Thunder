@@ -280,7 +280,7 @@ namespace Thunder {
 namespace Core {
     EXTERNAL const char* FileNameOnly(const char fileName[]);
     EXTERNAL string LogMessage(const TCHAR filename[], const uint32_t LineNumber, const TCHAR* message);
-#ifdef __WINDOWS__
+#if defined(__CORE_MESSAGING__) && defined(__WINDOWS__)
     EXTERNAL const std::string& GetProgramName();
 #endif
 }
