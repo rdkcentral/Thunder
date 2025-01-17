@@ -54,7 +54,7 @@ namespace Assertion {
         Core::CriticalSection* _adminLock;
     };
 
-    class BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
+    class EXTERNAL BaseAssertType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT> {
     public:
         using BaseClass = Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::ASSERT>;
 
