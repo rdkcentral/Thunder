@@ -1225,26 +1225,20 @@ namespace Thunder {
             class Connection : public LinkType<INTERFACE> {
             private:
                 using Base = LinkType<INTERFACE>;
-                class EventSubscriber {
+                class EventSubscriber: public Core::Thread {
                     public:
                         EventSubscriber () = delete;
-                        EventSubscriber(Connection& parent, string event): _parent(parent), _event(event) {}
+                        EventSubscriber(const EventSubscriber&) = delete;
+                        EventSubscriber& operator=(const EventSubscriber&) = delete;
+                        EventSubscriber(Connection& parent):Thread(Thunder::Core::Thread::DefaultStackSize(), _T("SmartLinkTypeEventSubscriber")), _parent(parent){}
                         ~EventSubscriber() = default;
-                        bool operator==(const EventSubscriber& rhs) const {
-                            return this->_event == rhs._event;
-                        }
-                        uint64_t Timed(const uint64_t scheduledTime)
+                        uint32_t Worker() override
                         {
-                            uint64_t reschedulePeriod = 0;
-                            auto result = _parent.SendSubscribeRequest(_event);
-                            if (result != Core::ERROR_NONE) {
-                                reschedulePeriod = DefaultWaitTime;
-                            }
-                            return reschedulePeriod;
+                            _parent.SubscribeEvents();
+                            return Core::infinite;
                         }
                     private:
                         Connection& _parent;
-                        string _event;
                 };
             public:
                 static constexpr uint32_t DefaultWaitTime = Base::DefaultWaitTime;
@@ -1327,7 +1321,7 @@ namespace Thunder {
                     , _parent(parent)
                     , _adminLock()
                     , _subscriptions()
-                    , _eventSubscriber(Thunder::Core::Thread::DefaultStackSize(), _T("SmartLinkTypeEventSubscriber"))
+                    , _eventSubscriber(*this)
                     , _state(UNKNOWN)
                 {
                     _monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
@@ -1336,12 +1330,24 @@ namespace Thunder {
                 ~Connection() override
                 {
                     _monitor.Revoke(_T("statechange"));
+                    _eventSubscriber.Stop();
+                    _eventSubscriber.Wait(Core::Thread::STOPPED, Core::infinite);
                 }
 
             public:
                 bool IsActivated()
                 {
                     return (_state == ACTIVATED);
+                }
+                void SubscribeEvents() {
+                    _adminLock.Lock();
+                    for (const string& iter: _subscriptions) {
+                        SendSubscribeRequest(iter);
+                    }
+                    _adminLock.Unlock();
+                    _eventSubscriber.Block();
+                    _state = state::ACTIVATED;
+                    _parent.StateChange();
                 }
 
             template <typename INBOUND, typename METHOD>
@@ -1350,7 +1356,7 @@ namespace Thunder {
                 auto result = Base::template Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
                 if (result == Core::ERROR_NONE) {
                     _adminLock.Lock();
-                    _subscriptions.insert(std::make_pair<string, bool>(string(eventName), true));
+                    _subscriptions.insert(string(eventName));
                     _adminLock.Unlock();
                 }
                 return result;
@@ -1361,7 +1367,7 @@ namespace Thunder {
                 auto result = Base::template Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
                 if (result == Core::ERROR_NONE) {
                     _adminLock.Lock();
-                    _subscriptions.insert(std::make_pair<string, bool>(string(eventName), true));
+                    _subscriptions.insert(string(eventName));
                     _adminLock.Unlock();
                 }
                 return result;
@@ -1371,34 +1377,19 @@ namespace Thunder {
                 _adminLock.Lock();
                 ASSERT(_subscriptions.find(eventName) != _subscriptions.end());
                 auto iter = _subscriptions.erase(eventName);
-                _eventSubscriber.Revoke(EventSubscriber(*this, eventName));
                 _adminLock.Unlock();
                 return Base::Unsubscribe(waitTime, eventName);
             }
 
 
             private:
-                uint32_t SendSubscribeRequest(string eventName) {
+                uint32_t SendSubscribeRequest(const string& eventName) {
                     uint32_t retVal = Core::ERROR_UNAVAILABLE;
                     Core::JSONRPC::Message response;
                     const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + Base::Namespace() + "\"}");
                     auto result = Base::template Invoke<string>(DefaultWaitTime, "register", parameters, response);
                     if (result == Core::ERROR_NONE && response.Error.IsSet() != true) {
                         retVal = Core::ERROR_NONE;
-                        _adminLock.Lock();
-                        auto iter = _subscriptions.find(eventName);
-                        ASSERT(iter != _subscriptions.end());
-                        if(iter != _subscriptions.end()) {
-                            iter->second = true;
-                        }
-                        auto pendingEvent = std::find_if(_subscriptions.cbegin(), _subscriptions.cend(), [](std::pair<string, bool> elem) { return elem.second == false;});
-                        if (pendingEvent == _subscriptions.cend()){
-                            _state = state::ACTIVATED;
-                        }
-                        _adminLock.Unlock();
-                        if(_state == state::ACTIVATED) {
-                            _parent.StateChange();
-                        }
                     }
                     return retVal;
 
@@ -1408,19 +1399,13 @@ namespace Thunder {
                     if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                         if ((_state != ACTIVATED) && (_state != LOADING)) {
                             _state = state::LOADING;
-                            for (auto iter: _subscriptions) {
-                                _eventSubscriber.Schedule(Thunder::Core::Time::Now(), EventSubscriber(*this, iter.first));
-                            }
+                            _eventSubscriber.Run();
                           
                         }
                     }
                     else if (value == JSONRPC::JSONPluginState::DEACTIVATED) {
                         if (_state != DEACTIVATED) {
                             _state = DEACTIVATED;
-                            _adminLock.Lock();
-                            std::for_each(_subscriptions.begin(), _subscriptions.end(),[](std::pair<string, bool> elem) { elem.second= false;});
-                            _eventSubscriber.Flush();
-                            _adminLock.Unlock();
                             _parent.StateChange();
                         }
                     }
@@ -1460,8 +1445,8 @@ namespace Thunder {
                 LinkType<INTERFACE> _monitor;
                 SmartLinkType<INTERFACE>& _parent;
                 Core::CriticalSection _adminLock;
-                std::unordered_map<string, bool> _subscriptions;
-                Core::TimerType<EventSubscriber> _eventSubscriber;
+                std::unordered_set<string> _subscriptions;
+                EventSubscriber _eventSubscriber;
                 state _state;
             };
 
