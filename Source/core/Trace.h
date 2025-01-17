@@ -24,7 +24,9 @@
 #include "Portability.h"
 #include "AssertionControl.h"
 
+#ifdef __CORE_MESSAGING__
 #include <sstream>
+#endif
 
 #ifndef __WINDOWS__
 #include <syslog.h>

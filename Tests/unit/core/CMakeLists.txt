@@ -161,7 +161,6 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${NAMESPACE}COM::${NAMESPACE}COM
     ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
     ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-    ${NAMESPACE}Assertion::${NAMESPACE}Assertion
     ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
 )
 

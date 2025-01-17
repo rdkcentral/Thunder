@@ -19,14 +19,29 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Assertion
-#endif
+#include "Module.h"
+#include "MessageUnit.h"
 
-#include <core/core.h>
-#include <messaging/messaging.h>
+namespace Thunder {
+namespace Assertion {
 
-#if defined(__WINDOWS__) && defined(ASSERTION_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+    class EXTERNAL AssertionUnit : public IAssertionUnit {
+    private:
+        AssertionUnit(const AssertionUnit&) = delete;
+        AssertionUnit& operator=(const AssertionUnit&) = delete;
+        AssertionUnit(AssertionUnit&&) = delete;
+        AssertionUnit& operator=(AssertionUnit&&) = delete;
+
+    protected:
+        AssertionUnit();
+
+    public:
+        ~AssertionUnit() override;
+
+    public:
+        static AssertionUnit& Instance();
+
+        void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message) override;
+    };
+}
+}

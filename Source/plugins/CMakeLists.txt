@@ -85,7 +85,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
-          ${NAMESPACE}Assertion::${NAMESPACE}Assertion
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
@@ -107,7 +106,6 @@ target_link_libraries(${TARGET_PROXYSTUBS}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-          ${NAMESPACE}Assertion::${NAMESPACE}Assertion
         )
 
 target_include_directories( ${TARGET}

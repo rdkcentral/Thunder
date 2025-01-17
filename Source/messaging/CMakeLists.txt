@@ -25,7 +25,8 @@ add_library(${TARGET}
         Logging.cpp
         DirectOutput.cpp
         ConsoleStreamRedirect.cpp
-        OperationalCategories.cpp)
+        OperationalCategories.cpp
+        AssertionUnit.cpp)
 
 set(PUBLIC_HEADERS
         Module.h
@@ -42,7 +43,8 @@ set(PUBLIC_HEADERS
         Module.h
         TraceFactory.h
         ConsoleStreamRedirect.h
-        OperationalCategories.h)
+        OperationalCategories.h
+        AssertionUnit.h)
 
 target_compile_definitions(${TARGET} PRIVATE MESSAGING_EXPORTS)
 
