@@ -28,6 +28,11 @@ namespace Thunder {
 
     namespace Messaging {
 
+        template <const Core::Messaging::Metadata::type TYPE>
+        using BaseCategoryType = Core::Messaging::BaseCategoryType<TYPE>;
+
+        using TextMessage = Core::Messaging::TextMessage;
+
         /**
         * @brief Class responsible for:
         *        - opening buffers
