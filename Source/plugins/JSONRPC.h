@@ -381,16 +381,16 @@ namespace PluginHost {
             Registration()
                 : Core::JSON::Container()
                 , Event()
-                , Callsign()
+                , Id()
             {
                 Add(_T("event"), &Event);
-                Add(_T("id"), &Callsign);
+                Add(_T("id"), &Id);
             }
             ~Registration() override = default;
 
         public:
             Core::JSON::String Event;
-            Core::JSON::String Callsign;
+            Core::JSON::String Id;
         };
 
         enum state {
@@ -626,9 +626,16 @@ namespace PluginHost {
 
             if (method.empty() == false) {
 
-                ASSERT(Core::JSONRPC::Message::Callsign(method).empty() || (Core::JSONRPC::Message::Callsign(method) == _callsign));
+                string callsign;
+                string prefix;
+                string instanceId;
+                string methodName;
 
-                string realMethod(Core::JSONRPC::Message::Method(method));
+                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, nullptr);
+
+                const string realMethod = Core::JSONRPC::Message::Join(prefix, methodName);
+
+                ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
                 result = Core::ERROR_NONE;
 
@@ -659,10 +666,10 @@ namespace PluginHost {
                             response = _T("1");
                         }
                     }
-                    else if (realMethod == _T("register")) {
+                    else if (methodName == _T("register")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Subscribe(channelId, info.Event.Value(), info.Callsign.Value());
+                        result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
                         if (result == Core::ERROR_NONE) {
                             response = _T("0");
                         }
@@ -670,10 +677,10 @@ namespace PluginHost {
                             result = Core::ERROR_FAILED_REGISTERED;
                         }
                     }
-                    else if (realMethod == _T("unregister")) {
+                    else if (methodName == _T("unregister")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Unsubscribe(channelId, info.Event.Value(), info.Callsign.Value());
+                        result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
                         if (result == Core::ERROR_NONE) {
                             response = _T("0");
                         }
@@ -712,6 +719,10 @@ namespace PluginHost {
             }
 
             result = index->second.Subscribe(callback, designator);
+
+            if ((result != Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                _observers.erase(index);
+            }
 
             _adminLock.Unlock();
 
@@ -958,7 +969,13 @@ namespace PluginHost {
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
 
-        JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus()
+            : _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+
         JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
         JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
@@ -970,7 +987,7 @@ namespace PluginHost {
         };
 
     public:
-        template <typename METHOD>
+        template<typename METHOD>
         void RegisterEventStatusListener(const string& event, METHOD method)
         {
             _adminLock.Lock();
@@ -993,47 +1010,68 @@ namespace PluginHost {
             _adminLock.Unlock();
         }
 
-    public:
-        uint32_t Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        template<typename METHOD>
+        void SetSubscribeAssessor(METHOD method)
         {
-            const Core::hresult result = JSONRPC::Subscribe(channel, eventId, designator);
+            _adminLock.Lock();
 
-            if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::registered);
+            _subscribeAssessor = method;
+
+            _adminLock.Unlock();
+        }
+
+    public:
+        uint32_t Subscribe(const uint32_t channel, const string& event, const string& clientId) override
+        {
+            Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
+
+            _adminLock.Lock();
+
+            if ((_subscribeAssessor == nullptr) || (_subscribeAssessor(channel, event, clientId) == true)) {
+
+                result = JSONRPC::Subscribe(channel, event, clientId);
+
+                if (result == Core::ERROR_NONE) {
+                    NotifyObservers(Core::JSONRPC::Message::Method(event), clientId, Status::registered);
+                }
             }
+
+            _adminLock.Unlock();
 
             return (result);
         }
-        uint32_t Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        uint32_t Unsubscribe(const uint32_t channel, const string& event, const string& clientId) override
         {
-            const Core::hresult result = JSONRPC::Unsubscribe(channel, eventId, designator);
+            _adminLock.Lock();
+
+            const Core::hresult result = JSONRPC::Unsubscribe(channel, event, clientId);
 
             if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::unregistered);
+                NotifyObservers(Core::JSONRPC::Message::Method(event), clientId, Status::unregistered);
             }
+
+            _adminLock.Unlock();
 
             return (result);
         }
 
     protected:
-        void NotifyObservers(const string& event, const string& client, const Status status) const
+        void NotifyObservers(const string eventName, const string& client, const Status status) const
         {
-            _adminLock.Lock();
-
-            StatusCallbackMap::const_iterator it = _observers.find(event);
+            StatusCallbackMap::const_iterator it = _observers.find(eventName);
             if (it != _observers.cend()) {
                 it->second(client, status);
             }
-
-            _adminLock.Unlock();
         }
 
     private:
         using EventStatusCallback = std::function<void(const string&, Status status)>;
+        using SubscribeCallback = std::function<bool(const uint32_t, const string&, const string&)>;
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
 
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
+        SubscribeCallback _subscribeAssessor;
     };
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
@@ -1123,6 +1161,9 @@ namespace JSONRPCErrorAssessorTypes {
         LookupStorageType& operator=(LookupStorageType&&) = delete;
 
     public:
+        using LifetimeCallback = std::function<void(const bool acquired, T* obj)>;
+
+    public:
         uint32_t Store(T* obj, const Core::JSONRPC::Context& context)
         {
             ID id = 0;
@@ -1141,13 +1182,34 @@ namespace JSONRPCErrorAssessorTypes {
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(context.ChannelId(), obj));
 
+                if (_callback != nullptr) {
+                    _callback(true, obj);
+                }
+
                 _lock.Unlock();
             }
 
             return (id);
         }
 
-        T* Lookup(const Core::JSONRPC::Context& context, const ID id)
+        bool Exists(const uint32_t channel, const ID id)
+        {
+            bool result = false;
+
+            _lock.Lock();
+
+            auto it = _storage.find(id);
+
+            if ((it != _storage.end()) && ((*it).second.first == channel)) {
+                result = true;
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+
+        T* Lookup(const uint32_t channel, const ID id)
         {
             T* obj{};
 
@@ -1155,7 +1217,30 @@ namespace JSONRPCErrorAssessorTypes {
 
             auto it = _storage.find(id);
 
-            if ((it != _storage.end()) && ((*it).second.first == context.ChannelId())) {
+            if ((it != _storage.end()) && ((*it).second.first == channel)) {
+                obj = (*it).second.second;
+                obj->AddRef();
+            }
+
+            _lock.Unlock();
+
+            return (obj);
+        }
+
+        T* Lookup(const Core::JSONRPC::Context& context, const ID id)
+        {
+            return (Lookup(context.ChannelId(), id));
+        }
+
+        const T* Lookup(const uint32_t channel, const ID id) const
+        {
+            const T* obj{};
+
+            _lock.Lock();
+
+            auto const it = _storage.cfind(id);
+
+            if ((it != _storage.cend()) && ((*it).second.first == channel)) {
                 obj = (*it).second.second;
                 obj->AddRef();
             }
@@ -1167,20 +1252,7 @@ namespace JSONRPCErrorAssessorTypes {
 
         const T* Lookup(const Core::JSONRPC::Context& context, const ID id) const
         {
-            const T* obj{};
-
-            _lock.Lock();
-
-            auto const it = _storage.cfind(id);
-
-            if ((it != _storage.cend()) && ((*it).second.first == context.ChannelId())) {
-                obj = (*it).second.second;
-                obj->AddRef();
-            }
-
-            _lock.Unlock();
-
-            return (obj);
+            return (Lookup(context.ChannelId(), id));
         }
 
         T* Dispose(const Core::JSONRPC::Context& context, const ID id)
@@ -1193,6 +1265,11 @@ namespace JSONRPCErrorAssessorTypes {
 
             if (it != _storage.end() && ((*it).second.first == context.ChannelId())) {
                 obj = (*it).second.second;
+
+                if (_callback != nullptr) {
+                    _callback(false, obj);
+                }
+
                 _storage.erase(it);
             }
 
@@ -1201,10 +1278,26 @@ namespace JSONRPCErrorAssessorTypes {
             return (obj);
         }
 
-    public:
-        using OnCloseCallback = std::function<void(const ID, const uint32_t, T*)>;
+        uint32_t InstanceId(const T* const obj) const
+        {
+            uint32_t result = 0;
 
-        void Closed(const uint32_t channel, const OnCloseCallback& callback = nullptr)
+            _lock.Lock();
+
+            for (auto const& entry : _storage) {
+                if (entry.second.second == obj) {
+                    result = entry.first;
+                    break;
+                }
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+
+    public:
+        void Closed(const uint32_t channel)
         {
             _lock.Lock();
 
@@ -1212,12 +1305,10 @@ namespace JSONRPCErrorAssessorTypes {
 
             while (it != _storage.end()) {
                 if ((*it).second.first == channel) {
-
                     T* obj = (*it).second.second;
-                    ASSERT(obj != nullptr);
 
-                    if (callback) {
-                        callback((*it).first, T::ID, obj);
+                    if (_callback != nullptr) {
+                        _callback(false, obj);
                     }
 
                     obj->Release();
@@ -1229,17 +1320,27 @@ namespace JSONRPCErrorAssessorTypes {
             }
 
             _lock.Unlock();
-
         }
 
-        void Closed(const Core::JSONRPC::Context& context, const OnCloseCallback& callback = nullptr)
+        void Closed(const Core::JSONRPC::Context& context)
         {
-            Closed(context.ChannelId(), callback);
+            Closed(context.ChannelId());
+        }
+
+    public:
+        void Callback(const LifetimeCallback& callback)
+        {
+            _lock.Lock();
+
+            _callback = callback;
+
+            _lock.Unlock();
         }
 
     private:
         mutable Core::CriticalSection _lock;
         std::map<ID, std::pair<uint32_t, T*>> _storage;
+        LifetimeCallback _callback;
         ID _nextId;
     };
 
