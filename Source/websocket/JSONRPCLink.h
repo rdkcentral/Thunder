@@ -467,7 +467,9 @@ namespace Thunder {
                 public:
                     Handler():_adminLock(),_invokeMap(){}
                     Handler(const Handler&) = delete;
+                    Handler(Handler&&) = delete;
                     Handler& operator=(const Handler&) = delete;
+                    Handler& operator=(Handler&&) = delete;
                     ~Handler() = default;
                     void Register(const string& methodName, const InvokeFunction& lambda)
                     {
