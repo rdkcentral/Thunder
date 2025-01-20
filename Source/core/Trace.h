@@ -22,9 +22,9 @@
 
 #include "Module.h"
 #include "Portability.h"
-#include "AssertionControl.h"
 
 #ifdef __CORE_MESSAGING__
+#include "AssertionControl.h"
 #include <sstream>
 #endif
 

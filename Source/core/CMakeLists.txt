@@ -26,7 +26,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in" "${CMAKE_CURRENT_BINAR
 message(VERBOSE "Generated ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h")
 
 add_library(${TARGET}
-        AssertionControl.cpp
         Module.cpp
         DoorBell.cpp
         CyclicBuffer.cpp
@@ -37,7 +36,6 @@ add_library(${TARGET}
         JSON.cpp
         JSONRPC.cpp
         Library.cpp
-        Messaging.cpp
         Netlink.cpp
         NetworkInfo.cpp
         NodeId.cpp
@@ -173,7 +171,7 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE MessageStore.cpp)
+    target_sources(${TARGET} PRIVATE Messaging.cpp MessageStore.cpp AssertionControl.cpp)
     message(STATUS "Messaging enabled")
 endif()
 
