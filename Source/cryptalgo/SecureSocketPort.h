@@ -199,7 +199,7 @@ namespace Crypto {
             void* _context;
             void* _ssl;
             CertificateStore::IValidate* _callback;
-            mutable state _handShaking;
+            mutable std::atomic<state> _handShaking;
             mutable Crypto::Certificate _certificate; // (PEM formatted) ccertificate (chain)
             mutable Crypto::Key _privateKey; // (PEM formatted) private key
             const bool _requestCertificate;
