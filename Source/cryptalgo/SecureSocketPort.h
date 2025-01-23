@@ -29,12 +29,12 @@ namespace Crypto {
     class EXTERNAL Certificate {
     public:
         Certificate() = delete;
-        Certificate& operator=(Certificate&&) = delete;
         Certificate& operator=(const Certificate&) = delete;
+        Certificate& operator=(Certificate&&) = delete;
 
+        Certificate(const Certificate& copy);
         Certificate(const std::string& fileName);
         Certificate(Certificate&& move) noexcept;
-        Certificate(const Certificate& copy);
         ~Certificate();
 
     public:
@@ -58,10 +58,10 @@ namespace Crypto {
         Key& operator=(Key&&) = delete;
         Key& operator=(const Key&) = delete;
 
+        Key(const Key& copy);
         Key(const string& fileName);
         Key(const string& fileName, const string& password);
         Key(Key&& move) noexcept;
-        Key(const Key& copy);
         ~Key();
 
     protected:
@@ -75,12 +75,12 @@ namespace Crypto {
     class EXTERNAL CertificateStore {
     public:
         CertificateStore() = delete;
-        CertificateStore& operator=(CertificateStore&&) = delete;
         CertificateStore& operator=(const CertificateStore&) = delete;
+        CertificateStore& operator=(CertificateStore&&) = delete;
 
+        CertificateStore(const CertificateStore&);
         CertificateStore(bool defaultStore);
         CertificateStore(CertificateStore&&) noexcept;
-        CertificateStore(const CertificateStore&);
         ~CertificateStore();
 
     public:
@@ -91,7 +91,6 @@ namespace Crypto {
 
         struct IValidate {
             virtual ~IValidate() = default;
-
             virtual bool Validate(const Certificate& certificate) const = 0;
         };
 
@@ -155,19 +154,23 @@ namespace Crypto {
             uint32_t Close(const uint32_t waitTime);
 
             // Methods to extract and insert data into the socket buffers
-            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override {
+            uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override
+            {
                 return (_parent.SendData(dataFrame, maxSendSize));
             }
 
-            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override {
+            uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override
+            {
                 return (_parent.ReceiveData(dataFrame, receivedSize));
             }
 
             // Signal a state change, Opened, Closed or Accepted
-            void StateChange() override {
+            void StateChange() override
+            {
                 Update();
             }
-            inline uint32_t Callback(CertificateStore::IValidate* callback) {
+            inline uint32_t Callback(CertificateStore::IValidate* callback)
+            {
                 uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
                 Core::SocketPort::Lock();
@@ -178,6 +181,7 @@ namespace Crypto {
                     _callback = callback;
                     result = Core::ERROR_NONE;
                 }
+
                 Core::SocketPort::Unlock();
 
                 return (result);
@@ -204,9 +208,10 @@ namespace Crypto {
         };
 
     public:
-        SecureSocketPortImproved(SecureSocketPortImproved&&) = delete;
         SecureSocketPortImproved(const SecureSocketPortImproved&) = delete;
+        SecureSocketPortImproved(SecureSocketPortImproved&&) = delete;
         SecureSocketPortImproved& operator=(const SecureSocketPortImproved&) = delete;
+        SecureSocketPortImproved& operator=(SecureSocketPortImproved&&) = delete;
 
         template <typename TOKEN = TYPE, typename... Args, typename = typename std::enable_if<!TOKEN::value, void>::type> 
         SecureSocketPortImproved(bool requestPeerCert, Args&&... args)
@@ -217,8 +222,8 @@ namespace Crypto {
         SecureSocketPortImproved(Args&&... args)
             : _handler(*this, false, std::forward<Args>(args)...)
         {}
-        ~SecureSocketPortImproved() override {
-        }
+        ~SecureSocketPortImproved() override
+        {}
 
     public:
         inline bool IsOpen() const
@@ -256,7 +261,6 @@ namespace Crypto {
         {
             return (_handler.RemoteNode());
         }
-
         inline uint32_t Open(const uint32_t waitTime) {
             return(_handler.Open(waitTime));
         }
@@ -266,13 +270,16 @@ namespace Crypto {
         inline void Trigger() {
             _handler.Trigger();
         }
-        inline uint32_t Callback(Crypto::CertificateStore::IValidate* callback) {
+        inline uint32_t Callback(Crypto::CertificateStore::IValidate* callback)
+        {
             return (_handler.Callback(callback));
         }
-        inline uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
+        inline uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key)
+        {
             return (_handler.Certificate(certificate, key));
         }
-        inline uint32_t CustomStore(const CertificateStore& store) {
+        inline uint32_t CustomStore(const CertificateStore& store)
+        {
             return (_handler.CustomStore(store));
         }
 
@@ -319,7 +326,7 @@ namespace Crypto {
             : SecureSocketPortImproved(std::forward<Args>(args)...)
         {}
 
-        ~SecureSocketPortClientType()
+        ~SecureSocketPortClientType() override
         {}
     };
 
@@ -336,7 +343,7 @@ namespace Crypto {
         SecureSocketPortServerType(bool requestPeerCert, Args&&... args)
             : SecureSocketPortImproved(requestPeerCert, std::forward<Args>(args)...)
         {} 
-        ~SecureSocketPortServerType()
+        ~SecureSocketPortServerType() override
         {}
     };
 
