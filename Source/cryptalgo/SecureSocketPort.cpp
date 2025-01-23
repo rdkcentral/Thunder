@@ -814,7 +814,7 @@ template <typename TYPE>
 uint32_t SecureSocketPortImproved<TYPE>::Handler::Open(const uint32_t waitTime)
 {
     // Users of struct timeval should not exhibit overflow
-    ASSERT(waitTime <= Core::infinite);
+    ASSERT(waitTime != Core::infinite);
 
     _waitTime = waitTime;
 
