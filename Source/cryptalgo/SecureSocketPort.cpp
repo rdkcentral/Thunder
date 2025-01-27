@@ -29,6 +29,17 @@
 
 #include <core/Time.h>
 
+/*
+TODO: added note for reviewer Pierre.
+
+Certificate and Key classes with their current declarations are 'alsmost' like interfaces.
+Protected members may become pure virtual.
+
+X509Certificate and X509Key might derive and become one of all possible implementations for TLS, ie, OpenSSL.
+
+https://en.wikipedia.org/wiki/Comparison_of_TLS_implementations
+*/
+
 #ifndef __WINDOWS__
 namespace {
 
