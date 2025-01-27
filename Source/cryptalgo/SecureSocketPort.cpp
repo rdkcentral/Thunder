@@ -38,6 +38,7 @@ Protected members may become pure virtual.
 X509Certificate and X509Key might derive and become one of all possible implementations for TLS, ie, OpenSSL.
 
 https://en.wikipedia.org/wiki/Comparison_of_TLS_implementations
+https://curl.se/docs/ssl-compared.html
 */
 
 #ifndef __WINDOWS__
