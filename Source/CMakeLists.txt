@@ -48,7 +48,7 @@ option(DEADLOCK_DETECTION
 option(DISABLE_USE_COMPLEMENTARY_CODE_SET
         "Disable the complementary code set" OFF)
 option(SECURE_SOCKET
-       "Enable SecureSocketPort" ON)
+       "Enable SecureSocketPort" OFF)
 
 if(HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
