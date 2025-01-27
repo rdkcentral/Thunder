@@ -427,26 +427,14 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length < _administration->_size);
-        ASSERT(IsValid() == true);
-
         uint32_t head = _administration->_head;
         uint32_t tail = _administration->_tail;
         uint32_t writeStart = head;
         bool shouldMoveHead = true;
 
         if (_administration->_reservedPID != 0) {
-#ifdef __WINDOWS__
-            // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
-#else
-            // We are writing because of reservation.
-            ASSERT(_administration->_reservedPID == ::getpid());
-#endif
-
             // Check if we are not writing more than reserved.
             uint32_t newReservedWritten = _administration->_reservedWritten + length;
-            ASSERT(newReservedWritten <= _administration->_reserved);
 
             // Set up everything for actual write operation.
             writeStart = (head + _administration->_reservedWritten) % _administration->_size;
@@ -550,7 +538,6 @@ namespace Core {
             return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
-        ASSERT(noOtherReservation);
 
         if (!noOtherReservation)
             return Core::ERROR_ILLEGAL_STATE;
@@ -562,7 +549,6 @@ namespace Core {
         }
 
         AssureFreeSpace(actualLength);
-        ASSERT(actualLength <= Free());
 
         _administration->_reserved = actualLength;
         _administration->_reservedWritten = 0;

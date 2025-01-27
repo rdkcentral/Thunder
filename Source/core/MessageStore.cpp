@@ -140,7 +140,7 @@ namespace Core {
                 }
             }
 
-            ASSERT(bufferSize >= length);
+            ASSERT((Type() != Metadata::type::ASSERT) && (bufferSize >= length));
 
             if (bufferSize >= length) {
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
@@ -214,7 +214,7 @@ namespace Core {
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp));
 
-                ASSERT(bufferSize >= (length + extra));
+                ASSERT((Type() != Metadata::type::ASSERT) && (bufferSize >= (length + extra)));
 
                 if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
@@ -413,8 +413,6 @@ namespace Core {
 
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_processId) + (_processName.size() + 1) + (_fileName.size() + 1) + sizeof(_lineNumber) + (_callstack.size() + 1));
-
-                ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);

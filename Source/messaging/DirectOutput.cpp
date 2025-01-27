@@ -28,7 +28,7 @@ namespace Thunder {
         */
         void DirectOutput::Output(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message) const
         {
-            ASSERT(message != nullptr);
+            ASSERT((messageInfo.Type() != Core::Messaging::Metadata::type::ASSERT) && (message != nullptr));
             ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
 #ifndef __WINDOWS__

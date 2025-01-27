@@ -175,9 +175,6 @@ namespace Messaging {
             uint32_t result = Core::ERROR_WRITE_ERROR;
             const uint16_t fullLength = sizeof(length) + length; // headerLength + informationLength
 
-            ASSERT(length > 0);
-            ASSERT(value != nullptr);
-
             _dataLock.Lock();
 
             if (_dataBuffer.IsValid() == true) {
