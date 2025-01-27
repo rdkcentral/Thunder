@@ -281,7 +281,7 @@ static Core::Time ASN1_ToTime(const ASN1_TIME* input)
 // class Certificate
 // -----------------------------------------------------------------------------
 Certificate::Certificate(const void* certificate)
-    : _certificate{ const_cast<void*>(certificate) }
+    : _certificate{ certificate }
 {
     if (certificate != nullptr) {
         VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
@@ -400,7 +400,7 @@ Certificate::operator const void* () const
 // class Key
 // -----------------------------------------------------------------------------
 Key::Key(const void* key)
-    : _key{ const_cast<void*>(key) }
+    : _key{ key }
 {
     if (_key != nullptr) {
         VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(static_cast<EVP_PKEY*>(_key));

@@ -32,7 +32,7 @@ namespace Crypto {
         Certificate& operator=(const Certificate&) = delete;
         Certificate& operator=(Certificate&&) = delete;
 
-        Certificate(const Certificate& copy);
+        explicit Certificate(const Certificate& copy);
         Certificate(const std::string& fileName);
         Certificate(Certificate&& move) noexcept;
         ~Certificate();
@@ -49,7 +49,7 @@ namespace Crypto {
         operator const void* () const;
 
     private:
-        mutable void* _certificate;
+        void* _certificate;
     };
 
     class EXTERNAL Key {
@@ -58,7 +58,7 @@ namespace Crypto {
         Key& operator=(Key&&) = delete;
         Key& operator=(const Key&) = delete;
 
-        Key(const Key& copy);
+        explicit Key(const Key& copy);
         Key(const string& fileName);
         Key(const string& fileName, const string& password);
         Key(Key&& move) noexcept;
@@ -69,7 +69,7 @@ namespace Crypto {
         operator const void* () const;
 
     private:
-        mutable void* _key;
+        void* _key;
     };
  
     class EXTERNAL CertificateStore {
