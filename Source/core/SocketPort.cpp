@@ -1144,7 +1144,7 @@ namespace Thunder {
         }
 
         /* virtual */ int32_t SocketPort::Read(uint8_t buffer[], const uint16_t length) const {
-            return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, MSG_NOSIGNAL));
+            return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, 0));
         }
 
         /* virtual */ int32_t SocketPort::Write(const uint8_t buffer[], const uint16_t length) {
