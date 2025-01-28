@@ -167,6 +167,15 @@ namespace Thunder {
         #define ASSERT_ABORT
     #endif
 
+    #define DIRECT_ASSERT                                                                                   \
+        std::list<Thunder::Core::callstack_info> entries;                                                   \
+        DumpCallStack(0, entries);                                                                          \
+        for(const Thunder::Core::callstack_info& entry : entries) {                                         \
+            fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
+        }                                                                                                   \
+        fflush(stderr);                                                                                     \
+        ASSERT_ABORT
+
     #ifdef __CORE_MESSAGING__
 
         #ifdef __APPLE__
@@ -225,18 +234,20 @@ namespace Thunder {
                     ASSERT_ABORT                                                                                \
                 }                                                                                               \
             } while(0)
+
+        #define INTERNAL_ASSERT(expr)                                                                                   \
+            do {                                                                                                        \
+                if (!(expr)) {                                                                                          \
+                    ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+                    DIRECT_ASSERT                                                                                       \
+                }                                                                                                       \
+            } while(0)
     #else
         #define ASSERT(expr)                                                                                            \
             do {                                                                                                        \
                 if (!(expr)) {                                                                                          \
                     ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                    std::list<Thunder::Core::callstack_info> entries;                                                   \
-                    DumpCallStack(0, entries);                                                                          \
-                    for(const Thunder::Core::callstack_info& entry : entries) {                                         \
-                        fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
-                    }                                                                                                   \
-                    fflush(stderr);                                                                                     \
-                    ASSERT_ABORT                                                                                        \
+                    DIRECT_ASSERT                                                                                       \
                 }                                                                                                       \
             } while(0)
 
@@ -244,15 +255,11 @@ namespace Thunder {
             do {                                                                                                                                             \
                 if (!(expr)) {                                                                                                                               \
                     ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-                    std::list<Thunder::Core::callstack_info> entries;                                                                                        \
-                    DumpCallStack(0, entries);                                                                                                               \
-                    for(const Thunder::Core::callstack_info& entry : entries) {                                                                              \
-                        fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);                                       \
-                    }                                                                                                                                        \
-                    fflush(stderr);                                                                                                                          \
-                    ASSERT_ABORT                                                                                                                             \
+                    DIRECT_ASSERT                                                                                                                            \
                 }                                                                                                                                            \
             } while(0)
+
+        #define INTERNAL_ASSERT(expr) ASSERT(expr)
     #endif
 
     #define VERIFY(expr) ASSERT(expr)
@@ -260,6 +267,8 @@ namespace Thunder {
     #define ASSERT(x)
 
     #define ASSERT_VERBOSE(x, y, ...)
+
+    #define INTERNAL_ASSERT(x)
 
     #define VERIFY(expr)                                                                                                   \
         do {                                                                                                               \

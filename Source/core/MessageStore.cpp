@@ -140,7 +140,7 @@ namespace Core {
                 }
             }
 
-            ASSERT((Type() != Metadata::type::ASSERT) && (bufferSize >= length));
+            INTERNAL_ASSERT(bufferSize >= length);
 
             if (bufferSize >= length) {
                 Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
@@ -214,7 +214,7 @@ namespace Core {
             if (length != 0) {
                 const uint16_t extra = static_cast<uint16_t>(sizeof(_timeStamp));
 
-                ASSERT((Type() != Metadata::type::ASSERT) && (bufferSize >= (length + extra)));
+                INTERNAL_ASSERT(bufferSize >= (length + extra));
 
                 if (bufferSize >= (length + extra)) {
                     Core::FrameType<0> frame(buffer + length, bufferSize - length, bufferSize - length);
