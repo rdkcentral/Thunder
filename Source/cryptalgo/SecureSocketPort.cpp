@@ -80,7 +80,7 @@ public:
         : Certificate{ certificate }
     {}
 
-    X509Certificate(const X509* certificate)
+    X509Certificate(X509* certificate)
         : Certificate { certificate }
     {}
 
@@ -105,7 +105,7 @@ public :
         : Key{ key }
     {}
 
-    X509Key(const EVP_PKEY* key)
+    X509Key(EVP_PKEY* key)
         : Key{ key }
     {}
 
@@ -292,7 +292,7 @@ static Core::Time ASN1_ToTime(const ASN1_TIME* input)
 // -----------------------------------------------------------------------------
 // class Certificate
 // -----------------------------------------------------------------------------
-Certificate::Certificate(const void* certificate)
+Certificate::Certificate(void* certificate)
     : _certificate{ certificate }
 {
     if (certificate != nullptr) {
@@ -411,7 +411,7 @@ Certificate::operator const void* () const
 // -----------------------------------------------------------------------------
 // class Key
 // -----------------------------------------------------------------------------
-Key::Key(const void* key)
+Key::Key(void* key)
     : _key{ key }
 {
     if (_key != nullptr) {

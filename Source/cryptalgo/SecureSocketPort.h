@@ -45,7 +45,7 @@ namespace Crypto {
         bool ValidHostname(const std::string& expectedHostname) const;
 
     protected:
-        Certificate(const void* certificate);
+        Certificate(void* certificate);
         operator const void* () const;
 
     private:
@@ -65,7 +65,7 @@ namespace Crypto {
         ~Key();
 
     protected:
-        Key(const void* key);
+        Key(void* key);
         operator const void* () const;
 
     private:
