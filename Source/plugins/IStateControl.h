@@ -28,6 +28,7 @@ namespace Thunder {
 namespace PluginHost {
 
     // This interface gives direct access to change occuring on the remote object
+    // @json 1.0.0 @text:legacy_lowercase @prefix:statecontrol
     struct EXTERNAL IStateControl : virtual public Core::IUnknown {
 
         enum {
@@ -46,19 +47,28 @@ namespace PluginHost {
             EXITED = 0x0003
         };
 
+        // @event
         struct INotification : virtual public Core::IUnknown {
             enum {
                 ID = RPC::ID_STATECONTROL_NOTIFICATION
             };
 
+            // Question: in .json, the param is a boolean, so we would break BC with state, and we probably cannot rename?
+            // @brief Signals a state change of the service
             virtual void StateChange(const IStateControl::state state) = 0;
         };
 
         static const TCHAR* ToString(const state value);
         static const TCHAR* ToString(const command value);
 
+        // @json:omit
         virtual Core::hresult Configure(PluginHost::IShell* framework) = 0;
+
+        // Question: should it be property, which returns hresult and has state as @out param? if so, we break BC, and we probably cannot rename
+        // @brief Running state of the service
         virtual state State() const = 0;
+
+        // @json:omit
         virtual Core::hresult Request(const command state) = 0;
 
         virtual void Register(IStateControl::INotification* notification) = 0;
