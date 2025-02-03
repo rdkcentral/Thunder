@@ -247,10 +247,18 @@ namespace RPC {
 
         Core::TextSegmentIterator places(Core::TextFragment(pathName), false, '|');
 
+#ifdef __APPLE__
 #ifdef VERSIONED_LIBRARY_LOADING
-        static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+    static const std::string suffixFilter = "*." + std::to_string(THUNDER_VERSION)+ ".dylib";
 #else
-        static const std::string suffixFilter = "*.so";
+    static const std::string suffixFilter = "*.dylib";
+#endif
+#else
+#ifdef VERSIONED_LIBRARY_LOADING
+    static const std::string suffixFilter = "*.so." + std::to_string(THUNDER_VERSION);
+#else
+    static const std::string suffixFilter = "*.so";
+#endif
 #endif
 
         while (places.Next() == true) {
