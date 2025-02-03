@@ -25,7 +25,6 @@
 
 #ifdef __CORE_MESSAGING__
 #include "AssertionControl.h"
-#include <sstream>
 #endif
 
 #ifndef __WINDOWS__
@@ -186,22 +185,21 @@ namespace Thunder {
             #define PROGRAM_NAME program_invocation_short_name
         #endif
 
-        #define ASSERT_METADATA                                                                                 \
-            Thunder::Core::Messaging::MessageInfo __messageInfo__(                                              \
-                Thunder::Assertion::BaseAssertType::Metadata());                                                \
-            std::list<Thunder::Core::callstack_info> __entries__;                                               \
-            DumpCallStack(0, __entries__);                                                                      \
-            std::ostringstream __output__;                                                                      \
-            for (const Thunder::Core::callstack_info& entry : __entries__) {                                    \
-                __output__ << "[" << entry.module << "]:[" << entry.function << "]:[" << entry.line << "]\n";   \
-            }                                                                                                   \
-            std::string __callstack__ = __output__.str();                                                       \
-            Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                        \
-                __messageInfo__,                                                                                \
-                TRACE_PROCESS_ID,                                                                               \
-                PROGRAM_NAME,                                                                                   \
-                __FILE__,                                                                                       \
-                __LINE__,                                                                                       \
+        #define ASSERT_METADATA                                                                                            \
+            Thunder::Core::Messaging::MessageInfo __messageInfo__(                                                         \
+                Thunder::Assertion::BaseAssertType::Metadata());                                                           \
+            std::list<Thunder::Core::callstack_info> __entries__;                                                          \
+            DumpCallStack(0, __entries__);                                                                                 \
+            std::string __callstack__;                                                                                     \
+            for (const Thunder::Core::callstack_info& entry : __entries__) {                                               \
+                __callstack__ += "[" + entry.module + "]:[" + entry.function + "]:[" + std::to_string(entry.line) + "]\n"; \
+            }                                                                                                              \
+            Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
+                __messageInfo__,                                                                                           \
+                TRACE_PROCESS_ID,                                                                                          \
+                PROGRAM_NAME,                                                                                              \
+                __FILE__,                                                                                                  \
+                __LINE__,                                                                                                  \
                 __callstack__);
 
         #define ASSERT_SENT                                                                                     \
