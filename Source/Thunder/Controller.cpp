@@ -978,7 +978,6 @@ namespace Plugin {
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
-                    NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::SUSPENDED);
                     stateControl->Release();
                 }
             }
@@ -1009,7 +1008,6 @@ namespace Plugin {
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
-                    NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
                     stateControl->Release();
                 }
             }
@@ -1362,19 +1360,19 @@ namespace Plugin {
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
 
-    void Controller::NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
+    void Controller::NotifySuspendResumeStateChange(const Exchange::Controller::ILifeTime::state& state)
     {
        _adminLock.Lock();
 
         LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
         while(index != _lifeTimeObservers.end()) {
-            (*index)->SuspendResumeStateChange(callsign, state);
+            (*index)->SuspendResumeStateChange(state);
             index++;
         }
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, callsign, state); 
+        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, state); 
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const

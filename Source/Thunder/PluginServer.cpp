@@ -1223,6 +1223,26 @@ namespace PluginHost {
         }
     }
 
+    void Server::StateChange(const IStateControl::state state)
+    {
+        ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
+
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+
+        ASSERT(controller != nullptr);
+
+        switch (state) {
+            case IStateControl::state::SUSPENDED:
+                controller->NotifySuspendResumeStateChange(Exchange::Controller::ILifeTime::state::SUSPENDED);
+                break;
+            case IStateControl::state::RESUMED:
+                controller->NotifySuspendResumeStateChange(Exchange::Controller::ILifeTime::state::RESUMED);
+                break;
+            default:
+                break;
+        }
+    }
+
     void Server::Open()
     {
         // Before we do anything with the subsystems (notifications)

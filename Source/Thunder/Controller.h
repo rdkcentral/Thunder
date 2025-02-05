@@ -259,6 +259,8 @@ namespace Plugin {
             return (Core::ERROR_NONE);
         }
 
+        void NotifySuspendResumeStateChange(const Exchange::Controller::ILifeTime::state& state);
+
     public:
         //  IPlugin methods
         // -------------------------------------------------------------------------------------------------------
@@ -379,7 +381,6 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state);
 
     private:
         Core::CriticalSection _adminLock;
