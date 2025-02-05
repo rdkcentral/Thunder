@@ -235,7 +235,7 @@ In Thunder, there are two main macros that can be used to wrap messages that wil
                 __LINE__,
                 Thunder::Core::ClassNameOnly(typeid(*this).name()).Text()
             );
-            Thunder::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Core::Messaging::TextMessage __message__(__data__.Data());
             Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
         }
     } while(false)
@@ -329,7 +329,7 @@ In the piece of code below we can see that the first noticeable difference betwe
                 Thunder::Core::Time::Now().Ticks()
             );
             Thunder::Core::Messaging::IStore::Logging __log__(__info__);
-            Thunder::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Core::Messaging::TextMessage __message__(__data__.Data());
             Thunder::Messaging::MessageUnit::Instance().Push(__log__, &__message__);
         }
     } while(false)
@@ -520,7 +520,7 @@ Thunder already offers several default categories for tracing:
 Each of them is created in `Thunder/Source/messaging/TraceCategories.h` either manually or by using the `DEFINE_MESSAGING_CATEGORY` macro:
 
 ```c++
-DEFINE_MESSAGING_CATEGORY(Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Text);
+DEFINE_MESSAGING_CATEGORY(Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::TRACING>, Text);
 ```
 
 As you can see in the code, these classes inherit from a templated class called `BaseCategoryType`. The association of these categories with tracing is established by passing the `TRACING` metadata type as a template parameter.
@@ -582,8 +582,8 @@ Now, let us delve into how the MessageControl plugin manages the messages from l
                 __LINE__,
                 __FUNCTION__
             );
-            Thunder::Messaging::TextMessage __message__(__data__.Data());
-            Thunder::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
+            Thunder::Core::Messaging::TextMessage __message__(__data__.Data());
+            Thunder::Core::Messaging::MessageUnit::Instance().Push(__trace__, &__message__);
         }
     } while(false)
 ```
@@ -641,7 +641,7 @@ void WarningReportingUnit::ReportWarningEvent(const char identifier[], const IWa
 
     string text;
     information.ToString(text);
-    Thunder::Messaging::TextMessage data(text);
+    Thunder::Core::Messaging::TextMessage data(text);
 
     Thunder::Messaging::MessageUnit::Instance().Push(report, &data);
 }

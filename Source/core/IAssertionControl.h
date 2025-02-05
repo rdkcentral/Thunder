@@ -1,8 +1,8 @@
-/*
+ /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2022 Metrological
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,16 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
+#include "Module.h"
+#include "Messaging.h"
 
-#include "MessageClient.h"
-#include "Logging.h"
-#include "LoggingCategories.h"
-#include "DirectOutput.h"
-#include "TraceCategories.h"
-#include "TraceControl.h"
-#include "TraceFactory.h"
-#include "ConsoleStreamRedirect.h"
-#include "OperationalCategories.h"
-#include "AssertionUnit.h"
+namespace Thunder {
+namespace Assertion {
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "messaging.lib")
-#endif
+    struct EXTERNAL IAssertionUnit {
+        virtual ~IAssertionUnit() = default;
+        virtual void AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message) = 0;
+    };
 
-WPEFRAMEWORK_NESTEDNAMESPACE_COMPATIBILIY(Messaging)
+}
+}
