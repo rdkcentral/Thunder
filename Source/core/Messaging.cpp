@@ -17,30 +17,16 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include "Module.h"
+#include "Messaging.h"
+#include "Frame.h"
 
 namespace Thunder {
 
-namespace Messaging {
+namespace Core {
 
-    class EXTERNAL TextMessage : public Core::Messaging::IEvent {
-    public:
-        TextMessage() = default;
-        TextMessage(const string& text)
-            : _text(text)
-        {
-        }
-        TextMessage(const uint16_t length, const TCHAR buffer[])
-            : _text(buffer, length)
-        {
-        }
+    namespace Messaging {
 
-        TextMessage(const TextMessage&) = delete;
-        TextMessage& operator=(const TextMessage&) = delete;
-
-        uint16_t Serialize(uint8_t buffer[], const uint16_t bufferSize) const override
+        uint16_t TextMessage::Serialize(uint8_t buffer[], const uint16_t bufferSize) const
         {
             Core::FrameType<0> frame(buffer, bufferSize, bufferSize);
             Core::FrameType<0>::Writer writer(frame, 0);
@@ -50,7 +36,7 @@ namespace Messaging {
             return (std::min(bufferSize, static_cast<uint16_t>(_text.size() + 1)));
         }
 
-        uint16_t Deserialize(const uint8_t buffer[], const uint16_t bufferSize) override
+        uint16_t TextMessage::Deserialize(const uint8_t buffer[], const uint16_t bufferSize)
         {
             Core::FrameType<0> frame(const_cast<uint8_t*>(buffer), bufferSize, bufferSize);
             Core::FrameType<0>::Reader reader(frame, 0);
@@ -59,14 +45,6 @@ namespace Messaging {
 
             return (static_cast<uint16_t>(_text.size() + 1));
         }
-
-        const string& Data() const override {
-            return (_text);
-        }
-
-    private:
-        string _text;
-    };
-
-} // namespace Messaging
+    }
+}
 }

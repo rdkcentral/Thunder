@@ -105,6 +105,7 @@ target_link_libraries(${TARGET_PROXYSTUBS}
           CompileSettingsDebug::CompileSettingsDebug
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}COM::${NAMESPACE}COM
+          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         )
 
 target_include_directories( ${TARGET}
