@@ -51,6 +51,7 @@ namespace PluginHost {
             enum { ID = RPC::ID_STATE_CONTROLLER_NOTIFICATION };
 
             // @brief Signals a state change of the service
+            // @param Current state of the service
             virtual void StateChanged(const state state) = 0;
         };
 
@@ -62,6 +63,7 @@ namespace PluginHost {
         virtual Core::hresult State(state& state /* @out */) const = 0;
 
         // @brief Request a change to the specified state
+        // @param State to which it is requested to change
         virtual Core::hresult Request(const command state) = 0;
     };
 

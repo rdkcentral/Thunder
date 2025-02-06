@@ -39,7 +39,7 @@
 #include "IVirtualInput.h"
 #include "JSONRPC.h"
 #include "IStateController.h"
-#include <plugins/json/json_IStateController.h>
+#include "json/json_IStateController.h"
 #include "Metadata.h"
 #include "Request.h"
 #include "Service.h"
