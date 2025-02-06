@@ -64,6 +64,7 @@ add_library(${TARGET}
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
         ASN1.h
+        AssertionControl.h
         DoorBell.h
         Config.h
         core.h
@@ -77,6 +78,7 @@ set(PUBLIC_HEADERS
         FileObserver.h
         Frame.h
         IAction.h
+        IAssertionControl.h
         IIterator.h
         IObserver.h
         IPCMessage.h
@@ -84,6 +86,7 @@ set(PUBLIC_HEADERS
         IPCChannel.h
         IPCConnector.h
         ISO639.h
+        IWarningReportingControl.h
         JSON.h
         JSONRPC.h
         KeyValue.h
@@ -93,6 +96,7 @@ set(PUBLIC_HEADERS
         Measurement.h
         Media.h
         MessageException.h
+        Messaging.h
         Module.h
         Netlink.h
         NetworkInfo.h
@@ -140,7 +144,6 @@ set(PUBLIC_HEADERS
         ValueRecorder.h
         XGetopt.h
         WorkerPool.h
-        IWarningReportingControl.h
         WarningReportingControl.h
         WarningReportingCategories.h
         Module.h
@@ -168,7 +171,7 @@ endif()
 
 if(MESSAGING)
     target_compile_definitions(${TARGET} PUBLIC __CORE_MESSAGING__)
-    target_sources(${TARGET} PRIVATE MessageStore.cpp)
+    target_sources(${TARGET} PRIVATE Messaging.cpp MessageStore.cpp AssertionControl.cpp)
     message(STATUS "Messaging enabled")
 endif()
 

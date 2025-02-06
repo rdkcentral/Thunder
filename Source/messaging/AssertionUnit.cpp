@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2022 Metrological
+ * Copyright 2020 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,30 @@
  * limitations under the License.
  */
 
-#include "OperationalCategories.h"
+#include "AssertionUnit.h"
 
 namespace Thunder {
+namespace Assertion {
 
-namespace OperationalStream {
-
-    // -----------------------------------------------------------------
-    // REGISTRATION
-    // -----------------------------------------------------------------
-
-    namespace {
-
-        static class Instantiation {
-        public:
-            Instantiation()
-            {
-                OPERATIONAL_STREAM_ANNOUNCE(StandardOut)
-                OPERATIONAL_STREAM_ANNOUNCE(StandardError)
-            }
-        } ControlsRegistration;
-
+    AssertionUnit::AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(this);
     }
 
+    AssertionUnit& AssertionUnit::Instance()
+    {
+        return (Core::SingletonType<AssertionUnit>::Instance());
+    }
+
+    AssertionUnit::~AssertionUnit()
+    {
+        AssertionUnitProxy::Instance().Handle(nullptr);
+    }
+
+    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
+    {
+        metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
+        Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message);
+    }
 }
 }
