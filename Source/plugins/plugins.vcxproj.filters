@@ -130,5 +130,8 @@
     <CustomBuild Include="IController.h">
       <Filter>Interface Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="IStateController.h">
+      <Filter>Interface Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>
