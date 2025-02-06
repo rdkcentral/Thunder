@@ -91,21 +91,23 @@ namespace PluginHost {
             void Unregister(IShell* shell)
             {
                 ASSERT(shell != nullptr);
+
                 if (shell != nullptr) {
 
                     _adminLock.Lock();
                     shell->Unregister(this);
                     _callsign.clear();
 
-                if (_designated != nullptr) {
+                    if (_designated != nullptr) {
 
-                    _designated->Release();
-                    _designated = nullptr;
+                        _designated->Release();
+                        _designated = nullptr;
 
-                    _parent.Deactivated();
-                }
+                        _parent.Deactivated();
+                    }
 
-                _adminLock.Unlock();
+                    _adminLock.Unlock();
+                }            
             }
             INTERFACE* Interface()
             {
