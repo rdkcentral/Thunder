@@ -17,57 +17,54 @@
  * limitations under the License.
  */
 
-#ifndef __ISTATECONTROL_H
-#define __ISTATECONTROL_H
+#pragma once
 
 #include "IShell.h"
 
 #include <com/ICOM.h>
 
 namespace Thunder {
+
 namespace PluginHost {
 
     // This interface gives direct access to change occuring on the remote object
-    struct EXTERNAL IStateControl : virtual public Core::IUnknown {
+    // @json 1.0.0 @text:legacy_lowercase @prefix:statecontrol
+    struct EXTERNAL IStateController : virtual public Core::IUnknown {
 
-        enum {
-            ID = RPC::ID_STATECONTROL
+        enum { ID = RPC::ID_STATE_CONTROLLER };
+
+        enum command : uint8_t {
+            SUSPEND,
+            RESUME
         };
 
-        enum command : uint16_t {
-            SUSPEND = 0x0001,
-            RESUME = 0x0002
+        enum state : uint8_t {
+            UNINITIALIZED,
+            SUSPENDED,
+            RESUMED,
+            EXITED
         };
 
-        enum state : uint16_t {
-            UNINITIALIZED = 0x0000,
-            SUSPENDED = 0x0001,
-            RESUMED = 0x0002,
-            EXITED = 0x0003
-        };
-
+        // @event
         struct INotification : virtual public Core::IUnknown {
-            enum {
-                ID = RPC::ID_STATECONTROL_NOTIFICATION
-            };
 
-            virtual void StateChange(const IStateControl::state state) = 0;
+            enum { ID = RPC::ID_STATE_CONTROLLER_NOTIFICATION };
+
+            // @brief Signals a state change of the service
+            virtual void StateChanged(const state state) = 0;
         };
 
-        static const TCHAR* ToString(const state value);
-        static const TCHAR* ToString(const command value);
+        virtual Core::hresult Register(INotification* const notification) = 0;
+        virtual Core::hresult Unregister(const INotification* const notification) = 0;
 
-        virtual Core::hresult Configure(PluginHost::IShell* framework) = 0;
+        // @property
+        // @brief Running state of the service
+        virtual Core::hresult State(state& state /* @out */) const = 0;
 
-        virtual state State() const = 0;
-
+        // @brief Request a change to the specified state
         virtual Core::hresult Request(const command state) = 0;
-
-        virtual void Register(IStateControl::INotification* notification) = 0;
-        virtual void Unregister(IStateControl::INotification* notification) = 0;
     };
 
 } // namespace PluginHost
-}
 
-#endif // __ISTATECONTROL_H
+}

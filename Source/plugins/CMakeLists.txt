@@ -25,13 +25,16 @@ ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IShell.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "Thunder::Exchange" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 JsonGenerator(CODE NAMESPACE Thunder::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
+JsonGenerator(CODE NAMESPACE Thunder::PluginHost INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IStateController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
 
 file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
 file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
+list(APPEND JSON_CODE_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JStateController.h")
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -62,6 +65,7 @@ set(PUBLIC_HEADERS
         IController.h
         Shell.h
         IStateControl.h
+        IStateController.h
         StateControl.h
         ISubSystem.h
         IDispatcher.h
@@ -162,6 +166,7 @@ install(
 
 install(
         FILES ${JSON_DATA_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT ${NAMESPACE}_Development
+        FILES ${JSON_CODE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT ${NAMESPACE}_Development
 )
 
 install(
