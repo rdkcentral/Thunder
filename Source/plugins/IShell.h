@@ -86,7 +86,7 @@ namespace PluginHost {
             ACTIVATION,
             PRECONDITION,
             HIBERNATED,
-            DESTROYED,
+            DESTROYED
         };
 
         enum class startmode : uint8_t {
