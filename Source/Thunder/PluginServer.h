@@ -1541,7 +1541,7 @@ namespace PluginHost {
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
                     _jsonrpc = newIF->QueryInterface<IDispatcher>();
-                
+
                     _composit.AcquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
