@@ -50,12 +50,38 @@ bool ParseOptions(int argc, char** argv, string& identifier, bool& server)
 
 namespace {
 class Server : public Core::PrivilegedRequest {
+private:
+    class Callback : public Core::PrivilegedRequest::ICallback {
+    public:
+        Callback() = delete;
+        Callback(Callback&&) = delete;
+        Callback(const Callback&&) = delete;
+        Callback& operator= (Callback&&) = delete;
+        Callback& operator= (const Callback&&) = delete;
+
+        Callback(Server& parent) : _parent(parent) {
+        }
+        ~Callback() override = default;
+
+    public:
+        void Request(const uint32_t id, Container& descriptors) override {
+            _parent.Request(id, descriptors);
+        }
+        void Offer(const uint32_t id, Container&& descriptors) override {
+            _parent.Offer(id, std::move(descriptors));
+        }
+
+    private:
+        Server& _parent;
+    };
+
 public:
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
     Server(const uint8_t nFiles)
         : _sharedFiles()
+        , _callback(*this)
     {
         _sharedFiles.clear();
 
@@ -105,28 +131,26 @@ public:
 
         _sharedFiles.clear();
     }
-
-    uint8_t Service(const uint32_t id, const uint8_t maxSize, int container[]) override
-    {
-        // container.clear();
-        memset(container, -1, maxSize);
-
+    void Request(const uint32_t id, Container& descriptors) {
+        descriptors.clear();
         uint8_t i(0);
 
         for (auto& file : _sharedFiles) {
-            if (i < maxSize) {
+            if (i < Core::PrivilegedRequest::MaxDescriptorsPerRequest) {
                 printf("identifier=%d -> %s fd=%d nFd=%d", id, file.FileName().c_str(), int(file), i);
-                container[i++] = int(file);
+                descriptors.emplace_back(static_cast<int>(file));
+                i++;
             }
         }
 
         printf("Service passed nFd=%d", i);
-
-        return i;
+    }
+    void Offer(const uint32_t id, Container&& descriptors) {
     }
 
 private:
     std::vector<Core::File> _sharedFiles;
+    Callback _callback;
 };
 }
 
