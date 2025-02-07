@@ -101,25 +101,27 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_LIFETIME };
 
         enum state : uint8_t {
+            UNINITIALIZED,
             SUSPENDED,
-            RESUMED
+            RESUMED,
+            EXITED
         };
 
         // @event
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
-            // @brief Notifies of a plugin state change controlled by Thunder
+            // @brief Notifies of a plugin state change
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
             // @param reason: Reason for state change
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
 
-            // @brief Notifies of a plugin state change controlled by the plugin
+            // @brief Notifies of a plugin state change controlled by IStateControl
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void SuspendResumeStateChange(const string& callsign, const state& state) = 0;
+            virtual void StateControlStateChange(const string& callsign, const state& state) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink) = 0;

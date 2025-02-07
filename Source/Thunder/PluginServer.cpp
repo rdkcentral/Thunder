@@ -1227,7 +1227,7 @@ namespace PluginHost {
         }
     }
 
-    void Server::StateChange(const string& callsign, const IStateControl::state state)
+    void Server::StateControlStateChange(const string& callsign, const IStateControl::state state)
     {
         ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
         Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
@@ -1235,10 +1235,16 @@ namespace PluginHost {
 
         switch (state) {
             case IStateControl::state::SUSPENDED:
-                controller->NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::SUSPENDED);
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::SUSPENDED);
                 break;
             case IStateControl::state::RESUMED:
-                controller->NotifySuspendResumeStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
+                break;
+            case IStateControl::state::EXITED:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::EXITED);
+                break;
+            case IStateControl::state::UNINITIALIZED:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::UNINITIALIZED);
                 break;
             default:
                 break;

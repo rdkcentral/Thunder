@@ -259,7 +259,7 @@ namespace Plugin {
             return (Core::ERROR_NONE);
         }
 
-        void NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state);
+        void NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state);
 
     public:
         //  IPlugin methods

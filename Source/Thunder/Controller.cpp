@@ -1360,19 +1360,19 @@ namespace Plugin {
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
 
-    void Controller::NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
+    void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
     {
        _adminLock.Lock();
 
         LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
         while(index != _lifeTimeObservers.end()) {
-            (*index)->SuspendResumeStateChange(callsign, state);
+            (*index)->StateControlStateChange(callsign, state);
             index++;
         }
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, callsign, state); 
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state); 
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const

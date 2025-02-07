@@ -514,7 +514,7 @@ namespace PluginHost {
                     _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
                 void StateChange(const IStateControl::state state) override {
-                    _parent._administrator.StateChange(_parent.Callsign(), state);
+                    _parent._administrator.StateControlStateChange(_parent.Callsign(), state);
                 }
                 BEGIN_INTERFACE_MAP(Composit)
                     INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
@@ -2869,9 +2869,9 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void StateChange(const string& callsign, const IStateControl::state state)
+            void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
-                _server.StateChange(callsign, state);       
+                _server.StateControlStateChange(callsign, state);       
             }
             void Created(const string& callsign, PluginHost::IShell* entry) {
                 _notificationLock.Lock();
@@ -4707,7 +4707,7 @@ namespace PluginHost {
         void Open();
         void Close();
 
-        void StateChange(const string& callsign, const IStateControl::state state);
+        void StateControlStateChange(const string& callsign, const IStateControl::state state);
 
         uint32_t Persist()
         {
