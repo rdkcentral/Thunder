@@ -514,7 +514,7 @@ namespace PluginHost {
                     _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
                 void StateChange(const IStateControl::state state) override {
-                    _parent._administrator.StateChange(state);
+                    _parent._administrator.StateChange(_parent.Callsign(), state);
                 }
                 BEGIN_INTERFACE_MAP(Composit)
                     INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
@@ -1541,12 +1541,7 @@ namespace PluginHost {
                     _rawSocket = newIF->QueryInterface<IChannel>();
                     _webSecurity = newIF->QueryInterface<ISecurity>();
                     _jsonrpc = newIF->QueryInterface<IDispatcher>();
-                    _stateControl = newIF->QueryInterface<IStateControl>();
-                    if (_stateControl != nullptr) {
-                        _stateControl->Register(&_composit);
-                    }
-                    ASSERT(_stateControl != nullptr);
-
+                
                     _composit.AcquireInterfaces(newIF);
                     if (_webSecurity == nullptr) {
                         _webSecurity = _administrator.Configuration().Security();
@@ -1606,11 +1601,7 @@ namespace PluginHost {
                     _jsonrpc->Release();
                     _jsonrpc = nullptr;
                 }
-                if (_stateControl != nullptr) {
-                    _stateControl->Unregister(&_composit);
-                    _stateControl->Release();
-                    _stateControl = nullptr;
-                }
+
                 _composit.ReleaseInterfaces();
                 if (_connection != nullptr) {
                     // Lets record the ID associated with this connection.
@@ -1987,7 +1978,6 @@ namespace PluginHost {
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
-            using StateNotifiers = std::vector<PluginHost::IStateControl::INotification*>;
 
             class CommunicatorServer : public RPC::Communicator {
             private:
@@ -2708,7 +2698,6 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _stateNotifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
                     *this,
@@ -2843,7 +2832,6 @@ namespace PluginHost {
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                
                 _notificationLock.Lock();
 
                 Notifiers::iterator index(_notifiers.begin());
@@ -2881,9 +2869,9 @@ namespace PluginHost {
 
                 _notificationLock.Unlock();
             }
-            void StateChange(const IStateControl::state state)
+            void StateChange(const string& callsign, const IStateControl::state state)
             {
-                _server.StateChange(state);       
+                _server.StateChange(callsign, state);       
             }
             void Created(const string& callsign, PluginHost::IShell* entry) {
                 _notificationLock.Lock();
@@ -2950,41 +2938,6 @@ namespace PluginHost {
                 if (index != _notifiers.end()) {
                     (*index)->Release();
                     _notifiers.erase(index);
-                }
-
-                _notificationLock.Unlock();
-            }
-            void Register(IStateControl::INotification* sink)
-            {
-                ASSERT(sink != nullptr);
-                ASSERT(false);
-                ASSERT(true);
-                if (sink != nullptr) {
-
-                    _notificationLock.Lock();
-
-                    StateNotifiers::iterator index = std::find(_stateNotifiers.begin(), _stateNotifiers.end(), sink);
-
-                    ASSERT(index == _stateNotifiers.end());
-
-                    if (index == _stateNotifiers.end()) {
-                        sink->AddRef();
-                        _stateNotifiers.push_back(sink);
-                    }
-
-                    _notificationLock.Unlock();
-                }
-            }
-            void Unregister(IStateControl::INotification* sink)
-            {
-                _notificationLock.Lock();
-
-                StateNotifiers::iterator index(std::find(_stateNotifiers.begin(), _stateNotifiers.end(), sink));
-                ASSERT(index != _stateNotifiers.end());
-
-                if (index != _stateNotifiers.end()) {
-                    (*index)->Release();
-                    _stateNotifiers.erase(index);
                 }
 
                 _notificationLock.Unlock();
@@ -3545,7 +3498,6 @@ namespace PluginHost {
             Plugins _services;
             mutable RemoteInstantiators _instantiators;
             Notifiers _notifiers;
-            StateNotifiers _stateNotifiers;
             Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Core::SinkType<SubSystems> _subSystems;
@@ -4755,7 +4707,7 @@ namespace PluginHost {
         void Open();
         void Close();
 
-        void StateChange(const IStateControl::state state);
+        void StateChange(const string& callsign, const IStateControl::state state);
 
         uint32_t Persist()
         {

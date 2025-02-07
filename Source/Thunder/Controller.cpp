@@ -589,7 +589,7 @@ namespace Plugin {
                             result->Message = _T("There is no callsign: ") + callSign;
                         }
                     }
-                }    
+                }
             } else if (index.Current() == _T("Unavailable")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
@@ -965,7 +965,7 @@ namespace Plugin {
     {
         Core::hresult result = Core::ERROR_NONE;
         ASSERT(_pluginServer != nullptr);
-        
+
         if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::IShell> service;
 
@@ -1360,19 +1360,19 @@ namespace Plugin {
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
     }
 
-    void Controller::NotifySuspendResumeStateChange(const Exchange::Controller::ILifeTime::state& state)
+    void Controller::NotifySuspendResumeStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
     {
        _adminLock.Lock();
 
         LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
         while(index != _lifeTimeObservers.end()) {
-            (*index)->SuspendResumeStateChange(state);
+            (*index)->SuspendResumeStateChange(callsign, state);
             index++;
         }
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, state); 
+        Exchange::Controller::JLifeTime::Event::SuspendResumeStateChange(*this, callsign, state); 
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const

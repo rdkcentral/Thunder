@@ -116,9 +116,10 @@ namespace Controller {
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
 
             // @brief Notifies of a plugin state change controlled by the plugin
+            // @param callsign: Plugin callsign
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void SuspendResumeStateChange(const state& state) = 0;
+            virtual void SuspendResumeStateChange(const string& callsign, const state& state) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink) = 0;
