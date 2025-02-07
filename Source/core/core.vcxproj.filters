@@ -258,6 +258,15 @@
     <ClInclude Include="IPCMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AssertionControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAssertionControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Messaging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">
@@ -366,6 +375,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WarningReportingCategories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AssertionControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Messaging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

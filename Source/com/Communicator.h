@@ -35,9 +35,8 @@
 #include <processcontainers/processcontainers.h>
 #endif
 
-
 #if defined(WARNING_REPORTING_ENABLED)
-#include "../warningreporting/WarningReportingUnit.h"
+#include <warningreporting/WarningReportingUnit.h>
 #endif
 
 #include "IteratorType.h"
@@ -1330,14 +1329,14 @@ namespace RPC {
                         observer++;
                     }
 
-                    // Don't forget to close on our side as well, if it is not already closed....
-                    index->second->Terminate();
 
                     // Release this entry, do not wait till it get's overwritten.
                     index->second->Release();
                     _connections.erase(index);
                     _adminLock.Unlock();
 
+                    // Don't forget to close on our side as well, if it is not already closed....
+                    connection->Terminate();
                     connection->Release();
                 }
             }

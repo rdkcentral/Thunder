@@ -161,7 +161,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -202,7 +202,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -241,7 +241,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;_DEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
@@ -282,7 +282,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>__CORE_MESSAGING__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PLUGINS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(FrameworkPath);$(WindowsPath);$(WindowsPath)zlib;$(FrameworkPath)extensions</AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
