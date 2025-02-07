@@ -20,8 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "TextMessage.h"
-#include "MessageUnit.h"
 
 namespace Thunder {
 
