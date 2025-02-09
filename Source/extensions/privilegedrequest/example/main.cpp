@@ -66,8 +66,14 @@ private:
     public:
         void Request(const uint32_t id, Container& descriptors) override {
             _parent.Request(id, descriptors);
+            printf("Request descriptors for [%d]: Amount: [%d], Values: [", id, descriptors.size());
+            for (uint8_t index = 0; index < descriptors.size(); index++) {
+                printf("%d,", static_cast<int>(descriptors[index]));
+            } 
+            printf("]\n");
         }
         void Offer(const uint32_t id, Container&& descriptors) override {
+            printf("Offered descriptors for [%d]: Amount: [%d]\n", id, descriptors.size());
             _parent.Offer(id, std::move(descriptors));
         }
 
@@ -76,11 +82,15 @@ private:
     };
 
 public:
+    Server() = delete;
+    Server(Server&&) = delete;
     Server(const Server&) = delete;
+    Server& operator=(Server&&) = delete;
     Server& operator=(const Server&) = delete;
 
     Server(const uint8_t nFiles)
-        : _sharedFiles()
+        : Core::PrivilegedRequest(&_callback)
+        , _sharedFiles()
         , _callback(*this)
     {
         _sharedFiles.clear();
@@ -104,7 +114,7 @@ public:
 
                 std::stringstream line;
 
-                line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "!" << std::endl;
+                line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "! Sequence= " << static_cast<unsigned>(i) << std::endl;
 
                 newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
             } else {
@@ -137,13 +147,12 @@ public:
 
         for (auto& file : _sharedFiles) {
             if (i < Core::PrivilegedRequest::MaxDescriptorsPerRequest) {
-                printf("identifier=%d -> %s fd=%d nFd=%d", id, file.FileName().c_str(), int(file), i);
-                descriptors.emplace_back(static_cast<int>(file));
+                descriptors.emplace_back(file);
                 i++;
             }
         }
 
-        printf("Service passed nFd=%d", i);
+        printf("Service passed nFd=%d\n", i);
     }
     void Offer(const uint32_t id, Container&& descriptors) {
     }
@@ -157,7 +166,7 @@ private:
 int main(int argc, char** argv)
 {
     bool server(false);
-    uint8_t nFiles(20);
+    uint8_t nFiles(12);
     string identifier;
 
     if ((ParseOptions(argc, argv, identifier, server) == true) || (identifier.empty() == true)) {
@@ -185,11 +194,14 @@ int main(int argc, char** argv)
 
                     channel.Request(1000, identifier, id, fds);
 
-                    for (auto& fd : fds) {
-                        if (fd > 0) {
-                            printf("descriptor: %d\n", int(fd));
+                    printf ("Received: %d descriptors.\n", fds.size());
 
-                            FILE* file = fdopen(fd, "w");
+                    for (const auto& fd : fds) {
+                        if (fd > 0) {
+                            int current = static_cast<int>(fd);
+                            printf("descriptor: %d\n", current);
+
+                            FILE* file = fdopen(current, "w");
 
                             if (file) {
                                 fprintf(file, "(%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());

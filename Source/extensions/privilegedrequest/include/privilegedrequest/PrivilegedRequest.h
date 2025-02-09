@@ -39,17 +39,14 @@ namespace Core {
     public:
         class Descriptor {
         public:
+            Descriptor() = delete;
             Descriptor& operator=(Descriptor&&) = delete;
             Descriptor& operator=(const Descriptor&) = delete;
 
-            Descriptor()
-                : _descriptor(-1)
-            {
-            }
             explicit Descriptor(const int descriptor)
                 : _descriptor(-1) {
                 ASSERT(descriptor != -1);
-                if (_descriptor != -1) {
+                if (descriptor != -1) {
 #ifndef __WINDOWS__
                     _descriptor = ::dup(descriptor);
 #endif
@@ -79,7 +76,7 @@ namespace Core {
             }
 
         public:
-            operator int() const
+            operator int () const
             {
                 return (_descriptor);
             }
@@ -144,6 +141,7 @@ namespace Core {
                 , _state(IDLE)
                 , _id(~0)
                 , _domainSocket(-1)
+                , _connector()
                 , _signal(true, true)
                 , _callback(callback) {
             }
@@ -160,40 +158,39 @@ namespace Core {
                 if (_state.compare_exchange_strong(expected, state::REQUEST) == true) {
                     ASSERT(_domainSocket == -1);
 
-                    result = Core::ERROR_UNAVAILABLE;
-
 #ifndef __WINDOWS__
-                    const Core::NodeId server(connector.c_str());
+                    string clientName(UniqueDomainName(connector));
+                    _domainSocket = OpenDomainSocket(clientName);
 
-                    _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+                    if (_domainSocket == -1) {
+                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                    else {
+                        const Core::NodeId server (connector.c_str());
 
-                    if (_domainSocket >= 0) {
-                        int flags = fcntl(_domainSocket, F_GETFL, 0) | O_NONBLOCK;
+                        result = Core::ERROR_TIMEDOUT;
 
-                        if (::fcntl(_domainSocket, F_SETFL, flags) != 0) {
-                            TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
-                            result = Core::ERROR_BAD_REQUEST;
-                        } else {
-                            result = Core::ERROR_TIMEDOUT;
+                        ResourceMonitor::Instance().Register(*this);
 
-                            ResourceMonitor::Instance().Register(*this);
+                        _signal.ResetEvent();
+                        _id = id;
 
-                            _signal.ResetEvent();
+                        // Send out the request, see if the server has descriptors to respond..
+                        Write(state::REQUEST, id, 0, nullptr, server, server.Size());
 
-                            // Send out the request, see if the server has descriptors to respond..
-                            Write(state::REQUEST, id, 0, nullptr, server, server.Size());
-
-                            if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
-                                result = Core::ERROR_NONE;
-                            }
-
-                            ResourceMonitor::Instance().Unregister(*this);
+                        if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
+                            result = Core::ERROR_NONE;
+                            descriptors = std::move(_descriptors);
                         }
+                        
+                        ResourceMonitor::Instance().Unregister(*this);
 
                         ::close(_domainSocket);
+                        ::unlink(clientName.c_str());
                         _domainSocket = -1;
-                    } else {
-                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        _id = -1;
+                        _descriptors.clear();
                     }
 
 #endif
@@ -212,42 +209,41 @@ namespace Core {
                     result = Core::ERROR_UNAVAILABLE;
 
 #ifndef __WINDOWS__
-                    const Core::NodeId server(connector.c_str());
+                    string clientName(UniqueDomainName(connector));
+                    _domainSocket = OpenDomainSocket(clientName);
 
-                    _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+                    if (_domainSocket == -1) {
+                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        result = Core::ERROR_BAD_REQUEST;
+                    }
+                    else {
+                        const Core::NodeId server (connector.c_str());
 
-                    if (_domainSocket >= 0) {
-                        int flags = fcntl(_domainSocket, F_GETFL, 0) | O_NONBLOCK;
+                        result = Core::ERROR_TIMEDOUT;
 
-                        if (::fcntl(_domainSocket, F_SETFL, flags) != 0) {
-                            TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
-                            result = Core::ERROR_BAD_REQUEST;
-                        } else {
-                            int buffer[MaxDescriptorsPerRequest];
-                            uint8_t count = std::min(MaxDescriptorsPerRequest, static_cast<uint8_t>(descriptors.size()));
+                        int buffer[MaxDescriptorsPerRequest];
+                        uint8_t count = std::min(MaxDescriptorsPerRequest, static_cast<uint8_t>(descriptors.size()));
 
-                            for(uint8_t index = 0; index < count; index++) { buffer[index] = descriptors[index]; }
+                        for(uint8_t index = 0; index < count; index++) { buffer[index] = descriptors[index]; }
 
-                            result = Core::ERROR_TIMEDOUT;
+                        ResourceMonitor::Instance().Register(*this);
 
-                            ResourceMonitor::Instance().Register(*this);
+                        _signal.ResetEvent();
+                        _id = id;
 
-                            _signal.ResetEvent();
+                        // Send out the offer, so the server can respond..
+                        Write(state::OFFER, id, count, buffer, server, server.Size());
 
-                            // Send out the offer, so the server can respond..
-                            Write(state::OFFER, id, count, buffer, server, server.Size());
-
-                            if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
-                                result = Core::ERROR_NONE;
-                            }
-
-                            ResourceMonitor::Instance().Unregister(*this);
+                        if (_signal.Lock(waitTime) == Core::ERROR_NONE) {
+                            result = Core::ERROR_NONE;
                         }
 
+                        ResourceMonitor::Instance().Unregister(*this);
+
                         ::close(_domainSocket);
+                        ::unlink(clientName.c_str());
                         _domainSocket = -1;
-                    } else {
-                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        _id = -1;
                     }
 
 #endif
@@ -264,43 +260,18 @@ namespace Core {
                 if (_state.compare_exchange_strong(expected, state::LISTENING) == true) {
                     ASSERT(_domainSocket == -1);
 
-                    result = Core::ERROR_UNAVAILABLE;
-                    const Core::NodeId server(connector.c_str());
-
 #ifndef __WINDOWS__
-                    _domainSocket = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+                    _domainSocket = OpenDomainSocket(connector);
 
-                    if (_domainSocket >= 0) {
-                        int flags = ::fcntl(_domainSocket, F_GETFL, 0) | O_NONBLOCK;
-
-                        if (::fcntl(_domainSocket, F_SETFL, flags) != 0) {
-                            TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
-                            result = Core::ERROR_BAD_REQUEST;
-                        } else {
-
-                            ::unlink(server.HostName().c_str());
-
-                            if (::bind(_domainSocket, server, server.Size()) == 0) {
-                                result = Core::ERROR_NONE;
-                                ResourceMonitor::Instance().Register(*this);
-                            } else {
-                                TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
-                                result = Core::ERROR_BAD_REQUEST;
-                            }
-                        }
-                    } else {
-                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
-                    }
-
-                    if (result != Core::ERROR_NONE) {
-                        if (_domainSocket >= 0) {
-                            TRACE_L1("Closing socket on error: 0x%04X", result);
-                            ::close(_domainSocket);
-                            _domainSocket = -1;
-                        }
+                    if (_domainSocket == -1) {
+                        TRACE_L1("failed to open domain socket: %s", connector.c_str());
+                        result = Core::ERROR_BAD_REQUEST;
                         _state = state::IDLE;
                     } else {
-                        TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, server.HostName().c_str());
+                        result = Core::ERROR_NONE;
+                        _connector = connector;
+                        ResourceMonitor::Instance().Register(*this);
+                        TRACE_L1("Server running on fd=%d connector=%s", _domainSocket, connector.c_str());
                     }
 #endif
                 }
@@ -310,9 +281,16 @@ namespace Core {
             uint32_t Close()
             {
                 if (_domainSocket != -1) {
-                    ResourceMonitor::Instance().Unregister(*this);
 #ifndef __WINDOWS__
+                    ResourceMonitor::Instance().Unregister(*this);
                     ::close(_domainSocket);
+                    if (_connector.empty() == true) {
+                        _signal.SetEvent();
+                    }
+                    else {
+                        ::unlink(_connector.c_str());
+                        _connector.clear();
+                    }
 #endif
                     _domainSocket = -1;
                 }
@@ -336,7 +314,38 @@ namespace Core {
 
         private:
 #ifndef __WINDOWS__
-            Container MoveToContainer(const uint8_t length, int* fds) const {
+            string UniqueDomainName(const string connector) const {
+                TCHAR binder[connector.length() + 1 + 6 + 1];
+                ::strcpy(binder, connector.c_str());
+                ::strcpy(&binder[connector.length()], _T(".XXXXXX")); 
+                ::mktemp(binder);
+                return(string(binder));
+            }
+            int OpenDomainSocket(const string& connector) const {
+                int fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+
+                if (fd >= 0) {
+                    int flags = fcntl(fd, F_GETFL, 0) | O_NONBLOCK;
+
+                    if (::fcntl(fd, F_SETFL, flags) != 0) {
+                        TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
+                        ::close(fd);
+                        fd = -1;
+                    } 
+                    else {
+                       const Core::NodeId binder(connector.c_str());
+
+                        if (::bind(fd, binder, binder.Size()) != 0) {
+                            TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
+                            ::close(fd);
+                            fd = -1;
+                        }
+                    }
+                }
+                return (fd);
+            }
+ 
+            Container MoveToContainer(const uint8_t length, const int* fds) const {
                 Container result;
 
                 for(uint8_t index = 0; index < length; index++) { 
@@ -348,13 +357,16 @@ namespace Core {
                 return(result);
             }
             uint8_t CopyContainer(const uint8_t length, int fds[], const Container& container) const {
-                uint8_t count = std::min(static_cast<uint8_t>(container.size()), length);
-                for(uint8_t index = 0; index < count; index++) { 
-                    fds[index] = container[index]; 
+                uint8_t count = 0;
+
+                for(uint8_t index = 0; ((index < static_cast<uint8_t>(container.size())) && (count < MaxDescriptorsPerRequest)); index++) { 
+                    if (container[index] != -1) {
+                        fds[count++] = container[index]; 
+                    }
                 }
                 return (count);
             }
-            uint32_t Load(const struct msghdr* msg, uint8_t& nFds, const int fds[]) const {
+            uint32_t Load(const struct msghdr* msg, uint8_t& nFds, int fds[]) const {
                 const struct cmsghdr* cmsg = CMSG_FIRSTHDR(msg);
                 uint32_t result = ((cmsg != nullptr) && (cmsg->cmsg_len >= CMSG_LEN(sizeof(int))) ? Core::ERROR_NONE : Core::ERROR_NOT_SUPPORTED);
 
@@ -367,7 +379,7 @@ namespace Core {
                         const unsigned char* const cmsgData = CMSG_DATA(cmsg);
                         nFds = std::min(static_cast<uint8_t>((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int)), nFds);
 
-                        ::memmove(&fds, cmsgData, nFds * sizeof(int));
+                        ::memmove(fds, cmsgData, nFds * sizeof(int));
                     }
                 }
                 return (result);
@@ -383,27 +395,36 @@ namespace Core {
                     TRACE_L1("Too much descriptors, sending the first %d.", MaxDescriptorsPerRequest);
                 }
 
-                const uint16_t payloadSize((nFds <= MaxDescriptorsPerRequest) ? (sizeof(int) * nFds) : (sizeof(int) * MaxDescriptorsPerRequest));
-
-                char* buf = static_cast<char*>(ALLOCA(CMSG_SPACE(payloadSize)));
-                memset(buf, 0, CMSG_SPACE(payloadSize));
+                ASSERT(_domainSocket != -1);
 
                 struct header info;
                 info.modus = modus;
                 info.id = id;
-
+ 
                 struct iovec io {
                     &info, sizeof(info)
                 };
 
-                msg.msg_name = &client;
+                TRACE_L1("Sending to: %s", reinterpret_cast<const struct sockaddr_un*>(client)->sun_path);
+
+                int sendBytes;
+                msg.msg_name = const_cast<sockaddr*>(client);
                 msg.msg_namelen = length;
                 msg.msg_iov = &io;
                 msg.msg_iovlen = 1;
-                msg.msg_control = buf;
-                msg.msg_controllen = CMSG_SPACE(payloadSize);
 
-                if (nFds > 0) {
+                if (nFds == 0) {
+                    msg.msg_control = nullptr;
+                    msg.msg_controllen = 0;
+
+                    sendBytes = sendmsg(_domainSocket, &msg, 0);
+                }
+                else {
+                    const uint16_t payloadSize((nFds <= MaxDescriptorsPerRequest) ? (sizeof(int) * nFds) : (sizeof(int) * MaxDescriptorsPerRequest));
+                    msg.msg_control = static_cast<char*>(ALLOCA(CMSG_SPACE(payloadSize)));
+                    ::memset(msg.msg_control, 0, CMSG_SPACE(payloadSize));
+                    msg.msg_controllen = CMSG_SPACE(payloadSize);
+
                     struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
                     ASSERT(cmsg != nullptr);
 
@@ -412,11 +433,9 @@ namespace Core {
                     cmsg->cmsg_len = CMSG_LEN(payloadSize);
 
                     ::memmove(CMSG_DATA(cmsg), fds, payloadSize);
+
+                    sendBytes = sendmsg(_domainSocket, &msg, 0);
                 }
-
-                ASSERT(_domainSocket != -1);
-
-                int sendBytes = sendmsg(_domainSocket, &msg, 0);
 
                 if (sendBytes < 0) {
                     TRACE_L1("Error on port socket sendmsg call. Error: %s", strerror(errno));
@@ -487,9 +506,10 @@ namespace Core {
                         TRACE_L1("Unexpected response. Not a matching ID.");
                     } 
                     else if (_state.load(Core::memory_order::memory_order_relaxed) != info.modus) {
-                        TRACE_L1("Unexpected response. Not a matching ID.");
+                        TRACE_L1("Unexpected response. Not a matching modus.");
                     }
                     else {
+
                         int descriptors[MaxDescriptorsPerRequest];
                         uint8_t count = sizeof(descriptors) / sizeof(int);
                         uint32_t result = Load(&msg, count, descriptors);
@@ -514,6 +534,7 @@ namespace Core {
             uint32_t _id;
             Container _descriptors;
             int _domainSocket;
+            string _connector;
             Core::Event _signal;
             ICallback* _callback;
         };
