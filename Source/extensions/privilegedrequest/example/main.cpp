@@ -49,6 +49,40 @@ bool ParseOptions(int argc, char** argv, string& identifier, bool& server)
 }
 
 namespace {
+
+using Files = std::vector<Core::File>;
+
+void LoadFiles(const uint8_t nFiles, const string& who, Files& files) {
+    files.clear();
+
+    for (uint8_t i = 0; i < nFiles; i++) {
+        char tmpfile[sizeof(fileNameTemplate) + 1];
+        strcpy(tmpfile, fileNameTemplate);
+
+        int fd = mkstemp(tmpfile); // creates a temp file and the generated filename is written in tmpfile
+
+        files.emplace_back(tmpfile);
+
+        if (fd > 0) {
+            close(fd);
+
+            Core::File& newFile = files.back();
+
+            newFile.Open(false);
+
+            printf("%s opened shared file [%d] %s\n", who.c_str(), newFile.operator Handle(), newFile.FileName().c_str());
+
+            std::stringstream line;
+
+            line << "[" << who << "] (" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "! Sequence= " << static_cast<unsigned>(i) << std::endl;
+
+            newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
+        } else {
+            printf("Failed to create shared file: %s\n", strerror(errno));
+        }
+    }
+}
+ 
 class Server : public Core::PrivilegedRequest {
 private:
     class Callback : public Core::PrivilegedRequest::ICallback {
@@ -66,11 +100,7 @@ private:
     public:
         void Request(const uint32_t id, Container& descriptors) override {
             _parent.Request(id, descriptors);
-            printf("Request descriptors for [%d]: Amount: [%d], Values: [", id, descriptors.size());
-            for (uint8_t index = 0; index < descriptors.size(); index++) {
-                printf("%d,", static_cast<int>(descriptors[index]));
-            } 
-            printf("]\n");
+            printf("Request descriptors for [%d]: Amount: [%d]\n", id, descriptors.size());
         }
         void Offer(const uint32_t id, Container&& descriptors) override {
             printf("Offered descriptors for [%d]: Amount: [%d]\n", id, descriptors.size());
@@ -93,36 +123,7 @@ public:
         , _sharedFiles()
         , _callback(*this)
     {
-        _sharedFiles.clear();
-
-        for (uint8_t i = 0; i < nFiles; i++) {
-            char tmpfile[sizeof(fileNameTemplate) + 1];
-            strcpy(tmpfile, fileNameTemplate);
-
-            int fd = mkstemp(tmpfile); // creates a temp file and the generated filename is written in tmpfile
-
-            _sharedFiles.emplace_back(tmpfile);
-
-            if (fd > 0) {
-                close(fd);
-
-                Core::File& newFile = _sharedFiles.back();
-
-                newFile.Open(false);
-
-                printf("Server opened shared file [%d] %s\n", int(newFile), newFile.FileName().c_str());
-
-                std::stringstream line;
-
-                line << "(" << Core::Time::Now().Ticks() << ") opened from PID=" << getpid() << "! Sequence= " << static_cast<unsigned>(i) << std::endl;
-
-                newFile.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
-            } else {
-                printf("Failed to create shared file: %s\n", strerror(errno));
-            }
-        }
-
-        printf("Server for %d file%s\n", nFiles, (nFiles == 1) ? "" : "s");
+        LoadFiles(nFiles, "Server", _sharedFiles);
     }
 
     ~Server()
@@ -130,7 +131,7 @@ public:
         for (auto& file : _sharedFiles) {
             std::stringstream line;
 
-            line << "(" << Core::Time::Now().Ticks() << ") closed from PID=" << getpid() << "!" << std::endl;
+            line << "[Server] (" << Core::Time::Now().Ticks() << ") closed from PID=" << getpid() << "!" << std::endl;
 
             file.Write(reinterpret_cast<const uint8_t*>(line.str().c_str()), line.str().size());
 
@@ -138,8 +139,6 @@ public:
 
             printf("Closed shared file.\n");
         }
-
-        _sharedFiles.clear();
     }
     void Request(const uint32_t id, Container& descriptors) {
         descriptors.clear();
@@ -155,10 +154,28 @@ public:
         printf("Service passed nFd=%d\n", i);
     }
     void Offer(const uint32_t id, Container&& descriptors) {
+        for (const auto& fd : descriptors) {
+            if (fd > 0) {
+                int current = static_cast<int>(fd);
+                printf("descriptor: %d\n", current);
+
+                FILE* file = fdopen(current, "w");
+
+                if (file) {
+                    fprintf(file, "[Server] (%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());
+                    fclose(file);
+                } else {
+                    printf("fdopen failed\n");
+                }
+
+                close(fd);
+            }
+        }
+        descriptors.clear();
     }
 
 private:
-    std::vector<Core::File> _sharedFiles;
+    Files _sharedFiles;
     Callback _callback;
 };
 }
@@ -179,11 +196,15 @@ int main(int argc, char** argv)
         if ((server == true) && (channel.Open(identifier) != Core::ERROR_NONE)) {
             printf("Something wrong with the identifier path to the server: %s\n", identifier.c_str());
         } else {
+            Files clientFiles;
+            if (server == false) {
+                LoadFiles(nFiles, "Client", clientFiles);
+            }
             do {
                 if (server == true) {
                     printf("\nserver [c,q]>");
                 } else {
-                    printf("\nclient [r,q]>");
+                    printf("\nclient [r,o,q]>");
                 }
                 keyPress = toupper(getchar());
 
@@ -204,7 +225,7 @@ int main(int argc, char** argv)
                             FILE* file = fdopen(current, "w");
 
                             if (file) {
-                                fprintf(file, "(%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());
+                                fprintf(file, "[Client] (%" PRIu64 ") write from PID=%d!\n", Core::Time::Now().Ticks(), getpid());
                                 fclose(file);
                             } else {
                                 printf("fdopen failed\n");
@@ -215,6 +236,21 @@ int main(int argc, char** argv)
                     }
                     break;
                 }
+                case 'O': {
+                    uint32_t id = 1;
+                    Core::PrivilegedRequest::Container fds;
+
+                    for (auto& file : clientFiles) {
+                        fds.emplace_back(static_cast<Core::File::Handle>(file));
+                    }
+
+                    uint32_t result = channel.Offer(1000, identifier, id, fds);
+
+                    printf ("Offer: %d descriptors, resulted in %d.\n", fds.size(), result);
+
+                    break;
+                }
+ 
                 case 'C': {
 
                     break;

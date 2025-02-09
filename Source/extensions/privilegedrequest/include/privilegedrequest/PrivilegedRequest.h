@@ -368,19 +368,23 @@ namespace Core {
             }
             uint32_t Load(const struct msghdr* msg, uint8_t& nFds, int fds[]) const {
                 const struct cmsghdr* cmsg = CMSG_FIRSTHDR(msg);
-                uint32_t result = ((cmsg != nullptr) && (cmsg->cmsg_len >= CMSG_LEN(sizeof(int))) ? Core::ERROR_NONE : Core::ERROR_NOT_SUPPORTED);
+                uint32_t result = Core::ERROR_NONE;
 
-                if (result == Core::ERROR_NONE) {
-                    if (cmsg->cmsg_level != SOL_SOCKET) {
-                        result = Core::ERROR_BAD_REQUEST;
-                    } else if (cmsg->cmsg_type != SCM_RIGHTS) {
-                        result = Core::ERROR_GENERAL;
-                    } else {
-                        const unsigned char* const cmsgData = CMSG_DATA(cmsg);
-                        nFds = std::min(static_cast<uint8_t>((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int)), nFds);
+                
+                if ((cmsg == nullptr) || (cmsg->cmsg_len < CMSG_LEN(sizeof(int)))) {
+                    nFds = 0;
+                }
+                else if (cmsg->cmsg_level != SOL_SOCKET) {
+                    result = Core::ERROR_BAD_REQUEST;
+                } 
+                else if (cmsg->cmsg_type != SCM_RIGHTS) {
+                    result = Core::ERROR_GENERAL;
+                } 
+                else {
+                    const unsigned char* const cmsgData = CMSG_DATA(cmsg);
+                    nFds = std::min(static_cast<uint8_t>((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int)), nFds);
 
-                        ::memmove(fds, cmsgData, nFds * sizeof(int));
-                    }
+                    ::memmove(fds, cmsgData, nFds * sizeof(int));
                 }
                 return (result);
             }
