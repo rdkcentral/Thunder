@@ -39,10 +39,9 @@ namespace PluginHost {
         };
 
         enum state : uint8_t {
-            UNINITIALIZED,
+            UNKNOWN,
             SUSPENDED,
-            RESUMED,
-            EXITED
+            RESUMED
         };
 
         // @event
