@@ -78,6 +78,8 @@ namespace RPC {
         ID_SHELL_CONNECTIONSERVER_NOTIFICATION     = (ID_OFFSET_INTERNAL + 0x0043),
         ID_STATECONTROL                            = (ID_OFFSET_INTERNAL + 0x0044),
         ID_STATECONTROL_NOTIFICATION               = (ID_OFFSET_INTERNAL + 0x0045),
+        ID_STATE_CONTROLLER                        = (ID_OFFSET_INTERNAL + 0x0046),
+        ID_STATE_CONTROLLER_NOTIFICATION           = (ID_OFFSET_INTERNAL + 0x0047),
 
         ID_SUBSYSTEM                               = (ID_OFFSET_INTERNAL + 0x0050),
         ID_SUBSYSTEM_NOTIFICATION                  = (ID_OFFSET_INTERNAL + 0x0051),
