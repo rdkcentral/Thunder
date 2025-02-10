@@ -379,10 +379,13 @@ namespace Core {
                 }
 
                 if (method.empty() == false) {
-                    idx0 = method.find(TCHAR(':'));
+                    idx0 = method.rfind(TCHAR(':'));
 
-                    if (method.size() < (idx0 + 2)) {
+                    if (method.size() < (idx0 + 1)) {
                         idx0 = string::npos;
+                    }
+                    else {
+                        idx0--;
                     }
 
                     if (idx0 != string::npos) {
@@ -433,7 +436,10 @@ POP_WARNING()
 
                 if (lookup != string::npos) {
                     size_t prefix = designator.find_first_of(':', lookup + 1);
-                    method = (designator.substr(begin, lookup - begin) + designator.substr(prefix, end - prefix));
+                    method = designator.substr(begin, lookup - begin);
+                    if (prefix != string::npos) {
+                        method += designator.substr(prefix, end - prefix);
+                    }
                  }
                 else {
                     method = designator.substr(begin, end - begin);
@@ -449,12 +455,12 @@ POP_WARNING()
             {
                 string prefix;
 
-                size_t end = designator.find_first_of(':');
+                size_t end = designator.find_last_of(':');
 
                 if (end != string::npos) {
                     size_t begin = designator.find_last_of('.', end) + 1;
                     size_t lookup = designator.find_first_of('#', begin);
-                    prefix = designator.substr(begin, std::min(lookup,end) - begin);
+                    prefix = designator.substr(begin, std::min(lookup,end - 1) - begin);
                 }
 
                 return (prefix);
