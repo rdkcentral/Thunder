@@ -1240,13 +1240,8 @@ namespace PluginHost {
             case IStateControl::state::RESUMED:
                 controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
                 break;
-            case IStateControl::state::EXITED:
-                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::EXITED);
-                break;
-            case IStateControl::state::UNINITIALIZED:
-                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::UNINITIALIZED);
-                break;
             default:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::UNKNOWN);
                 break;
         }
     }
