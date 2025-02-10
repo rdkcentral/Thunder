@@ -918,7 +918,6 @@ namespace Plugin {
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
                 result = service->Deactivate(PluginHost::IShell::REQUESTED);
-
                 // Normalise return code
                 if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
                     result = Core::ERROR_CLOSING_FAILED;
@@ -989,7 +988,6 @@ namespace Plugin {
         else {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
-
         return result;
     }
 
@@ -1347,22 +1345,34 @@ namespace Plugin {
 
         return (Core::ERROR_NONE);
     }
-
     void Controller::NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         _adminLock.Lock();
 
         LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-
         while(index != _lifeTimeObservers.end()) {
             (*index)->StateChange(callsign, state, reason);
             index++;
         }
 
         _adminLock.Unlock();
-
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+    }
+
+    void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
+    {
+       _adminLock.Lock();
+
+        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
+        while(index != _lifeTimeObservers.end()) {
+            (*index)->StateControlStateChange(callsign, state);
+            index++;
+        }
+
+        _adminLock.Unlock();
+        // also notify the JSON RPC listeners (if any)
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state); 
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
