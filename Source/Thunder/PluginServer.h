@@ -384,7 +384,7 @@ namespace PluginHost {
         private:
             using BaseClass = PluginHost::Service;
             using Jobs = Core::ThrottleQueueType<Core::ProxyType<Core::IDispatch>, ServiceMap&>;
-            class Composit : public PluginHost::ICompositPlugin::ICallback {
+            class Composit : public PluginHost::ICompositPlugin::ICallback, public PluginHost::IStateControl::INotification {
             public:
                 Composit() = delete;
                 Composit(Composit&&) = delete;
@@ -513,9 +513,12 @@ namespace PluginHost {
                     ASSERT(plugin != nullptr);
                     _parent._administrator.Unavailable(link + PluginHost::ICompositPlugin::Delimiter + callsign, plugin);
                 }
-
+                void StateChange(const IStateControl::state state) override {
+                    _parent._administrator.StateControlStateChange(_parent.Callsign(), state);
+                }
                 BEGIN_INTERFACE_MAP(Composit)
                     INTERFACE_ENTRY(PluginHost::ICompositPlugin::ICallback)
+                    INTERFACE_ENTRY(PluginHost::IStateControl::INotification)
                 END_INTERFACE_MAP
 
             private:
@@ -812,6 +815,7 @@ namespace PluginHost {
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
                 , _jsonrpc(nullptr)
+                , _stateControl(nullptr)
                 , _reason(IShell::reason::SHUTDOWN)
                 , _precondition(true, plugin.Precondition)
                 , _termination(false, plugin.Termination)
@@ -838,6 +842,7 @@ namespace PluginHost {
                 ASSERT(_rawSocket == nullptr);
                 ASSERT(_webSecurity == nullptr);
                 ASSERT(_jsonrpc == nullptr);
+                ASSERT(_stateControl == nullptr);
                 ASSERT(_connection == nullptr);
             }
 
@@ -1596,6 +1601,7 @@ namespace PluginHost {
                     _jsonrpc->Release();
                     _jsonrpc = nullptr;
                 }
+
                 _composit.ReleaseInterfaces();
                 if (_connection != nullptr) {
                     // Lets record the ID associated with this connection.
@@ -1634,6 +1640,7 @@ namespace PluginHost {
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
             IDispatcher* _jsonrpc;
+            IStateControl* _stateControl;
             reason _reason;
             Condition _precondition;
             Condition _termination;
@@ -1969,7 +1976,7 @@ namespace PluginHost {
             using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
             using Notifiers = std::vector<PluginHost::IPlugin::INotification*>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
-            using ShellNotifiers = std::vector< Exchange::Controller::IShells::INotification*>;
+            using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
             class CommunicatorServer : public RPC::Communicator {
@@ -2861,6 +2868,10 @@ namespace PluginHost {
                 }
 
                 _notificationLock.Unlock();
+            }
+            void StateControlStateChange(const string& callsign, const IStateControl::state state)
+            {
+                _server.StateControlStateChange(callsign, state);       
             }
             void Created(const string& callsign, PluginHost::IShell* entry) {
                 _notificationLock.Lock();
@@ -4695,6 +4706,8 @@ namespace PluginHost {
         void Notification(const string& callsign, const string& jsonrpc_event, const string& message);
         void Open();
         void Close();
+
+        void StateControlStateChange(const string& callsign, const IStateControl::state state);
 
         uint32_t Persist()
         {
