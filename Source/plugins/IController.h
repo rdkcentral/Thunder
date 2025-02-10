@@ -101,9 +101,9 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_LIFETIME };
 
         enum state : uint8_t {
+            UNKNOWN,
             SUSPENDED,
-            RESUMED,
-            UNKNOWN
+            RESUMED
         };
 
         // @event
