@@ -97,10 +97,8 @@ namespace Plugin {
             void Activated(const string& callsign, PluginHost::IShell* plugin) override
             {
                 _parent.NotifyStateChange(callsign, PluginHost::IShell::ACTIVATED, plugin->Reason());
-
                 // Make sure the resumes 
                 _parent.StartupResume(callsign, plugin);
-
             }
             void Deactivated(const string& callsign, PluginHost::IShell* plugin) override
             {
@@ -260,6 +258,8 @@ namespace Plugin {
         {
             return (Core::ERROR_NONE);
         }
+
+        void NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state);
 
     public:
         //  IPlugin methods

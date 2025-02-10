@@ -454,11 +454,13 @@ namespace PluginHost {
                     State(ACTIVATED);
                     _administrator.Activated(callSign, this);
 
-                    IStateControl* stateControl = nullptr;
-                    if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
+                    _stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
+                    if (_stateControl != nullptr) {
+                        _stateControl->Register(&_composit);
 
-                        stateControl->Request(PluginHost::IStateControl::RESUME);
-                        stateControl->Release();
+                        if (Resumed() == true) {
+                            _stateControl->Request(PluginHost::IStateControl::RESUME);
+                        }
                     }
 
                     Unlock();
@@ -478,7 +480,6 @@ namespace PluginHost {
 
     uint32_t Server::Service::Resume(const reason why) /* override */ {
         uint32_t result = Core::ERROR_NONE;
-
         Lock();
 
         IShell::state currentState(State());
@@ -494,16 +495,14 @@ namespace PluginHost {
 
         if (currentState == IShell::ACTIVATED) {
             // See if we need can and should RESUME.
-            IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
-            if (stateControl == nullptr) {
+            if (_stateControl == nullptr) {
                 result = Core::ERROR_BAD_REQUEST;
             }
             else {
                 // We have a StateControl interface, so at least start resuming, if not already resumed :-)
-                if (stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
-                    result = stateControl->Request(PluginHost::IStateControl::RESUME);
+                if (_stateControl->State() == PluginHost::IStateControl::SUSPENDED) {
+                    result = _stateControl->Request(PluginHost::IStateControl::RESUME);
                 }
-                stateControl->Release();
             }
         }
 
@@ -562,6 +561,12 @@ namespace PluginHost {
                 _administrator.Evaluate();
 
                 // And finally start tearing down this plugin...
+
+                if (_stateControl != nullptr) {
+                    _stateControl->Unregister(&_composit);
+                    _stateControl->Release();
+                    _stateControl = nullptr;
+                }
 
                 if (currentState == IShell::ACTIVATED) {
                     TRACE(Activity, (_T("Deactivating plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -638,16 +643,14 @@ namespace PluginHost {
                 result = Core::ERROR_ILLEGAL_STATE;
             } else if ((currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
                 // See if we need can and should SUSPEND.
-                IStateControl* stateControl = _handler->QueryInterface<PluginHost::IStateControl>();
-                if (stateControl == nullptr) {
+                if (_stateControl == nullptr) {
                     result = Core::ERROR_BAD_REQUEST;
                 }
                 else {
                     // We have a StateControl interface, so at least start suspending, if not already suspended :-)
-                    if (stateControl->State() == PluginHost::IStateControl::RESUMED) {
-                        result = stateControl->Request(PluginHost::IStateControl::SUSPEND);
+                    if (_stateControl->State() == PluginHost::IStateControl::RESUMED) {
+                        result = _stateControl->Request(PluginHost::IStateControl::SUSPEND);
                     }
-                    stateControl->Release();
                 }
             }
 
@@ -1221,6 +1224,25 @@ namespace PluginHost {
 
                 _controller->Notify(EMPTY_STRING, messageString);
             }
+        }
+    }
+
+    void Server::StateControlStateChange(const string& callsign, const IStateControl::state state)
+    {
+        ASSERT((_controller.IsValid() == true) && (_controller->ClassType<Plugin::Controller>() != nullptr));
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+        ASSERT(controller != nullptr);
+
+        switch (state) {
+            case IStateControl::state::SUSPENDED:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::SUSPENDED);
+                break;
+            case IStateControl::state::RESUMED:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::RESUMED);
+                break;
+            default:
+                controller->NotifyStateControlStateChange(callsign, Exchange::Controller::ILifeTime::state::UNKNOWN);
+                break;
         }
     }
 
