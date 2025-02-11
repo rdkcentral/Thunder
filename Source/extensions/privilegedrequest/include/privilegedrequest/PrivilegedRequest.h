@@ -356,7 +356,8 @@ namespace Core {
                 }
                 return(result);
             }
-            uint8_t CopyContainer(const uint8_t length, int fds[], const Container& container) const {
+            uint8_t CopyContainer(const uint8_t length VARIABLE_IS_NOT_USED, int fds[], const Container& container) const
+            {
                 uint8_t count = 0;
 
                 for(uint8_t index = 0; ((index < static_cast<uint8_t>(container.size())) && (count < MaxDescriptorsPerRequest)); index++) { 

@@ -140,7 +140,7 @@ public:
             printf("Closed shared file.\n");
         }
     }
-    void Request(const uint32_t id, Container& descriptors) {
+    void Request(const uint32_t id VARIABLE_IS_NOT_USED, Container& descriptors) {
         descriptors.clear();
         uint8_t i(0);
 
@@ -153,7 +153,7 @@ public:
 
         printf("Service passed nFd=%d\n", i);
     }
-    void Offer(const uint32_t id, Container&& descriptors) {
+    void Offer(const uint32_t id VARIABLE_IS_NOT_USED, Container&& descriptors) {
         for (const auto& fd : descriptors) {
             if (fd > 0) {
                 int current = static_cast<int>(fd);
