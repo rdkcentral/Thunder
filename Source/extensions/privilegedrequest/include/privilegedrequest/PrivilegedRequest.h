@@ -113,6 +113,8 @@ namespace Core {
         };
 
     private:
+        static constexpr uint8_t MaxFilePathLength = 255; // just an arbitrary number.
+        
         class Connection : public Core::IResource {
         private:
             enum state : uint8_t {
@@ -315,11 +317,16 @@ namespace Core {
         private:
 #ifndef __WINDOWS__
             string UniqueDomainName(const string connector) const {
-                TCHAR binder[connector.length() + 1 + 6 + 1];
+                char* binder = static_cast<char*>(::alloca(connector.length() + 1 + 6 + 1));
+                
                 ::strcpy(binder, connector.c_str());
                 ::strcpy(&binder[connector.length()], _T(".XXXXXX")); 
-                ::mktemp(binder);
-                return(string(binder));
+                
+                ASSERT(strlen(binder) < MaxFilePathLength);
+                
+                ::mkstemp(binder);
+
+                return (string(binder));
             }
             int OpenDomainSocket(const string& connector) const {
                 int fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
