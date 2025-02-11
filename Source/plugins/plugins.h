@@ -38,6 +38,7 @@
 #include "ISubSystem.h"
 #include "IVirtualInput.h"
 #include "JSONRPC.h"
+#include "IStateController.h"
 #include "Metadata.h"
 #include "Request.h"
 #include "Service.h"

@@ -64,6 +64,20 @@
     <ClInclude Include="IPlugin.h" />
     <ClInclude Include="IShell.h" />
     <ClInclude Include="IStateControl.h" />
+    <CustomBuild Include="IStateController.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python "$(ToolPath)\JsonGenerator\JsonGenerator.py" -I "$(FrameworkPath)\" --case-convention legacy --no-includes --keep-empty -c --namespace Thunder::PluginHost -o "$(ProjectDir)/json" "%(FullPath)" --force</Command>
+    </CustomBuild>
     <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="Metadata.h" />
