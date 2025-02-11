@@ -224,7 +224,7 @@ namespace Core {
                         result = Core::ERROR_TIMEDOUT;
 
                         int buffer[MaxDescriptorsPerRequest];
-                        uint8_t count = std::min(MaxDescriptorsPerRequest, static_cast<uint8_t>(descriptors.size()));
+                        uint8_t count = std::min(static_cast<uint8_t>(MaxDescriptorsPerRequest), static_cast<uint8_t>(descriptors.size()));
 
                         for(uint8_t index = 0; index < count; index++) { buffer[index] = descriptors[index]; }
 
@@ -320,7 +320,7 @@ namespace Core {
                 char* binder = static_cast<char*>(::alloca(connector.length() + 1 + 6 + 1));
                 
                 ::strcpy(binder, connector.c_str());
-                ::strcpy(&binder[connector.length()], _T(".XXXXXX")); 
+                ::strcpy(&binder[connector.length()], _T(".XXXXXX"));
                 
                 ASSERT(strlen(binder) < MaxFilePathLength);
                 
