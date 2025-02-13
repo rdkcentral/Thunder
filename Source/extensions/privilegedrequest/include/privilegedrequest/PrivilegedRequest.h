@@ -491,8 +491,8 @@ namespace Core {
                             uint8_t count = sizeof(descriptors) / sizeof(int);
                             // Send out the offer, so the server can respond..
                             uint32_t result = Load(&msg, count, descriptors);
-                            Container container = MoveToContainer(count, descriptors);
                             if ( (result == Core::ERROR_NONE) && (_callback != nullptr)) {
+                                Container container = MoveToContainer(count, descriptors);
                                 _callback->Offer(info.id, std::move(container)); 
                             }
                             Write(state::OFFER, info.id, 0, nullptr, reinterpret_cast<const struct sockaddr*>(&client), msg.msg_namelen);
