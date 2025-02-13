@@ -31,7 +31,7 @@ namespace Exchange {
 
 namespace Controller {
 
-    // @json 1.0.0
+    // @json 1.0.0 @text:legacy_lowercase
     struct EXTERNAL ISystem : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_SYSTEM };
 
@@ -58,7 +58,7 @@ namespace Controller {
         virtual Core::hresult Environment(const string& variable /* @index */, string& value /* @out */ ) const = 0;
     };
 
-    // @json 1.0.0
+    // @json 1.0.0 @text:legacy_lowercase
     struct EXTERNAL IDiscovery : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_DISCOVERY };
 
@@ -82,7 +82,7 @@ namespace Controller {
         virtual Core::hresult DiscoveryResults(Data::IDiscoveryResultsIterator*& results /* @out */) const = 0;
     };
 
-    // @json 1.0.0 @uncompliant:extended
+    // @json 1.0.0 @text:legacy_lowercase @uncompliant:extended 
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
@@ -96,7 +96,7 @@ namespace Controller {
         virtual Core::hresult Configuration(const string& callsign /* @index */, const string& configuration /* @opaque */) = 0;
     };
 
-    // @json 1.0.0
+    // @json 1.0.0 @text:legacy_lowercase
     struct EXTERNAL ILifeTime : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_LIFETIME };
 
@@ -183,7 +183,7 @@ namespace Controller {
         virtual Core::hresult Unregister(INotification* sink) = 0;
     };
 
-    // @json 1.0.0 @uncompliant:collapsed
+    // @json 1.0.0 @text:legacy_lowercase @uncompliant:collapsed
     struct EXTERNAL ISubsystems : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_SUBSYSTEMS };
 
@@ -208,7 +208,7 @@ namespace Controller {
         virtual Core::hresult Subsystems(ISubsystemsIterator*& subsystems /* @out */) const = 0;
     };
 
-    // @json 1.0.0
+    // @json 1.0.0 @text:legacy_lowercase
     struct EXTERNAL IEvents : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_EVENTS };
 
@@ -227,7 +227,7 @@ namespace Controller {
         };
     };
 
-    // @json 1.0.0
+    // @json 1.0.0 @text:legacy_lowercase
     struct EXTERNAL IMetadata : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_METADATA };
 
@@ -274,7 +274,7 @@ namespace Controller {
                 uint8_t ThreadPoolCount /* Number of configured threads on the threadpool */;
                 uint32_t COMRPCTimeOut /* The number of milliseconds a COMRPC call can take before it is assumed to fail */;
             };
-            
+
             struct CallStack {
                 Core::instance_id Address /* @brief Memory address */;
                 string Module /* @brief Module name */;
