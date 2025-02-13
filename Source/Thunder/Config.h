@@ -741,8 +741,10 @@ namespace PluginHost {
         POP_WARNING()
         ~Config()
         {
-            ASSERT(_security != nullptr);
-            _security->Release();
+            if(_security != nullptr) {
+                _security->Release();
+                _security = nullptr;
+            }
         }
 
     public:
