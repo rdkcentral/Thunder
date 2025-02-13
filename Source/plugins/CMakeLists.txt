@@ -63,7 +63,6 @@ set(PUBLIC_HEADERS
         IPlugin.h
         IShell.h
         IController.h
-        Shell.h
         IStateControl.h
         IStateController.h
         StateControl.h

@@ -42,7 +42,6 @@
 #include "Metadata.h"
 #include "Request.h"
 #include "Service.h"
-#include "Shell.h"
 #include "StateControl.h"
 #include "SubSystem.h"
 #include "System.h"

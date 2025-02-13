@@ -165,7 +165,7 @@ namespace Core {
                     _domainSocket = OpenDomainSocket(clientName);
 
                     if (_domainSocket == -1) {
-                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        TRACE_L1("failed to open domain socket: %s", clientName.c_str());
                         result = Core::ERROR_BAD_REQUEST;
                     }
                     else {
@@ -215,7 +215,7 @@ namespace Core {
                     _domainSocket = OpenDomainSocket(clientName);
 
                     if (_domainSocket == -1) {
-                        TRACE_L1("failed to open domain socket: %s\n", server.HostName().c_str());
+                        TRACE_L1("failed to open domain socket: %s", clientName.c_str());
                         result = Core::ERROR_BAD_REQUEST;
                     }
                     else {
