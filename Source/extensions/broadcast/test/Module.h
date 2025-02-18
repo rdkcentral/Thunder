@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+ #pragma once
 
-#pragma once
-
-#ifndef MODULE_NAME
-#error "Please define a MODULE_NAME that describes the binary/library you are building."
-#endif
-
-#include "Module.h"
-#include "Definitions.h"
-#include "Descriptors.h"
-#include "MPEGDescriptor.h"
-#include "MPEGSection.h"
-#include "MPEGTable.h"
-#include "NIT.h"
-#include "Networks.h"
-#include "ProgramTable.h"
-#include "SDT.h"
-#include "Services.h"
-#include "TDT.h"
-#include "TimeDate.h"
-
-#ifdef __WINDOWS__
-#pragma comment(lib, "broadcast.lib")
-#endif
+ #ifndef MODULE_NAME
+ #define MODULE_NAME BroadcastTest
+ #endif
+ 
+ #include <core/core.h>
+ #include <broadcast/broadcast.h>
+ 
+ #if defined(__WINDOWS__) && defined(BROADCAST_EXPORTS)
+ #undef EXTERNAL
+ #define EXTERNAL EXTERNAL_EXPORT
+ #endif
