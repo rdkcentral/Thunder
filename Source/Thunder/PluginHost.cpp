@@ -579,7 +579,7 @@ POP_WARNING()
             _config = new Config(configFile, _background, error);
 
             if (error.IsSet() == true) {
-                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                DIRECT_SYSLOG("Parsing failed with %s\n", ErrorDisplayMessage(error.Value()).c_str());
                 delete _config;
                 _config = nullptr;
             }
