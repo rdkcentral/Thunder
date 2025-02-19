@@ -691,7 +691,7 @@ namespace PluginHost {
                 _ethernetCard = config.EthernetCard.Value();
                 _delegatedReleases = config.DelegatedReleases.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
-                    SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
+                    DIRECT_SYSLOG("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support\n");
                 }
 
                 _messagingCategoriesFile = config.DefaultMessagingCategories.IsQuoted();
@@ -717,12 +717,12 @@ namespace PluginHost {
                 Core::JSON::ArrayType<Plugin::Config::Environment>::ConstIterator index(static_cast<const JSONConfig&>(config).Environments.Elements());
                 while (index.Next() == true) {
                     if (index.Current().Key.IsSet() == false) {
-                        SYSLOG(Logging::Startup, (_T("Failure n setting an environmet variable. Empty key defined!!\n")));
+                        DIRECT_SYSLOG("Failure in setting an environmet variable. Empty key defined!!\n");
                     }
                     else {
                         string value = _substituter.Substitute(index.Current().Value.Value(), nullptr);
                         if (Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, ((index.Current().Scope.Value() == RPC::Environment::scope::GLOBAL) ? true : false)) != true) {
-                            SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
+                            DIRECT_SYSLOG("Failure in setting Key:Value:[%s]:[%s]\n", index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
                         }
                     }
                 }
@@ -976,7 +976,7 @@ namespace PluginHost {
                 _accessor.PortNumber(_portNumber);
                 hostaddress = _accessor.HostAddress();
                 _configLock.Unlock();
-                SYSLOG(Logging::Startup, ("Invalid config information could not resolve to a proper IP"));
+                DIRECT_SYSLOG("Invalid config information could not resolve to a proper IP\n");
             } else {
                 _accessor.PortNumber(_portNumber);
                 hostaddress= _accessor.HostAddress();
@@ -991,8 +991,8 @@ namespace PluginHost {
             }
             
 
-            SYSLOG(Logging::Startup, (_T("Accessor: %s"), _URL.c_str()));
-            SYSLOG(Logging::Startup, (_T("Interface IP: %s"), hostaddress.c_str()));
+            DIRECT_SYSLOG("Accessor: %s\n", _URL.c_str());
+            DIRECT_SYSLOG("Interface IP: %s\n", hostaddress.c_str());
 
         }
 
@@ -1017,12 +1017,12 @@ namespace PluginHost {
             else {
                 _binder.PortNumber(_portNumber);
             }
-            SYSLOG(Logging::Startup, (_T("Binder: [%s:%d]"), _binder.HostAddress().c_str(), _binder.PortNumber()));
+            DIRECT_SYSLOG("Binder: [%s:%d]\n", _binder.HostAddress().c_str(), _binder.PortNumber());
         }
 
         inline void Security(ISecurity* security)
         {
-            ASSERT((_security == nullptr) && (security != nullptr));
+            INTERNAL_ASSERT((_security == nullptr) && (security != nullptr));
 
             _security = security;
 
