@@ -1363,11 +1363,11 @@ namespace WPEFramework {
             			}
             			void Unsubscribe(const uint32_t waitTime, const string& eventName)
             			{
-                			_adminLock.Lock();
-                			ASSERT(_subscriptions.find(eventName) != _subscriptions.end());
-                			auto iter = _subscriptions.erase(eventName);
-                			_adminLock.Unlock();
-                			return Base::Unsubscribe(waitTime, eventName);
+                                       _adminLock.Lock();
+                                       ASSERT(_subscriptions.find(eventName) != _subscriptions.end());
+                                       _subscriptions.erase(eventName);
+                                       _adminLock.Unlock();
+                                       return Base::Unsubscribe(waitTime, eventName);
             			}
 
 
