@@ -18,12 +18,15 @@
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../broadcast)
 include_directories($<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
-add_executable(BroadcastTester BroadcastTester.cpp)
+add_executable(BroadcastTester
+    Module.cpp
+    BroadcastTester.cpp)
 
 target_link_libraries(BroadcastTester 
     PRIVATE
-        ${NAMESPACE}Broadcast::${NAMESPACE}Broadcast
+        CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Core::${NAMESPACE}Core
-)   
+        ${NAMESPACE}Broadcast::${NAMESPACE}Broadcast
+)
 
 install(TARGETS BroadcastTester DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)

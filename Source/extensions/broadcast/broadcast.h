@@ -23,6 +23,7 @@
 #error "Please define a MODULE_NAME that describes the binary/library you are building."
 #endif
 
+#include "Module.h"
 #include "Definitions.h"
 #include "Descriptors.h"
 #include "MPEGDescriptor.h"
