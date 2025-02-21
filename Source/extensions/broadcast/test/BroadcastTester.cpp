@@ -18,12 +18,8 @@
  * limitations under the License.
  */
 
-#define MODULE_NAME BroadcastTest
+#include "Module.h"
 
-#include <broadcast/broadcast.h>
-#include <core/core.h>
-
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 using namespace Thunder;
 
 void printHelp(){
