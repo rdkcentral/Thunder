@@ -44,7 +44,8 @@ namespace Core {
             Descriptor& operator=(const Descriptor&) = delete;
 
             explicit Descriptor(const int descriptor)
-                : _descriptor(-1) {
+                : _descriptor(-1)
+            {
                 ASSERT(descriptor != -1);
                 if (descriptor != -1) {
 #ifndef __WINDOWS__
@@ -76,7 +77,7 @@ namespace Core {
             }
 
         public:
-            operator int () const
+            operator int() const
             {
                 return (_descriptor);
             }
@@ -114,7 +115,7 @@ namespace Core {
 
     private:
         static constexpr uint8_t MaxFilePathLength = 255; // just an arbitrary number.
-        
+
         class Connection : public Core::IResource {
         private:
             enum state : uint8_t {
@@ -124,12 +125,12 @@ namespace Core {
                 LISTENING
             };
 
-            #pragma pack(push,1)
+#pragma pack(push, 1)
             struct header {
-                state    modus;
+                state modus;
                 uint32_t id;
             };
-            #pragma pack(pop)
+#pragma pack(pop)
 
         public:
             Connection() = delete;
@@ -145,9 +146,11 @@ namespace Core {
                 , _domainSocket(-1)
                 , _connector()
                 , _signal(true, true)
-                , _callback(callback) {
+                , _callback(callback)
+            {
             }
-            ~Connection() override {
+            ~Connection() override
+            {
                 Close();
             };
 
@@ -167,9 +170,8 @@ namespace Core {
                     if (_domainSocket == -1) {
                         TRACE_L1("failed to open domain socket: %s", clientName.c_str());
                         result = Core::ERROR_BAD_REQUEST;
-                    }
-                    else {
-                        const Core::NodeId server (connector.c_str());
+                    } else {
+                        const Core::NodeId server(connector.c_str());
 
                         result = Core::ERROR_TIMEDOUT;
 
@@ -185,7 +187,7 @@ namespace Core {
                             result = Core::ERROR_NONE;
                             descriptors = std::move(_descriptors);
                         }
-                        
+
                         ResourceMonitor::Instance().Unregister(*this);
 
                         ::close(_domainSocket);
@@ -200,7 +202,7 @@ namespace Core {
                 }
                 return (result);
             }
-            uint32_t Offer (const uint32_t waitTime, const string& connector, const uint32_t id, const Container& descriptors)
+            uint32_t Offer(const uint32_t waitTime, const string& connector, const uint32_t id, const Container& descriptors)
             {
                 uint32_t result = Core::ERROR_INPROGRESS;
                 state expected = state::IDLE;
@@ -217,16 +219,17 @@ namespace Core {
                     if (_domainSocket == -1) {
                         TRACE_L1("failed to open domain socket: %s", clientName.c_str());
                         result = Core::ERROR_BAD_REQUEST;
-                    }
-                    else {
-                        const Core::NodeId server (connector.c_str());
+                    } else {
+                        const Core::NodeId server(connector.c_str());
 
                         result = Core::ERROR_TIMEDOUT;
 
                         int buffer[MaxDescriptorsPerRequest];
                         uint8_t count = std::min(static_cast<uint8_t>(MaxDescriptorsPerRequest), static_cast<uint8_t>(descriptors.size()));
 
-                        for(uint8_t index = 0; index < count; index++) { buffer[index] = descriptors[index]; }
+                        for (uint8_t index = 0; index < count; index++) {
+                            buffer[index] = descriptors[index];
+                        }
 
                         ResourceMonitor::Instance().Register(*this);
 
@@ -253,7 +256,7 @@ namespace Core {
                 }
                 return (result);
             }
- 
+
             uint32_t Open(const string& connector)
             {
                 uint32_t result = Core::ERROR_ILLEGAL_STATE;
@@ -288,8 +291,7 @@ namespace Core {
                     ::close(_domainSocket);
                     if (_connector.empty() == true) {
                         _signal.SetEvent();
-                    }
-                    else {
+                    } else {
                         ::unlink(_connector.c_str());
                         _connector.clear();
                     }
@@ -316,19 +318,30 @@ namespace Core {
 
         private:
 #ifndef __WINDOWS__
-            string UniqueDomainName(const string connector) const {
+            static constexpr char Delimiter = '|';
+
+            string UniqueDomainName(const string connector) const
+            {
                 char* binder = static_cast<char*>(::alloca(connector.length() + 1 + 6 + 1));
-                
-                ::strcpy(binder, connector.c_str());
-                ::strcpy(&binder[connector.length()], _T(".XXXXXX"));
-                
+
+                std::size_t delimiter = connector.find(Delimiter);
+
+                if (delimiter == string::npos) {
+                    ::strcpy(binder, connector.c_str());
+                    ::strcpy(&binder[connector.length()], _T(".XXXXXX"));
+                } else {
+                    ::memcpy(binder, connector.c_str(), delimiter);
+                    ::strcpy(&binder[delimiter], _T(".XXXXXX"));
+                }
+
                 ASSERT(strlen(binder) < MaxFilePathLength);
-                
+
                 ::mkstemp(binder);
 
                 return (string(binder));
             }
-            int OpenDomainSocket(const string& connector) const {
+            int OpenDomainSocket(const string& connector) const
+            {
                 int fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
 
                 if (fd >= 0) {
@@ -338,9 +351,10 @@ namespace Core {
                         TRACE_L1("Error on port socket F_SETFL call. Error: %s", strerror(errno));
                         ::close(fd);
                         fd = -1;
-                    } 
-                    else {
-                       const Core::NodeId binder(connector.c_str());
+                    } else {
+                        ::unlink(connector.c_str());
+
+                        const Core::NodeId binder(connector.c_str());
 
                         if (::bind(fd, binder, binder.Size()) != 0) {
                             TRACE_L1("Error on port socket bind call. Error: %s", strerror(errno));
@@ -351,44 +365,42 @@ namespace Core {
                 }
                 return (fd);
             }
- 
-            Container MoveToContainer(const uint8_t length, const int* fds) const {
+
+            Container MoveToContainer(const uint8_t length, const int* fds) const
+            {
                 Container result;
 
-                for(uint8_t index = 0; index < length; index++) { 
+                for (uint8_t index = 0; index < length; index++) {
                     ASSERT(fds[index] >= 0);
-                    
-                    result.emplace_back(fds[index]); 
+
+                    result.emplace_back(fds[index]);
                     ::close(fds[index]);
                 }
-                return(result);
+                return (result);
             }
             uint8_t CopyContainer(const uint8_t length VARIABLE_IS_NOT_USED, int fds[], const Container& container) const
             {
                 uint8_t count = 0;
 
-                for(uint8_t index = 0; ((index < static_cast<uint8_t>(container.size())) && (count < MaxDescriptorsPerRequest)); index++) { 
+                for (uint8_t index = 0; ((index < static_cast<uint8_t>(container.size())) && (count < MaxDescriptorsPerRequest)); index++) {
                     if (container[index] != -1) {
-                        fds[count++] = container[index]; 
+                        fds[count++] = container[index];
                     }
                 }
                 return (count);
             }
-            uint32_t Load(const struct msghdr* msg, uint8_t& nFds, int fds[]) const {
+            uint32_t Load(const struct msghdr* msg, uint8_t& nFds, int fds[]) const
+            {
                 const struct cmsghdr* cmsg = CMSG_FIRSTHDR(msg);
                 uint32_t result = Core::ERROR_NONE;
 
-                
                 if ((cmsg == nullptr) || (cmsg->cmsg_len < CMSG_LEN(sizeof(int)))) {
                     nFds = 0;
-                }
-                else if (cmsg->cmsg_level != SOL_SOCKET) {
+                } else if (cmsg->cmsg_level != SOL_SOCKET) {
                     result = Core::ERROR_BAD_REQUEST;
-                } 
-                else if (cmsg->cmsg_type != SCM_RIGHTS) {
+                } else if (cmsg->cmsg_type != SCM_RIGHTS) {
                     result = Core::ERROR_GENERAL;
-                } 
-                else {
+                } else {
                     const unsigned char* const cmsgData = CMSG_DATA(cmsg);
                     nFds = std::min(static_cast<uint8_t>((cmsg->cmsg_len - sizeof(cmsghdr)) / sizeof(int)), nFds);
 
@@ -412,7 +424,7 @@ namespace Core {
                 struct header info;
                 info.modus = modus;
                 info.id = id;
- 
+
                 struct iovec io {
                     &info, sizeof(info)
                 };
@@ -430,8 +442,7 @@ namespace Core {
                     msg.msg_controllen = 0;
 
                     sendBytes = sendmsg(_domainSocket, &msg, 0);
-                }
-                else {
+                } else {
                     const uint16_t payloadSize((nFds <= MaxDescriptorsPerRequest) ? (sizeof(int) * nFds) : (sizeof(int) * MaxDescriptorsPerRequest));
                     msg.msg_control = static_cast<char*>(ALLOCA(CMSG_SPACE(payloadSize)));
                     ::memset(msg.msg_control, 0, CMSG_SPACE(payloadSize));
@@ -483,8 +494,7 @@ namespace Core {
 
                 if (recvBytes < 0) {
                     TRACE_L1("Error on port socket recvfrom call. Error: %s", strerror(errno));
-                }
-                else if (recvBytes > 0) {
+                } else if (recvBytes > 0) {
                     if (_state.load(Core::memory_order::memory_order_relaxed) == state::LISTENING) {
                         if (info.modus == state::OFFER) {
                             int descriptors[MaxDescriptorsPerRequest];
@@ -494,7 +504,7 @@ namespace Core {
                             if (result == Core::ERROR_NONE) {
                                 Container container = MoveToContainer(count, descriptors); // always needed to properly close the file descriptors
                                 if (_callback != nullptr) {
-                                    _callback->Offer(info.id, std::move(container)); 
+                                    _callback->Offer(info.id, std::move(container));
                                 }
                             }
                             Write(state::OFFER, info.id, 0, nullptr, reinterpret_cast<const struct sockaddr*>(&client), msg.msg_namelen);
@@ -503,26 +513,21 @@ namespace Core {
                             // Honour the request, get a lift of RefCounted File descriptors to return...
                             if (_callback == nullptr) {
                                 Write(REQUEST, info.id, 0, nullptr, reinterpret_cast<const struct sockaddr*>(&client), msg.msg_namelen);
-                            }
-                            else {
+                            } else {
                                 Container container;
-				_callback->Request(info.id, container);
+                                _callback->Request(info.id, container);
                                 int descriptors[MaxDescriptorsPerRequest];
                                 uint8_t count = CopyContainer(MaxDescriptorsPerRequest, descriptors, container);
                                 Write(REQUEST, info.id, count, descriptors, reinterpret_cast<const struct sockaddr*>(&client), msg.msg_namelen);
                             }
-                        }
-                        else {
+                        } else {
                             TRACE_L1("Error on port socket recvfrom call. Unknown modus: %d", info.modus);
                         }
-                    } 
-                    else if (_id != info.id) {
+                    } else if (_id != info.id) {
                         TRACE_L1("Unexpected response. Not a matching ID.");
-                    } 
-                    else if (_state.load(Core::memory_order::memory_order_relaxed) != info.modus) {
+                    } else if (_state.load(Core::memory_order::memory_order_relaxed) != info.modus) {
                         TRACE_L1("Unexpected response. Not a matching modus.");
-                    }
-                    else {
+                    } else {
 
                         int descriptors[MaxDescriptorsPerRequest];
                         uint8_t count = sizeof(descriptors) / sizeof(int);
@@ -531,8 +536,7 @@ namespace Core {
 
                         if (result != Core::ERROR_NONE) {
                             TRACE_L1("Could not load the descriptors! Error: [%d].", result);
-                        }
-                        else {
+                        } else {
                             _signal.SetEvent();
                         }
                     }
@@ -558,9 +562,11 @@ namespace Core {
         PrivilegedRequest& operator=(const PrivilegedRequest&) = delete;
 
         PrivilegedRequest(ICallback* callback = nullptr)
-            : _link(*this, callback) {
+            : _link(*this, callback)
+        {
         }
-        virtual ~PrivilegedRequest() {
+        virtual ~PrivilegedRequest()
+        {
             Close();
         }
 
@@ -581,7 +587,8 @@ namespace Core {
             }
             return (result);
         }
-        uint32_t Offer(const uint32_t waitTime, const string& identifier, const uint32_t requestId, const Container& fds) {
+        uint32_t Offer(const uint32_t waitTime, const string& identifier, const uint32_t requestId, const Container& fds)
+        {
             uint32_t result;
             if ((result = _link.Offer(waitTime, identifier, requestId, fds)) != Core::ERROR_NONE) {
                 TRACE_L1("Could not get a privileged offer answered.");
