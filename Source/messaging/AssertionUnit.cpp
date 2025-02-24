@@ -39,7 +39,6 @@ namespace Assertion {
 
     void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
     {
-        metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
         Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message);
     }
 }
