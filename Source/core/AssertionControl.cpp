@@ -66,13 +66,11 @@ namespace Assertion {
         // print the ASSERT to stderr if handler is not set, possibly due to the messaging engine not being fully initialized yet
         if (_handler != nullptr) {
             _handler->AssertionEvent(metadata, message);
+            _adminLock->Unlock();
         }
         else {
-            ::fprintf(stderr, "%s%s\n", metadata.ToString(Core::Messaging::MessageInfo::abbreviate::FULL).c_str(), message.Data().c_str());
-            ::fflush(stderr);
+            fprintf(stderr, "%s%s\n", metadata.ToString(Core::Messaging::MessageInfo::abbreviate::FULL).c_str(), message.Data().c_str());
         }
-
-        _adminLock->Unlock();
     }
 
     void AssertionUnitProxy::Handle(IAssertionUnit* handler)
