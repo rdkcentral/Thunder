@@ -69,7 +69,9 @@ namespace Assertion {
             _adminLock->Unlock();
         }
         else {
-            fprintf(stderr, "%s%s\n", metadata.ToString(Core::Messaging::MessageInfo::abbreviate::FULL).c_str(), message.Data().c_str());
+            _adminLock->Unlock();
+            ::fprintf(stderr, "%s%s\n", metadata.ToString(Core::Messaging::MessageInfo::abbreviate::FULL).c_str(), message.Data().c_str());
+            ::fflush(stderr);
         }
     }
 
