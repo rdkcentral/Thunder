@@ -12,7 +12,7 @@
     "systempath": "/home/bram/Projects/metrological/Thunder/install/usr/lib/thunder/plugins",
     "proxystubpath": "/home/bram/Projects/metrological/Thunder/install/usr/lib/thunder/proxystubs",
     "postmortempath": "/opt/minidumps",
-    "redirect": "/Service/Controller/UI",
+    "redirect": "/Service/Controller/UI/index.html",
     "communicator": "127.0.0.1:62000",
     "process": {
         "priority": 0,
