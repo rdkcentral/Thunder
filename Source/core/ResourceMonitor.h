@@ -543,6 +543,8 @@ POP_WARNING()
 
             if (_resources.size() > 0) {
 
+                size_t count = _resources.size();
+
                 _adminLock.Unlock();
 
                 WaitForSingleObject(_action, Core::infinite);
@@ -556,7 +558,10 @@ POP_WARNING()
 
                 ::WSAResetEvent(_action);
 
-                while (index != _resources.end()) {
+                while (count != 0) {
+                    count--;
+
+                    ASSERT(index != _resources.end());
 
                     RESOURCE* entry = (*index);
 
