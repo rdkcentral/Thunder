@@ -331,7 +331,7 @@ namespace Thunder {
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if (_settings.IsDirect() == true) {
+            if ((_settings.IsDirect() == true) || (_dispatcher == nullptr)) {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
                 uint8_t serializationBuffer[TempDataBufferSize];

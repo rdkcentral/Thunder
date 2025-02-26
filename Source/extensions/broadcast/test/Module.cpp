@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2021 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+#include "Module.h"
 
-#include "AssertionUnit.h"
-
-namespace Thunder {
-namespace Assertion {
-
-    AssertionUnit::AssertionUnit()
-    {
-        AssertionUnitProxy::Instance().Handle(this);
-    }
-
-    AssertionUnit& AssertionUnit::Instance()
-    {
-        return (Core::SingletonType<AssertionUnit>::Instance());
-    }
-
-    AssertionUnit::~AssertionUnit()
-    {
-        AssertionUnitProxy::Instance().Handle(nullptr);
-    }
-
-    void AssertionUnit::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
-    {
-        Thunder::Messaging::MessageUnit::Instance().Push(metadata, &message);
-    }
-}
-}
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)

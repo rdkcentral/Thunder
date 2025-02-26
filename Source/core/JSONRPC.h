@@ -320,13 +320,14 @@ namespace Core {
             {
                 // [Callsign.][version.][prefix[#instanceid]::]method[@index]
 
-                size_t idx = val.find(TCHAR('.'));
                 size_t idx0 = 0;
+
+                size_t idx = val.find(TCHAR('.'));
                 size_t idxV = 0;
 
                 if (idx != string::npos) {
 
-                    for (idxV = 0; (idxV< idx) && (::isdigit(val[idxV])); idxV++)
+                    for (idxV = 0; (idxV < idx) && (::isdigit(val[idxV])); idxV++)
                         /* continue */;
 
                     if (idxV == idx) {
@@ -364,51 +365,40 @@ namespace Core {
                     }
                 }
 
-                string method;
                 const size_t idxI = val.find(TCHAR('@'), idx0);
 
                 if ((idxI != string::npos) && (val.size() > idxI)) {
                     if (outIndex != nullptr) {
                         (*outIndex) = val.substr(idxI + 1);
                     }
-
-                    method = val.substr(idx0, (idxI - idx0));
-                }
-                else {
-                    method = val.substr(idx0);
                 }
 
-                if (method.empty() == false) {
-                    idx0 = method.rfind(TCHAR(':'));
+                size_t idxP = val.rfind(TCHAR(':'), idxI);
 
-                    if (method.size() < (idx0 + 1)) {
-                        idx0 = string::npos;
-                    }
-                    else {
-                        idx0--;
-                    }
+                if ((idxP != string::npos) && (val.size() > (idxI + 1))) {
+                    if ((idxP > 0) && (val[idxP - 1] == ':')) {
+                        idxP--;
 
-                    if (idx0 != string::npos) {
-                        idx = method.find(TCHAR('#'));
+                        idx = val.find(TCHAR('#'), idx0);
 
-                        if ((outInstanceId != nullptr) && (idx != string::npos) && (method.size() > idx)) {
-                            (*outInstanceId) = method.substr((idx + 1), (idx0 - idx - 1));
+                        if ((outInstanceId != nullptr) && (idx != string::npos) && (val.size() > idx)) {
+                            (*outInstanceId) = val.substr((idx + 1), (idxP - idx - 1));
                         }
 
                         if (outPrefix != nullptr) {
-                            (*outPrefix) = method.substr(0, std::min(idx0, idx));
+                            (*outPrefix) = val.substr(idx0, (std::min(idxP, idx) - idx0));
                         }
 
-                        idx0++;
+                        idx0 = (idxP + 2);
                     }
+                }
 
-                    if (outMethod != nullptr) {
-                        (*outMethod) = method.substr(idx0 + 1);
+                if (outMethod != nullptr) {
+                    (*outMethod) = val.substr(idx0, (idxI - idx0));
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
-                        ToCamelCase(*outMethod);
+                    ToCamelCase(*outMethod);
 POP_WARNING()
-                    }
                 }
             }
             static string Callsign(const string& designator)

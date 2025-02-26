@@ -415,7 +415,6 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
 
                     _reason = reason::INITIALIZATION_FAILED;
-                    _administrator.Deinitialized(callSign, this);
 
                     if( _administrator.Configuration().LegacyInitialize() == false ) {
                         REPORT_DURATION_WARNING({ _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
@@ -425,6 +424,8 @@ namespace PluginHost {
                     ReleaseInterfaces();
                     State(DEACTIVATED);
                     Unlock();
+
+                    _administrator.Deinitialized(callSign, this);
 
                 } else {
                     const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
@@ -521,9 +522,13 @@ namespace PluginHost {
 
         if (currentState == IShell::state::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::DESTROYED)) {
+            Unlock();
+        }
+        else if ( ((currentState == IShell::state::ACTIVATION) && (why != IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
-        } else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED) ) {
+            Unlock();
+        }
+        else if ( ((currentState == IShell::state::ACTIVATION) && (why == IShell::reason::INITIALIZATION_FAILED)) || (currentState == IShell::state::UNAVAILABLE) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED) ) {
             const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             const string className(PluginHost::Service::Configuration().ClassName.Value());
@@ -613,13 +618,12 @@ namespace PluginHost {
 
             State(why == CONDITIONS ? PRECONDITION : DEACTIVATED);
 
-            _administrator.Deinitialized(callSign, this);
-
             // We have no need for his module anymore..
             ReleaseInterfaces();
-        }
+            Unlock();
 
-        Unlock();
+            _administrator.Deinitialized(callSign, this);
+        }
 
         return (result);
     }
