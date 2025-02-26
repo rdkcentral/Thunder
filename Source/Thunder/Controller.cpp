@@ -399,6 +399,9 @@ namespace Plugin {
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
         result->ContentType = Web::MIME_JSON;
 
+        result->ErrorCode = Web::STATUS_OK;
+        result->Message = "OK";
+
         if (index.Next() == false) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata>> response(jsonBodyMetadataFactory.Element());
 
@@ -527,6 +530,9 @@ namespace Plugin {
             Core::ProxyType<Web::JSONBodyType<PluginHost::Metadata::Version>> response(jsonBodyVersionFactory.Element());
             _pluginServer->Metadata(*response);
             result->Body(Core::ProxyType<Web::IBody>(response));
+        } else {
+            result->ErrorCode = Web::STATUS_BAD_REQUEST;
+            result->Message = _T("Bad request.");
         }
 
         return (result);
