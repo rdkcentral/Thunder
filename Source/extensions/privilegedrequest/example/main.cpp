@@ -100,10 +100,10 @@ private:
     public:
         void Request(const uint32_t id, Container& descriptors) override {
             _parent.Request(id, descriptors);
-            printf("Request descriptors for [%d]: Amount: [%d]\n", id, descriptors.size());
+            printf("Request descriptors for [%d]: Amount: [%d]\n", id, static_cast<uint32_t>(descriptors.size()));
         }
         void Offer(const uint32_t id, Container&& descriptors) override {
-            printf("Offered descriptors for [%d]: Amount: [%d]\n", id, descriptors.size());
+            printf("Offered descriptors for [%d]: Amount: [%d]\n", id, static_cast<uint32_t>(descriptors.size()));
             _parent.Offer(id, std::move(descriptors));
         }
 
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
 
                     channel.Request(1000, identifier, id, fds);
 
-                    printf ("Received: %d descriptors.\n", fds.size());
+                    printf ("Received: %d descriptors.\n", static_cast<uint32_t>(fds.size()));
 
                     for (const auto& fd : fds) {
                         if (fd > 0) {
@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 
                     uint32_t result = channel.Offer(1000, identifier, id, fds);
 
-                    printf ("Offer: %d descriptors, resulted in %d.\n", fds.size(), result);
+                    printf ("Offer: %d descriptors, resulted in %d.\n", static_cast<uint32_t>(fds.size()), result);
 
                     break;
                 }
