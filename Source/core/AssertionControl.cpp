@@ -60,10 +60,19 @@ namespace Assertion {
     void AssertionUnitProxy::AssertionEvent(Core::Messaging::IStore::Assert& metadata, const Core::Messaging::TextMessage& message)
     {
         _adminLock->Lock();
+
+        metadata.TimeStamp(Thunder::Core::Time::Now().Ticks());
+
+        // print the ASSERT to stderr if handler is not set, possibly due to the messaging engine not being fully initialized yet
         if (_handler != nullptr) {
             _handler->AssertionEvent(metadata, message);
+            _adminLock->Unlock();
         }
-        _adminLock->Unlock();
+        else {
+            _adminLock->Unlock();
+            ::fprintf(stderr, "%s%s\n", metadata.ToString(Core::Messaging::MessageInfo::abbreviate::FULL).c_str(), message.Data().c_str());
+            ::fflush(stderr);
+        }
     }
 
     void AssertionUnitProxy::Handle(IAssertionUnit* handler)

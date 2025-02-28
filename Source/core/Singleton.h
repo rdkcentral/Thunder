@@ -243,6 +243,80 @@ namespace Core {
     private:
         ProxyType<PROXYTYPE> _wrapped;
     };
+
+    template<typename SINGLETON>
+    class UniqueType {
+    private:
+        using available = std::is_default_constructible<SINGLETON>;
+
+        class Info {
+        public:
+            Info(Info&&) = delete;
+            Info(const Info&) = delete;
+            Info& operator=(Info&&) = delete;
+            Info& operator=(const Info&) = delete;
+
+            Info()
+                : _adminLock()
+                , _refCount(1)
+                , _entry(nullptr) {
+            }
+            ~Info () = default;
+
+        public:
+            SINGLETON& Instance() {
+                _adminLock.Lock();
+                if (_entry == nullptr) {
+                    _entry = new SINGLETON();
+                }
+                else {
+                    ++_refCount;
+                }
+                _adminLock.Unlock();
+
+                return (*_entry);
+            }
+            void Drop() {
+                _adminLock.Lock();
+                if (_refCount == 1) {
+                    delete _entry;
+                    _entry = nullptr;
+                }
+                else {
+                    --_refCount;
+                }
+                _adminLock.Unlock();
+            }
+
+        public:
+            CriticalSection _adminLock;
+            uint32_t        _refCount;
+            SINGLETON*      _entry;
+        };
+
+    public:
+        UniqueType(UniqueType<SINGLETON>&&) = delete;
+        UniqueType(const UniqueType<SINGLETON>&) = delete;
+        UniqueType<SINGLETON> operator=(SingletonType<SINGLETON>&&) = delete;
+        UniqueType<SINGLETON> operator=(const SingletonType<SINGLETON>&) = delete;
+
+        UniqueType() = default;
+        ~UniqueType() = default;
+
+        SINGLETON& Instance() {
+            return (_singleton.Instance());
+        }
+        void Drop() {
+            return (_singleton.Drop());
+        }
+
+    private:
+        static Info _singleton;
+    };
+
+    template <typename SINGLETONTYPE>
+    EXTERNAL_HIDDEN typename UniqueType<SINGLETONTYPE>::Info  UniqueType<SINGLETONTYPE>::_singleton;
+
 }
 } // namespace Core
 

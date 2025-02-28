@@ -1056,7 +1056,7 @@ namespace Thunder {
             }
             else if (m_State != 0) {
 #ifdef __WINDOWS__
-                result = FD_CLOSE;
+                result = FD_READ;
 #else
                 result = POLLIN;
 #endif
@@ -1089,6 +1089,8 @@ namespace Thunder {
                     }
 #ifdef __LINUX__
                     result |= ((m_State & SocketPort::LINK) != 0 ? (POLLHUP | POLLRDHUP ) : 0) | ((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
+#else
+                    result |= ((m_State & SocketPort::LINK) != 0 ? FD_CLOSE : 0) | ((m_State & SocketPort::WRITE) != 0 ? FD_WRITE : 0);
 #endif
                 }
             }
@@ -1115,8 +1117,7 @@ namespace Thunder {
                 else if ((flagsSet & FD_CONNECT) != 0) {
                     Opened();
                     m_State |= UPDATE;
-                }
-                else {
+                } else {
                     if (((flagsSet & FD_WRITE) != 0) || (breakIssued == true)) {
                         Write();
                     }

@@ -9,7 +9,7 @@
   "systempath": "D:/domotica/artifacts/Debug",
   "proxystubpath": "D:/domotica/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
-  "redirect": "Service/Controller/UI",
+  "redirect": "Service/Controller/UI/index.html",
   "observe": {
     "proxystubpath": "D:/domotica/artifacts/dynamic/proxystubs",
     "configpath": "D:/domotica/artifacts/dynamic/config"
