@@ -233,6 +233,7 @@ namespace Thunder {
             }
             uint32_t Open(const uint32_t waitTime, const string& specificInterface);
             uint32_t Close(const uint32_t waitTime);
+            void CloseSocket();
             void Trigger();
 
             // Methods to extract and insert data into the socket buffers

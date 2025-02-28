@@ -26,6 +26,8 @@
 #include "Thread.h"
 #include "Timer.h"
 #include "Number.h"
+#include "WarningReportingControl.h"
+#include "WarningReportingCategories.h"
 
 #ifdef __POSIX__
 #include <arpa/inet.h>
@@ -491,105 +493,108 @@ namespace Thunder {
         {
             uint32_t nStatus = Core::ERROR_ILLEGAL_STATE;
 
-            m_ReadBytes = 0;
-            m_SendBytes = 0;
-            m_SendOffset = 0;
+            REPORT_DURATION_WARNING(
+            {
+                m_ReadBytes = 0;
+                m_SendBytes = 0;
+                m_SendOffset = 0;
 
-            if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
+                if ((m_State.load(Core::memory_order::memory_order_relaxed) & (SocketPort::LINK | SocketPort::OPEN | SocketPort::MONITOR)) == (SocketPort::LINK | SocketPort::OPEN)) {
 
-                if (Initialize() != Core::ERROR_NONE) {
-                    nStatus = Core::ERROR_ABORTED;
+                    if (Initialize() != Core::ERROR_NONE) {
+                        nStatus = Core::ERROR_ABORTED;
+                    }
+                    else {
+                        // Open up an accepted socket, but not yet added to the monitor.
+                        m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);
+                        nStatus = Core::ERROR_INPROGRESS;
+                    }
                 }
                 else {
-                    // Open up an accepted socket, but not yet added to the monitor.
-                    m_State.fetch_or(SocketPort::UPDATE, Core::memory_order::memory_order_relaxed);
-                    nStatus = Core::ERROR_INPROGRESS;
-                }
-            }
-            else {
-                ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
+                    ASSERT((m_Socket == INVALID_SOCKET) && (m_State.load(Core::memory_order::memory_order_relaxed) == 0));
 
-                if ((m_SocketType == SocketPort::STREAM) || (m_SocketType == SocketPort::SEQUENCED) || (m_SocketType == SocketPort::RAW)) {
-                    if (m_LocalNode.IsValid() == false) {
-                        m_LocalNode = m_RemoteNode.Origin();
-                    }
-                }
-
-                ASSERT(((m_SocketType != LISTEN) || (m_LocalNode.IsValid() == true)) && ((m_SocketType != STREAM) || (m_RemoteNode.Type() == m_LocalNode.Type())));
-
-                m_Socket = ConstructSocket(m_LocalNode, specificInterface);
-
-                if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
-
-                    TRACE_L3("Socket %u constructed", static_cast<uint32_t>(m_Socket));
-
-                    if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
-                        m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
-
-                        nStatus = Core::ERROR_NONE;
-                    }
-                    else if (m_SocketType == LISTEN) {
-                        if (::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
-                            TRACE_L1("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                    if ((m_SocketType == SocketPort::STREAM) || (m_SocketType == SocketPort::SEQUENCED) || (m_SocketType == SocketPort::RAW)) {
+                        if (m_LocalNode.IsValid() == false) {
+                            m_LocalNode = m_RemoteNode.Origin();
                         }
-                        else {
-                            // Trigger state to Open
-                            m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::ACCEPT, Core::memory_order::memory_order_relaxed);
+                    }
+
+                    ASSERT(((m_SocketType != LISTEN) || (m_LocalNode.IsValid() == true)) && ((m_SocketType != STREAM) || (m_RemoteNode.Type() == m_LocalNode.Type())));
+
+                    m_Socket = ConstructSocket(m_LocalNode, specificInterface);
+
+                    if ((m_Socket != INVALID_SOCKET) && (Initialize() == Core::ERROR_NONE)) {
+
+                        TRACE_L3("Socket %u constructed", static_cast<uint32_t>(m_Socket));
+
+                        if ((m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false))) {
+                            m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
 
                             nStatus = Core::ERROR_NONE;
+                        }
+                        else if (m_SocketType == LISTEN) {
+                            if (::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
+                                TRACE_L1("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                            }
+                            else {
+                                // Trigger state to Open
+                                m_State.store(SocketPort::UPDATE | SocketPort::OPEN | SocketPort::ACCEPT, Core::memory_order::memory_order_relaxed);
+
+                                nStatus = Core::ERROR_NONE;
+                            }
+                        }
+                        else {
+                            if (::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
+                                m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
+                                nStatus = Core::ERROR_NONE;
+                            }
+                            else {
+                                int l_Result = __ERRORRESULT__;
+
+                                if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
+                                    m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, Core::memory_order::memory_order_relaxed);
+                                    nStatus = Core::ERROR_INPROGRESS;
+                                }
+                                else {
+                                    if (l_Result == __ERROR_ISCONN__) {
+                                        nStatus = Core::ERROR_ALREADY_CONNECTED;
+                                    }
+                                    else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
+                                        nStatus = Core::ERROR_UNREACHABLE_NETWORK;
+                                    }
+                                    else {
+                                        nStatus = Core::ERROR_ASYNC_FAILED;
+                                    }
+
+                                    TRACE_L1("Error on socket connect. Error %d", __ERRORRESULT__);
+                                }
+                            }
                         }
                     }
                     else {
-                        if (::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
-                            m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ, Core::memory_order::memory_order_relaxed);
+                        nStatus = Core::ERROR_GENERAL;
+                    }
+                }
+
+                if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
+
+                    ResourceMonitor::Instance().Register(*this);
+
+                    if (nStatus == Core::ERROR_INPROGRESS) {
+                        if (waitTime > 0) {
+                            // We are good to go, we just have to wait till we are connected..
+                            nStatus = WaitForOpen(waitTime);
+                        }
+                        else if (IsOpen() == true) {
                             nStatus = Core::ERROR_NONE;
                         }
-                        else {
-                            int l_Result = __ERRORRESULT__;
-
-                            if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
-                                m_State.store(SocketPort::UPDATE | SocketPort::LINK | SocketPort::WRITE, Core::memory_order::memory_order_relaxed);
-                                nStatus = Core::ERROR_INPROGRESS;
-                            }
-                            else {
-                                if (l_Result == __ERROR_ISCONN__) {
-                                    nStatus = Core::ERROR_ALREADY_CONNECTED;
-                                }
-                                else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
-                                    nStatus = Core::ERROR_UNREACHABLE_NETWORK;
-                                }
-                                else {
-                                    nStatus = Core::ERROR_ASYNC_FAILED;
-                                }
-
-                                TRACE_L1("Error on socket connect. Error %d", __ERRORRESULT__);
-                            }
-                        }
                     }
+
                 }
                 else {
-                    nStatus = Core::ERROR_GENERAL;
+                    DestroySocket(m_Socket);
                 }
-            }
-
-            if ((nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS)) {
-
-                ResourceMonitor::Instance().Register(*this);
-
-                if (nStatus == Core::ERROR_INPROGRESS) {
-                    if (waitTime > 0) {
-                        // We are good to go, we just have to wait till we are connected..
-                        nStatus = WaitForOpen(waitTime);
-                    }
-                    else if (IsOpen() == true) {
-                        nStatus = Core::ERROR_NONE;
-                    }
-                }
-
-            }
-            else {
-                DestroySocket(m_Socket);
-            }
+            }, WarningReporting::SocketOperationTooLong);
 
             return (nStatus);
         }
@@ -601,61 +606,70 @@ namespace Thunder {
 
             bool closed = IsClosed();
 
-            if (m_Socket != INVALID_SOCKET) {
+            REPORT_DURATION_WARNING(
+            {
+                if (m_Socket != INVALID_SOCKET) {
+
+                    m_syncAdmin.Unlock();
+                    WaitForWriteComplete(waitTime);
+                    m_syncAdmin.Lock();
+
+                    if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
+
+                        TRACE_L3("Closing socket %u...", static_cast<uint32_t>(m_Socket));
+
+                        if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
+
+                            // This is a connectionless link, do not expect a close from the otherside.
+                            // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
+                            m_State |= (SHUTDOWN | EXCEPTION);
+                        }
+                        else {
+                            m_State |= SHUTDOWN;
+
+                            // Block new data from coming in, signal the other side that we close !!
+                            CloseSocket();
+                        }
+
+                        ResourceMonitor::Instance().Break();
+                    } else {
+                        TRACE_L3("Socket is already closed or being closed");
+                    }
+
+                    if (waitTime > 0) {
+                        closed = (WaitForClosure(waitTime) == Core::ERROR_NONE);
+
+                        if (closed == false) {
+                            // Make this a forced close !!!
+                            m_State |= EXCEPTION;
+
+                            // We probably did not get a response from the otherside on the close
+                            // sloppy but let's forcefully close it
+                            ResourceMonitor::Instance().Break();
+
+                            closed = (WaitForClosure(Core::infinite) == Core::ERROR_NONE);
+
+                            ASSERT(closed == true);
+                        }
+                    }
+                } else {
+                    TRACE_L3("Socket is already closed and destroyed");
+                }
 
                 m_syncAdmin.Unlock();
-                WaitForWriteComplete(waitTime);
-                m_syncAdmin.Lock();
 
-                if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
-
-                    TRACE_L3("Closing socket %u...", static_cast<uint32_t>(m_Socket));
-
-                    if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
-
-                        // This is a connectionless link, do not expect a close from the otherside.
-                        // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
-                        m_State |= (SHUTDOWN | EXCEPTION);
-                    }
-                    else {
-                        m_State |= SHUTDOWN;
-
-                        // Block new data from coming in, signal the other side that we close !!
-#ifdef __WINDOWS__
-                        shutdown(m_Socket, SD_BOTH);
-#else
-                        shutdown(m_Socket, SHUT_RDWR);
-#endif
-                    }
-
-                    ResourceMonitor::Instance().Break();
-                } else {
-                    TRACE_L3("Socket is already closed or being closed");
-                }
-
-                if (waitTime > 0) {
-                    closed = (WaitForClosure(waitTime) == Core::ERROR_NONE);
-
-                    if (closed == false) {
-                        // Make this a forced close !!!
-                        m_State |= EXCEPTION;
-
-                        // We probably did not get a response from the otherside on the close
-                        // sloppy but let's forcefully close it
-                        ResourceMonitor::Instance().Break();
-
-                        closed = (WaitForClosure(Core::infinite) == Core::ERROR_NONE);
-
-                        ASSERT(closed == true);
-                    }
-                }
-            } else {
-                TRACE_L3("Socket is already closed and destroyed");
-            }
-
-            m_syncAdmin.Unlock();
+            }, WarningReporting::SocketOperationTooLong);
 
             return (closed ? Core::ERROR_NONE : Core::ERROR_PENDING_SHUTDOWN);
+        }
+
+        void SocketPort::CloseSocket()
+        {
+#ifdef __WINDOWS__
+            shutdown(m_Socket, SD_BOTH);
+#else
+            shutdown(m_Socket, SHUT_RDWR);
+#endif
         }
 
         void SocketPort::Trigger()
