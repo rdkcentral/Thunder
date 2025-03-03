@@ -1088,13 +1088,19 @@ POP_WARNING()
         }
         uint32_t Open(const uint32_t waitTime)
         {
-            _channel.Open(0);
+            uint32_t result;
 
-            return WaitForLink(waitTime);
+            REPORT_DURATION_WARNING( { _channel.Open(0); result = WaitForLink(waitTime); }, WarningReporting::SocketOperationTooLong)
+
+            return (result);
         }
         uint32_t Close(const uint32_t waitTime)
         {
-            return (_channel.Close(waitTime));
+            uint32_t result;
+
+            REPORT_DURATION_WARNING( { result = _channel.Close(waitTime); }, WarningReporting::SocketOperationTooLong)
+
+            return (result);
         }
         void Ping()
         {
