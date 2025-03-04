@@ -73,6 +73,10 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 ASSERT(std::find(_controlList.begin(), _controlList.end(), control) == _controlList.end());
                 _controlList.push_back(control);
 
+                if (_storage != nullptr) {
+                    control->Enable(_storage->Default(control->Metadata()));
+                }
+
                 _adminLock.Unlock();
             }
 
@@ -106,15 +110,13 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
 
             void SetStorage(Core::Messaging::IStore* storage)
             {
+                _adminLock.Lock();
+
                 ASSERT((_storage == nullptr) ^ (storage == nullptr));
 
-                _adminLock.Lock();
                 _storage = storage;
-                _adminLock.Unlock();
-            }
 
-            Core::Messaging::IStore* Storage() const {
-                return (_storage);
+                _adminLock.Unlock();
             }
 
         private:
@@ -503,10 +505,6 @@ namespace Core {
         /* static */ void IControl::Announce(IControl* control)
         {
             ControlsInstance().Announce(control);
-
-            if (ControlsInstance().Storage() != nullptr) {
-                control->Enable(ControlsInstance().Storage()->Default(control->Metadata()));
-            }
         }
 
         /* static */ void IControl::Revoke(IControl* control) {
@@ -515,10 +513,6 @@ namespace Core {
 
         /* static */ void IControl::Iterate(IControl::IHandler& handler) {
             ControlsInstance().Iterate(handler);
-        }
-
-        /* static */ IStore* IStore::Instance() {
-            return (ControlsInstance().Storage());
         }
         
         /* static */ void IStore::Set(IStore* storage)
