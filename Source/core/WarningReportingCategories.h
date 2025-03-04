@@ -278,8 +278,8 @@ namespace WarningReporting {
                 visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
             };
 
-            static constexpr uint32_t DefaultWarningBound = { 1 };
-            static constexpr uint32_t DefaultReportBound = { 1 };
+            static constexpr uint32_t DefaultWarningBound = { 1000 };
+            static constexpr uint32_t DefaultReportBound = { 1000 };
         };
 
 }
