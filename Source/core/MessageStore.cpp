@@ -108,7 +108,7 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Unlock();
             }
 
-            void SetStorage(Core::Messaging::IStore* storage)
+            void Set(Core::Messaging::IStore* storage)
             {
                 _adminLock.Lock();
 
@@ -517,7 +517,7 @@ namespace Core {
         
         /* static */ void IStore::Set(IStore* storage)
         {
-            ControlsInstance().SetStorage(storage);
+            ControlsInstance().Set(storage);
         }
     } // namespace Messaging
 } // namespace Core
