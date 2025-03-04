@@ -22,7 +22,6 @@
 #include "Sync.h"
 #include "Frame.h"
 #include "Enumerate.h"
-#include "Singleton.h"
 
 namespace Thunder {
 
@@ -47,7 +46,10 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             Controls(const Controls&) = delete;
             Controls& operator=(const Controls&) = delete;
 
-            Controls() = default;
+            Controls()
+                : _storage(nullptr)
+            {
+            }
             ~Controls()
             {
                 _adminLock.Lock();
@@ -102,9 +104,23 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
                 _adminLock.Unlock();
             }
 
+            void SetStorage(Core::Messaging::IStore* storage)
+            {
+                ASSERT((_storage == nullptr) ^ (storage == nullptr));
+
+                _adminLock.Lock();
+                _storage = storage;
+                _adminLock.Unlock();
+            }
+
+            Core::Messaging::IStore* Storage() const {
+                return (_storage);
+            }
+
         private:
             mutable Core::CriticalSection _adminLock;
             ControlList _controlList;
+            Core::Messaging::IStore* _storage;
         };
 
         Controls& ControlsInstance()
@@ -113,10 +129,8 @@ ENUM_CONVERSION_END(Core::Messaging::Metadata::type)
             // the SingleTonType dispose and the Controls would be newly created instead
             // of the current one used
             static Controls instance;
-            return instance;
+            return (instance);
         }
-
-        static Core::Messaging::IStore* _storage;
     }
 
 namespace Core {
@@ -490,8 +504,8 @@ namespace Core {
         {
             ControlsInstance().Announce(control);
 
-            if (_storage != nullptr) {
-                control->Enable(_storage->Default(control->Metadata()));
+            if (ControlsInstance().Storage() != nullptr) {
+                control->Enable(ControlsInstance().Storage()->Default(control->Metadata()));
             }
         }
 
@@ -504,13 +518,12 @@ namespace Core {
         }
 
         /* static */ IStore* IStore::Instance() {
-            return (_storage);
+            return (ControlsInstance().Storage());
         }
         
         /* static */ void IStore::Set(IStore* storage)
         {
-            ASSERT ((_storage == nullptr) ^ (storage == nullptr));
-            _storage = storage;
+            ControlsInstance().SetStorage(storage);
         }
     } // namespace Messaging
 } // namespace Core
