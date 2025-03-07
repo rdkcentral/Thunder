@@ -316,85 +316,62 @@ namespace Core {
 
                 return (out);
             }
-            static void Split(const string& val, string* outCallsign, string* outVersion, string* outPrefix, string* outInstanceId, string* outMethod, string* outIndex)
+            static void Split(const string& designator, string* outCallsign, string* outVersion, string* outPrefix, string* outInstanceId, string* outMethod, string* outIndex)
             {
                 // [Callsign.][version.][prefix[#instanceid]::]method[@index]
 
-                size_t idx0 = 0;
+                const size_t idxI = designator.rfind(TCHAR('@'));
 
-                size_t idx = val.find(TCHAR('.'));
-                size_t idxV = 0;
-
-                if (idx != string::npos) {
-
-                    for (idxV = 0; (idxV < idx) && (::isdigit(val[idxV])); idxV++)
-                        /* continue */;
-
-                    if (idxV == idx) {
-                        // It is a version number.
-                        if (outVersion != nullptr) {
-                            (*outVersion) = val.substr(0, idx);
-                        }
-                    }
-                    else {
-                        if (outCallsign != nullptr) {
-                            (*outCallsign) = val.substr(0, idx);
-                        }
-                    }
-
-                    idx0 = idx + 1;
+                if ((outIndex != nullptr) && (idxI != string::npos)) {
+                    (*outIndex) = designator.substr(idxI + 1);
                 }
 
-                if (idxV != idx) {
-                    idx = val.find(TCHAR('.'), idx0);
+                size_t idxM = designator.rfind(TCHAR('.'), idxI);
 
-                    if (idx != string::npos) {
+                if ((idxM != string::npos) && (idxM != 0)) {
 
-                        for (idxV = idx0; (idxV < idx) && (::isdigit(val[idxV])); idxV++)
-                            /* continue */;
+                    const size_t idxV = (designator.rfind(TCHAR('.'), (idxM - 1)) + 1);
 
-                        if (idxV == idx) {
-                            // It indeed is a version number.
+                    size_t i = idxV;
+                    while ((i < idxM) && (::isdigit(designator[i]))) {
+                        i++;
+                    }
 
-                            if (outVersion != nullptr) {
-                                (*outVersion) = val.substr(idx0, idx - idx0);
-                            }
+                    const size_t end = ((i == idxM) ? (idxV - 1) : idxM);
 
-                            idx0 = idx + 1;
-                        }
+                    if ((outVersion != nullptr) && (end != idxM)) {
+                        (*outVersion) = designator.substr(idxV, (idxM - idxV));
+                    }
+
+                    if ((outCallsign != nullptr) && (end != string::npos)) {
+                        (*outCallsign) = designator.substr(0, end);
                     }
                 }
 
-                const size_t idxI = val.find(TCHAR('@'), idx0);
+                idxM++;
 
-                if ((idxI != string::npos) && (val.size() > idxI)) {
-                    if (outIndex != nullptr) {
-                        (*outIndex) = val.substr(idxI + 1);
-                    }
-                }
+                const size_t idxP = designator.rfind(_T("::"), idxI);
 
-                size_t idxP = val.rfind(TCHAR(':'), idxI);
+                if ((idxP != string::npos) && ((idxP + 1) < designator.size())) {
 
-                if ((idxP != string::npos) && (val.size() > (idxI + 1))) {
-                    if ((idxP > 0) && (val[idxP - 1] == ':')) {
-                        idxP--;
+                    if ((outInstanceId != nullptr) || (outPrefix != nullptr)) {
 
-                        idx = val.find(TCHAR('#'), idx0);
+                        const size_t idxId = designator.rfind(TCHAR('#'), idxP);
 
-                        if ((outInstanceId != nullptr) && (idx != string::npos) && (val.size() > idx)) {
-                            (*outInstanceId) = val.substr((idx + 1), (idxP - idx - 1));
+                        if ((outInstanceId != nullptr) && (idxId != string::npos)) {
+                            (*outInstanceId) = designator.substr((idxId + 1), (idxP - idxId - 1));
                         }
 
                         if (outPrefix != nullptr) {
-                            (*outPrefix) = val.substr(idx0, (std::min(idxP, idx) - idx0));
+                            (*outPrefix) = designator.substr(idxM, (std::min(idxP, idxId) - idxM));
                         }
-
-                        idx0 = (idxP + 2);
                     }
+
+                    idxM = (idxP + 2);
                 }
 
                 if (outMethod != nullptr) {
-                    (*outMethod) = val.substr(idx0, (idxI - idx0));
+                    (*outMethod) = designator.substr(idxM, ((idxI == string::npos)? idxI : (idxI - idxM)));
 
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
                     ToCamelCase(*outMethod);
