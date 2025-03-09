@@ -1821,7 +1821,7 @@ namespace Core {
                         const uint16_t current = static_cast<uint16_t>((_value[offset - 1]) & 0xFF);
 
                         // See if this is a printable character
-                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\') && (current != '/')) ) {
+                        if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\'))) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
                             offset++;
@@ -1840,7 +1840,6 @@ namespace Core {
                             case 0x0c: stream[result++] = 'f'; break;
                             case 0x0d: stream[result++] = 'r'; break;
                             case '\\': stream[result++] = '\\'; break;
-                            case '/': stream[result++] = '/'; break;
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
