@@ -314,6 +314,14 @@ POP_WARNING()
         return (result);
     }
 
+    uint8_t FromString(const string& newValue, uint8_t object[], uint8_t& length, const TCHAR* ignoreList)
+    {
+        uint32_t tempLength = length;
+        const uint8_t result = FromString(newValue, object, tempLength, ignoreList);
+        length = static_cast<uint8_t>(tempLength);
+        return (result);
+    }
+
     bool CodePointToUTF16(const uint32_t codePoint, uint16_t& lowPart, uint16_t& highPart) {
 
         bool translated = true;
