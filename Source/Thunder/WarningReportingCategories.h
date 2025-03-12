@@ -258,7 +258,7 @@ namespace WarningReporting {
         void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
         {
             visitor = (_T("The flow control queue size has reached a critical level"));
-            visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
+            visitor += Core::Format(_T(", value %" PRId64 ", max allowed %" PRId64 ""), actualValue, maxValue);
         };
 
         static constexpr uint32_t DefaultWarningBound = { 10 };
