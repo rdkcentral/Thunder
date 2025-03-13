@@ -1,4 +1,4 @@
-/* 
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -21,51 +21,245 @@
 
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
-#include <openssl/bio.h>
+#include <openssl/x509.h>
+#include <openssl/crypto.h>
 #include <openssl/err.h>
-#include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/pem.h>
-#include <openssl/bn.h>
 
-#ifdef __WINDOWS__
-#include <wincrypt.h>
-#include <cryptuiapi.h>
-#include <iostream>
-#include <tchar.h>
+#include <unordered_map>
 
-#pragma comment (lib, "crypt32.lib")
-#pragma comment (lib, "cryptui.lib")
-#endif
+#include <core/Time.h>
+
+/*
+TODO: added note for reviewer Pierre.
+
+Certificate and Key classes with their current declarations are 'alsmost' like interfaces.
+Protected members may become pure virtual.
+
+X509Certificate and X509Key might derive and become one of all possible implementations for TLS, ie, OpenSSL.
+
+https://en.wikipedia.org/wiki/Comparison_of_TLS_implementations
+https://curl.se/docs/ssl-compared.html
+*/
 
 #ifndef __WINDOWS__
 namespace {
 
-    class OpenSSL {
-    public:
-        OpenSSL(OpenSSL&&) = delete;
-        OpenSSL(const OpenSSL&) = delete;
-        OpenSSL& operator=(OpenSSL&&) = delete;
-        OpenSSL& operator=(const OpenSSL&) = delete;
+class OpenSSL {
+public:
+    OpenSSL(OpenSSL&&) = delete;
+    OpenSSL(const OpenSSL&) = delete;
+    OpenSSL& operator=(OpenSSL&&) = delete;
+    OpenSSL& operator=(const OpenSSL&) = delete;
 
-        OpenSSL()
-        {
-            SSL_library_init();
-            OpenSSL_add_all_algorithms();
-            SSL_load_error_strings();
-        }
-        ~OpenSSL()
-        {
-        }
-    };
+    OpenSSL()
+    {
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+        SSL_load_error_strings();
+    }
+    ~OpenSSL() = default;
+};
 
-    static OpenSSL _initialization;
+static OpenSSL _initialization;
 }
 #endif
 
 namespace Thunder {
-
 namespace Crypto {
+
+class X509Certificate : public Certificate {
+public:
+    X509Certificate() = delete;
+    X509Certificate(const X509Certificate&) = delete;
+    X509Certificate(X509Certificate&&) = delete;
+
+    X509Certificate& operator=(const X509Certificate&) = delete;
+    X509Certificate& operator=(X509Certificate&&) = delete;
+ 
+    X509Certificate(const Certificate& certificate)
+        : Certificate{ certificate }
+    {}
+
+    X509Certificate(X509* certificate)
+        : Certificate { certificate }
+    {}
+
+    ~X509Certificate() = default;
+
+    operator const X509* () const
+    {
+        return static_cast<const X509*>(Certificate::operator const void* ());
+    }
+};
+
+class X509Key : public Key {
+public :
+    X509Key() = delete;
+    X509Key(const X509Key&) = delete;
+    X509Key(X509Key&&) = delete;
+
+    X509Key& operator=(const Key&) = delete;
+    X509Key& operator=(X509Key&&) = delete;
+
+    X509Key(const Key& key)
+        : Key{ key }
+    {}
+
+    X509Key(EVP_PKEY* key)
+        : Key{ key }
+    {}
+
+    ~X509Key() = default;
+
+    operator const EVP_PKEY* () const
+    {
+        return static_cast<const EVP_PKEY*>(Key::operator const void* ());
+    }
+};
+
+class X509CertificateStore : public CertificateStore {
+public:
+    X509CertificateStore() = delete;
+    X509CertificateStore(const X509CertificateStore&) = delete;
+    X509CertificateStore(X509CertificateStore&&) = delete;
+
+    X509CertificateStore& operator=(X509CertificateStore&&) = delete;
+    X509CertificateStore& operator=(const X509CertificateStore&) = delete;
+
+    X509CertificateStore(const CertificateStore& store)
+        : CertificateStore{ store }
+    {}
+
+    ~X509CertificateStore() = default;
+
+    operator X509_STORE* () const
+    {
+        const std::vector<Certificate>* list { static_cast<const std::vector<Certificate>*>(CertificateStore::operator const void* ()) };
+
+        X509_STORE* store{ list != nullptr ? X509_STORE_new() : nullptr };
+
+        if (store != nullptr) {
+            CertificateStore::_lock.Lock();
+
+            for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
+                // Do not X509_free
+                X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
+
+                if (   certificate == nullptr
+                    || X509_STORE_add_cert(store, certificate) != 1
+                   ) {
+                    X509_STORE_free(store);
+
+                    store = nullptr;
+
+                    break;
+                }
+            }
+
+            CertificateStore::_lock.Unlock();
+        }
+
+        return (store);
+    }
+
+    operator STACK_OF(X509_NAME)* () const
+    {
+        const std::vector<Certificate>* list { static_cast<const std::vector<Certificate>*>(CertificateStore::operator const void* ()) };
+
+        STACK_OF(X509_NAME)* store{ list != nullptr ? sk_X509_NAME_new_null() : nullptr };
+
+        if (store != nullptr) {
+            CertificateStore::_lock.Lock();
+
+            for (auto head = list->begin(), index = head, tail = list->end(); index != tail; index++) {
+                // Do not X509_free
+                X509* certificate = const_cast<X509*>(X509Certificate{ *index }.operator const X509*());
+
+                // name must not be freed
+                X509_NAME* name = certificate != nullptr ? X509_get_subject_name(certificate) : nullptr;
+
+                if (   certificate == nullptr
+                    || sk_X509_NAME_push(store, name) == 0
+                   ) {
+                    sk_X509_NAME_free(store);
+
+                    store = nullptr;
+
+                    break;
+                }
+            }
+
+            CertificateStore::_lock.Unlock();
+        }
+
+        return (store);
+    }
+};
+
+// Placeholder for custom data 'appended' to SSL structures and sharing within the OpenSSL API
+class ApplicationData {
+public :
+
+    ApplicationData(const ApplicationData&) = delete;
+    ApplicationData(ApplicationData&&) = delete;
+
+    ApplicationData& operator=(const ApplicationData&) = delete;
+    ApplicationData& operator=(ApplicationData&&) = delete;
+
+    static ApplicationData& Instance()
+    {
+        static ApplicationData data;
+        return data;
+    }
+
+    int Index(const SSL* const ssl, int index)
+    {
+        ASSERT(index != -1 && ssl != nullptr);
+
+        _lock.Lock();
+
+        int result = _map.insert({ssl, index}).second ? index : -1;
+
+        _lock.Unlock();
+
+        return result;
+    }
+
+    int Index(const SSL* const ssl) const
+    {
+        ASSERT(ssl != nullptr);
+
+        _lock.Lock();
+
+        auto it = _map.find(ssl);
+
+        _lock.Unlock();
+
+        return it != _map.end() ? it->second : -1;
+    }
+
+    bool Reset(const SSL* const ssl)
+    {
+        ASSERT(ssl != nullptr);
+
+        _lock.Lock();
+
+        bool result = _map.erase(ssl) == 1;
+
+        _lock.Unlock();
+
+        return result;
+    }
+
+private :
+
+    ApplicationData() = default;
+    ~ApplicationData() = default;
+
+    std::unordered_map<const SSL*, int> _map;
+
+    mutable Core::CriticalSection _lock;
+};
 
 static Core::Time ASN1_ToTime(const ASN1_TIME* input)
 {
@@ -75,14 +269,11 @@ static Core::Time ASN1_ToTime(const ASN1_TIME* input)
         uint16_t year = 0;
         const char* textVersion = reinterpret_cast<const char*>(input->data);
 
-        if (input->type == V_ASN1_UTCTIME)
-        {
+        if (input->type == V_ASN1_UTCTIME) {
             year = (textVersion[0] - '0') * 10 + (textVersion[1] - '0');
             year += (year < 70 ? 2000 : 1900);
             textVersion = &textVersion[2];
-        }
-        else if (input->type == V_ASN1_GENERALIZEDTIME)
-        {
+        } else if (input->type == V_ASN1_GENERALIZEDTIME) {
             year = (textVersion[0] - '0') * 1000 + (textVersion[1] - '0') * 100 + (textVersion[2] - '0') * 10 + (textVersion[3] - '0');
             textVersion = &textVersion[4];
         }
@@ -101,157 +292,302 @@ static Core::Time ASN1_ToTime(const ASN1_TIME* input)
 // -----------------------------------------------------------------------------
 // class Certificate
 // -----------------------------------------------------------------------------
-Certificate::Certificate(const x509_st* certificate)
-    : _certificate(certificate) {
+Certificate::Certificate(void* certificate)
+    : _certificate{ certificate }
+{
     if (certificate != nullptr) {
-        X509_up_ref(const_cast<x509_st*>(_certificate));
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
+        ASSERT(result == 1);
     }
 }
 
-Certificate::Certificate(const TCHAR fileName[]) {
-    X509* cert = X509_new();
-    BIO* bio_cert = BIO_new_file(fileName, "rb");
-    PEM_read_bio_X509(bio_cert, &cert, NULL, NULL);
-    _certificate = cert;
+Certificate::Certificate(const string& fileName)
+    : _certificate{ nullptr }
+{
+    BIO* bioFile{ !fileName.empty() ? BIO_new_file(fileName.c_str(), "r") : nullptr };
+
+    if (bioFile != nullptr) {
+        _certificate = PEM_read_bio_X509(bioFile, nullptr, nullptr, nullptr);
+
+        BIO_free(bioFile);
+    }
 }
 
 Certificate::Certificate(Certificate&& certificate) noexcept
-    : _certificate(certificate._certificate) {
+    : _certificate{ certificate._certificate }
+{
     certificate._certificate = nullptr;
 }
 
 Certificate::Certificate(const Certificate& certificate)
-    : _certificate(certificate._certificate) {
+    : _certificate{ certificate._certificate }
+{
     if (_certificate != nullptr) {
-        X509_up_ref(const_cast<x509_st*>(_certificate));
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
+        ASSERT(result == 1);
     }
 }
 
 Certificate::~Certificate()
 {
     if (_certificate != nullptr) {
-        X509_free(const_cast<x509_st*>(_certificate));
+        X509_free(static_cast<X509*>(_certificate));
     }
 }
 
-string Certificate::Issuer() const {
-    char buffer[1024];
-    buffer[0] = '\0';
-    X509_NAME_oneline(X509_get_issuer_name(_certificate), buffer, sizeof(buffer));
+const std::string Certificate::Issuer() const
+{
+    std::string result;
 
-    return (string(buffer));
+    if (_certificate != nullptr) {
+        char* buffer = nullptr; 
+
+        // Do not free
+        X509_NAME* name = X509_get_issuer_name(static_cast<X509*>(_certificate));
+
+        if ((buffer = X509_NAME_oneline(name, nullptr, 0)) != nullptr) {
+            result = buffer;
+
+            free(buffer);
+        }
+    }
+
+    return (result);
 }
 
-string Certificate::Subject() const {
-    char buffer[1024];
-    buffer[0] = '\0';
-    X509_NAME_oneline(X509_get_subject_name(_certificate), buffer, sizeof(buffer));
+const std::string Certificate::Subject() const
+{
+    std::string result;
 
-    return (string(buffer));
+    if (_certificate != nullptr) {
+        char* buffer = nullptr; 
+
+        // Do not free
+        X509_NAME* name = X509_get_subject_name(static_cast<X509*>(_certificate));
+
+        if ((buffer = X509_NAME_oneline(name, nullptr, 0)) != nullptr) {
+            result = buffer;
+
+            free(buffer);
+        }
+    }
+
+    return (result);
 }
 
-Core::Time Certificate::ValidFrom() const {
-    return(ASN1_ToTime(X509_get0_notBefore(_certificate)));
+Core::Time Certificate::ValidFrom() const
+{
+    ASSERT(_certificate != nullptr);
+
+    // Do not free
+    return (ASN1_ToTime(X509_get0_notBefore(static_cast<X509*>(_certificate))));
 }
 
-Core::Time Certificate::ValidTill() const {
-    return(ASN1_ToTime(X509_get0_notAfter(_certificate)));
+Core::Time Certificate::ValidTill() const
+{
+    ASSERT(_certificate != nullptr);
+
+    // Do not free
+    return (ASN1_ToTime(X509_get0_notAfter(static_cast<X509*>(_certificate))));
 }
 
-bool Certificate::ValidHostname(const string& expectedHostname) const {
-    return (X509_check_host(const_cast<struct x509_st*>(_certificate), expectedHostname.data(), expectedHostname.size(), 0, nullptr) == 1);
+bool Certificate::ValidHostname(const std::string& expectedHostname) const
+{
+    return    _certificate != nullptr
+           && X509_check_host(static_cast<X509*>(_certificate), expectedHostname.c_str(), expectedHostname.size(), 0, nullptr) == 1
+    ;
+}
+
+Certificate::operator const void* () const
+{
+    if (_certificate != nullptr) {
+        VARIABLE_IS_NOT_USED int result = X509_up_ref(static_cast<X509*>(_certificate));
+        ASSERT(result == 1);
+    }
+
+    return (_certificate);
 }
 
 // -----------------------------------------------------------------------------
 // class Key
 // -----------------------------------------------------------------------------
-Key::Key(const evp_pkey_st* key)
-    : _key(key) {
+Key::Key(void* key)
+    : _key{ key }
+{
     if (_key != nullptr) {
-        EVP_PKEY_up_ref(const_cast<evp_pkey_st*>(_key));
+        VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(static_cast<EVP_PKEY*>(_key));
+        ASSERT(result == 1);
     }
 }
 
 Key::Key(Key&& key) noexcept
-    : _key(key._key) {
+    : _key{ key._key }
+{
     key._key = nullptr;
 }
 
 Key::Key(const Key& key)
-    : _key(key._key) {
+    : _key{ key._key }
+{
     if (_key != nullptr) {
-        EVP_PKEY_up_ref(const_cast<evp_pkey_st*>(_key));
+        VARIABLE_IS_NOT_USED int result = EVP_PKEY_up_ref(static_cast<EVP_PKEY*>(_key));
+        ASSERT(result == 1);
     }
 }
 
 Key::Key(const string& fileName)
-    : _key(nullptr) {
+    : _key{ nullptr }
+{
+    BIO* bioFile{ !fileName.empty() ? BIO_new_file(fileName.c_str(), "r") : nullptr };
 
-    BIO* bio_key = BIO_new_file(fileName.c_str(), "rb");
-    
-    if (bio_key != nullptr) {
-        _key = PEM_read_bio_PUBKEY(bio_key, NULL, NULL, NULL);
+    if (bioFile != nullptr) {
+        _key = PEM_read_bio_PrivateKey(bioFile, nullptr, nullptr, nullptr);
 
-        BIO_free(bio_key);
+        BIO_free(bioFile);
     }
 }
 
-static int passwd_callback(char* buffer, int size, int /* flags */, void* password)
+#ifdef __cplusplus
+extern "C"
 {
-    int copied = std::min(static_cast<int>(strlen(static_cast<const char*>(password))), size);
-    memcpy(buffer, password, copied);
-    return copied;
+#endif
+int PasswdCallback(char* buffer, int size, VARIABLE_IS_NOT_USED int rw, void* password)
+{
+    // if rw == 0 then request to supply passphrase
+    // if rw == 1, something else, possibly verify the supplied passphrase in a second prompt
+    ASSERT(rw == 0);
+
+    size_t copied = 0;
+
+    if (   buffer != nullptr
+        && size > 0
+        && password != nullptr
+       ) {
+        copied = std::min(strlen(static_cast<const char*>(password)), static_cast<size_t>(size));
+        /* void* */ memcpy(buffer, password, copied);
+    }
+
+    // 0 - error, 0> - number of characaters in passphrase
+    return static_cast<int>(copied);
 }
+#ifdef __cplusplus
+}
+#endif
 
 Key::Key(const string& fileName, const string& password) 
-    : _key(nullptr) {
-    BIO* bio_key = BIO_new_file(fileName.c_str(), "rb");
+    : _key(nullptr)
+{
+    BIO* bioFile{ !fileName.empty() ? BIO_new_file(fileName.c_str(), "r") : nullptr };
 
-    if (bio_key != nullptr) {
-        _key = PEM_read_bio_PrivateKey(bio_key, NULL, passwd_callback, const_cast<void*>(static_cast<const void*>(password.c_str())));
-        BIO_free(bio_key);
+    if (bioFile != nullptr) {
+        _key = PEM_read_bio_PrivateKey(bioFile, nullptr, PasswdCallback, const_cast<char*>(password.c_str()));
+
+        BIO_free(bioFile);
     }
 }
 
 Key::~Key()
 {
     if (_key != nullptr) {
-        EVP_PKEY_free(const_cast<evp_pkey_st*>(_key));
+        EVP_PKEY_free(static_cast<EVP_PKEY*>(_key));
     }
+}
+
+Key::operator const void* () const
+{
+    return (_key);
 }
 
 // -----------------------------------------------------------------------------
 // class CertificateStore
 // -----------------------------------------------------------------------------
+CertificateStore::CertificateStore(bool defaultStore) 
+    : _list{}
+    , _defaultStore{ defaultStore && CreateDefaultStore() }
+{}
 
-#ifdef __WINDOWS__
-static struct x509_store_st* CreateDefaultStore()
+CertificateStore::CertificateStore(CertificateStore&& move) noexcept
+    : _list { std::move(move._list) }
+    , _defaultStore{ move._defaultStore }
+{}
+
+CertificateStore::CertificateStore(const CertificateStore& copy)
+    : _list { copy._list }
+    , _defaultStore{ copy._defaultStore }
+{}
+
+CertificateStore::~CertificateStore()
+{}
+
+uint32_t CertificateStore::Add(const Certificate& certificate)
 {
-    HCERTSTORE hStore;
-    PCCERT_CONTEXT pContext = nullptr;
-    X509_STORE* store = X509_STORE_new();
+    uint32_t result = Core::ERROR_GENERAL;
 
-    hStore = CertOpenSystemStore(NULL, _T("ROOT"));
+    const X509* x509Certificate = X509Certificate{ certificate };
 
-    if (hStore != nullptr) {
-        while (pContext = CertEnumCertificatesInStore(hStore, pContext)) {
-            X509* x509 = d2i_X509(nullptr, (const unsigned char**)&pContext->pbCertEncoded, pContext->cbCertEncoded);
+    _lock.Lock();
 
-            if (x509 != nullptr) {
-                X509_STORE_add_cert(store, x509);
-                X509_free(x509);
-            }
-        }
-        CertFreeCertificateContext(pContext);
-        CertCloseStore(hStore, 0);
+    if (   x509Certificate != nullptr
+        && std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate& item){
+                                                                                                     const X509* x509 = item;
+                                                                                                     return X509_cmp(x509Certificate, x509) == 0;
+                                                                                                   }
+                       ) == _list.end()
+       ) {
+        _list.push_back(certificate);
+
+        result = Core::ERROR_NONE;
     }
 
-    return (store);
+    _lock.Unlock();
+
+    return (result);
 }
-#else
-static struct x509_store_st* CreateDefaultStore()
+
+uint32_t CertificateStore::Remove(const Certificate& certificate)
 {
-    X509_STORE* store = X509_STORE_new();
+    uint32_t result = Core::ERROR_GENERAL;
+
+    const X509* x509Certificate = X509Certificate{ certificate };
+
+    _lock.Lock();
+
+    std::vector<Certificate>::iterator it;
+
+    if ((it = std::find_if(_list.begin(), _list.end(), [&x509Certificate](const X509Certificate& item){
+                                                                                                        const X509* x509 = item;
+                                                                                                        return X509_cmp(x509Certificate, x509) == 0;
+                                                                                                      }
+                       )) != _list.end()
+       ) {
+        static_assert(  !std::has_virtual_destructor<Crypto::Certificate>::value
+                      , "new placement without support for virtual base classes"
+        );
+
+        if (_list.size() > 1) {
+            size_t position = std::distance(_list.begin(), it);
+
+            Certificate& item = _list[position];
+
+            item.~Certificate();
+            new (&(item)) Crypto::Certificate(_list.back());
+        }
+
+        _list.pop_back();
+
+        result = Core::ERROR_NONE;
+    }
+
+    _lock.Unlock();
+
+    return (result);
+}
+
+uint32_t CertificateStore::CreateDefaultStore()
+{
+    // Intended use only at object construction
+
+    uint32_t result = Core::ERROR_NONE;
 
     const char* dir = getenv(X509_get_default_cert_dir_env());
 
@@ -259,267 +595,534 @@ static struct x509_store_st* CreateDefaultStore()
         dir = X509_get_default_cert_dir();
     }
 
-    X509_STORE_load_path(store, dir);
+    const std::string paths = dir;
 
-    return (store);
-}
-#endif
+    // OPENSSL_info requires at least version 3.0
 
-/* static */ struct x509_store_st* CertificateStore::_default = CreateDefaultStore();
+    static_assert(   ((OPENSSL_VERSION_NUMBER >> 28) & 0xF) >= 3  // Major
+                  && ((OPENSSL_VERSION_NUMBER >> 20) & 0xFF) >= 0 // Minor
+                  && ((OPENSSL_VERSION_NUMBER >> 4) & 0xF) >= 0   // Patch
+                  && ((OPENSSL_VERSION_NUMBER) & 0xF) >= 0        // Pre-release
+                  , "OpenSSL version unsupported. Expected version 3.0.0.0 and higher"
+                 );
 
-CertificateStore::CertificateStore() 
-    : _store(X509_STORE_new()) {
-}
+    const char* separator = OPENSSL_info(OPENSSL_INFO_LIST_SEPARATOR);
 
-CertificateStore::CertificateStore(CertificateStore&& move) noexcept
-    : _store(move._store) {
-    move._store = nullptr;
-}
+    std::string::size_type head = paths.empty() ? std::string::npos : 0;
 
-CertificateStore::CertificateStore(const CertificateStore& copy)
-    : _store(copy._store) {
-    if (_store != nullptr) {
-        X509_STORE_up_ref(const_cast<x509_store_st*>(_store));
-    }
-}
+    while (head != std::string::npos && separator != nullptr) {
+        std::string::size_type tail = paths.find(separator[0], head);
 
-CertificateStore::CertificateStore(struct x509_store_st* store) 
-    : _store(store) {
-    if (_store != nullptr) {
-        X509_STORE_up_ref(const_cast<x509_store_st*>(_store));
-    }
-}
+        Core::Directory path{ paths.substr(head, tail != std::string::npos ? tail - 1 : tail).c_str() };
 
-CertificateStore::~CertificateStore() {
-    if (_store != nullptr) {
-        X509_STORE_free(const_cast<x509_store_st*>(_store));
-    }
-}
+        while (path.Next()) {
+            const Certificate certificate{ Certificate{ path.Current() } };
 
-void CertificateStore::Add(const Certificate& certificate) {
-    const struct x509_st* cert = certificate;
-    X509_STORE_add_cert(_store, const_cast<x509_st*>(cert));
-}
+            if (X509Certificate { certificate }.operator const X509* () != nullptr) {
+                result = Add(certificate);
+            }
 
-// -----------------------------------------------------------------------------
-// class SecureSocketPort::Handler
-// -----------------------------------------------------------------------------
-SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
-    const enumType socketType,
-    const Core::NodeId& localNode,
-    const Core::NodeId& remoteNode,
-    const uint16_t sendBufferSize,
-    const uint16_t receiveBufferSize,
-    const uint32_t socketSendBufferSize,
-    const uint32_t socketReceiveBufferSize)
-    : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
-    , _parent(parent)
-    , _callback(nullptr)
-    , _handShaking(EXCHANGE) {
-    CreateContext(TLS_method());
-}
-
-SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
-    const enumType socketType,
-    const SOCKET& connector,
-    const Core::NodeId& remoteNode,
-    const uint16_t sendBufferSize,
-    const uint16_t receiveBufferSize,
-    const uint32_t socketSendBufferSize,
-    const uint32_t socketReceiveBufferSize)
-    : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
-    , _parent(parent)
-    , _callback(nullptr)
-    , _handShaking(EXCHANGE) {
-    CreateContext(TLS_server_method());
-}
-
-SecureSocketPort::Handler::~Handler() {
-    ASSERT(IsClosed() == true);
-    Close(0);
-
-    if (_ssl != nullptr) {
-        SSL_free(_ssl);
-        _ssl = nullptr;
-    }
-    if (_context != nullptr) {
-        SSL_CTX_free(_context);
-        _context = nullptr;
-    }
-}
-
-void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method) {
-    _context = SSL_CTX_new(method);
-    if (_context != nullptr) {
-        _ssl = SSL_new(_context);
-
-        if (_ssl == nullptr) {
-            SSL_CTX_free(_context);
-            _context = nullptr;
-        }
-        else {
-            constexpr unsigned long options = SSL_OP_ALL | SSL_OP_NO_SSLv2;
-
-            VARIABLE_IS_NOT_USED unsigned long bitmask = SSL_CTX_set_options(_context, options);
-
-            ASSERT((bitmask & options) == options);
-        }
-    }
-}
-
-uint32_t SecureSocketPort::Handler::Initialize() {
-    bool initialized = false;
-
-    ASSERT(_context != nullptr);
-    ASSERT(_ssl != nullptr);
-
-    if (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
-        SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
-        if (IsOpen() == true) {
-            SSL_set_accept_state(_ssl);
-        }
-        else {
-            SSL_set_connect_state(_ssl);
+            if (result != Core::ERROR_NONE) {
+                tail = std::string::npos;
+                break;
+            }
         }
 
-        initialized =  Core::SocketPort::Initialize();
-    }
-
-    return (initialized);
-}
-
-int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
-
-    ASSERT(_handShaking != ERROR);
-
-    if (_handShaking != OPEN) {
-        const_cast<Handler&>(*this).Update();
-    }
- 
-    return (SSL_read(_ssl, buffer, length));
-}
-
-int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
-
-    ASSERT(_handShaking != ERROR);
-
-    uint32_t result = SSL_write(_ssl, buffer, length);
-
-    if (_handShaking != OPEN) {
-        Update();
+        head = tail == std::string::npos ? tail : tail + 1;
     }
 
     return (result);
 }
 
-uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
+CertificateStore::operator const void* () const
+{
+    return &_list;
+}
+
+bool CertificateStore::IsDefaultStore() const
+{
+    return _defaultStore;
+}
+
+template <typename TYPE>
+SecureSocketPortImproved<TYPE>::Handler::~Handler()
+{
+    ASSERT(IsClosed() == true);
+    Close(0);
+}
+
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Initialize()
+{
+    uint32_t success = Core::ERROR_NONE;
+
+    X509* x509Certificate = nullptr;
+    EVP_PKEY* x509Key = nullptr;
+  
+    // Client and server use
+    if ((_context = SSL_CTX_new(TLS_method())) != nullptr) {
+        constexpr uint64_t options = SSL_OP_ALL | SSL_OP_NO_SSLv2;
+
+        VARIABLE_IS_NOT_USED uint64_t bitmask = SSL_CTX_set_options(static_cast<SSL_CTX*>(_context), options);
+
+        ASSERT((bitmask & options) == options);
+
+        // Do not X509_free
+        x509Certificate = const_cast<X509*>(X509Certificate{ _certificate }.operator const X509*());
+        // Do not EVP_PKEY_free
+        x509Key = const_cast<EVP_PKEY*>(X509Key{ _privateKey }.operator const EVP_PKEY*());
+    } else {
+        _handShaking = ERROR;
+        SetError();
+    }
+
+    int exDataIndex = -1;
+
+    if ( ( (    (_handShaking == ACCEPTING)
+              // Load server certificate and private key
+             && x509Certificate != nullptr
+             && (SSL_CTX_use_certificate(static_cast<SSL_CTX*>(_context), x509Certificate) == 1)
+             && x509Key != nullptr
+             && (SSL_CTX_use_PrivateKey(static_cast<SSL_CTX*>(_context), x509Key) == 1)
+             && (SSL_CTX_check_private_key(static_cast<SSL_CTX*>(_context)) == 1)
+             && (EnableClientCertificateRequest() == Core::ERROR_NONE)
+           )
+           ||
+              // Load client certificate and private key if present
+           (    (_handShaking == CONNECTING)
+             && (
+                  x509Certificate == nullptr
+                  ||
+                  (    x509Certificate != nullptr
+                    && (SSL_CTX_use_certificate(static_cast<SSL_CTX*>(_context), x509Certificate) == 1)
+                  )
+                )
+             && (
+                  x509Key == nullptr
+                  ||
+                  (   x509Key != nullptr
+                   && (SSL_CTX_use_PrivateKey(static_cast<SSL_CTX*>(_context), x509Key) == 1)
+                   && (SSL_CTX_check_private_key(static_cast<SSL_CTX*>(_context)) == 1)
+                  )
+                )
+           )
+         )
+            // Create a new SSL connection structure for storing the custom certification method for use in the available callback mechanism
+         && ((_ssl = SSL_new(static_cast<SSL_CTX*>(_context))) != nullptr)
+         && (SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor()) == 1)
+         && ((exDataIndex = SSL_get_ex_new_index(/* number of callback arguments */ 0, /* pointer to callback arguments */ nullptr, /* allocation and initialization of exdata */ nullptr, /* duplication of exdata in copy operations */ nullptr, /* deallocaton of exdata */ nullptr)) != -1)
+            // The custom method to do validation of certificates with issues
+         && (SSL_set_ex_data(static_cast<SSL*>(_ssl), exDataIndex, _callback) == 1)
+       ) {
+            // Placeholder to refer to the validation method within the context of SSL connection
+            ApplicationData::Instance().Index(static_cast<SSL*>(_ssl), exDataIndex);
+
+            success = Core::SocketPort::Initialize();
+    } else {
+        TRACE_L1("OpenSSL failed to initialize: ssl structure / certificate store");
+        success = Core::ERROR_GENERAL;
+    }
+
+    ASSERT(success == 0);
+
+    return success;
+}
+
+template <typename TYPE>
+int32_t SecureSocketPortImproved<TYPE>::Handler::Read(uint8_t buffer[], const uint16_t length) const
+{
+    // Intensively used
+    ASSERT(_handShaking == CONNECTED);
+    ASSERT(_ssl != nullptr);
+    ASSERT(length > 0);
+
+    int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+
+    ASSERT(fd >= 0);
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    struct timeval tv {
+      static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+    , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
+    };
+
+    int result = -1;
+
+    switch (SSL_want(static_cast<SSL*>(_ssl))) {
+    case SSL_NOTHING            :   // No data to be written or read
+                                    result = SSL_read(static_cast<SSL*>(_ssl), buffer, length);
+                                    break;
+    case SSL_WRITING            :   // More data to be written to complete
+                                    result = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_read(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_READING            :   // More data to be read to complete
+                                    result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_read(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+PUSH_WARNING(DISABLE_WARNING_IMPLICIT_FALLTHROUGH)
+    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+POP_WARNING()
+    default                     :   // Error not processed
+                                    result = -1;
+    }
+
+    return (result > 0 ? result : /* error */ -1);
+}
+
+template <typename TYPE>
+int32_t SecureSocketPortImproved<TYPE>::Handler::Write(const uint8_t buffer[], const uint16_t length)
+{
+    // Intensively used
+    ASSERT(_handShaking == CONNECTED);
+    ASSERT(_ssl != nullptr);
+    ASSERT(length > 0);
+
+    int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+
+    ASSERT(fd >= 0);
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    struct timeval tv {
+      static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+    , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
+    };
+
+    int result = -1;
+
+    switch (SSL_want(static_cast<SSL*>(_ssl))) {
+    case SSL_NOTHING            :   // No data to be written or read
+                                    result = SSL_write(static_cast<SSL*>(_ssl), buffer, length);
+                                    break;
+    case SSL_WRITING            :   // More data to be written to complete
+                                    result = (select(fd + 1, &fds, nullptr, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_write(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_READING            :   // More data to be read to complete
+                                    result = (select(fd + 1, nullptr, &fds, nullptr, &tv) > 0) && FD_ISSET(fd, &fds) ? SSL_write(static_cast<SSL*>(_ssl), buffer, length) : -1;
+                                    break;
+    case SSL_X509_LOOKUP        :   // Callback should be called again, see SSL_CTX_set_client_cert_cb()
+PUSH_WARNING(DISABLE_WARNING_IMPLICIT_FALLTHROUGH)
+    case SSL_RETRY_VERIFY       :   // Callback should be called again, see SSL_set_retry_verify()
+    case SSL_ASYNC_PAUSED       :   // Asynchronous operation partially completed and paused, see SSL_get_all_async_fds
+    case SSL_ASYNC_NO_JOBS      :   // Asynchronous jobs could not be started, bone available, see ASYNC_init_thread()
+    case SSL_CLIENT_HELLO_CB    :   // Operation did not complete, callback has to be called again. see SSL_CTX_set_client_hello_cb()
+POP_WARNING()
+    default                     :   // Error not processed
+                                    result = -1;
+    }
+
+    return (result > 0 ? result : /* error */ -1);
+}
+
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Open(const uint32_t waitTime)
+{
+    // Users of struct timeval should not exhibit overflow
+    ASSERT(waitTime != Core::infinite);
+
+    _waitTime = waitTime;
+
     return (Core::SocketPort::Open(waitTime));
 }
 
-uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
-    ASSERT(_ssl != nullptr);
-    SSL_shutdown(_ssl);
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Close(const uint32_t waitTime)
+{
+    if (_ssl != nullptr) {
+        SSL_shutdown(static_cast<SSL*>(_ssl));
+        SSL_free(static_cast<SSL*>(_ssl));
+
+        /* bool */ ApplicationData::Instance().Reset(static_cast<SSL*>(_ssl));
+
+        _ssl = nullptr;
+    }
+
+    if (_context != nullptr) {
+        SSL_CTX_free(static_cast<SSL_CTX*>(_context));
+        _context = nullptr;
+    }
 
     return(Core::SocketPort::Close(waitTime));
 }
 
-uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
-    // Load server certificate and private key
-    const struct x509_st* cert = certificate;
-    const struct evp_pkey_st* base_key = key;
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key)
+{
+    // Load server / client certificate and private key
+ 
     uint32_t result = Core::ERROR_BAD_REQUEST;
 
-    if (SSL_CTX_use_certificate(_context, const_cast<struct x509_st*>(cert)) == 1) {
-        result = Core::ERROR_UNKNOWN_KEY;
-        if (SSL_CTX_use_PrivateKey(_context, const_cast<EVP_PKEY*>(base_key)) == 1) {
-            result = Core::ERROR_NONE;
-        }
+    // Do not free
+    const X509* x509Certificate = X509Certificate{ certificate };
+    // Do not free
+    const EVP_PKEY* x509Key = X509Key{ key };
+
+    if (   x509Certificate != nullptr
+        && x509Key != nullptr
+    ) {
+        static_assert(   !std::has_virtual_destructor<Crypto::Certificate>::value
+                      && !std::has_virtual_destructor<Crypto::Key>::value
+                      , "new placement without support for virtual base classes"
+        );
+
+        this->_certificate.~Certificate();
+        new (&(this->_certificate)) Crypto::Certificate(certificate);
+
+        this->_privateKey.~Key();
+        new (&(this->_privateKey)) Crypto::Key(key);
+
+        // Verification of the pair at Initialize()
+
+        result = Core::ERROR_NONE;
     }
 
     return (result);
 }
 
-uint32_t SecureSocketPort::Handler::Root(const CertificateStore& certStore) {
-    const struct x509_store_st* store = certStore;
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::CustomStore(const CertificateStore& certStore)
+{
+    static_assert(!std::has_virtual_destructor<CertificateStore>::value, "new placement without support for virtual base classes");
 
-    SSL_CTX_set_cert_store(_context, const_cast<struct x509_store_st*>(store));
+    this->_store.~CertificateStore();
+    new (&(this->_store)) CertificateStore(certStore);
 
     return (Core::ERROR_NONE);
 }
 
-void SecureSocketPort::Handler::ValidateHandShake() {
-    // Step 1: verify a certificate was presented during the negotiation
-    X509* x509cert = SSL_get_peer_certificate(_ssl);
-
-    if (x509cert == nullptr) {
+template <typename TYPE>
+void SecureSocketPortImproved<TYPE>::Handler::ValidateHandShake()
+{
+    // Internal (partial) validation result if no callback is set
+    if (   _ssl == nullptr
+        || _context == nullptr
+        || SSL_get_verify_result(static_cast<SSL*>(_ssl)) != X509_V_OK) {
         _handShaking = ERROR;
         SetError();
+    }
+}
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+int VerifyCallbackWrapper(int checkOK, X509_STORE_CTX* ctx);
+int PeerCertificateCallbackWrapper(X509_STORE_CTX* ctx, void* arg);
+#ifdef __cplusplus
+}
+#endif
+
+int VerifyCallbackWrapper(int verifyStatus, X509_STORE_CTX* ctx)
+{ // This is callled for certificates with issues to allow a custom validation
+    int result { verifyStatus };
+
+    switch (verifyStatus) {
+    case 0  :   {
+                    X509* x509Cert = nullptr;
+                    int exDataIndex = -1;
+                    SSL* ssl = nullptr;
+                    CertificateStore::IValidate* validator = nullptr;
+
+                    // Retrieve and call the registered callback
+
+                    if (   ctx != nullptr
+                         && (exDataIndex = SSL_get_ex_data_X509_STORE_CTX_idx()) != -1
+                         && (ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, exDataIndex))) != nullptr
+                         && (exDataIndex = ApplicationData::Instance().Index(static_cast<SSL*>(ssl))) != -1
+                         && (validator =  static_cast<CertificateStore::IValidate*>(SSL_get_ex_data(ssl, exDataIndex))) != nullptr
+                         && (x509Cert = X509_STORE_CTX_get_current_cert(ctx)) != nullptr
+                       ) {
+                        X509_up_ref(x509Cert);
+
+                        X509Certificate certificate(x509Cert);
+
+                        result = validator->Validate(certificate);
+
+                        // Reflect the verification result in the error member of X509_STORE_CTX
+                        if (result) {
+                            X509_STORE_CTX_set_error(ctx, X509_V_OK);
+
+                           ASSERT(X509_STORE_CTX_get_error(ctx) == X509_V_OK);
+                        }
+
+                        X509_free(x509Cert);
+                    }
+
+                    break;
+                }
+    case 1  :   // No error
+                break;
+    default :   ASSERT(false); // Not within set of defined values
+    }
+
+    return result; // 0 - Failure, 1 - OK
+}
+
+int PeerCertificateCallbackWrapper(VARIABLE_IS_NOT_USED X509_STORE_CTX* ctx, VARIABLE_IS_NOT_USED void* arg)
+{ // This is called if the complete certificate validation procedure has its custom implementation
+  // This is typically not what is intended or required, and, a complex process to do correct
+
+    ASSERT(false);
+
+    return 0; // 0 - Failurre, 1 - OK
+}
+
+template <typename TYPE>
+uint32_t SecureSocketPortImproved<TYPE>::Handler::EnableClientCertificateRequest()
+{
+    uint32_t result{ Core::ERROR_NONE };
+
+    if (_requestCertificate) {
+        STACK_OF(X509_NAME)* nameList = X509CertificateStore{ _store };
+
+        if (   nameList != nullptr
+            && _context != nullptr
+           ) {
+            // Takes ownership of nameList
+            // CA list to send to the client against the client's certificate is vlidated
+            SSL_CTX_set_client_CA_list(static_cast<SSL_CTX*>(_context), nameList);
+
+            // Callback is triggered if certificates have errors
+            SSL_CTX_set_verify(static_cast<SSL_CTX*>(_context), SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, VerifyCallbackWrapper);
+
+            // Typically, SSL_CTX_set_cert_verify_callback is the most complex as it should replace the complete verification process procedure
+//            SSL_CTX_set_cert_verify_callback(static_cast<SSL_CTX*>(_context), PeerCertificateCallbackWrapper, static_cast<void*>(_ssl));
+        } else {
+            result = Core::ERROR_GENERAL;
+        }
+    }
+
+    return result;
+}
+
+template <typename TYPE>
+void SecureSocketPortImproved<TYPE>::Handler::Update()
+{
+    if (   IsOpen() == true
+        && _handShaking != CONNECTED
+        && _handShaking != ERROR
+        && _context != nullptr
+        && _ssl != nullptr
+    ) {
+        // The old store is automatically X509_store_free()ed
+        /* void */ SSL_CTX_set_cert_store(static_cast<SSL_CTX*>(_context), X509CertificateStore{ _store });
+
+        errno = 0;
+
+        switch (_handShaking) {
+        case CONNECTING :   // Client
+                            SSL_set_connect_state(static_cast<SSL*>(_ssl));
+                            break;
+        case ACCEPTING  :  // Server
+                            SSL_set_accept_state(static_cast<SSL*>(_ssl));
+                            break;
+        case EXCHANGE   :   // Re-initialie a previous session
+                            break;
+        default         :   ASSERT(false);
+        }
+
+        const int fd = SSL_get_fd(static_cast<SSL*>(_ssl));
+
+        ASSERT(fd >= 0);
+
+        fd_set rfds, wfds;
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
+        FD_SET(fd, &rfds);
+        FD_SET(fd, &wfds);
+
+        struct timeval tv {
+          static_cast<time_t>(_waitTime / (Core::Time::MilliSecondsPerSecond))
+        , static_cast<suseconds_t>((_waitTime % (Core::Time::MilliSecondsPerSecond)) * (Core::Time::MilliSecondsPerSecond / Core::Time::MicroSecondsPerSecond))
+        };
+
+        do {
+            int result = SSL_do_handshake(static_cast<SSL*>(_ssl));
+
+            switch ((result = SSL_get_error(static_cast<SSL*>(_ssl), result))) {
+            case SSL_ERROR_NONE                 :   _handShaking = CONNECTED;
+                                                    break;
+            case SSL_ERROR_SYSCALL              :   // Some syscall failed
+PUSH_WARNING(DISABLE_WARNING_IMPLICIT_FALLTHROUGH)
+                                                    if (errno != EAGAIN) {
+                                                        // Last error without removing it from the queue
+#ifdef VERBOSE
+                                                       unsigned long result = 0;
+
+                                                        if ((result = ERR_peek_last_error_all(&file, &line, &func, &data, &flag)) != 0) {
+                                                            int lib = ERR_GET_LIB(result);
+                                                            int reason = ERR_GET_REASON(result);
+
+                                                            TRACE_L1(_T("ERROR: OpenSSL SYSCALL error in LIB %d with REASON %d"), lib, reason);
+                                                        }
+#endif
+                                                    }
+                                                    // Fallthrough for select
+            case SSL_ERROR_WANT_READ            :   // Wait until ready to read
+            case SSL_ERROR_WANT_WRITE           :   // Wait until ready to write
+            case SSL_ERROR_WANT_CONNECT         :   // Operation did not complete. Redo if the connection has been established
+POP_WARNING()
+            case SSL_ERROR_WANT_ACCEPT          :   // Idem
+                                                    switch (select(fd + 1, &rfds, &wfds, nullptr, &tv)) {
+                                                    default :   if (   !FD_ISSET(fd, &rfds)
+                                                                    && !FD_ISSET(fd, &wfds)
+                                                                   ) {
+                                                                    // Only file descriptors in the set should be set
+                                                                    _handShaking = ERROR;
+            ASSERT(_handShaking != ERROR);
+                                                                    break;
+                                                                }
+                                                    case 0  :   // Timeout
+// TODO: redo SSL_do_handshake or consider it an error?
+                                                                continue;
+                                                    case -1 :   // Select failed, consider it an error
+                                                                _handShaking = ERROR;
+            ASSERT(_handShaking != ERROR);
+                                                    }
+                                                    break;
+            case SSL_ERROR_ZERO_RETURN          :    
+PUSH_WARNING(DISABLE_WARNING_IMPLICIT_FALLTHROUGH)
+            case SSL_ERROR_WANT_ASYNC           :    
+            case SSL_ERROR_WANT_ASYNC_JOB       :    
+            case SSL_ERROR_WANT_CLIENT_HELLO_CB :   
+            case SSL_ERROR_SSL                  :   // Unrecoverable error
+POP_WARNING()
+            default                             :   // Error
+                                                    _handShaking = ERROR;
+            }
+
+        } while (_handShaking != CONNECTED);
+
+        // If server has sent a certificate, and, we want to do 'our' own check
+        // or
+        // Client has sent a certificate (optional, on request only)
+
+        // Only if a callback has not been set
+        if (   /*(_callback == nullptr)
+            &&*/ (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != nullptr)
+            && (SSL_get_verify_callback(static_cast<SSL*>(_ssl)) != &VerifyCallbackWrapper)
+            && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != nullptr)
+            && (SSL_CTX_get_verify_callback(static_cast<SSL_CTX*>(_context)) != &VerifyCallbackWrapper)
+        ) {
+            ValidateHandShake();
+        }
+            ASSERT(_handShaking != ERROR);
+
         _parent.StateChange();
     }
-    else {
-        long error;
-        string validationError;
-        Crypto::Certificate certificate(x509cert);
-
-        // Step 2: Validate certificate - use custom IValidator instance if available or if self signed
-        // certificates are needed :-)
-        if (_callback != nullptr) {
-            if (_callback->Validate(certificate) == false) {
-                _handShaking = ERROR;
-                SetError();
-                _parent.StateChange();
-            }
-            else {
-                _handShaking = OPEN;
-                _parent.StateChange();
-            }
-        }
-        // SSL handshake does an implicit verification, its result is:
-        else if ((error = SSL_get_verify_result(_ssl)) != X509_V_OK) {
-            // string errorMsg = X509_verify_cert_error_string(error);
-            _handShaking = ERROR;
-            SetError();
-            _parent.StateChange();
-        }
-        else {
-            _handShaking = OPEN;
-            _parent.StateChange();
-        }
-
-        X509_free(x509cert);
-    }   
 }
 
-void SecureSocketPort::Handler::Update() {
+// Explicit instantiation
+template class SecureSocketPortImproved<std::false_type>;
+template class SecureSocketPortImproved<std::true_type>;
 
-    if (IsOpen() == true) {
-        int result = 1;
-
-        ASSERT(_ssl != nullptr);
-
-        if (_handShaking == EXCHANGE) {
-            if ((result = SSL_do_handshake(_ssl)) == 1) {
-                ValidateHandShake();
-            }
-            else {
-                result = SSL_get_error(_ssl, result);
-
-                if (result == SSL_ERROR_WANT_WRITE) {
-                    Trigger();
-                }
-                else if (result != SSL_ERROR_WANT_READ) {
-                    _handShaking = ERROR;
-                }
-            }
-        }
-    }
-    else {
-        _handShaking = EXCHANGE;
-        _parent.StateChange();
-    }
 }
-
-SecureSocketPort::~SecureSocketPort() {
-}
-
-} } // namespace Thunder::Crypto
+} // namespace Thunder::Crypto
