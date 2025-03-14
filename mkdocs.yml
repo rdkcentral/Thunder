@@ -46,6 +46,9 @@ nav:
     - Private COM-RPC : plugin/private-comrpc.md
     - Split Implementation: plugin/split-implementation.md
     - Composite Plugins: plugin/composite.md
+    - Plugin Development Tools:
+      - ThunderDevTools: plugin/devtools/devtools.md
+      - Plugin Skeleton Generator: plugin/devtools/pluginskeletongenerator.md
   - Common Utilities:
     - Strings: utils/strings.md
     - File Handling:
