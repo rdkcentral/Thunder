@@ -9,7 +9,7 @@ Some remarks:
 * Start the PSG in the folder where you want a subfolder to be created for your new plugin (so do not start it from the PSG folder itself).
 * The PSG does already support a plugin implementing more than one interface.
 * At the moment the PSG does not yet parse the header file for the interface(s) you want your plugin to implement, this is planned for a future release. So it will not generate the correct methods etc, but for now only some example methods and you will have to update manually to reflect your interface(s).
-* The PSG will generate a default text for the License in all the code files with a placeholder for the organization. Please update this after generating the code.
+* The PSG will generate a default text for the License (Apache License 2.0) in all the code files with a placeholder for the organization. Please update this after generating the code.
 
 How to use the Plugin Skeleton Generator:
 
