@@ -1822,9 +1822,9 @@ namespace Core {
 
                         // See if this is a printable character
                         if ((isQuoted == false) || ((::isprint(static_cast<uint8_t>(current))) && (current != '\"') && (current != '\\')
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                             && (current != '/')
-#endif
+                    #endif
                         )) {
                             stream[result++] = static_cast<TCHAR>(current);
                             length--;
@@ -1844,9 +1844,9 @@ namespace Core {
                             case 0x0c: stream[result++] = 'f'; break;
                             case 0x0d: stream[result++] = 'r'; break;
                             case '\\': stream[result++] = '\\'; break;
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                        #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                             case '/': stream[result++] = '/'; break;
-#endif
+                        #endif
                             case '"': stream[result++] = '"'; break;
                             default: {
                                 uint16_t lowPart, highPart;
