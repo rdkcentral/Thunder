@@ -35,9 +35,6 @@ To be able to support the Thunder community better a dedicated Thunder support t
 ### Feature: Thunder changes to support new Tooling features
 
 Internal Thunder code was adapted to be able to support the new ThunderTooling features (e.g. new JSON-RPC casing infrastructure, JSONs-RPC session support and async interfaces, std::vector support). See the ThunderTools section below for more details on these features.
-### Feature: Thunder changes to support new Tooling features
-
-Internal Thunder code was adapted to be able to support the new ThunderTooling features (e.g. new JSON-RPC casing infrastructure, JSONs-RPC session support and async interfaces, std::vector support). See the ThunderTools section below for more details on these features.
 
 ### Feature: TLS Client side certificates and Server 
 
