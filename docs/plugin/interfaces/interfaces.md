@@ -239,7 +239,7 @@ To register for an event for a specific Device, so object ID in the JSON-RPC wor
 
 #### Asynchronous Functions
 
-When an action triggered by a method on a COM-RPC interface takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the interface will be called when the action that was started is finished or failed (it it mandatory that the started action always results in a method to be called so ti is clear when the action is over).
+When an action triggered by a method on a COM-RPC interface which takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the interface will be called when the action that was started is finished or failed (it it mandatory that the started action always results in a method to be called so ti is clear when the action is over).
 
 This is also supported on the JSON-RPC interface. Of course it is not possible to pass a callback so here the end of the action will be indicated by an event send on the same channel the action was started on and an async event ID will be used to connect the function that started the action to the event. Use the @async tag to indicate the method should be async on the JSON-RPC interface (it is of course expected to have one input callback interface parameter and the interface for the callback should contain one callback method only).
 See the example below for more information.
