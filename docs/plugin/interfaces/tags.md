@@ -170,9 +170,13 @@ In [ICOM.h](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#
 <hr/>
 
 #### @length
-This tag should be associated with an array. It specifies the expresion to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)
+This tag should be associated with an array. It specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)
 
 Use round parenthesis for expressions, e.g.  `@length:bufferSize` `@length:(width * height * 4)`
+
+
+Note @length:return can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.
+
 
 ##### Example
 **From another parameter**
@@ -201,6 +205,10 @@ In `IOCDM.h`:
 
 <hr/>
 
+**returned**
+
+See [here](https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57) for an example.
+
 #### @maxlength
 Used with the `@out` or `@inout` tag. It specifies a maximum buffer length value (a constant, a parameter name or a math expression). If not specified, `@length` is considered as maximum length
 
@@ -216,7 +224,7 @@ This tag should be associated with optional types. It provides a default value f
 
 Note: Unless a parameter is optional, it must be set.
 
-Note: Currently, OptionalType does not work with C-Style arrays.
+Note: Currently, OptionalType does not work with C-Style arrays, of course a fixed array of OptionalTypes is supported.
 
 ##### Example
 
@@ -259,7 +267,7 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
 |[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
-|[@lookup](#lookup)| Creates a JSON-RPC interface to access dynamically created sessions | | No | Yes | Method |
+|[@async](#asynch)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
 |[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
 
 #### @json
@@ -455,7 +463,17 @@ This tag is applicable to enums, method names, method parameters, PoD members an
 * When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.
 * When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.
 * When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).
-* When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.
+* When used at interface level it will influence the casing generated for the JSON-RPC for the whole interface (that is Method names, Parameter names, POD member names, Event names and Enum names). The following options can be used with @text at interface level:
+    * @text:standard generates the names for all elements in the JSON-RPC interface according the "standard" convention (camelCase for everything except enums which are UPPER_SNAKE). If nothing is specified the default is used (which is if not overridden with the commandline parameter --case-convention, see below, is "standard")
+	* @text:keep keeps the names for all elements as is in the header file for the JSONRPC interface
+	* @text:legacy (or as an alternative @text:legacy_lowercase) generates the names for all elements in the JSON-RPC interface to be completely lowercase and PascalCase for enums (this used to be convention for Thunder 5.1 and older).
+	* @text:custom allows influencing the generation of the casing in the JSON-RPC interface per element. The format to use is @text:custom=<METHODS>,<EVENTS>,<PARAMETERS>,<MEMBERS>,<ENUMS> where allowed values are "lower", "upper", "lowersnake", uppersnake", "camel", "pascal", "keep". See the example section below for more information as well.
+
+Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface casing guidelines in use (even more perhaps when using @text at interface level as now the whole interface is influenced). 
+
+The following commandline options for the JSON-RPC generator are available to also influence the casing used for the generated JSON-RPC code:
+* --case-convention <CONVENTION> selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
+* --ignore-source-case-convention: will make the generator ignore the @text set at interface level
 
 ##### Example
 <hr>
@@ -489,6 +507,28 @@ In this example now for all enums, method names, method parameters and PoD membe
   struct EXTERNAL IExample : virtual public Core::IUnknown {
 ```
 </hr>
+
+<hr>
+
+In this example now for all method names, method parameters, PoD member names and events will be lowercase in the JSON generated code, enums will be PascalCase
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:legacy_lowercase */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+</hr>
+
+<hr>
+
+In this example now for all method names will be lowercase in the JSON generated code, events will be uppercase, parameters will be lower snake, PoD members will be upper snake and enums will be camel case.
+
+```cpp hl_lines="1"
+  /* @json 1.0.0 @text:custom=lower,upper,lowersnake,uppersnake,camel */
+  struct EXTERNAL IExample : virtual public Core::IUnknown {
+```
+</hr>
+
+
 <hr>
 
 #### @prefix
@@ -514,13 +554,13 @@ For more details, click [here](../interfaces/#notification-registration)
 </hr>
 <hr>
 
-#### @lookup
+#### @async
 
-This tag is used on methods, to create a JSON-RPC interface that is dynamically accessing created objects (or sessions).
+Use this tag, to indicate a method on the COM-RPC interface should lead to an asynchronous JSON-RPC function, meaning the completion of the functionality triggered by calling the function is not achieved when the method returns but when a specific event is sent to indicate this.
 
-For more details, click [here](../interfaces/#object-lookup)
+For more details, click [here](../interfaces/#asynchronous_functions)
 
-<hr/>
+</hr>
 
 #### @encode
 
@@ -582,6 +622,8 @@ Example list:
 |[@details](#details)|Specifies detaild description of a method/property/notification | | No| Yes|Method|
 |[@param](#param)|Provide description for method/notification parameter or property/notification index |  | No | Yes|Method|
 |[@retval](#retval)|Specifies possible return error codes for method/property (can be many) | | No|Yes|Method|
+|[@pre](#precondition)|Allows you to specify the preconditions for a method (documentation only) |  | No | Yes |Method |
+|[@post](#postcondition)|Allows you to specify the postconditions for a method (documentation only) |  | No | Yes |Method |
 
 #### @sourcelocation
 By default, the documentation generator will add links to the implemented interface definitions. 
@@ -669,5 +711,23 @@ This tag adds description about each return codes specified in the generated mar
 
 ##### Example
 In [IVolumeControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54), it uses this tag to add description about the returned error code.
+
+<hr/>
+
+#### @precondition
+This tag is used in document creation.
+
+The syntax for this tag is `@precondition <Description>`. It is associated with function/property
+
+This tag adds description about the preconditions required before calling this function\property
+
+<hr/>
+
+#### @postcondition
+This tag is used in document creation.
+
+The syntax for this tag is `@postcondition <Description>`. It is associated with function/property
+
+This tag adds description about the postconditions reached after calling this function\property
 
 <hr/>

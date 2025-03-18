@@ -83,7 +83,7 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 * The JSON-RPC generator now supports the usage of nested "plain-old data"(POD) types (such as plain C structs) in the C++ interface.
     * The JSON-RPC generator can now parse these structs and their usage in methods and generate a JSON-RPC interface for such cases.
 
-* `Core::hresult` is now supported as a return type from Thunder 5.0 onwards for JSONRPC and is strongly recommended to be used.
+* `Core::hresult` is required as a return type from Thunder 5.0 onwards for JSONRPC and is strongly recommended to be used.
 
 * `@text` metatag has been extended to have more options to influence the names used in generated code.
     * For more details click [here](../tags/#text).
@@ -91,7 +91,6 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 * Float type is now supported in the IDL header files.
 
 * Fixed size arrays are now supported, for example:`array[10]`
-    * See an example in [ICryptography](https://github.com/rdkcentral/ThunderInterfaces/blob/master/interfaces/ICryptography.h#L140)
 
 * `Core::instance_id` is now supported in the IDL header files.
     * It is presented as a 32/64 bit hexadecimal value in JSON-RPC.
@@ -101,11 +100,17 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 
 * `Core::OptionalType<T>` allows a member to be optional (this superseded @optional), and must be used if an attribute is expected to be optional on JSON-RPC. In COM-RPC the OptionalType can be used to see if a value was set, and in JSON-RPC it is then allowed to omit this parameter.
     * A @default tag can be used to provide a value, in the case T is not set. See more [here](../tags/#default).
-    * Note: Currently, OptionalType does not work with C-Style arrays.
+    * If a parameter is not optional now in the generated documentation for this interface that parameter will now be explicitly mentioned to be mandatory to prevent any confusion and indicate it must be provided when using the JSON-RPC interface.
 
 * JSON-RPC supports the usage of bitmask enums (a combination of enum values can be set in the same enum parameter at the same time).
     * This is mapped as an array of values in the JSON-RPC interface.
     * See more information about `/* @encode:bitmask */` [here](../tags/#encode).
+
+* The usage of std::vector<Type> is now allowed both by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
+    * nested usage of std:L:vector is not supported, meaning a std::vector<std::vector<Type>>, of course a std::vector in a struct used as type in a std::vector is.
+    * @restrict is mandatory to be used to indicate the maximum allowed size of the std::vector (to make the interface designed think about size consequences and not allow unlimited sized vectors). For COM-RPC it means all the data in the std::vector is transferred at once, if this is not desired best to use an iterator as an alternative.
+    * usage of std::vector is also allowed in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
+
 
 <hr/>
 
@@ -196,44 +201,61 @@ For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForE
 #### Object lookup
 
 Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
-This object interface is brought into JSON-RPC scope with a prefix.
+This object interface is brought into JSON-RPC scope with a prefix. This translated the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
 
-The format for this ability is to use the tag '@lookup:[prefix]' on a method.
+Object lookup will happen automatically by the generator when a method is found on the COM-RPC interface that returns an COM-RPC Interface also tagged as JSON-RPC interface as an out parameter and it is expected also a method that takes the same interface as input parameter is available to be able to destroy the created object.
 
-Note: If 'prefix' is not set, then the name of the object interface is used instead.
+The generated JSON-RPC interface will then automatically associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
+
+Note this also works when the interface contains an event. You will then be able to register specifically for the events of a specific object ID and only receive the ones generated for that object ID.
+
+The calls using a certain object ID must be done on the same channel the object ID was created on.
+To prevent any object leaks a call must be made into the generated code to release any objects still held when the channel closes (in case the destroy function was not called before the channel terminated). See example below on how to do this. It is also possible to pass a callback to this generated method so you are notified on the objects being destroyed, in case you need to trigger specific code for an object being destroyed. 
+
+Meaning to be able to use this COM-RPC interface in JSON-RPC no additional code needs to be written, it is enough to implement the COM-RPC interface and connect the JSON-RPC interface to it as you would normally do, the code generator will take care of the full JSON-RPC interface.
 
 ##### Example
 
-The signature of a lookup function must be:
+[here](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleInstanceObjects.h#L29) you will see an example of an interface that uses automatic object lookup.
 
-```cpp 
-virtual <Interface>* Method(const uint32_t id) = 0;
-```
+The [Acquire](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleInstanceObjects.h#L39).
+With the [Relinquish](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleInstanceObjects.h#L78) method the object is destroyed again.
 
-An example of an IPlayer interface containing a playback session. Using tag @lookup, you are able to have multiple sessions, which can be differentiated by using JSON-RPC.
+If you look into the generated documentation for this interface which can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md)
 
-```cpp 
-struct IPlayer {
-	struct IPlaybackSession {
-		virtual Core::hresult Play() = 0;
-		virtual Core::hresult Stop() = 0;
-	};
+The [acquire](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md#method_acquire) function will now return an object id for the IDevice object created.
 
-	// @lookup:session
-	virtual IPlaySession* Session(const uint32_t id) = 0;
+If you now want a function/property to call on that specific IDevice object you specify the object id in the designator using the #delimiter, see [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md#property_device__name) on how to do that.
 
-	virtual Core::hresult Create(uint32_t& id /* @out */) = 0;
-	virtual Core::hresult Configure(const string& config) = 0;
-}
-```
-An example of possible calls to the interface: the lookup method is used to convert the id to the object.
+If you are done using the object you can call the [relinquish](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md#method_relinquish) method specifying the object ID of the object you want to destroy.
 
-```
-Player.1.configure
-Player.1.create
-Player.1.session#1::play
-Player.1.session#1::stop
-```
+The IDevice also has an event, see [here](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleInstanceObjects.h#L43).
+
+To register for an event for a specific Device, so object ID in the JSON-RPC world you can see [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md#head_Notifications) how that is done, again specify the object ID with the # delimiter in the designator for the register method. As you can see when the event is sent the object ID is also in the event designator (convenient in case you registered for notifications of multiple object ID's)
+
+[Here](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/GeneratorShowcase.h#L673) you can see how to call the generated Closed method to do cleanup in case the channel closed without all devices being Relinquished. As mentioned it is also possible to pass a callback to the Closed method to get notified on all devices being released here (not demonstrated).
+
+<hr/>
+
+#### Asynchronous Functions
+
+When an action triggered by a method on a COM-RPC interface takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the interface will be called when the action that was started is finished or failed (it it mandatory that the started action always results in a method to be called so ti is clear when the action is over).
+
+This is also supported on the JSON-RPC interface. Of course it is not possible to pass a callback so here the end of the action will be indicated by an event send on the same channel the action was started on and an async event ID will be used to connect the function that started the action to the event. Use the @async tag to indicate the method should be async on the JSON-RPC interface (it is of course expected to have one input callback interface parameter and the interface for the callback should contain one callback method only).
+See the example below for more information.
+
+Again meaning to be able to use this COM-RPC interface in JSON-RPC no additional code needs to be written, it is enough to implement the COM-RPC interface and connect the JSON-RPC interface to it as you would normally do, the code generator will take care of the full JSON-RPC interface.
+
+##### Example
+
+[here](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleAsync.h#L29) you will see an interface that has a COM-RPC method that triggers an asynchronous event.
+The method [Connect](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleAsync.h#L73) allows to pass an ICallback object that will be used to notify when the asynchronous event has completed.
+[Complete](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleAsync.h#L54) will be called on the passed ICallback object to indicate this. 
+[async](https://github.com/rdkcentral/ThunderNanoServices/blob/bbbfdb7027a3afb74c4fb1c90981dfc51de37eb4/examples/GeneratorShowcase/interfaces/ISimpleAsync.h#L57) is set for this method to indicate we also want the JSON-RPC function to be async.
+
+In the generated documentation for the interface it can be seen how this works on JSON-RPC, found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md)
+The [connect](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/docs/GeneratorShowcasePlugin.md#method_connect) function now is expected to also pass an async ID as parameter. The connect function will result in a response on the JSON-RPC request to indicate the action was triggered but when the action is completed an event is sent on the same channel that started the action which includes the async ID and the name of the method in the designator.
+
 
 ### Code Generation
 
