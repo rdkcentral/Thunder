@@ -267,7 +267,7 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@text](#text)| Renames identifier Method, Parameter, PoD Member, Enum, Interface | | No | Yes |Enum, Method parameter, Method name, PoD member, Interface |
 |[@prefix](#prefix)| Prepends identifier for all JSON-RPC methods and properties in a class | | No | Yes | Class |
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
-|[@async](#asynch)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
+|[@async](#async)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
 |[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
 
 #### @json
@@ -467,13 +467,13 @@ This tag is applicable to enums, method names, method parameters, PoD members an
     * @text:standard generates the names for all elements in the JSON-RPC interface according the "standard" convention (camelCase for everything except enums which are UPPER_SNAKE). If nothing is specified the default is used (which is if not overridden with the commandline parameter --case-convention, see below, is "standard")
 	* @text:keep keeps the names for all elements as is in the header file for the JSONRPC interface
 	* @text:legacy (or as an alternative @text:legacy_lowercase) generates the names for all elements in the JSON-RPC interface to be completely lowercase and PascalCase for enums (this used to be convention for Thunder 5.1 and older).
-	* @text:custom allows influencing the generation of the casing in the JSON-RPC interface per element. The format to use is @text:custom=<METHODS>,<EVENTS>,<PARAMETERS>,<MEMBERS>,<ENUMS> where allowed values are "lower", "upper", "lowersnake", uppersnake", "camel", "pascal", "keep". See the example section below for more information as well.
+	* @text:custom allows influencing the generation of the casing in the JSON-RPC interface per element. The format to use is @text:custom=< METHODS >,< EVENTS >,< PARAMETERS >,< MEMBERS >,< ENUMS > where allowed values are "lower", "upper", "lowersnake", uppersnake", "camel", "pascal", "keep". See the example section below for more information as well.
 
 Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface casing guidelines in use (even more perhaps when using @text at interface level as now the whole interface is influenced). 
 
 The following commandline options for the JSON-RPC generator are available to also influence the casing used for the generated JSON-RPC code:
-* --case-convention <CONVENTION> selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
-* --ignore-source-case-convention: will make the generator ignore the @text set at interface level
+* "--case-convention < CONVENTION >" selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
+* "--ignore-source-case-convention" will make the generator ignore the @text set at interface level
 
 ##### Example
 <hr>
@@ -558,7 +558,7 @@ For more details, click [here](../interfaces/#notification-registration)
 
 Use this tag, to indicate a method on the COM-RPC interface should lead to an asynchronous JSON-RPC function, meaning the completion of the functionality triggered by calling the function is not achieved when the method returns but when a specific event is sent to indicate this.
 
-For more details, click [here](../interfaces/#asynchronous_functions)
+For more details, click [here](../interfaces/#asynchronous-functions)
 
 </hr>
 
