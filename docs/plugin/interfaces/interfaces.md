@@ -106,8 +106,8 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
     * This is mapped as an array of values in the JSON-RPC interface.
     * See more information about `/* @encode:bitmask */` [here](../tags/#encode).
 
-* The usage of std::vector<Type> is now allowed both by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
-    * nested usage of std:L:vector is not supported, meaning a std::vector<std::vector<Type>>, of course a std::vector in a struct used as type in a std::vector is.
+* The usage of std::vector< Type > is now allowed both by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
+    * nested usage of std::vector is not supported, meaning a std::vector< std::vector< Type > >. Of course a std::vector inside a struct where the struct is used as type in another std::vector is.
     * @restrict is mandatory to be used to indicate the maximum allowed size of the std::vector (to make the interface designed think about size consequences and not allow unlimited sized vectors). For COM-RPC it means all the data in the std::vector is transferred at once, if this is not desired best to use an iterator as an alternative.
     * usage of std::vector is also allowed in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
 
@@ -239,7 +239,7 @@ To register for an event for a specific Device, so object ID in the JSON-RPC wor
 
 #### Asynchronous Functions
 
-When an action triggered by a method on a COM-RPC interface which takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the interface will be called when the action that was started is finished or failed (it it mandatory that the started action always results in a method to be called so ti is clear when the action is over).
+When an action triggered by a method on a COM-RPC interface which takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the callback interface will be called when the action that was started is finished or failed (it it mandatory that the started action always results in a method to be called so ti is clear when the action is over).
 
 This is also supported on the JSON-RPC interface. Of course it is not possible to pass a callback so here the end of the action will be indicated by an event send on the same channel the action was started on and an async event ID will be used to connect the function that started the action to the event. Use the @async tag to indicate the method should be async on the JSON-RPC interface (it is of course expected to have one input callback interface parameter and the interface for the callback should contain one callback method only).
 See the example below for more information.
