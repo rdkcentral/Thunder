@@ -106,10 +106,11 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
     * This is mapped as an array of values in the JSON-RPC interface.
     * See more information about `/* @encode:bitmask */` [here](../tags/#encode).
 
-* The usage of std::vector< Type > is now allowed both by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
+* The usage of std::vector< Type > is now supported by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
     * nested usage of std::vector is not supported, meaning a std::vector< std::vector< Type > >. Of course a std::vector inside a struct where the struct is used as type in another std::vector is.
     * @restrict is mandatory to be used to indicate the maximum allowed size of the std::vector (to make the interface designed think about size consequences and not allow unlimited sized vectors). For COM-RPC it means all the data in the std::vector is transferred at once, if this is not desired best to use an iterator as an alternative.
-    * usage of std::vector is also allowed in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
+    * usage of std::vector is also supported in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
+    * a std::vector cannot contain a Core::OptionalType (at least not for the code generators) as that would not make sense. Then just do not add the optional elements to the vector.
 
 
 <hr/>
