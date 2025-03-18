@@ -201,7 +201,7 @@ For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForE
 #### Object lookup
 
 Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
-This object interface is brought into JSON-RPC scope with a prefix. This translated the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
+This object interface is brought into JSON-RPC scope with a object ID. This translates the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
 
 Object lookup will happen automatically by the generator when a method is found on the COM-RPC interface that returns an COM-RPC Interface also tagged as JSON-RPC interface as an out parameter and it is expected also a method that takes the same interface as input parameter is available to be able to destroy the created object.
 
