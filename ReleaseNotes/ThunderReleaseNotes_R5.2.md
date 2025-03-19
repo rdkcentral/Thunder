@@ -99,7 +99,7 @@ See for more details below and also on new options to influence the generated ca
 
 ### Feature: JSON-RPC case options
 
-Up to now the JSON-RPC code generators generated lowercase function, parameters, PoD members and event names by default from the interface files while the enums where PascalCase by default. Quite a number of interfaces used different @text options to deviate from this and it was decided to make camelCase the default for function function, parameters, PoD members and event names while using UPPER_SNAKE for enums. 
+Up to now the JSON-RPC code generators generated lowercase function, parameters, PoD members and event names by default from the interface files while the enums were PascalCase by default. Quite a number of interfaces used different @text options to deviate from this and it was decided to make camelCase the default for function names, parameters, PoD members and event names while using UPPER_SNAKE for enums. 
 This is now what Thunder 5.2 will generate as default.
 
 There are quite a number of new options to influence the generated casing for the JSON-RPC interface.
