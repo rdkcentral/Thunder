@@ -34,11 +34,11 @@ To be able to support the Thunder community better a dedicated Thunder support t
 
 ### Feature: Thunder changes to support new Tooling features
 
-Internal Thunder code was adapted to be able to support the new ThunderTooling features (e.g. new JSON-RPC casing infrastructure, JSONs-RPC session support and async interfaces, std::vector support). See the ThunderTools section below for more details on these features.
+Internal Thunder code was adapted to be able to support the new ThunderTooling features (e.g. new JSON-RPC casing infrastructure, JSON-RPC session support and async interfaces, std::vector support). See the ThunderTools section below for more details on these features.
 
 ### Feature: TLS Client side certificates and Server 
 
-The Thunder SecureSockets implementation now also support client side certificates verification and the option to run a SecureSocketPort server (previously only connecting to a SecureSocketPort server was possible). 
+The Thunder SecureSockets implementation now also supports client side certificates verification and the option to run a SecureSocketPort server (previously only connecting to a SecureSocketPort server was possible). 
 
 ### Feature: Assert also handled by Message Engine
 
@@ -48,13 +48,13 @@ This was added as we notice configurations being used where Asserts are enabled 
 ### Change: Message Engine Improvements
 
 The message engine was improved again internally. 
-On very early Thunder startup where the message engine is not fully up and running it is now made sure messages messages are not completely missed but outputted to std output.
+On very early Thunder startup where the message engine is not fully up and running it is now made sure messages are not completely missed but outputted to std output.
 
 ### Change: Suspend and Resume via controller
 
 Suspend and Resume notifications for plugins can now also be subscribed on using a Controller event instead of only on a specific plugin.
 
-### Change: leaked Proxy detection and reporting
+### Change: Leaked Proxy detection and reporting
 
 The detection and reporting of leaked proxies was improved (also backported to Thunder 4.4)
 
@@ -68,7 +68,7 @@ Some flavours of the ProcessContainer implementations were updated to reflect th
 
 ### Change: JSONRPCLink improvements
 
-The JSONRPCLink now also makes sure events it was subscribed on for will be restored when a connection was lost and restored. 
+The JSONRPCLink now also makes sure events it was subscribed to for will be restored when a connection was lost and restored. 
 
 ### Change: Windows socket handling improvements
 
@@ -85,7 +85,7 @@ A number of issues found in Thunder 5.1 have been corrected in Thunder 5.2.
 
 ## Breaking Changes
 
-Although Thunder 5.2 is a minor upgrade and therefore should not contain breaking changes there is one however. This because of a request to the Thunder team to change the behaviour of the ThunderTooling in this regard. 
+Although Thunder 5.2 is a minor upgrade and therefore should not contain breaking changes there is one however. This due to a request to the Thunder team to change the behavior of the ThunderTooling regarding the default casing generated for the JSON-RPC API.
 In itself this change in the ThunderTooling should not lead to different behaviour in Interfaces used in RDKServices as far as we are aware. The old Thunder Interfaces used in RDKServices were all adapted to generate the exact same interface as in 5.1 and others used different @text options already to force the behaviour that has now become the default.
 
 ### default case for generated JSON-RPC code.
@@ -120,7 +120,7 @@ See [here](can only be added once the documentation change is merged) for more i
 
 ### Feature: Async interfaces
 
-When an action triggered by a method on a COM-RPC interface which takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the callback interface will be called when the action that was started is finished or failed
+When an action triggered by a method on a COM-RPC interface which takes some time to complete this method will be made asynchronous, meaning it will return when the action is started and it will expect a callback interface to be passed as input parameter to the method so a method on the callback interface will be called when the action that was started is finished or failed.
 This is now also supported on the JSON-RPC interface. 
 One can indicate a method on the JSON-RPC interface should be asynchronous by specifying the @async tag.
 The code generators will then generate code to fully automate this again, meaning no additional code needs to be written for the JSON-RPC interface.
@@ -137,7 +137,7 @@ See [here](an only be added once the documentation change is merged) for the doc
 
 The PluginSkeletonGenerator (PSG) is a tool that can be used to generate a skeleton for a new plugin, giving you a quick start when developing a new plugin but also preventing common mistakes to be made in the generic plugin code.
 
-Please note that the tool is in beta release at the moment. Although it was very carefully designed and reviewed of course it cannot be ruled out that there are any issues with it, certainly seen the number of different configurations it can generate. If you find any issues with the generated code please contact the Thunder team.
+Please note that the tool is in beta release at the moment. Although it was very carefully designed and reviewed of course it cannot be ruled out that there are any issues with it, certainly given the number of different configurations it can generate. If you find any issues with the generated code please contact the Thunder team.
 
 More information can be found [here](https://rdkcentral.github.io/Thunder/plugin/devtools/pluginskeletongenerator/).
 
@@ -150,7 +150,7 @@ See [here](can only be added once the documentation change is merged)
 
 ### Change: not optional means mandatory
 
-To prevent any confusion the Document generator will for now on explicitly document elements that are not optional to be mandatory. So this change only influences the generated Documentation, not any behaviour.
+To prevent any confusion, the Document generator will now explicitly mark non-optional elements as mandatory. So this change only influences the generated Documentation, not any behaviour.
 
 ### Change: Core::OptionalType and fixed arrays
 
@@ -163,7 +163,7 @@ can contain elements of Core::OptionalTypes, the array itself logically cannot b
 
  ### Known Issue: statuslistener for session based interfaces
 
- Note that using the @statuslistener inside session based interfaces will not work at the moment
+ Note that using the @statuslistener inside session based interfaces will not work at the moment.
 
 # Thunder Interfaces
 
@@ -175,7 +175,7 @@ To guarantee backward compatibility with the new JSON-RPC casing options and add
 
 ### Change: external interface offset added
 
-An external offset was added to the interface ID range used by Thunder so a specific range can be used for interfaces outside ThunderInterfaces who's ID is not added to the IDs.h. This to prevent collisions with interfaces inside ThunderInterfaces.
+An external offset was added to the interface ID range used by Thunder so a specific range can be used for interfaces outside ThunderInterfaces whose ID is not added to the IDs.h. This to prevent collisions with interfaces inside ThunderInterfaces.
 
 ### Change: ITestAutomation
 
@@ -183,4 +183,4 @@ The ITestAutomation interface was extended to make it possible to add more testi
 
 ### Change: IDictionary improved
 
-The IDictionary interface was improved to add full json rpc support and to make usage of the interface more intuitive and consistent.
+The IDictionary interface was improved to add full JSON-RPC support and to make usage of the interface more intuitive and consistent.
