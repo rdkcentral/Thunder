@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(Thunder
-        VERSION 5.0.0
+        VERSION 5.2.0
         DESCRIPTION "Thunder framework"
         HOMEPAGE_URL "https://rdkcentral.github.io/Thunder/")
 
