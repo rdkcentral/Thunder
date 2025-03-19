@@ -1503,9 +1503,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#lookup" class="md-nav__link">
+  <a href="#async" class="md-nav__link">
     <span class="md-ellipsis">
-      @lookup
+      @async
     </span>
   </a>
   
@@ -1593,6 +1593,24 @@
   <a href="#retval" class="md-nav__link">
     <span class="md-ellipsis">
       @retval
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precondition" class="md-nav__link">
+    <span class="md-ellipsis">
+      @precondition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#postcondition" class="md-nav__link">
+    <span class="md-ellipsis">
+      @postcondition
     </span>
   </a>
   
@@ -3303,9 +3321,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#lookup" class="md-nav__link">
+  <a href="#async" class="md-nav__link">
     <span class="md-ellipsis">
-      @lookup
+      @async
     </span>
   </a>
   
@@ -3393,6 +3411,24 @@
   <a href="#retval" class="md-nav__link">
     <span class="md-ellipsis">
       @retval
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precondition" class="md-nav__link">
+    <span class="md-ellipsis">
+      @precondition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#postcondition" class="md-nav__link">
+    <span class="md-ellipsis">
+      @postcondition
     </span>
   </a>
   
@@ -3706,8 +3742,9 @@ When the function returns, the parameter will have the modified length value. Th
 <hr/>
 
 <h4 id="length">@length</h4>
-<p>This tag should be associated with an array. It specifies the expresion to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)</p>
+<p>This tag should be associated with an array. It specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)</p>
 <p>Use round parenthesis for expressions, e.g.  <code>@length:bufferSize</code> <code>@length:(width * height * 4)</code></p>
+<p>Note @length:return can be used in case the length of the array is the return value of the method instead of an in/in-out parameter.</p>
 <h5 id="example_10">Example</h5>
 <p><strong>From another parameter</strong></p>
 <div class="highlight"><pre><span></span><code>/* @length:param1 */
@@ -3729,6 +3766,8 @@ When the function returns, the parameter will have the modified length value. Th
 </ul>
 <hr/>
 
+<p><strong>returned</strong></p>
+<p>See <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/16d1459ae85940fa71d6836301dc2b4288e9f3b4/interfaces/ICryptography.h#L57">here</a> for an example.</p>
 <h4 id="maxlength">@maxlength</h4>
 <p>Used with the <code>@out</code> or <code>@inout</code> tag. It specifies a maximum buffer length value (a constant, a parameter name or a math expression). If not specified, <code>@length</code> is considered as maximum length</p>
 <p>When used with <code>@inout</code> it will use different buffer for output depending upon this tag. If not specified it will reuse the same input buffer for output as well.</p>
@@ -3739,7 +3778,7 @@ When the function returns, the parameter will have the modified length value. Th
 <h4 id="default">@default</h4>
 <p>This tag should be associated with optional types. It provides a default value for JSON-RPC, even if no explicit value was set.</p>
 <p>Note: Unless a parameter is optional, it must be set.</p>
-<p>Note: Currently, OptionalType does not work with C-Style arrays.</p>
+<p>Note: Currently, OptionalType does not work with C-Style arrays, of course a fixed array of OptionalTypes is supported.</p>
 <h5 id="example_12">Example</h5>
 <p>In this example class, the OptionalType members have a default value that would be transmitted incase their values have not been set.</p>
 <div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">Store</span><span class="w"> </span><span class="p">{</span>
@@ -3892,8 +3931,8 @@ When the function returns, the parameter will have the modified length value. Th
 <td style="text-align: center;">Method</td>
 </tr>
 <tr>
-<td><a href="#lookup">@lookup</a></td>
-<td>Creates a JSON-RPC interface to access dynamically created sessions</td>
+<td><a href="#async">@async</a></td>
+<td>Indicates a method is asynchronous for the JSON-RPC interface</td>
 <td style="text-align: center;"></td>
 <td style="text-align: center;">No</td>
 <td style="text-align: center;">Yes</td>
@@ -4060,8 +4099,18 @@ The helper functions are defined in IIteratorType.h. </p>
 <li>When used for a method name, it will replace the actual method name with the text that is given in the tag while keeping the case of the text as is.</li>
 <li>When used for a method parameter, it will replace the parameter name with the text that is given in the tag while keeping the case of the text as is.</li>
 <li>When used for a PoD member, it will replace the PoD member name with the text that is given in the tag while keeping the case of the text as is. Please note that the tag must be placed before the ';'  following the PoD member name (see the examples below).</li>
-<li>When used for a whole interface it must be used in the form '@text:keep'. It will in this case make the JSON generator use the name of the above items in JSON code exactly as specified in the interface, including the case of the text. Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface guideliness in use (even more perhaps then with the other uses of @text as now the whole interface is influenced). Please see an example on how to apply this form of @text below in the examples.</li>
+<li>When used at interface level it will influence the casing generated for the JSON-RPC for the whole interface (that is Method names, Parameter names, POD member names, Event names and Enum names). The following options can be used with @text at interface level:<ul>
+<li>@text:standard generates the names for all elements in the JSON-RPC interface according the "standard" convention (camelCase for everything except enums which are UPPER_SNAKE). If nothing is specified the default is used (which is if not overridden with the commandline parameter --case-convention, see below, is "standard")</li>
+<li>@text:keep keeps the names for all elements as is in the header file for the JSONRPC interface</li>
+<li>@text:legacy (or as an alternative @text:legacy_lowercase) generates the names for all elements in the JSON-RPC interface to be completely lowercase and PascalCase for enums (this used to be convention for Thunder 5.1 and older).</li>
+<li>@text:custom allows influencing the generation of the casing in the JSON-RPC interface per element. The format to use is @text:custom=&lt; METHODS &gt;,&lt; EVENTS &gt;,&lt; PARAMETERS &gt;,&lt; MEMBERS &gt;,&lt; ENUMS &gt; where allowed values are "lower", "upper", "lowersnake", uppersnake", "camel", "pascal", "keep". See the example section below for more information as well.</li>
 </ul>
+</li>
+</ul>
+<p>Please note that of course the interface designer is responsible for making the interface compliant and consistent with the interface casing guidelines in use (even more perhaps when using @text at interface level as now the whole interface is influenced). </p>
+<p>The following commandline options for the JSON-RPC generator are available to also influence the casing used for the generated JSON-RPC code:
+* "--case-convention &lt; CONVENTION &gt;" selects the default convention to be used on interface level, if not passed the generator will use "standard". Possible values: standard, keep and legacy. 
+* "--ignore-source-case-convention" will make the generator ignore the @text set at interface level</p>
 <h5 id="example_22">Example</h5>
 <hr>
 
@@ -4090,6 +4139,20 @@ The helper functions are defined in IIteratorType.h. </p>
 </hr></p>
 <hr>
 
+<p>In this example now for all method names, method parameters, PoD member names and events will be lowercase in the JSON generated code, enums will be PascalCase</p>
+<p><div class="highlight"><pre><span></span><code><span class="hll"><span class="w">  </span><span class="cm">/* @json 1.0.0 @text:legacy_lowercase */</span>
+</span><span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IExample</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+</code></pre></div>
+</hr></p>
+<hr>
+
+<p>In this example now for all method names will be lowercase in the JSON generated code, events will be uppercase, parameters will be lower snake, PoD members will be upper snake and enums will be camel case.</p>
+<p><div class="highlight"><pre><span></span><code><span class="hll"><span class="w">  </span><span class="cm">/* @json 1.0.0 @text:custom=lower,upper,lowersnake,uppersnake,camel */</span>
+</span><span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">IExample</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+</code></pre></div>
+</hr></p>
+<hr>
+
 <h4 id="prefix">@prefix</h4>
 <p>Use this tag on a class to prepend all JSON-RPC methods with a prefix identifier. This is an alternative to using multiple @text tags.</p>
 <p>In this example, all registered methods would contain the prefix <code>source::</code>
@@ -4107,11 +4170,10 @@ This is particularly useful for avoiding clashes, especially if several interfac
 </hr>
 <hr>
 
-<h4 id="lookup">@lookup</h4>
-<p>This tag is used on methods, to create a JSON-RPC interface that is dynamically accessing created objects (or sessions).</p>
-<p>For more details, click <a href="../interfaces/#object-lookup">here</a></p>
-<hr/>
-
+<h4 id="async">@async</h4>
+<p>Use this tag, to indicate a method on the COM-RPC interface should lead to an asynchronous JSON-RPC function, meaning the completion of the functionality triggered by calling the function is not achieved when the method returns but when a specific event is sent to indicate this.</p>
+<p>For more details, click <a href="../interfaces/#asynchronous-functions">here</a></p>
+</hr>
 <h4 id="encode">@encode</h4>
 <p>This tag encodes data into an alternate format.</p>
 <ul>
@@ -4219,6 +4281,22 @@ This is particularly useful for avoiding clashes, especially if several interfac
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Method</td>
 </tr>
+<tr>
+<td><a href="#precondition">@pre</a></td>
+<td>Allows you to specify the preconditions for a method (documentation only)</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
+</tr>
+<tr>
+<td><a href="#postcondition">@post</a></td>
+<td>Allows you to specify the postconditions for a method (documentation only)</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Method</td>
+</tr>
 </tbody>
 </table>
 <h4 id="sourcelocation">@sourcelocation</h4>
@@ -4290,6 +4368,18 @@ This tag adds the description about the specified parameter in the generated cod
 <p>This tag adds description about each return codes specified in the generated markdown document.</p>
 <h5 id="example_30">Example</h5>
 <p>In <a href="https://github.com/rdkcentral/ThunderInterfaces/blob/5fa166bd17c6b910696c6113c5520141bcdea07b/interfaces/IVolumeControl.h#L54">IVolumeControl.h</a>, it uses this tag to add description about the returned error code.</p>
+<hr/>
+
+<h4 id="precondition">@precondition</h4>
+<p>This tag is used in document creation.</p>
+<p>The syntax for this tag is <code>@precondition &lt;Description&gt;</code>. It is associated with function/property</p>
+<p>This tag adds description about the preconditions required before calling this function\property</p>
+<hr/>
+
+<h4 id="postcondition">@postcondition</h4>
+<p>This tag is used in document creation.</p>
+<p>The syntax for this tag is <code>@postcondition &lt;Description&gt;</code>. It is associated with function/property</p>
+<p>This tag adds description about the postconditions reached after calling this function\property</p>
 <hr/>
 
 
