@@ -116,7 +116,7 @@ The code generator automatically detects these interfaces and generates the nece
 It even works for notification used in such a created object (session) where one can subscribe and be notified of only the events for this object/session.
 In the functional JSON-RPC world an automatically generated object ID is used to connect functional world to the OO COM-RPC /C++ world.
 
-See [here](can only be added once the documentation change is merged) for more info and how to use this.
+See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#object-lookup) for more info and how to use this.
 
 ### Feature: Async interfaces
 
@@ -125,13 +125,12 @@ This is now also supported on the JSON-RPC interface.
 One can indicate a method on the JSON-RPC interface should be asynchronous by specifying the @async tag.
 The code generators will then generate code to fully automate this again, meaning no additional code needs to be written for the JSON-RPC interface.
 
-See [here](can only be added once the documentation change is merged) for more info and how to use this.
+See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#asynchronous-functions) for more info and how to use this.
 
 ### Feature: std::vector Support
 
 The usage of std::vector< Type > is now supported by the Proxy Stub generators as well as the JSON-RPC generators (where it translates to a json array).
-It is also allowed to be used inside events/notifications (see the Thunder documentation on the new feature [here](can only be added once the documentation change is merged) to see why you should be careful when using this). 
-See [here](an only be added once the documentation change is merged) for the documentation.
+It is also allowed to be used inside events/notifications (see the Thunder documentation on the new feature [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#overview) to see why you should be careful when using this). 
 
 ### Feature: plugin skeleton generator
 
@@ -146,7 +145,7 @@ Please note also a main entry for all ThunderDevelopmentTools was added but for 
 ### Feature: pre- and postconditions
 
 It is now possible to add pre- and postconditions tags for a method to document the pre- and postconditions. So for (generated) documentation purposes only.
-See [here](can only be added once the documentation change is merged)
+See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#precondition)
 
 ### Change: not optional means mandatory
 
