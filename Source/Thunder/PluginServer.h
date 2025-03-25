@@ -61,7 +61,11 @@ namespace Core {
             , _forwarder(std::forward<Args>(args)...)
             , _slots(1)
             , _used(0)
-            , _queue() {
+            , _queue()
+#ifdef __CORE_WARNING_REPORTING__
+            , _lastPop(0)
+#endif
+        {
         }
         ~ThrottleQueueType() = default;
 
@@ -83,6 +87,8 @@ namespace Core {
             }
             else {
                 _queue.emplace(object);
+
+                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::FlowControlQueueSize, _queue.size());
             }
             _adminLock.Unlock();
         }
@@ -92,6 +98,12 @@ namespace Core {
             if (_queue.empty() == false) {
                 _forwarder.Submit(std::forward<CONTENT>(_queue.front()));
                 _queue.pop();
+
+                REPORT_OUTOFBOUNDS_WARNING(WarningReporting::FlowControlJobTime, ((_lastPop != 0) ? ((Core::Time::Now().Ticks() - _lastPop) / 1000) : 0 ));
+
+#ifdef __CORE_WARNING_REPORTING__
+                _lastPop = Core::Time::Now().Ticks();
+#endif
             }
             else {
                 _used--;
@@ -105,6 +117,9 @@ namespace Core {
         uint32_t _slots;
         uint32_t _used;
         Queue _queue;
+#ifdef __CORE_WARNING_REPORTING__
+        Core::Time::microsecondsfromepoch _lastPop;
+#endif
     };
 }
 
