@@ -93,6 +93,13 @@ namespace RPC {
             Channel(ConnectorType<ENGINE>& parent, const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler)
                 : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
                 , _parent(parent)
+                , _waitTime(Core::infinite)
+            {
+            }
+            Channel(ConnectorType<ENGINE>& parent, const Core::NodeId& remoteNode, const Core::ProxyType<RPC::IIPCServer>& handler,const uint32_t waitTime) 
+                : CommunicatorClient(remoteNode, Core::ProxyType<Core::IIPCServer>(handler))
+                , _parent(parent)
+                , _waitTime(waitTime)
             {
             }
             ~Channel() override = default;
@@ -100,15 +107,15 @@ namespace RPC {
         public:
             uint32_t Initialize()
             {
-                return (CommunicatorClient::Open(Core::infinite));
+                return (CommunicatorClient::Open(_waitTime));
             }
             void Deintialize()
             {
-                CommunicatorClient::Close(Core::infinite);
+                CommunicatorClient::Close(_waitTime);
             }
             void Unlink()
             {
-                CommunicatorClient::Close(Core::infinite);
+                CommunicatorClient::Close(_waitTime);
             }
             void StateChange() override {
                 CommunicatorClient::StateChange();
@@ -117,6 +124,7 @@ namespace RPC {
 
         private:
             ConnectorType<ENGINE>& _parent;
+            uint32_t _waitTime;
         };
 
     public:
@@ -131,11 +139,11 @@ namespace RPC {
 
     public:
         template <typename INTERFACE>
-        INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version)
+        INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version, const uint32_t connectionwaitTime = Core::infinite)
         {
             INTERFACE* result = nullptr;
 
-            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, *this, nodeId, ENGINE());
+            Core::ProxyType<Channel> channel = _comChannels.template Instance<Channel>(nodeId, *this, nodeId, ENGINE(), connectionwaitTime);
 
             if (channel.IsValid() == true) {
                 result = channel->template Acquire<INTERFACE>(waitTime, className, version);

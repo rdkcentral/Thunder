@@ -272,6 +272,30 @@ namespace RPC {
     private:
         using Monitor = PluginHost::PluginMonitorType<INTERFACE, SmartInterfaceType<INTERFACE, ENGINE>&>;
 
+        class InterfaceConnectorType : public ConnectorType<ENGINE> {
+        public:
+            InterfaceConnectorType(const InterfaceConnectorType&) = delete;
+            InterfaceConnectorType& operator=(const InterfaceConnectorType&) = delete;
+            InterfaceConnectorType(InterfaceConnectorType&&) = delete;
+            InterfaceConnectorType& operator=(InterfaceConnectorType&&) = delete;
+
+            InterfaceConnectorType(SmartInterfaceType& parent)
+                : ConnectorType<ENGINE>()
+                , _parent(parent)
+            {
+            }
+            ~InterfaceConnectorType() override = default;
+
+            void Operational(const bool operational) override
+            {
+                _parent.ChannelOperational(operational);
+            }
+
+        private:
+            SmartInterfaceType& _parent;
+        };
+
+
     public:
         SmartInterfaceType(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
         SmartInterfaceType<INTERFACE, ENGINE>& operator=(const SmartInterfaceType<INTERFACE, ENGINE>&) = delete;
@@ -281,7 +305,7 @@ namespace RPC {
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         SmartInterfaceType()
             : _controller(nullptr)
-            , _administrator()
+            , _administrator(*this)
             , _monitor(*this)
             , _connectionId(~0)
         {
@@ -304,7 +328,10 @@ POP_WARNING()
         {
             Core::IUnknown* controller = RPC::ConnectorController::Instance().Controller();
 
-            ASSERT(_controller == nullptr);
+            if ((IsOperational() == false) && (_controller != nullptr)) {
+                _controller->Release();
+                _controller = nullptr;
+            }
 
             if (controller != nullptr) {
                 // Seems like we already have a connection to the IShell of the Controller plugin, reuse it.
@@ -312,7 +339,7 @@ POP_WARNING()
                 controller->Release();
             }
             if (_controller == nullptr) {
-                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
+                _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0, waitTime);
             }
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
@@ -337,7 +364,7 @@ POP_WARNING()
         template <typename EXPECTED_INTERFACE>
         EXPECTED_INTERFACE* Acquire(const uint32_t waitTime, const Core::NodeId& nodeId, const string className, const uint32_t version = ~0)
         {
-            return (_administrator.template Acquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version));
+            return (_administrator.template Acquire<EXPECTED_INTERFACE>(waitTime, nodeId, className, version, waitTime));
         }
 
         INTERFACE* Interface()
@@ -382,6 +409,15 @@ POP_WARNING()
     private:
         friend Monitor;
 
+        void ChannelOperational(const bool operational)
+        {
+            if (operational == false) {
+                if (_controller != nullptr) {
+                    _monitor.Unregister(_controller);
+                }
+            }
+        }
+
         void Activated(INTERFACE* /* plugin */)
         {
             Operational(true);
@@ -393,7 +429,7 @@ POP_WARNING()
 
     private:
         PluginHost::IShell* _controller;
-        ConnectorType<ENGINE> _administrator;
+        InterfaceConnectorType _administrator;
         Monitor _monitor;
         uint32_t _connectionId;
     };
