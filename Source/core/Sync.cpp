@@ -950,7 +950,7 @@ namespace Core {
         }
         result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
 
-#elif defined(__MUSL__)
+#elif defined(__MUSL__) || defined(__UCLIBC__)
         struct timespec referenceTime = {0,0};
         clock_gettime(CLOCK_MONOTONIC, &referenceTime);
         referenceTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */

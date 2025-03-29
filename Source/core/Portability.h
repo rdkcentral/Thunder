@@ -629,7 +629,7 @@ EXTERNAL inline void SleepS(unsigned int a_Time)
 #endif
 
 #ifdef __LINUX__
-#if !defined(OS_ANDROID) && !defined(OS_NACL) && defined(__GLIBC__) && defined(_THUNDER_CALLSTACK_INFO)
+#if !defined(OS_ANDROID) && !defined(OS_NACL) && !defined(__UCLIBC__) && defined(__GLIBC__) && defined(_THUNDER_CALLSTACK_INFO)
 #define THUNDER_BACKTRACE 1
 #include <execinfo.h>
 #endif
