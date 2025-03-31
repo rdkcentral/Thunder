@@ -263,6 +263,7 @@ POP_WARNING()
     // Serialize: Base64
     //------------------------------------------------------------------------
     void EXTERNAL ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result);
+    uint8_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint8_t& length, const TCHAR* ignoreList = nullptr);
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
     uint32_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList = nullptr);
 
