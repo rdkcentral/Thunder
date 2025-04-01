@@ -514,7 +514,7 @@ namespace Core {
         }
 #else
 #ifndef __APPLE__ //No straight forward way to set process name in OSX
-        if (::getpid() == _pid) {  // Remove static_cast<uint32_t> since both are pid_t
+        if (::getpid() == _pid) {
             prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
         }
 #endif
