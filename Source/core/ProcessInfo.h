@@ -27,7 +27,7 @@ namespace Thunder {
 namespace Core {
 
     // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
-    using process_t = pid_t;
+    using process_t DEPRECATED = pid_t;
 
     class EXTERNAL ProcessInfo {
     public:

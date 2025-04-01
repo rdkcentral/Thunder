@@ -531,7 +531,7 @@ namespace Core {
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
         pid_t processId;
-        pid_t expectedProcessId = static_cast<pid_t>(0);
+        pid_t expectedProcessId = 0;
 
 #ifdef __WINDOWS__
         processId = GetCurrentProcessId();
