@@ -254,5 +254,33 @@ namespace WarningReporting {
         static constexpr uint32_t DefaultReportBound = { 15000 };
     };
 
+    class EXTERNAL SocketOperationTooLong {
+        public:
+            SocketOperationTooLong(const SocketOperationTooLong&) = delete;
+            SocketOperationTooLong& operator=(const SocketOperationTooLong&) = delete;
+            SocketOperationTooLong() = default;
+            ~SocketOperationTooLong() = default;
+
+            // Nothing to serialize/deserialize here
+            uint16_t Serialize(uint8_t[], const uint16_t) const
+            {
+                return 0;
+            }
+
+            uint16_t Deserialize(const uint8_t[], const uint16_t)
+            {
+                return 0;
+            }
+
+            void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+            {
+                visitor = (_T("Socket operation took too long"));
+                visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
+            };
+
+            static constexpr uint32_t DefaultWarningBound = { 1000 };
+            static constexpr uint32_t DefaultReportBound = { 1000 };
+        };
+
 }
 }

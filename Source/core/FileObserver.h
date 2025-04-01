@@ -296,6 +296,7 @@ private:
             int length;
             do {
                 length = ::read(_notifyFd, eventBuffer, sizeof(eventBuffer));
+                eventBuffer[sizeof(eventBuffer)-1] = '\0';
 
                 if (length >= static_cast<int>(sizeof(struct inotify_event))) {
                     const struct inotify_event *event = reinterpret_cast<const struct inotify_event *>(eventBuffer);
