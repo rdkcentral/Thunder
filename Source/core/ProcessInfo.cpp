@@ -122,7 +122,7 @@ namespace Core {
     }
 
     template <typename ACCEPTFUNCTION>
-    static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
+    static void FindChildren(std::list<pid_t>& children, ACCEPTFUNCTION acceptfunction)
     {
         DIR* dp;
         struct dirent* ep;
@@ -169,7 +169,7 @@ namespace Core {
      * that starts with value of *item*. The search is case-sensitive
      * in both cases.
      */
-    static void FindPid(const string& item, const bool exact, std::list<uint32_t>& pids)
+    static void FindPid(const string& item, const bool exact, std::list<pid_t>& pids)
     {
         DIR* dp;
         struct dirent* ep;
@@ -246,7 +246,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const uint32_t, const uint32_t) { return true; });
+        FindChildren(_pids, [=](const pid_t, const pid_t) { return true; });
 #endif
         Reset();
     }
@@ -258,7 +258,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const pid_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
             ProcessName(foundparentPID, fullname, sizeof(fullname));
@@ -282,7 +282,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const pid_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t childPID) {
             bool accept = false;
 
             if (parentPID == foundparentPID) {
@@ -313,7 +313,7 @@ namespace Core {
         }
 #else
 #ifndef __APPLE__
-        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const pid_t) {
             return parentPID == foundparentPID;
         });
 #endif
@@ -514,7 +514,7 @@ namespace Core {
         }
 #else
 #ifndef __APPLE__ //No straight forward way to set process name in OSX
-        if (static_cast<uint32_t>(::getpid()) == _pid) {
+        if (::getpid() == _pid) {  // Remove static_cast<uint32_t> since both are pid_t
             prctl(PR_SET_NAME, name.c_str(), 0, 0, 0, 0);
         }
 #endif
@@ -584,7 +584,7 @@ namespace Core {
     /* static */ void ProcessInfo::FindByName(const string& name VARIABLE_IS_NOT_USED, const bool exact VARIABLE_IS_NOT_USED, std::list<ProcessInfo>& processInfos VARIABLE_IS_NOT_USED)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        std::list<uint32_t> pidList;
+        std::list<pid_t> pidList;
         FindPid(name, exact, pidList);
 
         processInfos.clear();

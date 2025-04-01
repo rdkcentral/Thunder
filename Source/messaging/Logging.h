@@ -28,7 +28,7 @@ namespace Thunder {
 namespace Logging {
 
     void EXTERNAL DumpException(const string& exceptionType);
-    void EXTERNAL DumpSystemFiles(const Core::pid_t pid);
+    void EXTERNAL DumpSystemFiles(const pid_t pid);
 
     template <typename CATEGORY>
     class BaseLoggingType : public Core::Messaging::BaseCategoryType<Core::Messaging::Metadata::type::LOGGING> {

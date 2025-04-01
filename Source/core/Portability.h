@@ -743,6 +743,10 @@ typedef std::string string;
 #define DEBUG_VARIABLE(x)
 #endif
 
+#ifdef __WINDOWS__
+    using pid_t = DWORD;
+#endif
+
 namespace Thunder {
 namespace Core {
 
@@ -770,10 +774,6 @@ namespace Core {
     typedef pthread_t thread_id;
     #else
     typedef DWORD thread_id;
-    #endif
-
-    #ifdef __WINDOWS__
-    using pid_t = DWORD;
     #endif
 
     typedef uint32_t hresult;

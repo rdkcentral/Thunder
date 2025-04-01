@@ -732,7 +732,7 @@ namespace PluginHost {
             else {
                 State(IShell::HIBERNATED);
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                Core::pid_t parentPID = local->ParentPID();
+                pid_t parentPID = local->ParentPID();
                 local->Release();
                 Unlock();
 
@@ -800,7 +800,7 @@ namespace PluginHost {
             }
             else {
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                Core::pid_t parentPID = local->ParentPID();
+                pid_t parentPID = local->ParentPID();
 
                 // There is no recovery path while doing Wakeup, don't care about errors
                 WakeupChildren(parentPID, timeout);
@@ -822,11 +822,11 @@ namespace PluginHost {
     }
 
 #ifdef HIBERNATE_SUPPORT_ENABLED
-    uint32_t Server::Service::HibernateChildren(const Core::pid_t parentPID, const uint32_t timeout)
+    uint32_t Server::Service::HibernateChildren(const pid_t parentPID, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_NONE;
         Core::ProcessInfo::Iterator children(parentPID);
-        std::vector<Core::pid_t> childrenPIDs;
+        std::vector<pid_t> childrenPIDs;
 
         if (children.Count() > 0) {
 
@@ -872,7 +872,7 @@ namespace PluginHost {
         return result;
     }
 
-    uint32_t Server::Service::WakeupChildren(const Core::pid_t parentPID, const uint32_t timeout)
+    uint32_t Server::Service::WakeupChildren(const pid_t parentPID, const uint32_t timeout)
     {
         Core::hresult result = Core::ERROR_NONE;
         Core::ProcessInfo::Iterator children(parentPID);
