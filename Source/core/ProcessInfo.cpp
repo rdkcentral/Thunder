@@ -258,7 +258,7 @@ namespace Core {
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
             ProcessName(foundparentPID, fullname, sizeof(fullname));
@@ -276,13 +276,13 @@ namespace Core {
     }
 
     // Get the Child Processes with a name name from a Parent pid
-    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
+    ProcessInfo::Iterator::Iterator(const pid_t parentPID VARIABLE_IS_NOT_USED, const string& childname VARIABLE_IS_NOT_USED, const bool removepath VARIABLE_IS_NOT_USED)
         : _pids()
         , _current()
         , _index(0)
     {
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
-        FindChildren(_pids, [=](const process_t foundparentPID, const uint32_t childPID) {
+        FindChildren(_pids, [=](const pid_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
 
             if (parentPID == foundparentPID) {
@@ -297,7 +297,7 @@ namespace Core {
     }
 
     // Get the Children of the given PID.
-    ProcessInfo::Iterator::Iterator(const process_t parentPID VARIABLE_IS_NOT_USED)
+    ProcessInfo::Iterator::Iterator(const pid_t parentPID VARIABLE_IS_NOT_USED)
     {
 #ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -354,7 +354,7 @@ namespace Core {
     {
     }
     // Specifice Process Info
-    ProcessInfo::ProcessInfo(const process_t id)
+    ProcessInfo::ProcessInfo(const pid_t id)
         : _pid(id)
         , _memory(id)
 #ifdef __WINDOWS__
@@ -713,7 +713,7 @@ PUSH_WARNING(DISABLE_WARNING_CONVERSION_TO_GREATERSIZE)
 POP_WARNING()
     }
 
-    ProcessInfo::Memory::Memory(const process_t pid)
+    ProcessInfo::Memory::Memory(const pid_t pid)
         : _pid(pid)
         , _uss(0)
         , _pss(0)

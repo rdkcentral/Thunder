@@ -344,7 +344,7 @@ namespace Core {
                     , _callstack()
                 {
                 }
-                Assert(const MessageInfo& messageInfo, const uint16_t processId, const string& processName, const string& fileName, const uint16_t lineNumber, const string& callstack)
+                Assert(const MessageInfo& messageInfo, const pid_t processId, const string& processName, const string& fileName, const uint16_t lineNumber, const string& callstack)
                     : MessageInfo(messageInfo)
                     , _processId(processId)
                     , _processName(processName)
@@ -356,7 +356,7 @@ namespace Core {
                 ~Assert() = default;
 
             public:
-                uint16_t ProcessId() const {
+                pid_t ProcessId() const {
                     return (_processId);
                 }
 
@@ -382,7 +382,7 @@ namespace Core {
                 string ToString(const abbreviate abbreviate) const override;
 
             private:
-                uint16_t _processId;
+                pid_t _processId;
                 string _processName;
                 string _fileName;
                 uint16_t _lineNumber;

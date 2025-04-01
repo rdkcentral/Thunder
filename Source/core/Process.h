@@ -218,7 +218,7 @@ namespace Core {
         Process(const Process&) = delete;
         Process& operator=(const Process&) = delete;
 
-        explicit Process(const bool capture, const process_t pid = 0)
+        explicit Process(const bool capture, const pid_t pid = 0)
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
@@ -253,7 +253,7 @@ namespace Core {
         }
 
     public:
-        inline process_t Id() const
+        inline pid_t Id() const
         {
 #ifdef __WINDOWS__
             return (_info.dwProcessId);
@@ -607,7 +607,7 @@ namespace Core {
         int _stdin;
         int _stdout;
         int _stderr;
-        process_t _PID;
+        pid_t _PID;
 #endif
     };
 }

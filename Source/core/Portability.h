@@ -772,6 +772,10 @@ namespace Core {
     typedef DWORD thread_id;
     #endif
 
+    #ifdef __WINDOWS__
+    using pid_t = DWORD;
+    #endif
+
     typedef uint32_t hresult;
 
     struct callstack_info {

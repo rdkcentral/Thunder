@@ -26,9 +26,6 @@
 namespace Thunder {
 namespace Core {
 
-    // On 64 bits deployments, this is probably a uint64_t, lets prepare for it :-)
-    using process_t = uint32_t;
-
     class EXTERNAL ProcessInfo {
     public:
 #ifdef __WINDOWS__
@@ -58,7 +55,7 @@ namespace Core {
     private:
         class Memory {
         public:
-            explicit Memory(const process_t pid);
+            explicit Memory(const pid_t pid);
             ~Memory() = default;
 
             Memory(const Memory&);
@@ -90,7 +87,7 @@ namespace Core {
             }
 
         private:
-            process_t _pid;
+            pid_t _pid;
 
             uint64_t _uss;
             uint64_t _pss;
@@ -109,10 +106,10 @@ namespace Core {
             Iterator(const string& parentname, const string& childname, const bool removepath);
 
             // Get the Child Processes with a name name from a Parent pid
-            Iterator(const process_t parentPID, const string& childname, const bool removepath);
+            Iterator(const pid_t parentPID, const string& childname, const bool removepath);
 
             // Get the Children of the given PID.
-            Iterator(const process_t parentPID);
+            Iterator(const pid_t parentPID);
 
             Iterator(const Iterator& copy)
                 : _pids(copy._pids)
@@ -201,8 +198,8 @@ namespace Core {
             }
 
         private:
-            std::list<process_t> _pids;
-            std::list<process_t>::iterator _current;
+            std::list<pid_t> _pids;
+            std::list<pid_t>::iterator _current;
             uint32_t _index;
         };
 
@@ -211,7 +208,7 @@ namespace Core {
         ProcessInfo();
 
         // Specifice Process Info
-        ProcessInfo(const process_t id);
+        ProcessInfo(const pid_t id);
 
         ProcessInfo(const ProcessInfo&);
         ProcessInfo(ProcessInfo&&);
@@ -221,7 +218,7 @@ namespace Core {
         ~ProcessInfo();
 
     public:
-        inline process_t Id() const
+        inline pid_t Id() const
         {
             return (_pid);
         }
@@ -382,7 +379,7 @@ namespace Core {
         }
 
     private:
-        process_t _pid;
+        pid_t _pid;
         mutable Memory _memory;
 #ifdef __WINDOWS__
         HANDLE _handle;
