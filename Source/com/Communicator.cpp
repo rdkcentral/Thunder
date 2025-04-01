@@ -357,8 +357,8 @@ namespace RPC {
 
     void Communicator::ContainerProcess::PostMortem() /* override */
     {
-        Core::process_t pid;
-        if ( (_container.IsValid() == true) && ((pid = static_cast<Core::process_t>(_container->Pid())) != 0) ) {
+        Core::pid_t pid;
+        if ( (_container.IsValid() == true) && ((pid = static_cast<Core::pid_t>(_container->Pid())) != 0) ) {
             Core::ProcessInfo process(pid);
             process.Dump();
         }

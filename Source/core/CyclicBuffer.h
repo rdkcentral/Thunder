@@ -321,11 +321,7 @@ namespace Core {
             // Keeps track of how much has been reserved for writing and by whom.
             uint32_t _reserved; // How much reserved in total.
             uint32_t _reservedWritten; // How much has already been written.
-#ifndef __WINDOWS__
             std::atomic<pid_t> _reservedPID; // What process made the reservation.
-#else
-            std::atomic<DWORD> _reservedPID; // What process made the reservation.
-#endif
 
         } * _administration;
     };

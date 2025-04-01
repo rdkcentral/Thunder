@@ -1377,8 +1377,8 @@ namespace PluginHost {
             uint32_t Wakeup(const uint32_t timeout);
 
             #ifdef HIBERNATE_SUPPORT_ENABLED
-            uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
-            uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
+            uint32_t HibernateChildren(const Core::pid_t parentPID, const uint32_t timeout);
+            uint32_t WakeupChildren(const Core::pid_t parentPID, const uint32_t timeout);
             #endif
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
