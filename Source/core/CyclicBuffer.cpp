@@ -616,11 +616,11 @@ namespace Core {
         AdminLock();
 
         // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(static_cast<pid_t>(_administration->_lockPID) == Core::ProcessInfo().Id());
+        ASSERT(_administration->_lockPID == Core::ProcessInfo().Id());
         ASSERT((_administration->_state.load() & state::LOCKED) == state::LOCKED);
 
         // Only unlock if it is "our" lock.
-        if (static_cast<pid_t>(_administration->_lockPID) == Core::ProcessInfo().Id()) {
+        if (_administration->_lockPID == Core::ProcessInfo().Id()) {
 
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
