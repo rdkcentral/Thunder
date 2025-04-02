@@ -83,7 +83,7 @@ namespace Logging {
         }
     }
 
-    void DumpSystemFiles(const Core::process_t pid)
+    void DumpSystemFiles(const pid_t pid)
     {
         static auto logProcPath = [](const std::string& path) {
             std::ifstream fileStream(path);

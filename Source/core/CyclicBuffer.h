@@ -179,7 +179,7 @@ namespace Core {
         {
             return ((std::atomic_load(&(_administration->_state)) & LOCKED) == LOCKED);
         }
-        inline uint32_t LockPid() const
+        inline pid_t LockPid() const
         {
             return (_administration->_lockPID);
         }
@@ -316,16 +316,12 @@ namespace Core {
             std::atomic<uint32_t> _agents;
             std::atomic<uint16_t> _state;
             uint32_t _size;
-            uint32_t _lockPID;
+            pid_t _lockPID;
 
             // Keeps track of how much has been reserved for writing and by whom.
             uint32_t _reserved; // How much reserved in total.
             uint32_t _reservedWritten; // How much has already been written.
-#ifndef __WINDOWS__
             std::atomic<pid_t> _reservedPID; // What process made the reservation.
-#else
-            std::atomic<DWORD> _reservedPID; // What process made the reservation.
-#endif
 
         } * _administration;
     };
