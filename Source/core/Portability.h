@@ -743,6 +743,10 @@ typedef std::string string;
 #define DEBUG_VARIABLE(x)
 #endif
 
+#ifdef __WINDOWS__
+    using pid_t = DWORD;
+#endif
+
 namespace Thunder {
 namespace Core {
 
