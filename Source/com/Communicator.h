@@ -695,7 +695,7 @@ namespace RPC {
 
                 return (result);
             }
-            Core::process_t Id() const {
+            pid_t Id() const {
                 return(_id);
             }
 
@@ -729,7 +729,7 @@ namespace RPC {
             Core::Process::Options _options;
             int8_t _priority;
             string _systemRootPath;
-            Core::process_t _id;
+            pid_t _id;
             static Core::CriticalSection _ldLibLock;
         };
         class EXTERNAL RemoteConnection : public IRemoteConnection {

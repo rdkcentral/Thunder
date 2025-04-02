@@ -97,11 +97,7 @@ namespace Core {
                 _administration->_reserved = 0;
                 _administration->_reservedWritten = 0;
 
-                #ifndef __WINDOWS__
                 std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
-                #else
-                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
-                #endif
 
                 _administration->_tailIndexMask = 1;
                 _administration->_roundCountModulo = 1L << 31;
@@ -187,11 +183,8 @@ namespace Core {
 
                 _administration->_reserved = 0;
                 _administration->_reservedWritten = 0;
-#ifndef __WINDOWS__
+
                 std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
-#else
-                std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
-#endif
 
                 _administration->_tailIndexMask = 1;
                 _administration->_roundCountModulo = 1L << 31;
@@ -537,12 +530,13 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
+        pid_t processId;
+        pid_t expectedProcessId = 0;
+
 #ifdef __WINDOWS__
-        DWORD processId = GetCurrentProcessId();
-        DWORD expectedProcessId = static_cast<DWORD>(0);
+        processId = GetCurrentProcessId();
 #else
-        pid_t processId = ::getpid();
-        pid_t expectedProcessId = static_cast<pid_t>(0);
+        processId = ::getpid();
 #endif
 
         if ((length >= Size()) || (((_administration->_state.load() & state::OVERWRITE) == 0) && (length >= Free())))
