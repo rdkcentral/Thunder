@@ -25,8 +25,12 @@
 
 #include <core/core.h>
 
-#if defined(__WINDOWS__) && defined(CRYPTALGO_EXPORTS)
+#if defined(__WINDOWS__) 
+#if defined(CRYPTALGO_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
+#else
+#pragma comment(lib, "cryptalgo.lib")
+#endif
 #endif
 

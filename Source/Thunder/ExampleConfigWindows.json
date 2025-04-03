@@ -9,7 +9,7 @@
   "systempath": "D:/domotica/artifacts/Debug",
   "proxystubpath": "D:/domotica/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
-  "redirect": "Service/Controller/UI/index.html",
+  "redirect": "Service/Controller/UI",
   "observe": {
     "proxystubpath": "D:/domotica/artifacts/dynamic/proxystubs",
     "configpath": "D:/domotica/artifacts/dynamic/config"
@@ -42,6 +42,10 @@
         {
           "module": "Plugin_ZigbeeControl",
           "enabled": false
+        },
+        {
+          "module": "Plugin_USBControl",
+          "enabled": true
         },
         {
           "module": "Plugin_Butler",
@@ -86,6 +90,18 @@
       "configuration": {
         "root": {
           "mode": "Local"
+        }
+      }
+    },
+    {
+      "callsign": "WifiControl",
+      "locator": "libWifiControl.so",
+      "classname": "WifiControl",
+      "startmode": "Activated",
+      "configuration": {
+        "application": null,
+        "root": {
+          "mode": "Off"
         }
       }
     },
