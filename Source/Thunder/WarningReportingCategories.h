@@ -236,5 +236,62 @@ namespace WarningReporting {
         Type _type;
         string _content;
     };
+
+    class EXTERNAL FlowControlQueueSize {
+    public:
+        FlowControlQueueSize(const FlowControlQueueSize&) = delete;
+        FlowControlQueueSize& operator=(const FlowControlQueueSize&) = delete;
+        FlowControlQueueSize() = default;
+        ~FlowControlQueueSize() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("The flow control queue size has reached a critical level"));
+            visitor += Core::Format(_T(", value %" PRId64 ", max allowed %" PRId64 ""), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 10 };
+        static constexpr uint32_t DefaultReportBound = { 10 };
+    };
+
+    class EXTERNAL FlowControlJobTime {
+    public:
+        FlowControlJobTime(const FlowControlJobTime&) = delete;
+        FlowControlJobTime& operator=(const FlowControlJobTime&) = delete;
+        FlowControlJobTime() = default;
+        ~FlowControlJobTime() = default;
+
+        //nothing to serialize/deserialize here
+        uint16_t Serialize(uint8_t[], const uint16_t) const
+        {
+            return 0;
+        }
+
+        uint16_t Deserialize(const uint8_t[], const uint16_t)
+        {
+            return 0;
+        }
+
+        void ToString(string& visitor, const int64_t actualValue, const int64_t maxValue) const
+        {
+            visitor = (_T("The flow control job time has reached a critical level"));
+            visitor += Core::Format(_T(", value %" PRId64 " [ms], max allowed %" PRId64 " [ms]"), actualValue, maxValue);
+        };
+
+        static constexpr uint32_t DefaultWarningBound = { 1000 };
+        static constexpr uint32_t DefaultReportBound = { 1000 };
+    };
+
 }
 }
