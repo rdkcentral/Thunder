@@ -160,7 +160,7 @@ namespace Exchange {
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = static_cast<const ::Thunder::ProxyStub::UknownProxy&>(*this).Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
+            if ((output = static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
                 // read return value
                 ::Thunder::RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
@@ -178,7 +178,7 @@ namespace Exchange {
             writer.Number<const uint32_t>(param0);
 
             // invoke the method handler
-            static_cast<const ::Thunder::ProxyStub::UknownProxy&>(*this).Invoke(newMessage);
+            static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Invoke(newMessage);
         }
 
         uint32_t GetPid() override
@@ -187,7 +187,7 @@ namespace Exchange {
 
             // invoke the method handler
             uint32_t output{};
-            if ((output = static_cast<const ::Thunder::ProxyStub::UknownProxy&>(*this).Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
+            if ((output = static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Invoke(newMessage)) == ::Thunder::Core::ERROR_NONE) {
                 // read return value
                 ::Thunder::RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 output = reader.Number<uint32_t>();
