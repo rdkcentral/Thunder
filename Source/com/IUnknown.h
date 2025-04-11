@@ -478,37 +478,23 @@ namespace ProxyStub {
         ~UnknownProxyType() override = default;
 
     public:
-        UnknownProxy* Administration()
-        {
-            return(&_unknown);
+        // -------------------------------------------------------------------------------------------------------------------------------
+        // Access to Proxy environment calls
+        // -------------------------------------------------------------------------------------------------------------------------------
+        operator const UnknownProxy*() const {
+            return (&_unknown);
+        }
+        operator UnknownProxy*() {
+            return (&_unknown);
+        }
+        operator const UnknownProxy&() const {
+            return (_unknown);
+        }
+        operator UnknownProxy&() {
+            return (_unknown);
         }
 
-        // -------------------------------------------------------------------------------------------------------------------------------
-        // Proxy environment calls
-        // -------------------------------------------------------------------------------------------------------------------------------
-        IPCMessage Message(const uint8_t methodId) const
-        {
-            return (_unknown.Message(methodId));
-        }
-PUSH_WARNING(DISABLE_WARNING_OVERLOADED_VIRTUALS)
-        uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
-        {
-            return (_unknown.Invoke(message, waitTime));
-        }
-POP_WARNING()
-        void* Interface(const Core::instance_id& implementation, const uint32_t id) const
-        {
-            return (_unknown.Interface(implementation, id));
-        }
-        uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how) const
-        {
-            return (_unknown.Complete(instance, id, how));
-        }
-        // Required by proxystubs!
-        const Core::ProxyType<Core::IPCChannel>& Channel() const {
-            return (_unknown.Channel());
-        }
-
+    public:
         // -------------------------------------------------------------------------------------------------------------------------------
         // Applications calls to the Proxy
         // -------------------------------------------------------------------------------------------------------------------------------
