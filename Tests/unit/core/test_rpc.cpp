@@ -156,7 +156,7 @@ namespace Exchange {
 
         uint32_t GetValue() override
         {
-            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(0));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(0));
 
             // invoke the method handler
             uint32_t output{};
@@ -171,7 +171,7 @@ namespace Exchange {
 
         void Add(uint32_t param0) override
         {
-            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(1));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(1));
 
             // write parameters
             ::Thunder::RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -183,7 +183,7 @@ namespace Exchange {
 
         uint32_t GetPid() override
         {
-            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(2));
+            ::Thunder::ProxyStub::UnknownProxyType<Thunder::Tests::Core::Exchange::IAdder>::IPCMessage newMessage(static_cast<const ::Thunder::ProxyStub::UnknownProxy&>(*this).Message(2));
 
             // invoke the method handler
             uint32_t output{};
