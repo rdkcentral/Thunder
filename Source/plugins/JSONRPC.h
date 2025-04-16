@@ -649,13 +649,13 @@ namespace PluginHost {
             if (method.empty() == false) {
 
                 string callsign;
-                string ;
+                string prefix;
                 string instanceId;
                 string methodName;
 
-                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &, &instanceId, &methodName, nullptr);
+                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, nullptr);
 
-                const string realMethod = Core::JSONRPC::Message::Join(, methodName);
+                const string realMethod = Core::JSONRPC::Message::Join(prefix, methodName);
 
                 ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
@@ -691,7 +691,7 @@ namespace PluginHost {
                     else if (methodName == _T("register")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Subscribe(channelId, Core::JSONRPC::Message::Join(, instanceId, info.Event.Value()), info.Id.Value());
+                        result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
                         if (result == Core::ERROR_NONE) {
                             response = _T("0");
                         }
@@ -702,7 +702,7 @@ namespace PluginHost {
                     else if (methodName == _T("unregister")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(, instanceId, info.Event.Value()), info.Id.Value());
+                        result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
                         if (result == Core::ERROR_NONE) {
                             response = _T("0");
                         }
@@ -1026,7 +1026,7 @@ namespace PluginHost {
 
             ASSERT(_observers.find(event) == _observers.end());
 
-            // Expect event (or prefix+event) without instance id
+            // Expect event (or prefix+event) without instance id.
             _observers[event] = method;
 
             _adminLock.Unlock();
