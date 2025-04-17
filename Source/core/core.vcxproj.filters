@@ -84,6 +84,9 @@
     <ClInclude Include="LockableContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MACAddress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Measurement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
