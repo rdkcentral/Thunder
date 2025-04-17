@@ -1026,6 +1026,7 @@ namespace PluginHost {
 
             ASSERT(_observers.find(event) == _observers.end());
 
+            // Expect event (or prefix+event) without instance id.
             _observers[event] = method;
 
             _adminLock.Unlock();
@@ -1053,18 +1054,24 @@ namespace PluginHost {
         }
 
     public:
-        uint32_t Subscribe(const uint32_t channel, const string& event, const string& clientId, const bool oneShot = false) override
+        uint32_t Subscribe(const uint32_t channel, const string& designator, const string& clientId, const bool oneShot = false) override
         {
             Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
 
+            string prefix;
+            string instanceId;
+            string event;
+
+            Core::JSONRPC::Message::Split(designator, nullptr, nullptr, &prefix, &instanceId, &event, nullptr);
+
             _adminLock.Lock();
 
-            if ((_subscribeAssessor == nullptr) || (_subscribeAssessor(channel, event, clientId) == true)) {
+            if ((_subscribeAssessor == nullptr) || (_subscribeAssessor(channel, prefix, instanceId, event, clientId) == true)) {
 
-                result = JSONRPC::Subscribe(channel, event, clientId, oneShot);
+                result = JSONRPC::Subscribe(channel, designator, clientId, oneShot);
 
                 if (result == Core::ERROR_NONE) {
-                    NotifyObservers(Core::JSONRPC::Message::Method(event), clientId, Status::registered);
+                    NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, Status::registered);
                 }
             }
 
@@ -1072,14 +1079,20 @@ namespace PluginHost {
 
             return (result);
         }
-        uint32_t Unsubscribe(const uint32_t channel, const string& event, const string& clientId) override
+        uint32_t Unsubscribe(const uint32_t channel, const string& designator, const string& clientId) override
         {
+            string prefix;
+            string instanceId;
+            string event;
+
+            Core::JSONRPC::Message::Split(designator, nullptr, nullptr, &prefix, &instanceId, &event, nullptr);
+
             _adminLock.Lock();
 
-            const Core::hresult result = JSONRPC::Unsubscribe(channel, event, clientId);
+            const Core::hresult result = JSONRPC::Unsubscribe(channel, designator, clientId);
 
             if (result == Core::ERROR_NONE) {
-                NotifyObservers(Core::JSONRPC::Message::Method(event), clientId, Status::unregistered);
+                NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, Status::unregistered);
             }
 
             _adminLock.Unlock();
@@ -1088,17 +1101,17 @@ namespace PluginHost {
         }
 
     private:
-        void NotifyObservers(const string eventName, const string& client, const Status status) const
+        void NotifyObservers(const uint32_t channel, const string event, const string& instanceId, const string& client, const Status status) const
         {
-            StatusCallbackMap::const_iterator it = _observers.find(eventName);
+            StatusCallbackMap::const_iterator it = _observers.find(event);
             if (it != _observers.cend()) {
-                it->second(client, status);
+                it->second(channel, instanceId, client, status);
             }
         }
 
     private:
-        using EventStatusCallback = std::function<void(const string&, Status status)>;
-        using SubscribeCallback = std::function<bool(const uint32_t, const string&, const string&)>;
+        using EventStatusCallback = std::function<void(const uint32_t, const string&, const string&, Status status)>;
+        using SubscribeCallback = std::function<bool(const uint32_t, const string&, const string&, const string&, const string&)>;
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
 
         mutable Core::CriticalSection _adminLock;
