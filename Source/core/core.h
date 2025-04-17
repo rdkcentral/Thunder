@@ -57,6 +57,7 @@
 #include "Library.h"
 #include "Link.h"
 #include "LockableContainer.h"
+#include "MACAddress.h"
 #include "Measurement.h"
 #include "Media.h"
 #include "MessageStore.h"
