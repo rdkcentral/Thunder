@@ -871,9 +871,9 @@ namespace PluginHost {
 
         uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
         {
-            _adminLock.Lock();
-
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+            _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.find(eventId);
 
