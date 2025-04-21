@@ -880,9 +880,13 @@ namespace PluginHost {
             if (index != _observers.end()) {
                 result = index->second.Unsubscribe(channelId, designator);
 
-                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                if (result == Core::ERROR_NONE) {
+
                     ProcessUnsubscribed(channelId, eventId, designator);
-                    _observers.erase(index);
+
+                    if (index->second.IsEmpty() == true) {
+                        _observers.erase(index);
+                    }
                 }
             }
 
