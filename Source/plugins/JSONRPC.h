@@ -147,10 +147,12 @@ namespace PluginHost {
                     _callbacks.erase(index);
                 }
             }
-            void Dropped(const uint32_t channelId) {
+            template<typename METHOD>
+            void Dropped(const uint32_t channelId, METHOD unregistered) {
                 Destinations::iterator index = _designators.begin();
                 while (index != _designators.end()) {
                     if (index->first == channelId) {
+                        unregistered(index->second);
                         index = _designators.erase(index);
                     }
                     else {
@@ -553,7 +555,8 @@ namespace PluginHost {
 
             while (index != _observers.end()) {
 
-                index->second.Dropped(channelId);
+                const string& eventId = index->first;
+                index->second.Dropped(channelId, [this, channelId, &eventId](const string& designator) { ProcessUnsubscribed(channelId, eventId, designator); });
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
@@ -606,27 +609,11 @@ namespace PluginHost {
 
             return (_service->Submit(channel, Core::ProxyType<Core::JSON::IElement>(message)));
         }
-        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) final
         {
-            uint32_t result;
-
-            _adminLock.Lock();
-
-            ObserverMap::iterator index = _observers.find(eventId);
-
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(eventId),
-                    std::forward_as_tuple()).first;
-            }
-
-            result = index->second.Subscribe(channel, designator);
-
-            _adminLock.Unlock();
-
-            return (result);
+            return ProcessSubscribe(channel, eventId, designator);
         }
-        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) final
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -637,13 +624,53 @@ namespace PluginHost {
             if (index != _observers.end()) {
                 result = index->second.Unsubscribe(channel, designator);
 
-                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                    _observers.erase(index);
+                if (result == Core::ERROR_NONE) {
+
+                    ProcessUnsubscribed(channel, eventId, designator);
+            
+                    if (index->second.IsEmpty() == true) {
+                        _observers.erase(index);
+                    }
                 }
             }
             _adminLock.Unlock();
 
             return (result);
+        }
+
+    protected:
+        uint32_t DoSubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        {
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(eventId);
+
+            if (index == _observers.end()) {
+                index = _observers.emplace(std::piecewise_construct,
+                                      std::forward_as_tuple(eventId),
+                                      std::forward_as_tuple())
+                            .first;
+            }
+
+            uint32_t result = index->second.Subscribe(channelId, designator);
+
+            if ((result != Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
+                _observers.erase(index);
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+    private:
+        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        {
+            return DoSubscribe(channelId, eventId, designator);
+        }
+
+        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& eventId VARIABLE_IS_NOT_USED, const string& designator VARIABLE_IS_NOT_USED) 
+        {
         }
 
     protected:
@@ -818,10 +845,10 @@ namespace PluginHost {
             _adminLock.Unlock();
         }
 
-    public:
-        Core::hresult Subscribe(const uint32_t channel, const string& eventId, const string& designator) override
+    private:
+        uint32_t ProcessSubscribe(const uint32_t channel, const string& eventId, const string& designator) override
         {
-            const Core::hresult result = JSONRPC::Subscribe(channel, eventId, designator);
+            const Core::hresult result = JSONRPC::DoSubscribe(channel, eventId, designator);
 
             if (result == Core::ERROR_NONE) {
                 NotifyObservers(eventId, designator, Status::registered);
@@ -830,15 +857,9 @@ namespace PluginHost {
             return (result);
         }
 
-        Core::hresult Unsubscribe(const uint32_t channel, const string& eventId, const string& designator) override
+        void ProcessUnsubscribed(const uint32_t channel VARIABLE_IS_NOT_USED, const string& eventId, const string& designator) override
         {
-            const Core::hresult result = JSONRPC::Unsubscribe(channel, eventId, designator);
-
-            if (result == Core::ERROR_NONE) {
-                NotifyObservers(eventId, designator, Status::unregistered);
-            }
-
-            return (result);
+            NotifyObservers(eventId, designator, Status::unregistered);
         }
 
     protected:
