@@ -159,49 +159,21 @@ namespace Thunder {
                 case stage::BASE64: {
                     uint32_t bufferSize = sizeof(_address);
                     Core::FromString(input, _address, bufferSize, nullptr);
-
-                    converted = (bufferSize != sizeof(_address));
+                    converted = (bufferSize == sizeof(_address));
                     break;
                 }
                 case stage::HEX: {
-                    converted = Core::FromHexString(input, _address, sizeof(_address)) == 12;
+                    converted = (Core::FromHexString(input, _address, sizeof(_address)) == sizeof(_address));
                     break;
                 }
                 case stage::HEX_DELIMITED: {
-                    uint8_t loaded = 0;
-                    uint8_t value = 0;
-
-                    // It has to be an hex encoded , with ':'
-                    while (loaded < sizeof(_address)) {
-                        if (*input == ':') {
-                            _address[loaded++] = value;
-                            value = 0;
-                        }
-                        else if ((*input == '\0') || (::isspace(*input))) {
-                            _address[loaded++] = value;
-                            break;
-                        }
-                        else if (*input > 0x0F) {
-                            // This is an error, we can not add any new value
-                            break;
-                        }
-                        else if (isdigit(*input)) {
-                            value = (value << 4) | (*input - '0');
-                        }
-                        else if (isxdigit(*input)) {
-                            value = (value << 4) | ((::tolower(*input) - 'a') + 10);
-                        }
-                        else {
-                            // uncomprehendable data
-                            break;
-                        }
-                        ++input;
-                    }
-                    converted = (loaded == sizeof(_address));
+                    converted = (Core::FromHexString(input, _address, sizeof(_address), delimiter) == sizeof(_address));
+                    break;
                 }
                 default:
-                case stage::FAILED:
+                case stage::FAILED: {
                     break;
+                }
                 }
                 return (converted);
             }
