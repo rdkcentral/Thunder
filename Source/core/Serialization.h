@@ -25,6 +25,8 @@
 #include "Portability.h"
 #include "TextFragment.h"
 
+#include <vector>
+
 namespace Thunder {
 namespace Core {
 #ifdef _UNICODE
@@ -257,15 +259,19 @@ POP_WARNING()
     // Serialize: binary buffer
     //------------------------------------------------------------------------
     void EXTERNAL ToHexString(const uint8_t object[], const uint32_t length, string& result, const TCHAR delimiter = '\0');
+    void EXTERNAL ToHexString(const std::vector<uint8_t>& value, string& result, const TCHAR delimiter = '\0');
     uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter = '\0');
+    uint32_t EXTERNAL FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter = '\0');
 
     //------------------------------------------------------------------------
     // Serialize: Base64
     //------------------------------------------------------------------------
     void EXTERNAL ToString(const uint8_t object[], const uint32_t length, const bool padding, string& result);
+    void EXTERNAL ToString(const std::vector<uint8_t>& value, const bool padding, string& result);
     uint8_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint8_t& length, const TCHAR* ignoreList = nullptr);
     uint16_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList = nullptr);
     uint32_t EXTERNAL FromString(const string& newValue, uint8_t object[], uint32_t& length, const TCHAR* ignoreList = nullptr);
+    uint32_t EXTERNAL FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList = nullptr);
 
     //------------------------------------------------------------------------
     // Codepoint: Operations to extract and convert code points.

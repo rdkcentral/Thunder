@@ -217,6 +217,21 @@ POP_WARNING()
         return bufferIndex;
     }
 
+    void ToHexString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
+    {
+        ToHexString(object.data(), object.size(), result, delimiter);
+    }
+
+    uint32_t FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
+    {
+        const uint32_t maxSize = (delimiter == '\0' ? (hexString.size() / 2) : ((hexString.size() + 1) / 3 ));
+
+        ASSERT(object.empty() == true);
+        object.resize(std::min(maxSize, maxLength));
+
+        return (FromHexString(hexString, object.data(), object.size(), delimiter));
+    }
+
     static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                         "abcdefghijklmnopqrstuvwxyz"
                                         "0123456789+/";
@@ -319,6 +334,27 @@ POP_WARNING()
         uint32_t tempLength = length;
         const uint8_t result = FromString(newValue, object, tempLength, ignoreList);
         length = static_cast<uint8_t>(tempLength);
+        return (result);
+    }
+
+    void ToString(const std::vector<uint8_t>& object, const bool padding, string& result)
+    {
+        ToString(object.data(), object.size(), padding, result);
+    }
+
+    uint32_t FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList)
+    {
+        const uint8_t padding = ((value.size() > 0 && (value[value.size() - 1] == '=')) + (value.size() > 1 && (value[value.size() - 2] == '=')));
+        const uint32_t maxSize = (((value.size() / 4) * 3) - padding);
+
+        ASSERT(object.empty() == true);
+        object.resize(std::min(maxSize, length));
+
+        uint32_t size = object.size();
+        const uint32_t result = FromString(value, object.data(), size, ignoreList);
+
+        length = size;
+
         return (result);
     }
 
