@@ -255,7 +255,7 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
             // This should release the last reference and destruct the object. If not,
             // there's something else holding on to it and we have a leak
             VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
-            ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+            ASSERT( (result == Core::ERROR_CONNECTION_CLOSED) || (result == Core::ERROR_DESTRUCTION_SUCCEEDED) );
             _testPlugin = nullptr;
 
             // Shut down the out-of-process connection if still running
@@ -426,7 +426,8 @@ void TestPlugin::Deinitialize(PluginHost::IShell* service)
             // This should release the last reference and destruct the object. If not,
             // there's something else holding on to it and we have a leak
             VARIABLE_IS_NOT_USED uint32_t result = _testPlugin->Release();
-            ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
+            ASSERT( (result == Core::ERROR_CONNECTION_CLOSED) || (result == Core::ERROR_DESTRUCTION_SUCCEEDED) );
+
             _testPlugin = nullptr;
 
             // Shut down the out-of-process connection if still running
