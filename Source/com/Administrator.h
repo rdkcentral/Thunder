@@ -307,7 +307,7 @@ POP_WARNING()
 
             _adminLock.Unlock();
         }
-        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy);
+        bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uint32_t channelId);
 
    private:
         // ----------------------------------------------------------------------------------------------------

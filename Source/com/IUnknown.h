@@ -201,42 +201,50 @@ namespace ProxyStub {
  
             if (_refCount > 1 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
                 _adminLock.Unlock();
+                if (_channel.IsValid() == false) {
+                    result = Core::ERROR_ALREADY_RELEASED;
+                }
             } 
-            else if( _refCount == 0 ) {
-                _adminLock.Unlock();
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-                ASSERT(_channel.IsValid() == false);
-            }
             else {
-                if ((_channel.IsValid() == true) && ((_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0)) {
+                ASSERT (_refCount == 1);
 
-                    // We have reached "0", signal the other side..
-                    Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+                uint32_t channelId = 0;
+                if (_channel.IsValid() == true) {
+                    if ((_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0) {
 
-                    message->Parameters().Set(_implementation, _interfaceId, 1);
+                        // We have reached "0", signal the other side..
+                        Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
-                    // Pass on the number of reference we need to lower, since it is indicated by the amount of times this proxy had to be created
-                    message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
+                        message->Parameters().Set(_implementation, _interfaceId, 1);
 
-                    // Just try the destruction for few Seconds...
-                    result = _channel->Invoke(message, RPC::CommunicationTimeOut);
+                        // Pass on the number of reference we need to drop, this is indicated by the amount of times this proxy had to be created
+                        message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
 
-                    if (result != Core::ERROR_NONE) {
-                        TRACE_L1("Could not remote release the Proxy.");
-                        result |= COM_ERROR;
+                        // Just try the destruction for few Seconds...
+                        result = _channel->Invoke(message, RPC::CommunicationTimeOut);
+
+                        if (result != Core::ERROR_NONE) {
+                            TRACE_L1("Could not remote release the Proxy.");
+                            result |= COM_ERROR;
+                        }
+                        else {
+                            // Pass the remote release return value through
+                            result = message->Response().Reader().Number<uint32_t>();
+                        }
                     }
-                    else {
-                        // Pass the remote release return value through
-                        result = message->Response().Reader().Number<uint32_t>();
-                    }
+
+                    // We cleared it properly. Prevent the proxy from ending up in the Dangling list.
+                    channelId = _channel->Id();
+                    _channel.Release();
                 }
 
                 _adminLock.Unlock();
 
                 // Remove our selves from the Administration, we are done..
-                if (RPC::Administrator::Instance().UnregisterUnknownProxy(*this) == true ) {
-                    ASSERT(_refCount == 1);
-                    _refCount = 0;
+                bool removed = RPC::Administrator::Instance().UnregisterUnknownProxy(*this, channelId);
+
+                ASSERT (removed == true);
+                if ( removed == true ) {
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                 }
             }
@@ -438,11 +446,17 @@ namespace ProxyStub {
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
         uint32_t Id() const;
-        void Invalidate() {
+        bool Invalidate() {
+            bool succeeded = false;
             ASSERT(_refCount > 0);
             _adminLock.Lock();
-            _channel.Release();
+            if (_channel.IsValid() == true) {
+                _refCount++;
+                _channel.Release();
+                succeeded = true;
+            }
             _adminLock.Unlock();
+            return(succeeded);
         }
  
     private:
