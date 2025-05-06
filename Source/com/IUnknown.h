@@ -202,7 +202,7 @@ namespace ProxyStub {
             if (_refCount > 1 ) {  // note this proxy is also held in the administrator list for non happy day scenario's so we should already release with refcount one, the UnregisterProxy will remove it from the list
                 _adminLock.Unlock();
                 if (_channel.IsValid() == false) {
-                    result = Core::ERROR_ALREADY_RELEASED;
+                    result = Core::ERROR_CONNECTION_CLOSED;
                 }
             } 
             else {
