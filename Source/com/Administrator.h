@@ -119,7 +119,7 @@ namespace RPC {
 
             ProxyStub::UnknownProxy* CreateProxy(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& implementation, const bool remoteRefCounted) override
             {
-                return (new PROXY(channel, implementation, remoteRefCounted))->Administration();
+                return (*(new PROXY(channel, implementation, remoteRefCounted)));
             }
         };
 

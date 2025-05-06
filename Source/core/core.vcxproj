@@ -50,6 +50,7 @@
     <ClInclude Include="Library.h" />
     <ClInclude Include="Link.h" />
     <ClInclude Include="LockableContainer.h" />
+    <ClInclude Include="MACAddress.h" />
     <ClInclude Include="Measurement.h" />
     <ClInclude Include="Media.h" />
     <ClInclude Include="MessageException.h" />

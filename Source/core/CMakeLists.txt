@@ -94,6 +94,7 @@ set(PUBLIC_HEADERS
         Link.h
         LockableContainer.h
         Measurement.h
+        MACAddress.h
         Media.h
         MessageException.h
         Messaging.h
