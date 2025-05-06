@@ -116,13 +116,13 @@ namespace RPC {
         proxy->Complete(response);
     }
 
-    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy)
+    bool Administrator::UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uint32_t channelId)
     {
         bool removed = false;
 
         _adminLock.Lock();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Id()));
+        ChannelMap::iterator index(_channelProxyMap.find(channelId));
 
         if (index != _channelProxyMap.end()) {
             Proxies::iterator entry(index->second.second.begin());
@@ -150,6 +150,7 @@ namespace RPC {
             else {
                 TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
             }
+
         }
 
         _adminLock.Unlock();
@@ -446,19 +447,22 @@ namespace RPC {
 
         if (index != _channelProxyMap.end()) {
             for (auto entry : index->second.second) {
-                entry->Invalidate();
+                if (entry->Invalidate() == true) {
+                    // This is actually for the pendingProxies to be reported
+                    // dangling!!
+                    // Note: If the invalidation succeeds, hence why we are here, 
+                    //       a reference has been taken on the interface so it can
+                    //       be properly released, once it is reported!
+                    pendingProxies.emplace_back(entry);
+                }
+                // The _channelProxyMap does have a reference for each Proxy it
+                // holds, so it is safe to just move the vector from the map to
+                // the _danglingProxies. This is to keep the Proxies we created
+                // registered untill, really the last reference is dropped. Till
+                // that time we keep track of the proxy and report it as a potential
+                // leak that should be investigated!!!
                 _danglingProxies.emplace_back(entry);
-
-                // This is actually for the pendingProxies to be reported
-                // dangling!!
-                entry->AddRef();
             }
-            // The _channelProxyMap does have a reference for each Proxy it
-            // holds, so it is safe to just move the vector from the map to
-            // the pendingProxies. The receiver of pendingProxies has to take
-            // care of releasing the last reference we, as administration layer
-            // hold upon this..
-            pendingProxies = std::move(index->second.second);
             _channelProxyMap.erase(index);
         }
 
