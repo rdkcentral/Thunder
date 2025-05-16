@@ -1020,7 +1020,119 @@ namespace PluginHost {
         Core::SinkType<Notification> _notification;
     };
 
-    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
+    class EXTERNAL JSONRPCSupportsObjectLookup : virtual public PluginHost::JSONRPC {
+    public:
+        JSONRPCSupportsObjectLookup(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup(JSONRPCSupportsObjectLookup&&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(JSONRPCSupportsObjectLookup&&) = delete;
+
+        JSONRPCSupportsObjectLookup()
+            : _adminLock()
+        {
+        }
+
+        virtual ~JSONRPCSupportsObjectLookup()
+        {
+            ASSERT(_translators.empty() == true);
+        }
+
+    public:
+        template<typename T, typename METHOD1, typename METHOD2>
+        void Add(METHOD1& toIdCb, METHOD2& fromIdCb)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_translators.find(T::ID) == _translators.end());
+
+            _translators.emplace(std::piecewise_construct,
+                forward_as_tuple(T::ID),
+                forward_as_tuple(toIdCb, fromIdCb));
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        void Remove()
+        {
+            _adminLock.Lock();
+
+            ASSERT(_translators.find(T::ID) != _translators.end());
+
+            _translators.erase(T::ID);
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        bool Exists() const
+        {
+            bool result = false;
+
+            _adminLock.Lock();
+
+            result = (_translators.find(T::ID) != _translators.end());
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+        template<typename T>
+        string InstanceId(const T* const object) const
+        {
+            string id;
+
+            if (object != nullptr) {
+                _adminLock.Lock();
+
+                auto translator = _translators.find(T::ID);
+
+                if (translator != _translators.end()) {
+                    id = translator.first(object);
+                }
+
+                _adminLock.Unlock();
+            }
+
+            return (id);
+        }
+
+        template<typename T>
+        T* LookUp(const string& id)
+        {
+            T* obj{};
+
+            if (id.empty() == false) {
+                _adminLock.Lock();
+
+                auto translator = _translators.find(T::ID);
+
+                if (translator != _translators.end()) {
+                    Core::IUnknown* unknown = translator.second(id);
+
+                    if (unknown != nullptr) {
+                        obj = unknown->QueryInterface<T>();
+                        unknown->Release();
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+
+            return (obj);
+        }
+
+    private:
+        using ToIDCalback = std::function<Core::IUnknown*(const string&)>;
+        using FromIDCallback = std::function<uint32_t(const Core::IUnknown*)>;
+        using Translators = std::pair<ToIDCalback, FromIDCallback>;
+
+        mutable Core::CriticalSection _adminLock;
+        std::map<uint32_t, Translators> _translators;
+    };
+
+    class EXTERNAL JSONRPCSupportsEventStatus : virtual public PluginHost::JSONRPC {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
