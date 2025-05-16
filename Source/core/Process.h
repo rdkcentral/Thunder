@@ -560,7 +560,9 @@ namespace Core {
                 TerminateProcess(_info.hProcess, 1234);
             }
 #else
-            ::kill(_PID, (hardKill ? SIGKILL : SIGTERM));
+            ASSERT((errno = 0) == 0);
+            VARIABLE_IS_NOT_USED int result = ::kill(_PID, (hardKill ? SIGKILL : SIGTERM));
+            ASSERT(result == 0 && errno == 0);
 #endif
         }
 
