@@ -332,4 +332,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="CustomCleanGeneratedFiles" BeforeTargets="Clean">
+    <RemoveDir Directories="json" />
+  </Target>
 </Project>
