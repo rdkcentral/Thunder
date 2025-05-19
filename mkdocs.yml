@@ -31,7 +31,6 @@ nav:
         - Runc: plugin/execution-modes/containers/runc.md
         - Lxc: plugin/execution-modes/containers/lxc.md
     - Plugin Lifecycle: plugin/lifecycle.md
-    - Design Principles: plugin/principles.md
     - Interfaces:
       - Interface-Driven Development: plugin/interfaces/interfaces.md
       - Documentation generation: plugin/interfaces/docs.md
