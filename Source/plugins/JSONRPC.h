@@ -1295,7 +1295,7 @@ namespace PluginHost {
         using Handlers = std::pair<ToIDCallback, FromIDCallback>;
 
         mutable Core::CriticalSection _adminLock;
-        std::map<uint32_t, Handlers> _handlers;
+        std::unordered_map<uint32_t, Handlers> _handlers;
     };
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
