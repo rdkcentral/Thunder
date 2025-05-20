@@ -1020,7 +1020,7 @@ namespace PluginHost {
         Core::SinkType<Notification> _notification;
     };
 
-    class EXTERNAL JSONRPCSupportsEventStatus : public PluginHost::JSONRPC {
+    class EXTERNAL JSONRPCSupportsEventStatus : virtual public PluginHost::JSONRPC {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
@@ -1137,23 +1137,183 @@ namespace PluginHost {
         SubscribeCallback _subscribeAssessor;
     };
 
+    template<typename... LambdaArgs>
+    class EXTERNAL JSONRPCSupportsObjectLookup : virtual public PluginHost::JSONRPC {
+    public:
+        JSONRPCSupportsObjectLookup(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(const JSONRPCSupportsObjectLookup&) = delete;
+        JSONRPCSupportsObjectLookup(JSONRPCSupportsObjectLookup&&) = delete;
+        JSONRPCSupportsObjectLookup& operator=(JSONRPCSupportsObjectLookup&&) = delete;
+
+        JSONRPCSupportsObjectLookup()
+            : _adminLock()
+        {
+        }
+        virtual ~JSONRPCSupportsObjectLookup()
+        {
+            ASSERT(_handlers.empty() == true);
+        }
+
+    public:
+        template<typename T, typename METHOD1, typename METHOD2>
+        void Add(METHOD1 toIdCb, METHOD2 fromIdCb)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_handlers.find(T::ID) == _handlers.end());
+
+            _handlers.emplace(std::piecewise_construct,
+                std::forward_as_tuple(T::ID),
+                std::forward_as_tuple(toIdCb, fromIdCb));
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        void Remove()
+        {
+            _adminLock.Lock();
+
+            ASSERT(_handlers.find(T::ID) != _handlers.end());
+
+            _handlers.erase(T::ID);
+
+            _adminLock.Unlock();
+        }
+
+        void Clear()
+        {
+            _adminLock.Lock();
+
+            _handlers.clear();
+
+            _adminLock.Unlock();
+        }
+
+        template<typename T>
+        bool Exists() const
+        {
+            bool result = false;
+
+            _adminLock.Lock();
+
+            result = (_handlers.find(T::ID) != _handlers.end());
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+    public:
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+         T* LookUp(const string& id, const Core::JSONRPC::Context& context)
+        {
+            return (InternalLookUp<T>(id, context));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        T* LookUp(const string& id, const Core::JSONRPC::Context&)
+        {
+            return (InternalLookUp<T>(id));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        T* LookUp(const string& id)
+        {
+            return (InternalLookUp<T>(id, Core::JSONRPC::Context()));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        T* LookUp(const string& id)
+        {
+            return (InternalLookUp<T>(id));
+        }
+
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        string InstanceId(const T* const object, const Core::JSONRPC::Context& context) const
+        {
+            return (InternalInstanceId<T>(object, context));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        string InstanceId(const T* const object, const Core::JSONRPC::Context&) const
+        {
+            return (InternalInstanceId<T>(object));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        string InstanceId(const T* const object) const
+        {
+            return (InternalInstanceId<T>(object, Core::JSONRPC::Context()));
+        }
+        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
+        string InstanceId(const T* const object) const
+        {
+            return (InternalInstanceId<T>(object));
+        }
+
+    private:
+        template<typename T>
+        T* InternalLookUp(const string& id, LambdaArgs... args)
+        {
+            T* obj{};
+
+            _adminLock.Lock();
+
+            auto translator = _handlers.find(T::ID);
+
+            if (translator != _handlers.end()) {
+                Core::IUnknown* unknown = (*translator).second.second(id, args...);
+
+                if (unknown != nullptr) {
+                    obj = unknown->QueryInterface<T>();
+                    unknown->Release();
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (obj);
+        }
+
+        template<typename T>
+        string InternalInstanceId(const T* const object, LambdaArgs... args) const
+        {
+            string id;
+
+            _adminLock.Lock();
+
+            auto translator = _handlers.find(T::ID);
+
+            if (translator != _handlers.end()) {
+                id = (*translator).second.first(object, args...);
+            }
+
+            _adminLock.Unlock();
+
+            return (id);
+        }
+
+    private:
+        using ToIDCallback = std::function<string(const Core::IUnknown*, LambdaArgs...)>;
+        using FromIDCallback = std::function<Core::IUnknown*(const string&, LambdaArgs...)>;
+        using Handlers = std::pair<ToIDCallback, FromIDCallback>;
+
+        mutable Core::CriticalSection _adminLock;
+        std::map<uint32_t, Handlers> _handlers;
+    };
+
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
-namespace JSONRPCErrorAssessorTypes {
+    namespace JSONRPCErrorAssessorTypes {
 
         using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
         using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
-}
+    }
 
     template<typename JSONRPCERRORASSESSORTYPE>
     class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
     public:
-
         JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
-            {
-            }
+        {
+        }
 
         ~JSONRPCErrorAssessor() override = default;
 
@@ -1167,26 +1327,24 @@ namespace JSONRPCErrorAssessorTypes {
             return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(channelId, id, token, method, parameters, response, _errorhandler);
         }
 
-
-        private:
-            JSONRPCERRORASSESSORTYPE _errorhandler;
+    private:
+        JSONRPCERRORASSESSORTYPE _errorhandler;
     };
 
     template<>
     class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
     public:
-
         JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
             : JSONRPC()
             , _errorhandler(errorhandler)
-            {
-            }
+        {
+        }
 
         JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler)
             : JSONRPC()
             , _errorhandler(std::move(errorhandler))
-            {
-            }
+        {
+        }
 
         ~JSONRPCErrorAssessor() override = default;
 
@@ -1200,9 +1358,8 @@ namespace JSONRPCErrorAssessorTypes {
             return JSONRPC::InvokeHandler<const JSONRPCErrorAssessorTypes::StdFunctionCallbackType&>(channelId, id, token, method, parameters, response, _errorhandler);
         }
 
-
-        private:
-            JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
+    private:
+        JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
