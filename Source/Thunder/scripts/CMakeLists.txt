@@ -40,8 +40,12 @@ if (INITV_SCRIPT)
     set(SYSTEM_ROOT_PATH "/root" CACHE STRING "System root directory location")
     set(ROOT_PATH "${SYSTEM_ROOT_PATH}/${NAMESPACE}" CACHE STRING "Thunders root path")
 
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
-
+    if(ENABLE_THUNDER_ENVIRONMENT)
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.env.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
+    else()
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thunder.in" "${CMAKE_CURRENT_BINARY_DIR}/generated/thunder" @ONLY)
+    endif()
+    
     install(
             FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/thunder
             PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
