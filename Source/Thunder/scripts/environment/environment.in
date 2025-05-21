@@ -1,5 +1,9 @@
 #! /bin/sh
 # -----------------------------------------------------------------------------
+# NOTE: This script must be sourced, not executed.
+#       It is intended to be used in the Thunder startup sequence.
+#       Do not run this script directly.
+# -----------------------------------------------------------------------------
 # Thunder Environment Loader Script
 #
 # This script loads environment variables and executes configuration commands
@@ -28,20 +32,21 @@
 #   - Requires POSIX-compliant /bin/sh.
 # -----------------------------------------------------------------------------
 
-if [ ".$0" = ".$(basename "$0")" ]; then
-    echo "This script must be sourced, not executed."
-    echo "Use: . $0"
-    exit 1
-fi
-
-THUNDER_ENVIRONMENT_PATH="@THUNDER_ENVIRONMENT_PATH@"
+THUNDER_ENVIRONMENT_PATH="@THUNDER_ENVIRONMENT_PATH@/environment.d"
 
 set -a
-for environment in "$THUNDER_ENVIRONMENT_PATH"/*.env; do
-    [ -r "$environment" ] && . "$environment"
+for __my_env_file__ in ${THUNDER_ENVIRONMENT_PATH}/*.env; do
+    [ -r "${__my_env_file__}" ] && . "${__my_env_file__}"
 done
 set +a
 
-for conf in "$THUNDER_ENVIRONMENT_PATH"/*.sysconf; do
-    [ -r "$conf" ] && . "$conf"
+#
+# This is a side effect of the set -a above
+# it is not a problem, but it is not needed
+#
+unset _ # leftover from the source command 
+unset __my_env_file__ # leftover from the loop above
+
+for conf in ${THUNDER_ENVIRONMENT_PATH}/*.sysconf; do
+    [ -r "${conf}" ] && . "${conf}"
 done
