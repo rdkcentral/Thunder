@@ -1,0 +1,47 @@
+#! /bin/sh
+# -----------------------------------------------------------------------------
+# Thunder Environment Loader Script
+#
+# This script loads environment variables and executes configuration commands
+# for Thunder by sourcing all `.env` and `.conf` files from the directory:
+#   @THUNDER_ENVIRONMENT_PATH@
+#
+# - All `.env` files are sourced with `set -a` so their variables are exported.
+#   These files should contain only VAR=value assignments (no shell commands).
+#
+# - All `.sysconf` files are sourced as shell scripts and may contain arbitrary
+#   shell commands (e.g., ulimit, echo, mkdir, sysctl, etc).
+#
+# The `.d` suffix follows Unix convention for directories containing
+# configuration fragments, allowing modular and extensible configuration.
+#
+# Usage:
+#   Source this script in your Thunder startup sequence to ensure all
+#   environment variables and system settings are applied before Thunder starts.
+#
+#   Example:
+#     . /etc/Thunder/environment
+#
+# Notes:
+#   - This script must be sourced, not executed, to correctly set environment
+#     variables in the current shell.
+#   - Requires POSIX-compliant /bin/sh.
+# -----------------------------------------------------------------------------
+
+if [ ".$0" = ".$(basename "$0")" ]; then
+    echo "This script must be sourced, not executed."
+    echo "Use: . $0"
+    exit 1
+fi
+
+THUNDER_ENVIRONMENT_PATH="@THUNDER_ENVIRONMENT_PATH@"
+
+set -a
+for environment in "$THUNDER_ENVIRONMENT_PATH"/*.env; do
+    [ -r "$environment" ] && . "$environment"
+done
+set +a
+
+for conf in "$THUNDER_ENVIRONMENT_PATH"/*.sysconf; do
+    [ -r "$conf" ] && . "$conf"
+done

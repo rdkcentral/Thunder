@@ -19,6 +19,8 @@ option(SYSTEMD_SERVICE "Install the systemd service" OFF)
 option(INITV_SCRIPT "Install the initv script" ON)
 option(UDEV_VIDEO_RULE "Install the a thunder tailored udev rule to access the video device" OFF)
 
+option(ENABLE_THUNDER_ENVIRONMENT "support loading thunder system environment fragments (*.env, *.sysconf)" OFF)
+
 if (SYSTEMD_SERVICE)
     set(SYSTEMD_EXTRA_DEPENDS "" CACHE STRING "Adds extra dependecies to the systemd service")
     
@@ -73,4 +75,8 @@ if (UDEV_VIDEO_RULE)
     else()
         message(SEND_ERROR "Udev video device rule is enabled, but there is missing information.")
     endif()
+endif()
+
+if(ENABLE_THUNDER_ENVIRONMENT)
+add_subdirectory(environment)
 endif()
