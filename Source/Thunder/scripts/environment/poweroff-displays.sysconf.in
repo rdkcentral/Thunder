@@ -1,0 +1,15 @@
+# This script is designed to power off framebuffer devices (fb0, fb1, etc.) 
+# after a delay of 8 seconds. It performs the following steps:
+# 1. Waits for 8 seconds using the `sleep` command.
+# 2. Iterates over all framebuffer device "blank" files located in 
+#    /sys/class/graphics/fb*/blank.
+# 3. Writes the value `1` to each "blank" file, which signals the framebuffer 
+#    to turn off or enter a low-power state.
+# 4. Runs the entire operation in the background using the `&` operator.
+
+(
+    sleep 8
+    for fb in /sys/class/graphics/fb*/blank; do
+        echo 1 > "$fb"
+    done
+) &

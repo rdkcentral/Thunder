@@ -1,0 +1,52 @@
+#! /bin/sh
+# -----------------------------------------------------------------------------
+# NOTE: This script must be sourced, not executed.
+#       It is intended to be used in the Thunder startup sequence.
+#       Do not run this script directly.
+# -----------------------------------------------------------------------------
+# Thunder Environment Loader Script
+#
+# This script loads environment variables and executes configuration commands
+# for Thunder by sourcing all `.env` and `.conf` files from the directory:
+#   @THUNDER_ENVIRONMENT_PATH@
+#
+# - All `.env` files are sourced with `set -a` so their variables are exported.
+#   These files should contain only VAR=value assignments (no shell commands).
+#
+# - All `.sysconf` files are sourced as shell scripts and may contain arbitrary
+#   shell commands (e.g., ulimit, echo, mkdir, sysctl, etc).
+#
+# The `.d` suffix follows Unix convention for directories containing
+# configuration fragments, allowing modular and extensible configuration.
+#
+# Usage:
+#   Source this script in your Thunder startup sequence to ensure all
+#   environment variables and system settings are applied before Thunder starts.
+#
+#   Example:
+#     . /etc/Thunder/environment
+#
+# Notes:
+#   - This script must be sourced, not executed, to correctly set environment
+#     variables in the current shell.
+#   - Requires POSIX-compliant /bin/sh.
+# -----------------------------------------------------------------------------
+
+THUNDER_ENVIRONMENT_PATH="@THUNDER_ENVIRONMENT_PATH@/environment.d"
+
+set -a
+for __my_env_file__ in ${THUNDER_ENVIRONMENT_PATH}/*.env; do
+    [ -r "${__my_env_file__}" ] && . "${__my_env_file__}"
+done
+set +a
+
+#
+# This is a side effect of the set -a above
+# it is not a problem, but it is not needed
+#
+unset _ # leftover from the source command 
+unset __my_env_file__ # leftover from the loop above
+
+for conf in ${THUNDER_ENVIRONMENT_PATH}/*.sysconf; do
+    [ -r "${conf}" ] && . "${conf}"
+done
