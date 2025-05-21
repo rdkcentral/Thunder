@@ -1024,6 +1024,8 @@ namespace PluginHost {
     public:
         JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
         JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
+        JSONRPCSupportsEventStatus(JSONRPCSupportsEventStatus&&) = delete;
+        JSONRPCSupportsEventStatus& operator=(JSONRPCSupportsEventStatus&&) = delete;
 
         JSONRPCSupportsEventStatus()
             : _adminLock()
@@ -1031,11 +1033,28 @@ namespace PluginHost {
             , _subscribeAssessor()
         {
         }
-
-        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation) : JSONRPC(validation) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions) : JSONRPC(versions) {}
-        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation) : JSONRPC(versions, validation) {}
-        virtual ~JSONRPCSupportsEventStatus() = default;
+        JSONRPCSupportsEventStatus(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPC(validation)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions)
+            : JSONRPC(versions)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        JSONRPCSupportsEventStatus(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPC(versions, validation)
+            , _adminLock()
+            , _observers()
+            , _subscribeAssessor()
+        {
+        }
+        ~JSONRPCSupportsEventStatus() override = default;
 
         enum class Status {
             registered,
@@ -1146,10 +1165,30 @@ namespace PluginHost {
         JSONRPCSupportsObjectLookup& operator=(JSONRPCSupportsObjectLookup&&) = delete;
 
         JSONRPCSupportsObjectLookup()
-            : _adminLock()
+            : JSONRPC()
+            , _adminLock()
+            , _handlers()
         {
         }
-        virtual ~JSONRPCSupportsObjectLookup()
+        JSONRPCSupportsObjectLookup(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPC(validation)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        JSONRPCSupportsObjectLookup(const std::vector<uint8_t>& versions)
+            : JSONRPC(versions)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        JSONRPCSupportsObjectLookup(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPC(versions, validation)
+            , _adminLock()
+            , _handlers()
+        {
+        }
+        ~JSONRPCSupportsObjectLookup() override
         {
             ASSERT(_handlers.empty() == true);
         }
