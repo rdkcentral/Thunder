@@ -325,9 +325,14 @@ namespace ProxyStub {
             _adminLock.Unlock();
 
             if (channel.IsValid() == true) {
-	            result = channel->Invoke(message, waitTime);
+                result = channel->Invoke(message, waitTime);
 
 	            if (result != Core::ERROR_NONE) {
+
+                    if (result == Core::ERROR_TIMEDOUT) {
+                        SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout. Execution of code may or may not have happened. Side effects are to be expected after this message")));
+                    }
+
 	                result |= COM_ERROR;
 
 	                // Oops something failed on the communication. Report it.
