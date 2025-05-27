@@ -325,6 +325,7 @@ namespace ProxyStub {
             _adminLock.Unlock();
 
             if (channel.IsValid() == true) {
+
                 result = channel->Invoke(message, waitTime);
 
                 if (result != Core::ERROR_NONE) {
