@@ -339,7 +339,7 @@ namespace ProxyStub {
                     // Oops something failed on the communication. Report it.
                     TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
                 }
-	        }
+            }
 
             return (result);
         }
