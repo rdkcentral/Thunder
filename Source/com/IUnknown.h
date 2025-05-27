@@ -334,12 +334,12 @@ namespace ProxyStub {
                         SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout. Execution of code may or may not have happened. Side effects are to be expected after this message")));
                     }
 
-	                result |= COM_ERROR;
+                    result |= COM_ERROR;
 
-	                // Oops something failed on the communication. Report it.
-	                TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
-	            }
-	    }
+                    // Oops something failed on the communication. Report it.
+                    TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
+                }
+	        }
 
             return (result);
         }
