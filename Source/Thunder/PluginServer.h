@@ -3608,7 +3608,7 @@ namespace PluginHost {
                     message->ImplicitCallsign(_service->Callsign());
 
                     #if THUNDER_PERFORMANCE
-                    Core::ProxyType<TrackingJSONRPC> tracking(_element);
+                    Core::ProxyType<TrackingJSONRPC> tracking(message);
                     ASSERT(tracking.IsValid() == true);
                     tracking->Dispatch();
                     #endif

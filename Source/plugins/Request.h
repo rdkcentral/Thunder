@@ -116,29 +116,29 @@ namespace PluginHost {
                     _count = copy._count;
                 }
                 Tuple(Tuple&& move) {
-                    _minimum = move._minimum;
-                    _maximum = move._maximum;
-                    _average = move._average;
-                    _count = move._count;
+                    _minimum = std::move(move._minimum);
+                    _maximum = std::move(move._maximum);
+                    _average = std::move(move._average);
+                    _count = std::move(move._count);
                     move.Clear();
                 }
                 Tuple& operator=(const Tuple& rhs) {
-                    _minimum = rhs._minimum;
-                    _maximum = rhs._maximum;
-                    _average = rhs._average;
-                    _count = rhs._count;
-
+                    if (this != &rhs) {
+                        _minimum = rhs._minimum;
+                        _maximum = rhs._maximum;
+                        _average = rhs._average;
+                        _count = rhs._count;
+                    }
                     return (*this);
                 }
-                Tuple& operator=(Tuple*& move) {
+                Tuple& operator=(Tuple&& move) {
                     if (this != &move) {
-                        _minimum = move._minimum;
-                        _maximum = move._maximum;
-                        _average = move._average;
-                        _count = move._count;
+                        _minimum = std::move(move._minimum);
+                        _maximum = std::move(move._maximum);
+                        _average = std::move(move._average);
+                        _count = std::move(move._count);
                         move.Clear();
-		    }
-
+                    }
                     return (*this);
                 }
                 ~Tuple() = default;

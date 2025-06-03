@@ -639,6 +639,11 @@ POP_WARNING()
                 , _sequence(sequence)
                 , _token(token) {
             }
+            Context(const uint32_t channelId)
+                : _channelId(channelId)
+                , _sequence(~0)
+                , _token() {
+            }
             ~Context() = default;
 
         public:
