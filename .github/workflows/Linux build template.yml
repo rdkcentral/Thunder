@@ -133,6 +133,7 @@ jobs:
         -DPROCESSCONTAINERS=ON \
         -DPROCESSCONTAINERS_RUNC=ON \
         -DBROADCAST=ON \
+        -DPERFORMANCE_MONITOR=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
