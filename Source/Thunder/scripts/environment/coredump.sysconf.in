@@ -1,0 +1,19 @@
+# This script configures the system to handle core dumps for debugging purposes.
+# 
+# - Enables appending the process ID to core dump filenames by setting `core_uses_pid` to 1.
+# - Allows core dumps for setuid programs by setting `suid_dumpable` to 2.
+# - Configures the core dump file naming pattern and location using `core_pattern`.
+#   The pattern includes:
+#     - `%e`: Executable filename
+#     - `%p`: Process ID
+#     - `%h`: Hostname
+#     - `%t`: Timestamp
+# - Creates the directory for storing core dumps if it does not exist.
+# - Removes the limit on core dump file size by setting `ulimit -c` to unlimited.
+# 
+ 
+echo 1 > /proc/sys/kernel/core_uses_pid
+echo 2 > /proc/sys/fs/suid_dumpable
+echo "@ROOT_PATH@/cores/core_%e_%p_%h_%t" > /proc/sys/kernel/core_pattern
+mkdir -p @ROOT_PATH@/cores
+ulimit -c unlimited
