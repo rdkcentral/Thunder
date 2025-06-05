@@ -623,6 +623,8 @@ namespace PluginHost {
             Unlock();
 
             _administrator.Deinitialized(callSign, this);
+        } else {
+            Unlock();
         }
 
         return (result);
