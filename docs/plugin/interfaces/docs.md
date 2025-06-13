@@ -14,6 +14,7 @@ As you probably need to specify a number of additional parameters to JsonGenerat
 This script can be found [here](https://github.com/rdkcentral/ThunderTools/tree/master/JsonGenerator), and is called GenerateDocs.sh (there is also a GenerateDocs.bat in case you want to do this on a Windows OS).
 
 Follow these simple steps to generate the documentation for an interface or plugin from one of the Thunder repositories:
+
 1. Clone the ThunderTools repository
 2. Clone the ThunderInterfaces repository
 3. In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository.
