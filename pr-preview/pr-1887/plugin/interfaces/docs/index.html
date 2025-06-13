@@ -2587,14 +2587,16 @@ Of course as the options supported in the IDL file increases, the document gener
 <p>DocumentGeneration can be triggered by starting JsonGenerator.py with the --docs parameter (found <a href="https://github.com/rdkcentral/ThunderTools/tree/master/JsonGenerator">here</a>). 
 As you probably need to specify a number of additional parameters to JsonGenerator.py for the generation to be successful, a helper shell script is created that sets the parameters correctly when generating the documentation for the Thunder interfaces and plugin repositories. 
 This script can be found <a href="https://github.com/rdkcentral/ThunderTools/tree/master/JsonGenerator">here</a>, and is called GenerateDocs.sh (there is also a GenerateDocs.bat in case you want to do this on a Windows OS).</p>
-<p>Follow these simple steps to generate the documentation for an interface or plugin from one of the Thunder repositories:
-1. Clone the ThunderTools repository
-2. Clone the ThunderInterfaces repository
-3. In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository.
-4. Open a console window
-5. Go into the folder [path to where you cloned the ThunderTools]/ThunderTools/JsonGenerator
-6. now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated)
-7. the document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md)</p>
+<p>Follow these simple steps to generate the documentation for an interface or plugin from one of the Thunder repositories:</p>
+<ol>
+<li>Clone the ThunderTools repository</li>
+<li>Clone the ThunderInterfaces repository</li>
+<li>In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository.</li>
+<li>Open a console window</li>
+<li>Go into the folder [path to where you cloned the ThunderTools]/ThunderTools/JsonGenerator</li>
+<li>now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated)</li>
+<li>the document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md)</li>
+</ol>
 
 
 
