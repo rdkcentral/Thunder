@@ -548,6 +548,8 @@ namespace Core {
 
             inline TYPE Value() const
             {
+                ASSERT((_set & SET) != 0);
+
                 return ((_set & SET) != 0 ? _value : _default);
             }
 
@@ -1104,6 +1106,8 @@ namespace Core {
 
             inline TYPE Value() const
             {
+                ASSERT((_set & SET) != 0);
+
                 return ((_set & SET) != 0 ? _value : _default);
             }
 
@@ -1401,6 +1405,8 @@ namespace Core {
 
             inline bool Value() const
             {
+                ASSERT((_value & SetBit) != 0);
+
                 return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
             }
 
@@ -1737,6 +1743,8 @@ namespace Core {
 
             inline const string Value() const
             {
+                ASSERT((_flagsAndCounters & SetBit) && (((_flagsAndCounters & (QuoteFoundBit | QuotedSerializeBit)) == QuoteFoundBit) || ((_flagsAndCounters & NullBit) == 0)));
+
                 if ((_flagsAndCounters & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
                     return (Core::ToQuotedString('\"', _value));
                 }
@@ -2726,6 +2734,8 @@ namespace Core {
 
             inline const ENUMERATE Value() const
             {
+                ASSERT((_state & (SET | UNDEFINED)) == SET);
+
                 return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
             }
 
