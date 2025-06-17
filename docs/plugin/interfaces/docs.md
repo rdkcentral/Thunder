@@ -16,12 +16,12 @@ This script can be found [here](https://github.com/rdkcentral/ThunderTools/tree/
 Follow these simple steps to generate the documentation for an interface or plugin from one of the Thunder repositories:
 
 1. Clone the ThunderTools repository
-2. Clone the ThunderInterfaces repository
-3. In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository.
+2. Clone the ThunderInterfaces repository (inside the same folder where you cloned ThunderTools)
+3. In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository (again inside the same folder where you cloned ThunderTools)
 4. Open a console window
 5. Go into the folder [path to where you cloned the ThunderTools]/ThunderTools/JsonGenerator
-6. now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated)
-7. the document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md)
+6. now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated). Example call for generating the Plugin documentation would be: ./GenerateDocs.sh ../../ThunderNanoServices/Dictionary/DictionaryPlugin.json
+7. the document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md and for a plugin it will be inside the doc folder of the applicable plugin)
 
 
 
