@@ -44,9 +44,15 @@ namespace Thunder {
         template<typename CONTEXT>
         class ProxyType;
 
+        template <typename ELEMENT>
+        class SingletonProxyType;
+
         PUSH_WARNING(DISABLE_WARNING_MULTPILE_INHERITENCE_OF_BASE_CLASS)
         template <typename CONTEXT>
         class ProxyObject final : public CONTEXT, public std::conditional<std::is_base_of<IReferenceCounted, CONTEXT>::value, Void, IReferenceCounted>::type {
+
+        friend class ProxyType<CONTEXT>;
+
         public:
             // ----------------------------------------------------------------
             // Never, ever allow reference counted objects to be assigned.
@@ -408,6 +414,7 @@ POP_WARNING()
                 if (_refCount != nullptr) {
                     _refCount->AddRef();
                 }
+                ASSERT(_refCount != nullptr);
             }
             template <typename DERIVEDTYPE>
             explicit ProxyType(const ProxyType<DERIVEDTYPE>& copy)
@@ -648,6 +655,32 @@ POP_WARNING()
                 }
 
                 return (newItem);
+            }
+
+        public:
+
+            // only for debug puposes!!! (only specific friends can access this for that reason)
+            class LastRefAccessor {
+                template <typename U> friend class SingletonProxyType;
+
+            private:
+                static bool LastRef(const ProxyType<CONTEXT>& proxy)
+                {
+                    return proxy.LastRef();
+                }
+            };
+
+        private:
+
+            inline bool LastRef() const 
+            {
+                ASSERT(_refCount != nullptr);
+                const ProxyObject<CONTEXT>* po = dynamic_cast<const ProxyObject<CONTEXT>*>(_refCount);
+                bool lastref = true;
+                if (po != nullptr) {
+                    lastref = (po->_refCount == 1);
+                }
+                return lastref;
             }
 
         private:
