@@ -1156,8 +1156,12 @@ namespace PluginHost {
         SubscribeCallback _subscribeAssessor;
     };
 
-    template<typename... LambdaArgs>
     class EXTERNAL JSONRPCSupportsObjectLookup : virtual public PluginHost::JSONRPC {
+    private:
+        using ToIDCallback = std::function<string(const Core::JSONRPC::Context&, const Core::IUnknown*)>;
+        using FromIDCallback = std::function<Core::IUnknown* (const Core::JSONRPC::Context&, const string&)>;
+        using Handlers = std::pair<ToIDCallback, FromIDCallback>;
+
     public:
         JSONRPCSupportsObjectLookup(const JSONRPCSupportsObjectLookup&) = delete;
         JSONRPCSupportsObjectLookup& operator=(const JSONRPCSupportsObjectLookup&) = delete;
@@ -1197,13 +1201,44 @@ namespace PluginHost {
         template<typename T, typename METHOD1, typename METHOD2>
         void Add(METHOD1 toIdCb, METHOD2 fromIdCb)
         {
+            using FI1 = typename Core::TypeTraits::lambda_traits<METHOD1>;
+            using FI1_ARG0 = typename std::remove_cv<typename std::remove_reference<typename FI1::template argument<0>::type>::type>::type;
+            using FI2 = typename Core::TypeTraits::lambda_traits<METHOD2>;
+            using FI2_ARG0 = typename std::remove_cv<typename std::remove_reference<typename FI2::template argument<0>::type>::type>::type;
+
+
+            ToIDCallback toIdCallback([&](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> string {
+
+                string returnValue;
+                const T* realInterface(obj->QueryInterface<T>());
+                if (realInterface != nullptr) {
+                    returnValue = Execute<T, METHOD1>(
+                        context,
+                        realInterface,
+                        toIdCb,
+                        TemplateIntToType<std::is_same<FI1_ARG0, Core::JSONRPC::Context>::value>());
+
+                    realInterface->Release();
+                }
+                return (returnValue);
+            });
+
+            FromIDCallback fromIdCallback([&](const Core::JSONRPC::Context& context, const string& id) -> Core::IUnknown* {
+
+                return (Execute<METHOD2>(
+                    context,
+                    id,
+                    fromIdCb,
+                    TemplateIntToType<std::is_same<FI2_ARG0, Core::JSONRPC::Context>::value>()));
+            });
+
             _adminLock.Lock();
 
             ASSERT(_handlers.find(T::ID) == _handlers.end());
 
             _handlers.emplace(std::piecewise_construct,
                 std::forward_as_tuple(T::ID),
-                std::forward_as_tuple(toIdCb, fromIdCb));
+                std::forward_as_tuple(toIdCallback, fromIdCallback));
 
             _adminLock.Unlock();
         }
@@ -1243,52 +1278,8 @@ namespace PluginHost {
             return (result);
         }
 
-    public:
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-         T* LookUp(const string& id, const Core::JSONRPC::Context& context)
-        {
-            return (InternalLookUp<T>(id, context));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        T* LookUp(const string& id, const Core::JSONRPC::Context&)
-        {
-            return (InternalLookUp<T>(id));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        T* LookUp(const string& id)
-        {
-            return (InternalLookUp<T>(id, Core::JSONRPC::Context()));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        T* LookUp(const string& id)
-        {
-            return (InternalLookUp<T>(id));
-        }
-
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        string InstanceId(const T* const object, const Core::JSONRPC::Context& context) const
-        {
-            return (InternalInstanceId<T>(object, context));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        string InstanceId(const T* const object, const Core::JSONRPC::Context&) const
-        {
-            return (InternalInstanceId<T>(object));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        string InstanceId(const T* const object) const
-        {
-            return (InternalInstanceId<T>(object, Core::JSONRPC::Context()));
-        }
-        template<typename T, typename Q = typename Core::TypeTraits::pick<0, LambdaArgs...>::result, typename std::enable_if<!std::is_same<Q, Core::JSONRPC::Context>::value, int>::type = 0>
-        string InstanceId(const T* const object) const
-        {
-            return (InternalInstanceId<T>(object));
-        }
-
-    private:
         template<typename T>
-        T* InternalLookUp(const string& id, LambdaArgs... args)
+        T* LookUp(const string& id, const Core::JSONRPC::Context& context)
         {
             T* obj{};
 
@@ -1297,7 +1288,7 @@ namespace PluginHost {
             auto translator = _handlers.find(T::ID);
 
             if (translator != _handlers.end()) {
-                Core::IUnknown* unknown = (*translator).second.second(id, args...);
+                Core::IUnknown* unknown = (*translator).second.second(context, id);
 
                 if (unknown != nullptr) {
                     obj = unknown->QueryInterface<T>();
@@ -1311,7 +1302,7 @@ namespace PluginHost {
         }
 
         template<typename T>
-        string InternalInstanceId(const T* const object, LambdaArgs... args) const
+        string InstanceId(const T* const object, const Core::JSONRPC::Context& context) const
         {
             string id;
 
@@ -1320,7 +1311,7 @@ namespace PluginHost {
             auto translator = _handlers.find(T::ID);
 
             if (translator != _handlers.end()) {
-                id = (*translator).second.first(object, args...);
+                id = (*translator).second.first(context, object);
             }
 
             _adminLock.Unlock();
@@ -1328,11 +1319,86 @@ namespace PluginHost {
             return (id);
         }
 
-    private:
-        using ToIDCallback = std::function<string(const Core::IUnknown*, LambdaArgs...)>;
-        using FromIDCallback = std::function<Core::IUnknown*(const string&, LambdaArgs...)>;
-        using Handlers = std::pair<ToIDCallback, FromIDCallback>;
+        template<typename T>
+        string InstanceId(const T* const object) const
+        {
+            Core::JSONRPC::Context context{};
+            return (InstanceId<T>(object, context));
+        }
 
+    private:
+        template<typename T, typename METHOD>
+        string Execute(const Core::JSONRPC::Context&, const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            using INFO = typename Core::TypeTraits::lambda_traits<METHOD>;
+            return (ConvertToId<T, METHOD, typename INFO::result_type>(obj, method, TemplateIntToType<std::is_integral<typename INFO::result_type>::value>()));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(obj));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(method(obj));
+            return (number.Text());
+        }
+        template<typename T, typename METHOD>
+        string Execute(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            using INFO = typename Core::TypeTraits::lambda_traits<METHOD>;
+            return (ConvertToId<T, METHOD, typename INFO::result_type>(context, obj, method, TemplateIntToType<std::is_integral<typename INFO::result_type>::value>()));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(context, obj));
+        }
+        template<typename T, typename METHOD, typename INDEX>
+        string ConvertToId(const Core::JSONRPC::Context& context, const T* obj, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(method(context, obj));
+            return (number.Text());
+        }
+
+    private:
+        template<typename METHOD>
+        Core::IUnknown* Execute(const Core::JSONRPC::Context&, const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<0>::type;
+            return (ConvertFromId<METHOD, INDEX>(id, method, TemplateIntToType<std::is_integral<INDEX>::value>()));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(id));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(id.c_str(), static_cast<uint32_t>(id.length()));
+            return (method(number.Value()));
+        }
+        template<typename METHOD>
+        Core::IUnknown* Execute(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<0>::type;
+            return (ConvertFromId<METHOD,INDEX>(context, id, method, TemplateIntToType<std::is_integral<INDEX>::value>()));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<false>&)
+        {
+            return (method(context, id));
+        }
+        template<typename METHOD, typename INDEX>
+        Core::IUnknown* ConvertFromId(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
+        {
+            Core::NumberType<INDEX> number(id.c_str(), id.length());
+            return (method(context, number.Value()));
+        }
+
+    private:
         mutable Core::CriticalSection _adminLock;
         std::unordered_map<uint32_t, Handlers> _handlers;
     };
