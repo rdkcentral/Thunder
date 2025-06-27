@@ -37,8 +37,10 @@ Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
             RPC::InvokeServerType<1, 0, 8>::Stop();
         }
     };
-    static Core::ProxyType<Engine> engine = Core::ProxyType<Engine>::Create();
-    return Core::ProxyType<RPC::IIPCServer>(engine);
+
+    static Core::ProxyType<Engine>& instance = Core::SingletonProxyType<Engine>::Instance();
+
+    return Core::ProxyType<RPC::IIPCServer>(instance);
 }
 
 Core::ProxyType<RPC::IIPCServer> WorkerPoolInvokeServer()
