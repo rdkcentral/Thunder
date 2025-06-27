@@ -24,7 +24,7 @@ namespace RPC {
 
 Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
 {
-        class Engine : public RPC::InvokeServerType<1, 0, 8> {
+    class Engine : public RPC::InvokeServerType<1, 0, 8> {
     public:
         Engine() = default;
         ~Engine() override = default;
