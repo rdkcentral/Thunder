@@ -1019,7 +1019,7 @@ namespace Core {
 
     inline const TCHAR* ErrorToString(uint32_t code)
     {
-        return _bogus_ErrorToString<>(code);
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
     }
 
     #undef ERROR_CODE
