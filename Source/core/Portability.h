@@ -1017,9 +1017,9 @@ namespace Core {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
     };
 
-    inline const TCHAR* ErrorToString(uint32_t code)
+    inline const TCHAR* ErrorToString(Core::hresult code)
     {
-        return _bogus_ErrorToString<>(code);
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
     }
 
     #undef ERROR_CODE

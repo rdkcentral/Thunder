@@ -279,9 +279,9 @@ namespace RPC {
         SmartInterfaceType<INTERFACE, ENGINE>& operator=(SmartInterfaceType<INTERFACE, ENGINE>&&) = delete;
 
         PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        SmartInterfaceType()
+        explicit SmartInterfaceType(const uint32_t channelWaitTime = Core::infinite)
             : _controller(nullptr)
-            , _administrator()
+            , _administrator(channelWaitTime)
             , _monitor(*this)
             , _connectionId(~0)
         {
@@ -293,7 +293,8 @@ POP_WARNING()
         }
 
     public:
-        uint32_t ConnectionId() const {
+        DEPRECATED uint32_t ConnectionId() const
+        {
             return (_connectionId);
         }
         bool IsOperational() const
@@ -557,9 +558,9 @@ POP_WARNING()
         SmartControllerInterfaceType(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
         SmartControllerInterfaceType<INTERFACE, ENGINE>& operator=(const SmartControllerInterfaceType<INTERFACE, ENGINE>&) = delete;
 
-        SmartControllerInterfaceType()
+        explicit SmartControllerInterfaceType(const uint32_t channelWaitTime = Core::infinite)
             : _controller(nullptr)
-            , _administrator()
+            , _administrator(channelWaitTime)
             , _connectionId(~0)
         {
         }
@@ -570,7 +571,8 @@ POP_WARNING()
         }
 
     public:
-        uint32_t ConnectionId() const {
+        DEPRECATED uint32_t ConnectionId() const
+        {
             return (_connectionId);
         }
         bool IsOperational() const
