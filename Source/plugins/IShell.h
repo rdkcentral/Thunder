@@ -25,6 +25,8 @@
 
 #include <com/ICOM.h>
 
+// @insert <com/ICOM.h>
+
 namespace Thunder {
 
     namespace RPC {
