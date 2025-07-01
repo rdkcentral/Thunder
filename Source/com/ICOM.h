@@ -22,6 +22,7 @@
 #include "Ids.h"
 #include "IIteratorType.h"
 
+// @stubgen:include "Ids.h"
 // @stubgen:include "IIteratorType.h"
 
 namespace Thunder {
