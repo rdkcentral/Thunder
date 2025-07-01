@@ -81,7 +81,7 @@ namespace Core {
         }
         inline void Push(CONTENT&& object) {
             _adminLock.Lock();
-            if (_used < _slots) {
+            if ((_used < _slots) || (_slots == 0)) {
                 _used++;
                 _forwarder.Submit(std::move(object));
             }
@@ -691,7 +691,8 @@ namespace PluginHost {
                 ControlData(const ControlData&) = delete;
                 ControlData& operator=(ControlData&&) = delete;
                 ControlData& operator=(const ControlData&) = delete;
-                ControlData(const uint32_t maxRequests)
+
+                ControlData(const uint8_t maxRequests)
                     : _isExtended(false)
                     , _maxRequests(maxRequests)
                     , _major(~0)
@@ -730,7 +731,7 @@ namespace PluginHost {
                 }
 
             public:
-                uint32_t MaxRequests() const {
+                uint8_t MaxRequests() const {
                     return (_maxRequests);
                 }
                 bool IsExtended() const {
@@ -769,7 +770,7 @@ namespace PluginHost {
 
             private:
                 bool _isExtended;
-                uint32_t _maxRequests;
+                uint8_t _maxRequests;
                 uint8_t _major;
                 uint8_t _minor;
                 uint8_t _patch;
@@ -837,13 +838,14 @@ namespace PluginHost {
                 , _activity(0)
                 , _connection(nullptr)
                 , _lastId(0)
-                , _metadata(plugin.MaxRequests.Value())
+                , _metadata(plugin.Throttle.IsSet() ? plugin.Throttle.Value() : server.Throttle())
                 , _library()
                 , _external(PluginNodeId(server, plugin), server.ProxyStubPath(), handler, '/' + Callsign())
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
             {
+                _jobs.Slots(_metadata.MaxRequests());
             }
             ~Service() override
             {
@@ -4519,6 +4521,7 @@ namespace PluginHost {
                 : Core::SocketServerType<Channel>(listeningNode)
                 , _parent(parent)
                 , _connectionCheckTimer(0)
+                , _maxRequests(parent.Configuration().ChannelThrottle())
                 , _job(*this)
             {
             }
@@ -4566,8 +4569,10 @@ namespace PluginHost {
             inline Core::ProxyType<Channel> Connection(const uint32_t id) {
                 return(BaseClass::Client(id));
             }
-            void Cleanup()
-            {
+            inline uint8_t MaxRequests() const {
+                return (_maxRequests);
+            }
+            void Cleanup() {
                 if (_connectionCheckTimer == 0) {
                     _job.Submit();
                 }
@@ -4617,6 +4622,7 @@ namespace PluginHost {
         private:
             Server& _parent;
             uint32_t _connectionCheckTimer;
+            uint8_t _maxRequests;
             Core::WorkerPool::JobType<ChannelMap&> _job;
         };
 

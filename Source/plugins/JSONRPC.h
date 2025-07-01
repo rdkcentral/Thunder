@@ -1383,7 +1383,7 @@ namespace PluginHost {
         template<typename METHOD>
         Core::IUnknown* Execute(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
         {
-            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<0>::type;
+            using INDEX = typename Core::TypeTraits::lambda_traits<METHOD>::template argument<1>::type;
             return (ConvertFromId<METHOD,INDEX>(context, id, method, TemplateIntToType<std::is_integral<INDEX>::value>()));
         }
         template<typename METHOD, typename INDEX>
@@ -1394,7 +1394,7 @@ namespace PluginHost {
         template<typename METHOD, typename INDEX>
         Core::IUnknown* ConvertFromId(const Core::JSONRPC::Context& context, const string& id, METHOD method, const TemplateIntToType<true>&)
         {
-            Core::NumberType<INDEX> number(id.c_str(), id.length());
+            Core::NumberType<INDEX> number(id.c_str(), static_cast<uint32_t>(id.length()));
             return (method(context, number.Value()));
         }
 

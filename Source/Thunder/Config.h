@@ -387,6 +387,8 @@ namespace PluginHost {
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
                 , DelegatedReleases(true)
+                , Throttle(0)
+                , ChannelThrottle(0)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -428,6 +430,8 @@ namespace PluginHost {
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
                 Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
+                Add(_T("throttle"), &Throttle);
+                Add(_T("channel_throttle"), &ChannelThrottle);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -473,6 +477,8 @@ namespace PluginHost {
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
             Core::JSON::Boolean DelegatedReleases;
+            Core::JSON::DecUInt8 Throttle;
+            Core::JSON::DecUInt8 ChannelThrottle;
 #ifdef PROCESSCONTAINERS_ENABLED
             Core::JSON::String ProcessContainers;
 #endif
@@ -639,6 +645,8 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
+            , _throttle(0)
+            , _channelThrottle(0)
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
@@ -690,6 +698,8 @@ namespace PluginHost {
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
                 _delegatedReleases = config.DelegatedReleases.Value();
+                _throttle = config.Throttle.Value();
+                _channelThrottle = config.ChannelThrottle.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -897,6 +907,12 @@ namespace PluginHost {
         inline bool DelegatedReleases() const {
             return(_delegatedReleases);
         }
+        inline uint8_t Throttle() const {
+            return(_throttle);
+        }
+        inline uint8_t ChannelThrottle() const {
+            return(_channelThrottle);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1075,6 +1091,8 @@ namespace PluginHost {
         Substituter _substituter;
         mutable Core::CriticalSection _configLock;
         bool _delegatedReleases;
+        uint8_t _throttle;
+        uint8_t _channelThrottle;
 
 #ifdef PROCESSCONTAINERS_ENABLED
         string _processContainersConfig;
