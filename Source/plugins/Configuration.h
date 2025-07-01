@@ -334,7 +334,7 @@ namespace Plugin {
             , VolatilePathPostfix()
             , SystemRootPath()
             , StartupOrder(50)
-            , MaxRequests(~0)
+            , Throttle(~0)
             , StartMode(PluginHost::IShell::startmode::ACTIVATED)
             , Communicator()
             , Root()
@@ -353,7 +353,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("maxrequests"), &MaxRequests);
+            Add(_T("throttle"), &Throttle);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
             Add(_T("root"), &Root);
@@ -374,7 +374,7 @@ namespace Plugin {
             , VolatilePathPostfix(copy.VolatilePathPostfix)
             , SystemRootPath(copy.SystemRootPath)
             , StartupOrder(copy.StartupOrder)
-            , MaxRequests(copy.MaxRequests)
+            , Throttle(copy.Throttle)
             , StartMode(copy.StartMode)
             , Communicator(copy.Communicator)
             , Root(copy.Root)
@@ -393,7 +393,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("maxrequests"), &MaxRequests);
+            Add(_T("throttle"), &Throttle);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
             Add(_T("root"), &Root);
@@ -414,7 +414,7 @@ namespace Plugin {
             , VolatilePathPostfix(std::move(move.VolatilePathPostfix))
             , SystemRootPath(std::move(move.SystemRootPath))
             , StartupOrder(std::move(move.StartupOrder))
-            , MaxRequests(std::move(move.MaxRequests))
+            , Throttle(std::move(move.Throttle))
             , StartMode(std::move(move.StartMode))
             , Communicator(std::move(move.Communicator))
             , Root(std::move(move.Root))
@@ -433,7 +433,7 @@ namespace Plugin {
             Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
             Add(_T("systemrootpath"), &SystemRootPath);
             Add(_T("startuporder"), &StartupOrder);
-            Add(_T("maxrequests"), &MaxRequests);
+            Add(_T("throttle"), &Throttle);
             Add(_T("startmode"), &StartMode);
             Add(_T("communicator"), &Communicator);
             Add(_T("root"), &Root);
@@ -457,7 +457,7 @@ namespace Plugin {
             VolatilePathPostfix = RHS.VolatilePathPostfix;
             SystemRootPath = RHS.SystemRootPath;
             StartupOrder = RHS.StartupOrder;
-            MaxRequests = RHS.MaxRequests;
+            Throttle = RHS.Throttle;
             StartMode = RHS.StartMode;
             Communicator = RHS.Communicator;
             Root = RHS.Root;
@@ -481,7 +481,7 @@ namespace Plugin {
             VolatilePathPostfix = std::move(move.VolatilePathPostfix);
             SystemRootPath = std::move(move.SystemRootPath);
             StartupOrder = std::move(move.StartupOrder);
-            MaxRequests = std::move(move.MaxRequests);
+            Throttle = std::move(move.Throttle);
             StartMode = std::move(move.StartMode);
             Communicator = std::move(move.Communicator);
             Root = std::move(move.Root);
@@ -550,7 +550,7 @@ namespace Plugin {
         Core::JSON::String VolatilePathPostfix;
         Core::JSON::String SystemRootPath;
         Core::JSON::DecUInt32 StartupOrder;
-        Core::JSON::DecUInt32 MaxRequests;
+        Core::JSON::DecUInt8 Throttle;
         Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
         Core::JSON::String Communicator;
         RootConfig Root;

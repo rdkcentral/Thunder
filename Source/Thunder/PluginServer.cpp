@@ -1086,6 +1086,8 @@ namespace PluginHost {
         , _jobs()
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
+
+        _jobs.Slots(static_cast<ChannelMap&>(*parent).MaxRequests());
     }
 
     /* virtual */ Server::Channel::~Channel()
