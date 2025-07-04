@@ -1207,7 +1207,7 @@ namespace PluginHost {
             using FI2_ARG0 = typename std::remove_cv<typename std::remove_reference<typename FI2::template argument<0>::type>::type>::type;
 
 
-            ToIDCallback toIdCallback([&](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> string {
+            ToIDCallback toIdCallback([this, toIdCb](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> string {
 
                 string returnValue;
                 const T* realInterface(obj->QueryInterface<T>());
@@ -1223,7 +1223,7 @@ namespace PluginHost {
                 return (returnValue);
             });
 
-            FromIDCallback fromIdCallback([&](const Core::JSONRPC::Context& context, const string& id) -> Core::IUnknown* {
+            FromIDCallback fromIdCallback([this, fromIdCb](const Core::JSONRPC::Context& context, const string& id) -> Core::IUnknown* {
 
                 return (Execute<METHOD2>(
                     context,
