@@ -1507,6 +1507,7 @@ namespace PluginHost {
             JSONRPCSupportsObjectLookup::Clear();
 
             for (auto& entry : _interfaces) {
+                DEBUG_VARIABLE(entry);
                 ASSERT(entry.second.empty() == true);
             }
 
