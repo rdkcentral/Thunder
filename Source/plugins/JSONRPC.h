@@ -1403,6 +1403,322 @@ namespace PluginHost {
         std::unordered_map<uint32_t, Handlers> _handlers;
     };
 
+    class JSONRPCSupportsAutoObjectLookup : virtual public JSONRPCSupportsObjectLookup {
+    public:
+        JSONRPCSupportsAutoObjectLookup(const JSONRPCSupportsAutoObjectLookup&) = delete;
+        JSONRPCSupportsAutoObjectLookup& operator=(const JSONRPCSupportsAutoObjectLookup&) = delete;
+        JSONRPCSupportsAutoObjectLookup(JSONRPCSupportsAutoObjectLookup&&) = delete;
+        JSONRPCSupportsAutoObjectLookup& operator=(JSONRPCSupportsAutoObjectLookup&&) = delete;
+
+        JSONRPCSupportsAutoObjectLookup()
+            : JSONRPCSupportsObjectLookup()
+            , _lock()
+            , _interfaces()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const PluginHost::JSONRPC::TokenCheckFunction& validation)
+            : JSONRPCSupportsObjectLookup(validation)
+            , _lock()
+            , _interfaces()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const std::vector<uint8_t>& versions)
+            : JSONRPCSupportsObjectLookup(versions)
+            , _lock()
+            , _interfaces()
+            , _nextId(1)
+        {
+        }
+        JSONRPCSupportsAutoObjectLookup(const std::vector<uint8_t>& versions, const TokenCheckFunction& validation)
+            : JSONRPCSupportsObjectLookup(versions, validation)
+            , _lock()
+            , _interfaces()
+            , _nextId(1)
+        {
+        }
+        ~JSONRPCSupportsAutoObjectLookup() override
+        {
+            ASSERT(_interfaces.empty() == true);
+        }
+
+    public:
+        using LifetimeCallback = std::function<void(const bool acquired, const uint32_t, Core::IUnknown*)>;
+
+    public:
+        template<typename METHOD>
+        void Callback(METHOD cb)
+        {
+            _lock.Lock();
+
+            _callback = cb;
+
+            _lock.Unlock();
+        }
+
+    public:
+        template<typename T>
+        void InstallHandler()
+        {
+            _lock.Lock();
+
+            const uint32_t interfaceId = T::ID;
+            ASSERT(interfaceId != 0);
+
+            ASSERT(_interfaces.find(interfaceId) == _interfaces.end());
+
+            _interfaces.emplace(std::piecewise_construct, std::make_tuple(interfaceId), std::make_tuple());
+
+            JSONRPCSupportsObjectLookup::Add<T>(
+                [this, interfaceId](const Core::JSONRPC::Context& context, const Core::IUnknown* obj) -> uint32_t {
+                    return (LookUpImpl(obj, interfaceId, context));
+                },
+                [this, interfaceId](const Core::JSONRPC::Context& context, const uint32_t instanceId) {
+                    return (LookUpImpl(instanceId, interfaceId, context));
+                }
+            );
+
+            _lock.Unlock();
+        }
+
+        template<typename T>
+        void UninstallHandler()
+        {
+            _lock.Lock();
+
+            JSONRPCSupportsObjectLookup::Remove<T>();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+            ASSERT(storage.empty() == true); // otherwise it's a leak!
+
+            _interfaces.erase(T::ID);
+
+            _lock.Unlock();
+        }
+
+        void ClearHandlers()
+        {
+            _lock.Lock();
+
+            JSONRPCSupportsObjectLookup::Clear();
+
+            for (auto& entry : _interfaces) {
+                ASSERT(entry.second.empty() == true);
+            }
+
+            _interfaces.clear();
+
+            _lock.Unlock();
+        }
+
+    public:
+        template<typename T>
+        uint32_t Store(Core::IUnknown* obj, const Core::JSONRPC::Context& context)
+        {
+            uint32_t instanceId = 0;
+
+            ASSERT(obj != nullptr);
+            obj->AddRef();
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+
+            instanceId = _nextId++;
+
+            storage.emplace(std::piecewise_construct,
+                std::forward_as_tuple(instanceId),
+                std::forward_as_tuple(context.ChannelId(), obj));
+
+            if (_callback != nullptr) {
+                _callback(true, T::ID, obj);
+            }
+
+            _lock.Unlock();
+
+            return (instanceId);
+        }
+
+        template<typename T>
+        T* Dispose(const Core::JSONRPC::Context& context, const string& instanceId)
+        {
+            uint32_t intId = 0;
+            Core::FromString(instanceId, intId);
+            return (Dispose<T>(context, instanceId));
+        }
+
+        template<typename T>
+        T* Dispose(const Core::JSONRPC::Context& context, const uint32_t instanceId)
+        {
+            T* obj{};
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+            auto it = storage.find(instanceId);
+
+            if (it != storage.end() && ((*it).second.first == context.ChannelId())) {
+                obj = (*it).second.second->template QueryInterface<T>();
+                ASSERT(obj != nullptr);
+
+                if (_callback != nullptr) {
+                    _callback(false, T::ID, obj);
+                }
+
+                obj->Release();
+                // The caller should release one last time to destroy.
+
+                storage.erase(it);
+            }
+
+            _lock.Unlock();
+
+            return (obj);
+        }
+
+        template<typename T>
+        bool Check(const string& instanceId, const uint32_t channelId) const
+        {
+            uint32_t intId = 0;
+            Core::FromString(instanceId, intId);
+            return (Check<T>(intId, channelId));
+        }
+
+        template<typename T>
+        bool Check(const uint32_t instanceId, const uint32_t channelId) const
+        {
+            bool result = false;
+
+            _lock.Lock();
+
+            auto faceIt = _interfaces.find(T::ID);
+            ASSERT(faceIt != _interfaces.end());
+
+            auto& storage = (*faceIt).second;
+
+            auto it = storage.find(instanceId);
+
+            if ((it != storage.end()) && ((*it).second.first == channelId)) {
+                result = true;
+            }
+
+            _lock.Unlock();
+
+            return (result);
+        }
+
+    public:
+        void Closed(const Core::JSONRPC::Context& context)
+        {
+            Closed(context.ChannelId());
+        }
+
+        void Closed(const uint32_t channel)
+        {
+            _lock.Lock();
+
+            for (auto& interface : _interfaces) {
+                auto& storage = interface.second;
+                auto it = storage.begin();
+
+                while (it != storage.end()) {
+                    if ((*it).second.first == channel) {
+                        Core::IUnknown* obj = (*it).second.second;
+                        ASSERT(obj != nullptr);
+
+                        if (_callback != nullptr) {
+                            _callback(false, interface.first, obj);
+                        }
+
+                        obj->Release();
+                        it = storage.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
+                }
+            }
+
+            _lock.Unlock();
+        }
+
+    private:
+        uint32_t LookUpImpl(const Core::IUnknown* const obj, const uint32_t interfaceId, const Core::JSONRPC::Context& context) const
+        {
+            uint32_t id = 0;
+
+            ASSERT(interfaceId != 0);
+
+            if (obj != nullptr) {
+                _lock.Lock();
+
+                auto faceIt = _interfaces.find(interfaceId);
+                ASSERT(faceIt != _interfaces.end());
+
+                auto& storage = (*faceIt).second;
+
+                for (auto const& entry : storage) {
+                    if (entry.second.second == obj) {
+                        if ((context.ChannelId() == static_cast<uint32_t>(~0)) || (entry.second.first == context.ChannelId())) {
+                            id = entry.first;
+                        }
+
+                        break;
+                    }
+                }
+
+                _lock.Unlock();
+            }
+
+            return (id);
+        }
+
+        Core::IUnknown* LookUpImpl(const uint32_t instanceId, const uint32_t interfaceId, const Core::JSONRPC::Context& context) const
+        {
+            Core::IUnknown* obj{};
+
+            ASSERT(interfaceId != 0);
+
+            if (instanceId != 0) {
+                _lock.Lock();
+
+                auto faceIt = _interfaces.find(interfaceId);
+                ASSERT(faceIt != _interfaces.end());
+
+                auto& storage = (*faceIt).second;
+
+                auto const it = storage.find(instanceId);
+                if ((it != storage.cend()) && (((*it).second.first == context.ChannelId()) || (context.ChannelId() == static_cast<uint32_t>(~0)))) {
+
+                    obj = (*it).second.second;
+                    ASSERT(obj != nullptr);
+
+                    obj->AddRef();
+                }
+
+                _lock.Unlock();
+            }
+
+            return (obj);
+        }
+
+    private:
+        mutable Core::CriticalSection _lock;
+        std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::pair<uint32_t, Core::IUnknown*>>> _interfaces;
+        LifetimeCallback _callback;
+        uint32_t _nextId;
+    };
+
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
     namespace JSONRPCErrorAssessorTypes {
@@ -1468,206 +1784,6 @@ namespace PluginHost {
     };
 
 #endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
-    template<typename T, typename ID>
-    class LookupStorageType {
-    public:
-        LookupStorageType()
-            : _lock()
-            , _storage()
-            , _nextId(1)
-        {
-        }
-        ~LookupStorageType() = default;
-
-        LookupStorageType(const LookupStorageType&) = delete;
-        LookupStorageType(LookupStorageType&&) = delete;
-        LookupStorageType& operator=(const LookupStorageType&) = delete;
-        LookupStorageType& operator=(LookupStorageType&&) = delete;
-
-    public:
-        using LifetimeCallback = std::function<void(const bool acquired, T* obj)>;
-
-    public:
-        uint32_t Store(T* obj, const Core::JSONRPC::Context& context)
-        {
-            ID id = 0;
-
-            ASSERT(obj != nullptr);
-
-            if (obj != nullptr) {
-
-                obj->AddRef();
-
-                _lock.Lock();
-
-                id = _nextId++;
-
-                _storage.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(id),
-                    std::forward_as_tuple(context.ChannelId(), obj));
-
-                if (_callback != nullptr) {
-                    _callback(true, obj);
-                }
-
-                _lock.Unlock();
-            }
-
-            return (id);
-        }
-
-        bool Exists(const uint32_t channel, const ID id)
-        {
-            bool result = false;
-
-            _lock.Lock();
-
-            auto it = _storage.find(id);
-
-            if ((it != _storage.end()) && ((*it).second.first == channel)) {
-                result = true;
-            }
-
-            _lock.Unlock();
-
-            return (result);
-        }
-
-        T* Lookup(const uint32_t channel, const ID id)
-        {
-            T* obj{};
-
-            _lock.Lock();
-
-            auto it = _storage.find(id);
-
-            if ((it != _storage.end()) && ((*it).second.first == channel)) {
-                obj = (*it).second.second;
-                obj->AddRef();
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-        T* Lookup(const Core::JSONRPC::Context& context, const ID id)
-        {
-            return (Lookup(context.ChannelId(), id));
-        }
-
-        const T* Lookup(const uint32_t channel, const ID id) const
-        {
-            const T* obj{};
-
-            _lock.Lock();
-
-            auto const it = _storage.cfind(id);
-
-            if ((it != _storage.cend()) && ((*it).second.first == channel)) {
-                obj = (*it).second.second;
-                obj->AddRef();
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-        const T* Lookup(const Core::JSONRPC::Context& context, const ID id) const
-        {
-            return (Lookup(context.ChannelId(), id));
-        }
-
-        T* Dispose(const Core::JSONRPC::Context& context, const ID id)
-        {
-            T* obj{};
-
-            _lock.Lock();
-
-            auto it = _storage.find(id);
-
-            if (it != _storage.end() && ((*it).second.first == context.ChannelId())) {
-                obj = (*it).second.second;
-
-                if (_callback != nullptr) {
-                    _callback(false, obj);
-                }
-
-                _storage.erase(it);
-            }
-
-            _lock.Unlock();
-
-            return (obj);
-        }
-
-        uint32_t InstanceId(const T* const obj) const
-        {
-            uint32_t result = 0;
-
-            _lock.Lock();
-
-            for (auto const& entry : _storage) {
-                if (entry.second.second == obj) {
-                    result = entry.first;
-                    break;
-                }
-            }
-
-            _lock.Unlock();
-
-            return (result);
-        }
-
-    public:
-        void Closed(const uint32_t channel)
-        {
-            _lock.Lock();
-
-            auto it = _storage.begin();
-
-            while (it != _storage.end()) {
-                if ((*it).second.first == channel) {
-                    T* obj = (*it).second.second;
-
-                    if (_callback != nullptr) {
-                        _callback(false, obj);
-                    }
-
-                    obj->Release();
-                    it = _storage.erase(it);
-                }
-                else {
-                    ++it;
-                }
-            }
-
-            _lock.Unlock();
-        }
-
-        void Closed(const Core::JSONRPC::Context& context)
-        {
-            Closed(context.ChannelId());
-        }
-
-    public:
-        void Callback(const LifetimeCallback& callback)
-        {
-            _lock.Lock();
-
-            _callback = callback;
-
-            _lock.Unlock();
-        }
-
-    private:
-        mutable Core::CriticalSection _lock;
-        std::map<ID, std::pair<uint32_t, T*>> _storage;
-        LifetimeCallback _callback;
-        ID _nextId;
-    };
 
 } // namespace Thunder::PluginHost
 }
