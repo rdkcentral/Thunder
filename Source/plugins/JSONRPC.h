@@ -1414,6 +1414,7 @@ namespace PluginHost {
             : JSONRPCSupportsObjectLookup()
             , _lock()
             , _interfaces()
+            , _callback()
             , _nextId(1)
         {
         }
@@ -1421,6 +1422,7 @@ namespace PluginHost {
             : JSONRPCSupportsObjectLookup(validation)
             , _lock()
             , _interfaces()
+            , _callback()
             , _nextId(1)
         {
         }
@@ -1428,6 +1430,7 @@ namespace PluginHost {
             : JSONRPCSupportsObjectLookup(versions)
             , _lock()
             , _interfaces()
+            , _callback()
             , _nextId(1)
         {
         }
@@ -1435,6 +1438,7 @@ namespace PluginHost {
             : JSONRPCSupportsObjectLookup(versions, validation)
             , _lock()
             , _interfaces()
+            , _callback()
             , _nextId(1)
         {
         }
