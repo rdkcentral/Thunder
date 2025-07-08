@@ -4784,12 +4784,12 @@ namespace PluginHost {
         // that can handle the request.
         WorkerPoolImplementation _dispatcher;
 
+        // Remember the interesting and properly formatted part of the configuration.
+        PluginHost::Config& _config;
+
         // Create the server. This is a socket listening for incoming connections. Any connection comming in, will be
         // linked to this server and will forward the received requests to this server. This server will than handl it using a thread pool.
         ChannelMap _connections;
-
-        // Remember the interesting and properly formatted part of the configuration.
-        PluginHost::Config& _config;
 
         // Maintain a list of all the loaded plugin servers. Here we can dispatch work to.
         ServiceMap _services;
