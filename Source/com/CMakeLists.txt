@@ -36,8 +36,6 @@ set(PUBLIC_HEADERS
     Ids.h
     IteratorType.h
     IIteratorType.h
-    IStringIterator.h
-    IValueIterator.h
     ICOM.h
     IUnknown.h
     Messages.h
