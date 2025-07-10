@@ -537,6 +537,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1093,6 +1096,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1395,6 +1401,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -1638,6 +1647,9 @@ namespace Core {
             {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
+                }
+                else {
+                    Clear();
                 }
 
                 return (*this);
@@ -2715,6 +2727,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -3347,6 +3362,9 @@ namespace Core {
                 if (RHS.IsSet() == true) {
                     operator=(RHS.Value());
                 }
+                else {
+                    Clear();
+                }
 
                 return (*this);
             }
@@ -3603,7 +3621,8 @@ namespace Core {
             enum modus : uint8_t {
                 ERROR = 0x80,
                 UNDEFINED = 0x40,
-                COMPLETE = 0x20
+                COMPLETE = 0x20,
+                SET = 0x10
             };
 
             static constexpr uint16_t FIND_MARKER = 0;
@@ -3720,13 +3739,19 @@ namespace Core {
             // IElement and IMessagePack iface:
             bool IsSet() const override
             {
-                JSONElementList::const_iterator index = _data.begin();
-                // As long as we did not find a set element, continue..
-                while ((index != _data.end()) && (index->second->IsSet() == false)) {
-                    index++;
+                bool set = ((_state & SET) != 0);
+
+                if (set == false) {
+                    JSONElementList::const_iterator index = _data.begin();
+                    // As long as we did not find a set element, continue..
+                    while ((index != _data.end()) && (index->second->IsSet() == false)) {
+                        index++;
+                    }
+
+                    set = (index != _data.end());
                 }
 
-                return (index != _data.end());
+                return (set);
             }
 
             void Null(const bool enabled)
@@ -3742,6 +3767,16 @@ namespace Core {
             bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
+            }
+
+            void Set(const bool enabled)
+            {
+                if (enabled == true) {
+                    _state |= SET;
+                }
+                else {
+                    _state &= ~SET;
+                }
             }
 
             void Clear() override
