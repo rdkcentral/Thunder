@@ -1642,7 +1642,7 @@ POP_WARNING()
 
                 if (report.IsSet() == false) {
                     code = method(std::forward<Args>(args)..., inbound, outbound);
-                    if (code == Core::ERROR_NONE) {
+                    if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
                         outbound.ToString(result);
                     }
                     else {
@@ -1663,7 +1663,7 @@ POP_WARNING()
 
                 uint32_t code = method(std::forward<Args>(args)..., outbound);
 
-                if (code == Core::ERROR_NONE) {
+                if ((code == Core::ERROR_NONE) && (outbound.IsSet() == true)) {
                     outbound.ToString(result);
                 }
                 else {
