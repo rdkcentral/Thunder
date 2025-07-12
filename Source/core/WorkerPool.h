@@ -35,9 +35,11 @@ namespace Core {
         public:
             JobType(const JobType<IMPLEMENTATION>&) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
+            JobType(JobType<IMPLEMENTATION>&&) = delete;
+            JobType<IMPLEMENTATION>& operator=(JobType<IMPLEMENTATION>&&) = delete;
 
             template <typename... Args>
-            JobType(Args&&... args)
+            explicit JobType(Args&&... args)
                 : ThreadPool::JobType<IMPLEMENTATION>(std::forward<Args>(args)...)
             {
             }
