@@ -190,7 +190,8 @@ namespace Web {
             UPGRADING = 0x02,
             WEBSOCKET = 0x04,
             SUSPENDED = 0x08,
-            ACTIVITY  = 0x10
+            ACTIVITY  = 0x10,
+            PINGED = 0x20
         };
 
         DEPRECATED constexpr static EnumlinkState WEBSERVER { EnumlinkState::WEBSERVICE };
@@ -633,6 +634,7 @@ POP_WARNING()
                                     } else if (_handler.FrameType() == WebSocket::Protocol::PONG) {
                                         if (_pingFireTime != 0) {
                                             TRACE_L1("Ping acknowledged by a pong in %d (uS)", static_cast<uint32_t>(static_cast<uint64_t>(Core::Time::Now().Ticks() - _pingFireTime)));
+                                            _state &= (~PINGED);
                                             _pingFireTime = 0;
                                         } else {
                                             TRACE_L1("Pong received but nu ping requested ??? [%d] ", __LINE__);
@@ -716,11 +718,21 @@ POP_WARNING()
                 _state &= ~ACTIVITY;
             }
 
-            bool HasActivity() const
+            bool HasActivity()
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
-                return ((_state & ACTIVITY) != 0);
+                uint8_t state = _state & (ACTIVITY|PINGED);
+                bool result = false;
+                if (state  == 0 ) { // No activity try ping now.
+                    _state |= PINGED;
+                    result = true;
+                    Ping();
+                } else {
+                    result = (state == ACTIVITY);
+                }
+
+                return (result);
             }
 
             void Lock() const {
@@ -1035,7 +1047,7 @@ POP_WARNING()
         {
             return (_channel.ResetActivity());
         }
-        bool HasActivity() const
+        bool HasActivity()
         {
             return (_channel.HasActivity());
         }
