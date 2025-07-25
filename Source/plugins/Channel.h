@@ -212,7 +212,7 @@ namespace PluginHost {
         bool HasActivity()
         {
             bool result = HasReadActivity();
-            if (result == false && IsPingInProgress() == false) {
+            if (result == false && IsWebSocket() == true && IsPingInProgress() == false) {
                 TriggerPing();
                 result = true;
             }
