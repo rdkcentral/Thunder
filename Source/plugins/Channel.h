@@ -211,7 +211,12 @@ namespace PluginHost {
     public:
         bool HasActivity()
         {
-            return (BaseClass::HasActivity());
+            bool result = BaseClass::HasReadActivity();
+            if (result == false && BaseClass::IsPingInProgress() == false) {
+                BaseClass::TriggerPing();
+                result = true;
+            }
+            return result;
         }
         uint32_t Id() const
         {
