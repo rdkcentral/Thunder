@@ -1056,7 +1056,7 @@ POP_WARNING()
         {
             return (_channel.ResetActivity());
         }
-        bool HasActivity()
+        bool HasActivity() const
         {
             return (_channel.HasActivity());
         }
