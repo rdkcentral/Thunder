@@ -211,9 +211,9 @@ namespace PluginHost {
     public:
         bool HasActivity()
         {
-            bool result = BaseClass::HasReadActivity();
-            if (result == false && BaseClass::IsPingInProgress() == false) {
-                BaseClass::TriggerPing();
+            bool result = HasReadActivity();
+            if (result == false && IsPingInProgress() == false) {
+                TriggerPing();
                 result = true;
             }
             return result;
