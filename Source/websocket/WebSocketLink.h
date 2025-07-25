@@ -1072,10 +1072,6 @@ POP_WARNING()
         {
             return (_channel.IsPingInProgress());
         }
-        void TriggerPing() {
-            _channel.Ping();
-            return;
-        }
         const string& Path() const
         {
             return (_channel.Path());
