@@ -595,9 +595,6 @@ POP_WARNING()
 
                 _callback = nullptr;
 
-                if (_outbound.IsValid() == true) {
-                    _outbound.Release();
-                }
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
                 }
@@ -658,7 +655,7 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            bool AbortOutbound()
+            bool AbortOutbound(bool release)
             {
                 bool result = false;
 
@@ -668,13 +665,15 @@ POP_WARNING()
 
                     result = true;
 
-                    if (_callback != nullptr) {
+                    if ((release == true) || (_callback == nullptr)) {
+                        _outbound.Release();
+                    }
+                    else {
                         _callback->Dispatch(*_outbound);
                         _callback = nullptr;
                     }
-
-                    _outbound.Release();
-                } else {
+                }
+                else {
                     ASSERT(_callback == nullptr);
                 }
 
@@ -729,7 +728,7 @@ POP_WARNING()
 
         void Abort()
         {
-            _administration.AbortOutbound();
+            _administration.AbortOutbound(false);
         }
         template <typename ACTUALELEMENT>
         uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
@@ -858,10 +857,10 @@ POP_WARNING()
 
                 // Now we wait for ever, to get a signal that we are done :-)
                 if (_signal.Lock(waitTime) != Core::ERROR_NONE) {
-                    _administration.AbortOutbound();
+                    _administration.AbortOutbound(true);
 
                     result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.AbortOutbound() == true) {
+                } else if (_administration.AbortOutbound(true) == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
