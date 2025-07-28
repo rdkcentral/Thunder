@@ -190,8 +190,8 @@ namespace Web {
             UPGRADING = 0x02,
             WEBSOCKET = 0x04,
             SUSPENDED = 0x08,
-            RDACTIVITY  = 0x10,
-            WRACTIVITY  = 0x20,
+            READ_ACTIVITY  = 0x10,
+            WRITE_ACTIVITY  = 0x20,
             PINGED = 0x40
         };
 
@@ -569,7 +569,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                _state |= WRACTIVITY;
+                _state |= WRITE_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
                     if (maxSendSize > 8) {
@@ -595,7 +595,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                _state |= RDACTIVITY;
+                _state |= READ_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
                     bool tooSmall = false;
@@ -717,20 +717,20 @@ POP_WARNING()
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
 
-                _state &= ~(RDACTIVITY|WRACTIVITY);
+                _state &= ~(READ_ACTIVITY|WRITE_ACTIVITY);
             }
 
             bool HasActivity() const
             {
-                return IsStateSet(WRACTIVITY|RDACTIVITY);
+                return IsStateSet(WRITE_ACTIVITY|READ_ACTIVITY);
             }
             bool HasReadActivity() const
             {
-                return IsStateSet(RDACTIVITY);
+                return IsStateSet(READ_ACTIVITY);
             }
             bool HasWriteActivity() const
             {
-                return IsStateSet(WRACTIVITY);
+                return IsStateSet(WRITE_ACTIVITY);
             }
             bool IsPingInProgress() const
             {
