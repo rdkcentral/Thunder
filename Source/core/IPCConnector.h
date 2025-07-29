@@ -500,6 +500,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory(factory)
                 , _handlers()
+                , _abort(false)
             {
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
@@ -576,6 +577,7 @@ POP_WARNING()
 
                     if (rpcCall.IsValid() == true) {
                         _inbound = rpcCall;
+                        _abort = false;
                         result = rpcCall->IParameters();
                     } else {
                         TRACE_L1("No RPC method definition for ID [%d].\n", searchIdentifier);
@@ -595,9 +597,14 @@ POP_WARNING()
 
                 _callback = nullptr;
 
+                if (_outbound.IsValid() == true) {
+                    _outbound.Release();
+                }
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
                 }
+
+                _abort = true;
 
                 _lock.Unlock();
             }
@@ -651,11 +658,12 @@ POP_WARNING()
 
                 _outbound = outbound;
                 _callback = callback;
+                _abort = false;
 
                 _lock.Unlock();
             }
 
-            bool AbortOutbound(bool release)
+            bool AbortOutbound()
             {
                 bool result = false;
 
@@ -665,21 +673,19 @@ POP_WARNING()
 
                     result = true;
 
-                    if ((release == true) || (_callback == nullptr)) {
-                        _outbound.Release();
-                    }
-                    else {
+                    if (_callback != nullptr) {
                         _callback->Dispatch(*_outbound);
                         _callback = nullptr;
                     }
-                }
-                else {
+
+                    _outbound.Release();
+                } else {
                     ASSERT(_callback == nullptr);
                 }
 
                 _lock.Unlock();
 
-                return (result);
+                return (result || _abort);
             }
 
         private:
@@ -689,6 +695,7 @@ POP_WARNING()
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
             std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
+            bool _abort;
         };
 
     protected:
@@ -728,7 +735,7 @@ POP_WARNING()
 
         void Abort()
         {
-            _administration.AbortOutbound(false);
+            _administration.AbortOutbound();
         }
         template <typename ACTUALELEMENT>
         uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
@@ -857,10 +864,10 @@ POP_WARNING()
 
                 // Now we wait for ever, to get a signal that we are done :-)
                 if (_signal.Lock(waitTime) != Core::ERROR_NONE) {
-                    _administration.AbortOutbound(true);
+                    _administration.AbortOutbound();
 
                     result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.AbortOutbound(true) == true) {
+                } else if (_administration.AbortOutbound() == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
