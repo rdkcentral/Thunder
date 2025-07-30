@@ -1,4 +1,6 @@
 name: Build Thunder on Linux
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
