@@ -207,10 +207,13 @@ namespace Core {
         public:
             JobType(const JobType<IMPLEMENTATION>& copy) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
+            // deleting the move operators here is important as the varargs c'tor icw the casting operator allowed it to behave as a move operator
+            JobType(JobType<IMPLEMENTATION>&&) = delete;
+            JobType<IMPLEMENTATION>& operator=(JobType<IMPLEMENTATION>&&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+            PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             template <typename... Args>
-            JobType(Args&&... args)
+            explicit JobType(Args&&... args)
                 : _implementation(args...)
                 , _state(IDLE)
                 , _job(*this)
