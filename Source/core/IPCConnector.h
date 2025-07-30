@@ -500,7 +500,6 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory(factory)
                 , _handlers()
-                , _abort(false)
             {
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
@@ -577,7 +576,6 @@ POP_WARNING()
 
                     if (rpcCall.IsValid() == true) {
                         _inbound = rpcCall;
-                        _abort = false;
                         result = rpcCall->IParameters();
                     } else {
                         TRACE_L1("No RPC method definition for ID [%d].\n", searchIdentifier);
@@ -603,8 +601,6 @@ POP_WARNING()
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
                 }
-
-                _abort = true;
 
                 _lock.Unlock();
             }
@@ -658,7 +654,6 @@ POP_WARNING()
 
                 _outbound = outbound;
                 _callback = callback;
-                _abort = false;
 
                 _lock.Unlock();
             }
@@ -685,7 +680,7 @@ POP_WARNING()
 
                 _lock.Unlock();
 
-                return (result || _abort);
+                return (result);
             }
 
         private:
@@ -695,7 +690,6 @@ POP_WARNING()
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
             std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
-            bool _abort;
         };
 
     protected:
@@ -1036,6 +1030,12 @@ POP_WARNING()
                 _link.Submit(command->IParameters());
 
                 success = sink.Wait(waitTime);
+
+                // If the link is no longer open but we got a success result,
+                // the channel was closed after the signal was set - override to CONNECTION_CLOSED
+                if ((success == Core::ERROR_NONE) && (_link.IsOpen() == false)) {
+                    success = Core::ERROR_CONNECTION_CLOSED;
+                }
             }
 
             _serialize.Unlock();
