@@ -847,6 +847,7 @@ POP_WARNING()
             IPCTrigger(IPCFactory& administration)
                 : _administration(administration)
                 , _signal(false, true)
+                , _abort(false)
             {
             }
             ~IPCTrigger() override = default;
@@ -861,20 +862,22 @@ POP_WARNING()
                     _administration.AbortOutbound();
 
                     result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.AbortOutbound() == true) {
+                } else if (_abort == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
                 return (result);
             }
-            void Dispatch(IIPC& /* element */) override
+            void Dispatch(IIPC& element) override
             {
+                _abort = (element.IResponse()->Length() == 0 ? true : false);
                 _signal.SetEvent();
             }
 
         private:
             IPCFactory& _administration;
             Event _signal;
+            bool _abort;
         };
 
     public:
