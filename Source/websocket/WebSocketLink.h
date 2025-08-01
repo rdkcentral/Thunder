@@ -569,7 +569,8 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                _state |= WRITE_ACTIVITY;
+                if (_state & PINGED !=0 )
+                    _state |= WRITE_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
                     if (maxSendSize > 8) {

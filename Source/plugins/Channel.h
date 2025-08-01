@@ -209,15 +209,6 @@ namespace PluginHost {
         ~Channel() override;
 
     public:
-        bool HasActivity()
-        {
-            bool result = HasReadActivity();
-            if (result == false && IsWebSocket() == true && IsPingInProgress() == false) {
-                Ping();
-                result = true;
-            }
-            return result;
-        }
         uint32_t Id() const
         {
             return (_ID);

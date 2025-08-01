@@ -4599,16 +4599,21 @@ namespace PluginHost {
                     // Now suspend those that have no activity.
                     BaseClass::Iterator index(BaseClass::Clients());
 
-                    while (index.Next() == true) {
-                        if (index.Client()->HasActivity() == false) {
-                            TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
-
-                            // Oops nothing hapened for a long time, kill the connection
-                            // Give it all the time (0) if it i not yet suspended to close. If it is
-                            // suspended, force the close down if not closed in 100ms.
-                            index.Client()->Close(0);
-                        } else {
+                    while (index.Next() == true && index.Client()->IsWebSocket() == true) {
+                        if(index.Client()->HasReadActivity()) {
                             index.Client()->ResetActivity();
+                        }
+                        else {
+                            if (index.Client()->IsPingInProgress()) {
+                                TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+
+                                // Oops nothing hapened for a long time, kill the connection
+                                // Give it all the time (0) if it i not yet suspended to close. If it is
+                                // suspended, force the close down if not closed in 100ms.
+                                index.Client()->Close(0);
+                            } else {
+                                index.Client()->Ping();
+                            }
                         }
                     }
 
