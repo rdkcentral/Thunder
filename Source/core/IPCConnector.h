@@ -500,6 +500,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory(factory)
                 , _handlers()
+                , _aborted(false)
             {
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
@@ -652,6 +653,7 @@ POP_WARNING()
                 ASSERT((outbound.IsValid() == true) && (callback != nullptr));
                 ASSERT((_outbound.IsValid() == false) && (_callback == nullptr));
 
+                _aborted = false;
                 _outbound = outbound;
                 _callback = callback;
 
@@ -667,6 +669,7 @@ POP_WARNING()
                 if (_outbound.IsValid() == true) {
 
                     result = true;
+                    _aborted = true;
 
                     if (_callback != nullptr) {
                         _callback->Dispatch(*_outbound);
@@ -680,7 +683,7 @@ POP_WARNING()
 
                 _lock.Unlock();
 
-                return (result);
+                return (result || _aborted);
             }
 
         private:
@@ -690,6 +693,7 @@ POP_WARNING()
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
             std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
+            bool _aborted;
         };
 
     protected:
@@ -847,7 +851,6 @@ POP_WARNING()
             IPCTrigger(IPCFactory& administration)
                 : _administration(administration)
                 , _signal(false, true)
-                , _abort(false)
             {
             }
             ~IPCTrigger() override = default;
@@ -862,7 +865,7 @@ POP_WARNING()
                     _administration.AbortOutbound();
 
                     result = Core::ERROR_TIMEDOUT;
-                } else if (_abort == true) {
+                } else if (_administration.AbortOutbound() == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
@@ -870,14 +873,12 @@ POP_WARNING()
             }
             void Dispatch(IIPC& element) override
             {
-                _abort = (element.IResponse()->Length() == 0 ? true : false);
                 _signal.SetEvent();
             }
 
         private:
             IPCFactory& _administration;
             Event _signal;
-            bool _abort;
         };
 
     public:
@@ -1033,12 +1034,6 @@ POP_WARNING()
                 _link.Submit(command->IParameters());
 
                 success = sink.Wait(waitTime);
-
-                // If the link is no longer open but we got a success result,
-                // the channel was closed after the signal was set - override to CONNECTION_CLOSED
-                if ((success == Core::ERROR_NONE) && (_link.IsOpen() == false)) {
-                    success = Core::ERROR_CONNECTION_CLOSED;
-                }
             }
 
             _serialize.Unlock();
