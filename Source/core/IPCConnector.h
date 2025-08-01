@@ -871,7 +871,7 @@ POP_WARNING()
 
                 return (result);
             }
-            void Dispatch(IIPC& element) override
+            void Dispatch(IIPC& /* element */) override
             {
                 _signal.SetEvent();
             }
