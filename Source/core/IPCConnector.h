@@ -991,17 +991,16 @@ POP_WARNING()
                 // We need to accept a CONST object to avoid an additional object creation
                 // proxy casted objects.
                 _administration.SetOutbound(command, completed);
-            }
 
-            if (_link.IsOpen() == true) {
-                _link.Submit(command->IParameters());
+                if (_link.IsOpen() == true) {
+                    _link.Submit(command->IParameters());
 
-                success = Core::ERROR_NONE;
-            }
-            else {
-                _administration.Flush();
+                    success = Core::ERROR_NONE;
+                } else {
+                    _administration.Flush();
 
-                success = Core::ERROR_CONNECTION_CLOSED;
+                    success = Core::ERROR_CONNECTION_CLOSED;
+                }
             }
 
             _serialize.Unlock();
