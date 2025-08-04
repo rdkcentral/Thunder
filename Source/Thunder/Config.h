@@ -387,8 +387,8 @@ namespace PluginHost {
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
                 , DelegatedReleases(true)
-                , Throttle(0)
-                , ChannelThrottle(0)
+                , Throttle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
+                , ChannelThrottle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -645,8 +645,8 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
-            , _throttle(0)
-            , _channelThrottle(0)
+            , _throttle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
+            , _channelThrottle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
