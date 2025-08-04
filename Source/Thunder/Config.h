@@ -31,6 +31,8 @@ namespace PluginHost {
     */
     class EXTERNAL Config {
     private:
+        static constexpr uint8_t DefaultThrottle = ((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1);
+
         class Substituter {
         private:
             static constexpr TCHAR Delimeter = _T('%');
@@ -387,8 +389,8 @@ namespace PluginHost {
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
                 , DelegatedReleases(true)
-                , Throttle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
-                , ChannelThrottle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
+                , Throttle(DefaultThrottle)
+                , ChannelThrottle(DefaultThrottle)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -645,8 +647,8 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
-            , _throttle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
-            , _channelThrottle((THREADPOOL_COUNT > 1) ? (THREADPOOL_COUNT / 2) : 1)
+            , _throttle(DefaultThrottle)
+            , _channelThrottle(DefaultThrottle)
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
