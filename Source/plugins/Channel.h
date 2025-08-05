@@ -198,9 +198,7 @@ namespace PluginHost {
             RAW      = 0x08,
             TEXT     = 0x10,
             JSONRPC  = 0x20,
-
-            PINGED   = 0x4000,
-            NOTIFIED = 0x8000
+            NOTIFIED = 0x4000
         };
 
     public:
@@ -211,32 +209,6 @@ namespace PluginHost {
         ~Channel() override;
 
     public:
-        bool HasActivity() const
-        {
-            Lock();
-
-            bool result(BaseClass::HasActivity());
-
-            // Check if we had a forced activity, if so than the result = the result no second chance;
-            if ((_state & PINGED) == PINGED) {
-                // Let clear it, if the activity succeeed, we are good to go, if not, too bad :-)
-                _state &= (~PINGED);
-                Unlock();
-            } 
-            else if ((result == true) || (IsWebSocket() == false)) {
-                Unlock();
-            } 
-            else {
-                // We are a websiocket and had no activity, time to send a ping..
-                _state |= PINGED;
-                Unlock();
-
-                const_cast<BaseClass*>(static_cast<const BaseClass*>(this))->Ping();
-                result = true;
-            }
-
-            return (result);
-        }
         uint32_t Id() const
         {
             return (_ID);
