@@ -569,7 +569,7 @@ POP_WARNING()
 
                 _adminLock.Lock();
 
-                if ((_state & PINGED) !=0 )
+                if ((_state & PINGED) != 0 )
                     _state |= WRITE_ACTIVITY;
 
                 if ((_state & WEBSOCKET) != 0) {
