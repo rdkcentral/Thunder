@@ -22,6 +22,8 @@
 
 #include <plugins/json/json_IController.h>
 
+#error broken on purpose, do not commit this!!!!
+
 namespace Thunder {
 
     namespace {
