@@ -2362,6 +2362,45 @@ namespace PluginHost {
                     CommunicatorServer& _parent;
                     string _observerPath;
                 };
+                class DanglingNotifierJob : public Core::IDispatch {
+                    protected:
+                        DanglingNotifierJob(CommunicatorServer* commServer, RPC::Administrator::Proxies& deadProxies)
+                            : _commServer(commServer)
+                            , _deadProxies(deadProxies)
+                        {
+                        }
+
+                    public:
+                        DanglingNotifierJob() = delete;
+                        DanglingNotifierJob(const DanglingNotifierJob&) = delete;
+                        DanglingNotifierJob& operator=(const DanglingNotifierJob&) = delete;
+
+                        ~DanglingNotifierJob() override
+                        {
+                            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(_deadProxies.begin());
+                            while (loop != _deadProxies.end()) {
+                                // To avoid race conditions, the creation of the deadProxies took a reference
+                                // on the interfaces, we presented here. Do not forget to release this reference.
+                                if ((*loop)->Parent()->Release()!= Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                                    TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), (*loop)->InterfaceId()));
+                                }
+                                loop++;
+                            }
+                            _deadProxies.clear();
+                        }
+
+                    public:
+                        static Core::ProxyType<Core::IDispatch> Create(CommunicatorServer* commServer, RPC::Administrator::Proxies& deadProxies);
+
+                        void Dispatch() override
+                        {
+                            _commServer->NotifyDangling(_deadProxies);
+                        }
+
+                    private:
+                        CommunicatorServer* _commServer;
+                        RPC::Administrator::Proxies _deadProxies;
+                };
 
             public:
                 CommunicatorServer() = delete;
@@ -2516,7 +2555,21 @@ namespace PluginHost {
                         _adminLock.Unlock();
                     }
                 }
+                void NotifyDangling(RPC::Administrator::Proxies& deadProxies){
+                    // Oke time to notify the destruction of some proxies...
+                    _adminLock.Lock();
 
+                    std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+                    while (loop != deadProxies.end()) {
+                        _parent.Dangling((*loop)->Parent(), (*loop)->InterfaceId());
+
+                        for (IShell::ICOMLink::INotification* observer : _requestObservers) {
+                            observer->Dangling((*loop)->Parent(), (*loop)->InterfaceId());
+                        }
+                        loop++;
+                    }
+                    _adminLock.Unlock();
+                }
             private:
                 void Reload(const string& path) {
                     TRACE(Activity, (Core::Format(_T("Reloading ProxyStubs from %s."), path.c_str())));
@@ -2555,20 +2608,9 @@ namespace PluginHost {
                 {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
-
-                void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
+                void Dangling(RPC::Administrator::Proxies& deadProxies) override
                 {
-                    _adminLock.Lock();
-
-                    _parent.Dangling(source, interfaceId);
-
-                    for (auto& observer : _requestObservers) {
-                        observer->Dangling(source, interfaceId);
-                    }
-
-                    _adminLock.Unlock();
-
-                    TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), interfaceId));
+                    Core::IWorkerPool::Instance().Submit(DanglingNotifierJob::Create(this, deadProxies));
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override

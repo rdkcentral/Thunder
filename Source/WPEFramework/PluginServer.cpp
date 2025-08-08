@@ -274,6 +274,11 @@ namespace PluginHost
         _processAdministrator.Destroy();
     }
 
+    /* static */ Core::ProxyType<Core::IDispatch> Server::ServiceMap::CommunicatorServer::DanglingNotifierJob::Create(Server::ServiceMap::CommunicatorServer* commServer, RPC::Administrator::Proxies& deadProxies)
+    {
+        return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Server::ServiceMap::CommunicatorServer::DanglingNotifierJob>::Create(commServer, deadProxies)));
+    }
+
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
