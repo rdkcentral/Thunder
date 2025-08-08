@@ -2210,16 +2210,26 @@ namespace PluginHost {
 
         class DanglingNotifierJob : public Core::IDispatch {
             protected:
-                DanglingNotifierJob(CommunicatorServer* commServer, RPC::Administrator::Proxies& deadProxies)
+                DanglingNotifierJob(CommunicatorServer* commServer, RPC::Administrator::Proxies&& deadProxies)
                     : _commServer(commServer)
-                    , _deadProxies(deadProxies)
+                    , _deadProxies(std::move(deadProxies))
                 {
+                    std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(_deadProxies.begin());
+                    while (loop != _deadProxies.end()) {
+                        // Lets take a reference on the deadproxies until the notification
+                        // to all observers are complete. This will be released when
+                        // this Job is destructed.
+                        (*loop)->Parent()->AddRef();
+                        loop++;
+                    }
                 }
 
             public:
                 DanglingNotifierJob() = delete;
                 DanglingNotifierJob(const DanglingNotifierJob&) = delete;
+                DanglingNotifierJob(DanglingNotifierJob&&) = delete;
                 DanglingNotifierJob& operator=(const DanglingNotifierJob&) = delete;
+                DanglingNotifierJob& operator=(DanglingNotifierJob&&) = delete;
 
                 ~DanglingNotifierJob() override
                 {
@@ -2236,7 +2246,7 @@ namespace PluginHost {
                 }
 
             public:
-                static Core::ProxyType<Core::IDispatch> Create(CommunicatorServer* commServer, RPC::Administrator::Proxies& deadProxies);
+                static Core::ProxyType<Core::IDispatch> Create(CommunicatorServer* commServer, RPC::Administrator::Proxies&& deadProxies);
 
                 void Dispatch() override
                 {
@@ -2422,7 +2432,6 @@ namespace PluginHost {
                     std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
                     while (loop != deadProxies.end()) {
                         _parent.Dangling((*loop)->Parent(), (*loop)->InterfaceId());
-
                         for (IShell::ICOMLink::INotification* observer : _requestObservers) {
                             observer->Dangling((*loop)->Parent(), (*loop)->InterfaceId());
                         }
@@ -2456,9 +2465,9 @@ namespace PluginHost {
                 {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
-                void Dangling(RPC::Administrator::Proxies& deadProxies) override
+                void Dangling(RPC::Administrator::Proxies&& deadProxies) override
                 {
-                    Core::IWorkerPool::Instance().Submit(DanglingNotifierJob::Create(this, deadProxies));
+                    Core::IWorkerPool::Instance().Submit(DanglingNotifierJob::Create(this, std::move(deadProxies)));
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
