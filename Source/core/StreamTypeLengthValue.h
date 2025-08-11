@@ -435,8 +435,9 @@ POP_WARNING()
         {
             _reevaluate.SetEvent();
 
+            uint8_t count = 0;
             while (_waitCount != 0) {
-                std::this_thread::yield();
+                Core::Thread::Yield(count);
             }
 
             _reevaluate.ResetEvent();
