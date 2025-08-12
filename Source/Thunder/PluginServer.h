@@ -2000,7 +2000,7 @@ namespace PluginHost {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
-                using Proxies = std::vector<Proxy>;
+                using Proxies = std::list<Proxy>;
 
                 class DistributedServer {
                 private:
@@ -2208,57 +2208,6 @@ namespace PluginHost {
                     string _observerPath;
                 };
 
-        class DanglingNotifierJob : public Core::IDispatch {
-            protected:
-                DanglingNotifierJob(CommunicatorServer* commServer, RPC::Administrator::Proxies&& deadProxies)
-                    : _commServer(commServer)
-                    , _deadProxies(std::move(deadProxies))
-                {
-                    std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(_deadProxies.begin());
-                    while (loop != _deadProxies.end()) {
-                        // Lets take a reference on the deadproxies until the notification
-                        // to all observers are complete. This will be released when
-                        // this Job is destructed.
-                        (*loop)->Parent()->AddRef();
-                        loop++;
-                    }
-                }
-
-            public:
-                DanglingNotifierJob() = delete;
-                DanglingNotifierJob(const DanglingNotifierJob&) = delete;
-                DanglingNotifierJob(DanglingNotifierJob&&) = delete;
-                DanglingNotifierJob& operator=(const DanglingNotifierJob&) = delete;
-                DanglingNotifierJob& operator=(DanglingNotifierJob&&) = delete;
-
-                ~DanglingNotifierJob() override
-                {
-                    std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(_deadProxies.begin());
-                    while (loop != _deadProxies.end()) {
-                        // To avoid race conditions, the creation of the deadProxies took a reference
-                        // on the interfaces, we presented here. Do not forget to release this reference.
-                        if ((*loop)->Parent()->Release()!= Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                            TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), (*loop)->InterfaceId()));
-                        }
-                        loop++;
-                    }
-                    _deadProxies.clear();
-                }
-
-            public:
-                static Core::ProxyType<Core::IDispatch> Create(CommunicatorServer* commServer, RPC::Administrator::Proxies&& deadProxies);
-
-                void Dispatch() override
-                {
-                    _commServer->NotifyDangling(_deadProxies);
-                }
-
-            private:
-                CommunicatorServer* _commServer;
-                RPC::Administrator::Proxies _deadProxies;
-            };
-
-
             public:
                 CommunicatorServer() = delete;
                 CommunicatorServer(CommunicatorServer&&) = delete;
@@ -2299,8 +2248,10 @@ namespace PluginHost {
                     , _adminLock()
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
+                    , _deadProxies()
                     , _hostingServer(parent, *this, _T("ToBeFilledIn"))
                     , _distributedServers()
+                    , _job(*this)
                 {
                     // Shall we enable the non-happy day functionality to cleanup Release on behalf of unexpected
                     // channel closes. Only for testing Buggy plugins, turn it off (false)!
@@ -2324,12 +2275,22 @@ namespace PluginHost {
                 }
                 virtual ~CommunicatorServer()
                 {
+                    _job.Revoke();
+                    Proxies::iterator pIndex(_deadProxies.begin());
+                    while (pIndex != _deadProxies.end()) {
+                        if ((*pIndex).second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                            TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), (*pIndex).first));
+                        }
+                        pIndex++;
+                    }
+                    _deadProxies.clear();
+
                     ASSERT(_requestObservers.size() == 0 && "Sink for ICOMLink::INotifications not unregistered!");
                     Observers::iterator index(_requestObservers.begin());
                     while (index != _requestObservers.end()) {
                         (*index)->Release();
                         index++;
-                }
+                    }
                     _requestObservers.clear();
                 }
 
@@ -2425,19 +2386,28 @@ namespace PluginHost {
                 IRemoteInstantiation* Hosting() {
                     return (reinterpret_cast<IRemoteInstantiation*>(_hostingServer.QueryInterface(IRemoteInstantiation::ID)));
                 }
-                void NotifyDangling(RPC::Administrator::Proxies& deadProxies){
+                void Dispatch() {
                     // Oke time to notify the destruction of some proxies...
+                    TRACE(Activity, (_T("Dangling resource cleanup Job")));
                     _adminLock.Lock();
+                    while (_deadProxies.size() != 0) {
+                        Proxy entry(_deadProxies.front());
+                        _deadProxies.pop_front();
+                        _adminLock.Unlock();
 
-                    std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-                    while (loop != deadProxies.end()) {
-                        _parent.Dangling((*loop)->Parent(), (*loop)->InterfaceId());
+                        _parent.Dangling(entry.second, entry.first);
+
                         for (IShell::ICOMLink::INotification* observer : _requestObservers) {
-                            observer->Dangling((*loop)->Parent(), (*loop)->InterfaceId());
+                            observer->Dangling(entry.second, entry.first);
+                            if (entry.second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                                TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), entry.first));
+                            }
                         }
-                        loop++;
+                        TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), entry.first));
+                        _adminLock.Lock();
                     }
                     _adminLock.Unlock();
+
                 }
 
             private:
@@ -2465,9 +2435,14 @@ namespace PluginHost {
                 {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
-                void Dangling(RPC::Administrator::Proxies&& deadProxies) override
+                void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
-                    Core::IWorkerPool::Instance().Submit(DanglingNotifierJob::Create(this, std::move(deadProxies)));
+                    _adminLock.Lock();
+                    _deadProxies.push_back(Proxy(interfaceId,source));
+                    source->AddRef();
+                    _job.Submit();
+                    _adminLock.Unlock();
+                    TRACE(Activity, (_T("Dangling resource cleanup notified for interface: 0x%X"), interfaceId));
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
@@ -2527,8 +2502,10 @@ namespace PluginHost {
                 mutable Core::CriticalSection _adminLock;
                 Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
+                Proxies _deadProxies;
                 Core::SinkType<HostingServer> _hostingServer;
                 Core::ProxyMapType<Core::NodeId, DistributedServer> _distributedServers;
+                Core::WorkerPool::JobType<CommunicatorServer&> _job;
             };
             class SubSystems : public Core::IDispatch, public SystemInfo {
             private:
