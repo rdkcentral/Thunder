@@ -241,7 +241,7 @@ namespace ProxyStub {
                 _adminLock.Unlock();
 
                 // Remove our selves from the Administration, we are done..
-                bool removed = RPC::Administrator::Instance().UnregisterUnknownProxy(*this, channelId);
+                VARIABLE_IS_NOT_USED bool removed = RPC::Administrator::Instance().UnregisterUnknownProxy(*this, channelId);
 
                 ASSERT ((removed == true) || (_channel.IsValid() == false));
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
