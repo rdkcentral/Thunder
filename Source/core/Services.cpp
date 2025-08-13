@@ -103,13 +103,14 @@ namespace Core {
     void ServiceAdministrator::FlushLibraries()
     {
         _adminLock.Lock();
+        uint8_t count = 0;
         while (_unreferencedLibraries.size() != 0) {
             // A few closing code instructions might still be required for 
-            // that thread that submitted the librray to complete, so at 
+            // that thread that submitted the library to complete, so at 
             // least give that thread a slice to complete the last few 
-            // instructions before we close down the librray (if it is 
+            // instructions before we close down the library (if it is 
             // the last reference)
-            std::this_thread::yield();
+            Core::Thread::Yield(count);
 
             _unreferencedLibraries.pop_front();
         }

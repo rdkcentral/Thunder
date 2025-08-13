@@ -19,6 +19,7 @@
 
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
+#include "Thread.h"
 
 namespace Thunder {
 namespace Core {
@@ -315,10 +316,11 @@ namespace Core {
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
+            uint8_t count = 0;
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
-                std::this_thread::yield();
+                Core::Thread::Yield(count);
             }
         }
     }

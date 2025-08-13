@@ -371,6 +371,7 @@ typedef std::string string;
 #undef ERROR_INVALID_PARAMETER
 #undef InterlockedIncrement
 #undef InterlockedDecrement
+#undef Yield
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
