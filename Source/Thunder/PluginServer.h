@@ -2000,7 +2000,7 @@ namespace PluginHost {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
                 using Proxy = std::pair<uint32_t, const Core::IUnknown*>;
-                using Proxies = std::list<Proxy>;
+                using Proxies = std::vector<Proxy>;
 
                 class DistributedServer {
                 private:
@@ -2388,26 +2388,32 @@ namespace PluginHost {
                 }
                 void Dispatch() {
                     // Oke time to notify the destruction of some proxies...
-                    TRACE(Activity, (_T("Dangling resource cleanup Job")));
-                    _adminLock.Lock();
-                    while (_deadProxies.size() != 0) {
-                        Proxy entry(_deadProxies.front());
-                        _deadProxies.pop_front();
-                        _adminLock.Unlock();
+
+                    while (true)
+                    {
+                        Observers observers;
+                        Proxy entry;
+                        {
+                            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                            if(_deadProxies.empty())
+                            {
+                                break;
+                            }
+                            entry = _deadProxies.back();
+                            _deadProxies.pop_back();
+                            observers.assign(_requestObservers.begin(), _requestObservers.end());
+                        }
 
                         _parent.Dangling(entry.second, entry.first);
-
-                        for (IShell::ICOMLink::INotification* observer : _requestObservers) {
+                        for (IShell::ICOMLink::INotification* observer : observers) {
                             observer->Dangling(entry.second, entry.first);
-                            if (entry.second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                        }
+
+                        if (entry.second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
                                 TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), entry.first));
-                            }
                         }
                         TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), entry.first));
-                        _adminLock.Lock();
                     }
-                    _adminLock.Unlock();
-
                 }
 
             private:
@@ -2438,7 +2444,7 @@ namespace PluginHost {
                 void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
                 {
                     _adminLock.Lock();
-                    _deadProxies.push_back(Proxy(interfaceId,source));
+                    _deadProxies.emplace_back(interfaceId,source);
                     source->AddRef();
                     _job.Submit();
                     _adminLock.Unlock();
