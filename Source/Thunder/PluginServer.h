@@ -1849,7 +1849,6 @@ namespace PluginHost {
                     ASSERT(indexCallsigns != _callsigns.end());
 
                     Core::File storage(indexFile->second);
-                    std::cout << indexFile->second << std::endl;
                     if (storage.Create() == true) {
 
                         // Clear all currently set values, they might be from the previous run.
@@ -4808,7 +4807,6 @@ namespace PluginHost {
         uint32_t Persist(const Core::OptionalType<string>& callsign)
         {
             Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
-            std::cout << Configuration().PersistentPath() + PluginOverrideDirectory << std::endl;
             return (infoBlob.Save(callsign));
         }
 
