@@ -221,19 +221,28 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Persist()
+    Core::hresult Controller::Persist(const Core::OptionalType<string>& callsign)
     {
         ASSERT(_pluginServer != nullptr);
-
-        Core::hresult result = _pluginServer->Persist();
+        Core::hresult result = _pluginServer->Persist(callsign);
 
         // Normalise return code
         if (result != Core::ERROR_NONE) {
             result = Core::ERROR_GENERAL;
         }
-
         return result;
+    }
 
+    Core::hresult Controller::Restore(const Core::OptionalType<string>& callsign)
+    {
+        ASSERT(_pluginServer != nullptr);
+        Core::hresult result = _pluginServer->Restore(callsign);
+
+        // Normalise return code
+        if (result != Core::ERROR_NONE) {
+            result = Core::ERROR_GENERAL;
+        }
+        return result;
     }
 
     Core::hresult Controller::Delete(const string& path)
@@ -657,7 +666,7 @@ namespace Plugin {
                 }
             } else if (index.Current() == _T("Persist")) {
 
-                _pluginServer->Persist();
+                _pluginServer->Persist(Core::OptionalType<string>());
 
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = _T("Current configuration stored");
