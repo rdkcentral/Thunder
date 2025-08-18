@@ -453,7 +453,7 @@ namespace RPC {
                     // Note: If the invalidation succeeds, hence why we are here, 
                     //       a reference has been taken on the interface so it can
                     //       be properly released, once it is reported!
-                    pendingProxies.emplace_back(std::move(std::pair<uint32_t,Core::IUnknown*>(entry->InterfaceId(), entry->Parent())));
+                    pendingProxies.emplace_back(std::pair<uint32_t,Core::IUnknown*>(entry->InterfaceId(), entry->Parent()));
                 }
                 // The _channelProxyMap does have a reference for each Proxy it
                 // holds, so it is safe to just move the vector from the map to
