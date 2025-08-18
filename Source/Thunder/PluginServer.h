@@ -570,7 +570,7 @@ namespace PluginHost {
                     ASSERT(interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET);
                     return (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET ? _plugin->QueryInterface(interfaceId) : nullptr);
                 }
-                void Dangling(Danglings&& proxies) {
+                void Dangling(Danglings&& proxies) override {
                     for (const std::pair<uint32_t, Core::IUnknown*>& entry : proxies) {
                         entry.second->Release();
                     };
