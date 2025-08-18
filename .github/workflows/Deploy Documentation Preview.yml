@@ -4,6 +4,9 @@
 
 name: Deploy documentation preview
 
+permissions:
+  contents: read
+
 # If the documentation build completed successfully, then download the generated artifact
 # and upload it to github pages
 on:
