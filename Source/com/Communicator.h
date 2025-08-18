@@ -1747,7 +1747,10 @@ POP_WARNING()
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
 
-            Dangling(std::move(deadProxies));
+            if(!deadProxies.empty())
+            {
+                Dangling(std::move(deadProxies));
+            }
         }
         virtual void* Acquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
         {
@@ -1757,7 +1760,16 @@ POP_WARNING()
         }
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        virtual void Dangling(Danglings&& proxies) = 0;
+        virtual void Dangling(Danglings&& proxies){
+            TRACE_L1("Implement this to gracefully handle the dangling proxies acquired through this channel!!!");
+            Danglings::const_iterator loop(proxies.begin());
+            while (loop != proxies.end()) {
+                // To avoid race conditions, the creation of the deadProxies took a reference
+                // on the interfaces, we presented here. Do not forget to release this reference.
+                (*loop).second->Release();
+                loop++;
+            }
+        }
 
     private:
         const string _source;
