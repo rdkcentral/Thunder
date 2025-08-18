@@ -2403,7 +2403,7 @@ namespace PluginHost {
                     // even worse, use the communicator thread..
                     _deadProxiesProtection.Lock();
                     while (_deadProxies.empty() == false) {
-                        std::pair<uint32_t, Core::IUnknown*> entry(std::move(_deadProxies.back()));
+                        std::pair<uint32_t, Core::IUnknown*> entry(_deadProxies.back());
                         _deadProxies.pop_back();
 
                         // Now the communicator thread can continue! In the span of the lock
