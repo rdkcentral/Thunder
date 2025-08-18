@@ -353,7 +353,7 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
-    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies)
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Danglings& pendingProxies)
     {
         _adminLock.Lock();
 
@@ -386,15 +386,22 @@ namespace RPC {
 
         if (index != _channelProxyMap.end()) {
             for (auto entry : index->second) {
-                entry->Invalidate();
+                if (entry->Invalidate() == true) {
+                    // This is actually for the pendingProxies to be reported
+                    // dangling!!
+                    // Note: If the invalidation succeeds, hence why we are here, 
+                    //       a reference has been taken on the interface so it can
+                    //       be properly released, once it is reported!
+                    pendingProxies.emplace_back(std::pair<uint32_t,Core::IUnknown*>(entry->InterfaceId(), entry->Parent()));
+                }
+                // The _channelProxyMap does have a reference for each Proxy it
+                // holds, so it is safe to just move the vector from the map to
+                // the _danglingProxies. This is to keep the Proxies we created
+                // registered untill, really the last reference is dropped. Till
+                // that time we keep track of the proxy and report it as a potential
+                // leak that should be investigated!!!
                 _danglingProxies.emplace_back(entry);
             }
-            // The _channelProxyMap does have a reference for each Proxy it 
-            // holds, so it is safe to just move the vector from the map to
-            // the pendingProxies. The receiver of pendingProxies has to take
-            // care of releasing the last reference we, as administration layer
-            // hold upon this..
-            pendingProxies = std::move(index->second);
             _channelProxyMap.erase(index);
         }
 
