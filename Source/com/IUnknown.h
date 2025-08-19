@@ -155,11 +155,16 @@ namespace ProxyStub {
         uint32_t ReferenceCount() const {
             return(_refCount);
         }
-    	void Invalidate() {
+        bool Invalidate() {
+            bool succeeded = false;
             ASSERT(_refCount > 0);
             _adminLock.Lock();
-            _channel.Release();
+            if (_channel.IsValid() == true) {
+                _channel.Release();
+                succeeded = true;
+            }
             _adminLock.Unlock();
+            return(succeeded);
         }
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls

@@ -960,6 +960,12 @@ namespace PluginHost {
                     ASSERT(interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET);
                     return (interfaceId >= RPC::IDS::ID_EXTERNAL_INTERFACE_OFFSET ? _plugin->QueryInterface(interfaceId) : nullptr);
                 }
+                void Dangling(Danglings&& proxies) override {
+                    for (const std::pair<uint32_t, Core::IUnknown*>& entry : proxies) {
+                        entry.second->Release();
+                    };
+                    proxies.clear();
+                }
 
             private:
                 Core::IUnknown* _plugin;
@@ -2265,6 +2271,7 @@ namespace PluginHost {
             class CommunicatorServer : public RPC::Communicator {
             private:
                 using Observers = std::vector<IShell::ICOMLink::INotification*>;
+                using Danglings = RPC::Communicator::Danglings;
 
                 class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
@@ -2399,6 +2406,9 @@ namespace PluginHost {
                     , _adminLock()
                     , _requestObservers()
                     , _proxyStubObserver(*this, observableProxyStubPath)
+                    , _deadProxiesProtection()
+                    , _deadProxies()
+                    , _job(*this)
                 {
                     // Shall we enable the non-happy day functionality to cleanup Release on behalf of unexpected
                     // channel closes. Only for testing Buggy plugins, turn it off (false)!
@@ -2422,6 +2432,15 @@ namespace PluginHost {
                 }
                 virtual ~CommunicatorServer()
                 {
+                    _job.Revoke();
+                    Danglings::iterator pIndex(_deadProxies.begin());
+                    while (pIndex != _deadProxies.end()) {
+                        if (pIndex->second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                            TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), pIndex->first));
+                        }
+                        pIndex++;
+                    }
+                    _deadProxies.clear();
                     ASSERT(_requestObservers.size() == 0 && "Sink for ICOMLink::INotifications not unregistered!");
                     Observers::iterator index(_requestObservers.begin());
                     while (index != _requestObservers.end()) {
@@ -2516,6 +2535,44 @@ namespace PluginHost {
                         _adminLock.Unlock();
                     }
                 }
+                void Dispatch() {
+                    // Oke time to notify the destruction of some proxies...
+                    // We use a dedicated synchronisation object as we must make sure
+                    // that the deadproxies are now not worked upon if we are evaluating
+                    // the list, and if needed, extract one element from it.
+                    // The addition to this list might be done by the communicator thread
+                    // and this thread should always be deterministicly short locked. So 
+                    // do not call anything that could potentially be undeteministic (or 
+                    // even worse, use the communicator thread..
+                    _deadProxiesProtection.Lock();
+                    while (_deadProxies.empty() == false) {
+                        std::pair<uint32_t, Core::IUnknown*> entry(std::move(_deadProxies.back()));
+                        _deadProxies.pop_back();
+
+                        // Now the communicator thread can continue! In the span of the lock
+                        // there are *no* calls that are undeterministaic or mght require the
+                        // communicator thread to safely continue.
+                        _deadProxiesProtection.Unlock();
+
+                        _parent.Dangling(entry.second, entry.first);
+
+                        _adminLock.Lock();
+                        for (IShell::ICOMLink::INotification* observer : _requestObservers) {
+                            observer->Dangling(entry.second, entry.first);
+                        }
+                        _adminLock.Unlock();
+
+                        // We reported the dangling to all interested. Drop ourr reference..
+                        if (entry.second->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                            TRACE(Trace::Warning, (_T("Potentially a Proxy leak on interface %d"), entry.first));
+                        }
+                        TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), entry.first));
+
+                        _deadProxiesProtection.Lock();
+                    }
+                    _deadProxiesProtection.Unlock();
+                }
+
 
             private:
                 void Reload(const string& path) {
@@ -2556,19 +2613,12 @@ namespace PluginHost {
                     return (_parent.Acquire(interfaceId, className, version));
                 }
 
-                void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) override
+                void Dangling(Danglings&& danglingProxies) override
                 {
-                    _adminLock.Lock();
-
-                    _parent.Dangling(source, interfaceId);
-
-                    for (auto& observer : _requestObservers) {
-                        observer->Dangling(source, interfaceId);
-                    }
-
-                    _adminLock.Unlock();
-
-                    TRACE(Activity, (_T("Dangling resource cleanup of interface: 0x%X"), interfaceId));
+                    _deadProxiesProtection.Lock();
+                    _deadProxies.insert(_deadProxies.end(), std::make_move_iterator(danglingProxies.begin()), std::make_move_iterator(danglingProxies.end()));
+                    _deadProxiesProtection.Unlock();
+                    _job.Submit();
                 }
 
                 void Revoke(const Core::IUnknown* remote, const uint32_t interfaceId) override
@@ -2604,6 +2654,9 @@ namespace PluginHost {
                 mutable Core::CriticalSection _adminLock;
                 Observers _requestObservers;
                 ProxyStubObserver _proxyStubObserver;
+                Core::CriticalSection _deadProxiesProtection;
+                Danglings _deadProxies;
+                Core::WorkerPool::JobType<CommunicatorServer&> _job;
             };
             class RemoteInstantiation : public IRemoteInstantiation {
             private:
@@ -3324,6 +3377,7 @@ POP_WARNING()
                             TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
                         }
                         _notificationLock.Unlock();
+                        base->Release();
                     }
                 }
             }

@@ -48,6 +48,7 @@ namespace RPC {
     class EXTERNAL Administrator {
     public:
         using Proxies = std::vector<ProxyStub::UnknownProxy*>;
+        using Danglings = std::vector<std::pair<uint32_t, Core::IUnknown*>>;
 
     private:
         Administrator();
@@ -210,7 +211,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Danglings& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
