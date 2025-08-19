@@ -3377,6 +3377,7 @@ POP_WARNING()
                             TRACE(Activity, (_T("Unregistered the dangling: PluginHost::IPlugin::INotification")));
                         }
                         _notificationLock.Unlock();
+                        base->Release();
                     }
                 }
             }

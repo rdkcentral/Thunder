@@ -160,7 +160,6 @@ namespace ProxyStub {
             ASSERT(_refCount > 0);
             _adminLock.Lock();
             if (_channel.IsValid() == true) {
-                _refCount++;
                 _channel.Release();
                 succeeded = true;
             }
