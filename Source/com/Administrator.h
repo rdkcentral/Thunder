@@ -131,6 +131,7 @@ namespace RPC {
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
+        using Danglings = std::vector<std::pair<uint32_t, Core::IUnknown*>>;
 
     public:
         Administrator(Administrator&&) = delete;
@@ -233,7 +234,7 @@ POP_WARNING()
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Danglings& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
