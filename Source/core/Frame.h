@@ -644,7 +644,7 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, int_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
