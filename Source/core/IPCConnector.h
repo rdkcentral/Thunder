@@ -587,8 +587,10 @@ POP_WARNING()
                 return (result);
             }
 
-            void Flush()
+            bool Flush()
             {
+                bool result = false;
+
                 _lock.Lock();
 
                 TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
@@ -597,12 +599,16 @@ POP_WARNING()
 
                 if (_outbound.IsValid() == true) {
                     _outbound.Release();
+                    result = true;
                 }
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
+                    result = true;
                 }
 
                 _lock.Unlock();
+
+                return (result);
             }
 
             ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
@@ -658,29 +664,16 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            bool AbortOutbound()
+            void Abort()
             {
-                bool result = false;
-
                 _lock.Lock();
 
-                if (_outbound.IsValid() == true) {
-
-                    result = true;
-
-                    if (_callback != nullptr) {
-                        _callback->Dispatch(*_outbound);
-                        _callback = nullptr;
-                    }
-
-                    _outbound.Release();
-                } else {
-                    ASSERT(_callback == nullptr);
+                if (_callback != nullptr) {
+                    _callback->Dispatch(*_outbound);
+                    _callback = nullptr;
                 }
 
                 _lock.Unlock();
-
-                return (result);
             }
 
         private:
@@ -727,10 +720,6 @@ POP_WARNING()
             _administration.Unregister(id);
         }
 
-        void Abort()
-        {
-            _administration.AbortOutbound();
-        }
         template <typename ACTUALELEMENT>
         uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
@@ -827,8 +816,7 @@ POP_WARNING()
             {
                 if (_parent.Source().IsOpen() == false) {
                     // Whatever s hapening, Flush what we were doing..
-                    _parent.Abort();
-                    _factory.Flush();
+                    _factory.Abort();
                 }
 
                 _parent.StateChange();
@@ -858,10 +846,10 @@ POP_WARNING()
 
                 // Now we wait for ever, to get a signal that we are done :-)
                 if (_signal.Lock(waitTime) != Core::ERROR_NONE) {
-                    _administration.AbortOutbound();
+                    _administration.Flush();
 
                     result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.AbortOutbound() == true) {
+                } else if (_administration.Flush() == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
@@ -998,15 +986,21 @@ POP_WARNING()
 
             if (_administration.InProgress() == true) {
                 success = Core::ERROR_INPROGRESS;
-            } else if (_link.IsOpen() == true) {
+            }
+            else {
                 // We need to accept a CONST object to avoid an additional object creation
                 // proxy casted objects.
                 _administration.SetOutbound(command, completed);
 
-                // Send out the
-                _link.Submit(command->IParameters());
+                if (_link.IsOpen() == true) {
+                    _link.Submit(command->IParameters());
 
-                success = Core::ERROR_NONE;
+                    success = Core::ERROR_NONE;
+                } else {
+                    _administration.Flush();
+
+                    success = Core::ERROR_CONNECTION_CLOSED;
+                }
             }
 
             _serialize.Unlock();
@@ -1019,17 +1013,21 @@ POP_WARNING()
 
             _serialize.Lock();
 
+            IPCTrigger sink(_administration);
+
+            // We need to accept a CONST object to avoid an additional object creation
+            // proxy casted objects.
+            _administration.SetOutbound(command, &sink);
+
             if (_link.IsOpen() == true) {
-                IPCTrigger sink(_administration);
-
-                // We need to accept a CONST object to avoid an additional object creation
-                // proxy casted objects.
-                _administration.SetOutbound(command, &sink);
-
-                // Send out the
                 _link.Submit(command->IParameters());
 
                 success = sink.Wait(waitTime);
+            }
+            else {
+                _administration.Flush();
+
+                success = Core::ERROR_CONNECTION_CLOSED;
             }
 
             _serialize.Unlock();
