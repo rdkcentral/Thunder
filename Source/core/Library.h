@@ -57,6 +57,9 @@ namespace Core {
         {
             return (_refCountedHandle != nullptr);
         }
+
+        uint32_t WaitUnloaded(const uint32_t timeout = Core::infinite);
+
         inline const string& Error() const
         {
             return (_error);
