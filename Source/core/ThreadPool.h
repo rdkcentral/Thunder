@@ -91,6 +91,8 @@ namespace Core {
              *        QueueType methods such as Post or Insert.
              */
             MeasurableJob(MeasurableJob&&) = delete;
+            MeasurableJob& operator=(MeasurableJob&&) = default;
+            MeasurableJob& operator=(const MeasurableJob&) = default;
 
             MeasurableJob()
                 : _job()
@@ -109,8 +111,6 @@ namespace Core {
                 }
             }
 
-            MeasurableJob& operator=(MeasurableJob&&) = default;
-            MeasurableJob& operator=(const MeasurableJob&) = default;
 
         public:
             bool operator==(const MeasurableJob& other) const
@@ -121,7 +121,7 @@ namespace Core {
             {
                 return _job != other._job;
             }
-            IJob* Process(IDispatcher* dispatcher)
+            void Process(IDispatcher* dispatcher)
             {
                 ASSERT(dispatcher != nullptr);
                 ASSERT(_job.IsValid());
@@ -131,8 +131,6 @@ namespace Core {
 
                 REPORT_OUTOFBOUNDS_WARNING(WarningReporting::JobTooLongWaitingInQueue, static_cast<uint32_t>((Time::Now().Ticks() - _time) / Time::TicksPerMillisecond));
                 REPORT_DURATION_WARNING({ dispatcher->Dispatch(request); }, WarningReporting::JobTooLongToFinish);
-
-                return (dynamic_cast<IJob*>(request));
             }
             bool IsValid() const
             {
@@ -167,7 +165,13 @@ namespace Core {
         using QueueElement = ProxyType<IDispatch>;
         #endif
 
-        using MessageQueue = QueueType< QueueElement >;
+        #if defined(__JOB_QUEUE_STATIC_PRIORITY__)
+        using MessageQueue = CategoryQueueType< QueueElement, false >;
+        #elif defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+        using MessageQueue = CategoryQueueType< QueueElement, true >;
+        #else
+		using MessageQueue = QueueType< QueueElement >;
+        #endif
 
     public:   
         template<typename IMPLEMENTATION>
@@ -185,7 +189,9 @@ namespace Core {
             class Worker : public IJob {
             public:
                 Worker() = delete;
+                Worker(Worker&&) = delete;
                 Worker(const Worker&) = delete;
+                Worker& operator=(Worker&&) = delete;
                 Worker& operator=(const Worker&) = delete;
 
                 Worker(JobType<IMPLEMENTATION>& parent) : _parent(parent) {
@@ -205,11 +211,11 @@ namespace Core {
             };
 
         public:
-            JobType(const JobType<IMPLEMENTATION>& copy) = delete;
-            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
-            // deleting the move operators here is important as the varargs c'tor icw the casting operator allowed it to behave as a move operator
+            // Deleting the move operators here is important as the varargs c'tor icw the casting operator allowed it to behave as a move operator
             JobType(JobType<IMPLEMENTATION>&&) = delete;
+            JobType(const JobType<IMPLEMENTATION>&) = delete;
             JobType<IMPLEMENTATION>& operator=(JobType<IMPLEMENTATION>&&) = delete;
+            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
 
             PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             template <typename... Args>
@@ -221,7 +227,7 @@ namespace Core {
             {
                 _job.AddRef();
             }
-POP_WARNING()
+            POP_WARNING()
             ~JobType()
             {
                 ASSERT (_state == IDLE);
@@ -373,7 +379,9 @@ POP_WARNING()
 
         class EXTERNAL Minion {
         public:
+            Minion(Minion&&) = delete;
             Minion(const Minion&) = delete;
+            Minion& operator=(Minion&&) = delete;
             Minion& operator=(const Minion&) = delete;
 
             Minion(ThreadPool& parent, IDispatcher* dispatcher)
@@ -442,27 +450,18 @@ POP_WARNING()
 
                     _parent.SaveDispatchedJobContext(data);
 
-                    IJob* job = _currentRequest.Process(_dispatcher);
+                    _currentRequest.Process(_dispatcher);
 
                     _parent.RemoveDispatchedJobContext(data);
 
-                    if (job != nullptr) {
-                        // Maybe we need to reschedule this request....
-                        _parent.Closure(*job);
-                    }
                     #else
                     IDispatch* request = &(*_currentRequest);
 
                     _dispatcher->Dispatch(request); 
 
-                    IJob* job = dynamic_cast<IJob*>(request);
-
-                    if (job != nullptr) {
-                        // Maybe we need to reschedule this request....
-                        _parent.Closure(*job);
-                    }
-
                     #endif
+
+                    _parent.Completed(_currentRequest);
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
@@ -494,11 +493,7 @@ POP_WARNING()
             mutable CriticalSection _adminLock;
             Event _signal;
             std::atomic<uint32_t> _interestCount;
-            #ifdef __CORE_WARNING_REPORTING__
-            MeasurableJob _currentRequest;
-            #else
-            ProxyType<IDispatch> _currentRequest;
-            #endif
+            QueueElement _currentRequest;
             uint32_t _runs;
         };
 
@@ -506,7 +501,9 @@ POP_WARNING()
         class EXTERNAL Executor : public Thread {
         public:
             Executor() = delete;
+            Executor(Executor&&) = delete;
             Executor(const Executor&) = delete;
+            Executor& operator=(Executor&&) = delete;
             Executor& operator=(const Executor&) = delete;
 
             Executor(ThreadPool& parent, IDispatcher* dispatcher, const uint32_t stackSize, const TCHAR* name)
@@ -551,11 +548,17 @@ POP_WARNING()
         };
 
     public:
-        ThreadPool(const ThreadPool& a_Copy) = delete;
-        ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
+        ThreadPool(ThreadPool&&) = delete;
+        ThreadPool(const ThreadPool&) = delete;
+        ThreadPool& operator=(ThreadPool&&) = delete;
+        ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback) 
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreshold = 0, const uint16_t mediumPriorityThreshold = 0)
+            #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+            : _queue(queueSize, lowPriorityThreshold, mediumPriorityThreshold)
+            #else
             : _queue(queueSize)
+            #endif 
             , _scheduler(scheduler)
             #ifdef __CORE_WARNING_REPORTING__
             , _dispatchedJobMonitor(nullptr)
@@ -695,6 +698,55 @@ POP_WARNING()
         #endif
 
     private:
+        // This seems to be a work-a-round- on windows to detect a method if it is *not* whitin a
+        // template class. If we do not wrap it in a template, MSVC tried to compile both paths
+		// also if the method is *not* available. This is not the case on GCC.
+        template<typename QUEUE>
+        struct CompletionCallback {
+        public:
+            // -----------------------------------------------------
+            // Check for Completion method on Queue
+            // -----------------------------------------------------
+            IS_MEMBER_AVAILABLE_INHERITANCE_TREE(Completion, hasCompletion);
+
+            template <typename TYPE = QUEUE>
+            inline static typename Core::TypeTraits::enable_if<hasCompletion<TYPE, void, const QueueElement&>::value, void>::type
+                Completion(QUEUE& queue, const QueueElement& job)
+            {
+                queue.Completion(job);
+            }
+            template <typename TYPE = QUEUE>
+            inline static typename Core::TypeTraits::enable_if<!hasCompletion<TYPE, void, const QueueElement&>::value, void>::type
+                Completion(QUEUE&, const QueueElement&)
+            {
+            }
+        };
+
+        void Completed(QueueElement& request)
+        {
+            ASSERT(request != nullptr);
+
+            // Report completion of this extracte Job
+            CompletionCallback<MessageQueue>::Completion(_queue, request);
+
+            IJob* job = dynamic_cast<IJob*>(request.operator->());
+
+            if (job != nullptr) {
+                // Maybe we need to reschedule this request....
+                Time scheduleTime;
+                ProxyType<IDispatch> resubmit = job->Resubmit(scheduleTime);
+                if (resubmit.IsValid() == true) {
+                    if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now())) {
+                        _queue.Post(resubmit);
+                    }
+                    else {
+                        // See if we have a hook that can process scheduled entries :-)
+                        _scheduler->Schedule(scheduleTime, resubmit);
+                    }
+                }
+            }
+        }
+
         void Idle() {
             if (_callback != nullptr) {
                 _queue.Lock();
@@ -713,21 +765,6 @@ POP_WARNING()
                     }
                 }
             }
-        }
-        void Closure(IJob& job) {
-            Time scheduleTime;
-            _queue.Lock();
-            ProxyType<IDispatch> resubmit = job.Resubmit(scheduleTime);
-            if (resubmit.IsValid() == true) {
-                if ((scheduleTime.IsValid() == false) || (_scheduler == nullptr) || (scheduleTime < Time::Now()) ) {
-                    _queue.Post(resubmit);
-                }
-                else {
-                    // See if we have a hook that can process scheduled entries :-)
-                    _scheduler->Schedule(scheduleTime, resubmit);
-                }
-            }
-            _queue.Unlock();
         }
 
     private:
