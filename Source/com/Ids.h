@@ -96,8 +96,8 @@ namespace RPC {
 
         ID_EXTERNAL_INTERFACE_OFFSET               = (ID_OFFSET_INTERNAL + 0x0080),
         ID_EXTERNAL_QA_INTERFACE_OFFSET            = (0xA000),
-        ID_EXTERNAL_CC_INTERFACE_OFFSET            = (0xCC00), // ends on 0xDFFF
-        ID_EXTERNAL_SAMPLE_INTERFACE_OFFSET        = (0xE000)
+	ID_EXTERNAL_SAMPLE_INTERFACE_OFFSET        = (0xB000),
+        ID_EXTERNAL_CC_INTERFACE_OFFSET            = (0xCC00) // ends on 0xDFFF
     };
 }
 }
