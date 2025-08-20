@@ -1,5 +1,8 @@
 name: Linux build template
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
 
