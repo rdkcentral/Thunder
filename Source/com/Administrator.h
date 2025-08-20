@@ -496,6 +496,12 @@ POP_WARNING()
             Core::ProxyType<Job> job(Job::Instance());
 
             job->Set(source, message);
+
+            // If this is on an already occupied channel, it has an outgoing COMRPC call, raise 
+            // the priority as we might be causing a deadlock if the workerpool would be stuffed.
+            if (source.InProgress() == true) {
+               // Schedule with high priority
+            }
             _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
         }
 
