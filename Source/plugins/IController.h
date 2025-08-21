@@ -123,7 +123,7 @@ namespace Controller {
             virtual void StateControlStateChange(const string& callsign, const state& state) = 0;
         };
 
-        virtual Core::hresult Register(INotification* sink) = 0;
+        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign) = 0;
         virtual Core::hresult Unregister(INotification* sink) = 0;
 
         // @brief Activates a plugin

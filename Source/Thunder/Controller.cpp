@@ -826,24 +826,38 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_ALREADY_CONNECTED;
         _adminLock.Lock();
 
-        // Make sure a sink is not registered multiple times.
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
-        ASSERT(index == _lifeTimeObservers.end());
+        // Make sure a sink is not registered multiple times, even with different callsigns.
+        auto existing = std::find_if(_lifeTimeObservers.begin(), _lifeTimeObservers.end(),
+            [notification](const LifeTimeObserver& entry) {
+                return (entry._sink == notification);
+            });
 
-        if (index == _lifeTimeObservers.end()) {
-            _lifeTimeObservers.push_back(notification);
-            notification->AddRef();
+        if (existing == _lifeTimeObservers.end()) {
+            _lifeTimeObservers.emplace_back(notification, callsign);
             result = Core::ERROR_NONE;
         }
 
         _adminLock.Unlock();
+
+        if (result == Core::ERROR_NONE) {
+            auto it = _pluginServer->Services().Services();
+
+            while (it.Next() == true) {
+                PluginHost::IShell* shell = it.Current().Origin();
+                const string& shellCallsign = shell->Callsign();
+
+                if ((callsign.IsSet() == false) || (callsign.Value() == shellCallsign)) {
+                    notification->StateChange(shellCallsign, shell->State(), shell->Reason());
+                }
+            }
+        }
 
         return (result);
     }
@@ -855,15 +869,12 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
-
-        // Make sure you do not unregister something you did not register !!!
-        ASSERT(index != _lifeTimeObservers.end());
-
-        if (index != _lifeTimeObservers.end()) {
-            (*index)->Release();
-            _lifeTimeObservers.erase(index);
-            result = Core::ERROR_NONE;
+        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); it++) {
+            if (it->_sink == notification) {
+                it = _lifeTimeObservers.erase(it);
+                result = Core::ERROR_NONE;
+                break;
+            }
         }
 
         _adminLock.Unlock();
@@ -1355,10 +1366,10 @@ namespace Plugin {
     {
         _adminLock.Lock();
 
-        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-        while(index != _lifeTimeObservers.end()) {
-            (*index)->StateChange(callsign, state, reason);
-            index++;
+        for (const auto& entry : _lifeTimeObservers) {
+            if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
+                entry._sink->StateChange(callsign, state, reason);
+            }
         }
 
         _adminLock.Unlock();
@@ -1370,10 +1381,10 @@ namespace Plugin {
     {
        _adminLock.Lock();
 
-        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-        while(index != _lifeTimeObservers.end()) {
-            (*index)->StateControlStateChange(callsign, state);
-            index++;
+        for (const auto& entry : _lifeTimeObservers) {
+           if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
+               entry._sink->StateControlStateChange(callsign, state);
+           }
         }
 
         _adminLock.Unlock();
