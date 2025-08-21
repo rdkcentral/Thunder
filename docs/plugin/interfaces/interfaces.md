@@ -217,10 +217,10 @@ Meaning to be able to use this COM-RPC interface in JSON-RPC no additional code 
 
 ##### Example
 
-[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleInstanceObjects.h#L29) you will see an example of an interface that uses automatic object lookup.
+[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleInstanceObjects.h#L29) you will see an example of an interface that uses automatic object lookup.
 
-The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleInstanceObjects.h#L39).
-With the [Relinquish](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleInstanceObjects.h#L78) method the object is destroyed again.
+The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleInstanceObjects.h#L39).
+With the [Relinquish](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleInstanceObjects.h#L78) method the object is destroyed again.
 
 If you look into the generated documentation for this interface which can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
 
@@ -230,7 +230,7 @@ If you now want a function/property to call on that specific IDevice object you 
 
 If you are done using the object you can call the [relinquish](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#method_relinquish) method specifying the object ID of the object you want to destroy.
 
-The IDevice also has an event, see [here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleInstanceObjects.h#L43).
+The IDevice also has an event, see [here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleInstanceObjects.h#L43).
 
 To register for an event for a specific Device, so object ID in the JSON-RPC world you can see [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#head_Notifications) how that is done, again specify the object ID with the # delimiter in the designator for the register method. As you can see when the event is sent the object ID is also in the event designator (convenient in case you registered for notifications of multiple object ID's)
 
@@ -250,10 +250,10 @@ Again meaning to be able to use this COM-RPC interface in JSON-RPC no additional
 
 ##### Example
 
-[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleAsync.h#L29) you will see an interface that has a COM-RPC method that triggers an asynchronous event.
-The method [Connect](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleAsync.h#L73) allows to pass an ICallback object that will be used to notify when the asynchronous event has completed.
-[Complete](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleAsync.h#L54) will be called on the passed ICallback object to indicate this. 
-[async](https://github.com/rdkcentral/ThunderInterfaces/blob/master/sample_interfaces/ISimpleAsync.h#L57) is set for this method to indicate we also want the JSON-RPC function to be async.
+[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleAsync.h#L29) you will see an interface that has a COM-RPC method that triggers an asynchronous event.
+The method [Connect](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleAsync.h#L73) allows to pass an ICallback object that will be used to notify when the asynchronous event has completed.
+[Complete](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleAsync.h#L54) will be called on the passed ICallback object to indicate this. 
+[async](https://github.com/rdkcentral/ThunderInterfaces/blob/master/examples/ISimpleAsync.h#L57) is set for this method to indicate we also want the JSON-RPC function to be async.
 
 In the generated documentation for the interface it can be seen how this works on JSON-RPC, found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
 The [connect](https://github.com/rdkcentral/ThunderNanoServices/blob/development/generator-showcase-exmaple-plugin/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#method_connect) function now is expected to also pass an async ID as parameter. The connect function will result in a response on the JSON-RPC request to indicate the action was triggered but when the action is completed an event is sent on the same channel that started the action which includes the async ID and the name of the method in the designator.
