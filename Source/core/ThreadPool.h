@@ -724,7 +724,7 @@ namespace Core {
 
         void Completed(QueueElement& request)
         {
-            ASSERT(request != nullptr);
+            ASSERT(request.IsValid());
 
             // Report completion of this extracte Job
             CompletionCallback<MessageQueue>::Completion(_queue, request);
