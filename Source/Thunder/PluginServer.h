@@ -1748,7 +1748,7 @@ namespace PluginHost {
             Override(const Override&) = delete;
             Override& operator=(const Override&) = delete;
 
-            Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persitentFolder)
+            Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persistentFolder)
                 : Services()
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
@@ -1772,8 +1772,15 @@ namespace PluginHost {
                         std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false)).first);
 
                     // Create individual plugin configuration files
-                    string filePath = persitentFolder + name + "Override.json";
-                    _pluginOverrideFiles[name] = filePath;
+                    string filePath;
+                    filePath.reserve(persistentFolder.size() + name.size() + sizeof("Override.json") - 1);
+                    filePath.append(persistentFolder).append(name).append("Override.json");
+
+                    _pluginOverrideFiles.emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(name),
+                        std::forward_as_tuple(std::move(filePath))
+                    );
 
                     // Store the override config in the JSON String created in the map
                     Services.Add(index->first.c_str(), &(index->second));
