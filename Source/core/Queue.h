@@ -439,7 +439,7 @@ namespace Thunder {
 
                     ASSERT(_submitted <= _highWaterMark);
 
-                    if ( (_submitted == _highWaterMark) || (_submitted >= currentLoad) ) {
+                    if ( (_submitted == _highWaterMark) || (currentLoad >= _highWaterMark) ) {
                         // We can submit it.
                         _queue.push_back(entry);
                     }
@@ -509,9 +509,10 @@ namespace Thunder {
                     if (_observers.load(Core::memory_order::memory_order_relaxed) > 0) {
                         _observerSignal.SetEvent();
 
-                        while (_observers.load(Core::memory_order::memory_order_relaxed) != 0) {
+						do {
                             std::this_thread::yield();
-                        }
+                        } while (_observers.load(Core::memory_order::memory_order_relaxed) != 0);
+						
                         _observerSignal.ResetEvent();
                     }
                     _observerLock.Unlock();
