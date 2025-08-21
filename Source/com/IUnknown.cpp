@@ -108,6 +108,18 @@ namespace ProxyStub {
         return (id);
     }
 
+    void UnknownProxy::Shutdown() const
+    {
+        _adminLock.Lock();
+        if (_channel.IsValid() == true) {
+            RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
+            if (comchannel != nullptr) {
+                comchannel->Source().Close(0);
+            }
+        }
+        _adminLock.Unlock();
+    }
+
     static class UnknownInstantiation {
     public:
         UnknownInstantiation()
