@@ -1,7 +1,7 @@
 name: Build Thunder documentation
 
 permissions:
-  contents: read
+  contents: write
 
 on:
   # Allows you to run this workflow manually from the Actions tab
