@@ -224,7 +224,10 @@ namespace ProxyStub {
                         result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                         if (result != Core::ERROR_NONE) {
-                            TRACE_L1("Could not remote release the Proxy.");
+                            if (result == Core::ERROR_TIMEDOUT) {
+                                Shutdown();
+                            }
+                            TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
                             result |= COM_ERROR;
                         }
                         else {
@@ -329,13 +332,13 @@ namespace ProxyStub {
                 if (result != Core::ERROR_NONE) {
 
                     if (result == Core::ERROR_TIMEDOUT) {
-                        SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X). Execution of code may or may not have happened. Side effects are to be expected after this message"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+                        Shutdown();
                     }
 
                     result |= COM_ERROR;
 
                     // Oops something failed on the communication. Report it.
-                    TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
+                    TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
                 }
             }
 
@@ -462,7 +465,9 @@ namespace ProxyStub {
             _adminLock.Unlock();
             return(succeeded);
         }
- 
+
+        void Shutdown() const;
+
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
