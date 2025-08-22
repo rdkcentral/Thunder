@@ -114,6 +114,7 @@ namespace ProxyStub {
         if (_channel.IsValid() == true) {
             RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
             if (comchannel != nullptr) {
+                SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
                 comchannel->Source().Close(0);
             }
         }
