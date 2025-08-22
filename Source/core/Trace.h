@@ -295,4 +295,11 @@ namespace Core {
 }
 } // namespace Core
 
+template<typename NEW_TYPE, typename ORIGINAL_TYPE>
+NEW_TYPE int_cast(const ORIGINAL_TYPE& input) {
+    ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
+    ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+    return(static_cast<NEW_TYPE>(input));
+}
+
 #endif //__TRACE_INTERNAL_H
