@@ -86,7 +86,7 @@ namespace Plugin {
                         _sink->AddRef();
                     }
                 }
-                return *this;
+                return (*this);
             }
             LifeTimeObserver& operator=(LifeTimeObserver&& rhs) noexcept {
                 if (this != &rhs) {
@@ -97,7 +97,7 @@ namespace Plugin {
                     _callsign = std::move(rhs._callsign);
                     rhs._sink = nullptr;
                 }
-                return *this;
+                return (*this);
             }
             ~LifeTimeObserver() {
                 if (_sink != nullptr) {
