@@ -871,7 +871,7 @@ namespace Plugin {
 
         for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); it++) {
             if (it->_sink == notification) {
-                it = _lifeTimeObservers.erase(it);
+                _lifeTimeObservers.erase(it);
                 result = Core::ERROR_NONE;
                 break;
             }
@@ -1382,9 +1382,9 @@ namespace Plugin {
        _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
-           if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
-               entry._sink->StateControlStateChange(callsign, state);
-           }
+            if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
+                entry._sink->StateControlStateChange(callsign, state);
+            }
         }
 
         _adminLock.Unlock();
