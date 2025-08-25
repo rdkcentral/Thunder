@@ -104,14 +104,17 @@ namespace Core {
     {
         _adminLock.Lock();
         while (_unreferencedLibraries.size() != 0) {
-            // A few closing code instructions might still be required for 
-            // that thread that submitted the librray to complete, so at 
-            // least give that thread a slice to complete the last few 
-            // instructions before we close down the librray (if it is 
-            // the last reference)
-            std::this_thread::yield();
-
+            Library lib = _unreferencedLibraries.front();
             _unreferencedLibraries.pop_front();
+            _adminLock.Unlock();
+            lib.Release();
+            // A few closing code instructions might still be required for 
+            // that thread that submitted the library to complete, so at 
+            // least give that thread a slice to complete the last few 
+            // instructions before we close down the library (if it is 
+            // the last reference)
+            lib.WaitUnloaded(5000);
+            _adminLock.Lock();
         }
         _adminLock.Unlock();
     }
