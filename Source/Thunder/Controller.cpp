@@ -844,8 +844,6 @@ namespace Plugin {
             result = Core::ERROR_NONE;
         }
 
-        _adminLock.Unlock();
-
         if (result == Core::ERROR_NONE) {
             auto it = _pluginServer->Services().Services();
 
@@ -858,6 +856,8 @@ namespace Plugin {
                 }
             }
         }
+
+        _adminLock.Unlock();
 
         return (result);
     }
