@@ -317,7 +317,7 @@ namespace Plugin {
 
         // ILifeTime overrides
         Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign) override;
-        Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification) override;
+        Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign) override;
         Core::hresult Activate(const string& callsign) override;
         Core::hresult Deactivate(const string& callsign) override;
         Core::hresult Unavailable(const string& callsign) override;

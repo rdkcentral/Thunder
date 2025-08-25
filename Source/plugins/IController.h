@@ -124,7 +124,7 @@ namespace Controller {
         };
 
         virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign) = 0;
-        virtual Core::hresult Unregister(INotification* sink) = 0;
+        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign) = 0;
 
         // @brief Activates a plugin
         // @details Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state.

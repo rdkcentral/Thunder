@@ -883,25 +883,30 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {})
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
-        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end();) {
+        auto match = [&](const LifeTimeObserver& entry) -> bool {
+            return ((entry.first == notification) &&
+                    ((callsign.IsSet() == false) ?
+                        (entry.second.IsSet() == false) :
+                        ((entry.second.IsSet() == true) && (entry.second.Value() == callsign.Value()))));
+        };
 
-            if (it->first == notification) {
+        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); ++it) {
+
+            if (match(*it) == true) {
 
                 if (it->first != nullptr) {
                     it->first->Release();
                 }
-                it = _lifeTimeObservers.erase(it);
+                _lifeTimeObservers.erase(it);
                 result = Core::ERROR_NONE;
-            }
-            else {
-                ++it;
+                break;
             }
         }
 
