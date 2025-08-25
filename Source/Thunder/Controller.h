@@ -48,64 +48,7 @@ namespace Plugin {
     private:
         using Resumes = std::vector<string>;
         using ExternalSubSystems = std::vector<PluginHost::ISubSystem::subsystem>;
-
-        struct LifeTimeObserver {
-            Exchange::Controller::ILifeTime::INotification* _sink;
-            Core::OptionalType<string> _callsign;
-
-            LifeTimeObserver(Exchange::Controller::ILifeTime::INotification* sink,
-                             const Core::OptionalType<string>& callsign)
-                : _sink(sink)
-                , _callsign(callsign)
-            {
-                ASSERT(_sink != nullptr);
-                _sink->AddRef();
-            }
-            LifeTimeObserver(const LifeTimeObserver& other)
-                : _sink(other._sink)
-                , _callsign(other._callsign)
-            {
-                if (_sink != nullptr) {
-                    _sink->AddRef();
-                }
-            }
-            LifeTimeObserver(LifeTimeObserver&& other) noexcept
-                : _sink(other._sink)
-                , _callsign(std::move(other._callsign))
-            {
-                other._sink = nullptr;
-            }
-            LifeTimeObserver& operator=(const LifeTimeObserver& rhs) {
-                if (this != &rhs) {
-                    if (_sink != nullptr) {
-                        _sink->Release();
-                    }
-                    _sink = rhs._sink;
-                    _callsign = rhs._callsign;
-                    if (_sink != nullptr) {
-                        _sink->AddRef();
-                    }
-                }
-                return (*this);
-            }
-            LifeTimeObserver& operator=(LifeTimeObserver&& rhs) noexcept {
-                if (this != &rhs) {
-                    if (_sink != nullptr) {
-                        _sink->Release();
-                    }
-                    _sink = rhs._sink;
-                    _callsign = std::move(rhs._callsign);
-                    rhs._sink = nullptr;
-                }
-                return (*this);
-            }
-            ~LifeTimeObserver() {
-                if (_sink != nullptr) {
-                    _sink->Release();
-                }
-            }
-        };
-
+        using LifeTimeObserver = std::pair<Exchange::Controller::ILifeTime::INotification*, Core::OptionalType<string>>;
         using LifeTimeObservers = std::vector<LifeTimeObserver>;
 
         class Sink 
@@ -262,6 +205,7 @@ namespace Plugin {
             // Attach to the SubSystems, we propagate the changes.
             PluginHost::ISubSystem* subSystems(_service->SubSystems());
 
+            ASSERT(_lifeTimeObservers.empty() == true);
             ASSERT(subSystems != nullptr);
 
             if (subSystems != nullptr) {
