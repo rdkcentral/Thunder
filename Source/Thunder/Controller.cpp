@@ -833,18 +833,37 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_ALREADY_CONNECTED;
         _adminLock.Lock();
 
-        // Make sure a sink is not registered multiple times, even with different callsigns.
-        auto existing = std::find_if(_lifeTimeObservers.begin(), _lifeTimeObservers.end(),
-            [notification](const LifeTimeObserver& entry) {
-                return (entry._sink == notification);
-            });
+        bool conflict = false;
 
-        if (existing == _lifeTimeObservers.end()) {
-            _lifeTimeObservers.emplace_back(notification, callsign);
-            result = Core::ERROR_NONE;
+        for (const auto& entry : _lifeTimeObservers) {
+
+            if (entry.first == notification) {
+
+                if (entry.second.IsSet() == false) {
+                    // Already registered for all
+                    conflict = true;
+                    break;
+                }
+
+                if (callsign.IsSet() == false) {
+                    // Can't register for all, because at least one specific callsign is already registered
+                    conflict = true;
+                    break;
+                }
+
+                if (entry.second.Value() == callsign.Value()) {
+                    // Duplicate registration for a specific callsign is not allowed
+                    conflict = true;
+                    break;
+                }
+            }
         }
 
-        if (result == Core::ERROR_NONE) {
+        if (conflict == false) {
+            notification->AddRef();
+            _lifeTimeObservers.emplace_back(notification, callsign);
+            result = Core::ERROR_NONE;
+
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -869,11 +888,18 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
-        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); it++) {
-            if (it->_sink == notification) {
-                _lifeTimeObservers.erase(it);
+        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end();) {
+
+            if (it->first == notification) {
+
+                if (it->first != nullptr) {
+                    it->first->Release();
+                }
+                it = _lifeTimeObservers.erase(it);
                 result = Core::ERROR_NONE;
-                break;
+            }
+            else {
+                ++it;
             }
         }
 
@@ -1367,8 +1393,8 @@ namespace Plugin {
         _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
-            if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
-                entry._sink->StateChange(callsign, state, reason);
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateChange(callsign, state, reason);
             }
         }
 
@@ -1382,8 +1408,8 @@ namespace Plugin {
        _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
-            if ((entry._callsign.IsSet() == false) || (entry._callsign.Value() == callsign)) {
-                entry._sink->StateControlStateChange(callsign, state);
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateControlStateChange(callsign, state);
             }
         }
 
