@@ -848,7 +848,7 @@ namespace Plugin {
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
-                PluginHost::IShell* shell = it.Current().Origin();
+                PluginHost::IShell* shell = it.Current().operator->();
                 const string& shellCallsign = shell->Callsign();
 
                 if ((callsign.IsSet() == false) || (callsign.Value() == shellCallsign)) {
