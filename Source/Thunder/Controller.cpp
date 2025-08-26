@@ -124,7 +124,7 @@ namespace Plugin {
         Exchange::Controller::JConfiguration::Register(*this, this);
         Exchange::Controller::JDiscovery::Register(*this, this);
         Exchange::Controller::JSystem::Register(*this, this);
-        Exchange::Controller::JLifeTime::Register(*this, this);
+        Exchange::Controller::JLifeTime::Register(*this, this, this);
         Exchange::Controller::JMetadata::Register(*this, this);
         Exchange::Controller::JSubsystems::Register(*this, this);
         Exchange::Controller::JEvents::Register(*this, this);
@@ -866,14 +866,19 @@ namespace Plugin {
             _lifeTimeObservers.emplace_back(notification, callsign);
             result = Core::ERROR_NONE;
 
-            auto it = _pluginServer->Services().Services();
+            if (callsign.IsSet() == true) {
+                Core::ProxyType<PluginHost::IShell> service;
 
-            while (it.Next() == true) {
-                PluginHost::IShell* shell = it.Current().operator->();
-                const string& shellCallsign = shell->Callsign();
+                if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                    notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                }
+            }
+            else {
+                auto it = _pluginServer->Services().Services();
 
-                if ((callsign.IsSet() == false) || (callsign.Value() == shellCallsign)) {
-                    notification->StateChange(shellCallsign, shell->State(), shell->Reason());
+                while (it.Next() == true) {
+                    Core::ProxyType<PluginHost::IShell> service = it.Current();
+                    notification->StateChange(service->Callsign(), service->State(), service->Reason());
                 }
             }
         }
@@ -909,6 +914,9 @@ namespace Plugin {
                 break;
             }
         }
+
+        // Make sure you do not unregister something you did not register !!!
+        ASSERT(result == Core::ERROR_NONE);
 
         _adminLock.Unlock();
 
@@ -1407,7 +1415,11 @@ namespace Plugin {
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason,
+            [&callsign](const string& designator) {
+                const size_t dot = designator.find('.');
+                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
+            });
     }
 
     void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
@@ -1422,7 +1434,11 @@ namespace Plugin {
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state); 
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state,
+            [&callsign](const string& designator) {
+                const size_t dot = designator.find('.');
+                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
+            });
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const

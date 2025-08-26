@@ -110,17 +110,19 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
+            // @statuslistener
             // @brief Notifies of a plugin state change
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
+            virtual void StateChange(const string& callsign /* @index */, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
 
+            // @statuslistener
             // @brief Notifies of a plugin state change controlled by IStateControl
             // @param callsign: Plugin callsign
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void StateControlStateChange(const string& callsign, const state& state) = 0;
+            virtual void StateControlStateChange(const string& callsign /* @index */, const state& state) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign) = 0;

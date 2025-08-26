@@ -26,8 +26,7 @@
 #include "IController.h"
 #include "PostMortem.h"
 
-#include <plugins/json/JsonData_Events.h>
-#include <plugins/json/JEvents.h>
+#include <plugins/json/json_IController.h>
 
 namespace Thunder {
 namespace Plugin {
@@ -36,7 +35,7 @@ namespace Plugin {
     class Controller
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
-        , public PluginHost::JSONRPC
+        , public PluginHost::JSONRPCSupportsEventStatus
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystem
@@ -44,7 +43,8 @@ namespace Plugin {
         , public Exchange::Controller::ILifeTime
         , public Exchange::Controller::IShells
         , public Exchange::Controller::ISubsystems
-        , public Exchange::Controller::IEvents {
+        , public Exchange::Controller::IEvents
+        , public Exchange::Controller::JLifeTime::IHandler {
     private:
         using Resumes = std::vector<string>;
         using ExternalSubSystems = std::vector<PluginHost::ISubSystem::subsystem>;
@@ -327,6 +327,21 @@ namespace Plugin {
 
         // ISubsystems overrides
         Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
+
+        // JSONRPCSupportsEventStatus handler callbacks (new)
+        void OnStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        {
+            TRACE(Trace::Information, (_T("Client [%s] %s statechange"), client.c_str(), (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered ? _T("registered") : _T("unregistered"))));
+
+            // TO-DO: Call Exchange::Controller::JLifeTime::Event::StateChange()
+            // Question: How do we get the needed params here?
+        }
+        void OnStateControlStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        {
+            TRACE(Trace::Information, (_T("Client [%s] %s statecontrolstatechange"), client.c_str(), (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered ? _T("registered") : _T("unregistered"))));
+
+            // TO-DO: Call Exchange::Controller::JLifeTime::Event::StateControlStateChange()
+        }
 
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
