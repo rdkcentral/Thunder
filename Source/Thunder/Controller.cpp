@@ -1464,8 +1464,15 @@ namespace Plugin {
 
         while (it.Next() == true) {
             Core::ProxyType<PluginHost::IShell> service = it.Current();
+            const string serviceCallsign = service->Callsign();
 
-            Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+            Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(),
+                [serviceCallsign, client](const string& designator) {
+                    const size_t dot = designator.find('.');
+                    return ((dot == string::npos) ?
+                            (designator == client) :
+                            ((designator.compare(0, dot, serviceCallsign) == 0) && (designator.compare(dot + 1, string::npos, client) == 0)));
+                });
         }
     }
 
@@ -1478,10 +1485,16 @@ namespace Plugin {
             PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
 
             if (control != nullptr) {
-                const PluginHost::IStateControl::state scState = control->State();
-                const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(scState);
+                const string serviceCallsign = service->Callsign();
+                const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
 
-                Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, serviceCallsign, ltState,
+                    [serviceCallsign, client](const string& designator) {
+                        const size_t dot = designator.find('.');
+                        return ((dot == string::npos) ?
+                                (designator == client) :
+                                ((designator.compare(0, dot, serviceCallsign) == 0) && (designator.compare(dot + 1, string::npos, client) == 0)));
+                    });
 
                 control->Release();
             }
