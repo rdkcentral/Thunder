@@ -333,14 +333,17 @@ namespace Plugin {
         {
             TRACE(Trace::Information, (_T("Client [%s] %s statechange"), client.c_str(), (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered ? _T("registered") : _T("unregistered"))));
 
-            // TO-DO: Call Exchange::Controller::JLifeTime::Event::StateChange()
-            // Question: How do we get the needed params here?
+            if ((status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) && (_pluginServer != nullptr)) {
+                SendInitialStateSnapshot(client);
+            }
         }
         void OnStateControlStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             TRACE(Trace::Information, (_T("Client [%s] %s statecontrolstatechange"), client.c_str(), (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered ? _T("registered") : _T("unregistered"))));
 
-            // TO-DO: Call Exchange::Controller::JLifeTime::Event::StateControlStateChange()
+            if ((status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) && (_pluginServer != nullptr)) {
+                SendInitialStateControlSnapshot(client);
+            }
         }
 
         // IMetadata overrides
@@ -398,6 +401,8 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
+        void SendInitialStateSnapshot(const string& client);
+        void SendInitialStateControlSnapshot(const string& client);
 
     private:
         Core::CriticalSection _adminLock;

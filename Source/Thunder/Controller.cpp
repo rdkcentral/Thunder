@@ -36,6 +36,23 @@ namespace Thunder {
             // Controls
             {}
         );
+
+        inline Exchange::Controller::ILifeTime::state ToLifeTimeState(const PluginHost::IStateControl::state input)
+        {
+            using SC = PluginHost::IStateControl;
+            using LT = Exchange::Controller::ILifeTime;
+
+            switch (input) {
+            case SC::SUSPENDED:
+                return (LT::SUSPENDED);
+            case SC::RESUMED:
+                return (LT::RESUMED);
+            case SC::UNINITIALIZED:
+            case SC::EXITED:
+            default:
+                return (LT::UNKNOWN);
+            }
+        }
     }
 
 namespace Plugin {
@@ -1439,6 +1456,36 @@ namespace Plugin {
                 const size_t dot = designator.find('.');
                 return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
             });
+    }
+
+    void Controller::SendInitialStateSnapshot(const string& client)
+    {
+        auto it = _pluginServer->Services().Services();
+
+        while (it.Next() == true) {
+            Core::ProxyType<PluginHost::IShell> service = it.Current();
+
+            Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+        }
+    }
+
+    void Controller::SendInitialStateControlSnapshot(const string& client)
+    {
+        auto it = _pluginServer->Services().Services();
+
+        while (it.Next() == true) {
+            Core::ProxyType<PluginHost::IShell> service = it.Current();
+            PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+            if (control != nullptr) {
+                const PluginHost::IStateControl::state scState = control->State();
+                const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(scState);
+
+                Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+
+                control->Release();
+            }
+        }
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
