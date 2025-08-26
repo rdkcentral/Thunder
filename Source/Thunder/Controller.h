@@ -328,7 +328,7 @@ namespace Plugin {
         // ISubsystems overrides
         Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
 
-        // JSONRPCSupportsEventStatus handler callbacks (new)
+        // JSONRPCSupportsEventStatus overrides
         void OnStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             TRACE(Trace::Information, (_T("Client [%s] %s statechange"), client.c_str(), (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered ? _T("registered") : _T("unregistered"))));
