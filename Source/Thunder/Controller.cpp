@@ -843,7 +843,7 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {})
+    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
@@ -905,7 +905,7 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {})
+    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
