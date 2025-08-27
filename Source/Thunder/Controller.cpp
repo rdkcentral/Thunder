@@ -922,10 +922,7 @@ namespace Plugin {
         for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); ++it) {
 
             if (match(*it) == true) {
-
-                if (it->first != nullptr) {
-                    it->first->Release();
-                }
+                it->first->Release();
                 _lifeTimeObservers.erase(it);
                 result = Core::ERROR_NONE;
                 break;
