@@ -884,9 +884,9 @@ namespace Plugin {
             result = Core::ERROR_NONE;
 
             if (callsign.IsSet() == true) {
-                Core::ProxyType<PluginHost::IShell> service;
+                Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
-                if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
+                if (service.IsValid() == true) {
                     notification->StateChange(service->Callsign(), service->State(), service->Reason());
                 }
             }
@@ -1460,43 +1460,55 @@ namespace Plugin {
 
     void Controller::SendInitialStateSnapshot(const string& client)
     {
-        auto it = _pluginServer->Services().Services();
+        const size_t dot = client.find('.');
 
-        while (it.Next() == true) {
-            Core::ProxyType<PluginHost::IShell> service = it.Current();
-            const string serviceCallsign = service->Callsign();
+        if (dot == string::npos) {
+            auto it = _pluginServer->Services().Services();
 
-            Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(),
-                [serviceCallsign, client](const string& designator) {
-                    const size_t dot = designator.find('.');
-                    return ((dot == string::npos) ?
-                            (designator == client) :
-                            ((designator.compare(0, dot, serviceCallsign) == 0) && (designator.compare(dot + 1, string::npos, client) == 0)));
-                });
+            while (it.Next() == true) {
+                Core::ProxyType<PluginHost::IShell> service = it.Current();
+                const string serviceCallsign = service->Callsign();
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
+            }
+        } else {
+            const string callsign(client.substr(0, dot));
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+
+            if (service.IsValid() == true) {
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+            }
         }
     }
 
     void Controller::SendInitialStateControlSnapshot(const string& client)
     {
-        auto it = _pluginServer->Services().Services();
+        const size_t dot = client.find('.');
 
-        while (it.Next() == true) {
-            Core::ProxyType<PluginHost::IShell> service = it.Current();
-            PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+        if (dot == string::npos) {
+            auto it = _pluginServer->Services().Services();
 
-            if (control != nullptr) {
-                const string serviceCallsign = service->Callsign();
-                const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+            while (it.Next() == true) {
+                Core::ProxyType<PluginHost::IShell> service = it.Current();
+                PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
 
-                Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, serviceCallsign, ltState,
-                    [serviceCallsign, client](const string& designator) {
-                        const size_t dot = designator.find('.');
-                        return ((dot == string::npos) ?
-                                (designator == client) :
-                                ((designator.compare(0, dot, serviceCallsign) == 0) && (designator.compare(dot + 1, string::npos, client) == 0)));
-                    });
+                if (control != nullptr) {
+                    const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                    control->Release();
+                }
+            }
+        } else {
+            const string callsign(client.substr(0, dot));
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
-                control->Release();
+            if (service.IsValid() == true) {
+                PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+                if (control != nullptr) {
+                    const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                    control->Release();
+                }
             }
         }
     }
