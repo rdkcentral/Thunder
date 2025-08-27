@@ -331,13 +331,13 @@ namespace Plugin {
         // JSONRPCSupportsEventStatus overrides
         void OnStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
-            if ((status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) && (_pluginServer != nullptr)) {
+            if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
                 SendInitialStateSnapshot(client);
             }
         }
         void OnStateControlStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
-            if ((status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) && (_pluginServer != nullptr)) {
+            if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
                 SendInitialStateControlSnapshot(client);
             }
         }
