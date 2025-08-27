@@ -1460,6 +1460,7 @@ namespace Plugin {
         const size_t dot = client.find('.');
 
         if (dot == string::npos) {
+            _adminLock.Lock();
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -1467,7 +1468,9 @@ namespace Plugin {
                 const string serviceCallsign = service->Callsign();
                 Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
             }
-        } else {
+            _adminLock.Unlock();
+        }
+        else {
             const string callsign(client.substr(0, dot));
             Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
@@ -1482,6 +1485,7 @@ namespace Plugin {
         const size_t dot = client.find('.');
 
         if (dot == string::npos) {
+            _adminLock.Lock();
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -1494,7 +1498,9 @@ namespace Plugin {
                     control->Release();
                 }
             }
-        } else {
+            _adminLock.Unlock();
+        }
+        else {
             const string callsign(client.substr(0, dot));
             Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
