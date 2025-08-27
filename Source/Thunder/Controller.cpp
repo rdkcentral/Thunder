@@ -1461,6 +1461,7 @@ namespace Plugin {
 
         if (dot == string::npos) {
             _adminLock.Lock();
+            ASSERT(_pluginServer != nullptr);
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
@@ -1486,6 +1487,7 @@ namespace Plugin {
 
         if (dot == string::npos) {
             _adminLock.Lock();
+            ASSERT(_pluginServer != nullptr);
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
