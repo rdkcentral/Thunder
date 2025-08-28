@@ -1476,6 +1476,7 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 Core::ProxyType<PluginHost::IShell> service = it.Current();
+
                 if (service->State() == PluginHost::IShell::state::ACTIVATED) {
                     const string serviceCallsign = service->Callsign();
                     Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
