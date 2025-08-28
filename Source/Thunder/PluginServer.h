@@ -1779,8 +1779,8 @@ namespace PluginHost {
 
                     // Create individual plugin configuration files
                     string filePath;
-                    filePath.reserve(persistentFolder.size() + name.size() + sizeof("Override.json") - 1);
-                    filePath.append(persistentFolder).append(name).append("Override.json");
+                    filePath.reserve(persistentFolder.size() + name.size() + sizeof(".json") - 1);
+                    filePath.append(persistentFolder).append(name).append(".json");
 
                     _pluginOverrideFiles.emplace(
                         std::piecewise_construct,
@@ -1861,31 +1861,46 @@ namespace PluginHost {
                     Callsigns::iterator indexCallsigns(_callsigns.find(currentCallsign));
                     ASSERT(indexCallsigns != _callsigns.end());
 
-                    Core::File storage(indexFile->second);
-                    if (storage.Create() == true) {
+                    string config(indexService->ConfigLine());
 
-                        // Clear all currently set values, they might be from the previous run.
-                        Clear();
+                    if (!config.empty()) {
 
-                        Prefix    = _serverconfig.Prefix();
-                        IdleTime  = _serverconfig.IdleTime();
-
-                        string config(indexService->ConfigLine());
-
-                        if (config.empty() == true) {
-                            indexCallsigns->second.Configuration = _T("{}");
-                        } else {
-                            indexCallsigns->second.Configuration = config;
+                        const Thunder::Plugin::Config* readOnlyConfig = nullptr;
+                        Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator indexConfig = _serverconfig.Plugins();
+                        while (indexConfig.Next()) {
+                            if (indexConfig.Current().Callsign.Value() == currentCallsign) {
+                                readOnlyConfig = &indexConfig.Current();
+                                break;
+                            }
                         }
-                        indexCallsigns->second.SystemRootPath = indexService->SystemRootPath();
-                        indexCallsigns->second.StartMode = indexService->StartMode();
-                        indexCallsigns->second.Resumed = indexService->Resumed();
 
-                        // Persist the currently set information
-                        IElement::ToFile(storage);
-                        storage.Close();
-                    } else {
-                        result = storage.ErrorCode();
+                        // ONLY persist when the config changes from the default config
+                        if (readOnlyConfig == nullptr || config == readOnlyConfig->Configuration.Value()) {
+                            return;
+                        }
+
+                        Core::File storage(indexFile->second);
+                        if (storage.Create() == true) {
+
+                            // Clear all currently set values, they might be from the previous run.
+                            Clear();
+    
+                            Prefix    = _serverconfig.Prefix();
+                            IdleTime  = _serverconfig.IdleTime();
+
+                            indexCallsigns->second.Configuration = config;
+                            indexCallsigns->second.SystemRootPath = indexService->SystemRootPath();
+                            indexCallsigns->second.StartMode = indexService->StartMode();
+                            indexCallsigns->second.Resumed = indexService->Resumed();
+    
+                            // Persist the currently set information
+                            IElement::ToFile(storage);
+                            storage.Close();
+                        } else {
+                            if (result == Core::ERROR_NONE) {
+                                result = storage.ErrorCode();
+                            }
+                        }
                     }
                 };
                     

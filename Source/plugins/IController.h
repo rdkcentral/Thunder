@@ -86,7 +86,7 @@ namespace Controller {
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
-        // @omit
+        // @omit @deprecated
         Core::hresult Persist() { return Persist(Core::OptionalType<string>());}
 
         // @alt storeconfig
