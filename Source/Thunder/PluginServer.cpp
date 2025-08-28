@@ -76,6 +76,7 @@ namespace PluginHost {
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
     /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
+    /* static */ const TCHAR* Server::PluginOverrideDirectory = _T("Thunder/plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
@@ -1232,7 +1233,7 @@ namespace PluginHost {
         IFactories::Assign(&_factoriesImplementation);
 
         // See if the persitent path for our-selves exist, if not we will create it :-)
-        Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
+        Core::File persistentPath(_config.PersistentPath() + _T("Thunder/plugins"));
 
         if (persistentPath.IsDirectory() == false) {
             Core::Directory(persistentPath.Name().c_str()).Create();
