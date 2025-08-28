@@ -932,10 +932,7 @@ namespace Plugin {
         for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); ++it) {
 
             if (match(*it) == true) {
-
-                if (it->first != nullptr) {
-                    it->first->Release();
-                }
+                it->first->Release();
                 _lifeTimeObservers.erase(it);
                 result = Core::ERROR_NONE;
                 break;
@@ -1473,16 +1470,18 @@ namespace Plugin {
         const size_t dot = client.find('.');
 
         if (dot == string::npos) {
+            _adminLock.Lock();
+            ASSERT(_pluginServer != nullptr);
             auto it = _pluginServer->Services().Services();
 
             while (it.Next() == true) {
                 Core::ProxyType<PluginHost::IShell> service = it.Current();
-
                 if (service->State() == PluginHost::IShell::state::ACTIVATED) {
                     const string serviceCallsign = service->Callsign();
                     Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
                 }
             }
+            _adminLock.Unlock();
         }
         else {
             const string callsign(client.substr(0, dot));
