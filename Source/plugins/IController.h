@@ -87,7 +87,7 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @omit @deprecated
-        Core::hresult Persist() { return Persist(Core::OptionalType<string>());}
+        DEPRECATED Core::hresult Persist() { return Persist(Core::OptionalType<string>());}
 
         // @alt storeconfig
         // @brief Stores configuration to the persistent memory
