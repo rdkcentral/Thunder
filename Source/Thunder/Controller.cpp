@@ -886,8 +886,12 @@ namespace Plugin {
             if (callsign.IsSet() == true) {
                 Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
-                if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
-                    notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                if (service.IsValid() == true) {
+
+                    if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                        notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                    }
+
                     PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
 
                     if (control != nullptr) {
