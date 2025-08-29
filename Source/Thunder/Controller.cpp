@@ -886,7 +886,7 @@ namespace Plugin {
             if (callsign.IsSet() == true) {
                 Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
-                if (service.IsValid() == true) {
+                if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
                     notification->StateChange(service->Callsign(), service->State(), service->Reason());
                     PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
 
@@ -1488,7 +1488,7 @@ namespace Plugin {
             const string callsign(client.substr(0, dot));
             Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
-            if (service.IsValid() == true) {
+            if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
                 Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
             }
         }
