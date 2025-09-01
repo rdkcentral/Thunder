@@ -67,11 +67,13 @@ namespace PluginHost {
             void Register(IShell* shell)
             {
                 ASSERT(shell != nullptr);
+                ASSERT(_callsign.empty() == false);
+
                 _adminLock.Lock();
                 _state = state::REGISTRING;
                 _adminLock.Unlock();
 
-                shell->Register(this);
+                shell->Register(this, Core::OptionalType<string>(_callsign));
 
                 _adminLock.Lock();
                 if (_state == state::LOADED) {
@@ -91,10 +93,12 @@ namespace PluginHost {
             void Unregister(IShell* shell)
             {
                 ASSERT(shell != nullptr);
+                ASSERT(_callsign.empty() == false);
+
                 if (shell != nullptr) {
 
                     _adminLock.Lock();
-                    shell->Unregister(this);
+                    shell->Unregister(this, Core::OptionalType<string>(_callsign));
                     _callsign.clear();
 
                     if (_designated != nullptr) {
