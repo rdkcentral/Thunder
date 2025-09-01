@@ -260,7 +260,7 @@ namespace PluginHost {
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
         TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
+        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
         }
 
@@ -975,7 +975,7 @@ namespace PluginHost {
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
         TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
+        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
             TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
         }
 

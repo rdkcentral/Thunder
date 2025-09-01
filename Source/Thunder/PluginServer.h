@@ -2026,7 +2026,7 @@ namespace PluginHost {
                         if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
                             entry.first->Activated(service->Callsign(), service.operator->());
 
-                            // Report any composit plugins that are active..
+                            // Report any composite plugins that are active..
                             service->Composits().Visit([&](const string& callsign, IShell* proxy) {
                                 if (proxy->State() == IShell::ACTIVATED) {
                                     entry.first->Activated(callsign, proxy);
@@ -2936,7 +2936,6 @@ namespace PluginHost {
             {
                 _notificationLock.Lock();
 
-                _notificationLock.Lock();
                 for (auto& n : _notifiers) {
                     if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
                         n.first->Unavailable(callsign, entry);
