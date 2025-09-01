@@ -471,9 +471,10 @@ POP_WARNING()
     public:
         class EXTERNAL IPCFactory {
         private:
+            using Servers = std::map<uint32_t, ProxyType<IIPCServer>>;
             friend IPCChannel;
 
-            IPCFactory()
+            inline IPCFactory()
                 : _lock()
                 , _inbound()
                 , _outbound()
@@ -482,7 +483,7 @@ POP_WARNING()
                 , _handlers()
             {
             }
-            void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+            inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             {
                 ASSERT((_factory.IsValid() == false) && (factory.IsValid() == true));
 
@@ -490,10 +491,12 @@ POP_WARNING()
             }
 
         public:
+            IPCFactory(IPCFactory&& copy) = delete;
             IPCFactory(const IPCFactory& copy) = delete;
+            IPCFactory& operator=(IPCFactory&&) = delete;
             IPCFactory& operator=(const IPCFactory&) = delete;
 
-            IPCFactory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+            inline IPCFactory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
                 : _lock()
                 , _inbound()
                 , _outbound()
@@ -504,13 +507,13 @@ POP_WARNING()
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
             }
-            ~IPCFactory()
+            inline ~IPCFactory()
             {
 
                 // We expect what you register, to be unregistered before the IPCCHannel is closed !!!
                 ASSERT(_handlers.size() == 0);
 
-                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
+                Servers::iterator index(_handlers.begin());
 
                 while (index != _handlers.end()) {
                     (*index).second.Release();
@@ -521,12 +524,12 @@ POP_WARNING()
             }
 
         public:
-            void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
+            inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
             {
                 _lock.Lock();
 
                 ASSERT(handler.IsValid() == true);
-                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
+                Servers::iterator index(_handlers.find(id));
 
                 ASSERT(index == _handlers.end());
 
@@ -536,11 +539,11 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            void Unregister(const uint32_t id)
+            inline void Unregister(const uint32_t id)
             {
                 _lock.Lock();
 
-                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
+                Servers::iterator index(_handlers.find(id));
 
                 ASSERT(index != _handlers.end());
 
@@ -551,12 +554,12 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            bool InProgress() const
+            inline bool InProgress() const
             {
                 return (_outbound.IsValid());
             }
 
-            ProxyType<IMessage> Element(const uint32_t& identifier)
+            inline ProxyType<IMessage> Element(const uint32_t& identifier)
             {
                 ProxyType<IMessage> result;
                 uint32_t searchIdentifier(identifier >> 1);
@@ -587,7 +590,7 @@ POP_WARNING()
                 return (result);
             }
 
-            bool Flush()
+            inline bool Flush()
             {
                 bool result = false;
 
@@ -611,7 +614,7 @@ POP_WARNING()
                 return (result);
             }
 
-            ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
+            inline ProxyType<IIPCServer> ReceivedMessage(const Core::ProxyType<IMessage>& rhs, Core::ProxyType<IIPC>& inbound)
             {
                 ProxyType<IIPCServer> procedure;
 
@@ -630,7 +633,7 @@ POP_WARNING()
                 // If this is *NOT* the outbound call, it is inbound and thus it must have been registered
                 else if (_inbound.IsValid() == true) {
 
-                    std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(_inbound->Label()));
+                    Servers::iterator index(_handlers.find(_inbound->Label()));
 
 					ASSERT(index != _handlers.end());
 
@@ -651,7 +654,7 @@ POP_WARNING()
                 return (procedure);
             }
 
-            void SetOutbound(const Core::ProxyType<IIPC>& outbound, IDispatchType<IIPC>* callback)
+            inline void SetOutbound(const Core::ProxyType<IIPC>& outbound, IDispatchType<IIPC>* callback)
             {
                 _lock.Lock();
 
@@ -664,7 +667,7 @@ POP_WARNING()
                 _lock.Unlock();
             }
 
-            void Abort()
+            inline void Abort()
             {
                 _lock.Lock();
 
@@ -682,7 +685,7 @@ POP_WARNING()
             mutable Core::ProxyType<IIPC> _outbound;
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
-            std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
+            Servers _handlers;
         };
 
     protected:
@@ -699,7 +702,9 @@ POP_WARNING()
         }
 
     public:
+        IPCChannel(IPCChannel&&) = delete;
         IPCChannel(const IPCChannel&) = delete;
+        IPCChannel& operator=(IPCChannel&&) = delete;
         IPCChannel& operator=(const IPCChannel&) = delete;
 
         IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
@@ -710,40 +715,38 @@ POP_WARNING()
         virtual ~IPCChannel() = default;
 
     public:
-        void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
+        inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _administration.Register(id, handler);
         }
-
-        void Unregister(const uint32_t id)
+        inline void Unregister(const uint32_t id)
         {
             _administration.Unregister(id);
         }
 
         template <typename ACTUALELEMENT>
-        uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
+        inline uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, IDispatchType<IIPC>* completed)
         {
             return (Execute(Core::ProxyType<IIPC>(command), completed));
         }
         template <typename ACTUALELEMENT>
-        uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
+        inline uint32_t Invoke(const ProxyType<ACTUALELEMENT>& command, const uint32_t waitTime)
         {
             return (Execute(Core::ProxyType<IIPC>(command), waitTime));
         }
-        uint32_t Invoke(const ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
+        inline uint32_t Invoke(const ProxyType<Core::IIPC>& command, IDispatchType<IIPC>* completed)
         {
             return (Execute(command, completed));
         }
-        uint32_t Invoke(const ProxyType<Core::IIPC>& command, const uint32_t waitTime)
+        inline uint32_t Invoke(const ProxyType<Core::IIPC>& command, const uint32_t waitTime)
         {
             return (Execute(command, waitTime));
         }
-
-        const void* CustomData() const
+        inline const void* CustomData() const
         {
             return (_customData);
         }
-        void CustomData(const void* const data)
+        inline void CustomData(const void* const data)
         {
             _customData = data;
         }
@@ -889,34 +892,33 @@ POP_WARNING()
         ~IPCChannelType() override = default;
 
     public:
-        EXTENSION& Extension()
+        inline EXTENSION& Extension()
         {
             return (_extension);
         }
-        const EXTENSION& Extension() const
+        inline const EXTENSION& Extension() const
         {
             return (_extension);
         }
-        ACTUALSOURCE& Source()
+        inline ACTUALSOURCE& Source()
         {
             return (_link.Link());
         }
-        const ACTUALSOURCE& Source() const
+        inline const ACTUALSOURCE& Source() const
         {
             return (_link.Link());
         }
-        bool InProgress() const
+        inline bool InProgress() const
         {
             return (_administration.InProgress());
         }
-        uint32_t Id() const override {
+        inline uint32_t Id() const override {
             return (__Id());
         }
-        string Origin() const override {
+        inline string Origin() const override {
             return (__Origin());
         }
-
-        uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
+        inline uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) override
         {
             // We got the event, start the invoke, wait for the event to be set again..
             _link.SendResponse(inbound);
