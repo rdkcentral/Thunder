@@ -2003,10 +2003,10 @@ namespace PluginHost {
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
-            void Snapshot(const Notifier& entry) const
+            void Snapshot(const Notifier& entry)
             {
                 if (entry.second.IsSet() == true) {
-                    const Core::ProxyType<IShell> shell;
+                    Core::ProxyType<IShell> shell;
 
                     if (FromIdentifier(entry.second.Value(), shell) == Core::ERROR_NONE) {
 
@@ -3314,14 +3314,6 @@ namespace PluginHost {
             }
 
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
-            {
-                return (InternalFromIdentifier(callSign, service));
-            }
-            uint32_t FromIdentifier(const string& callSign, const Core::ProxyType<IShell>& service) const
-            {
-                return (InternalFromIdentifier(callSign, const_cast<Core::ProxyType<IShell>&>(service)));
-            }
-            uint32_t InternalFromIdentifier(const string& callSign, Core::ProxyType<IShell>& service) const
             {
                 size_t pos;
                 Core::ProxyType<Service> selected;
