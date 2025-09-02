@@ -2003,19 +2003,21 @@ namespace PluginHost {
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
-            void Snapshot(const Notifier& entry)
+            void Snapshot(const Notifier& entry) const
             {
                 if (entry.second.IsSet() == true) {
-                    Core::ProxyType<IShell> shell;
+                    const Core::ProxyType<IShell> shell;
 
                     if (FromIdentifier(entry.second.Value(), shell) == Core::ERROR_NONE) {
 
                         if (shell->State() == IShell::ACTIVATED) {
-                            entry.first->Activated(shell->Callsign(), shell.operator->());
+                            entry.first->Activated(shell->Callsign(), shell.Origin());
                         }
                     }
                 }
                 else {
+                    _adminLock.Lock();
+
                     for (auto& index : _services) {
                         ASSERT(index.second.IsValid());
 
@@ -2034,6 +2036,7 @@ namespace PluginHost {
                             });
                         }
                     }
+                    _adminLock.Unlock();
                 }
             }
 
@@ -3309,7 +3312,16 @@ namespace PluginHost {
 
                 _adminLock.Unlock();
             }
+
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
+            {
+                return (InternalFromIdentifier(callSign, service));
+            }
+            uint32_t FromIdentifier(const string& callSign, const Core::ProxyType<IShell>& service) const
+            {
+                return (InternalFromIdentifier(callSign, const_cast<Core::ProxyType<IShell>&>(service)));
+            }
+            uint32_t InternalFromIdentifier(const string& callSign, Core::ProxyType<IShell>& service) const
             {
                 size_t pos;
                 Core::ProxyType<Service> selected;
