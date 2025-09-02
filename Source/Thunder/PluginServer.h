@@ -3327,7 +3327,7 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                for (auto index : _services) {
+                for (const auto& index : _services) {
                     const string& source(index.first);
                     uint32_t length = static_cast<uint32_t>(source.length());
 
