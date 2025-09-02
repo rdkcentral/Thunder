@@ -2011,7 +2011,7 @@ namespace PluginHost {
                     if (FromIdentifier(entry.second.Value(), shell) == Core::ERROR_NONE) {
 
                         if (shell->State() == IShell::ACTIVATED) {
-                            entry.first->Activated(shell->Callsign(), shell.Origin());
+                            entry.first->Activated(shell->Callsign(), shell.operator->());
                         }
                     }
                 }
