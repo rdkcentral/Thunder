@@ -570,7 +570,7 @@ namespace Core {
         uint32_t timeLeft = waitTime;
 
         // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(_administration->_lockPID == 0);
+        ASSERT(_administration->_lockPID != Core::ProcessInfo().Id());
 
         // Lock the administrator..
         AdminLock();
