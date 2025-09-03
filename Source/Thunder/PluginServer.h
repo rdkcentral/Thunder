@@ -3316,7 +3316,7 @@ namespace PluginHost {
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
                 size_t pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter);
-                // This can be a Composit plugin identifier..
+                // This can be a Composite plugin identifier..
                 string baseName = (pos == string::npos ? callSign : callSign.substr(0, pos));
                 size_t versionDot = baseName.find('.');
                 string namePart = (versionDot == string::npos ? baseName : baseName.substr(0, versionDot));
