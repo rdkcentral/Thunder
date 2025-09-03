@@ -36,13 +36,12 @@ namespace Core {
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              (bufferSize == 0 ? (mode & (~File::CREATE)) : (mode | File::CREATE)),
+              (bufferSize == 0 ? (mode & (~File::CREATE)) | File::USER_WRITE : (mode | File::CREATE | File::USER_WRITE)),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(nullptr)
         , _alert(false)
         , _administration(nullptr)
     {
-        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
