@@ -3337,13 +3337,15 @@ namespace PluginHost {
                             selected = index.second;
                             result = Core::ERROR_NONE;
                             break;
-                        } else if (baseName[length] == '.') {
+                        }
+                        else if (baseName[length] == '.') {
                             // Requested specific version of a plugin
                             if (index.second->HasVersionSupport(baseName.substr(length + 1)) == true) {
                                 // Requested version of service is supported!
                                 selected = index.second;
                                 result = Core::ERROR_NONE;
-                            } else {
+                            }
+                            else {
                                 // Requested version is not supported
                                 result = Core::ERROR_INVALID_SIGNATURE;
                             }
@@ -3357,7 +3359,8 @@ namespace PluginHost {
                 if (selected.IsValid() == true) {
                     if (pos == string::npos) {
                         service = Core::ProxyType<IShell>(selected);
-                    } else {
+                    }
+                    else {
                         service = selected->Composits().Source(callSign.substr(pos + 1));
                         result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
                     }
