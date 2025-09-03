@@ -36,6 +36,23 @@ namespace Thunder {
             // Controls
             {}
         );
+
+        inline Exchange::Controller::ILifeTime::state ToLifeTimeState(const PluginHost::IStateControl::state input)
+        {
+            using SC = PluginHost::IStateControl;
+            using LT = Exchange::Controller::ILifeTime;
+
+            switch (input) {
+            case SC::SUSPENDED:
+                return (LT::SUSPENDED);
+            case SC::RESUMED:
+                return (LT::RESUMED);
+            case SC::UNINITIALIZED:
+            case SC::EXITED:
+            default:
+                return (LT::UNKNOWN);
+            }
+        }
     }
 
 namespace Plugin {
@@ -124,7 +141,7 @@ namespace Plugin {
         Exchange::Controller::JConfiguration::Register(*this, this);
         Exchange::Controller::JDiscovery::Register(*this, this);
         Exchange::Controller::JSystem::Register(*this, this);
-        Exchange::Controller::JLifeTime::Register(*this, this);
+        Exchange::Controller::JLifeTime::Register(*this, this, this);
         Exchange::Controller::JMetadata::Register(*this, this);
         Exchange::Controller::JSubsystems::Register(*this, this);
         Exchange::Controller::JEvents::Register(*this, this);
@@ -826,21 +843,75 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_ALREADY_CONNECTED;
         _adminLock.Lock();
 
-        // Make sure a sink is not registered multiple times.
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
-        ASSERT(index == _lifeTimeObservers.end());
+        bool conflict = false;
 
-        if (index == _lifeTimeObservers.end()) {
-            _lifeTimeObservers.push_back(notification);
+        for (const auto& entry : _lifeTimeObservers) {
+
+            if (entry.first == notification) {
+
+                if (entry.second.IsSet() == false) {
+                    // Already registered for all
+                    conflict = true;
+                    break;
+                }
+
+                if (callsign.IsSet() == false) {
+                    // Can't register for all, because at least one specific callsign is already registered
+                    conflict = true;
+                    break;
+                }
+
+                if (entry.second.Value() == callsign.Value()) {
+                    // Duplicate registration for a specific callsign is not allowed
+                    conflict = true;
+                    break;
+                }
+            }
+        }
+
+        ASSERT(conflict == false);
+
+        if (conflict == false) {
             notification->AddRef();
+            _lifeTimeObservers.emplace_back(notification, callsign);
             result = Core::ERROR_NONE;
+
+            if (callsign.IsSet() == true) {
+                Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
+
+                if (service.IsValid() == true) {
+
+                    if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                        notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                    }
+
+                    PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+                    if (control != nullptr) {
+                        const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                        notification->StateControlStateChange(service->Callsign(), ltState);
+                        control->Release();
+                    }
+                }
+            }
+            else {
+                auto it = _pluginServer->Services().Services();
+
+                while (it.Next() == true) {
+                    Core::ProxyType<PluginHost::IShell> service = it.Current();
+
+                    if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                        notification->StateChange(service->Callsign(), service->State(), service->Reason());
+                    }
+                }
+            }
         }
 
         _adminLock.Unlock();
@@ -848,23 +919,32 @@ namespace Plugin {
         return (result);
     }
 
-    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification)
+    Core::hresult Controller::Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign)
     {
         ASSERT(notification != nullptr);
 
         Core::hresult result = Core::ERROR_NOT_EXIST;
         _adminLock.Lock();
 
-        LifeTimeNotifiers::iterator index(std::find(_lifeTimeObservers.begin(), _lifeTimeObservers.end(), notification));
+        auto match = [&](const LifeTimeObserver& entry) -> bool {
+            return ((entry.first == notification) &&
+                    ((callsign.IsSet() == false) ?
+                        (entry.second.IsSet() == false) :
+                        ((entry.second.IsSet() == true) && (entry.second.Value() == callsign.Value()))));
+        };
+
+        for (auto it = _lifeTimeObservers.begin(); it != _lifeTimeObservers.end(); ++it) {
+
+            if (match(*it) == true) {
+                it->first->Release();
+                _lifeTimeObservers.erase(it);
+                result = Core::ERROR_NONE;
+                break;
+            }
+        }
 
         // Make sure you do not unregister something you did not register !!!
-        ASSERT(index != _lifeTimeObservers.end());
-
-        if (index != _lifeTimeObservers.end()) {
-            (*index)->Release();
-            _lifeTimeObservers.erase(index);
-            result = Core::ERROR_NONE;
-        }
+        ASSERT(result == Core::ERROR_NONE);
 
         _adminLock.Unlock();
 
@@ -1355,30 +1435,87 @@ namespace Plugin {
     {
         _adminLock.Lock();
 
-        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-        while(index != _lifeTimeObservers.end()) {
-            (*index)->StateChange(callsign, state, reason);
-            index++;
+        for (const auto& entry : _lifeTimeObservers) {
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateChange(callsign, state, reason);
+            }
         }
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason);
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason,
+            [&callsign](const string& designator) {
+                const size_t dot = designator.find('.');
+                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
+            });
     }
 
     void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
     {
        _adminLock.Lock();
 
-        LifeTimeNotifiers::const_iterator index = _lifeTimeObservers.begin();
-        while(index != _lifeTimeObservers.end()) {
-            (*index)->StateControlStateChange(callsign, state);
-            index++;
+        for (const auto& entry : _lifeTimeObservers) {
+            if ((entry.second.IsSet() == false) || (entry.second.Value() == callsign)) {
+                entry.first->StateControlStateChange(callsign, state);
+            }
         }
 
         _adminLock.Unlock();
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state); 
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state,
+            [&callsign](const string& designator) {
+                const size_t dot = designator.find('.');
+                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
+            });
+    }
+
+    void Controller::SendInitialStateSnapshot(const string& client)
+    {
+        const size_t dot = client.find('.');
+
+        if (dot == string::npos) {
+            _adminLock.Lock();
+            ASSERT(_pluginServer != nullptr);
+            auto it = _pluginServer->Services().Services();
+
+            while (it.Next() == true) {
+                Core::ProxyType<PluginHost::IShell> service = it.Current();
+
+                if (service->State() == PluginHost::IShell::state::ACTIVATED) {
+                    const string serviceCallsign = service->Callsign();
+                    Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
+                }
+            }
+            _adminLock.Unlock();
+        }
+        else {
+            const string callsign(client.substr(0, dot));
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+
+            if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+            }
+        }
+    }
+
+    void Controller::SendInitialStateControlSnapshot(const string& client)
+    {
+        const size_t dot = client.find('.');
+
+        if (dot != string::npos) {
+            const string callsign(client.substr(0, dot));
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+
+            if (service.IsValid() == true) {
+                PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
+
+                if (control != nullptr) {
+                    const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                    control->Release();
+                }
+            }
+        }
     }
 
     Core::hresult Controller::BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const
