@@ -3315,48 +3315,49 @@ namespace PluginHost {
 
             uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
             {
-                size_t pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter);
-                // This can be a Composite plugin identifier..
-                string baseName = (pos == string::npos ? callSign : callSign.substr(0, pos));
-                size_t versionDot = baseName.find('.');
-                string namePart = (versionDot == string::npos ? baseName : baseName.substr(0, versionDot));
-                string versionPart;
-
-                if (versionDot != string::npos) {
-                    versionPart = baseName.substr(versionDot + 1);
-                }
-
+                size_t pos;
                 Core::ProxyType<Service> selected;
                 uint32_t result = Core::ERROR_UNAVAILABLE;
+                string baseName = callSign;
+
+                if ((pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter)) != string::npos) {
+                    // This is a Composit plugin identifier..
+                    baseName = callSign.substr(0, pos);
+                }
 
                 _adminLock.Lock();
 
-                auto it = _services.find(namePart);
+                for (const auto& index : _services) {
+                    const string& source(index.first);
+                    uint32_t length = static_cast<uint32_t>(source.length());
 
-                if (it != _services.end()) {
-
-                    if (versionPart.empty()) {
-                        // Service found, did not requested specific version
-                        selected = it->second;
-                        result = Core::ERROR_NONE;
-                    }
-                    else if (it->second->HasVersionSupport(versionPart) == true) {
-                        // Requested specific version of a plugin, and this version is supported!
-                        selected = it->second;
-                        result = Core::ERROR_NONE;
-                    }
-                    else {
-                        // Requested version is not supported
-                        result = Core::ERROR_INVALID_SIGNATURE;
+                    if (baseName.compare(0, source.length(), source) == 0) {
+                        if (baseName.length() == length) {
+                            // Service found, did not requested specific version
+                            selected = index.second;
+                            result = Core::ERROR_NONE;
+                            break;
+                        } else if (baseName[length] == '.') {
+                            // Requested specific version of a plugin
+                            if (index.second->HasVersionSupport(baseName.substr(length + 1)) == true) {
+                                // Requested version of service is supported!
+                                selected = index.second;
+                                result = Core::ERROR_NONE;
+                            } else {
+                                // Requested version is not supported
+                                result = Core::ERROR_INVALID_SIGNATURE;
+                            }
+                            break;
+                        }
                     }
                 }
+
                 _adminLock.Unlock();
 
                 if (selected.IsValid() == true) {
                     if (pos == string::npos) {
                         service = Core::ProxyType<IShell>(selected);
-                    }
-                    else {
+                    } else {
                         service = selected->Composits().Source(callSign.substr(pos + 1));
                         result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
                     }
