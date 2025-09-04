@@ -73,7 +73,7 @@ namespace PluginHost {
                 _state = state::REGISTRING;
                 _adminLock.Unlock();
 
-                shell->Register(this, Core::OptionalType<string>(_callsign));
+                shell->Register(this, _callsign);
 
                 _adminLock.Lock();
                 if (_state == state::LOADED) {
