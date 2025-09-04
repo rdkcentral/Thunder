@@ -98,7 +98,7 @@ namespace PluginHost {
                 if (shell != nullptr) {
 
                     _adminLock.Lock();
-                    shell->Unregister(this, Core::OptionalType<string>(_callsign));
+                    shell->Unregister(this, _callsign);
                     _callsign.clear();
 
                     if (_designated != nullptr) {
