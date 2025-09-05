@@ -171,8 +171,8 @@ POP_WARNING()
             const bool wasValid = IsValid();
             const bool wasBeforeFirst = (_index == 0);
             const bool wasPastEnd = (_index == (Count() + 1));
-
             size_t offset = 0;
+
             if (wasValid == true) {
                 offset = static_cast<size_t>(std::distance(_container.begin(), _iterator));
             }
