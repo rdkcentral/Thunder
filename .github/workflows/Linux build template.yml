@@ -44,6 +44,8 @@ jobs:
         PKGS="python3-venv python3-pip build-essential cmake ninja-build libusb-1.0-0-dev"
         if [ "${{ matrix.architecture }}" = "32" ]; then
           PKGS="$PKGS zlib1g-dev:i386 libssl-dev:i386 libsbc-dev:i386 gcc-13-multilib g++-13-multilib"
+        else
+          PKGS="$PKGS zlib1g-dev libssl-dev libsbc-dev"
         fi
         for attempt in {1..4}; do
           if sudo apt-get install -y --no-install-recommends $PKGS; then
