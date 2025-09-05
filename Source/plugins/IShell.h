@@ -83,7 +83,7 @@ namespace PluginHost {
         enum state : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
-            ACTIVATED,
+            ACTIVATED, /* @end */
             DEACTIVATION,
             ACTIVATION,
             PRECONDITION,
