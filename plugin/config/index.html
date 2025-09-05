@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -2951,14 +2951,14 @@
 </tr>
 <tr>
 <td>precondition</td>
-<td>Array of subsystems that are preconditions for plugin activation<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. If any of the provided subsystems aren't marked as active, the plugin will not activate until those preconditions are met.</td>
+<td>Array of subsystems that are preconditions for plugin activation<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. If any of the provided subsystems aren't marked as active, the plugin will not activate until those preconditions are met.</td>
 <td>array</td>
 <td>-</td>
 <td>["GRAPHICS"]</td>
 </tr>
 <tr>
 <td>termination</td>
-<td>Array of subsystems that, when not present, will cause the plugin to deactivate if it's running<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Typically paired with preconditions.<br /><br />E.G If a plugin requires the graphics subsystem, adding <code>NOT_GRAPHICS</code> in the termination options will cause the plugin to deactivate if the graphics subsystem is marked as down.</td>
+<td>Array of subsystems that, when not present, will cause the plugin to deactivate if it's running<sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Typically paired with preconditions.<br /><br />E.G If a plugin requires the graphics subsystem, adding <code>NOT_GRAPHICS</code> in the termination options will cause the plugin to deactivate if the graphics subsystem is marked as down.</td>
 <td>array</td>
 <td>-</td>
 <td>["NOT_GRAPHICS"]</td>
