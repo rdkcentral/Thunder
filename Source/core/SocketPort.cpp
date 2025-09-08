@@ -1240,7 +1240,9 @@ namespace Thunder {
 
                 if (l_Size == 0) {
                     if ((m_State & SocketPort::LINK) != 0) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        // peer has performed an orderly shutdown
+                        m_State &= (~SocketPort::OPEN);
+                        StateChange();
                     }
                 }
                 else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
