@@ -28,11 +28,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 #if defined(__WINDOWS__) || defined(__LINUX__)
 
         int requiredSize = static_cast<int>(::wcstombs(nullptr, realString, 0));
-#ifdef __WINDOWS__
-        char* convertedText = static_cast<char*>(::_alloca((requiredSize + 1) * sizeof(char)));
-#else
-        char* convertedText = static_cast<char*>(alloca((requiredSize + 1) * sizeof(char)));
-#endif
+        char* convertedText = static_cast<char*>(ALLOCA((requiredSize + 1) * sizeof(char)));
 
 #if _TRACE_LEVEL > 0
 #ifdef __DEBUG__
@@ -56,11 +52,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
 #if defined(__WINDOWS__) || defined(__LINUX__)
 
-#ifdef __WINDOWS__
-        wchar_t* convertedText = static_cast<wchar_t*>(::_alloca((requiredSize + 1) * sizeof(wchar_t)));
-#else
-        wchar_t* convertedText = static_cast<wchar_t*>(alloca((requiredSize + 1) * sizeof(wchar_t)));
-#endif
+        wchar_t* convertedText = static_cast<wchar_t*>(ALLOCA((requiredSize + 1) * sizeof(wchar_t)));
 
 #if _TRACE_LEVEL > 0
 #ifdef __DEBUG__
@@ -90,10 +82,10 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 #else
 
         int requiredSize = static_cast<int>(::wcstombs(nullptr, realString, length));
+        char* convertedText = static_cast<char*>(ALLOCA(requiredSize + 1));
 
 #ifdef __WINDOWS__
 
-        char* convertedText = static_cast<char*>(::_alloca(requiredSize + 1));
 
 #if _TRACE_LEVEL > 0
         size_t size =
@@ -101,8 +93,6 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
             ::wcstombs(convertedText, realString, requiredSize + 1);
 
 #else
-
-        char* convertedText = static_cast<char*>(::alloca(requiredSize + 1));
 
 #if _TRACE_LEVEL > 0
 #ifdef __DEBUG__
@@ -178,7 +168,7 @@ POP_WARNING()
 
     uint32_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint32_t maxLength, const TCHAR delimiter)
     {
-        ASSERT(object != nullptr || maxLength == 0); 
+        ASSERT((object != nullptr) && (maxLength > 0));
         uint8_t highNibble;
         uint8_t lowNibble;
         uint32_t bufferIndex = 0, strIndex = 0;
@@ -219,17 +209,17 @@ POP_WARNING()
 
     void ToHexString(const std::vector<uint8_t>& object, string& result, const TCHAR delimiter)
     {
-        ToHexString(object.data(), object.size(), result, delimiter);
+        ToHexString(object.data(), static_cast<uint32_t>(object.size()), result, delimiter);
     }
 
     uint32_t FromHexString(const string& hexString, std::vector<uint8_t>& object, const uint32_t maxLength, const TCHAR delimiter)
     {
-        const uint32_t maxSize = (delimiter == '\0' ? (hexString.size() / 2) : ((hexString.size() + 1) / 3 ));
+        const uint32_t maxSize = static_cast<uint32_t>(delimiter == '\0' ? (hexString.size() / 2) : ((hexString.size() + 1) / 3 ));
 
         ASSERT(object.empty() == true);
         object.resize(std::min(maxSize, maxLength));
 
-        return (FromHexString(hexString, object.data(), object.size(), delimiter));
+        return (FromHexString(hexString, object.data(), static_cast<uint32_t>(object.size()), delimiter));
     }
 
     static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -339,18 +329,18 @@ POP_WARNING()
 
     void ToString(const std::vector<uint8_t>& object, const bool padding, string& result)
     {
-        ToString(object.data(), object.size(), padding, result);
+        ToString(object.data(), static_cast<uint32_t>(object.size()), padding, result);
     }
 
     uint32_t FromString(const string& value, std::vector<uint8_t>& object, uint32_t& length, const TCHAR* ignoreList)
     {
         const uint8_t padding = ((value.size() > 0 && (value[value.size() - 1] == '=')) + (value.size() > 1 && (value[value.size() - 2] == '=')));
-        const uint32_t maxSize = (((value.size() / 4) * 3) - padding);
+        const uint32_t maxSize = static_cast<uint32_t>(((value.size() / 4) * 3) - padding);
 
         ASSERT(object.empty() == true);
         object.resize(std::min(maxSize, length));
 
-        uint32_t size = object.size();
+        uint32_t size = static_cast<uint32_t>(object.size());
         const uint32_t result = FromString(value, object.data(), size, ignoreList);
 
         length = size;
@@ -426,7 +416,7 @@ POP_WARNING()
             // all right shit in the other bits..
             for (uint8_t index = 1; (index <= following) && (index <= length); index++) {
                 codePoint = (codePoint << 6) | (data[index] & 0x3F);
-                invalid = invalid | ((data[index] & 0xC0) != 0x80);
+                invalid = invalid || ((data[index] & 0xC0) != 0x80);
             }
         }
         #endif
