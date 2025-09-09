@@ -750,6 +750,10 @@ POP_WARNING()
         {
             _customData = data;
         }
+        inline bool InProgress() const
+        {
+            return (_administration.InProgress());
+        }
 
         virtual uint32_t Id() const = 0;
         virtual string Origin() const = 0;
