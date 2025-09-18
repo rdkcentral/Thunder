@@ -2594,8 +2594,9 @@ This script can be found <a href="https://github.com/rdkcentral/ThunderTools/tre
 <li>In case you want to generate plugin documentation, also clone the applicable Thunder plugin repository (again inside the same folder where you cloned ThunderTools)</li>
 <li>Open a console window</li>
 <li>Go into the folder [path to where you cloned the ThunderTools]/ThunderTools/JsonGenerator</li>
-<li>now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated). Example call for generating the Plugin documentation would be: ./GenerateDocs.sh ../../ThunderNanoServices/Dictionary/DictionaryPlugin.json</li>
-<li>the document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md and for a plugin it will be inside the doc folder of the applicable plugin)</li>
+<li>Now call ./GenerateDocs.sh [path to where you cloned the ThunderInterfaces]/ThunderInterfaces/interfaces/IYourInterface.h (or specify a path to a plugin json file in case you want the plugin documentation to be generated). Example call for generating the Plugin documentation would be: <code>./GenerateDocs.sh ../../ThunderNanoServices/Dictionary/DictionaryPlugin.json</code></li>
+<li>If your plugin or interface has a different namespace then you should provide it via --namespace flag. ie: <code>./GenerateDocs.sh --namespace ::Thunder::YourNameSpace ../../ThunderNanoServices/Dictionary/DictionaryPlugin.json</code></li>
+<li>The document generator will print where it created the documentation .md file (for an interface .h file it will be ThunderInterfaces/interfaces/doc/YourInterfaceAPI.md and for a plugin it will be inside the doc folder of the applicable plugin)</li>
 </ol>
 
 
