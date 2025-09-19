@@ -4478,6 +4478,11 @@ namespace PluginHost {
 
                         _service.Release();
                     }
+                    if (!IsSuspended()) {
+                        // need to close our side as well, to avoid sockets
+                        // staying indefinetely in CLOSE_WAIT
+                        Close(0);
+                    }
 
                     State(CLOSED, false);
 
