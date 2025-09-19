@@ -309,7 +309,8 @@ namespace Plugin {
         Core::hresult DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& results) const override;
 
         // IConfiguration overrides
-        Core::hresult Persist() override;
+        Core::hresult Persist(const Core::OptionalType<string>& callsign) override;
+        Core::hresult Restore(const Core::OptionalType<string>& callsign) override;
         Core::hresult Configuration(const Core::OptionalType<string>& callsign, string& configuration) const override;
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
