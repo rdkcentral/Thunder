@@ -62,7 +62,7 @@ namespace Core {
 
     public:
         Library LoadLibrary(const TCHAR libraryName[]) {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+            Core::SafeSyncType<Core::CriticalSection> lock(_dynamicLoaderLock);
             return (Library(libraryName));
         }
         // There is *NO* locking around the _callback pointer. SO this callback 
@@ -113,6 +113,7 @@ namespace Core {
 
     private:
         Core::CriticalSection _adminLock;
+        Core::CriticalSection _dynamicLoaderLock;
         Services _services;
         mutable uint32_t _instanceCount;
         ICallback* _callback;

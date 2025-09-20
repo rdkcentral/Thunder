@@ -30,6 +30,7 @@ namespace Core {
         class SInt24 {
         public:
             static constexpr uint8_t SizeOf = 3;
+            static constexpr uint32_t Max = 0x7FFFFF;
 
             SInt24()
                 : _value(0)
@@ -64,6 +65,7 @@ namespace Core {
         class UInt24 {
         public:
             static constexpr uint8_t SizeOf = 3;
+            static constexpr uint32_t Max = 0xFFFFFF;
 
             UInt24()
                 : _value(0)
@@ -102,6 +104,15 @@ namespace Core {
         template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
         static constexpr uint8_t RealSize() {
             return (T::SizeOf);
+        }
+
+        template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
+        static constexpr uint32_t Max() {
+            return (std::numeric_limits<T>::max());
+        }
+        template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
+        static constexpr uint32_t Max() {
+            return (T::Max);
         }
     }
 
@@ -604,7 +615,7 @@ namespace Core {
 
         }
         template <typename TYPENAME>
-        uint32_t SetBuffer(const SIZE_CONTEXT offset, const TYPENAME& length, const uint8_t buffer[])
+        uint32_t SetBuffer(const SIZE_CONTEXT offset, const TYPENAME length, const uint8_t buffer[])
         {
             SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(Frame::RealSize<TYPENAME>() + length));
 
@@ -644,7 +655,8 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            ASSERT(convertedText.length() <= Frame::Max<TYPENAME>());
+            return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>()? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
