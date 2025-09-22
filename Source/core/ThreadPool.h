@@ -631,12 +631,12 @@ namespace Core {
             }
 
         }
-#if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
-        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority)
+        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority VARIABLE_IS_NOT_USED)
         {
             ASSERT(job.IsValid() == true);
             ASSERT(_queue.HasEntry(job) == false);
 
+#if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
             typename MessageQueue::category cat = MessageQueue::category::LOW;
             switch (priority) {
             case Priority::High:
@@ -655,13 +655,11 @@ namespace Core {
             } else {
                 _queue.Insert(job, waitTime, cat);
             }
-        }
 #else
-        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority /* priority */)
-        {
+            // No priority support in the queue: fall back to non-priority submit.
             Submit(job, waitTime);
-        }
 #endif
+        }
         uint32_t Revoke(const ProxyType<IDispatch>& job, const uint32_t waitTime)
         {
             uint32_t result = ERROR_UNKNOWN_KEY;
