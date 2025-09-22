@@ -30,6 +30,7 @@
 
 #define SOCKET_TEST_VECTORS 1
 
+#define __JOB_QUEUE_STATIC_PRIORITY__ 1
 // #define __JOB_QUEUE_DYNAMIC_PRIORITY__ 1
 
 // Whether we need to keep track of locked critical section stack.

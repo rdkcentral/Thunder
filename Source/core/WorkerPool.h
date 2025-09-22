@@ -106,6 +106,7 @@ namespace Core {
 
         virtual thread_id Id(const uint8_t index) const = 0;
         virtual void Submit(const Core::ProxyType<IDispatch>& job) = 0;
+        virtual void Submit(const Core::ProxyType<IDispatch>& job, const ThreadPool::Priority priority) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
@@ -316,7 +317,7 @@ namespace Core {
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback)
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, 1, 2) // TO-DO: figure out the correct values for these thresholds
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
@@ -343,6 +344,13 @@ POP_WARNING()
             ASSERT(_timer.HasEntry(Timer(this, job)) == false);
 
             _threadPool.Submit(job, Core::infinite);
+        }
+        void Submit(const Core::ProxyType<IDispatch>& job, const ThreadPool::Priority priority) override
+        {
+            ASSERT(_timer.HasEntry(Timer(this, job)) == false);
+
+            // Forward to thread pool with priority (falls back to normal submit if priority queues are disabled)
+            _threadPool.Submit(job, Core::infinite, priority);
         }
         void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
         {

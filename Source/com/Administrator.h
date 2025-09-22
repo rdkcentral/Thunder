@@ -500,9 +500,10 @@ POP_WARNING()
             // If this is on an already occupied channel, it has an outgoing COMRPC call, raise 
             // the priority as we might be causing a deadlock if the workerpool would be stuffed.
             if (source.InProgress() == true) {
-               // Schedule with high priority
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::High);
+            } else {
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
             }
-            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
         }
 
     private:
@@ -540,7 +541,7 @@ POP_WARNING()
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr)
+            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, 1, 2) // TO-DO: figure out the correct values for these thresholds
         {
             _threadPoolEngine.Run();
         }

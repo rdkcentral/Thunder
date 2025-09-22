@@ -686,7 +686,7 @@ namespace Thunder {
                 if (_state != DISABLED) {
                     do {
                         // And is there a slot to read ?
-                        if (_state != EMPTY) {
+                        if (_queue.empty() == false) {
                             received = true;
 
                             // Get the first entry from the first spot..
@@ -695,6 +695,9 @@ namespace Thunder {
                             // Move to entry to InProcess...
                             _inProcess.push_back(_queue.front());
                             _queue.pop_front();
+
+                            // Update the state to reflect the queue content (EMPTY has priority).
+                            _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                         }
                         else {
                             // We are moving into a wait, release the lock.
@@ -738,12 +741,11 @@ namespace Thunder {
                     // Yep, we found it, remove it
                     _inProcess.erase(index);
 
-                    uint8_t index = 0;
                     typename Categories::iterator categoryIndex = _categories.begin();
 
                     // Submit (if possible) a new one from high Prio to low..
                     while ((categoryIndex != _categories.end()) && (categoryIndex->HasEntry() == false)) {
-                        index++;
+                        categoryIndex++;
                     }
 
                     if (categoryIndex == _categories.end()) {
@@ -798,7 +800,7 @@ namespace Thunder {
                 _queue.clear();
 
                 for (auto& category : _categories) {
-                    category.second.Flush();
+                    category.Flush();
                 }
 
                 // Done with the administration. Release the lock.

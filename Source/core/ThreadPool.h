@@ -55,6 +55,11 @@ namespace Core {
             uint32_t                    Runs;
             Core::OptionalType<string>  Job;
         };
+        enum class Priority : uint8_t {
+            High = 0,
+            Medium = 1,
+            Low = 2
+        };
 
         #ifdef __CORE_WARNING_REPORTING__
         struct EXTERNAL DispatchedJobMetaData {
@@ -626,6 +631,37 @@ namespace Core {
             }
 
         }
+#if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority priority)
+        {
+            ASSERT(job.IsValid() == true);
+            ASSERT(_queue.HasEntry(job) == false);
+
+            typename MessageQueue::category cat = MessageQueue::category::LOW;
+            switch (priority) {
+            case Priority::High:
+                cat = MessageQueue::category::HIGH;
+                break;
+            case Priority::Medium:
+                cat = MessageQueue::category::MEDIUM;
+                break;
+            case Priority::Low:
+                cat = MessageQueue::category::LOW;
+                break;
+            }
+
+            if (Thread::ThreadId() == ResourceMonitor::Instance().Id()) {
+                _queue.Post(job, cat);
+            } else {
+                _queue.Insert(job, waitTime, cat);
+            }
+        }
+#else
+        void Submit(const ProxyType<IDispatch>& job, const uint32_t waitTime, const Priority /* priority */)
+        {
+            Submit(job, waitTime);
+        }
+#endif
         uint32_t Revoke(const ProxyType<IDispatch>& job, const uint32_t waitTime)
         {
             uint32_t result = ERROR_UNKNOWN_KEY;
