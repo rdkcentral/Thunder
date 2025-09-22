@@ -537,7 +537,7 @@ POP_WARNING()
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, ((THREADPOOLCOUNT / 2) - 1), ((THREADPOOLCOUNT / 2) - 1))
+            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, std::max(((THREADPOOLCOUNT / 2) - 1), 1), std::max(((THREADPOOLCOUNT / 2) - 1), 1))
         {
             _threadPoolEngine.Run();
         }
