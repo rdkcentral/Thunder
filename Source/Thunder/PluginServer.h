@@ -1748,7 +1748,6 @@ namespace PluginHost {
             };
 
             using Callsigns = std::unordered_map<string, Plugin>;
-            using PluginOverrideFiles = std::unordered_map<string, string>; // [callsign, filepath]
 
         public:
             Override(const Override&) = delete;
@@ -1760,38 +1759,10 @@ namespace PluginHost {
                 , IdleTime(serverconfig.IdleTime())
                 , _services(services)
                 , _serverconfig(serverconfig)
-                , _pluginOverrideFiles()
+                , _persistentFolder(persistentFolder)
                 , _callsigns()
             {
                 Add(_T("Services"), &Services);
-
-                // Add all service names (callsigns) that are not yet in there...
-                ServiceMap::Iterator service(services.Services());
-
-                while (service.Next() == true) {
-                    const string& name(service->Callsign());
-
-                    // Create an element for this service with its callsign.
-                    Callsigns::iterator index(_callsigns.emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(name),
-                        std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false)).first);
-
-                    // Create individual plugin configuration files
-                    string filePath;
-                    filePath.reserve(persistentFolder.size() + name.size() + sizeof(".json") - 1);
-                    filePath.append(persistentFolder).append(name).append(".json");
-
-                    _pluginOverrideFiles.emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(name),
-                        std::forward_as_tuple(std::move(filePath))
-                    );
-
-                    // Store the override config in the JSON String created in the map
-                    Services.Add(index->first.c_str(), &(index->second));
-                }
-
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
 
@@ -1803,28 +1774,23 @@ namespace PluginHost {
             {
                 uint32_t result = Core::ERROR_NONE;
 
+                LoadPluginHostConfig();
+
                 ServiceMap::Iterator indexService(_services.Services());
                 while (indexService.Next() == true) {
-                    const string currentCallsign = indexService->Callsign();
+                    const string& currentCallsign = indexService->Callsign();
 
-                    PluginOverrideFiles::const_iterator indexFile = _pluginOverrideFiles.find(currentCallsign);
-                    ASSERT(indexFile != _pluginOverrideFiles.end());
-
-                    Callsigns::iterator indexCallsigns(_callsigns.find(currentCallsign));
+                    auto indexCallsigns = RegisterService(currentCallsign);
                     ASSERT(indexCallsigns != _callsigns.end());
 
-                    Core::File storage(indexFile->second);
+                    Core::File storage(CreateOverridePath(currentCallsign));
                     if ((storage.Exists() == true) && (storage.Open(true) == true)) {
 
                         result = true;
 
-                        // Clear all currently set values, they might be from the previous run.
                         Clear();
-
                         // Read the file and parse it into this object.
                         IElement::FromFile(storage);
-                        _serverconfig.SetPrefix(Prefix.Value());
-                        _serverconfig.SetIdleTime(IdleTime.Value());
 
                         if (indexCallsigns->second.IsSet() == true) {
                             if (indexCallsigns->second.Configuration.IsSet() == true) {
@@ -1845,25 +1811,20 @@ namespace PluginHost {
                         result = storage.ErrorCode();
                     }
                 }
-                return (result);
+                return result;
             }
 
             bool Save(const Core::OptionalType<string>& callsign)
             {
                 uint32_t result = Core::ERROR_NONE;
-                
-                auto CreateOverride = [this, &result](ServiceMap::Iterator& indexService) {
-                    const string currentCallsign = indexService->Callsign();
 
-                    PluginOverrideFiles::const_iterator indexFile = _pluginOverrideFiles.find(currentCallsign);
-                    ASSERT(indexFile != _pluginOverrideFiles.end());
+                SavePluginHostConfig();
 
-                    Callsigns::iterator indexCallsigns(_callsigns.find(currentCallsign));
-                    ASSERT(indexCallsigns != _callsigns.end());
-
-                    string config(indexService->ConfigLine());
+                auto CreateOverride = [this, &result](const ServiceMap::Iterator& indexService) {
+                    const string& config(indexService->ConfigLine());
 
                     if (!config.empty()) {
+                        const string& currentCallsign = indexService->Callsign();
 
                         const Thunder::Plugin::Config* readOnlyConfig = nullptr;
                         Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator indexConfig = _serverconfig.Plugins();
@@ -1875,30 +1836,28 @@ namespace PluginHost {
                         }
 
                         // ONLY persist when the config changes from the default config
-                        if (readOnlyConfig == nullptr || config == readOnlyConfig->Configuration.Value()) {
-                            return;
-                        }
+                        if (readOnlyConfig != nullptr && config != readOnlyConfig->Configuration.Value()) {
+                            Core::File storage(CreateOverridePath(currentCallsign));
+                            if (storage.Create() == true) {
 
-                        Core::File storage(indexFile->second);
-                        if (storage.Create() == true) {
+                                // Clear all currently set values, they might be from the previous run.
+                                Clear();
 
-                            // Clear all currently set values, they might be from the previous run.
-                            Clear();
-    
-                            Prefix    = _serverconfig.Prefix();
-                            IdleTime  = _serverconfig.IdleTime();
+                                auto indexCallsigns = RegisterService(currentCallsign);
+                                ASSERT(indexCallsigns != _callsigns.end());
 
-                            indexCallsigns->second.Configuration = config;
-                            indexCallsigns->second.SystemRootPath = indexService->SystemRootPath();
-                            indexCallsigns->second.StartMode = indexService->StartMode();
-                            indexCallsigns->second.Resumed = indexService->Resumed();
-    
-                            // Persist the currently set information
-                            IElement::ToFile(storage);
-                            storage.Close();
-                        } else {
-                            if (result == Core::ERROR_NONE) {
-                                result = storage.ErrorCode();
+                                indexCallsigns->second.Configuration = config;
+                                indexCallsigns->second.SystemRootPath = indexService->SystemRootPath();
+                                indexCallsigns->second.StartMode = indexService->StartMode();
+                                indexCallsigns->second.Resumed = indexService->Resumed();
+        
+                                // Persist the currently set information
+                                IElement::ToFile(storage);
+                                storage.Close();
+                            } else {
+                                if (result == Core::ERROR_NONE) {
+                                    result = storage.ErrorCode();
+                                }
                             }
                         }
                     }
@@ -1906,7 +1865,8 @@ namespace PluginHost {
                     
                 if (callsign.IsSet() == true) {
                     bool found = false;
-                    const string target = callsign.Value();
+                    const string& raw = callsign.Value();
+                    const string& target = raw.empty() ? "Controller" : raw;
 
                     ServiceMap::Iterator index(_services.Services());
                     while (index.Next() == true) {
@@ -1935,10 +1895,7 @@ namespace PluginHost {
 
                 auto DestroyOverride = [this, &result](const string& target) {
 
-                    PluginOverrideFiles::const_iterator indexFile = _pluginOverrideFiles.find(target);
-                    ASSERT(indexFile != _pluginOverrideFiles.end());
-
-                    Core::File storage(indexFile->second);
+                    Core::File storage(CreateOverridePath(target));
   
                     if (storage.Exists() == true) {
                         if (storage.Destroy() == false) {
@@ -1949,7 +1906,8 @@ namespace PluginHost {
                     
                 if (callsign.IsSet() == true) {
                     bool found = false;
-                    const string target = callsign.Value();
+                    const string& raw = callsign.Value();
+                    const string& target = raw.empty() ? "Controller" : raw;
 
                     ServiceMap::Iterator index(_services.Services());
                     while (index.Next() == true) {
@@ -1977,9 +1935,59 @@ namespace PluginHost {
             Core::JSON::DecUInt16 IdleTime;
 
         private:
+
+            void LoadPluginHostConfig() {
+                Core::File storage(CreateOverridePath("PluginHost"));
+                if (storage.Exists() && storage.Open(true) == true) {
+                    Clear();
+
+                    IElement::FromFile(storage);
+
+                    _serverconfig.SetPrefix(Prefix.Value());
+                    _serverconfig.SetIdleTime(IdleTime.Value());
+                    storage.Close();
+                }
+            }
+
+            void SavePluginHostConfig() {
+                Core::File storage(CreateOverridePath("PluginHost"));
+                if (storage.Create()) {
+                    Clear();
+
+                    Prefix    = _serverconfig.Prefix();
+                    IdleTime  = _serverconfig.IdleTime();
+
+                    IElement::ToFile(storage);
+                    storage.Close();
+                }
+            }
+
+            string CreateOverridePath(const string& callsign) const {
+                string outPath;
+                outPath.reserve(_persistentFolder.size() + callsign.size() + sizeof(".json") - 1);
+                outPath.append(_persistentFolder).append(callsign).append(".json");
+                return outPath;
+            }
+
+            Callsigns::iterator RegisterService(const std::string& name) {
+                auto it = _callsigns.find(name);
+                if (it == _callsigns.end()) {
+                    auto res = _callsigns.emplace(
+                        std::piecewise_construct,
+                        std::make_tuple(name),
+                        std::make_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false));
+                    it = res.first;
+        
+                    if (res.second) {
+                        Services.Add(it->first.c_str(), &it->second);
+                    }
+                }
+                return it;
+            }
+
             ServiceMap& _services;
             PluginHost::Config& _serverconfig;
-            PluginOverrideFiles _pluginOverrideFiles;
+            const string _persistentFolder;
             Callsigns _callsigns;
         };
 
