@@ -86,7 +86,7 @@ namespace Controller {
     struct EXTERNAL IConfiguration : virtual public Core::IUnknown {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
-        // @omit @deprecated
+        // @alt:deprecated storeconfig
         DEPRECATED Core::hresult Persist() { return Persist(Core::OptionalType<string>());}
 
         // @alt storeconfig
@@ -96,7 +96,7 @@ namespace Controller {
 
         // @brief Restores configuration back to default
         // @param callsign: Callsign to restore
-        virtual Core::hresult Restore(const Core::OptionalType<string>& callsign) = 0;
+        virtual Core::hresult Restore(const Core::OptionalType<string>& callsign = {}) = 0;
 
         // @property
         // @brief Service configuration
