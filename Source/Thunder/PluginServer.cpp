@@ -259,8 +259,8 @@ namespace PluginHost {
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
         TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
+        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
         }
 
         _processAdministrator.Close(Core::infinite);
@@ -314,14 +314,14 @@ namespace PluginHost {
         return (_administrator.QueryInterfaceByCallsign(id, name));
     }
 
-    void Server::Service::Register(IPlugin::INotification * sink) /* override */
+    void Server::Service::Register(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
-        _administrator.Register(sink);
+        _administrator.Register(sink, callsign);
     }
 
-    void Server::Service::Unregister(IPlugin::INotification * sink) /* override */
+    void Server::Service::Unregister(IPlugin::INotification * sink, const Core::OptionalType<string>& callsign) /* override */
     {
-        _administrator.Unregister(sink);
+        _administrator.Unregister(sink, callsign);
     }
 
     // Methods to stop/start/update the service.
@@ -974,8 +974,8 @@ namespace PluginHost {
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
         TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier).name()).Text().c_str());
+        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
         }
 
         _processAdministrator.Close(Core::infinite);
