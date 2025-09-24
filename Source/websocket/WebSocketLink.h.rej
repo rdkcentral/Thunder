@@ -1,0 +1,11 @@
+--- Source/websocket/WebSocketLink.h
++++ Source/websocket/WebSocketLink.h
+@@ -445,7 +445,7 @@ POP_WARNING()
+             }
+             bool IsCompleted() const
+             {
+-                return (_handler.ReceiveInProgress() == false);
++                return (_handler.IsCompleteMessage() != false);
+             }
+             const string& Path() const
+             {

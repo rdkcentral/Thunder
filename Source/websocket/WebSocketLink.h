@@ -443,9 +443,15 @@ POP_WARNING()
             {
                 return ((State() & WEBSOCKET) != 0);
             }
+            // Transmission of the last fragment started
             bool IsCompleted() const
             {
                 return (_handler.ReceiveInProgress() == false);
+            }
+            // Transmission of the (last) fragment completed
+            bool IsCompleteMessage() const
+            {
+                return (_handler.IsCompleteMessage() != false);
             }
             const string& Path() const
             {
@@ -1037,6 +1043,10 @@ POP_WARNING()
         {
             return (_channel.IsCompleted());
         }
+        bool IsCompleteMessage() const
+        {
+            return (_channel.IsCompleteMessage());
+        }
         void Binary(const bool binary)
         {
             _channel.Binary(binary);
@@ -1304,6 +1314,10 @@ POP_WARNING()
         {
             return (_channel.IsCompleted());
         }
+        bool IsCompleteMessage() const
+        {
+            return (_channel.IsCompleteMessage());
+        }
         void Binary(const bool binary)
         {
             _channel.Binary(binary);
@@ -1465,6 +1479,10 @@ POP_WARNING()
         bool IsCompleted() const
         {
             return (_channel.IsCompleted());
+        }
+        bool IsCompleteMessage() const
+        {
+            return (_channel.IsCompleteMessage());
         }
         void Binary(const bool binary)
         {
