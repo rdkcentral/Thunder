@@ -36,14 +36,6 @@
 namespace Thunder {
 
 namespace Core {
-    namespace System {
-        extern "C" {
-        typedef const char* (*ModuleNameImpl)();
-        typedef const char* (*ModuleBuildRefImpl)();
-        typedef const IService::IMetadata* (*ModuleServiceMetadataImpl)();
-        }
-    }
-
     template<typename CONTENT, typename FORWARDER> 
     class ThrottleQueueType {
     private:
@@ -712,22 +704,31 @@ namespace PluginHost {
                 }
                 ~ControlData() = default;
 
-                ControlData& operator=(const Core::IService::IMetadata* info) {
+                ControlData& operator=(Core::IService* info) {
                     if (info != nullptr) {
-                        const Plugin::IMetadata* extended = dynamic_cast<const Plugin::IMetadata*>(info);
+                        Core::IService* runner(info);
+                        const Plugin::IMetadata* extended(nullptr);
 
-                        _major = info->Major();
-                        _minor = info->Minor();
-                        _patch = info->Patch();
-                        _module = info->Module();
+                        while ((extended == nullptr) && (runner != nullptr)) {
+                            extended = dynamic_cast<const Plugin::IMetadata*>(runner->Metadata());
+                            runner = runner->Next();
+                        }
 
                         if (extended == nullptr) {
-                            _precondition.clear();
-                            _termination.clear();
-                            _control.clear();
+                            const Core::IService::IMetadata* base(info->Metadata());
+                            if (base != nullptr) {
+                                _major = base->Major();
+                                _minor = base->Minor();
+                                _patch = base->Patch();
+                                _module = base->Module();
+                            }
                         }
                         else {
                             _isExtended = true;
+                            _major = extended->Major();
+                            _minor = extended->Minor();
+                            _patch = extended->Patch();
+                            _module = extended->Module();
                             _precondition = extended->Precondition();
                             _termination = extended->Termination();
                             _control = extended->Control();
@@ -1471,11 +1472,12 @@ namespace PluginHost {
                             }
 
                             Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
-                            Core::System::ModuleServiceMetadataImpl moduleServiceMetadata = reinterpret_cast<Core::System::ModuleServiceMetadataImpl>(newLib.LoadFunction(_T("ModuleServiceMetadata")));
+                            Core::System::GetModuleServicesImpl moduleServiceMetadata = reinterpret_cast<Core::System::GetModuleServicesImpl>(newLib.LoadFunction(_T("GetModuleServices")));
                             if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
                                 result = newLib;
                                 progressedState = 3;
-                                if (_metadata.IsValid() == false) {
+                                // DEPRECATED: In the next release cleanup the legacy, where the extended interface was [optional] it should be mandatory!
+                                if ((_metadata.IsValid() == false) || (_metadata.IsExtended() == false)) {
                                     _metadata = moduleServiceMetadata();
                                     if (_metadata.IsValid() == true) {
                                         _precondition.Load(_metadata.Precondition());
@@ -1573,10 +1575,6 @@ namespace PluginHost {
 
                     _pluginHandling.Lock();
                     _handler = newIF;
-
-                    if (_metadata.IsValid() == false) {
-                        _metadata = dynamic_cast<Core::IService::IMetadata*>(newIF);
-                    }
 
                     uint32_t events = _administrator.SubSystemInfo().Value();
 

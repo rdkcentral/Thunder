@@ -28,12 +28,15 @@ namespace Thunder {
 
         static Plugin::Metadata<Plugin::Controller> metadata(
             // Version (Major, Minor, Patch)
-            1, 0, 0,
-            // Preconditions
+            1, 0, 0, 
+
+            // precondition
             {},
-            // Terminations
+
+            // terminaltion
             {},
-            // Controls
+
+            // control
             {}
         );
     }

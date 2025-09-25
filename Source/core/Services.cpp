@@ -23,69 +23,44 @@ namespace Thunder {
 namespace Core {
     /* static */ ServiceAdministrator ServiceAdministrator::_systemServiceAdministrator;
 
-    ServiceAdministrator::ServiceAdministrator()
-        : _adminLock()
-        , _dynamicLoaderLock()
-        , _services()
-        , _instanceCount(0)
-        , _callback(nullptr)
-        , _unreferencedLibraries()
-    {
-    }
-
-    /* virtual */ ServiceAdministrator::~ServiceAdministrator()
-    {
-    }
-
-    void ServiceAdministrator::Announce(IService* service)
-    {
-        _adminLock.Lock();
-
-        // Only register a service once !!!
-        ASSERT(std::find(_services.begin(), _services.end(), service) == _services.end());
-
-        _services.push_back(service);
-
-        _adminLock.Unlock();
-    }
-
-    void ServiceAdministrator::Revoke(IService* service)
-    {
-        _adminLock.Lock();
-
-        Services::iterator index = std::find(_services.begin(), _services.end(), service);
-
-        // Only unregister a service once !!!
-        ASSERT(index != _services.end());
-
-        _services.erase(index);
-
-        _adminLock.Unlock();
-    }
-
     /* static */ ServiceAdministrator& ServiceAdministrator::Instance()
     {
         return (_systemServiceAdministrator);
     }
 
-    void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber)
+    void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t interfaceId, const uint32_t version)
     {
-        void* result = nullptr;
+        bool found(false);
+        void* result(nullptr);
+        IService* startPoint(nullptr);
 
-        _adminLock.Lock();
+        if (library.IsLoaded() == false) {
+            startPoint = System::GetModuleServices();
+        }
+        else {
+            System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
 
-        Services::iterator index = _services.begin();
-
-        while ((index != _services.end()) && (result == nullptr)) {
-            const IService::IMetadata* info((*index)->Metadata());
-
-            if ((strcmp(info->ServiceName(), name) == 0) && ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((info->Major() << 8) | info->Minor())))) {
-                result = (*index)->Create(library, interfaceNumber);
+            if (service != nullptr) {
+                startPoint = service();
             }
-            index++;
         }
 
-        _adminLock.Unlock();
+        // Now lets see if we can find what we need to instantiate..
+        while ( (startPoint != nullptr) && (found == false) ) {
+            const IService::IMetadata* info (startPoint->Metadata());
+            
+            if ( ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((info->Major() << 8) | info->Minor()))) &&
+                 (strcmp(info->Name(), name) == 0) ) {
+                found = true;
+            }
+            else {
+                startPoint = startPoint->Next();
+            }
+        }
+
+        if (startPoint != nullptr) {
+            result = startPoint->Create(interfaceId);
+        }
 
         if(result == nullptr){
             TRACE_L1("Missing implementation classname %s in library %s\n", name, library.Name().c_str());
@@ -96,18 +71,18 @@ namespace Core {
 
     void ServiceAdministrator::ReleaseLibrary(Library&& reference)
     {
-        _dynamicLoaderLock.Lock();
+        _adminLock.Lock();
         _unreferencedLibraries.emplace_back(std::move(reference));
-        _dynamicLoaderLock.Unlock();
+        _adminLock.Unlock();
     }
 
     void ServiceAdministrator::FlushLibraries()
     {
-        _dynamicLoaderLock.Lock();
+        _adminLock.Lock();
         while (_unreferencedLibraries.size() != 0) {
             Library lib = _unreferencedLibraries.front();
-            _unreferencedLibraries.pop_front();
-            _dynamicLoaderLock.Unlock();
+            _unreferencedLibraries.pop_back();
+            _adminLock.Unlock();
             lib.Release();
             // A few closing code instructions might still be required for 
             // that thread that submitted the library to complete, so at 
@@ -115,9 +90,9 @@ namespace Core {
             // instructions before we close down the library (if it is 
             // the last reference)
             lib.WaitUnloaded(5000);
-            _dynamicLoaderLock.Lock();
+            _adminLock.Lock();
         }
-        _dynamicLoaderLock.Unlock();
+        _adminLock.Unlock();
     }
 }
 } // namespace Core
