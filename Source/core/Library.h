@@ -132,7 +132,7 @@ namespace Core {
                 return (true);
             }
             Library Current() {
-                ASSERT(IsValid() == true)
+                ASSERT(IsValid() == true);
                 return (Library(static_cast<const TCHAR*>(_current->l_name)));
             }
 
