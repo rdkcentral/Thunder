@@ -30,6 +30,7 @@
 #include "Trace.h"
 #include "Proxy.h"
 #include "SystemInfo.h"
+#include "Thread.h"
 
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
@@ -61,7 +62,7 @@ namespace Core {
 
     public:
         Library LoadLibrary(const TCHAR libraryName[]) {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+            Core::SafeSyncType<Core::CriticalSection> lock(_dynamicLoaderLock);
             return (Library(libraryName));
         }
         // There is *NO* locking around the _callback pointer. SO this callback 
@@ -112,6 +113,7 @@ namespace Core {
 
     private:
         Core::CriticalSection _adminLock;
+        Core::CriticalSection _dynamicLoaderLock;
         Services _services;
         mutable uint32_t _instanceCount;
         ICallback* _callback;
@@ -162,6 +164,22 @@ namespace Core {
             ASSERT (_referenceCount > 0);
             Core::InterlockedDecrement(_referenceCount);
             return (Core::ERROR_COMPOSIT_OBJECT);
+        }
+
+        uint32_t WaitReleased(const uint32_t timeout = Core::infinite)
+        {
+            uint32_t result = Core::ERROR_NONE;
+            uint64_t now = Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond;
+            uint8_t count = 0;
+            while (_referenceCount > 0) {
+                    Core::Thread::Yield(count, 100);
+                    if (( timeout != Core::infinite ) && ( (Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond) - now > timeout )) {
+                        result = Core::ERROR_TIMEDOUT;
+                        break;
+                    }
+            };
+
+            return result;
         }
 
     private:

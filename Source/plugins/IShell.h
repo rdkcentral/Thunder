@@ -83,7 +83,7 @@ namespace PluginHost {
         enum state : uint8_t {
             UNAVAILABLE,
             DEACTIVATED,
-            ACTIVATED,
+            ACTIVATED, /* @end */
             DEACTIVATION,
             ACTIVATION,
             PRECONDITION,
@@ -264,8 +264,8 @@ namespace PluginHost {
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
         // on the controller.
-        virtual void Register(IPlugin::INotification* sink) = 0;
-        virtual void Unregister(IPlugin::INotification* sink) = 0;
+        virtual void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
+        virtual void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
         virtual state State() const = 0;
         virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
