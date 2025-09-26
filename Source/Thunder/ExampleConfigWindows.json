@@ -1,36 +1,18 @@
 {
+  "port": 25555,
+  "binding": "127.0.0.1",
   "idletime": 60,
   "ipv6": false,
-  "location": {
-    "persistent": "D:/domotica/artifacts/Persistent",
-    "volatile": "D:/domotica//artifacts/temp",
-    "data": "D:/domotica/artifacts/Debug/Plugins",
-    "system": "D:/domotica/artifacts/Debug",
-    "proxystub": "D:/domotica/artifacts/ProxyStubs/Debug"
-  },
-  "webserver": {
-    "binding": "0.0.0.0:25555",
-    "redirect": "Service/Controller/UI/index.html",
-    "certificate": "websecurity.crt"
-  },
-  "comserver": {
-    "binding": "127.0.0.1:62000"
-  },
+  "persistentpath": "C:/ThunderWin/artifacts/Persistent",
+  "volatilepath": "C:/ThunderWin/artifacts/temp",
+  "datapath": "C:/ThunderWin/artifacts/Debug/Plugins",
+  "systempath": "C:/ThunderWin/artifacts/Debug",
+  "proxystubpath": "C:/ThunderWin/artifacts/ProxyStubs/Debug",
+  "communicator": "127.0.0.1:62000",
+  "redirect": "Service/Controller/UI",
   "observe": {
-    "proxystub": "D:/domotica/artifacts/dynamic/proxystubs",
-    "config": "D:/domotica/artifacts/dynamic/config"
-  },
-  "process": {
-    "softkill": 12,
-    "hardkill": 6,
-    "outofprocess": 20
-  },
-  "postmortem": {
-    "reasons": [ "Failure", "MemoryExceeded", "WatchdogExpired" ]
-  },
-  "cryptography": {
-    "key": "validation.pub",
-    "hash": "A length Base64 hash of Thunder app encrytped with the RSA private key of validation.pub"
+    "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
+    "configpath": "C:/ThunderWin/artifacts/dynamic/config"
   },
   "messaging": {
     "port": 63000,
@@ -50,16 +32,6 @@
           "enabled": true
         },
         {
-          "module": "Zigbee",
-          "category": "AttributeFlow",
-          "enabled": true
-        },
-        {
-          "module": "Zigbee",
-          "category": "ClusterFlow",
-          "enabled": true
-        },
-        {
           "module": "Plugin_ZWaveControl",
           "enabled": true
         },
@@ -69,7 +41,7 @@
         },
         {
           "module": "Plugin_ZigbeeControl",
-          "enabled": true
+          "enabled": false
         },
         {
           "module": "Plugin_USBControl",
@@ -94,47 +66,6 @@
     {
       "callsign": "Controller",
       "configuration": {}
-    },
-    {
-      "callsign": "Backend",
-      "locator": "libBackend.so",
-      "classname": "Backend",
-      "startmode": "Deactivated",
-      "configuration": {
-        "components": "components",
-        "endpoint": "integraal.info:80"
-      }
-    },
-    {
-      "callsign": "DNSServer",
-      "locator": "libDNSServer.so",
-      "classname": "DNSServer",
-      "startmode": "Deactivated",
-      "configuration": {
-        "multicast": "224.0.0.251:5353",
-        "server": [ "8.8.8.8:53", "4.4.4.4:53" ]
-      }
-    },
-    {
-      "callsign": "NetworkControl",
-      "locator": "libNetworkControl00000.so",
-      "classname": "NetworkControl",
-      "startmode": "Deactivated",
-      "configuration": {
-        "interfaces": [
-          {
-            "interface": "WiFi",
-            "mode": "Static",
-            "address": "192.168.11.123",
-            "mask": 24,
-            "gateway": "192.168.11.254",
-            "broadcast": "192.168.11.255",
-            "dns": [
-              "192.168.11.254"
-            ]
-          }
-        ]
-      }
     },
     {
       "callsign": "Cobalt",
@@ -166,7 +97,7 @@
       "callsign": "WifiControl",
       "locator": "libWifiControl.so",
       "classname": "WifiControl",
-      "startmode": "Deactivated",
+      "startmode": "Activated",
       "configuration": {
         "application": null,
         "root": {
@@ -222,17 +153,17 @@
       "callsign": "Butler",
       "locator": "libButler.so",
       "classname": "Butler",
-      "startmode": "Activated"
+      "startmode": "Deactivated"
     },
     {
       "callsign": "ZigbeeControl",
       "locator": "libZigbeeControl.so",
       "classname": "ZigbeeControl",
-      "startmode": "Activated",
+      "startmode": "Deactivated",
       "configuration": {
-        "port": "\\\\.\\COM6",
+        "port": "\\\\.\\COM4",
         "watchdog": 1442,
-        "pan": 48879
+        "pan": 65200
       }
     },
     {
@@ -463,9 +394,9 @@
       "callsign": "I2CControl",
       "locator": "libI2CControl.so",
       "classname": "I2CControl",
-      "startmode": "Activated",
+      "startmode": "Deactivated",
       "configuration": {
-        "port": "MCP2221",
+        "port": "\\\\.\\COM24",
         "devices": [
           {
             "address": 35,
@@ -543,19 +474,13 @@
       "callsign": "WebServer",
       "locator": "libWebServer.so",
       "classname": "WebServer",
-      "startmode": "Deactivated",
+      "startmode": "Activated",
       "communicator": "127.0.0.1:2349",
       "configuration": {
-        "access": {
-          "binding": "0.0.0.0:8080",
-          "certificate": "websecurity.crt",
-          "key2": "websecurity.key"
-        },
-        "domains": [
-          "localhost.lan"
-        ],
+        "port": 8080,
+        "binding": "0.0.0.0",
         "root": {
-          "mode": "Off"
+          "mode": "Local"
         }
       }
     },
@@ -577,7 +502,7 @@
       "callsign": "TimeSync",
       "locator": "libtimesync.so",
       "classname": "TimeSync",
-      "startmode": "Activated",
+      "startmode": "Deactivated",
       "configuration": {
         "interval": 30,
         "retries": 20,
@@ -594,7 +519,7 @@
       "callsign": "LocationSync",
       "locator": "liblocationsync.so",
       "classname": "LocationSync",
-      "startmode": "Activated",
+      "startmode": "Deactivated",
       "configuration": {
         "interval": 30,
         "retries": 20,
