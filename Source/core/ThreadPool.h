@@ -637,6 +637,24 @@ namespace Core {
             ASSERT(_queue.HasEntry(job) == false);
 
 #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
+            if (priority == Priority::High) {
+                uint8_t total = Count();
+                uint8_t active = 0;
+                std::list<Executor>::const_iterator it = _units.cbegin();
+
+                while (it != _units.cend()) {
+                    if (it->IsActive()) {
+                        ++active;
+                    }
+                    ++it;
+                }
+
+                if (active >= total) {
+                    ASSERT(active == total);
+                    TRACE_L1("PriorityQueue: High-priority submit while no free workers; pending=%u, active=%u, total=%u", Pending(), active, total);
+                }
+            }
+
             typename MessageQueue::category cat = MessageQueue::category::LOW;
             switch (priority) {
             case Priority::High:
