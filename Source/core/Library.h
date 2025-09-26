@@ -95,8 +95,8 @@ namespace Core {
                     if (index < (needed / sizeof(HANDLE))) { 
                         TCHAR moduleName[MAX_PATH];
 
-                        if (::GetModuleFileNameEx(GetCurrentProcess(), handles[current], moduleName, sizeof(moduleName)/sizeof(TCHAR))) {
-                            _current = moduleName;
+                        if (::GetModuleFileNameEx(GetCurrentProcess(), handles[_current], moduleName, sizeof(moduleName)/sizeof(TCHAR))) {
+                            _filename = moduleName;
                             loaded = true;
                         }
                     }
