@@ -28,21 +28,17 @@ namespace Core {
         return (_systemServiceAdministrator);
     }
 
-    void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t interfaceId, const uint32_t version)
+    void* ServiceAdministrator::Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceId)
     {
         bool found(false);
         void* result(nullptr);
         IService* startPoint(nullptr);
 
-        if (library.IsLoaded() == false) {
-            startPoint = System::GetModuleServices();
-        }
-        else {
-            System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
+        ASSERT(library.IsLoaded() == true);
+        System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
 
-            if (service != nullptr) {
-                startPoint = service();
-            }
+        if (service != nullptr) {
+            startPoint = service();
         }
 
         // Now lets see if we can find what we need to instantiate..
