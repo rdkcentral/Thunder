@@ -80,7 +80,7 @@ namespace Core {
     {
         _adminLock.Lock();
         while (_unreferencedLibraries.size() != 0) {
-            Library lib = _unreferencedLibraries.front();
+            Library lib = _unreferencedLibraries.back();
             _unreferencedLibraries.pop_back();
             _adminLock.Unlock();
             lib.Release();
