@@ -183,10 +183,13 @@ namespace Core {
     class ServiceType : public ACTUALSERVICE {
     protected:
         template<typename... Args>
-        ServiceType(Library&& library, Args&&... args)
+        ServiceType(Args&&... args)
             : ACTUALSERVICE(std::forward<Args>(args)...)
-            , _referenceLib(std::move(library))
+            , _referenceLib(&System::MODULE_NAME)
         {
+            ASSERT(_referenceLib.IsLoaded() == true);
+
+            TRACE_L1("Creating: [%s] in the Module: [%s] using Library: [%s]", typeid(ACTUALSERVICE).name(), System::MODULE_NAME, _referenceLib.Name().c_str());
             ServiceAdministrator::Instance().Created();
         }
 
@@ -199,13 +202,7 @@ namespace Core {
         template <typename INTERFACE, typename... Args>
         static INTERFACE* Create(Args&&... args)
         {
-            Core::Library library(&System::MODULE_NAME);
-
-            ASSERT (library.IsLoaded() == true);
-
-            TRACE_L1("Loading the reference library for: [%s] using [%s] in so: [%s]", typeid(ACTUALSERVICE).name(), System::MODULE_NAME, library.Name());
-
-            Core::ProxyType< ServiceType<ACTUALSERVICE> > object = Core::ProxyType< ServiceType<ACTUALSERVICE> >::Create(std::move(library), std::forward<Args>(args)...);
+            Core::ProxyType< ServiceType<ACTUALSERVICE> > object = Core::ProxyType< ServiceType<ACTUALSERVICE> >::Create(std::forward<Args>(args)...);
 
             ASSERT (object.IsValid() == true);
 
