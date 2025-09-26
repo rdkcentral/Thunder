@@ -1518,7 +1518,8 @@ namespace PluginHost {
 
                 if (locator.empty() == true) {
                     Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-                    newIF = admin.Instantiate<IPlugin>(Core::Library(), className, version);
+                    Core::Library library(&Core::System::MODULE_NAME);
+                    newIF = admin.Instantiate<IPlugin>(library, className, version);
                     if (newIF == nullptr) {
                         ErrorMessage(_T("local class definitions/version does not exist"));
                     }
