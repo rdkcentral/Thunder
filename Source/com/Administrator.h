@@ -496,7 +496,16 @@ POP_WARNING()
             Core::ProxyType<Job> job(Job::Instance());
 
             job->Set(source, message);
-            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
+
+            if (source.InProgress() == true) {
+                // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
+                // the priority as we might be causing a deadlock if the workerpool would be stuffed.
+                SYSLOG(Logging::Notification, (_T("COM-RPC: second call in the same direction detected; raising priority to High")));
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::High);
+            }
+            else {
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::Medium);
+            }
         }
 
     private:
@@ -534,7 +543,7 @@ POP_WARNING()
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr)
+            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, static_cast<uint16_t>((THREADPOOLCOUNT >= 4 ? 3 : 1)), static_cast<uint16_t>((THREADPOOLCOUNT > 2) ? std::max<int>(3, THREADPOOLCOUNT - ((THREADPOOLCOUNT >= 4) ? 2 : 1) - 1) : 1))
         {
             _threadPoolEngine.Run();
         }
@@ -568,7 +577,15 @@ POP_WARNING()
             Core::ProxyType<RPC::Job> job(Job::Instance());
 
             job->Set(source, message);
-            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
+
+            if (source.InProgress() == true) {
+                // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
+                // the priority as we might be causing a deadlock if the workerpool would be stuffed.
+                SYSLOG(Logging::Notification, (_T("COM-RPC: second call in the same direction detected; raising priority to High")));
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::High);
+            } else {
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::Medium);
+            }
         }
 
     private:

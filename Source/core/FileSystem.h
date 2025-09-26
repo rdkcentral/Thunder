@@ -525,7 +525,7 @@ namespace Core {
 #endif
 #ifdef __WINDOWS__
             DWORD readBytes = 0;
-            ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
+            (void) ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
             return static_cast<uint32_t>(readBytes);
 #endif
         }
