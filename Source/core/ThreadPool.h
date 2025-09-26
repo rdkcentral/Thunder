@@ -95,7 +95,13 @@ namespace Core {
              *        conversion from ProxyType<IDispatch> to MeasurableJob in
              *        QueueType methods such as Post or Insert.
              */
-            MeasurableJob(MeasurableJob&&) = delete;
+            MeasurableJob(MeasurableJob&& other) noexcept
+                : _job(std::move(other._job))
+                , _time(other._time)
+            {
+                other._time = NumberType<uint64_t>::Max();
+            }
+
             MeasurableJob& operator=(MeasurableJob&&) = default;
             MeasurableJob& operator=(const MeasurableJob&) = default;
 

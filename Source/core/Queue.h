@@ -475,7 +475,6 @@ namespace Thunder {
                 bool AwaitQueuing(const CONTEXT& entry, const uint32_t waitTime) const
                 {
                     uint32_t result = Core::ERROR_NONE;;
-                    bool posted = false;
 
                     _observerLock.Lock();
 
