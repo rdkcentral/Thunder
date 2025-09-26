@@ -201,7 +201,7 @@ namespace Core {
         {
             Core::Library library(&System::MODULE_NAME);
 
-            ASSERT (library.IsValid() == true);
+            ASSERT (library.IsLoaded() == true);
 
             TRACE_L1("Loading the reference library for: [%s] using [%s] in so: [%s]", typeid(ACTUALSERVICE).name(), System::MODULE_NAME, library.Name());
 
