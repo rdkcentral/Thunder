@@ -80,12 +80,12 @@ namespace Core {
                 return (false);
             }
             Library Current() {
-                ASSERT(IsValid() == true)
+                ASSERT(IsValid() == true);
                 return (Library(_filename.c_str()));
             }
 
         private:
-            // Index is the inde counted from 1 up.. (0 is an illegal index as it means no handle)
+            // Index is the index counted from 1 up.. (0 is an illegal index as it means no handle)
             bool LoadIndex(const uint32_t index) {
                 bool loaded (false);
                 ASSERT (index > 0);
@@ -96,12 +96,12 @@ namespace Core {
                         TCHAR moduleName[MAX_PATH];
 
                         if (::GetModuleFileNameEx(GetCurrentProcess(), handles[current], moduleName, sizeof(moduleName)/sizeof(TCHAR))) {
-                            _filename = (moduleName);
+                            _current = moduleName;
                             loaded = true;
                         }
                     }
                 }
-                return (loaded)
+                return (loaded);
             }
 
         private:
