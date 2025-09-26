@@ -566,7 +566,7 @@ namespace Core {
 
         ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreshold = 0, const uint16_t mediumPriorityThreshold = 0)
             #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
-            : _queue(queueSize, lowPriorityThreshold, mediumPriorityThreshold)
+            : _queue(lowPriorityThreshold, mediumPriorityThreshold, queueSize)
             #else
             : _queue(queueSize)
             #endif 

@@ -350,7 +350,7 @@ namespace Thunder {
 
                 CategoryAdminType() = delete;
 
-                CategoryAdminType(CategoryAdminType<ELEMENT>&& move)
+                CategoryAdminType(CategoryAdminType<ELEMENT>&& move) noexcept
                     : _type(std::move(move._type))
                     , _highWaterMark(std::move(move._highWaterMark))
                     , _submitted(std::move(move._submitted))
