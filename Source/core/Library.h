@@ -85,7 +85,7 @@ namespace Core {
             }
 
         private:
-            // Index is the index counted from 1 up.. (0 is an illegal index as it means no handle)
+            // Index is counted up from 1 up.. (0 is an illegal index as it means no handle)
             bool LoadIndex(const uint32_t index) {
                 bool loaded (false);
                 ASSERT (index > 0);
