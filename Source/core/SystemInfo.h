@@ -41,7 +41,7 @@ namespace Core {
         struct EXTERNAL IMetadata {
             virtual ~IMetadata() = default;
 
-            virtual const TCHAR* ServiceName() const = 0;
+            virtual const TCHAR* Name() const = 0;
             virtual const TCHAR* Module() const = 0;
             virtual uint8_t Major() const = 0;
             virtual uint8_t Minor() const = 0;
@@ -50,18 +50,21 @@ namespace Core {
 
         virtual ~IService() = default;
 
-        virtual void* Create(const Library& library, const uint32_t interfaceNumber) = 0;
+        virtual void* Create(const uint32_t interfaceNumber) = 0;
         virtual const IMetadata* Metadata() const = 0;
+        virtual IService* Next() = 0;
     };
 
     namespace System {
-        extern "C" EXTERNAL_EXPORT const Thunder::Core::IService::IMetadata * ROOT_META_DATA;
-
         extern "C" EXTERNAL_EXPORT const char* MODULE_NAME;
-
         extern "C" EXTERNAL_EXPORT uint32_t Reboot();
+
         extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
-        extern "C" EXTERNAL_EXPORT const IService::IMetadata* ModuleServiceMetadata();
+        extern "C" EXTERNAL_EXPORT IService* GetModuleServices();
+        extern "C" EXTERNAL_EXPORT IService* SetModuleServices(IService* service);
+
+        extern "C" typedef const char* (*ModuleBuildRefImpl)();
+        extern "C" typedef IService*   (*GetModuleServicesImpl)();
     }
 
     class EXTERNAL SystemInfo {
@@ -255,29 +258,34 @@ namespace Core {
 } // namespace Core
 } // namespace Thunder
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                     \
-    extern "C" {                                                                                              \
-    namespace Thunder {                                                                                  \
-        namespace Core {                                                                                      \
-            namespace System {                                                                                \
-                EXTERNAL_EXPORT const Thunder::Core::IService::IMetadata* ROOT_META_DATA = nullptr;      \
-                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                         \
-                EXTERNAL_EXPORT const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }            \
-                EXTERNAL_EXPORT const IService::IMetadata* ModuleServiceMetadata() {return(ROOT_META_DATA);}  \
-            }                                                                                                 \
-        }                                                                                                     \
-    }                                                                                                         \
+#define MODULE_NAME_DECLARATION(buildref)                                                             \
+    extern "C" {                                                                                      \
+    namespace {                                                                                       \
+        static Thunder::Core::IService* ROOT_META_DATA = nullptr;                                     \
+    }                                                                                                 \
+    namespace Thunder {                                                                               \
+        namespace Core {                                                                              \
+            namespace System {                                                                        \
+                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                 \
+                EXTERNAL_EXPORT const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }    \
+                EXTERNAL_EXPORT IService* GetModuleServices() { return(ROOT_META_DATA); }             \
+                EXTERNAL_EXPORT IService* SetModuleServices(IService* service) {                      \
+                    IService* result = ROOT_META_DATA; ROOT_META_DATA = service; return (result);     \
+                }                                                                                     \
+            }                                                                                         \
+        }                                                                                             \
+    }                                                                                                 \
     } // extern "C" Core::System
 
-#define MODULE_NAME_ARCHIVE_DECLARATION                                                             \
-    extern "C" {                                                                                    \
-    namespace Thunder {                                                                        \
-        namespace Core {                                                                            \
-            namespace System {                                                                      \
-                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);               \
-            }                                                                                       \
-        }                                                                                           \
-    }                                                                                               \
+#define MODULE_NAME_ARCHIVE_DECLARATION                                                               \
+    extern "C" {                                                                                      \
+    namespace Thunder {                                                                               \
+        namespace Core {                                                                              \
+            namespace System {                                                                        \
+                EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                 \
+            }                                                                                         \
+        }                                                                                             \
+    }                                                                                                 \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H
