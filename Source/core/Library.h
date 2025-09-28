@@ -107,7 +107,7 @@ namespace Core {
         private:
             uint32_t _current;
             string _filename;
-#else
+#elif !defined(__APPLE__)
             Iterator() : _current(nullptr) {
             }
 
