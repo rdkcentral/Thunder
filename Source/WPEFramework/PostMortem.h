@@ -85,10 +85,10 @@ namespace PluginHost {
         }
 
     public:
-        Core::JSON::InstanceId    Address;
-        Core::JSON::String        Function;
-        Core::JSON::String        Module;
-        Core::JSON::DecUInt32     Line;
+        Core::JSON::Pointer   Address;
+        Core::JSON::String    Function;
+        Core::JSON::String    Module;
+        Core::JSON::DecUInt32 Line;
     };
 
     
@@ -100,7 +100,7 @@ namespace PluginHost {
 
             Callstack() 
                 : Core::JSON::Container()
-                , Id()
+                , Id(0)
                 , Data() {
                 Add(_T("id"), &Id);
                 Add(_T("stack"), &Data);
@@ -122,7 +122,7 @@ namespace PluginHost {
             ~Callstack() override = default;
 
         public:
-            Core::JSON::InstanceId Id;
+            Core::JSON::Pointer                   Id;
             Core::JSON::ArrayType<CallstackData>  Data;
         };
 
