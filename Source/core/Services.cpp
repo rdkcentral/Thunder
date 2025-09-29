@@ -32,7 +32,7 @@ namespace Core {
     {
         bool found(false);
         void* result(nullptr);
-        IService* startPoint(nullptr);
+        const IService* startPoint(nullptr);
 
         ASSERT(library.IsLoaded() == true);
         System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
@@ -43,7 +43,7 @@ namespace Core {
 
         // Now lets see if we can find what we need to instantiate..
         while ( (startPoint != nullptr) && (found == false) ) {
-            const IService::IMetadata* info (startPoint->Metadata());
+            const IService::IMetadata* info (startPoint->Info());
             
             if ( ((version == static_cast<uint32_t>(~0)) || (version == static_cast<uint32_t>((info->Major() << 8) | info->Minor()))) &&
                  (strcmp(info->Name(), name) == 0) ) {

@@ -704,18 +704,18 @@ namespace PluginHost {
                 }
                 ~ControlData() = default;
 
-                ControlData& operator=(Core::IService* info) {
+                ControlData& operator=(const Core::IService* info) {
                     if (info != nullptr) {
-                        Core::IService* runner(info);
+                        const Core::IService* runner(info);
                         const Plugin::IMetadata* extended(nullptr);
 
                         while ((extended == nullptr) && (runner != nullptr)) {
-                            extended = dynamic_cast<const Plugin::IMetadata*>(runner->Metadata());
+                            extended = dynamic_cast<const Plugin::IMetadata*>(runner->Info());
                             runner = runner->Next();
                         }
 
                         if (extended == nullptr) {
-                            const Core::IService::IMetadata* base(info->Metadata());
+                            const Core::IService::IMetadata* base(info->Info());
                             if (base != nullptr) {
                                 _major = base->Major();
                                 _minor = base->Minor();

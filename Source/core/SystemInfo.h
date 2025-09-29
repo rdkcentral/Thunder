@@ -50,9 +50,9 @@ namespace Core {
 
         virtual ~IService() = default;
 
-        virtual void* Create(const uint32_t interfaceNumber) = 0;
-        virtual const IMetadata* Metadata() const = 0;
-        virtual IService* Next() = 0;
+        virtual void* Create(const uint32_t interfaceNumber) const = 0;
+        virtual const IMetadata* Info() const = 0;
+        virtual const IService* Next() const = 0;
     };
 
     namespace System {
@@ -60,7 +60,7 @@ namespace Core {
         extern "C" EXTERNAL_EXPORT uint32_t Reboot();
 
         extern "C" EXTERNAL_EXPORT const char* ModuleBuildRef();
-        extern "C" EXTERNAL_EXPORT IService* GetModuleServices();
+        extern "C" EXTERNAL_EXPORT const IService* GetModuleServices();
         extern "C" EXTERNAL_EXPORT IService* SetModuleServices(IService* service);
 
         extern "C" typedef const char* (*ModuleBuildRefImpl)();
@@ -268,7 +268,7 @@ namespace Core {
             namespace System {                                                                        \
                 EXTERNAL_EXPORT const char* MODULE_NAME = DEFINE_STRING(MODULE_NAME);                 \
                 EXTERNAL_EXPORT const char* ModuleBuildRef() { return (DEFINE_STRING(buildref)); }    \
-                EXTERNAL_EXPORT IService* GetModuleServices() { return(ROOT_META_DATA); }             \
+                EXTERNAL_EXPORT const IService* GetModuleServices() { return(ROOT_META_DATA); }       \
                 EXTERNAL_EXPORT IService* SetModuleServices(IService* service) {                      \
                     IService* result = ROOT_META_DATA; ROOT_META_DATA = service; return (result);     \
                 }                                                                                     \

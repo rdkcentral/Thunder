@@ -331,7 +331,7 @@ namespace Core {
         ~PublishedServiceType() override = default;
 
     public:
-        void* Create(const uint32_t interfaceNumber) override {
+        void* Create(const uint32_t interfaceNumber) const override {
             void* interfaceInstance = nullptr;
             ACTUALSERVICE* result = Implementation<ACTUALSERVICE>::template Create<ACTUALSERVICE>();
             ASSERT(result != nullptr);
@@ -341,10 +341,10 @@ namespace Core {
             }
             return (interfaceInstance);
         }
-        const IMetadata* Metadata() const override {
+        const IMetadata* Info() const override {
             return (&_info);
         }
-        IService* Next() override {
+        const IService* Next() const override {
             return (_next);
         }
 
