@@ -85,11 +85,10 @@ namespace PluginHost {
         }
 
     public:
-        //Core::JSON::Pointer   Address;
         Core::JSON::InstanceId    Address;
-	Core::JSON::String    Function;
-        Core::JSON::String    Module;
-        Core::JSON::DecUInt32 Line;
+        Core::JSON::String        Function;
+        Core::JSON::String        Module;
+        Core::JSON::DecUInt32     Line;
     };
 
     
@@ -124,7 +123,7 @@ namespace PluginHost {
 
         public:
             Core::JSON::InstanceId Id;
-	    Core::JSON::ArrayType<CallstackData>  Data;
+            Core::JSON::ArrayType<CallstackData>  Data;
         };
 
     public:
