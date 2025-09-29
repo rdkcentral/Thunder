@@ -26,8 +26,7 @@
 #include "IController.h"
 #include "PostMortem.h"
 
-#include <plugins/json/JsonData_Events.h>
-#include <plugins/json/JEvents.h>
+#include <plugins/json/json_IController.h>
 
 namespace Thunder {
 namespace Plugin {
@@ -36,7 +35,7 @@ namespace Plugin {
     class Controller
         : public PluginHost::IPlugin
         , public PluginHost::IWeb
-        , public PluginHost::JSONRPC
+        , public PluginHost::JSONRPCSupportsEventStatus
         , public Exchange::Controller::IConfiguration
         , public Exchange::Controller::IDiscovery
         , public Exchange::Controller::ISystem
@@ -44,11 +43,13 @@ namespace Plugin {
         , public Exchange::Controller::ILifeTime
         , public Exchange::Controller::IShells
         , public Exchange::Controller::ISubsystems
-        , public Exchange::Controller::IEvents {
+        , public Exchange::Controller::IEvents
+        , public Exchange::Controller::JLifeTime::IHandler {
     private:
         using Resumes = std::vector<string>;
         using ExternalSubSystems = std::vector<PluginHost::ISubSystem::subsystem>;
-        using LifeTimeNotifiers = std::vector<Exchange::Controller::ILifeTime::INotification*>;
+        using LifeTimeObserver = std::pair<Exchange::Controller::ILifeTime::INotification*, Core::OptionalType<string>>;
+        using LifeTimeObservers = std::vector<LifeTimeObserver>;
 
         class Sink 
             : public PluginHost::IPlugin::INotification
@@ -204,6 +205,7 @@ namespace Plugin {
             // Attach to the SubSystems, we propagate the changes.
             PluginHost::ISubSystem* subSystems(_service->SubSystems());
 
+            ASSERT(_lifeTimeObservers.empty() == true);
             ASSERT(subSystems != nullptr);
 
             if (subSystems != nullptr) {
@@ -315,8 +317,8 @@ namespace Plugin {
         Core::hresult Configuration(const string& callsign, const string& configuration) override;
 
         // ILifeTime overrides
-        Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification) override;
-        Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification) override;
+        Core::hresult Register(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {}) override;
+        Core::hresult Unregister(Exchange::Controller::ILifeTime::INotification* notification, const Core::OptionalType<string>& callsign = {}) override;
         Core::hresult Activate(const string& callsign) override;
         Core::hresult Deactivate(const string& callsign) override;
         Core::hresult Unavailable(const string& callsign) override;
@@ -326,6 +328,20 @@ namespace Plugin {
 
         // ISubsystems overrides
         Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
+
+        // JSONRPCSupportsEventStatus overrides
+        void OnStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        {
+            if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
+                SendInitialStateSnapshot(client);
+            }
+        }
+        void OnStateControlStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        {
+            if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
+                SendInitialStateControlSnapshot(client);
+            }
+        }
 
         // IMetadata overrides
         Core::hresult Links(IMetadata::Data::ILinksIterator*& links) const override;
@@ -382,6 +398,8 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
+        void SendInitialStateSnapshot(const string& client);
+        void SendInitialStateControlSnapshot(const string& client);
 
     private:
         Core::CriticalSection _adminLock;
@@ -394,7 +412,7 @@ namespace Plugin {
         Resumes _resumes;
         uint32_t _lastReported;
         ExternalSubSystems _externalSubsystems;
-        LifeTimeNotifiers _lifeTimeObservers;
+        LifeTimeObservers _lifeTimeObservers;
     };
 
     POP_WARNING()
