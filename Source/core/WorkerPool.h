@@ -317,7 +317,7 @@ namespace Core {
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, static_cast<uint16_t>((threadCount >= 4 ? 3 : 1)), static_cast<uint16_t>((threadCount > 2) ? std::max<int>(3, threadCount - ((threadCount >= 4) ? 2 : 1) - 1) : 1))
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, std::max((threadCount - 1), 1), std::max((threadCount - 1), 1))
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
