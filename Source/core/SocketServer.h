@@ -220,6 +220,10 @@ namespace Core {
             {
                 SocketListner::LocalNode(localNode);
             }
+            inline const Core::NodeId& LocalNode() const
+            {
+                return (SocketListner::LocalNode());
+            }
             inline Core::ProxyType<HANDLECLIENT> Client(const uint32_t ID)
             {
                 Core::ProxyType<HANDLECLIENT> result;
@@ -392,6 +396,10 @@ namespace Core {
         inline void LocalNode(const Core::NodeId& localNode)
         {
             _handler.LocalNode(localNode);
+        }
+        inline const Core::NodeId& LocalNode() const
+        {
+            return (_handler.LocalNode());
         }
         template <typename PACKAGE>
         inline uint32_t Submit(const uint32_t ID, PACKAGE package)
