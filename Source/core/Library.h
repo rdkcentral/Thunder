@@ -27,7 +27,7 @@
 
 #ifdef __WINDOWS__
 #include <psapi.h>
-#else
+#else !defined(__APPLE__)
 #include <link.h>
 #endif
 
