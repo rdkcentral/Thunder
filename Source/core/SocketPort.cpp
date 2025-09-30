@@ -1240,7 +1240,8 @@ namespace Thunder {
 
                 if (l_Size == 0) {
                     if ((m_State & SocketPort::LINK) != 0) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED );
+                        StateChange();
                     }
                 }
                 else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
@@ -1253,7 +1254,8 @@ namespace Thunder {
                         m_State |= SocketPort::READ;
                     }
                     else if (l_Result == __ERROR_CONNRESET__) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED);
+                        StateChange();
                     }
                     else if (l_Result != 0) {
                         printf("Read exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));

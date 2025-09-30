@@ -25,6 +25,7 @@ namespace Core {
 
     ServiceAdministrator::ServiceAdministrator()
         : _adminLock()
+        , _dynamicLoaderLock()
         , _services()
         , _instanceCount(0)
         , _callback(nullptr)
@@ -95,18 +96,18 @@ namespace Core {
 
     void ServiceAdministrator::ReleaseLibrary(Library&& reference)
     {
-        _adminLock.Lock();
+        _dynamicLoaderLock.Lock();
         _unreferencedLibraries.emplace_back(std::move(reference));
-        _adminLock.Unlock();
+        _dynamicLoaderLock.Unlock();
     }
 
     void ServiceAdministrator::FlushLibraries()
     {
-        _adminLock.Lock();
+        _dynamicLoaderLock.Lock();
         while (_unreferencedLibraries.size() != 0) {
             Library lib = _unreferencedLibraries.front();
             _unreferencedLibraries.pop_front();
-            _adminLock.Unlock();
+            _dynamicLoaderLock.Unlock();
             lib.Release();
             // A few closing code instructions might still be required for 
             // that thread that submitted the library to complete, so at 
@@ -114,9 +115,9 @@ namespace Core {
             // instructions before we close down the library (if it is 
             // the last reference)
             lib.WaitUnloaded(5000);
-            _adminLock.Lock();
+            _dynamicLoaderLock.Lock();
         }
-        _adminLock.Unlock();
+        _dynamicLoaderLock.Unlock();
     }
 }
 } // namespace Core
