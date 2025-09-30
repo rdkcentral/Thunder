@@ -1924,15 +1924,22 @@ namespace Core {
                                 else {
                                     // We are done ! Move on, strange character has been handled and converted
                                     uint8_t skip = ((_flagsAndCounters >> 3) & 0x07);
-                                    length -= skip;
-                                    offset += skip;
+                                    if(offset < _value.length() && ((length-skip) > 0)) {
+                                        length -= skip;
+                                        offset += skip;
+                                    } else {
+                                        length = 0;
+                                        result = 0;
+                                        offset = 0;
+                                        isQuoted = false;
+                                        break;
+                                    }
 
                                     _flagsAndCounters &= (FlagMask ^ SpecialSequenceBit);
                                 }
                             }
                         }
                     }
-
                     if (length == 0) {
                         // And we close with a quote..
                         if (isQuoted == false) {
