@@ -273,7 +273,7 @@ namespace Exchange {
 
             ::Thunder::Core::NodeId remoteNode(connector.c_str());
 
-            ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
+            ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1, 1, 1>> engine = ::Thunder::Core::ProxyType<::Thunder::RPC::InvokeServerType<4, 0, 1>>::Create();
             ASSERT_TRUE(engine.IsValid());
 
             ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient> client = ::Thunder::Core::ProxyType<::Thunder::RPC::CommunicatorClient>::Create(remoteNode, ::Thunder::Core::ProxyType<::Thunder::Core::IIPCServer>(engine));
