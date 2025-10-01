@@ -588,18 +588,18 @@ namespace Core {
 
                 _administration->_agents++;
 
-                AdminUnlock();
-
                 timeLeft = SignalLock(timeLeft);
 
                 _administration->_agents--;
 
-                AdminLock();
+                AdminUnlock();
 
                 if (_alert == true) {
                     _alert = false;
                     result = Core::ERROR_ASYNC_ABORTED;
                 }
+
+                AdminLock();
             }
 
         } while ((timeLeft > 0) && (result == Core::ERROR_TIMEDOUT));
