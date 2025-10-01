@@ -545,7 +545,7 @@ POP_WARNING()
             : _dispatcher()
             , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT)
         {
-            static_assert(THREADPOOLCOUNT > 0);
+            static_assert(THREADPOOLCOUNT > 0, "ThreadPool count has to be above zero");
 
             _threadPoolEngine.Run();
         }
