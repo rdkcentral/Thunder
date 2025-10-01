@@ -66,7 +66,7 @@ namespace Core {
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                #ifdef __LINUX__
+                #ifdef __POSIX__
                 ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
                 #endif
@@ -161,7 +161,7 @@ namespace Core {
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
-                #ifdef __LINUX__
+                #ifdef __POSIX__
                 ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
                 #endif
