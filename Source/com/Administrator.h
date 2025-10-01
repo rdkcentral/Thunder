@@ -504,7 +504,7 @@ POP_WARNING()
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::High);
             }
             else {
-                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::Medium);
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::Low);
             }
         }
 
@@ -512,7 +512,7 @@ POP_WARNING()
         Core::IWorkerPool& _threadPoolEngine;
     };
 
-    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
+    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS, const uint8_t LOWPRIORITYTHREADCOUNT, const uint8_t MEDIUMPRIORITYTHREADCOUNT>
     class InvokeServerType : public IIPCServer {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
@@ -536,15 +536,17 @@ POP_WARNING()
         };
 
     public:
-        InvokeServerType(InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
-        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
-        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
-        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType(InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&&) = delete;
+        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>& operator=(InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&&) = delete;
+        InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>& operator=(const InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&) = delete;
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, std::max(THREADPOOLCOUNT - 1, 1), std::max(THREADPOOLCOUNT - 1, 1))
+            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT)
         {
+            static_assert(THREADPOOLCOUNT > 0);
+
             _threadPoolEngine.Run();
         }
         ~InvokeServerType() override
@@ -584,7 +586,7 @@ POP_WARNING()
                 SYSLOG(Logging::Notification, (_T("COM-RPC: second call in the same direction detected; raising priority to High")));
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::High);
             } else {
-                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::Medium);
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::Low);
             }
         }
 

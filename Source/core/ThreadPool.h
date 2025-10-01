@@ -19,6 +19,7 @@
  
 #pragma once
 
+#include <unordered_set>
 #include "Thread.h"
 #include "ResourceMonitor.h"
 #include "Number.h"
@@ -564,9 +565,9 @@ namespace Core {
         ThreadPool& operator=(ThreadPool&&) = delete;
         ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreshold = 0, const uint16_t mediumPriorityThreshold = 0)
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
             #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
-            : _queue(lowPriorityThreshold, mediumPriorityThreshold, queueSize)
+            : _queue(lowPriorityThreadCount, mediumPriorityThreadCount, queueSize)
             #else
             : _queue(queueSize)
             #endif 
@@ -576,10 +577,14 @@ namespace Core {
             #endif
             , _external(external)
             , _callback(callback)
+            , _unitsSet()
         {
+            ASSERT((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count));
+
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
                 _units.emplace_back(*this, dispatcher, stackSize, name);
+                _unitsSet.insert(_units.back().Id());
             }
         }
         ~ThreadPool() {
@@ -629,7 +634,9 @@ namespace Core {
             ASSERT(job.IsValid() == true);
             ASSERT(_queue.HasEntry(job) == false);
 
-            if (Thread::ThreadId() == ResourceMonitor::Instance().Id()) {
+            thread_id threadId = Thread::ThreadId();
+
+            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
                 _queue.Post(job);
             }
             else {
@@ -674,7 +681,9 @@ namespace Core {
                 break;
             }
 
-            if (Thread::ThreadId() == ResourceMonitor::Instance().Id()) {
+            thread_id threadId = Thread::ThreadId();
+
+            if (threadId == ResourceMonitor::Instance().Id() || HasThreadID(threadId)) {
                 _queue.Post(job, cat);
             } else {
                 _queue.Insert(job, waitTime, cat);
@@ -732,6 +741,18 @@ namespace Core {
                 index->Stop();
                 index++;
             }
+        }
+        bool HasThreadID(const thread_id id) const
+        {
+            return (_unitsSet.find(id) != _unitsSet.end());
+        }
+        void Announce(const thread_id id)
+        {
+            _unitsSet.insert(id);
+        }
+        void Revoke(const thread_id id)
+        {
+            _unitsSet.erase(id);
         }
 
         #ifdef __CORE_WARNING_REPORTING__
@@ -834,6 +855,7 @@ namespace Core {
         #endif
         Minion* _external;
         ICallback* _callback;
+        std::unordered_set<thread_id> _unitsSet;
     };
 
 }

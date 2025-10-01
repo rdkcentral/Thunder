@@ -315,9 +315,9 @@ namespace Core {
         WorkerPool& operator=(const WorkerPool&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, std::max((threadCount - 1), 1), std::max((threadCount - 1), 1))
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount)
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
@@ -391,7 +391,9 @@ POP_WARNING()
         void Join() override
         {
             _joined = Thread::ThreadId();
+            _threadPool.Announce(_joined);
             _external.Process();
+            _threadPool.Revoke(_joined);
             _joined = 0;
         }
         thread_id Id(const uint8_t index) const override
