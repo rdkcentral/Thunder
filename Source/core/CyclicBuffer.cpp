@@ -244,30 +244,30 @@ namespace Core {
     // This is in MS...
     uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
     {
-
         uint32_t result = waitTime;
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
-            struct timespec structTime = {0,0};
+            auto start = std::chrono::steady_clock::now();
+            auto finish = start + std::chrono::milliseconds(waitTime);
 
-            clock_gettime(CLOCK_MONOTONIC, &structTime);
+            auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(finish.time_since_epoch());
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(finish.time_since_epoch());
 
-            structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-            structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-            structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+            struct timespec structTime = { seconds.count(), (nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count() };
 
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
-                struct timespec nowTime = {0,0};
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
-                clock_gettime(CLOCK_MONOTONIC, &nowTime);
-                if (nowTime.tv_nsec > structTime.tv_nsec) {
+                // Prevent overflow
+                // Prevent trend due to jitter
 
-                    result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
-                } else {
+                using common_t = std::common_type<std::chrono::milliseconds::rep, uint32_t>::type;
 
-                    result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
-                }
+                ASSERT(static_cast<common_t>(std::numeric_limits<uint32_t>::max()) >= std::min(static_cast<common_t>(elapsed.count()), static_cast<common_t>(waitTime)));
+
+                result = static_cast<uint32_t>(std::min(static_cast<common_t>(elapsed.count()), static_cast<common_t>(waitTime)));
+
                 TRACE_L1("End wait. %d\n", result);
             }
 #else
@@ -277,9 +277,6 @@ namespace Core {
                 result = 100;
             }
 #endif
-
-            // We can not wait longer than the set time.
-            ASSERT(result <= waitTime);
         } else {
 #ifdef __POSIX__
             pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
