@@ -62,6 +62,18 @@ namespace Core {
         virtual ~ServiceAdministrator() = default;
 
         static ServiceAdministrator& Instance();
+        static const IService* LibraryToService (const Library& library) {
+            void* result(nullptr);
+            const IService* startPoint(nullptr);
+
+            ASSERT(library.IsLoaded() == true);
+            System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
+
+            if (service != nullptr) {
+                return(service());
+            }
+            return (nullptr);
+        }
 
     public:
         Library LoadLibrary(const TCHAR libraryName[]) {
@@ -92,12 +104,12 @@ namespace Core {
         }
         void FlushLibraries();
         void ReleaseLibrary(Library&& reference);
-        void* Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber);
+        void* Instantiate(const IService* service, const char name[], const uint32_t version, const uint32_t interfaceNumber);
 
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const Library& library, const char name[], const uint32_t version)
+        REQUESTEDINTERFACE* Instantiate(const IService* service, const char name[], const uint32_t version)
         {
-            void* baseInterface(Instantiate(library, name, version, REQUESTEDINTERFACE::ID));
+            void* baseInterface(Instantiate(service, name, version, REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
                 return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));

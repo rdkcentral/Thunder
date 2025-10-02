@@ -1464,7 +1464,7 @@ namespace PluginHost {
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
                         // ServiceAdministrator, is already taken before entering the dlopen. This can only be achieved
                         // by forwarding this call to the ServiceAdministrator, so please so...
-                        Core::Library newLib = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
+                        Core::Library newLib(element.c_str());
 
                         if (newLib.IsLoaded() == true) {
                             if (progressedState == 1) {
@@ -1515,27 +1515,40 @@ namespace PluginHost {
                 const string classNameString(PluginHost::Service::Configuration().ClassName.Value());
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(static_cast<uint32_t>(~0));
+                const Core::IService* loader;
 
                 if (locator.empty() == true) {
-                    Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-                    Core::Library library(&Core::System::MODULE_NAME);
-                    newIF = admin.Instantiate<IPlugin>(library, className, version);
-                    if (newIF == nullptr) {
-                        ErrorMessage(_T("local class definitions/version does not exist"));
+		    // This is only allowed for the Controller! So we need to search in our own
+		    // process space..
+                    loader = Core::System::GetModuleServices();
+
+                    // Now lets see if we can find what we need to instantiate..
+                    if (loader == nullptr) {
+                        ErrorMessage(_T("Designated library does not expose an IService interface"));
+                    }
+		    else {
+                        newIF = Core::ServiceAdministrator::Instance().Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(loader, className, version);
+                        if (newIF == nullptr) {
+                            ErrorMessage(_T("local class definitions/version does not exist"));
+			}
                     }
                 } else {
-                    _library = LoadLibrary(locator);
-                    if (_library.IsLoaded() == true) { 
+                    Core::Library library(locator.c_str());
+                    if ( (library.IsLoaded() == false) || ((loader = Core::ServiceAdministrator::LibraryToService(library)) == nullptr) ) { 
+                        ErrorMessage(_T("Designated library does not expose an IService interface"));
+                    }
+		    else {
                         if ((PluginHost::Service::Configuration().Root.IsSet() == false) || (PluginHost::Service::Configuration().Root.Mode.Value() == Plugin::Config::RootConfig::ModeType::OFF)) {
-                            if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(_library, className, version)) == nullptr) {
+                            if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(loader, className, version)) == nullptr) {
                                 ErrorMessage(_T("class definitions/version does not exist"));
                                 Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
                             }
+			    else {
+			        _library = library;
+			    }
                         }
                         else {
                             uint32_t pid;
-                            Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
-
                             RPC::Object definition(locator,
                                 classNameString,
                                 Callsign(),
