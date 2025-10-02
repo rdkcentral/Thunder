@@ -36,13 +36,12 @@ namespace Core {
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              (bufferSize == 0 ? (mode & (~File::CREATE)) : (mode | File::CREATE)),
+              (bufferSize == 0 ? (mode & (~File::CREATE)) | File::USER_WRITE : (mode | File::CREATE | File::USER_WRITE)),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(nullptr)
         , _alert(false)
         , _administration(nullptr)
     {
-        ASSERT((mode & Core::File::USER_WRITE) != 0);
 #ifdef __WINDOWS__
         string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
         _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
@@ -65,6 +64,11 @@ namespace Core {
 
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+                #ifdef __POSIX__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                #endif
 
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
@@ -156,6 +160,11 @@ namespace Core {
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
+                #ifdef __POSIX__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+                #endif
+
                 pthread_mutexattr_t mutex_attr;
 
                 // default values
@@ -172,7 +181,7 @@ namespace Core {
 #endif
 
                 ret = pthread_mutex_init(&(_administration->_mutex), &mutex_attr);
-                ASSERT(ret ==0); DEBUG_VARIABLE(ret);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 #endif
 
                 std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
@@ -244,32 +253,37 @@ namespace Core {
     // This is in MS...
     uint32_t CyclicBuffer::SignalLock(const uint32_t waitTime)
     {
-
-        uint32_t result = waitTime;
+        // For a succesful 'signal'
+        uint32_t result = 0;
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
-            struct timespec structTime = {0,0};
+            auto start = std::chrono::steady_clock::now();
+            auto finish = start + std::chrono::milliseconds(waitTime);
 
-            clock_gettime(CLOCK_MONOTONIC, &structTime);
+            auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(finish.time_since_epoch());
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(finish.time_since_epoch());
 
-            structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-            structTime.tv_sec += (waitTime / 1000); // + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-            structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+            struct timespec structTime = { seconds.count(), (nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count() };
 
-            if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
-                struct timespec nowTime = {0,0};
+            int retval = 0;
 
-                clock_gettime(CLOCK_MONOTONIC, &nowTime);
-                if (nowTime.tv_nsec > structTime.tv_nsec) {
+            if ((retval = pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime)) != 0) {
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
-                    result = (nowTime.tv_sec - structTime.tv_sec) * 1000 + ((nowTime.tv_nsec - structTime.tv_nsec) / 1000000);
-                } else {
+                // Prevent overflow
+                // Prevent trend due to jitter
 
-                    result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
-                }
+                using common_t = std::common_type<std::chrono::milliseconds::rep, uint32_t>::type;
+
+                ASSERT(static_cast<common_t>(std::numeric_limits<uint32_t>::max()) >= std::min(static_cast<common_t>(elapsed.count()), static_cast<common_t>(waitTime)));
+
+                result = static_cast<uint32_t>(std::min(static_cast<common_t>(elapsed.count()), static_cast<common_t>(waitTime)));
+
                 TRACE_L1("End wait. %d\n", result);
             }
+
+            ASSERT((retval == 0) || (retval == ETIMEDOUT));
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
 
@@ -277,12 +291,10 @@ namespace Core {
                 result = 100;
             }
 #endif
-
-            // We can not wait longer than the set time.
-            ASSERT(result <= waitTime);
         } else {
 #ifdef __POSIX__
-            pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            int retval = pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
+            ASSERT(retval == 0); DEBUG_VARIABLE(retval);
 #else
             ::WaitForSingleObjectEx(_signal, INFINITE, FALSE);
 #endif
@@ -309,17 +321,17 @@ namespace Core {
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
-#ifdef __POSIX__
-            for (int index = _administration->_agents.load(); index != 0; index--) {
-                pthread_cond_signal(&(_administration->_signal));
-            }
-#else
+#ifndef __POSIX__
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
             uint8_t count = 0;
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
+#ifdef __POSIX__
+                int retval = pthread_cond_broadcast(&(_administration->_signal));
+                ASSERT(retval == 0); DEBUG_VARIABLE(retval);
+#endif
                 Core::Thread::Yield(count);
             }
         }
@@ -333,9 +345,9 @@ namespace Core {
 
         _alert = true;
 
-        Reevaluate();
-
         AdminUnlock();
+
+        Reevaluate();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -486,9 +498,10 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
+                Reevaluate();
+
                 AdminLock();
 
-                Reevaluate();
                 DataAvailable();
 
                 AdminUnlock();
@@ -571,7 +584,7 @@ namespace Core {
         uint32_t timeLeft = waitTime;
 
         // Lock can not be called recursive, unlock if you would like to lock it..
-        ASSERT(_administration->_lockPID == 0);
+        ASSERT(_administration->_lockPID != Core::ProcessInfo().Id());
 
         // Lock the administrator..
         AdminLock();
@@ -588,18 +601,20 @@ namespace Core {
 
                 _administration->_agents++;
 
-                AdminUnlock();
-
-                timeLeft = SignalLock(timeLeft);
+                // As its name suggests time left should reduce (gradually) to zero
+                // Retry to obtain the 'real' lock on succesful release, eg, no deadlock hence no subtraction needed
+                timeLeft -= SignalLock(timeLeft);
 
                 _administration->_agents--;
 
-                AdminLock();
+                AdminUnlock();
 
                 if (_alert == true) {
                     _alert = false;
                     result = Core::ERROR_ASYNC_ABORTED;
                 }
+
+                AdminLock();
             }
 
         } while ((timeLeft > 0) && (result == Core::ERROR_TIMEDOUT));
@@ -627,7 +642,11 @@ namespace Core {
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
 
+            AdminUnlock();
+
             Reevaluate();
+
+            AdminLock();
 
             result = Core::ERROR_NONE;
         }
