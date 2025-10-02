@@ -680,14 +680,16 @@ namespace PluginHost {
 
                     if (realMethod == _T("versions")) {
                         _versions.ToString(response);
-                        result = Core::ERROR_NONE;
                     }
                     else if (realMethod == _T("exists")) {
-                        if (Handler(parameters) == nullptr) {
+                        Core::JSONRPC::Handler* handler(Handler(method));
+                        if (handler == nullptr) {
                             response = _T("0");
                         }
                         else {
-                            response = _T("1");
+                            Core::JSON::String info;
+                            info.FromString(parameters);
+                            response = (handler->Exists(info.Value()) == Core::ERROR_NONE? _T("1") : _T("0"));
                         }
                     }
                     else if (methodName == _T("register")) {
@@ -713,7 +715,7 @@ namespace PluginHost {
                         }
                     }
                     else {
-                        Core::JSONRPC::Handler* handler(Handler(realMethod));
+                        Core::JSONRPC::Handler* handler(Handler(method));
 
                         if (handler != nullptr) {
                             Core::JSONRPC::Context context(channelId, id, token);
