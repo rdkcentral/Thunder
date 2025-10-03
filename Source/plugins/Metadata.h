@@ -306,16 +306,18 @@ namespace Plugin {
     };
 
     // Baseclass to turn objects into services
-    template <typename ACTUALSERVICE>
-    class Metadata : public IMetadata {
+    template<typename ACTUALSERVICE>
+    class MetadataType : public IMetadata{
     public:
-        Metadata() = delete;
-        Metadata(Metadata&&) = delete;
-        Metadata(const Metadata&) = delete;
-        Metadata& operator=(Metadata&&) = delete;
-        Metadata& operator=(const Metadata&) = delete;
+        using SubSystems = std::initializer_list<subsystem>;
 
-        Metadata(
+        MetadataType() = delete;
+        MetadataType(MetadataType<ACTUALSERVICE>&&) = delete;
+        MetadataType(const MetadataType<ACTUALSERVICE>&) = delete;
+        MetadataType<ACTUALSERVICE>& operator=(MetadataType<ACTUALSERVICE>&&) = delete;
+        MetadataType<ACTUALSERVICE>& operator=(const MetadataType<ACTUALSERVICE>&) = delete;
+
+        MetadataType(
             const uint8_t major,
             const uint8_t minor,
             const uint8_t patch,
@@ -326,35 +328,31 @@ namespace Plugin {
             , _precondition(precondition)
             , _termination(termination)
             , _control(control)
-            , _service(Core::System::MODULE_NAME, major, minor, patch) {
-            ASSERT(Core::System::ROOT_META_DATA == nullptr);
-            Core::System::ROOT_META_DATA = this;
+            , _info(Core::System::MODULE_NAME, major, minor, patch) {
         }
-        ~Metadata() {
-            Core::System::ROOT_META_DATA = nullptr;
-        }
+        ~MetadataType() = default;
 
     public:
         uint8_t Major() const override {
-            return (_service.Metadata()->Major());
+            return (_info.Major());
         }
         uint8_t Minor() const override {
-            return (_service.Metadata()->Minor());
+            return (_info.Minor());
         }
         uint8_t Patch() const override {
-            return (_service.Metadata()->Patch());
+            return (_info.Patch());
         }
         const TCHAR* InstanceId() const override {
             if (_plugin.empty()) {
-                _plugin = string(_service.Metadata()->Module()) + "::" + string(_service.Metadata()->ServiceName());
+                _plugin = string(_info.Module()) + "::" + string(_info.Name());
             }
             return (_plugin.c_str());
         }
-        const TCHAR* ServiceName() const override {
-            return (_service.Metadata()->ServiceName());
+        const TCHAR* Name() const override {
+            return (_info.Name());
         }
         const TCHAR* Module() const override {
-            return (_service.Metadata()->Module());
+            return (_info.Module());
         }
         const std::vector<subsystem>& Precondition() const override {
             return (_precondition);
@@ -371,7 +369,30 @@ namespace Plugin {
         std::vector<subsystem> _precondition;
         std::vector<subsystem> _termination;
         std::vector<subsystem> _control;
-        Core::PublishedServiceType<ACTUALSERVICE> _service;
+        Core::PublishedMetadataType<ACTUALSERVICE> _info;
+    };
+
+    template<typename SERVICE>
+    class Metadata : public Core::PublishedServiceType<SERVICE, MetadataType<SERVICE> > {
+    private:
+        using BaseClass = Core::PublishedServiceType<SERVICE, MetadataType<SERVICE> >;
+    public:
+        Metadata() = delete;
+        Metadata(Metadata<SERVICE>&&) = delete;
+        Metadata(const Metadata<SERVICE>&) = delete;
+        Metadata<SERVICE>& operator=(Metadata<SERVICE>&&) = delete;
+        Metadata<SERVICE>& operator=(const Metadata<SERVICE>&) = delete;
+
+        Metadata(
+            const uint8_t major,
+            const uint8_t minor,
+            const uint8_t patch,
+            const std::initializer_list<subsystem>& precondition, 
+            const std::initializer_list<subsystem>& termination, 
+            const std::initializer_list<subsystem>& control)
+            : BaseClass(major, minor, patch, precondition, termination, control) {
+        }
+        ~Metadata() override = default;
     };
 }
 

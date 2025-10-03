@@ -39,8 +39,12 @@ namespace PluginHost
             string locator(rootConfig.Locator.Value());
 
             if (locator.empty() == true) {
-                result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
-            } else {
+                locator = (this->Locator());
+            } 
+
+	    ASSERT(locator.empty() == false);
+
+            if (locator.empty() == false) {
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(locator);
                 ASSERT(all_paths != nullptr);
 
@@ -49,14 +53,17 @@ namespace PluginHost
                     Core::File file(element.c_str());
                     if (file.Exists()) {
 
-                        Core::Library resource = Core::ServiceAdministrator::Instance().LoadLibrary(element.c_str());
+                        Core::Library resource(element.c_str());
+			const Core::IService* loader;
 
-                        if (resource.IsLoaded())
+                        if ( (resource.IsLoaded()) && ((loader = Core::ServiceAdministrator::LibraryToService(resource)) != nullptr) ) {
+
                             result = Core::ServiceAdministrator::Instance().Instantiate(
-                                resource,
+                                loader,
                                 className.c_str(),
                                 version,
                                 interface);
+			}
                     }
                 }
                 all_paths->Release();

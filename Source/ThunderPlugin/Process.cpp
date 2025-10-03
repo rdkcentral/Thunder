@@ -312,10 +312,11 @@ POP_WARNING()
             TRACE_L1("Attempting to load '%s' from %s...", options.ClassName, path.c_str());
 
             Core::Library library(path.c_str());
+	    const Core::IService* loader;
 
-            if (library.IsLoaded() == true) {
+            if ( (library.IsLoaded() == true) && ((loader = Core::ServiceAdministrator::LibraryToService(library)) != nullptr) ) {
                 // Instantiate the object
-                result = Core::ServiceAdministrator::Instance().Instantiate(library, options.ClassName, options.Version, options.InterfaceId);
+                result = Core::ServiceAdministrator::Instance().Instantiate(loader, options.ClassName, options.Version, options.InterfaceId);
             }
         }
 
