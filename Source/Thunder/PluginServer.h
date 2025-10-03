@@ -1533,7 +1533,7 @@ namespace PluginHost {
                         config.Root.Configuration.Value(),
                         config.Root.Environment());
 
-                    newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().Process().OutOfProcess(), pid));
+                    newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
                     if (newIF == nullptr) {
                         ErrorMessage(_T("could not start the plugin in a detached mode"));
                     }
