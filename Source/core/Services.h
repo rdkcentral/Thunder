@@ -63,16 +63,9 @@ namespace Core {
 
         static ServiceAdministrator& Instance();
         static const IService* LibraryToService (const Library& library) {
-            void* result(nullptr);
-            const IService* startPoint(nullptr);
-
             ASSERT(library.IsLoaded() == true);
             System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
-
-            if (service != nullptr) {
-                return(service());
-            }
-            return (nullptr);
+            return (service != nullptr ? service() : nullptr);
         }
 
     public:
