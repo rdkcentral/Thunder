@@ -51,7 +51,7 @@ namespace Core {
         }
 
         if(result == nullptr){
-            TRACE_L1("Missing implementation classname %s in library %s\n", name, library.Name().c_str());
+            TRACE_L1("Missing implementation classname %s in library\n", name);
         }
 
         return (result);
