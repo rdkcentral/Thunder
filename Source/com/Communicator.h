@@ -1997,7 +1997,7 @@ POP_WARNING()
 
         uint32_t Close(const uint32_t waitTime);
 
-        virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        virtual void* Acquire(const string&, const uint32_t, const uint32_t)
         {
             // This would be a Server, asking a client for a service (interface)... Interesting. I guess the 
 	    // derived version of this interface should implement this :-)
