@@ -1382,9 +1382,19 @@ namespace PluginHost {
             void LoadMetadata() {
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
                 if (locator.empty() == false) {
-                    Core::Library loadedLib = LoadLibrary(locator);
-                    if (loadedLib.IsLoaded() == true) {
-                        Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(loadedLib));
+                    Core::Library loadedLib;
+                    const Core::IService* service(LoadLibrary(locator, loadedLib));
+                    if (service != nullptr) {
+                        ASSERT (loadedLib.IsLoaded() == true);
+                        Core::System::ModuleBuildRefImpl moduleBuildRef(reinterpret_cast<Core::System::ModuleBuildRefImpl>(loadedLib.LoadFunction(_T("ModuleBuildRef"))));
+                        if (moduleBuildRef != nullptr) {
+			    _metadata.Hash(moduleBuildRef());
+                        }
+                        _metadata = service;
+                        if (_metadata.IsValid() == true) {
+                            _precondition.Load(_metadata.Precondition());
+                            _termination.Load(_metadata.Termination());
+                        }
                     }
                 }
             }
@@ -1441,24 +1451,20 @@ namespace PluginHost {
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
             }
 
-            Core::Library LoadLibrary(const string& name) {
-                uint8_t progressedState = 0;
-                Core::Library result;
+            const Core::IService* LoadLibrary(const string& name, Core::Library& library) {
+                Core::IService* result(nullptr);
 
                 RPC::IStringIterator* all_paths = GetLibrarySearchPaths(name);
                 ASSERT(all_paths != nullptr);
 
                 string element;
-                while((all_paths->Next(element) == true) && (progressedState <= 2)) {
+                while((all_paths->Next(element) == true) && (result == nullptr)) {
 
                     TRACE_L1("attempting to load library %s", element.c_str());
 
                     Core::File libraryToLoad(element);
 
                     if (libraryToLoad.Exists() == true) {
-                        if (progressedState == 0) {
-                            progressedState = 1;
-                        }
 
                         // Loading a library, in the static initializers, might register Service::Metadata structures. As
                         // the dlopen has a process wide system lock, make sure that the, during open used lock of the
@@ -1467,41 +1473,18 @@ namespace PluginHost {
                         Core::Library newLib(element.c_str());
 
                         if (newLib.IsLoaded() == true) {
-                            if (progressedState == 1) {
-                                progressedState = 2;
-                            }
 
-                            Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(newLib.LoadFunction(_T("ModuleBuildRef")));
                             Core::System::GetModuleServicesImpl moduleServiceMetadata = reinterpret_cast<Core::System::GetModuleServicesImpl>(newLib.LoadFunction(_T("GetModuleServices")));
-                            if ((moduleBuildRef != nullptr) && (moduleServiceMetadata != nullptr)) {
-                                result = newLib;
-                                progressedState = 3;
-                                // DEPRECATED: In the next release cleanup the legacy, where the extended interface was [optional] it should be mandatory!
-                                if ((_metadata.IsValid() == false) || (_metadata.IsExtended() == false)) {
-                                    _metadata = moduleServiceMetadata();
-                                    if (_metadata.IsValid() == true) {
-                                        _precondition.Load(_metadata.Precondition());
-                                        _termination.Load(_metadata.Termination());
-                                    }
-                                    _metadata.Hash(moduleBuildRef());
+                            if (moduleServiceMetadata != nullptr) {
+                                result = moduleServiceMetadata();
+                                if (result != nullptr) {
+                                    library = std::move(newLib);
                                 }
                             }
                         }
                     }
                 }
                 all_paths->Release();
-
-                if (HasError() == false) {
-                    if (progressedState == 0) {
-                        ErrorMessage(_T("library does not exist"));
-                    }
-                    else if (progressedState == 1) {
-                        ErrorMessage(_T("library could not be loaded"));
-                    }
-                    else if (progressedState == 2) {
-                        ErrorMessage(_T("library does not contain the right methods"));
-                    }
-                }
 
                 return (result);
             }
@@ -1511,20 +1494,20 @@ namespace PluginHost {
                 ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
 
                 IPlugin* newIF = nullptr;
-                const string locator(PluginHost::Service::Configuration().Locator.Value());
-                const string classNameString(PluginHost::Service::Configuration().ClassName.Value());
+                const Plugin::Config& config(PluginHost::Service::Configuration());
+                const string locator(config.Locator.Value());
+                const string classNameString(config.ClassName.Value());
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(static_cast<uint32_t>(~0));
-                const Core::IService* loader;
 
                 if (locator.empty() == true) {
 		    // This is only allowed for the Controller! So we need to search in our own
 		    // process space..
-                    loader = Core::System::GetModuleServices();
+                    const Core::IService* loader = Core::System::GetModuleServices();
 
                     // Now lets see if we can find what we need to instantiate..
                     if (loader == nullptr) {
-                        ErrorMessage(_T("Designated library does not expose an IService interface"));
+                        ErrorMessage(_T("Application does not expose an IService interface"));
                     }
 		    else {
                         newIF = Core::ServiceAdministrator::Instance().Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(loader, className, version);
@@ -1532,43 +1515,43 @@ namespace PluginHost {
                             ErrorMessage(_T("local class definitions/version does not exist"));
 			}
                     }
-                } else {
-                    Core::Library library(locator.c_str());
-                    if ( (library.IsLoaded() == false) || ((loader = Core::ServiceAdministrator::LibraryToService(library)) == nullptr) ) { 
-                        ErrorMessage(_T("Designated library does not expose an IService interface"));
-                    }
-		    else {
-                        if ((PluginHost::Service::Configuration().Root.IsSet() == false) || (PluginHost::Service::Configuration().Root.Mode.Value() == Plugin::Config::RootConfig::ModeType::OFF)) {
-                            if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(loader, className, version)) == nullptr) {
-                                ErrorMessage(_T("class definitions/version does not exist"));
-                                Core::ServiceAdministrator::Instance().ReleaseLibrary(std::move(_library));
-                            }
-			    else {
-			        _library = library;
-			    }
-                        }
-                        else {
-                            uint32_t pid;
-                            RPC::Object definition(locator,
-                                classNameString,
-                                Callsign(),
-                                IPlugin::ID,
-                                version,
-                                PluginHost::Service::Configuration().Root.User.Value(),
-                                PluginHost::Service::Configuration().Root.Group.Value(),
-                                PluginHost::Service::Configuration().Root.Threads.Value(),
-                                PluginHost::Service::Configuration().Root.Priority.Value(),
-                                PluginHost::Service::Configuration().Root.HostType(),
-                                SystemRootPath(),
-                                PluginHost::Service::Configuration().Root.RemoteAddress.Value(),
-                                PluginHost::Service::Configuration().Root.Configuration.Value(),
-                                PluginHost::Service::Configuration().Root.Environment());
+                } 
+                else if ((config.Root.IsSet() == true) && (config.Root.Mode.Value() != Plugin::Config::RootConfig::ModeType::OFF)) {
+                    uint32_t pid;
+                    RPC::Object definition(locator,
+                        classNameString,
+                        Callsign(),
+                        IPlugin::ID,
+                        version,
+                        config.Root.User.Value(),
+                        config.Root.Group.Value(),
+                        config.Root.Threads.Value(),
+                        config.Root.Priority.Value(),
+                        config.Root.HostType(),
+                        SystemRootPath(),
+                        config.Root.RemoteAddress.Value(),
+                        config.Root.Configuration.Value(),
+                        config.Root.Environment());
 
-                                newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().OutOfProcessWaitTime(), pid));
-                            if (newIF == nullptr) {
-                                ErrorMessage(_T("could not start the plugin in a detached mode"));
-                            }
+                    newIF = reinterpret_cast<IPlugin*>(Instantiate(definition, _administrator.Configuration().Process().OutOfProcess(), pid));
+                    if (newIF == nullptr) {
+                        ErrorMessage(_T("could not start the plugin in a detached mode"));
+                    }
+                }
+                else {
+                    Core::Library library;
+                    const Core::IService* loader(LoadLibrary(locator.c_str(), library));
+                    if ( loader == nullptr) {
+                        ErrorMessage(_T("Library could not be loaded!"));
+                    }
+                    else {
+                        ASSERT(library.IsLoaded() == true);
+                        if ((newIF = Core::ServiceAdministrator::Instance().Instantiate<IPlugin>(loader, className, version)) == nullptr) {
+                            ErrorMessage(_T("class definitions/version does not exist"));
                         }
+			else {
+			    _library = std::move(library);
+			}
                     }
                 }
 

@@ -63,6 +63,9 @@ namespace Core {
 
         static ServiceAdministrator& Instance();
         static const IService* LibraryToService (const Library& library) {
+            void* result(nullptr);
+            const IService* startPoint(nullptr);
+
             ASSERT(library.IsLoaded() == true);
             System::GetModuleServicesImpl service = reinterpret_cast<System::GetModuleServicesImpl>(library.LoadFunction(_T("GetModuleServices")));
 
@@ -73,10 +76,6 @@ namespace Core {
         }
 
     public:
-        Library LoadLibrary(const TCHAR libraryName[]) {
-            Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
-            return (Library(libraryName));
-        }
         inline void Created() {
             Core::InterlockedIncrement(_instanceCount);
         }
@@ -359,7 +358,7 @@ namespace Core {
 
     private:
         METADATA _info;
-        IService* _next;
+        const IService* _next;
     };
 
 
