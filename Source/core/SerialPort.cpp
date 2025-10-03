@@ -988,31 +988,38 @@ void SerialPort::Read(const uint16_t readBytes)
 
 #ifdef __WINDOWS__
         DCB options;
+        SecureZeroMemory(&options, sizeof(DCB));
+        options.DCBlength = sizeof(DCB);
 
         ::GetCommState(_descriptor, &options);
 
-        options.DCBlength = sizeof(DCB);
         options.BaudRate = _baudRate;
         options.ByteSize = _dataBits;
         options.Parity = _parity;
         options.StopBits = _stopBits;
+        options.fBinary = TRUE;
+        options.fAbortOnError = FALSE;
         if (_flowControl == OFF) {
+            options.fDsrSensitivity = FALSE;
             options.fOutX = FALSE;
             options.fInX = FALSE;
-            options.fDtrControl = DTR_CONTROL_DISABLE;
-            options.fRtsControl = RTS_CONTROL_DISABLE;
+            options.fDtrControl = DTR_CONTROL_ENABLE;
+            options.fRtsControl = RTS_CONTROL_ENABLE;
             options.fOutxCtsFlow = FALSE;
             options.fOutxDsrFlow = FALSE;
+            options.fNull = FALSE;
         } else if (_flowControl == SOFTWARE) {
             options.fOutX = TRUE;
             options.fInX = TRUE;
-            options.fDtrControl = DTR_CONTROL_DISABLE;
-            options.fRtsControl = RTS_CONTROL_DISABLE;
+            options.fDsrSensitivity = FALSE;
+            options.fDtrControl = DTR_CONTROL_ENABLE;
+            options.fRtsControl = RTS_CONTROL_ENABLE;
             options.fOutxCtsFlow = FALSE;
             options.fOutxDsrFlow = FALSE;
         } else if (_flowControl == HARDWARE) {
             options.fOutX = FALSE;
             options.fInX = FALSE;
+            options.fDsrSensitivity = TRUE;
             options.fDtrControl = DTR_CONTROL_HANDSHAKE;
             options.fRtsControl = RTS_CONTROL_HANDSHAKE;
             options.fOutxCtsFlow = TRUE;
