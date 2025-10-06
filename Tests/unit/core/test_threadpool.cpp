@@ -310,7 +310,7 @@ namespace Core {
         ThreadPoolTester& operator=(const ThreadPoolTester&) = delete;
         ThreadPoolTester(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize)
             : JobControl(*this)
-            , ThreadPool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr)
+            , ThreadPool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr, (count > 2 ? (count - 1) : 1), (count > 2 ? (count - 1) : 1))
             , _queueSize(queueSize)
             , _dispatcher()
             , _scheduler(*this)
