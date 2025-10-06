@@ -1867,7 +1867,7 @@ namespace Core {
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
-                                    if(codeSize < length) {
+                                    if(codeSize <= length) {
                                         codeSize = -codeSize;
                                     }else {
                                         codeSize = length;
@@ -1936,6 +1936,7 @@ namespace Core {
                             }
                         }
                     }
+
                     if (length == 0) {
                         // And we close with a quote..
                         if (isQuoted == false) {
