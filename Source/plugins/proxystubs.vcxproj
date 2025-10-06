@@ -22,6 +22,7 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Module.cpp" />
     <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubsMetadata.cpp" />
     <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Controller.cpp" />
     <ClCompile Include="..\..\..\..\artifacts\generated\proxystubs\ProxyStubs_Dispatcher.cpp" />
