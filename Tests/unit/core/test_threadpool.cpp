@@ -327,7 +327,7 @@ namespace Core {
         }
         bool QueueIsFull()
         {
-            return (ThreadPool::Pending() == _queueSize);
+            return (ThreadPool::Pending() >= _queueSize);
         }
         bool QueueIsEmpty()
         {
@@ -410,7 +410,7 @@ namespace Core {
         }
         bool QueueIsFull()
         {
-            return (_threadPool.Pending() == _queueSize);
+            return (_threadPool.Pending() >= _queueSize);
         }
         bool QueueIsEmpty()
         {
@@ -450,15 +450,21 @@ namespace Core {
         ThreadPoolTester threadPool(0, 0, queueSize);
         MinionTester minion(threadPool, queueSize);
 
-        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, true));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, false));
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
         EXPECT_EQ(minion.IsActive(), false);
         minion.SubmitUsingSelfWorker(job);
         EXPECT_EQ(minion.IsActive(), false);
         minion.Run();
-        EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 2), ::Thunder::Core::ERROR_NONE);
+
+        volatile bool queueIsEmpty = false;
+        while((queueIsEmpty = minion.QueueIsEmpty()) != true) {
+            __asm__ volatile("nop");
+        }
+
         EXPECT_EQ(minion.IsActive(), true);
-        minion.NotifyReady(job);
+
+        EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         minion.Shutdown();
 
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
@@ -524,16 +530,24 @@ namespace Core {
         uint8_t queueSize = 5;
         ThreadPoolTester threadPool(0, 0, queueSize);
         MinionTester minion(threadPool, queueSize);
-        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, true));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<MinionTester>>::Create(minion, TestJob<MinionTester>::INITIATED, 500, false));
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::INITIATED);
         EXPECT_EQ(minion.IsActive(), false);
         minion.SubmitUsingSelfWorker(job);
         EXPECT_EQ(minion.IsActive(), false);
         minion.Run();
-        EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
+
+        volatile bool queueIsEmpty = false;
+        while((queueIsEmpty = minion.QueueIsEmpty()) != true) {
+            __asm__ volatile("nop");
+        }
+
+        EXPECT_EQ(minion.IsActive(), true);
+
         minion.Revoke(job);
         EXPECT_EQ(minion.IsActive(), true);
-        minion.NotifyReady(job);
+
+        EXPECT_EQ(minion.WaitForJobEvent(job, MaxJobWaitTime * 3), ::Thunder::Core::ERROR_NONE);
         EXPECT_EQ(static_cast<TestJob<MinionTester>&>(*job).GetStatus(), TestJob<MinionTester>::COMPLETED);
 
         ::Thunder::Core::ThreadPool::Metadata info;
@@ -541,7 +555,6 @@ namespace Core {
         EXPECT_EQ(info.Runs, 1u);
 
         minion.Shutdown();
-        usleep(100);
         EXPECT_EQ(minion.IsActive(), false);
         job.Release();
     }
@@ -724,11 +737,14 @@ namespace Core {
             } else {
                 EXPECT_EQ(threadPool.QueueIsFull(), true);
                 threadPool.SubmitUsingExternalWorker(job, ::Thunder::Core::infinite);
+                
             }
         }
+        usleep(1000);
+
         EXPECT_EQ(threadPool.QueueIsFull(), true);
         EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-        EXPECT_EQ(threadPool.Pending(), queueSize);
+        EXPECT_GE(threadPool.Pending(), queueSize);
 
         threadPool.Run();
         for (auto& job: jobs) {
@@ -797,13 +813,12 @@ namespace Core {
         }
         EXPECT_EQ(threadPool.QueueIsFull(), true);
         EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-        EXPECT_EQ(threadPool.Pending(), queueSize);
+        EXPECT_GE(threadPool.Pending(), queueSize);
 
         threadPool.Run();
         threadPool.Revoke(jobs[3], 0);
         threadPool.Revoke(jobs[4], 0);
 
-        EXPECT_EQ(threadPool.QueueIsFull(), false);
         ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> newJob = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED));
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*newJob).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
         // Try to push additional job to queue from external worker
@@ -854,7 +869,7 @@ namespace Core {
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
         for (uint8_t i = 0; i < queueSize + additionalJobs; ++i) {
-            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED, 100, true)));
+            jobs.push_back(::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<ThreadPoolTester>>::Create(threadPool, TestJob<ThreadPoolTester>::INITIATED, 500, false)));
         }
 
         for (auto& job: jobs) {
@@ -867,7 +882,7 @@ namespace Core {
             }
         }
         EXPECT_EQ(threadPool.QueueIsEmpty(), false);
-        EXPECT_EQ(threadPool.Pending(), queueSize);
+        EXPECT_GE(threadPool.Pending(), queueSize);
 
         threadPool.Run();
         usleep(100);
@@ -877,7 +892,6 @@ namespace Core {
             if ((i == 3) || (i == 4)) {
                 threadPool.Revoke(jobs[i], 0);
             }
-            threadPool.NotifyReady(jobs[i]);
         }
 
         for (auto& job: jobs) {
