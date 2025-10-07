@@ -1997,18 +1997,12 @@ POP_WARNING()
 
         uint32_t Close(const uint32_t waitTime);
 
-        virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        virtual void* Acquire(const string&, const uint32_t, const uint32_t)
         {
-            Core::Library emptyLibrary;
-            // Allright, respond with the interface.
-            void* result = Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId);
-
-            if (result != nullptr) {
-                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
-                Administrator::Instance().RegisterInterface(baseChannel, result, interfaceId);
-            }
-
-            return (result);
+            // This would be a Server, asking a client for a service (interface)... Interesting. I guess the 
+	    // derived version of this interface should implement this :-)
+	    ASSERT(false);
+	    return (nullptr);
         }
 
     private:
