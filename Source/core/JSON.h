@@ -1863,6 +1863,7 @@ namespace Core {
                             default: {
                                 uint16_t lowPart, highPart;
                                 int8_t codeSize = ToCodePoint(&(_value[offset - 1]), length, _storage);
+                               
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
