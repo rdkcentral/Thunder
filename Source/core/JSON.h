@@ -1869,7 +1869,7 @@ namespace Core {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
                                     if((static_cast<uint32_t>(-codeSize)) <= length) {
-                                    codeSize = -codeSize;
+                                        codeSize = -codeSize;
                                     } else {
                                         codeSize = length;
                                     }
