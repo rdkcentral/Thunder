@@ -1867,7 +1867,7 @@ namespace Core {
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
-                                    if(::abs(codeSize) <= length) {
+                                    if((static_cast<uint32_t>(-codeSize)) <= length) {
                                         codeSize = -codeSize;
                                     } else {
                                         codeSize = length;
