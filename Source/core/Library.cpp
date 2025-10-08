@@ -174,7 +174,7 @@ namespace Core {
         return (*this);
     }
 
-    void* Library::LoadFunction(const TCHAR functionName[])
+    void* Library::LoadFunction(const TCHAR functionName[]) const
     {
         void* function = nullptr;
 
