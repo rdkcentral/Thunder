@@ -556,6 +556,7 @@ POP_WARNING()
 
             inline bool InProgress() const
             {
+                Core::SafeSyncType<Core::CriticalSection> lock(_lock);
                 return (_outbound.IsValid());
             }
 
