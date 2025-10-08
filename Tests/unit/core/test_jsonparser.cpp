@@ -2899,6 +2899,18 @@ namespace Tests {
             printf("output %zd --- = %s \n", output.length(), output.c_str());
 
             EXPECT_STREQ(input.c_str(), output.c_str());
+            
+            uint8_t data[] = { 0xD0, 0x9F, 0x80, 0xFF, 0xFE, 0x41, 0x42, 0x43 };
+            JsonObject response;
+            input = string(reinterpret_cast<const char*>(data), sizeof(data));
+            response["state"] = input;
+            const char expected_output[] = "{\"state\":\"\\u041F\\u0000\\u0020\"}";
+            response.ToString(output);
+            printf("\n\n Case 19: \n");
+            printf("     input  %zd --- = %s \n", input.length(), input.c_str());
+            printf("     output %zd --- = %s \n", output.length(), output.c_str());
+            printf("     expected_output --- = %s \n", expected_output);
+            EXPECT_STREQ(expected_output, output.c_str());
         }
     }
 }
