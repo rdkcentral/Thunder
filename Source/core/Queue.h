@@ -336,7 +336,7 @@ namespace Thunder {
             } state;
 
             // All actions in the CategoryAdmin class must be protected by the parent class.
-            // o locking takes place here s it is assumed that the parent call takes care of 
+            // No locking takes place here as it is assumed that the parent call takes care of 
             // the locking.
             template<typename ELEMENT>
             class CategoryAdminType {
