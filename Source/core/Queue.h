@@ -644,7 +644,7 @@ namespace Thunder {
                         }
                         else if (_state != LIMITED) {
                             _adminLock.Unlock();
-                            // It 's a priortity wait. We need to blcock ourself till we 
+                            // It's a priority wait. We need to block ourself till we 
                             // are actually scheduled for a post.
                             posted = _categories[type].AwaitQueuing(entry, waitTime);
                             triggered = false;
