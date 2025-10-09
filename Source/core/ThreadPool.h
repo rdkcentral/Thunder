@@ -777,7 +777,7 @@ namespace Core {
         #endif
 
     private:
-        // This seems to be a work-a-round- on windows to detect a method if it is *not* whitin a
+        // This seems to be a work-a-round- on windows to detect a method if it is *not* within a
         // template class. If we do not wrap it in a template, MSVC tried to compile both paths
 		// also if the method is *not* available. This is not the case on GCC.
         template<typename QUEUE>
