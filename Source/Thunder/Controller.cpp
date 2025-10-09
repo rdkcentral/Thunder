@@ -811,6 +811,11 @@ namespace Plugin {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
         }
         else {
+            string version(Core::JSONRPC::Message::VersionAsString(method));
+            if (version.empty() == false) {
+                callsign += TCHAR('.') + version;
+            }
+
             Core::ProxyType<PluginHost::IShell> service;
 
             result = _pluginServer->Services().FromIdentifier(callsign, service);
@@ -821,7 +826,6 @@ namespace Plugin {
                 if (currrentState != PluginHost::IShell::state::ACTIVATED)
                 {
                     result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
-                    response = (currrentState == PluginHost::IShell::state::HIBERNATED ? _T("Service is hibernated") : _T("Service is not active"));
                 }
                 else {
                     ASSERT(service.IsValid());
