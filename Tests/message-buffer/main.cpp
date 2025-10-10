@@ -17,7 +17,7 @@ private:
 
 public:
     PluginHost()
-        : _engine(Thunder::Core::ProxyType<Thunder::RPC::InvokeServerType<2, 0, 4>>::Create())
+        : _engine(Thunder::Core::ProxyType<Thunder::RPC::InvokeServerType<2, 0, 4, 1, 1>>::Create())
         , _comClient(Core::ProxyType<RPC::CommunicatorClient>::Create(GetConnectionNode(), Core::ProxyType<Core::IIPCServer>(_engine)))
     {
     }
@@ -60,7 +60,7 @@ public:
     }
 
 private:
-    Core::ProxyType<RPC::InvokeServerType<2, 0, 4> > _engine;
+    Core::ProxyType<RPC::InvokeServerType<2, 0, 4, 1, 1> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _comClient;
 } _thunderClient;
 
