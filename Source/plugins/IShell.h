@@ -48,7 +48,7 @@ namespace PluginHost {
 
             struct INotification : virtual public Core::IUnknown {
                 virtual void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
-                virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
+                DEPRECATED virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) {};
             };
 
             virtual ~ICOMLink() = default;
