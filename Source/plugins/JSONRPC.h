@@ -417,6 +417,25 @@ namespace PluginHost {
             Core::JSON::String Id;
         };
 
+        class ExistsParams : public Core::JSON::Container {
+        public:
+            ExistsParams(const ExistsParams&) = delete;
+            ExistsParams& operator=(const ExistsParams&) = delete;
+            ExistsParams(ExistsParams&&) = delete;
+            ExistsParams& operator=(ExistsParams&&) = delete;
+
+            ExistsParams()
+                : Core::JSON::Container()
+                , Method()
+            {
+                Add(_T("method"), &Method);
+            }
+            ~ExistsParams() override = default;
+
+        public:
+            Core::JSON::String Method;
+        };
+
         enum state {
             STATE_INCORRECT_HANDLER,
             STATE_INCORRECT_VERSION,
