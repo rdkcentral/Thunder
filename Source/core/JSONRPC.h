@@ -118,15 +118,15 @@ namespace Core {
                     switch (frameworkError) {
                     case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
-                        Text = _T("Unknown jsonrpc error.");
+                        Text = _T("Unknown JSON-RPC error.");
                         break;
                     case Core::ERROR_INVALID_ENVELOPPE:
-                        Text = _T("Invalid Request.");
+                        Text = _T("Invalid request.");
                         Code = -32600; // Invalid request
                         break;
                     case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
-                        Text = _T("Invalid Parameters.");
+                        Text = _T("Invalid parameters.");
                         break;
                     case Core::ERROR_UNKNOWN_METHOD:
                         Text = _T("Unknown method.");
@@ -134,11 +134,11 @@ namespace Core {
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
-                        Text = _T("method invocation not allowed.");
+                        Text = _T("Method invocation not allowed.");
                         break;
                     case Core::ERROR_PRIVILIGED_DEFERRED:
                         Code = -32604;
-                        Text = _T("method invokation is deferred, Currently not allowed.");
+                        Text = _T("Method invocation is deferred, currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
@@ -148,8 +148,12 @@ namespace Core {
                         Code = -32700; // Parse error
                         Text = _T("Parsing of the parameters failed");
                         break;
-                    case Core::ERROR_INVALID_RANGE:
-                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_RANGE;
+                    case Core::ERROR_NOT_EXIST:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_EXIST;
+                        Text = _T("The service is not available.");
+                        break;
+                    case Core::ERROR_INVALID_SIGNATURE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_SIGNATURE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
@@ -158,7 +162,7 @@ namespace Core {
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
-                        Text = _T("The service is in an illegal state!!!.");
+                        Text = _T("The service is in an illegal state.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
@@ -170,11 +174,11 @@ namespace Core {
                         break;
                     case Core::ERROR_HIBERNATED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
-                        Text = _T("The service is in an Hibernated state!!!.");
+                        Text = _T("The service is hibernated.");
                         break;
                     case Core::ERROR_UNAVAILABLE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
-                        Text = _T("Requested service is not available.");
+                        Text = _T("The service is not active.");
                         break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
@@ -182,7 +186,10 @@ namespace Core {
                         } else {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
                         }
-                        Text = Core::ErrorToString(frameworkError);
+
+                        if (Text.IsSet() == false) {
+                            Text = Core::ErrorToString(frameworkError);
+                        }
                         break;
                     }
                 }

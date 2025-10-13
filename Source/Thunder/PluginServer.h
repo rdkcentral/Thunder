@@ -1055,15 +1055,11 @@ namespace PluginHost {
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if(IsHibernated() == true)
-                    {
+                    if (IsHibernated() == true) {
                         response->Error.SetError(Core::ERROR_HIBERNATED);
-                        response->Error.Text = _T("Service is hibernated");
                     }
-                    else
-                    {
+                    else {
                         response->Error.SetError(Core::ERROR_UNAVAILABLE);
-                        response->Error.Text = _T("Service is not active");
                     }
                     response->Id = message.Id;
                 }
@@ -1081,14 +1077,14 @@ namespace PluginHost {
                     if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
 
                         response = IFactories::Instance().JSONRPC();
-                        
+
                         if (message.Id.IsSet()) {
                             response->Id = message.Id.Value();
                         }
 
                         if (result == Core::ERROR_NONE) {
                             if (output.empty() == true) {
-                                response->Result.Null(true);;
+                                response->Result.Null(true);
                             }
                             else {
                                 response->Result = output;
@@ -3322,7 +3318,7 @@ namespace PluginHost {
                 }
 
                 Core::ProxyType<Service> selected;
-                uint32_t result = Core::ERROR_UNAVAILABLE;
+                uint32_t result = Core::ERROR_NOT_EXIST;
 
                 _adminLock.Lock();
 
@@ -3330,7 +3326,7 @@ namespace PluginHost {
 
                 if (it != _services.end()) {
 
-                    if (versionPart.empty()) {
+                    if (versionPart.empty() == true) {
                         // Service found, did not requested specific version
                         selected = it->second;
                         result = Core::ERROR_NONE;
@@ -4390,7 +4386,6 @@ namespace PluginHost {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
                             message->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            message->Error.Text = _T("method invokation not allowed.");
                             Submit(Core::ProxyType<Core::JSON::IElement>(message));
                         }
                     }
