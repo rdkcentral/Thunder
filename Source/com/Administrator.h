@@ -512,7 +512,9 @@ POP_WARNING()
         Core::IWorkerPool& _threadPoolEngine;
     };
 
-    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS, const uint8_t LOWPRIORITYTHREADCOUNT, const uint8_t MEDIUMPRIORITYTHREADCOUNT>
+    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS,
+              const uint8_t LOWPRIORITYTHREADCOUNT = (THREADPOOLCOUNT > 2 ? (THREADPOOLCOUNT - 1) : 1),
+              const uint8_t MEDIUMPRIORITYTHREADCOUNT = (THREADPOOLCOUNT > 2 ? (THREADPOOLCOUNT - 1) : 1)>
     class InvokeServerType : public IIPCServer {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
