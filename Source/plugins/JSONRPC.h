@@ -720,8 +720,12 @@ namespace PluginHost {
                             else {
                                 // DEPRECATED signature
                                 Core::JSON::String info; info.FromString(parameters);
-                                response = (handler->Exists(info.Value()) == Core::ERROR_NONE ? _T("1") : _T("0"));
-                            }
+                                if (handler->Exists(parameters) == Core::ERROR_NONE) {
+                                    response = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
+                                }
+                                else {
+                                    response = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
+                                }                            }
                         }
                     }
                     else if (methodName == _T("register")) {
