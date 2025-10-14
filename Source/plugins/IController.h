@@ -378,6 +378,7 @@ namespace Controller {
         virtual Core::hresult Proxies(const Core::OptionalType<string>& linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
+        // @text:framework @alt-deprecated:version
         // @brief Framework version
         virtual Core::hresult Version(Data::Version& version /* @out */) const = 0;
 
