@@ -200,7 +200,13 @@ namespace Core {
 
         public:
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
+            static constexpr TCHAR KeyId[] = _T("id");
+            static constexpr TCHAR KeyMethod[] = _T("method");
+            static constexpr TCHAR KeyParameters[] = _T("params");
+            static constexpr TCHAR KeyResult[] = _T("result");
+            static constexpr TCHAR KeyError[] = _T("error");
 
+            Message& operator=(Message&&) = delete;
             Message& operator=(const Message&) = delete;
 
             Message()
@@ -214,11 +220,11 @@ namespace Core {
                 , _implicitCallsign()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
 
                 Clear();
             }
@@ -233,13 +239,12 @@ namespace Core {
                 , _implicitCallsign(copy._implicitCallsign)
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             Message(Message&& move) noexcept
                 : Core::JSON::Container()
                 , JSONRPC(std::move(move.JSONRPC))
@@ -251,13 +256,12 @@ namespace Core {
                 , _implicitCallsign(std::move(move._implicitCallsign))
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             ~Message() override = default;
 
         public:

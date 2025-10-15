@@ -164,7 +164,7 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this)
+                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this, (THREADPOOL_COUNT > 2 ? (THREADPOOL_COUNT - 1) : 1), (THREADPOOL_COUNT > 2 ? (THREADPOOL_COUNT - 1) : 1))
                 , _dispatch()
             {
                 Run();
@@ -3990,12 +3990,14 @@ namespace PluginHost {
                     }
 
                     if (_element.IsValid()) {
-                        // Fire and forget, We are done !!!
                         Job::Submit(_element);
-                        _element.Release();
                     }
 
                     Job::Completed();
+
+                    if (_element.IsValid()) {
+                        _element.Release();
+                    }
                 }
                 string Identifier() const override {
                     if (_jsonrpc == true) {

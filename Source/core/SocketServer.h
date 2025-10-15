@@ -179,6 +179,13 @@ namespace Core {
             }
 
         public:
+            inline uint32_t AllocateId() {
+                _lock.Lock();
+                uint32_t slotId = _nextClient++;
+                _lock.Unlock();
+
+                return (slotId);
+            }
             inline uint32_t Count() const
             {
                 return (static_cast<uint32_t>(_clients.size()));
@@ -371,6 +378,9 @@ namespace Core {
         ~SocketServerType() = default;
 
     public:
+        inline uint32_t AllocateId() {
+            return (_handler.AllocateId());
+        }
         inline uint32_t Open(const uint32_t waitTime)
         {
             return (_handler.Open(waitTime));
