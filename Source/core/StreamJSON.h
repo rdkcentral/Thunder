@@ -243,8 +243,8 @@ POP_WARNING()
         {
             return (_channel);
         }
-        virtual void Received(ProxyType<INTERFACE>& element) = 0;
-        virtual void Send(ProxyType<INTERFACE>& element) = 0;
+        virtual void Received(const ProxyType<INTERFACE>& element) = 0;
+        virtual void Send(const ProxyType<INTERFACE>& element) = 0;
         virtual void StateChange() = 0;
 
         inline void Submit(const ProxyType<INTERFACE>& element)

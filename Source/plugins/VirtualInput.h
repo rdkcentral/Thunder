@@ -807,7 +807,9 @@ POP_WARNING()
             }
             void Reload()
             {
-                _postLookup = _parent->FindPostLookup(_name);
+                if (_name.empty() == false) {
+                    _postLookup = _parent->FindPostLookup(_name);
+                }
             }
 
         private:
@@ -823,7 +825,10 @@ POP_WARNING()
 
                 _name = (static_cast<IVirtualInput::NameMessage&>(element).Response().Name);
                 _mode = (static_cast<IVirtualInput::NameMessage&>(element).Response().Mode);
-                _postLookup = _parent->FindPostLookup(_name);
+
+                if (_name.empty() == false) {
+                    _postLookup = _parent->FindPostLookup(_name);
+                }
             }
 
         private:

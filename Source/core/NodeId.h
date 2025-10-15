@@ -249,11 +249,20 @@ namespace Core {
         }
         inline uint16_t PortNumber() const
         {
+            uint16_t port = 0;
+            if (Type() == TYPE_IPV4) {
+                port = ntohs(m_structInfo.IPV4Socket.sin_port);
+            }
+            else if (Type() == TYPE_IPV6) {
+                port = ntohs(m_structInfo.IPV6Socket.sin6_port);
+            }
 #ifdef __CORE_BLUETOOTH_SUPPORT__
-            return (Type() == TYPE_BLUETOOTH ? m_structInfo.BTSocket.hci_dev : ntohs(m_structInfo.IPV4Socket.sin_port));
-#else
-            return (ntohs(m_structInfo.IPV4Socket.sin_port));
+            else if (Type() == TYPE_BLUETOOTH) {
+                port = m_structInfo.BTSocket.hci_dev;
+            }
 #endif
+
+            return (port);
         }
 
 #if !defined (__WINDOWS__) && !defined(__APPLE__)
@@ -267,7 +276,17 @@ namespace Core {
 
         inline void PortNumber(const uint16_t portNumber)
         {
-            m_structInfo.IPV4Socket.sin_port = ntohs(portNumber);
+            if (Type() == TYPE_IPV4) {
+                m_structInfo.IPV4Socket.sin_port = htons(portNumber);
+            }
+            else if (Type() == TYPE_IPV6) {
+                m_structInfo.IPV6Socket.sin6_port = htons(portNumber);
+            }
+#ifdef __CORE_BLUETOOTH_SUPPORT__
+            else if (Type() == TYPE_BLUETOOTH) {
+                m_structInfo.BTSocket.hci_dev = portNumber;
+            }
+#endif
         }
         inline bool IsValid() const
         {
@@ -358,6 +377,7 @@ namespace Core {
         bool IsLocalInterface() const;
         bool IsAnyInterface() const;
         bool IsMulticast() const;
+        bool IsLinkLocal() const;
         uint8_t DefaultMask() const;
 
         bool operator==(const NodeId& rInfo) const;

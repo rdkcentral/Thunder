@@ -676,13 +676,25 @@ static bool IsIPv6Address(const TCHAR hostname[]) {
     bool NodeId::IsMulticast() const
     {
         if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
-#ifdef __WINDOWS__
-            return (((m_structInfo.IPV4Socket.sin_addr.S_un.S_un_b.s_b1 & 0xF0) & 0xE0) == 0xE0);
-#else
-                return ((htonl(m_structInfo.IPV4Socket.sin_addr.s_addr) & 0xE0000000) == 0xE0000000);
-#endif
+            return ((htonl(m_structInfo.IPV4Socket.sin_addr.s_addr) & 0xE0000000) == 0xE0000000);
         } else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
             return (false);
+        }
+
+        return (false);
+    }
+
+    bool NodeId::IsLinkLocal() const
+    {
+        if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
+            return ((htonl(m_structInfo.IPV4Socket.sin_addr.s_addr) & 0xFFFF0000) == 0xA9FE0000);
+        }
+        else if (m_structInfo.IPV4Socket.sin_family == AF_INET6) {
+            #ifdef __WINDOWS__
+            return (m_structInfo.IPV6Socket.sin6_addr.u.Byte[0] == 0xFE) && ((m_structInfo.IPV6Socket.sin6_addr.u.Byte[1] & 0xC0) == 0x80);
+            #else
+            return (m_structInfo.IPV6Socket.sin6_addr.s6_addr[0] == 0xFE) && ((m_structInfo.IPV6Socket.sin6_addr.s6_addr[1] & 0xC0) == 0x80);
+            #endif
         }
 
         return (false);

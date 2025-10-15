@@ -139,7 +139,7 @@ namespace Thunder {
                     ~ChannelImpl() override = default;
 
                 public:
-                    virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
+                    virtual void Received(const Core::ProxyType<INTERFACE>& jsonObject) override
                     {
                         Core::ProxyType<Core::JSONRPC::Message> inbound(jsonObject);
 
@@ -149,7 +149,7 @@ namespace Thunder {
                             _parent.Inbound(inbound);
                         }
                     }
-                    virtual void Send(Core::ProxyType<INTERFACE>& jsonObject VARIABLE_IS_NOT_USED) override
+                    virtual void Send(const Core::ProxyType<INTERFACE>& jsonObject VARIABLE_IS_NOT_USED) override
                     {
 #ifdef __DEBUG__
                         string message;

@@ -31,19 +31,24 @@ struct x509_store_st;
 namespace Thunder {
 namespace Crypto {
 
+    EXTERNAL string LastLibraryError();
+
     class EXTERNAL Certificate {
     public:
-        Certificate() = delete;
-        Certificate& operator=(Certificate&&) = delete;
-        Certificate& operator=(const Certificate&) = delete;
-
+        Certificate() : _certificate(nullptr) {}
         Certificate(const x509_st* certificate);
         Certificate(const TCHAR fileName[]);
         Certificate(Certificate&& move) noexcept;
         Certificate(const Certificate& copy);
         ~Certificate();
 
+        Certificate& operator=(Certificate&&) noexcept;
+        Certificate& operator=(const Certificate&);
+
     public:
+        bool IsValid() const {
+            return(_certificate != nullptr);
+        }
         string Issuer() const;
         string Subject() const;
         Core::Time ValidFrom() const;
@@ -59,10 +64,7 @@ namespace Crypto {
     };
     class EXTERNAL Key {
     public:
-        Key() = delete;
-        Key& operator=(Key&&) = delete;
-        Key& operator=(const Key&) = delete;
-
+        Key() : _key(nullptr) {}
         Key(const evp_pkey_st* key);
         Key(const string& fileName);
         Key(const string& fileName, const string& password);
@@ -70,7 +72,13 @@ namespace Crypto {
         Key(const Key& copy);
         ~Key();
 
+        Key& operator=(Key&&) noexcept;
+        Key& operator=(const Key&);
+
     public:
+        bool IsValid() const {
+            return(_key != nullptr);
+        }
         inline operator const evp_pkey_st* () const {
             return (_key);
         }
@@ -102,6 +110,29 @@ namespace Crypto {
     private:
         struct x509_store_st* _store;
         static struct x509_store_st* _default;
+    };
+    class EXTERNAL Context {
+    public:
+        Context();
+        Context(const Certificate& cert, const Key& key);
+        Context(Context&& move) noexcept;
+        Context(const Context& copy);
+        ~Context();
+
+        Context& operator=(Context&&) noexcept;
+        Context& operator=(const Context&);
+
+    public:
+        bool IsValid() const {
+            return(_context != nullptr);
+        }
+        inline operator const struct ssl_ctx_st* () const {
+            return (_context);
+        }
+        uint32_t Authorities(const CertificateStore& store);
+
+    private:
+        struct ssl_ctx_st* _context;
     };
     class EXTERNAL SecureSocketPort : public Core::IResource {
     public:
@@ -165,7 +196,12 @@ namespace Crypto {
 
             // Signal a state change, Opened, Closed or Accepted
             inline void StateChange() override {
-                Update();
+                if (_ssl == nullptr) {
+                    _parent.StateChange();
+                }
+                else {
+                    Update();
+                }
             };
             inline void Validate(const IValidate*  callback) {
                 Core::SocketPort::Lock();
@@ -175,17 +211,14 @@ namespace Crypto {
                 _callback = callback;
                 Core::SocketPort::Unlock();
             }
-            uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key);
-            uint32_t Root(const CertificateStore& store);
+            void Context(const Crypto::Context& context);
 
         private:
             void Update();
             void ValidateHandShake();
-            void CreateContext(const struct ssl_method_st* method);
  
         private:
             SecureSocketPort& _parent;
-            struct ssl_ctx_st* _context;
             struct ssl_st* _ssl;
             const IValidate* _callback;
             mutable state _handShaking;
@@ -197,6 +230,7 @@ namespace Crypto {
         SecureSocketPort& operator=(SecureSocketPort&&) = delete;
         SecureSocketPort& operator=(const SecureSocketPort&) = delete;
 
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST);
         SecureSocketPort(
             const Core::SocketPort::enumType socketType,
             const Core::NodeId& localNode,
@@ -233,6 +267,7 @@ namespace Crypto {
             const uint32_t socketReceiveBufferSize)
             : _handler(*this, socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize) {
         }
+        POP_WARNING();
 
         ~SecureSocketPort() override;
 
@@ -272,6 +307,9 @@ namespace Crypto {
         {
             return (_handler.RemoteNode());
         }
+        inline void Flush() {
+            return (_handler.Flush());
+        }
 
         inline uint32_t Open(const uint32_t waitTime) {
             return(_handler.Open(waitTime));
@@ -285,13 +323,9 @@ namespace Crypto {
         inline void Validate(const IValidate* callback) {
             _handler.Validate(callback);
         }
-        inline uint32_t Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
-            return (_handler.Certificate(certificate, key));
+        inline void Context(const Crypto::Context& context) {
+            _handler.Context(context);
         }
-        inline uint32_t Root(const CertificateStore& store) {
-            return (_handler.Root(store));
-        }
-
 
         //
         // Core::IResource interface
@@ -320,6 +354,55 @@ namespace Crypto {
         Handler _handler;
     };
 
+    class EXTERNAL SecureSocketStream : public SecureSocketPort {
+    private:
+        SecureSocketStream() = delete;
+        SecureSocketStream(SecureSocketStream&&) = delete;
+        SecureSocketStream(const SecureSocketStream&) = delete;
+        SecureSocketStream& operator=(SecureSocketStream&&) = delete;
+        SecureSocketStream& operator=(const SecureSocketStream&) = delete;
+
+    public:
+        SecureSocketStream(const bool rawSocket,
+            const Core::NodeId& localNode,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize)
+            : SecureSocketPort((rawSocket ? Core::SocketPort::RAW : Core::SocketPort::STREAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {
+        }
+        SecureSocketStream(const bool rawSocket,
+            const Core::NodeId& localNode,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : SecureSocketPort((rawSocket ? Core::SocketPort::RAW : Core::SocketPort::STREAM), localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
+        {
+        }
+        SecureSocketStream(const bool rawSocket,
+            const SOCKET& connector,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize)
+            : SecureSocketPort((rawSocket ? Core::SocketPort::RAW : Core::SocketPort::STREAM), connector, remoteNode, sendBufferSize, receiveBufferSize, sendBufferSize, receiveBufferSize)
+        {
+        }
+        SecureSocketStream(const bool rawSocket,
+            const SOCKET& connector,
+            const Core::NodeId& remoteNode,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize,
+            const uint32_t socketSendBufferSize,
+            const uint32_t socketReceiveBufferSize)
+            : SecureSocketPort((rawSocket ? Core::SocketPort::RAW : Core::SocketPort::STREAM), connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
+        {
+        }
+
+        ~SecureSocketStream() override = default;
+    };
+
     template <typename CLIENT>
     class SecureSocketServerType : public Core::SocketServerType<CLIENT> {
     public:
@@ -332,12 +415,14 @@ namespace Crypto {
         SecureSocketServerType(const Certificate& certificate, const Key& key)
             : Core::SocketServerType<CLIENT>()
             , _certificate(certificate)
-            , _key(key) {
+            , _key(key)
+            , _context(certificate, key) {
         }
         SecureSocketServerType(const Certificate& certificate, const Key& key, const Core::NodeId& serverNode)
             : Core::SocketServerType<CLIENT>(serverNode)
             , _certificate(certificate)
-            , _key(key) {
+            , _key(key)
+            , _context(certificate, key) {
         }
         ~SecureSocketServerType() = default;
 
@@ -348,10 +433,14 @@ namespace Crypto {
         const Crypto::Key& Key() const {
             return (_key);
         }
+        const Crypto::Context& Context() const {
+            return (_context);
+        }
 
     private:
         Crypto::Certificate _certificate;
         Crypto::Key _key;
+        Crypto::Context _context;
     };
 }
 }

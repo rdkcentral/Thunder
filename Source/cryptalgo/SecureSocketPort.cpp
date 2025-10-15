@@ -27,6 +27,8 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/bn.h>
+#include <openssl/opensslv.h>
+
 
 #ifdef __WINDOWS__
 #include <wincrypt.h>
@@ -38,7 +40,6 @@
 #pragma comment (lib, "cryptui.lib")
 #endif
 
-#ifndef __WINDOWS__
 namespace {
 
     class OpenSSL {
@@ -50,9 +51,18 @@ namespace {
 
         OpenSSL()
         {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
             SSL_library_init();
             OpenSSL_add_all_algorithms();
             SSL_load_error_strings();
+            #else
+            if (OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, nullptr) != 1) {
+                printf("Could not initializ the OpenSSL library\n");
+            }
+            else if (OPENSSL_init_crypto(0, nullptr) != 1) {
+                printf("Could not initializ the OpenSSL Crypto library\n");
+            }
+            #endif
         }
         ~OpenSSL()
         {
@@ -61,7 +71,6 @@ namespace {
 
     static OpenSSL _initialization;
 }
-#endif
 
 namespace Thunder {
 
@@ -134,6 +143,26 @@ Certificate::~Certificate()
     }
 }
 
+Certificate& Certificate::operator=(Certificate&& rhs) noexcept {
+    if (_certificate != nullptr) {
+        X509_free(const_cast<x509_st*>(_certificate));
+    }
+    _certificate = rhs._certificate;
+    rhs._certificate = nullptr;
+    return (*this);
+}
+
+Certificate& Certificate::operator=(const Certificate& rhs) {
+    if (_certificate != nullptr) {
+        X509_free(const_cast<x509_st*>(_certificate));
+    }
+    _certificate = rhs._certificate;
+    if (_certificate != nullptr) {
+        X509_up_ref(const_cast<x509_st*>(_certificate));
+    }
+    return (*this);
+}
+
 string Certificate::Issuer() const {
     char buffer[1024];
     buffer[0] = '\0';
@@ -196,6 +225,27 @@ Key::Key(const string& fileName)
     }
 }
 
+Key& Key::operator=(Key&& key) noexcept {
+    if (_key != nullptr) {
+        EVP_PKEY_free(const_cast<evp_pkey_st*>(_key));
+    }
+    _key = key._key;
+    key._key = nullptr;
+
+    return (*this);
+}
+
+Key& Key::operator=(const Key& key) {
+    if (_key != nullptr) {
+        EVP_PKEY_free(const_cast<evp_pkey_st*>(_key));
+    }
+    _key = key._key;
+    if (_key != nullptr) {
+        EVP_PKEY_up_ref(const_cast<evp_pkey_st*>(_key));
+    }
+    return (*this);
+}
+
 static int passwd_callback(char* buffer, int size, int /* flags */, void* password)
 {
     int copied = std::min(static_cast<int>(strlen(static_cast<const char*>(password))), size);
@@ -219,6 +269,83 @@ Key::~Key()
         EVP_PKEY_free(const_cast<evp_pkey_st*>(_key));
     }
 }
+
+// -----------------------------------------------------------------------------
+// class Context
+// -----------------------------------------------------------------------------
+
+Context::Context() 
+    : _context(SSL_CTX_new(TLS_client_method())) {
+}
+
+Context::Context(const Certificate& cert, const Key& key) 
+    : _context(SSL_CTX_new(TLS_server_method())) {
+
+    const x509_st* sslCert = static_cast<const x509_st*>(cert);
+    const evp_pkey_st* sslKey = static_cast<const evp_pkey_st*>(key);
+
+    if ((sslCert != nullptr) && (sslKey != nullptr)) {
+        int result = SSL_CTX_use_certificate(_context, const_cast<x509_st*>(sslCert));
+        ASSERT(result == 1);
+
+        result = SSL_CTX_use_PrivateKey(_context, const_cast<evp_pkey_st*>(sslKey));
+        ASSERT(result == 1);
+    }
+
+    constexpr unsigned long options = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+
+    VARIABLE_IS_NOT_USED uint64_t bitmask = SSL_CTX_set_options(_context, options);
+    ASSERT((bitmask & options) == options);
+}
+
+Context::Context(Context&& move) noexcept
+    : _context(move._context) {
+    move._context = nullptr;
+}
+
+Context::Context(const Context& copy)
+    : _context(copy._context) {
+    if (_context != nullptr) {
+        SSL_CTX_up_ref(_context);
+    }
+}
+
+Context::~Context()
+{
+    if (_context != nullptr) {
+        SSL_CTX_free(_context);
+    }
+}
+
+Context& Context::operator=(Context&& rhs) noexcept {
+    if (_context != nullptr) {
+        SSL_CTX_free(const_cast<ssl_ctx_st*>(_context));
+    }
+    _context = rhs._context;
+    rhs._context = nullptr;
+
+    return (*this);
+}
+
+Context& Context::operator=(const Context& rhs) {
+    if (_context != nullptr) {
+        SSL_CTX_free(_context);
+    }
+    _context = rhs._context;
+    if (_context != nullptr) {
+        SSL_CTX_up_ref(_context);
+    }
+    return (*this);
+}
+
+uint32_t Context::Authorities(const CertificateStore& certStore) {
+    const struct x509_store_st* store = certStore;
+
+    SSL_CTX_set_cert_store(_context, const_cast<struct x509_store_st*>(store));
+
+    return (Core::ERROR_NONE);
+}
+
 
 // -----------------------------------------------------------------------------
 // class CertificateStore
@@ -314,9 +441,9 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, localNode, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
+    , _ssl(nullptr)
     , _callback(nullptr)
     , _handShaking(EXCHANGE) {
-    CreateContext(TLS_method());
 }
 
 SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
@@ -329,9 +456,9 @@ SecureSocketPort::Handler::Handler(SecureSocketPort& parent,
     const uint32_t socketReceiveBufferSize)
     : SocketPort(socketType, connector, remoteNode, sendBufferSize, receiveBufferSize, socketSendBufferSize, socketReceiveBufferSize)
     , _parent(parent)
+    , _ssl(nullptr)
     , _callback(nullptr)
     , _handShaking(EXCHANGE) {
-    CreateContext(TLS_server_method());
 }
 
 SecureSocketPort::Handler::~Handler() {
@@ -342,71 +469,52 @@ SecureSocketPort::Handler::~Handler() {
         SSL_free(_ssl);
         _ssl = nullptr;
     }
-    if (_context != nullptr) {
-        SSL_CTX_free(_context);
-        _context = nullptr;
-    }
-}
-
-void SecureSocketPort::Handler::CreateContext(const struct ssl_method_st* method) {
-    _context = SSL_CTX_new(method);
-    if (_context != nullptr) {
-        _ssl = SSL_new(_context);
-
-        if (_ssl == nullptr) {
-            SSL_CTX_free(_context);
-            _context = nullptr;
-        }
-        else {
-            constexpr unsigned long options = SSL_OP_ALL | SSL_OP_NO_SSLv2;
-
-            VARIABLE_IS_NOT_USED unsigned long bitmask = SSL_CTX_set_options(_context, options);
-
-            ASSERT((bitmask & options) == options);
-        }
-    }
 }
 
 uint32_t SecureSocketPort::Handler::Initialize() {
-    bool initialized = false;
-
-    ASSERT(_context != nullptr);
-    ASSERT(_ssl != nullptr);
-
-    if (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
-        SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
+    if (_ssl != nullptr) {
         if (IsOpen() == true) {
             SSL_set_accept_state(_ssl);
         }
         else {
             SSL_set_connect_state(_ssl);
         }
-
-        initialized =  Core::SocketPort::Initialize();
+        if (SSL_set_fd(_ssl, static_cast<Core::IResource&>(*this).Descriptor()) == 1) {
+            SSL_set_tlsext_host_name(_ssl, RemoteNode().HostName().c_str());
+        }
     }
 
-    return (initialized);
+    return (Core::SocketPort::Initialize());
 }
 
 int32_t SecureSocketPort::Handler::Read(uint8_t buffer[], const uint16_t length) const {
 
-    ASSERT(_handShaking != ERROR);
+    uint32_t result = 0;
 
-    if (_handShaking != OPEN) {
-        const_cast<Handler&>(*this).Update();
+    if (_ssl == nullptr) {
+        result = Core::SocketPort::Read(buffer, length);
     }
- 
-    return (SSL_read(_ssl, buffer, length));
+    else if (_handShaking != ERROR) {
+        if (_handShaking != OPEN) {
+            const_cast<Handler&>(*this).Update();
+        }
+        result = SSL_read(_ssl, buffer, length);
+    }
+
+    return (result);
 }
 
 int32_t SecureSocketPort::Handler::Write(const uint8_t buffer[], const uint16_t length) {
+    uint32_t result;
+    if (_ssl == nullptr) {
+        result = Core::SocketPort::Write(buffer, length);
+    }
+    else  if (_handShaking != ERROR) {
+        result = SSL_write(_ssl, buffer, length);
 
-    ASSERT(_handShaking != ERROR);
-
-    uint32_t result = SSL_write(_ssl, buffer, length);
-
-    if (_handShaking != OPEN) {
-        Update();
+        if (_handShaking != OPEN) {
+            Update();
+        }
     }
 
     return (result);
@@ -417,34 +525,16 @@ uint32_t SecureSocketPort::Handler::Open(const uint32_t waitTime) {
 }
 
 uint32_t SecureSocketPort::Handler::Close(const uint32_t waitTime) {
-    ASSERT(_ssl != nullptr);
-    SSL_shutdown(_ssl);
+    if (_ssl != nullptr) {
+        SSL_shutdown(_ssl);
+    }
 
     return(Core::SocketPort::Close(waitTime));
 }
 
-uint32_t SecureSocketPort::Handler::Certificate(const Crypto::Certificate& certificate, const Crypto::Key& key) {
-    // Load server certificate and private key
-    const struct x509_st* cert = certificate;
-    const struct evp_pkey_st* base_key = key;
-    uint32_t result = Core::ERROR_BAD_REQUEST;
-
-    if (SSL_CTX_use_certificate(_context, const_cast<struct x509_st*>(cert)) == 1) {
-        result = Core::ERROR_UNKNOWN_KEY;
-        if (SSL_CTX_use_PrivateKey(_context, const_cast<EVP_PKEY*>(base_key)) == 1) {
-            result = Core::ERROR_NONE;
-        }
-    }
-
-    return (result);
-}
-
-uint32_t SecureSocketPort::Handler::Root(const CertificateStore& certStore) {
-    const struct x509_store_st* store = certStore;
-
-    SSL_CTX_set_cert_store(_context, const_cast<struct x509_store_st*>(store));
-
-    return (Core::ERROR_NONE);
+void SecureSocketPort::Handler::Context(const Crypto::Context& context) {
+    const struct ssl_ctx_st* sslContext = static_cast<const struct ssl_ctx_st*>(context);
+    _ssl = SSL_new(const_cast<struct ssl_ctx_st*>(sslContext));
 }
 
 void SecureSocketPort::Handler::ValidateHandShake() {
@@ -452,9 +542,22 @@ void SecureSocketPort::Handler::ValidateHandShake() {
     X509* x509cert = SSL_get_peer_certificate(_ssl);
 
     if (x509cert == nullptr) {
-        _handShaking = ERROR;
-        SetError();
-        _parent.StateChange();
+        if (_callback == nullptr) {
+            _handShaking = ERROR;
+            SetError();
+            _parent.StateChange();
+        }
+        else {
+            if (_callback->Validate(Crypto::Certificate()) == false) {
+                _handShaking = ERROR;
+                SetError();
+                _parent.StateChange();
+            }
+            else {
+                _handShaking = OPEN;
+                _parent.StateChange();
+            }
+        }
     }
     else {
         long error;
@@ -491,13 +594,13 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 }
 
 void SecureSocketPort::Handler::Update() {
-
     if (IsOpen() == true) {
         int result = 1;
 
         ASSERT(_ssl != nullptr);
 
         if (_handShaking == EXCHANGE) {
+            ERR_clear_error();
             if ((result = SSL_do_handshake(_ssl)) == 1) {
                 ValidateHandShake();
             }
@@ -513,13 +616,30 @@ void SecureSocketPort::Handler::Update() {
             }
         }
     }
+    else if (_handShaking == OPEN) {
+        _parent.StateChange();
+        _handShaking = EXCHANGE;
+    }
     else {
         _handShaking = EXCHANGE;
-        _parent.StateChange();
     }
 }
 
 SecureSocketPort::~SecureSocketPort() {
 }
 
+string LastLibraryError() {
+    // SSL_CTX_set_ecdh_auto(_context, 1);    
+    // if (SSL_CTX_set_cipher_list(_context, "ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384") <= 0) {
+    // SSL_set_ciphersuites(_ssl, "ALL:eNULL");
+    // SSL_set_ciphersuites(_ssl, "ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384");
+    //printf("Ciphers: %s\n", SSL_get_cipher(_ssl));
+    // if (SSL_CTX_set_cipher_list(_context, "ALL:eNULL") <= 0) {
+    //        printf("Error setting the cipher list.\n");
+    // }
+    char buffer[1024];
+    ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
+    ERR_clear_error();
+    return (string(buffer));
+}
 } } // namespace Thunder::Crypto
