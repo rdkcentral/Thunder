@@ -152,7 +152,7 @@ namespace Core {
         ~JSONConnector() override = default;
 
     public:
-        void Received(const ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement) override
+        void Received(const ::Thunder::Core::ProxyType<INTERFACE>& newElement) override
         {
             string textElement;
             newElement->ToString(textElement);
@@ -165,7 +165,7 @@ namespace Core {
             }
         }
 
-        void Send(VARIABLE_IS_NOT_USED const ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement) override
+        void Send(VARIABLE_IS_NOT_USED const ::Thunder::Core::ProxyType<INTERFACE>& newElement) override
         {
         }
 
