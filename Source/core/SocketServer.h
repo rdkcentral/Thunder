@@ -97,7 +97,7 @@ namespace Core {
             inline void Reset()
             {
                 _atHead = true;
-                _iterator = _clients->begin();
+                _iterator = _clients.begin();
             }
             inline bool Next()
             {
