@@ -130,7 +130,9 @@ namespace Core {
 
     public:
         JSONConnector() = delete;
+        JSONConnector(JSONConnector&& copy) = delete;
         JSONConnector(const JSONConnector& copy) = delete;
+        JSONConnector& operator=(JSONConnector&&) = delete;
         JSONConnector& operator=(const JSONConnector&) = delete;
 
         JSONConnector(const ::Thunder::Core::NodeId& remoteNode)
@@ -140,7 +142,6 @@ namespace Core {
             , _objectFactory(1)
         {
         }
-
         JSONConnector(const SOCKET& connector, const ::Thunder::Core::NodeId& remoteId, ::Thunder::Core::SocketServerType<JSONConnector<INTERFACE>>*)
             : BaseClass(5, _objectFactory, false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
@@ -148,13 +149,10 @@ namespace Core {
             , _objectFactory(1)
         {
         }
-
-        virtual ~JSONConnector()
-        {
-        }
+        ~JSONConnector() override = default;
 
     public:
-        virtual void Received(::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
+        void Received(const ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement) override
         {
             string textElement;
             newElement->ToString(textElement);
@@ -167,11 +165,11 @@ namespace Core {
             }
         }
 
-        virtual void Send(VARIABLE_IS_NOT_USED ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement)
+        void Send(VARIABLE_IS_NOT_USED const ::Thunder::Core::ProxyType<::Thunder::Core::JSON::IElement>& newElement) override
         {
         }
 
-        virtual void StateChange()
+        void StateChange() override
         {
             if (this->IsOpen()) {
                 if (_serverSocket) {
@@ -182,7 +180,7 @@ namespace Core {
             }
         }
 
-        virtual bool IsIdle() const
+        bool IsIdle() const override
         {
             return (true);
         }
