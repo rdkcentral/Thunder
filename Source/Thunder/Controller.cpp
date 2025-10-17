@@ -808,31 +808,37 @@ namespace Plugin {
     Core::hresult Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
-        string callsign(Core::JSONRPC::Message::Callsign(method));
 
-        if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
+        const size_t indexDelimiter = method.find_last_of(TCHAR('@'));
+        const size_t compositeDelimiter = method.find_last_of(TCHAR('/'), indexDelimiter);
+        string callsign;
+
+        if ((compositeDelimiter == string::npos) && (((callsign = Core::JSONRPC::Message::Callsign(method), callsign.empty() == true) || (callsign == PluginHost::JSONRPC::Callsign())))) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
         }
         else {
-            string version(Core::JSONRPC::Message::VersionAsString(method));
-            if (version.empty() == false) {
-                callsign += TCHAR('.') + version;
-            }
-
             Core::ProxyType<PluginHost::IShell> service;
 
-            result = _pluginServer->Services().FromIdentifier(callsign, service);
+            if (compositeDelimiter != string::npos) {
+                // Composite designator: split it into bridge and callsign
+                const size_t versionDelimiter = method.find_last_of(TCHAR('.'), compositeDelimiter);
+                const string bridge = method.substr(0, (versionDelimiter == string::npos? compositeDelimiter : versionDelimiter));
+                callsign = Core::JSONRPC::Message::Callsign(method.substr(compositeDelimiter + 1));
+                result =  _pluginServer->Services().FromIdentifier(bridge, (callsign.empty() == true? PluginHost::JSONRPC::Callsign() : callsign), service);
+            }
+            else {
+                result = _pluginServer->Services().FromIdentifier(callsign, service);
+            }
 
             if (result == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
+                ASSERT(service.IsValid() == true);
+
                 PluginHost::IShell::state currrentState = service->State();
-                if (currrentState != PluginHost::IShell::state::ACTIVATED)
-                {
+
+                if (currrentState != PluginHost::IShell::state::ACTIVATED) {
                     result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
                 }
                 else {
-                    ASSERT(service.IsValid());
-
                     PluginHost::IDispatcher* dispatcher = service->QueryInterface<PluginHost::IDispatcher>();
 
                     if (dispatcher != nullptr) {
