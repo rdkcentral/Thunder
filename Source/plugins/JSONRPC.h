@@ -417,6 +417,25 @@ namespace PluginHost {
             Core::JSON::String Id;
         };
 
+        class ExistsParams : public Core::JSON::Container {
+        public:
+            ExistsParams(const ExistsParams&) = delete;
+            ExistsParams& operator=(const ExistsParams&) = delete;
+            ExistsParams(ExistsParams&&) = delete;
+            ExistsParams& operator=(ExistsParams&&) = delete;
+
+            ExistsParams()
+                : Core::JSON::Container()
+                , Method()
+            {
+                Add(_T("method"), &Method);
+            }
+            ~ExistsParams() override = default;
+
+        public:
+            Core::JSON::String Method;
+        };
+
         enum state {
             STATE_INCORRECT_HANDLER,
             STATE_INCORRECT_VERSION,
@@ -680,40 +699,63 @@ namespace PluginHost {
 
                     if (realMethod == _T("versions")) {
                         _versions.ToString(response);
-                        result = Core::ERROR_NONE;
                     }
                     else if (realMethod == _T("exists")) {
-                        if (Handler(parameters) == nullptr) {
-                            response = _T("0");
+                        Core::JSONRPC::Handler* handler(Handler(method));
+                        if (handler == nullptr) {
+                            result = Core::ERROR_INCORRECT_URL;
                         }
                         else {
-                            response = _T("1");
+                            ExistsParams info; info.FromString(parameters);
+                            if (info.IsComplete() == true) {
+                                if (info.Method.IsSet() == true) {
+                                    Core::JSON::Boolean output;
+                                    output = (handler->Exists(info.Method.Value()) == Core::ERROR_NONE);
+                                    output.ToString(response);
+                                }
+                                else {
+                                    result = Core::ERROR_INVALID_PARAMETER;
+                                }
+                            }
+                            else {
+                                // DEPRECATED signature
+                                Core::JSON::String info; info.FromString(parameters);
+                                if (handler->Exists(parameters) == Core::ERROR_NONE) {
+                                    response = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
+                                }
+                                else {
+                                    response = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
+                                }                            }
                         }
                     }
                     else if (methodName == _T("register")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
-                        if (result == Core::ERROR_NONE) {
-                            response = _T("0");
+                        if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
+                            result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Core::ERROR_FAILED_REGISTERED;
+                            result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
+                            if (result != Core::ERROR_NONE) {
+                                result = Core::ERROR_FAILED_REGISTERED;
+                            }
                         }
                     }
                     else if (methodName == _T("unregister")) {
                         Registration info;  info.FromString(parameters);
 
-                        result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
-                        if (result == Core::ERROR_NONE) {
-                            response = _T("0");
+                        if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
+                            result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Core::ERROR_FAILED_UNREGISTERED;
+                            result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
+                            if (result != Core::ERROR_NONE) {
+                                result = Core::ERROR_FAILED_REGISTERED;
+                            }
                         }
                     }
                     else {
-                        Core::JSONRPC::Handler* handler(Handler(realMethod));
+                        Core::JSONRPC::Handler* handler(Handler(method));
 
                         if (handler != nullptr) {
                             Core::JSONRPC::Context context(channelId, id, token);
