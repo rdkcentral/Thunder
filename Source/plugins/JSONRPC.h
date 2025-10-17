@@ -681,6 +681,7 @@ namespace PluginHost {
                 ASSERT((callsign.empty() == true) || (callsign == _callsign));
 
                 result = Core::ERROR_NONE;
+                Core::JSONRPC::Handler* handler(nullptr);
 
                 if (_validate != nullptr) {
                     classification validation = _validate(token, realMethod, parameters);
@@ -693,42 +694,47 @@ namespace PluginHost {
                 }
 
                 if (result == Core::ERROR_NONE) {
+                    handler = Handler(method);
+                    if (handler == nullptr) {
+                        result = Core::ERROR_INVALID_SIGNATURE;
+                    }
+                }
+
+                if (result == Core::ERROR_NONE) {
+
+                    static const std::array<const char*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
 
                     // Seems we are on the right handler..
                     // now see if someone supports this version
 
-                    if (realMethod == _T("versions")) {
+                    if (realMethod == builtIns[0]) {
                         _versions.ToString(response);
                     }
-                    else if (realMethod == _T("exists")) {
-                        Core::JSONRPC::Handler* handler(Handler(method));
-                        if (handler == nullptr) {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
-                        else {
-                            ExistsParams info; info.FromString(parameters);
-                            if (info.IsComplete() == true) {
-                                if (info.Method.IsSet() == true) {
-                                    Core::JSON::Boolean output;
-                                    output = (handler->Exists(info.Method.Value()) == Core::ERROR_NONE);
-                                    output.ToString(response);
-                                }
-                                else {
-                                    result = Core::ERROR_INVALID_PARAMETER;
-                                }
+                    else if (realMethod == builtIns[1]) {
+
+                        ExistsParams info; info.FromString(parameters);
+                        if (info.IsComplete() == true) {
+                            if (info.Method.IsSet() == true) {
+                                Core::JSON::Boolean output;
+                                output = ((handler->Exists(info.Method.Value()) == Core::ERROR_NONE)
+                                            || std::any_of(builtIns.cbegin(), builtIns.cend(), [&info](const char* const v) { return (info.Method.Value() == v); }));
+                                output.ToString(response);
                             }
                             else {
-                                // DEPRECATED signature
-                                Core::JSON::String info; info.FromString(parameters);
-                                if (handler->Exists(parameters) == Core::ERROR_NONE) {
-                                    response = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
-                                }
-                                else {
-                                    response = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
-                                }                            }
+                                result = Core::ERROR_INVALID_PARAMETER;
+                            }
+                        }
+                        else {
+                            // DEPRECATED signature
+                            Core::JSON::String info; info.FromString(parameters);
+                            Core::JSON::DecUInt32 output;
+                            bool found = ((handler->Exists(info.Value()) == Core::ERROR_NONE)
+                                            || std::any_of(builtIns.cbegin(), builtIns.cend(), [&info](const char* const v) { return (info.Value() == v); }));
+                            output = (found? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                            output.ToString(response);
                         }
                     }
-                    else if (methodName == _T("register")) {
+                    else if (methodName == builtIns[2]) {
                         Registration info;  info.FromString(parameters);
 
                         if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
@@ -741,7 +747,7 @@ namespace PluginHost {
                             }
                         }
                     }
-                    else if (methodName == _T("unregister")) {
+                    else if (methodName == builtIns[3]) {
                         Registration info;  info.FromString(parameters);
 
                         if ((info.Event.IsSet() == false) || (info.Id.IsSet() == false))  {
@@ -755,14 +761,8 @@ namespace PluginHost {
                         }
                     }
                     else {
-                        Core::JSONRPC::Handler* handler(Handler(method));
-
-                        if (handler != nullptr) {
-                            Core::JSONRPC::Context context(channelId, id, token);
-                            result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
-                        } else {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
+                        Core::JSONRPC::Context context(channelId, id, token);
+                        result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
                     }
                 }
             }
