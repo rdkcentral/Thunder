@@ -29,6 +29,8 @@ namespace Thunder {
 
 namespace PluginHost {
 
+    static const std::array<const char*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
+
     namespace {
 
         template<typename JSONRPCERRORASSESSORTYPE>
@@ -701,8 +703,6 @@ namespace PluginHost {
                 }
 
                 if (result == Core::ERROR_NONE) {
-
-                    static const std::array<const char*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
 
                     // Seems we are on the right handler..
                     // now see if someone supports this version
