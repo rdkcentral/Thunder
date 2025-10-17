@@ -163,8 +163,8 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-            WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this, (THREADPOOL_COUNT > 2 ? (THREADPOOL_COUNT - 1) : 1), (THREADPOOL_COUNT > 2 ? (THREADPOOL_COUNT - 1) : 1))
+            WorkerPoolImplementation(const uint8_t threadCount, const uint32_t stackSize, const uint8_t lowPriorityThreadCount, const uint8_t mediumPriorityThreadCount)
+                : Core::WorkerPool(threadCount, stackSize, 8 * threadCount, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
             {
                 Run();

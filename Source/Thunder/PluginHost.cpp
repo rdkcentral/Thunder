@@ -1000,7 +1000,7 @@ POP_WARNING()
                                 counter++;
                             }
                         } else {
-                           printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT + 1);
+                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", _config->ThreadPoolCount() + 1);
                         }
 
                         break;
@@ -1015,7 +1015,7 @@ POP_WARNING()
                         printf("  [T]rigger resource monitor\n");
                         printf("  [M]etadata resource monitor\n");
                         printf("  [R]esource monitor stack\n");
-                        printf("  [0..%d] Threadpool stacks\n", THREADPOOL_COUNT + 1);
+                        printf("  [0..%d] Threadpool stacks\n", _config->ThreadPoolCount() + 1);
                         printf("  [Q]uit\n\n");
                         break;
 
