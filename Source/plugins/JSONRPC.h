@@ -29,7 +29,7 @@ namespace Thunder {
 
 namespace PluginHost {
 
-    static const std::array<const char*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
+    static const std::array<const TCHAR*,4> builtIns = { _T("versions"), _T("exists"), _T("register"), _T("unregister") };
 
     namespace {
 
