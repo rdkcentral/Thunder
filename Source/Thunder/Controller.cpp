@@ -1601,9 +1601,9 @@ namespace Plugin {
             buildInfo.WCharSupport = true;
         #endif
 
-        #ifdef THREADPOOL_COUNT
-            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
-        #endif
+        ASSERT(_pluginServer != nullptr);
+
+        buildInfo.ThreadPoolCount = _pluginServer->Configuration().ThreadPoolCount();
 
         buildInfo.COMRPCTimeOut = RPC::CommunicationTimeOut;
 

@@ -14,6 +14,11 @@
     "proxystubpath": "C:/ThunderWin/artifacts/dynamic/proxystubs",
     "configpath": "C:/ThunderWin/artifacts/dynamic/config"
   },
+  "process": {
+    "threadpoolcount": 4,
+    "lowprioritythreadcount": 3,
+    "mediumprioritythreadcount": 3
+  },
   "messaging": {
     "port": 63000,
     "logging": {
