@@ -1431,7 +1431,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Version(IMetadata::Data::Version& version) const
+    Core::hresult Controller::Framework(IMetadata::Data::Version& version) const
     {
         PluginHost::Metadata::Version ver;
 
