@@ -445,7 +445,6 @@ namespace Core {
 
 #ifdef __POSIX__
                int errval{0};
-               errno = 0;
                result = ((errval = remove(_name.c_str())) == 0) || (errval == -1 && (errno == ENOENT));
 #endif
 #ifdef __WINDOWS__
