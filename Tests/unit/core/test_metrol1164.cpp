@@ -38,13 +38,13 @@ namespace Core {
     // Both processes close the used buffer and hence the underlying mapped file
     // Commit d41b8db695e8fead30b872535a9da9d2bf7b8bf7 prevents an assert at 
     // CyclicBuffer.cpp:222 due to the return value of FilseSystem.h at 449
-    // remove() returning -1 and errno set to NOENTi for the second call. This
+    // remove() returning -1 and errno set to ENOENT for the second call. This
     // test should not fail with the patch applied.
 
     TEST(METROL_1164, CreateDestroy)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
-        VARIABLE_IS_NOT_USED constexpr uint8_t maxRetries = 100;
+        constexpr uint8_t maxRetries = 100;
 
         const std::string bufferName {"/tmp/CyclicBuffer-metrol1164"};
 
