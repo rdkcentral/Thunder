@@ -24,17 +24,17 @@ namespace RPC {
 
 Core::ProxyType<RPC::IIPCServer> DefaultInvokeServer()
 {
-    class Engine : public RPC::InvokeServerType<1, 0, 8> {
+    class Engine : public RPC::InvokeServerType<1, 0, 8, 1, 1> {
     public:
         Engine() = default;
         ~Engine() override = default;
 
     protected:
         void Acquire(Core::ProxyType<Engine>& source VARIABLE_IS_NOT_USED) {
-            RPC::InvokeServerType<1, 0, 8>::Run();
+            RPC::InvokeServerType<1, 0, 8, 1 ,1>::Run();
         }
         void Relinquish(Core::ProxyType<Engine>& source VARIABLE_IS_NOT_USED) {
-            RPC::InvokeServerType<1, 0, 8>::Stop();
+            RPC::InvokeServerType<1, 0, 8, 1 ,1>::Stop();
         }
     };
 
