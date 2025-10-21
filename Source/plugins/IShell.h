@@ -198,9 +198,6 @@ namespace PluginHost {
         //! ClassName: Name of the class to be instantiated for this IShell
         virtual string ClassName() const = 0;
 
-        //! Versions: Returns a JSON Array of versions (JSONRPC interfaces) supported by this plugin.
-        virtual string Versions() const = 0;
-
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
         virtual string Callsign() const = 0;
 
@@ -246,9 +243,6 @@ namespace PluginHost {
         virtual Core::hresult ConfigLine(const string& config) = 0;
         virtual Core::hresult Metadata(string& info /* @out */) const = 0;
 
-        //! Return whether the given version is supported by this IShell instance.
-        virtual bool IsSupported(const uint8_t version) const = 0;
-
         // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
         // status of the sub systems is.
         virtual ISubSystem* SubSystems() = 0;
@@ -264,8 +258,8 @@ namespace PluginHost {
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
         // on the controller.
-        virtual void Register(IPlugin::INotification* sink) = 0;
-        virtual void Unregister(IPlugin::INotification* sink) = 0;
+        virtual void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
+        virtual void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
         virtual state State() const = 0;
         virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
