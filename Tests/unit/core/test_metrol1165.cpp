@@ -90,7 +90,7 @@ namespace Core {
     TEST(METROL_1165, NoneZeroPid)
     {
         constexpr uint32_t initHandshakeValue = 0, maxWaitTime = 4, VARIABLE_IS_NOT_USED maxWaitTimeMs = 4000, VARIABLE_IS_NOT_USED maxInitTime = 2000;
-        constexpr uint8_t maxRetries = 100;
+        VARIABLE_IS_NOT_USED constexpr uint8_t maxRetries = 100;
 
         const std::string bufferName {"/tmp/CyclicBuffer-metrol1165"};
 
