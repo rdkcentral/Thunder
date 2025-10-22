@@ -1183,21 +1183,21 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 string info;
-                const string& callsign(it.Index());
+                const string& cs(it.Index());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
 
                     if (callsign.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
-                        meta.Callsign = callsign;
+                        meta.Callsign = cs;
                     }
 
                     IMetadata::Data::Service service(meta);
 
                     // Make sure the list is sorted..
                     std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < callsign)) {
+                    while ((index != services.end()) && (index->Callsign < cs)) {
                         index++;
                     }
                     services.insert(index, service);
