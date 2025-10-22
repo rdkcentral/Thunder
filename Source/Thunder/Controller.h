@@ -350,7 +350,7 @@ namespace Plugin {
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
         Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
-        Core::hresult Version(IMetadata::Data::Version& version) const override;
+        Core::hresult Framework(IMetadata::Data::Version& version) const override;
         Core::hresult BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const override;
 
         // IShells overrides
