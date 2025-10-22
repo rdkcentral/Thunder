@@ -90,16 +90,16 @@ namespace Crypto {
         HASH_SHA384 = 48,
         HASH_SHA512 = 64
     };
-    typedef struct EXTERNAL Context {
+    typedef struct EXTERNAL HashContext {
         uint64_t length;
         uint64_t h[8];
         uint32_t index;
         uint8_t block[2 * (1024 / 8)];
-    } Context;
+    } HashContext;
 
     class EXTERNAL MD5 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         MD5(MD5&&) = delete;
@@ -183,7 +183,7 @@ namespace Crypto {
 
     class EXTERNAL SHA1 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         SHA1(SHA1&&) = delete;
@@ -299,10 +299,9 @@ namespace Crypto {
         Context _context;
     };
 
-
     class EXTERNAL SHA256 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         SHA256(SHA256&&) = delete;
@@ -369,7 +368,7 @@ namespace Crypto {
 
     class EXTERNAL SHA224 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         SHA224(SHA224&&) = delete;
@@ -436,7 +435,7 @@ namespace Crypto {
 
     class EXTERNAL SHA512 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         SHA512(SHA512&&) = delete;
@@ -503,7 +502,7 @@ namespace Crypto {
 
     class EXTERNAL SHA384 {
     public:
-        typedef Crypto::Context Context;
+        using Context = Crypto::HashContext;
 
     public:
         SHA384(SHA384&&) = delete;

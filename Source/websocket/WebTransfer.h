@@ -304,7 +304,7 @@ POP_WARNING()
         {
             return (_fileBody.Position());
         }
-        inline void LoadHash(const Crypto::Context& context)
+        inline void LoadHash(const Crypto::HashContext& context)
         {
             _LoadHash(context);
         }
@@ -433,7 +433,7 @@ POP_WARNING()
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _LoadHash(const Crypto::Context& context)
+        _LoadHash(const Crypto::HashContext& context)
         {
             typename ACTUALFILEBODY::HashType& hash = const_cast<typename ACTUALFILEBODY::HashType&>(_fileBody.Hash());
             hash.Reset();
@@ -442,7 +442,7 @@ POP_WARNING()
 
         template < typename ACTUALFILEBODY = FILEBODY>
         inline typename Core::TypeTraits::enable_if<!hasLoadHash<const ACTUALFILEBODY, const typename ACTUALFILEBODY::HashType&>::value, void>::type
-        _LoadHash(const Crypto::Context& /* context */)
+        _LoadHash(const Crypto::HashContext& /* context */)
         {
         }
 

@@ -679,7 +679,7 @@ namespace Core {
             while ((start < _source.Length()) && (valid == false)) {
                 _index = (_delimiter == 0 ? _source.ForwardFind(_delimiters.c_str(), start) : _source.ForwardFind(_delimiter, start));
 
-                if ((_suppressEmpty == false) || (start <= _index)) {
+                if ((_suppressEmpty == false) || (start < _index)) {
                     valid = true;
 
                     _current = TextFragment(_source, start, _index - start);
