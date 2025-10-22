@@ -1189,7 +1189,7 @@ namespace Plugin {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
 
-                    if (callsign.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
+                    if (cs.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
                         meta.Callsign = cs;
                     }
 
