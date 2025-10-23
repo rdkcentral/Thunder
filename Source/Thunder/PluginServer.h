@@ -1954,6 +1954,10 @@ namespace PluginHost {
                     }
                     return (_index != _container.end());
                 }
+                const string& Index() const {
+                    ASSERT(IsValid());
+                    return (_index->first);
+                }
                 Core::ProxyType<PluginHost::IShell> Current() {
                     ASSERT(IsValid());
                     return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
@@ -1961,17 +1965,12 @@ namespace PluginHost {
                 uint32_t Count() const {
                     return (static_cast<uint32_t>(_container.size()));
                 }
-                Core::ProxyType<PluginHost::IShell> operator->()
-                {
+                Core::ProxyType<PluginHost::IShell> operator->() {
                     ASSERT(IsValid());
-
                     return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
-
-                Core::ProxyType<const PluginHost::IShell> operator->() const
-                {
+                Core::ProxyType<const PluginHost::IShell> operator->() const {
                     ASSERT(IsValid());
-
                     return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
 
