@@ -575,6 +575,7 @@ namespace Core {
     {
         uint32_t result = Core::ERROR_TIMEDOUT;
         uint32_t timeLeft = waitTime;
+        uint32_t oldTimeLeft{ timeLeft };
 
         // Lock can not be called recursive, unlock if you would like to lock it..
         ASSERT(_administration->_lockPID == 0);
@@ -596,6 +597,9 @@ namespace Core {
 
                 AdminUnlock();
 
+                // Re-use the variable
+                oldTimeLeft = timeLeft;
+
                 // As its name suggests time left should reduce (gradually) to zero
                 // Retry to obtain the 'real' lock on succesful release, eg, no deadlock hence no subtraction needed
                 timeLeft -= SignalLock(timeLeft);
@@ -610,7 +614,7 @@ namespace Core {
                 }
             }
 
-        } while ((timeLeft > 0) && (result == Core::ERROR_TIMEDOUT));
+        } while ((timeLeft > 0) && (oldTimeLeft > timeLeft) && (result == Core::ERROR_TIMEDOUT));
 
         AdminUnlock();
 
