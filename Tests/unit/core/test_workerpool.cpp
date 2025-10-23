@@ -98,6 +98,7 @@ namespace Core {
             Notify();
             if (_checkParentState) {
                 _parent.WaitForReady(this, _waitTime * 10);
+                Notify();
             }
             if (_notifyInvokedTime) {
                 _parent.InvokedTime(this, invokedTime);
@@ -440,12 +441,21 @@ namespace Core {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
         ::Thunder::Core::WorkerPool::Assign(&workerPool);
 
-        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 1000));
+        ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch> job = ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>(::Thunder::Core::ProxyType<TestJob<WorkerPoolTester>>::Create(workerPool, TestJob<WorkerPoolTester>::INITIATED, 2000, true));
         EXPECT_EQ(static_cast<TestJob<WorkerPoolTester>&>(*job).GetStatus(), TestJob<WorkerPoolTester>::INITIATED);
         workerPool.Submit(job);
         workerPool.RunThreadPool();
-        usleep(100);
+
+        // Wait for job to actually start executing (wait for first notification)
+        EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
+
+        // Now job is waiting in WaitForReady - it's definitely running
+        // Try to revoke while job is running (should fail to cancel)
         workerPool.Revoke(job);
+
+        // Now notify it to continue and complete
+        workerPool.NotifyReady(job);
+
         EXPECT_EQ(workerPool.WaitForJobEvent(job, MaxJobWaitTime), ::Thunder::Core::ERROR_NONE);
         workerPool.Stop();
 
@@ -1021,7 +1031,6 @@ namespace Core {
         WorkerPoolTester workerPool(threadCount, 0, queueSize);
         ::Thunder::Core::WorkerPool::Assign(&workerPool);
         workerPool.RunThreadPool();
-        workerPool.RunExternal();
 
         std::vector<::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>> jobs;
         // Create Jobs with more than Queue size. i.e, queueSize + additionalJobs
