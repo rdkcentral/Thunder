@@ -699,7 +699,6 @@ namespace Thunder {
 
                             // Update the state to reflect the queue content (EMPTY has priority).
                             _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
-
                         }
                         else {
                             // We are moving into a wait, release the lock.
@@ -707,7 +706,6 @@ namespace Thunder {
 
                             // Wait till the status of the queue changes.
                             triggered = _state.WaitState(DISABLED | ENTRIES | LIMITED, waitTime);
-
 
                             // Seems something happend, lock the administration.
                             _adminLock.Lock();
