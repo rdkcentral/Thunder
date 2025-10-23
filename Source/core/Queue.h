@@ -580,7 +580,9 @@ namespace Thunder {
                     _queue.erase(index);
 
                     // Determine the new state.
-                    _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                    if (_state.GetState() != DISABLED) {
+                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                    }
                 }
                 else {
                     typename Categories::iterator categoryIndex = _categories.begin();
@@ -697,6 +699,7 @@ namespace Thunder {
 
                             // Update the state to reflect the queue content (EMPTY has priority).
                             _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
+
                         }
                         else {
                             // We are moving into a wait, release the lock.
@@ -704,6 +707,7 @@ namespace Thunder {
 
                             // Wait till the status of the queue changes.
                             triggered = _state.WaitState(DISABLED | ENTRIES | LIMITED, waitTime);
+
 
                             // Seems something happend, lock the administration.
                             _adminLock.Lock();
@@ -742,20 +746,22 @@ namespace Thunder {
 
                     typename Categories::iterator categoryIndex = _categories.begin();
 
-                    // Submit (if possible) a new one from high Prio to low..
-                    while ((categoryIndex != _categories.end()) && (categoryIndex->HasEntry() == false)) {
-                        categoryIndex++;
-                    }
+                    if (_state != DISABLED) {
+                        // Submit (if possible) a new one from high Prio to low..
+                        while ((categoryIndex != _categories.end()) && (categoryIndex->HasEntry() == false)) {
+                            categoryIndex++;
+                        }
 
-                    if (categoryIndex == _categories.end()) {
-                        // Determine the new state.
-                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
-                    }
-                    else {
-                        // We have a new entry to submit, so we can post it.
-                        _queue.emplace_back(std::make_pair(categoryIndex->Category(), categoryIndex->Extract()));
-                        // Determine the new state.
-                        _state.SetState(IsFull() ? LIMITED : ENTRIES);
+                        if (categoryIndex == _categories.end()) {
+                            // Determine the new state.
+                            _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                        }
+                        else {
+                            // We have a new entry to submit, so we can post it.
+                            _queue.emplace_back(std::make_pair(categoryIndex->Category(), categoryIndex->Extract()));
+                            // Determine the new state.
+                            _state.SetState(IsFull() ? LIMITED : ENTRIES);
+                        }
                     }
                 }
 
