@@ -118,15 +118,15 @@ namespace Core {
                     switch (frameworkError) {
                     case Core::ERROR_INTERNAL_JSONRPC:
                         Code = -32603; // Internal Error
-                        Text = _T("Unknown jsonrpc error.");
+                        Text = _T("Unknown JSON-RPC error.");
                         break;
                     case Core::ERROR_INVALID_ENVELOPPE:
-                        Text = _T("Invalid Request.");
+                        Text = _T("Invalid request.");
                         Code = -32600; // Invalid request
                         break;
                     case Core::ERROR_INVALID_PARAMETER:
                         Code = -32602; // Invalid parameters
-                        Text = _T("Invalid Parameters.");
+                        Text = _T("Invalid parameters.");
                         break;
                     case Core::ERROR_UNKNOWN_METHOD:
                         Text = _T("Unknown method.");
@@ -134,11 +134,11 @@ namespace Core {
                         break;
                     case Core::ERROR_PRIVILIGED_REQUEST:
                         Code = -32604; // Priviliged
-                        Text = _T("method invocation not allowed.");
+                        Text = _T("Method invocation not allowed.");
                         break;
                     case Core::ERROR_PRIVILIGED_DEFERRED:
                         Code = -32604;
-                        Text = _T("method invokation is deferred, Currently not allowed.");
+                        Text = _T("Method invocation is deferred, currently not allowed.");
                         break;
                     case Core::ERROR_TIMEDOUT:
                         Code = -32000; // Server defined, now mapped to Timed out
@@ -148,8 +148,12 @@ namespace Core {
                         Code = -32700; // Parse error
                         Text = _T("Parsing of the parameters failed");
                         break;
-                    case Core::ERROR_INVALID_RANGE:
-                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_RANGE;
+                    case Core::ERROR_NOT_EXIST:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_EXIST;
+                        Text = _T("The service is not available.");
+                        break;
+                    case Core::ERROR_INVALID_SIGNATURE:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_INVALID_SIGNATURE;
                         Text = _T("Requested version is not supported.");
                         break;
                     case Core::ERROR_INCORRECT_URL:
@@ -158,7 +162,7 @@ namespace Core {
                         break;
                     case Core::ERROR_ILLEGAL_STATE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_ILLEGAL_STATE;
-                        Text = _T("The service is in an illegal state!!!.");
+                        Text = _T("The service is in an illegal state.");
                         break;
                     case Core::ERROR_FAILED_REGISTERED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_FAILED_REGISTERED;
@@ -170,11 +174,11 @@ namespace Core {
                         break;
                     case Core::ERROR_HIBERNATED:
                         Code = ApplicationErrorCodeBase - Core::ERROR_HIBERNATED;
-                        Text = _T("The service is in an Hibernated state!!!.");
+                        Text = _T("The service is hibernated.");
                         break;
                     case Core::ERROR_UNAVAILABLE:
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
-                        Text = _T("Requested service is not available.");
+                        Text = _T("The service is not active.");
                         break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
@@ -182,7 +186,10 @@ namespace Core {
                         } else {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
                         }
-                        Text = Core::ErrorToString(frameworkError);
+
+                        if (Text.IsSet() == false) {
+                            Text = Core::ErrorToString(frameworkError);
+                        }
                         break;
                     }
                 }
@@ -193,7 +200,13 @@ namespace Core {
 
         public:
             static constexpr TCHAR DefaultVersion[] = _T("2.0");
+            static constexpr TCHAR KeyId[] = _T("id");
+            static constexpr TCHAR KeyMethod[] = _T("method");
+            static constexpr TCHAR KeyParameters[] = _T("params");
+            static constexpr TCHAR KeyResult[] = _T("result");
+            static constexpr TCHAR KeyError[] = _T("error");
 
+            Message& operator=(Message&&) = delete;
             Message& operator=(const Message&) = delete;
 
             Message()
@@ -207,11 +220,11 @@ namespace Core {
                 , _implicitCallsign()
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
 
                 Clear();
             }
@@ -226,13 +239,12 @@ namespace Core {
                 , _implicitCallsign(copy._implicitCallsign)
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             Message(Message&& move) noexcept
                 : Core::JSON::Container()
                 , JSONRPC(std::move(move.JSONRPC))
@@ -244,13 +256,12 @@ namespace Core {
                 , _implicitCallsign(std::move(move._implicitCallsign))
             {
                 Add(_T("jsonrpc"), &JSONRPC);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
+                Add(KeyId, &Id);
+                Add(KeyMethod, &Designator);
+                Add(KeyParameters, &Parameters);
+                Add(KeyResult, &Result);
+                Add(KeyError, &Error);
             }
-
             ~Message() override = default;
 
         public:
@@ -279,7 +290,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 if (index.empty() == false) {
                     out += TCHAR('@');
@@ -303,7 +314,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 return (out);
             }
@@ -316,7 +327,7 @@ namespace Core {
                     out += _T("::");
                 }
 
-                out += method;
+                out += Formalize(method);
 
                 return (out);
             }
@@ -376,10 +387,7 @@ namespace Core {
 
                 if (outMethod != nullptr) {
                     (*outMethod) = designator.substr(idxM, ((idxI == string::npos)? idxI : (idxI - idxM)));
-
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
-                    ToCamelCase(*outMethod);
-POP_WARNING()
+                    Formalize(*outMethod);
                 }
             }
             static string Callsign(const string& designator)
@@ -397,6 +405,18 @@ POP_WARNING()
                     }
                 }
                 return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
+            }
+            static void Formalize(string& method)
+            {
+PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
+                ToCamelCase(method);
+POP_WARNING()
+            }
+            static string Formalize(const string& method)
+            {
+                string formalized = method;
+                Formalize(formalized);
+                return (formalized);
             }
             static string Method(const string& designator)
             {
@@ -416,9 +436,7 @@ POP_WARNING()
                     method = designator.substr(begin, end - begin);
                 }
 
-PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
-                ToCamelCase(method);
-POP_WARNING()
+                Formalize(method);
 
                 return (method);
             }
@@ -905,18 +923,20 @@ POP_WARNING()
             {
                 return (EventIterator(_handlers));
             }
-            inline bool Copy(const Handler& copy, const string& method)
+            inline bool Copy(const Handler& copy, const string& methodName)
             {
                 bool copied = false;
 
-                HandlerMap::const_iterator index = copy._handlers.find(method);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::const_iterator index = copy._handlers.find(formalMethodName);
 
                 if (index != copy._handlers.end()) {
                     copied = true;
                     const Entry& info(index->second);
 
                     _handlers.emplace(std::piecewise_construct,
-                        std::forward_as_tuple(method),
+                        std::forward_as_tuple(std::move(formalMethodName)),
                         std::forward_as_tuple(info));
                 }
 
@@ -926,7 +946,8 @@ POP_WARNING()
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName) const
             {
-                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
+                string formalMethodName = Message::Formalize(methodName);
+                return ((_handlers.find(formalMethodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_METHOD);
             }
             bool HasVersionSupport(const uint8_t number) const
             {
@@ -1020,10 +1041,12 @@ POP_WARNING()
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -1032,11 +1055,13 @@ POP_WARNING()
             }
             void Register(const string& methodName, const CallbackFunction& lambda)
             {
+                string formalMethodName = Message::Formalize(methodName);
+
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
 
                 auto retval = _handlers.emplace(std::piecewise_construct,
-                                    std::make_tuple(methodName),
+                                    std::make_tuple(std::move(formalMethodName)),
                                     std::make_tuple(lambda));
 
                 if ( retval.second == false ) {
@@ -1048,23 +1073,28 @@ POP_WARNING()
                 ASSERT(methodName.empty() == false);
                 ASSERT(primaryName.empty() == false);
 
-                auto retval = _handlers.find(primaryName);
+                string formalMethodName = Message::Formalize(methodName);
+                string formalPrimaryName = Message::Formalize(primaryName);
+
+                auto retval = _handlers.find(formalPrimaryName);
                 ASSERT(retval != _handlers.end());
 
-                auto retvalAlias = _handlers.find(methodName);
+                auto retvalAlias = _handlers.find(formalMethodName);
                 ASSERT(retvalAlias == _handlers.end());
 
                 // Register the handler under an alternative name.
 
                 if ((retval != _handlers.end()) && (retvalAlias == _handlers.end()))  {
                     _handlers.emplace(std::piecewise_construct,
-                        std::make_tuple(methodName),
+                        std::make_tuple(std::move(formalMethodName)),
                         std::make_tuple(retval->second));
                 }
             }
             void Unregister(const string& methodName)
             {
-                HandlerMap::iterator index = _handlers.find(methodName);
+                string formalMethodName = Message::Formalize(methodName);
+
+                HandlerMap::iterator index = _handlers.find(formalMethodName);
 
                 ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 
