@@ -28,12 +28,15 @@ namespace Thunder {
 
         static Plugin::Metadata<Plugin::Controller> metadata(
             // Version (Major, Minor, Patch)
-            1, 0, 0,
-            // Preconditions
+            1, 0, 0, 
+
+            // precondition
             {},
-            // Terminations
+
+            // terminaltion
             {},
-            // Controls
+
+            // control
             {}
         );
 
@@ -805,27 +808,37 @@ namespace Plugin {
     Core::hresult Controller::Invoke(const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) /* override */
     {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
-        string callsign(Core::JSONRPC::Message::Callsign(method));
 
-        if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
+        const size_t indexDelimiter = method.find_last_of(TCHAR('@'));
+        const size_t compositeDelimiter = method.find_last_of(PluginHost::ICompositPlugin::Delimiter, indexDelimiter);
+        string callsign;
+
+        if ((compositeDelimiter == string::npos) && (((callsign = Core::JSONRPC::Message::Callsign(method), callsign.empty() == true) || (callsign == PluginHost::JSONRPC::Callsign())))) {
             result = PluginHost::JSONRPC::Invoke(channelId, id, token, method, parameters, response);
         }
         else {
             Core::ProxyType<PluginHost::IShell> service;
 
-            result = _pluginServer->Services().FromIdentifier(callsign, service);
+            if (compositeDelimiter != string::npos) {
+                // Composite designator: split it into bridge and callsign
+                const size_t versionDelimiter = method.find_last_of(TCHAR('.'), compositeDelimiter);
+                const string bridge = method.substr(0, (versionDelimiter == string::npos? compositeDelimiter : versionDelimiter));
+                callsign = Core::JSONRPC::Message::Callsign(method.substr(compositeDelimiter + 1));
+                result =  _pluginServer->Services().FromIdentifier(bridge, (callsign.empty() == true? PluginHost::JSONRPC::Callsign() : callsign), service);
+            }
+            else {
+                result = _pluginServer->Services().FromIdentifier(callsign, service);
+            }
 
             if (result == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
+                ASSERT(service.IsValid() == true);
+
                 PluginHost::IShell::state currrentState = service->State();
-                if (currrentState != PluginHost::IShell::state::ACTIVATED)
-                {
+
+                if (currrentState != PluginHost::IShell::state::ACTIVATED) {
                     result = (currrentState == PluginHost::IShell::state::HIBERNATED ? Core::ERROR_HIBERNATED : Core::ERROR_UNAVAILABLE);
-                    response = (currrentState == PluginHost::IShell::state::HIBERNATED ? _T("Service is hibernated") : _T("Service is not active"));
                 }
                 else {
-                    ASSERT(service.IsValid());
-
                     PluginHost::IDispatcher* dispatcher = service->QueryInterface<PluginHost::IDispatcher>();
 
                     if (dispatcher != nullptr) {
@@ -1170,16 +1183,21 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 string info;
-                const string& callsign(it.Current()->Callsign());
+                const string& cs(it.Index());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
+
+                    if (cs.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
+                        meta.Callsign = cs;
+                    }
+
                     IMetadata::Data::Service service(meta);
 
                     // Make sure the list is sorted..
                     std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < callsign)) {
+                    while ((index != services.end()) && (index->Callsign < cs)) {
                         index++;
                     }
                     services.insert(index, service);
@@ -1418,7 +1436,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult Controller::Version(IMetadata::Data::Version& version) const
+    Core::hresult Controller::Framework(IMetadata::Data::Version& version) const
     {
         PluginHost::Metadata::Version ver;
 
@@ -1594,9 +1612,9 @@ namespace Plugin {
             buildInfo.WCharSupport = true;
         #endif
 
-        #ifdef THREADPOOL_COUNT
-            buildInfo.ThreadPoolCount = THREADPOOL_COUNT;
-        #endif
+        ASSERT(_pluginServer != nullptr);
+
+        buildInfo.ThreadPoolCount = _pluginServer->Configuration().ThreadPoolCount();
 
         buildInfo.COMRPCTimeOut = RPC::CommunicationTimeOut;
 

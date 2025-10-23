@@ -378,8 +378,9 @@ namespace Controller {
         virtual Core::hresult Proxies(const Core::OptionalType<string>& linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
+        // @alt-deprecated:version
         // @brief Framework version
-        virtual Core::hresult Version(Data::Version& version /* @out */) const = 0;
+        virtual Core::hresult Framework(Data::Version& version /* @out */) const = 0;
 
         // @property
         // @brief Workerpool threads
