@@ -322,17 +322,18 @@ namespace Core {
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
 
-#ifndef __POSIX__
+#ifdef __POSIX__
+            for (int index = _administration->_agents.load(); index != 0; index--) {
+                pthread_cond_signal(&(_administration->_signal));
+            }
+#else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
+
             uint8_t count = 0;
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
-#ifdef __POSIX__
-                int retval = pthread_cond_broadcast(&(_administration->_signal));
-                ASSERT(retval == 0); DEBUG_VARIABLE(retval);
-#endif
                 Core::Thread::Yield(count);
             }
         }
@@ -346,9 +347,9 @@ namespace Core {
 
         _alert = true;
 
-        AdminUnlock();
-
         Reevaluate();
+
+        AdminUnlock();
     }
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length, bool partialRead)
@@ -499,10 +500,10 @@ namespace Core {
 
             if (startingEmpty) {
                 // Was empty before, tell observers about new data.
-                Reevaluate();
 
                 AdminLock();
 
+                Reevaluate();
                 DataAvailable();
 
                 AdminUnlock();
@@ -647,11 +648,7 @@ namespace Core {
             _administration->_lockPID = 0;
             std::atomic_fetch_and(&(_administration->_state), static_cast<uint16_t>(~state::LOCKED));
 
-            AdminUnlock();
-
             Reevaluate();
-
-            AdminLock();
 
             result = Core::ERROR_NONE;
         }
