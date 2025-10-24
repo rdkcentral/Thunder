@@ -75,7 +75,7 @@ namespace Controller {
 
         // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @default:1 @restrict:1..255 */) = 0;
+        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @restrict:1..255 */) = 0;
 
         // @property
         // @brief SSDP network discovery results
