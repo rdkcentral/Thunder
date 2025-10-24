@@ -59,10 +59,6 @@ namespace PluginHost {
             ~Config() = default;
 
         public:
-            inline bool IsSupported(const uint8_t number) const
-            {
-                return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
-            }
             inline void Configuration(const string& value)
             {
                 _config.Configuration = value;
@@ -115,26 +111,6 @@ namespace PluginHost {
             inline void Update(const Plugin::Config& config)
             {
                 _config = config;
-
-                _versions.clear();
-
-                // Extract the version list from the config
-                Core::JSON::ArrayType<Core::JSON::DecUInt8> versions;
-                Core::OptionalType<Core::JSON::Error> error;
-                versions.FromString(config.Versions.Value(), error);
-                if (error.IsSet() == true) {
-                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-                }
-                Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
-
-                while (index.Next() == true) {
-                    _versions.push_back(index.Current().Value());
-                }
-
-                // If no versions are give, lets assume this is version 1, and we support it :-)
-                if (_versions.empty() == true) {
-                    _versions.push_back(1);
-                }
             }
 
         private:
@@ -145,7 +121,6 @@ namespace PluginHost {
             string _volatilePath;
             string _dataPath;
             string _accessor;
-            std::list<uint8_t> _versions;
         };
 
     public:
@@ -173,10 +148,6 @@ namespace PluginHost {
         ~Service() override = default;
 
     public:
-        string Versions() const override
-        {
-            return (_config.Configuration().Versions.Value());
-        }
         string Locator() const override
         {
             return (_config.Configuration().Locator.Value());
@@ -262,10 +233,6 @@ namespace PluginHost {
             _config.StartMode(value);
 
             return (Core::ERROR_NONE);
-        }
-        bool IsSupported(const uint8_t number) const override
-        {
-            return (_config.IsSupported(number));
         }
 
         // As a service, the plugin could act like a WebService. The Webservice hosts files from a location over the

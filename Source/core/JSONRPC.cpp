@@ -26,6 +26,12 @@ namespace Core {
     namespace JSONRPC {
 
         /* static */ constexpr TCHAR Message::DefaultVersion[];
+        /* static */ constexpr TCHAR Message::KeyId[];
+        /* static */ constexpr TCHAR Message::KeyParameters[];
+        /* static */ constexpr TCHAR Message::KeyMethod[];
+        /* static */ constexpr TCHAR Message::KeyResult[];
+        /* static */ constexpr TCHAR Message::KeyError[];
+
     }
 }
 } // namespace Thunder::Core::JSONRPC
