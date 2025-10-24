@@ -157,7 +157,7 @@ This method takes no parameters.
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
-| result | array | mandatory | A list ofsinterfaces with their version numbers<br>*Array length must be in range [1..256] elements.* |
+| result | array | mandatory | A list ofsinterfaces with their version numbers<br>*Array length must be at most 255 elements.* |
 | result[#] | object | mandatory | *...* |
 | result[#].name | string | mandatory | Name of the interface |
 | result[#].major | integer | mandatory | Major part of version number |
