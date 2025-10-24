@@ -255,7 +255,6 @@ namespace Core {
         uint32_t result = waitTime;
 
         if (waitTime != Core::infinite) {
-#ifdef __POSIX__
             auto start = std::chrono::steady_clock::now();
             auto finish = start + std::chrono::milliseconds(waitTime);
 
@@ -264,7 +263,11 @@ namespace Core {
 
             struct timespec structTime = { seconds.count(), (nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count() };
 
+#ifdef __POSIX__
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
+#else
+            if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
+#endif
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
                 // Prevent overflow
@@ -278,13 +281,6 @@ namespace Core {
 
                 TRACE_L1("End wait. %d\n", result);
             }
-#else
-            if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {
-
-                // Calculate the time we used, and subtract it from the waitTime.
-                result = 100;
-            }
-#endif
         } else {
 #ifdef __POSIX__
             pthread_cond_wait(&(_administration->_signal), &(_administration->_mutex));
