@@ -15,16 +15,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-#pragma once
+*/
 
 #include "Module.h"
-#include "interfaces/IStateControl.h"
 
-namespace Thunder {
-
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
-
-}
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)

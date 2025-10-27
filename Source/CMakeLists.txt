@@ -30,6 +30,8 @@ option(COM
         "Include the COM library." ON)
 option(PROCESS
         "Include the COM hosting process executable." ON)
+option(INTERFACES
+        "Include the interfaces library." ON)
 option(PLUGINS
         "Include plugins library." ON)
 option(EXECUTABLE
@@ -112,6 +114,10 @@ add_subdirectory(extensions)
 
 if(COM)
     add_subdirectory(com)
+endif()
+
+if(INTERFACES)
+    add_subdirectory(interfaces)
 endif()
 
 if(PLUGINS)

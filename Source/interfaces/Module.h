@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2025 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,15 @@
 
 #pragma once
 
-#include "Module.h"
-#include "interfaces/IStateControl.h"
+#ifndef MODULE_NAME
+#define MODULE_NAME Interfaces
+#endif
 
-namespace Thunder {
+#include <core/core.h>
+#include <com/com.h>
+#include <messaging/messaging.h>
 
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::command)
-ENUM_CONVERSION_HANDLER(PluginHost::IStateControl::state)
-
-}
+#if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif

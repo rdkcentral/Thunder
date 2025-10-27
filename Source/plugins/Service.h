@@ -24,8 +24,8 @@
 #include "Configuration.h"
 #include "Metadata.h"
 #include "System.h"
-#include "IPlugin.h"
-#include "IShell.h"
+#include "interfaces/IPlugin.h"
+#include "interfaces/IShell.h"
 
 namespace Thunder {
 namespace PluginHost {

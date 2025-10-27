@@ -23,8 +23,8 @@
 #include "Configuration.h"
 
 #include "IController.h"
-#include <plugins/json/JsonData_Metadata.h>
-#include <plugins/json/JsonData_Discovery.h>
+#include <interfaces/json/JsonData_Metadata.h>
+#include <interfaces/json/JsonData_Discovery.h>
 
 namespace Thunder {
 namespace PluginHost {

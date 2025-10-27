@@ -26,7 +26,7 @@
 #include "IController.h"
 #include "PostMortem.h"
 
-#include <plugins/json/json_IController.h>
+#include <interfaces/json/json_IController.h>
 
 namespace Thunder {
 namespace Plugin {

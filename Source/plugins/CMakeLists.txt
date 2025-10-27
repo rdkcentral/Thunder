@@ -16,25 +16,11 @@
 # limitations under the License.
 
 set(TARGET ${NAMESPACE}Plugins)
-set(TARGET_PROXYSTUBS ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IShell.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::Exchange" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStateController.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-ProxyStubGenerator(NAMESPACE "Thunder::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IDispatcher.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/..")
-
-JsonGenerator(CODE NAMESPACE Thunder::Exchange::Controller INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
-JsonGenerator(CODE NAMESPACE Thunder::PluginHost INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IStateController.h OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/json" INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." NO_INCLUDES)
-
-file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
-file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
-list(APPEND JSON_CODE_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JStateController.h")
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_BINARY_DIR}/Source/interfaces/json/JsonEnum_*.cpp")
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -50,24 +36,11 @@ add_library(${TARGET} SHARED
         ${JSON_ENUM_SOURCES}
         )
 
-file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/ProxyStubs*.cpp")
-add_library(${TARGET_PROXYSTUBS} SHARED
-        ${PROXY_STUB_SOURCES}
-        Module.cpp
-        )
-
 set(PUBLIC_HEADERS
         Channel.h
         Config.h
         Configuration.h
-        IPlugin.h
-        IShell.h
-        IController.h
-        IStateControl.h
-        IStateController.h
         StateControl.h
-        ISubSystem.h
-        IDispatcher.h
         SubSystem.h
         JSONRPC.h
         Metadata.h
@@ -77,7 +50,6 @@ set(PUBLIC_HEADERS
         System.h
         Types.h
         VirtualInput.h
-        IVirtualInput.h
         Module.h
         )
 
@@ -88,6 +60,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
           ${NAMESPACE}COM::${NAMESPACE}COM
           ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+          ${NAMESPACE}Interfaces
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
@@ -99,29 +72,12 @@ if (WARNING_REPORTING)
             )
 endif()
 
-# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
-# as usage of those deprecated methods is valid here
-target_compile_options(${TARGET_PROXYSTUBS} PRIVATE -Wno-deprecated-declarations)
-
-target_link_libraries(${TARGET_PROXYSTUBS}
-        PRIVATE
-          CompileSettingsDebug::CompileSettingsDebug
-          ${NAMESPACE}Core::${NAMESPACE}Core
-          ${NAMESPACE}COM::${NAMESPACE}COM
-          ${NAMESPACE}Messaging::${NAMESPACE}Messaging
-        )
-
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
+          $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/Source>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
-        )
-
-target_include_directories( ${TARGET_PROXYSTUBS}
-        PRIVATE
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces>
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -138,18 +94,6 @@ set_target_properties(${TARGET} PROPERTIES
         )
 endif()
 
-set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
-        CXX_STANDARD 11
-        CXX_STANDARD_REQUIRED YES
-        FRAMEWORK FALSE
-        SOVERSION ${VERSION_MAJOR}
-        )
-
-if(HUMAN_VERSIONED_BINARIES)
-set_target_properties(${TARGET} PROPERTIES
-        VERSION ${VERSION}
-        )
-endif()
 
 # ===========================================================================================
 # Install ARTIFACTS:
@@ -164,21 +108,6 @@ install(
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
 
-install(
-        FILES ${JSON_DATA_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT ${NAMESPACE}_Development
-        FILES ${JSON_CODE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/plugins/json COMPONENT ${NAMESPACE}_Development
-)
-
-install(
-        TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets      
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Development
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs COMPONENT ${NAMESPACE}_Development
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs
-)
-
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
@@ -189,5 +118,3 @@ InstallPackageConfig(
 InstallCMakeConfig(
         EXTRA_DEPENDENCIES "ConfigGenerator"
         TARGETS ${TARGET})
-
-InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})
