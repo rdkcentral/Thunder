@@ -2698,7 +2698,6 @@ namespace Core {
             demoObject["f"] = object;
             string serialized;
             demoObject.ToString(serialized);
-            printf("serialized-%s\n",serialized.c_str());
             EXPECT_STREQ(input.c_str(), serialized.c_str());
 
             JsonObject::Iterator index = demoObject.Variants();
@@ -2938,7 +2937,6 @@ namespace Core {
             printf("\n\n Case 21: \n");
             printf("input  %zd --- = %s \n", input.length(), input.c_str());
             printf("output %zd --- = %s \n", output.length(), output.c_str());
-            printf("json value --= %s \n",json.Value().c_str());
             EXPECT_STREQ(input.c_str(), json.Value().c_str());
 
 
