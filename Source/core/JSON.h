@@ -2005,17 +2005,12 @@ namespace Core {
                         }
 
                         if (finished == false) {
-                            if ((_flagsAndCounters & QuotedAreaBit) != 0) {
-                                // Write the amount we possibly can..
-                                _value += current;
-                            }
-                            else if (::isspace(static_cast<uint8_t>(current)) == false) {
-                                // If we are creating an opaque string, drop all whitespaces if possible.
-                                _value += current;
+                            // Write the amount we possibly can..
+                            _value += current;
 
-                                // See if we are done, if this is the last close marker, we bail out..
-                                finished = (((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']')));
-                            }
+                            // See if we are done, if this is the last close marker, we bail out..
+                            finished = ((((_flagsAndCounters & 0x1F) == 0) && ((current == '}') || (current == ']'))) || (result == maxLength -2));
+
 
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
