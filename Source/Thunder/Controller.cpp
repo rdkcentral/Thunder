@@ -810,7 +810,7 @@ namespace Plugin {
         Core::hresult result = Core::ERROR_BAD_REQUEST;
 
         const size_t indexDelimiter = method.find_last_of(TCHAR('@'));
-        const size_t compositeDelimiter = method.find_last_of(TCHAR('/'), indexDelimiter);
+        const size_t compositeDelimiter = method.find_last_of(PluginHost::ICompositPlugin::Delimiter, indexDelimiter);
         string callsign;
 
         if ((compositeDelimiter == string::npos) && (((callsign = Core::JSONRPC::Message::Callsign(method), callsign.empty() == true) || (callsign == PluginHost::JSONRPC::Callsign())))) {
@@ -1183,16 +1183,21 @@ namespace Plugin {
 
             while (it.Next() == true) {
                 string info;
-                const string& callsign(it.Current()->Callsign());
+                const string& cs(it.Index());
 
                 if (it.Current().operator->()->Metadata(info) == Core::ERROR_NONE) {
                     PluginHost::Metadata::Service meta;
                     meta.FromString(info);
+
+                    if (cs.find(PluginHost::ICompositPlugin::Delimiter) != string::npos) {
+                        meta.Callsign = cs;
+                    }
+
                     IMetadata::Data::Service service(meta);
 
                     // Make sure the list is sorted..
                     std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < callsign)) {
+                    while ((index != services.end()) && (index->Callsign < cs)) {
                         index++;
                     }
                     services.insert(index, service);
