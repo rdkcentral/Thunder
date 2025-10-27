@@ -334,7 +334,7 @@ public :
 
     // Illustrate the result with the proposed patch applied
     // As a result, this test succeeds.
-    TEST(METROL_1188, AccessGood)
+    TEST(METROL_1192, AccessGood)
     {
         constexpr uint32_t maxWaitTime{ 1000 };
 
