@@ -62,6 +62,7 @@ namespace Thunder {
 
                 // Disable the queue and flush all entries.
                 Disable();
+				Flush();
             }
 
             typedef enum {
@@ -558,6 +559,10 @@ namespace Thunder {
             ~CategoryQueueType()
             {
                 TRACE_L5("Destructor CategoryQueueType <%p>", (this));
+
+				// Disable the queue and flush all entries.
+                Disable();
+				Flush();
             }
 
         public:
