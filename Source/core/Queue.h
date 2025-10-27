@@ -580,7 +580,7 @@ namespace Thunder {
                     _queue.erase(index);
 
                     // Determine the new state.
-                    if (_state.GetState() != DISABLED) {
+                    if (_state != DISABLED) {
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     }
                 }
