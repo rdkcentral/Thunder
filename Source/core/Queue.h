@@ -222,7 +222,7 @@ namespace Thunder {
                 _adminLock.Lock();
 
                 if (_state == DISABLED) {
-                    _state.SetState(EMPTY);
+                    _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                 }
 
                 // Done with the administration. Release the lock.
@@ -744,22 +744,19 @@ namespace Thunder {
 
                     typename Categories::iterator categoryIndex = _categories.begin();
 
-                    if (_state != DISABLED) {
-                        // Submit (if possible) a new one from high Prio to low..
-                        while ((categoryIndex != _categories.end()) && (categoryIndex->HasEntry() == false)) {
-                            categoryIndex++;
-                        }
+                    // Submit (if possible) a new one from high Prio to low..
+                    while ((categoryIndex != _categories.end()) && (categoryIndex->HasEntry() == false)) {
+                        categoryIndex++;
+                    }
 
-                        if (categoryIndex == _categories.end()) {
-                            // Determine the new state.
-                            _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
-                        }
-                        else {
-                            // We have a new entry to submit, so we can post it.
-                            _queue.emplace_back(std::make_pair(categoryIndex->Category(), categoryIndex->Extract()));
-                            // Determine the new state.
-                            _state.SetState(IsFull() ? LIMITED : ENTRIES);
-                        }
+                    if (categoryIndex != _categories.end()) {
+                        // We have a new entry to submit, so we can post it.
+                        _queue.emplace_back(std::make_pair(categoryIndex->Category(), categoryIndex->Extract()));
+                    }
+
+                    if (_state != DISABLED) {
+                        // Determine the new state if not disabled
+                        _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                     }
                 }
 
@@ -772,7 +769,7 @@ namespace Thunder {
                 _adminLock.Lock();
 
                 if (_state == DISABLED) {
-                    _state.SetState(EMPTY);
+                    _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                 }
 
                 // Done with the administration. Release the lock.
