@@ -568,28 +568,28 @@ namespace Thunder {
                 // This needs to be atomic. Make sure it is.
                 _adminLock.Lock();
 
-                typename Entries::iterator index(_queue.begin());
-                
-                while ((index != _queue.end()) && (index->second != entry)) {
-                    ++index;
-                }
+                if (_state != DISABLED) {
+                    typename Entries::iterator index(_queue.begin());
 
-                if (index != _queue.end()) {
-                    // Yep, we found it, remove it
-                    removed = true;
-                    _queue.erase(index);
+                    while ((index != _queue.end()) && (index->second != entry)) {
+                        ++index;
+                    }
 
-                    // Determine the new state.
-                    if (_state != DISABLED) {
+                    if (index != _queue.end()) {
+                        // Yep, we found it, remove it
+                        removed = true;
+                        _queue.erase(index);
+
+                        // Determine the new state.
                         _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
                     }
-                }
-                else {
-                    typename Categories::iterator categoryIndex = _categories.begin();
-                    while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
-                        categoryIndex++;
+                    else {
+                        typename Categories::iterator categoryIndex = _categories.begin();
+                        while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
+                            categoryIndex++;
+                        }
+                        removed = categoryIndex != _categories.end();
                     }
-                    removed = categoryIndex != _categories.end();
                 }
 
                 // Done with the administration. Release the lock.
