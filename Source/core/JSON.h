@@ -3212,7 +3212,7 @@ namespace Core {
                     return false;
                 }
 
-                for (uint32_t i = 0; i < aLength; ++i) {
+                for (uint16_t i = 0; i < aLength; ++i) {
                     if (!((*this)[i] == RHS[i])) {
                         return false;
                     }
@@ -4983,17 +4983,17 @@ namespace Core {
                 case type::EMPTY:
                     return true;
                 case type::BOOLEAN:
-                    return Boolean() == other.Boolean();        
-                case type::STRING:       
-                    return String() == other.String();      
-                case type::NUMBER:        
-                    return Number() == other.Number();        
+                    return Boolean() == other.Boolean();
+                case type::STRING:
+                    return String() == other.String();
+                case type::NUMBER:
+                    return Number() == other.Number();
                 case type::FLOAT:
-                    return Float() == other.Float();       
-                case type::DOUBLE:       
-                    return Double() == other.Double();        
+                    return Float() == other.Float();
+                case type::DOUBLE:
+                    return Double() == other.Double();
                 case type::ARRAY:
-                   return Array() == other.Array();
+                    return Array() == other.Array();
                 case type::OBJECT:
                     return Object() == other.Object();
             }
