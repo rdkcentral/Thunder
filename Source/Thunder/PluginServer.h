@@ -2500,7 +2500,9 @@ namespace PluginHost {
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
+                        PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
                         observer->Revoked(remote, interfaceId);
+                        POP_WARNING()
                     }
 
                     _adminLock.Unlock();
