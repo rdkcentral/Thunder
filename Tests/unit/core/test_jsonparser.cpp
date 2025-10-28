@@ -2922,6 +2922,24 @@ namespace Core {
             printf("     expected_output --- = %s \n", expected_output);
             EXPECT_STREQ(expected_output, output.c_str());
 
+            input = R"json({"payload":"This is test\" message"})json";
+            Thunder::Core::JSON::String json;
+            json.FromString(input);
+            json.ToString(output);
+            printf("\n\n Case 20: \n");
+            printf("input  %zd --- = %s \n", input.length(), input.c_str());
+            printf("output %zd --- = %s \n", output.length(), output.c_str());
+            EXPECT_STREQ(input.c_str(), json.Value().c_str());
+
+            input = R"json({"payload":"This is test\" message"}\}\}"})json";
+            json.FromString(input);
+            json.ToString(output);
+            printf("\n\n Case 21: \n");
+            printf("input  %zd --- = %s \n", input.length(), input.c_str());
+            printf("output %zd --- = %s \n", output.length(), output.c_str());
+            EXPECT_STREQ(input.c_str(), json.Value().c_str());
+
+
         }
     }
 
