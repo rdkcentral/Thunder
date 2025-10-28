@@ -3205,6 +3205,26 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const ArrayType<ELEMENT>& RHS) const
+            {
+                const uint16_t aLength = this->Length();
+                if (aLength != RHS.Length()) {
+                    return false;
+                }
+
+                for (uint32_t i = 0; i < aLength; ++i) {
+                    if (!((*this)[i] == RHS[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            bool operator!=(const ArrayType<ELEMENT>& RHS) const
+            {
+                return !(*this == RHS);
+            }
+
         public:
             // IElement and IMessagePack iface:
             bool IsSet() const override
@@ -4524,6 +4544,9 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const Variant& other) const;
+            bool operator!=(const Variant& other) const;
+
             inline void ToString(string& result) const;
 
             // IElement and IMessagePack iface:
@@ -4700,7 +4723,6 @@ namespace Core {
                 , _elements(std::move(move._elements))
             {
                 Elements::iterator index(_elements.begin());
-
                 while (index != _elements.end()) {
                     ASSERT (HasLabel(index->first.c_str()));
                     Container::Add(index->first.c_str(), &(index->second));
@@ -4792,6 +4814,33 @@ namespace Core {
                 return (*this);
             }
 
+            bool operator==(const VariantContainer& RHS) const
+            {
+                if (this->Size() != RHS.Size()) {
+                    return false;
+                }
+
+                auto it = this->Variants();
+                while (it.Next()) {
+                    const TCHAR* key = it.Label();
+                    const JSON::Variant* valRHS = RHS.FindValue(key);
+
+                    if (valRHS == nullptr) {
+                        return false;
+                    }
+
+                    if (!(it.Current() == *valRHS)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            bool operator!=(const VariantContainer& RHS) const
+            {
+                return !(*this == RHS);
+            }
+
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
                 Elements::iterator index(Find(fieldName));
@@ -4851,6 +4900,12 @@ namespace Core {
             bool HasLabel(const TCHAR labelName[]) const
             {
                 return (Find(labelName) != _elements.end());
+            }
+
+            const JSON::Variant* FindValue(const TCHAR key[]) const
+            {
+                Elements::const_iterator index(Find(key));
+                return (index == _elements.end() ? nullptr : &index->second);
             }
 
             Iterator Variants() const
@@ -4916,6 +4971,38 @@ namespace Core {
             VariantContainer result;
             result.FromString(Value());
             return (result);
+        }
+
+        inline bool Variant::operator==(const Variant& other) const
+        {
+            if (_type != other._type) {
+                return false;
+            }
+
+            switch (_type) {
+                case type::EMPTY:
+                    return true;
+                case type::BOOLEAN:
+                    return Boolean() == other.Boolean();        
+                case type::STRING:       
+                    return String() == other.String();      
+                case type::NUMBER:        
+                    return Number() == other.Number();        
+                case type::FLOAT:
+                    return Float() == other.Float();       
+                case type::DOUBLE:       
+                    return Double() == other.Double();        
+                case type::ARRAY:
+                   return Array() == other.Array();
+                case type::OBJECT:
+                    return Object() == other.Object();
+            }
+            return false;
+        }
+
+        inline bool Variant::operator!=(const Variant& other) const
+        {
+            return !(*this == other);
         }
 
         inline bool Variant::IsValid() const {
