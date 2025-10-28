@@ -127,7 +127,7 @@ class WorkerPoolTestAdministrator
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
-                : WorkerPool(threads, stackSize, queueSize, &_dispatcher)
+                : WorkerPool(threads, stackSize, queueSize, &_dispatcher, (threads > 2 ? (threads - 1) : 1), (threads > 2 ? (threads - 1) : 1))
                 , _dispatcher(){ }
 
             ~WorkerPoolImplementation()

@@ -163,8 +163,8 @@ namespace PluginHost {
             WorkerPoolImplementation& operator=(WorkerPoolImplementation&&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-            WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPool(THREADPOOL_COUNT, stackSize, 8 * THREADPOOL_COUNT, &_dispatch, this)
+            WorkerPoolImplementation(const uint8_t threadCount, const uint32_t stackSize, const uint8_t lowPriorityThreadCount, const uint8_t mediumPriorityThreadCount)
+                : Core::WorkerPool(threadCount, stackSize, 8 * threadCount, &_dispatch, this, lowPriorityThreadCount, mediumPriorityThreadCount)
                 , _dispatch()
             {
                 Run();
@@ -1055,15 +1055,11 @@ namespace PluginHost {
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if(IsHibernated() == true)
-                    {
+                    if (IsHibernated() == true) {
                         response->Error.SetError(Core::ERROR_HIBERNATED);
-                        response->Error.Text = _T("Service is hibernated");
                     }
-                    else
-                    {
+                    else {
                         response->Error.SetError(Core::ERROR_UNAVAILABLE);
-                        response->Error.Text = _T("Service is not active");
                     }
                     response->Id = message.Id;
                 }
@@ -1081,14 +1077,14 @@ namespace PluginHost {
                     if ( (result != static_cast<uint32_t>(~0)) && ( (message.Id.IsSet()) || (result != Core::ERROR_NONE) ) )  {
 
                         response = IFactories::Instance().JSONRPC();
-                        
+
                         if (message.Id.IsSet()) {
                             response->Id = message.Id.Value();
                         }
 
                         if (result == Core::ERROR_NONE) {
                             if (output.empty() == true) {
-                                response->Result.Null(true);;
+                                response->Result.Null(true);
                             }
                             else {
                                 response->Result = output;
@@ -1372,11 +1368,6 @@ namespace PluginHost {
             reason Reason() const override
             {
                 return (_reason);
-            }
-
-            bool HasVersionSupport(const string& number) const
-            {
-                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
             void LoadMetadata() {
@@ -1963,6 +1954,10 @@ namespace PluginHost {
                     }
                     return (_index != _container.end());
                 }
+                const string& Index() const {
+                    ASSERT(IsValid());
+                    return (_index->first);
+                }
                 Core::ProxyType<PluginHost::IShell> Current() {
                     ASSERT(IsValid());
                     return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
@@ -1970,17 +1965,12 @@ namespace PluginHost {
                 uint32_t Count() const {
                     return (static_cast<uint32_t>(_container.size()));
                 }
-                Core::ProxyType<PluginHost::IShell> operator->()
-                {
+                Core::ProxyType<PluginHost::IShell> operator->() {
                     ASSERT(IsValid());
-
                     return (Core::ProxyType<PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
-
-                Core::ProxyType<const PluginHost::IShell> operator->() const
-                {
+                Core::ProxyType<const PluginHost::IShell> operator->() const {
                     ASSERT(IsValid());
-
                     return (Core::ProxyType<const PluginHost::IShell>(static_cast<Core::IReferenceCounted&>(*_index->second), *_index->second));
                 }
 
@@ -2510,7 +2500,9 @@ namespace PluginHost {
                     _adminLock.Lock();
 
                     for (auto& observer : _requestObservers) {
+                        PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
                         observer->Revoked(remote, interfaceId);
+                        POP_WARNING()
                     }
 
                     _adminLock.Unlock();
@@ -3308,54 +3300,45 @@ namespace PluginHost {
                 _adminLock.Unlock();
             }
 
-            uint32_t FromIdentifier(const string& callSign, Core::ProxyType<IShell>& service)
+            uint32_t FromIdentifier(const string& composite, const string& callsign, Core::ProxyType<IShell>& service)
             {
-                size_t pos = callSign.find_first_of(PluginHost::ICompositPlugin::Delimiter);
-                // This can be a Composite plugin identifier..
-                string baseName = (pos == string::npos ? callSign : callSign.substr(0, pos));
-                size_t versionDot = baseName.find('.');
-                string namePart = (versionDot == string::npos ? baseName : baseName.substr(0, versionDot));
-                string versionPart;
-
-                if (versionDot != string::npos) {
-                    versionPart = baseName.substr(versionDot + 1);
-                }
-
-                Core::ProxyType<Service> selected;
-                uint32_t result = Core::ERROR_UNAVAILABLE;
+                uint32_t result = Core::ERROR_NOT_EXIST;
 
                 _adminLock.Lock();
 
-                auto it = _services.find(namePart);
+                auto it = _services.find(composite);
 
                 if (it != _services.end()) {
+                    ASSERT(it->second != nullptr);
 
-                    if (versionPart.empty()) {
-                        // Service found, did not requested specific version
-                        selected = it->second;
+                    service = it->second->Composits().Source(callsign);
+
+                    if (service.IsValid() == true) {
                         result = Core::ERROR_NONE;
-                    }
-                    else if (it->second->HasVersionSupport(versionPart) == true) {
-                        // Requested specific version of a plugin, and this version is supported!
-                        selected = it->second;
-                        result = Core::ERROR_NONE;
-                    }
-                    else {
-                        // Requested version is not supported
-                        result = Core::ERROR_INVALID_SIGNATURE;
                     }
                 }
+
                 _adminLock.Unlock();
 
-                if (selected.IsValid() == true) {
-                    if (pos == string::npos) {
-                        service = Core::ProxyType<IShell>(selected);
-                    }
-                    else {
-                        service = selected->Composits().Source(callSign.substr(pos + 1));
-                        result = (service.IsValid() == false ? Core::ERROR_UNKNOWN_KEY : Core::ERROR_NONE);
-                    }
+                return (result);
+            }
+
+            uint32_t FromIdentifier(const string& callsign, Core::ProxyType<IShell>& service)
+            {
+                uint32_t result = Core::ERROR_NOT_EXIST;
+
+                _adminLock.Lock();
+
+                auto it = _services.find(callsign);
+
+                if (it != _services.end()) {
+                    ASSERT(it->second != nullptr);
+
+                    service = Core::ProxyType<IShell>(it->second);
+                    result = Core::ERROR_NONE;
                 }
+
+                _adminLock.Unlock();
 
                 return (result);
             }
@@ -3994,12 +3977,14 @@ namespace PluginHost {
                     }
 
                     if (_element.IsValid()) {
-                        // Fire and forget, We are done !!!
                         Job::Submit(_element);
-                        _element.Release();
                     }
 
                     Job::Completed();
+
+                    if (_element.IsValid()) {
+                        _element.Release();
+                    }
                 }
                 string Identifier() const override {
                     if (_jsonrpc == true) {
@@ -4388,7 +4373,6 @@ namespace PluginHost {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
                             message->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
-                            message->Error.Text = _T("method invokation not allowed.");
                             Submit(Core::ProxyType<Core::JSON::IElement>(message));
                         }
                     }

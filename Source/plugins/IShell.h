@@ -48,7 +48,7 @@ namespace PluginHost {
 
             struct INotification : virtual public Core::IUnknown {
                 virtual void Dangling(const Core::IUnknown* source, const uint32_t interfaceId) = 0;
-                virtual void Revoked(const Core::IUnknown* remote, const uint32_t interfaceId) = 0;
+                DEPRECATED virtual void Revoked(const Core::IUnknown* remote VARIABLE_IS_NOT_USED, const uint32_t interfaceId VARIABLE_IS_NOT_USED) {};
             };
 
             virtual ~ICOMLink() = default;
@@ -198,9 +198,6 @@ namespace PluginHost {
         //! ClassName: Name of the class to be instantiated for this IShell
         virtual string ClassName() const = 0;
 
-        //! Versions: Returns a JSON Array of versions (JSONRPC interfaces) supported by this plugin.
-        virtual string Versions() const = 0;
-
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
         virtual string Callsign() const = 0;
 
@@ -245,9 +242,6 @@ namespace PluginHost {
         virtual string ConfigLine() const = 0;
         virtual Core::hresult ConfigLine(const string& config) = 0;
         virtual Core::hresult Metadata(string& info /* @out */) const = 0;
-
-        //! Return whether the given version is supported by this IShell instance.
-        virtual bool IsSupported(const uint8_t version) const = 0;
 
         // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
         // status of the sub systems is.
