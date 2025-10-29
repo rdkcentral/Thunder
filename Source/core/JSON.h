@@ -2020,7 +2020,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || IsEscaped(_value))) {
+                            if ((current == '\"') && ((_value.empty() == true) || result <= 1 || IsEscaped(_value))) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -2224,7 +2224,7 @@ namespace Core {
                 // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
                 //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
                 //      'Test \" and \" and than \\\"' are all escaped quotes 
-                uint32_t index = static_cast<uint32_t>(value.length() - 1);
+                uint32_t index = static_cast<uint32_t>(value.length() - 2);
                 uint32_t start = index;
                 while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
                     index--;
