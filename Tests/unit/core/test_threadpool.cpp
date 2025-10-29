@@ -1259,10 +1259,12 @@ namespace Core {
                 EXPECT_EQ(jobRetry.IsValid(), false);
             }
             if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
-                if (threadPool.QueueIsFull() == false) {
+                bool queueWasFull = threadPool.QueueIsFull();
+
+                if (queueWasFull == false) {
                     threadPool.SubmitUsingSelfWorker(job);
                 } else {
-                    EXPECT_EQ(threadPool.QueueIsFull(), true);
+                    EXPECT_EQ(queueWasFull, true);
                     threadPool.SubmitUsingExternalWorker(job, ::Thunder::Core::infinite);
                 }
             }
