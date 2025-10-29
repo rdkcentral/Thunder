@@ -288,22 +288,19 @@ namespace PluginHost {
             AddRef();
             result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
         }
-        else if (id == PluginHost::IDispatcher::ID) {
-            _pluginHandling.Lock();
-            if (_jsonrpc != nullptr) {
-                _jsonrpc->AddRef();
-                result = _jsonrpc;
-            }
-            _pluginHandling.Unlock();
-        }
         else {
             _pluginHandling.Lock();
-
-            if (_handler != nullptr) {
-
-                result = _handler->QueryInterface(id);
+            if (State() == ACTIVATED) {
+                if (id == PluginHost::IDispatcher::ID) {
+                    if (_jsonrpc != nullptr) {
+                        _jsonrpc->AddRef();
+                        result = _jsonrpc;
+                    }
+                }
+                else if (_handler != nullptr) {
+                    result = _handler->QueryInterface(id);
+                }
             }
-
             _pluginHandling.Unlock();
         }
 
