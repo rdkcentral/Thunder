@@ -2229,7 +2229,7 @@ namespace Core {
                 while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
                     index--;
                 }
-                return (((start - index) % 2) == 0);
+                return (((start - index) % 2) == 1);
             }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
