@@ -1259,7 +1259,6 @@ namespace Core {
                 EXPECT_EQ(jobRetry.IsValid(), false);
             }
             if (job.IsValid() && (jobs[i]->IsIdle() != true)) {
-
                 if (threadPool.QueueIsFull() == false) {
                     threadPool.SubmitUsingSelfWorker(job);
                 } else {
