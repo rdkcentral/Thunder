@@ -444,8 +444,7 @@ namespace Core {
                 Close();
 
 #ifdef __POSIX__
-               int errval{0};
-               result = ((errval = remove(_name.c_str())) == 0) || (errval == -1 && (errno == ENOENT));
+                result = (remove(_name.c_str()) == 0);
 #endif
 #ifdef __WINDOWS__
                 result = (::DeleteFile(_name.c_str()) != FALSE);
