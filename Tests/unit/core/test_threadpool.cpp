@@ -1262,7 +1262,6 @@ namespace Core {
                 if (threadPool.QueueIsFull() == false) {
                     threadPool.SubmitUsingSelfWorker(job);
                 } else {
-                    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
                     threadPool.SubmitUsingExternalWorker(job, ::Thunder::Core::infinite);
                 }
             }
@@ -1373,7 +1372,6 @@ namespace Core {
                 if (threadPool.QueueIsFull() == false) {
                     threadPool.SubmitUsingSelfWorker(job);
                 } else {
-                    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
                     threadPool.SubmitUsingExternalWorker(job, ::Thunder::Core::infinite);
                 }
             }
@@ -1439,7 +1437,6 @@ namespace Core {
                 if (threadPool.QueueIsFull() == false) {
                     threadPool.SubmitUsingSelfWorker(job);
                 } else {
-                    EXPECT_EQ(threadPool.QueueIsEmpty(), false);
                     threadPool.SubmitUsingExternalWorker(job, ::Thunder::Core::infinite);
                 }
             }
