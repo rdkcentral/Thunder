@@ -318,18 +318,13 @@ namespace Core {
         if (_administration->_agents.load() > 0) {
 
 #ifdef __POSIX__
-            for (int index = _administration->_agents.load(); index != 0; index--) {
-                pthread_cond_signal(&(_administration->_signal));
-            }
+            pthread_cond_broadcast(&(_administration->_signal));
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
             uint8_t count = 0;
 
-            // Wait till all waiters have seen the trigger..
-            while (_administration->_agents.load() > 0) {
-                Core::Thread::Yield(count);
-            }
+            Core::Thread::Yield(count);
         }
     }
 
