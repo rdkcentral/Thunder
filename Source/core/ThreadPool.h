@@ -541,7 +541,7 @@ namespace Core {
                 Thread::Run();
             }
             void Stop () {
-                Thread::Wait(Thread::STOPPED|Thread::BLOCKED, infinite);
+                Thread::Stop();
             }
             Minion& Me() {
                 return (_minion);
