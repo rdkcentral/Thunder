@@ -62,6 +62,7 @@ namespace Thunder {
 
                 // Disable the queue and flush all entries.
                 Disable();
+				Flush();
             }
 
             typedef enum {
@@ -222,7 +223,7 @@ namespace Thunder {
                 _adminLock.Lock();
 
                 if (_state == DISABLED) {
-                    _state.SetState(EMPTY);
+                    _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                 }
 
                 // Done with the administration. Release the lock.
@@ -558,6 +559,10 @@ namespace Thunder {
             ~CategoryQueueType()
             {
                 TRACE_L5("Destructor CategoryQueueType <%p>", (this));
+
+				// Disable the queue and flush all entries.
+                Disable();
+				Flush();
             }
 
         public:
@@ -568,26 +573,28 @@ namespace Thunder {
                 // This needs to be atomic. Make sure it is.
                 _adminLock.Lock();
 
-                typename Entries::iterator index(_queue.begin());
-                
-                while ((index != _queue.end()) && (index->second != entry)) {
-                    ++index;
-                }
+                if (_state != DISABLED) {
+                    typename Entries::iterator index(_queue.begin());
 
-                if (index != _queue.end()) {
-                    // Yep, we found it, remove it
-                    removed = true;
-                    _queue.erase(index);
-
-                    // Determine the new state.
-                    _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
-                }
-                else {
-                    typename Categories::iterator categoryIndex = _categories.begin();
-                    while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
-                        categoryIndex++;
+                    while ((index != _queue.end()) && (index->second != entry)) {
+                        ++index;
                     }
-                    removed = categoryIndex != _categories.end();
+
+                    if (index != _queue.end()) {
+                        // Yep, we found it, remove it
+                        removed = true;
+                        _queue.erase(index);
+
+                        // Determine the new state.
+                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
+                    }
+                    else {
+                        typename Categories::iterator categoryIndex = _categories.begin();
+                        while ((categoryIndex != _categories.end()) && (categoryIndex->Remove(entry) == false)) {
+                            categoryIndex++;
+                        }
+                        removed = categoryIndex != _categories.end();
+                    }
                 }
 
                 // Done with the administration. Release the lock.
@@ -747,15 +754,14 @@ namespace Thunder {
                         categoryIndex++;
                     }
 
-                    if (categoryIndex == _categories.end()) {
-                        // Determine the new state.
-                        _state.SetState(IsEmpty() ? EMPTY : ENTRIES);
-                    }
-                    else {
+                    if (categoryIndex != _categories.end()) {
                         // We have a new entry to submit, so we can post it.
                         _queue.emplace_back(std::make_pair(categoryIndex->Category(), categoryIndex->Extract()));
-                        // Determine the new state.
-                        _state.SetState(IsFull() ? LIMITED : ENTRIES);
+                    }
+
+                    if (_state != DISABLED) {
+                        // Determine the new state if not disabled
+                        _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                     }
                 }
 
@@ -768,7 +774,7 @@ namespace Thunder {
                 _adminLock.Lock();
 
                 if (_state == DISABLED) {
-                    _state.SetState(EMPTY);
+                    _state.SetState(IsEmpty() ? EMPTY : (IsFull() ? LIMITED : ENTRIES));
                 }
 
                 // Done with the administration. Release the lock.
