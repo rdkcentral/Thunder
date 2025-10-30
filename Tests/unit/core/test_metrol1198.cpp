@@ -32,7 +32,7 @@
 
 #include <core/core.h>
 
-#include "../IPTestAdministrator.h"
+//#include "../IPTestAdministrator.h"
 
 // The tests are 'equivalent' to the flow of ::Thunder::Core::CyclicBuffer with pthread_cond_signal
 // or with pthread_cond_broadcvast as in the proposed patch. They illustrate 'broadcast to wake up any
@@ -94,7 +94,7 @@ namespace Core {
 
                         _agents++;
 
-                        // Any blocked thread / process may continue on a signal, all, 
+                        // Any blocked thread / process may continue on a signal, all,
                         // continue on a broadcast
 
                         // For illustrative purpose the return value has a diffent meaning: error code
@@ -295,7 +295,7 @@ namespace Core {
             uint32_t result{ ::Thunder::Core::ERROR_NONE };
 
             int errval{ 0 };
-            
+
             // Flow of interest at ::Thunder::Core::CyclicBuffer:
             // 1. agents > 0, eg, there are blocked threads / processes
             // 2. at least one unique blocked thread / process is released
@@ -343,7 +343,7 @@ namespace Core {
             uint32_t result{ ::Thunder::Core::ERROR_INVALID_PARAMETER };
 
             if (_initialized != false) {
-                // Reevaluate without mutex-lock-unlock 
+                // Reevaluate without mutex-lock-unlock
                 result = this->Reevaluate();
             }
 
@@ -382,7 +382,7 @@ namespace Core {
 
             return result;
         }
- 
+
     private :
 
     };
@@ -416,10 +416,10 @@ namespace Core {
 
             Stop();
 
-            /* bool */ Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::BLOCKED | ::Thunder::Core::Thread::STOPPING, maxCleanupTime); 
+            /* bool */ Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::BLOCKED | ::Thunder::Core::Thread::STOPPING, maxCleanupTime);
         }
 
-        uint32_t Worker() override 
+        uint32_t Worker() override
         {
             constexpr uint32_t result{ ::Thunder::Core::infinite };
 
@@ -468,7 +468,7 @@ namespace Core {
 
         for (auto& agent : agents) {
             agent.Run();
-        }  
+        }
 
         // Let all agents get to the SignalLock
         SleepMs(1000);
@@ -484,12 +484,12 @@ namespace Core {
         while (   std::all_of
                   (
                      agents.begin()
-                   , agents.end() 
+                   , agents.end()
                    , [&workTime](ProcessEmulator<SharedAccessWrong>& agent) { return agent.Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::STOPPING | ::Thunder::Core::Thread::BLOCKED, workTime) != false; }
                   ) != true
                && !(timedOut = ((stopWatch.Elapsed() / 1000) > ((N + 1) * workTime))) != false
         ) {}
-        
+
         nonAgent.Stop();
 
         EXPECT_TRUE(nonAgent.Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::BLOCKED | ::Thunder::Core::Thread::STOPPING));
@@ -524,7 +524,7 @@ namespace Core {
 
         for (auto& agent : agents) {
             agent.Run();
-        }  
+        }
 
         // Let all agents get to the SignalLock
         SleepMs(1000);
@@ -540,12 +540,12 @@ namespace Core {
         while (   std::all_of
                   (
                      agents.begin()
-                   , agents.end() 
+                   , agents.end()
                    , [&workTime](ProcessEmulator<SharedAccessGood>& agent) { return agent.Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::STOPPING | ::Thunder::Core::Thread::BLOCKED, workTime) != false; }
                   ) != true
                && !(timedOut = ((stopWatch.Elapsed() / 1000) > ((N + 1) * workTime))) != false
         ) {}
-        
+
         nonAgent.Stop();
 
         EXPECT_TRUE(nonAgent.Wait(::Thunder::Core::Thread::STOPPED | ::Thunder::Core::Thread::BLOCKED | ::Thunder::Core::Thread::STOPPING));
