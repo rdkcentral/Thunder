@@ -326,10 +326,7 @@ namespace Core {
 #endif
             uint8_t count = 0;
 
-            // Wait till all waiters have seen the trigger..
-            while (_administration->_agents.load() > 0) {
-                Core::Thread::Yield(count);
-            }
+            Core::Thread::Yield(count);
         }
     }
 
