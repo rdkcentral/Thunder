@@ -416,6 +416,7 @@ namespace PluginHost {
                 , DelegatedReleases(true)
                 , Throttle((Process.ThreadPoolCount.Value() > 1) ? (Process.ThreadPoolCount.Value() / 2) : 1)
                 , ChannelThrottle(((Process.ThreadPoolCount.Value() > 1) ? (Process.ThreadPoolCount.Value() / 2) : 1))
+                , MetadataDiscovery(true)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -459,6 +460,7 @@ namespace PluginHost {
                 Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
                 Add(_T("throttle"), &Throttle);
                 Add(_T("channel_throttle"), &ChannelThrottle);
+                Add(_T("discovery"), &MetadataDiscovery);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -506,6 +508,7 @@ namespace PluginHost {
             Core::JSON::Boolean DelegatedReleases;
             Core::JSON::DecUInt8 Throttle;
             Core::JSON::DecUInt8 ChannelThrottle;
+            Core::JSON::Boolean MetadataDiscovery;
 #ifdef PROCESSCONTAINERS_ENABLED
             Core::JSON::String ProcessContainers;
 #endif
@@ -677,6 +680,7 @@ namespace PluginHost {
             , _delegatedReleases(true)
             , _throttle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
             , _channelThrottle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
+            , _metadataDiscovery(true)
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
@@ -733,6 +737,7 @@ namespace PluginHost {
                 _delegatedReleases = config.DelegatedReleases.Value();
                 _throttle = config.Throttle.Value();
                 _channelThrottle = config.ChannelThrottle.Value();
+                _metadataDiscovery = config.MetadataDiscovery.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -958,6 +963,9 @@ namespace PluginHost {
         inline uint8_t ChannelThrottle() const {
             return(_channelThrottle);
         }
+        inline bool MetadataDiscovery() const {
+            return (_metadataDiscovery);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1141,6 +1149,7 @@ namespace PluginHost {
         bool _delegatedReleases;
         uint8_t _throttle;
         uint8_t _channelThrottle;
+        bool _metadataDiscovery;
 
 #ifdef PROCESSCONTAINERS_ENABLED
         string _processContainersConfig;
