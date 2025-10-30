@@ -32,13 +32,9 @@
 
 #include <core/core.h>
 
-//#include "../IPTestAdministrator.h"
-
-// The tests are 'equivalent' to the flow of ::Thunder::Core::CyclicBuffer with pthread_cond_signal
-// or with pthread_cond_broadcvast as in the proposed patch. They illustrate 'broadcast to wake up any
-// blocked threads / processes simplifies code and it gurantueed by the standard :
-// https://pubs.opengroup.org/onlinepubs/9799919799/functions/pthread_cond_broadcast.html
-// Test 'Deadlocked' is deliberately disabled to safeguard progression for this unit.
+// The tests are 'equivalent' to the flow of ::Thunder::Core::CyclicBuffer llustrating a possible
+// deadlock with necessary METROL-1188 applied. Test 'Deadlocked' is deliberately disabled to 
+// safeguard progression for this unit.
 
 namespace Thunder {
 namespace Tests {
