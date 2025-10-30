@@ -443,7 +443,7 @@ namespace Core {
     };
 
     // Disable to prevent any completion of all tests
-    TEST(METROL_1199, DISABLED_Deadlocked)
+    TEST(METROL_1198, DISABLED_Deadlocked)
     {
         constexpr size_t N{ 3 };
 
@@ -499,7 +499,7 @@ namespace Core {
         ::Thunder::Core::Singleton::Dispose();
     }
 
-    TEST(METROL_1199, NonDeadlocked)
+    TEST(METROL_1198, NonDeadlocked)
     {
         constexpr size_t N{ 3 };
 
