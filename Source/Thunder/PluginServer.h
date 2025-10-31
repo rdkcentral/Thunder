@@ -4316,6 +4316,9 @@ namespace PluginHost {
                     }
                     break;
                 }
+                case Request::INCOMPLETE: 
+                // nothing to do for now, jira ticket created...
+                break;
                 default: {
                     // I think we handled every possible situation
                     ASSERT(false);
