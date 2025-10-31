@@ -33,6 +33,8 @@ namespace Core {
             static constexpr uint32_t Max = 0x7FFFFF;
             static constexpr int32_t  Min = 0x800000;
 
+            using InternalType = int32_t;
+
             SInt24()
                 : _value(0)
             {
@@ -67,7 +69,9 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0xFFFFFF;
-            static constexpr int32_t Min = 0;
+            static constexpr uint32_t Min = 0;
+
+            using InternalType = uint32_t;
 
             UInt24()
                 : _value(0)
@@ -109,23 +113,24 @@ namespace Core {
         }
 
         template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
-        static constexpr uint32_t Max() {
+        static constexpr T Max() {
             return (std::numeric_limits<T>::max());
         }
 
         template <typename T, typename std::enable_if<T::Max != 0, int>::type = 0>
-        static constexpr uint32_t Max() {
+        static constexpr typename T::InternalType Max()
+        {
             return (T::Max);
         }
 
         template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
-        static constexpr int32_t Min()
+        static constexpr T Min()
         {
             return (std::numeric_limits<T>::min());
         }
 
         template <typename T, typename std::enable_if<T::Min <= T::Max, int>::type = 0>
-        static constexpr int32_t Min()
+        static constexpr typename T::InternalType Min()
         {
             return (T::Min);
         }
