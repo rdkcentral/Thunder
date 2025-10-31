@@ -31,6 +31,7 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0x7FFFFF;
+            static constexpr int32_t  Min = 0x800000;
 
             SInt24()
                 : _value(0)
@@ -66,6 +67,7 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0xFFFFFF;
+            static constexpr int32_t Min = 0;
 
             UInt24()
                 : _value(0)
@@ -110,10 +112,37 @@ namespace Core {
         static constexpr uint32_t Max() {
             return (std::numeric_limits<T>::max());
         }
-        template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
+
+        template <typename T, typename std::enable_if<T::Max != 0, int>::type = 0>
         static constexpr uint32_t Max() {
             return (T::Max);
         }
+
+        template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
+        static constexpr int32_t Min()
+        {
+            return (std::numeric_limits<T>::min());
+        }
+
+        template <typename T, typename std::enable_if<T::Min <= T::Max, int>::type = 0>
+        static constexpr int32_t Min()
+        {
+            return (T::Min);
+        }
+
+        template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+        NEW_TYPE safe_cast(const ORIGINAL_TYPE& input)
+        {
+            ASSERT(input <= Frame::Max<NEW_TYPE>());
+            ASSERT(input >= Frame::Min<NEW_TYPE>());
+
+            PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
+            return (static_cast<NEW_TYPE>(input));
+
+            POP_WARNING()
+        }
+
     }
 
     template <const uint32_t BLOCKSIZE, const bool BIG_ENDIAN_ORDERING = true, typename SIZE_CONTEXT = uint16_t>
@@ -655,8 +684,7 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            ASSERT(convertedText.length() <= Frame::Max<TYPENAME>());
-            return (SetBuffer<TYPENAME>(offset, int_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>() ? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, Frame::safe_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>() ? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
