@@ -328,8 +328,8 @@ namespace ProxyStub {
             if (channel.IsValid() == true) {
 
                 if (channel->InProgress() == true) {
-                    ASSERT(false && "IPC in progress detected. Possible deadlock!");
-                    SYSLOG(Logging::Error, (_T("IPC in progress detected for Interface [0x%X], Method ID [0x%X]. Possible deadlock!"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+                    ASSERT(false && "IPC in progress detected on this channel. Possible deadlock!");
+                    SYSLOG(Logging::Error, (_T("IPC in progress detected on this channel for Interface [0x%X], Method ID [0x%X]. Possible deadlock!"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
                 }
 
                 result = channel->Invoke(message, waitTime);
