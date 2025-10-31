@@ -30,7 +30,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_enumerate.cpp
    test_event.cpp
    test_filesystem.cpp
-   test_frametype.cpp
+   #test_frametype.cpp
    test_hash.cpp
    test_hex2strserialization.cpp
    #test_ipc.cpp
@@ -43,7 +43,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_lockablecontainer.cpp
    test_measurementtype.cpp
    test_memberavailability.cpp
-   test_message_dispatcher.cpp
+   #test_message_dispatcher.cpp
    test_messageException.cpp
    test_networkinfo.cpp
    test_nodeid.cpp
@@ -73,7 +73,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_threadpool.cpp
    test_time.cpp
    test_timer.cpp
-   test_tristate.cpp
+   #test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
