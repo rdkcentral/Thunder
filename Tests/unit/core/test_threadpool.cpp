@@ -318,6 +318,7 @@ namespace Core {
         }
         ~ThreadPoolTester()
         {
+            Stop();
         }
 
     public:
@@ -350,8 +351,8 @@ namespace Core {
     private:
         uint32_t _queueSize;
         Dispatcher _dispatcher;
-        Scheduler _scheduler;
         ::Thunder::Core::ThreadPool _pool;
+        Scheduler _scheduler;
     };
 
     class MinionTester : public ::Thunder::Core::Thread, public JobControl<MinionTester> {
@@ -364,13 +365,14 @@ namespace Core {
             : JobControl(*this)
             , _queueSize(queueSize)
             , _threadPool(threadPool)
-            , _minion(_threadPool.Pool(), &_dispatcher)
             , _dispatcher()
+            , _minion(_threadPool.Pool(), &_dispatcher)
         {
         }
         ~MinionTester()
         {
             Stop();
+            Shutdown();
         }
 
     public:
@@ -385,6 +387,9 @@ namespace Core {
         void Shutdown()
         {
             _threadPool.Stop();
+            // FIXME: This can trigger a race condition in the threadpool ThreadPool::Stop() is now async, 
+            // so we need a synchronization primitive. For now sleep, and hope for the best....
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         void Revoke(const ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, const uint32_t waitTime = 0)
         {
@@ -432,8 +437,8 @@ namespace Core {
     private:
         uint32_t _queueSize;
         ThreadPoolTester& _threadPool;
-        ::Thunder::Core::ThreadPool::Minion _minion;
         Dispatcher _dispatcher;
+        ::Thunder::Core::ThreadPool::Minion _minion;
     };
     TEST(Core_ThreadPool, CheckMinion_ProcessJob)
     {
