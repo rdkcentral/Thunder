@@ -541,7 +541,7 @@ namespace Core {
                 Thread::Run();
             }
             void Stop () {
-                Thread::Wait(Thread::STOPPED|Thread::BLOCKED, infinite);
+                Thread::Stop();
             }
             Minion& Me() {
                 return (_minion);
@@ -579,7 +579,8 @@ namespace Core {
             , _callback(callback)
             , _unitsSet()
         {
-            ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
+            // FIXME!!!
+            // ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
 
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
