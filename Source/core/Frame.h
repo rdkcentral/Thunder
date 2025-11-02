@@ -31,7 +31,7 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0x7FFFFF;
-            static constexpr int32_t  Min = 0x800000;
+            static constexpr int32_t Min = 0xFF800000;
 
             using InternalType = int32_t;
 
