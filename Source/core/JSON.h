@@ -4996,6 +4996,8 @@ namespace Core {
                     return Array() == other.Array();
                 case type::OBJECT:
                     return Object() == other.Object();
+                default:
+                    ASSERT(false);
             }
             return false;
         }
