@@ -31,6 +31,9 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0x7FFFFF;
+            static constexpr int32_t Min = 0xFF800000;
+
+            using InternalType = int32_t;
 
             SInt24()
                 : _value(0)
@@ -66,6 +69,9 @@ namespace Core {
         public:
             static constexpr uint8_t SizeOf = 3;
             static constexpr uint32_t Max = 0xFFFFFF;
+            static constexpr uint32_t Min = 0;
+
+            using InternalType = uint32_t;
 
             UInt24()
                 : _value(0)
@@ -107,13 +113,44 @@ namespace Core {
         }
 
         template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
-        static constexpr uint32_t Max() {
+        static constexpr T Max() {
             return (std::numeric_limits<T>::max());
         }
-        template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
-        static constexpr uint32_t Max() {
+
+        template <typename T, typename std::enable_if<T::Max != 0, int>::type = 0>
+        static constexpr typename T::InternalType Max()
+        {
             return (T::Max);
         }
+
+        template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
+        static constexpr T Min()
+        {
+            return (std::numeric_limits<T>::min());
+        }
+
+        template <typename T, typename std::enable_if<T::Min <= T::Max, int>::type = 0>
+        static constexpr typename T::InternalType Min()
+        {
+            return (T::Min);
+        }
+
+        template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+        NEW_TYPE buffer_length_cast(const ORIGINAL_TYPE& input)
+        {
+            ASSERT(input <= Frame::Max<NEW_TYPE>());
+            ASSERT(input >= Frame::Min<NEW_TYPE>());
+
+            // in release in case the length does not fit we do not want to send data at all, then it is more obvious to the recipient something is wrong instead of only sending partial data
+            ORIGINAL_TYPE length = (input <= Frame::Max<NEW_TYPE>() ? input : 0);
+
+            PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
+            return (static_cast<NEW_TYPE>(length));
+
+            POP_WARNING()
+        }
+
     }
 
     template <const uint32_t BLOCKSIZE, const bool BIG_ENDIAN_ORDERING = true, typename SIZE_CONTEXT = uint16_t>
@@ -655,8 +692,7 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            ASSERT(convertedText.length() <= Frame::Max<TYPENAME>());
-            return (SetBuffer<TYPENAME>(offset, int_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>() ? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, Frame::buffer_length_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
