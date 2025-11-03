@@ -322,7 +322,7 @@ namespace Core {
         WorkerPoolTester(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
             : JobControl(*this, threads)
             , _dispatcher()
-            , _pool(threads, stackSize, queueSize, &_dispatcher, nullptr, (threads > 2 ? (threads - 1) : 1), (threads > 2 ? (threads - 1) : 1))
+            , _pool(threads, stackSize, queueSize, &_dispatcher, nullptr, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads))
         {
         }
 
