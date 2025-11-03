@@ -309,7 +309,7 @@ namespace Core {
         ThreadPoolTester(const ThreadPoolTester&) = delete;
         ThreadPoolTester& operator=(const ThreadPoolTester&) = delete;
         ThreadPoolTester(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize)
-            : JobControl(*this)
+            : JobControl(*this)            
             , _queueSize(queueSize)
             , _dispatcher()
             , _pool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr, (count > 2 ? (count - 1) : 1), (count > 2 ? (count - 1) : 1))
@@ -372,7 +372,6 @@ namespace Core {
         }
         ~MinionTester()
         {
-            Stop();
             Shutdown();
         }
 
@@ -388,9 +387,7 @@ namespace Core {
         void Shutdown()
         {
             _threadPool.Stop();
-            // FIXME: This can trigger a race condition in the threadpool ThreadPool::Stop() is now async, 
-            // so we need a synchronization primitive. For now sleep, and hope for the best....
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            Stop();
         }
         void Revoke(const ::Thunder::Core::ProxyType<::Thunder::Core::IDispatch>& job, const uint32_t waitTime = 0)
         {
