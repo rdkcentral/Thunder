@@ -337,6 +337,7 @@ namespace Core {
         void Stop()
         {
             _pool.Stop();
+            assert(_pool.WaitForStop(5000) == true);
             JobControl<ThreadPoolTester>::Stop();
         }
 
