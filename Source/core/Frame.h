@@ -136,14 +136,17 @@ namespace Core {
         }
 
         template <typename NEW_TYPE, typename ORIGINAL_TYPE>
-        NEW_TYPE safe_cast(const ORIGINAL_TYPE& input)
+        NEW_TYPE buffer_length_cast(const ORIGINAL_TYPE& input)
         {
             ASSERT(input <= Frame::Max<NEW_TYPE>());
             ASSERT(input >= Frame::Min<NEW_TYPE>());
 
+            // in release in case the length does not fit we do not want to send data at all, then it is more obvious to the recipient something is wrong instead of only sending partial data
+            ORIGINAL_TYPE length = (input <= Frame::Max<NEW_TYPE>() ? input : 0);
+
             PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
 
-            return (static_cast<NEW_TYPE>(input));
+            return (static_cast<NEW_TYPE>(length));
 
             POP_WARNING()
         }
@@ -689,7 +692,7 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            return (SetBuffer<TYPENAME>(offset, Frame::safe_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>() ? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, Frame::buffer_length_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
