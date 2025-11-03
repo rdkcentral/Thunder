@@ -32,10 +32,10 @@ namespace Core {
     TEST(test_TriState, simple_TriState)
     {
         ::Thunder::Core::TriState();
-        ::Thunder::Core::TriState tristate1("F");
-        ::Thunder::Core::TriState tristate2("T");
-        ::Thunder::Core::TriState tristate3("True");
-        ::Thunder::Core::TriState tristate4("False");
+        ::Thunder::Core::TriState tristate1("F", 1);
+        ::Thunder::Core::TriState tristate2("T", 1);
+        ::Thunder::Core::TriState tristate3("True", sizeof("True") / sizeof(TCHAR) - 1);
+        ::Thunder::Core::TriState tristate4("False", sizeof("False") / sizeof(TCHAR) - 1);
         ::Thunder::Core::TriState tristate5(tristate1);
         ::Thunder::Core::TriState tristate6 =tristate1;
         ::Thunder::Core::TriState tristate7(::Thunder::Core::TriState::EnumState::True);
