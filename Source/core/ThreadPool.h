@@ -565,7 +565,7 @@ namespace Core {
         ThreadPool& operator=(ThreadPool&&) = delete;
         ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t aditionalThreads = 0)
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
             #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
             : _queue(lowPriorityThreadCount, mediumPriorityThreadCount, queueSize)
             #else
@@ -579,8 +579,8 @@ namespace Core {
             , _callback(callback)
             , _unitsSet()
         {
-            DEBUG_VARIABLE(aditionalThreads);
-            ASSERT(((lowPriorityThreadCount <= (count + aditionalThreads)) && (mediumPriorityThreadCount <= (count + aditionalThreads))));
+            DEBUG_VARIABLE(additionalThreads);
+            ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
 
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
