@@ -337,6 +337,7 @@ namespace Core {
         void Stop()
         {
             _pool.Stop();
+            assert(_pool.WaitForStop(5000) == true);
             ::Thunder::Core::Thread::Wait(::Thunder::Core::Thread::STOPPED|::Thunder::Core::Thread::BLOCKED, ::Thunder::Core::infinite);
         }
 
