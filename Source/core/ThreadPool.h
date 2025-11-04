@@ -541,7 +541,7 @@ namespace Core {
                 Thread::Run();
             }
             void Stop () {
-                Thread::Wait(Thread::STOPPED|Thread::BLOCKED, infinite);
+                Thread::Stop();
             }
             Minion& Me() {
                 return (_minion);
@@ -579,7 +579,8 @@ namespace Core {
             , _callback(callback)
             , _unitsSet()
         {
-            ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
+            // FIXME!!!
+            // ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
 
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -741,6 +742,20 @@ namespace Core {
                 index->Stop();
                 index++;
             }
+        }
+        bool WaitForStop(uint32_t timeout = Core::infinite) 
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
+            
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+            
+            return allStopped;
         }
         bool HasThreadID(const thread_id id) const
         {

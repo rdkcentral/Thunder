@@ -180,6 +180,10 @@ namespace Core {
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
                         Text = _T("The service is not active.");
                         break;
+                    case Core::ERROR_NOT_SUPPORTED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_SUPPORTED;
+                        Text = _T("The operation is not supported.");
+                        break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
@@ -406,11 +410,13 @@ namespace Core {
                 }
                 return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
-            static void Formalize(string& method)
+            static void Formalize(VARIABLE_IS_NOT_USED string& method)
             {
+#ifdef __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__                
 PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE) // Support pascal casing during the transition period
                 ToCamelCase(method);
 POP_WARNING()
+#endif
             }
             static string Formalize(const string& method)
             {
