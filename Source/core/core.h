@@ -101,7 +101,6 @@
 #include "Timer.h"
 #include "TokenizedStringList.h"
 #include "Trace.h"
-#include "TriState.h"
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
 #include "XGetopt.h"
