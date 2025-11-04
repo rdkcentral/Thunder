@@ -1465,7 +1465,7 @@ namespace Plugin {
 
         // First notify observers that registered for all (notification will include the callsign)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, callsign, state, reason,
-            [&callsign](const string&, const string& index) {
+            [](const string&, const string& index) {
                 // Custom sendif lambda to only catch broadcast observers.
                 return (index.empty() == true);
         });
@@ -1488,7 +1488,7 @@ namespace Plugin {
 
         // also notify the JSON RPC listeners (if any)
         Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state,
-            [&callsign](const string&, const string& index) {
+            [](const string&, const string& index) {
                 return (index.empty() == true);
         });
 
