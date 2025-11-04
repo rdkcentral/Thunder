@@ -237,7 +237,7 @@ namespace Core {
     TEST_F(Core_MessageDispatcher, OffsetCutPushDataShouldFlushOldDataIfDoesNotFitOffsetCut)
     {
         // CyclicBuffer Reserve requires 'length' < Size()
-        uint8_t fullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 1]; // sizeof(length) + length - 1, eg. < Size()
+        uint8_t fullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 1] = {}; // sizeof(length) + length - 1, eg. < Size()
         uint8_t testData[] = { 12, 11, 13, 21 };
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
@@ -259,7 +259,7 @@ namespace Core {
 
     TEST_F(Core_MessageDispatcher, OnlyOffsetFitsPushDataShouldFlushOldDataIfDoesNotFit)
     {
-        uint8_t onlyOffsetFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 2];
+        uint8_t onlyOffsetFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 2] = {};
         uint8_t testData[] = { 12, 11, 13, 21 };
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
@@ -278,7 +278,7 @@ namespace Core {
 
     TEST_F(Core_MessageDispatcher, OffsetFitsBufferCutPushDataShouldFlushOldDataIfDoesNotFit)
     {
-        uint8_t offsetPlusFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 3];
+        uint8_t offsetPlusFitsSimulation[DATA_SIZE - sizeof(uint16_t) - 3] = {};
         uint8_t testData[] = { 12, 11, 13, 21 };
         uint8_t readData[4];
         uint16_t readLength = sizeof(readData);
@@ -297,7 +297,7 @@ namespace Core {
 
     TEST_F(Core_MessageDispatcher, BufferGetsFilledToItsVeryMaximum)
     {
-        uint8_t almostFullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 6];
+        uint8_t almostFullBufferSimulation[DATA_SIZE - sizeof(uint16_t) - 6] = {};
         uint8_t testData1[] = { 12, 11, 13, 21 };
         uint8_t testData2[] = { 54, 62, 78, 91 };
         uint8_t readData[4];
