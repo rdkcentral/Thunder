@@ -743,6 +743,20 @@ namespace Core {
                 index++;
             }
         }
+        bool WaitForStop(uint32_t timeout = Core::infinite) 
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
+            
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+            
+            return allStopped;
+        }
         bool HasThreadID(const thread_id id) const
         {
             return (_unitsSet.find(id) != _unitsSet.end());

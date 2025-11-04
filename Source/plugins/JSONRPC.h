@@ -55,6 +55,7 @@ namespace PluginHost {
     class EXTERNAL JSONRPC : public IDispatcher {
     public:
         using SendIfMethod = std::function<bool(const string&)>;
+        using SendIfMethodIndexed = std::function<bool(const string&, const string&)>;
 
     private:
         class Notification : public IShell::IConnectionServer::INotification {
@@ -98,12 +99,31 @@ namespace PluginHost {
                     : _callback(nullptr)
                     , _channelId(channelId)
                     , _designator(designator)
+                    , _index()
+                    , _oneShot(oneShot) {
+                }
+                Destination(uint32_t channelId, const string& designator, const string& index, const bool oneShot = false)
+                    : _callback(nullptr)
+                    , _channelId(channelId)
+                    , _designator(designator)
+                    , _index(index)
                     , _oneShot(oneShot) {
                 }
                 Destination(IDispatcher::ICallback* callback, const string& designator)
                     : _callback(callback)
                     , _channelId(~0)
                     , _designator(designator)
+                    , _index()
+                    , _oneShot(false) {
+                    if (_callback != nullptr) {
+                        _callback->AddRef();
+                    }
+                }
+                Destination(IDispatcher::ICallback* callback, const string& designator, const string& index)
+                    : _callback(callback)
+                    , _channelId(~0)
+                    , _designator(designator)
+                    , _index(index)
                     , _oneShot(false) {
                     if (_callback != nullptr) {
                         _callback->AddRef();
@@ -113,6 +133,7 @@ namespace PluginHost {
                     : _callback(move._callback)
                     , _channelId(move._channelId)
                     , _designator(std::move(move._designator))
+                    , _index(std::move(move._index))
                     , _oneShot(move._oneShot) {
                     move._callback = nullptr;
                     move._channelId = ~0;
@@ -121,6 +142,7 @@ namespace PluginHost {
                     : _callback(copy._callback)
                     , _channelId(copy._channelId)
                     , _designator(copy._designator)
+                    , _index(copy._index)
                     , _oneShot(copy._oneShot) {
                     if (_callback != nullptr) {
                         _callback->AddRef();
@@ -140,6 +162,7 @@ namespace PluginHost {
                     _callback = move._callback;
                     _channelId = move._channelId;
                     _designator = std::move(move._designator);
+                    _index = std::move(move._index);
                     move._callback = nullptr;
                     move._channelId = ~0;
                     return (*this);
@@ -152,6 +175,7 @@ namespace PluginHost {
                     _callback = copy._callback;
                     _channelId = copy._channelId;
                     _designator = copy._designator;
+                    _index = copy._index;
                     _oneShot = copy._oneShot;
                     if (_callback != nullptr) {
                         _callback->AddRef();
@@ -169,6 +193,9 @@ namespace PluginHost {
                 inline const string& Designator() const {
                     return (_designator);
                 }
+                inline const string& Index() const {
+                    return (_index);
+                }
                 inline bool IsOneShot() const {
                     return (_oneShot);
                 }
@@ -177,6 +204,7 @@ namespace PluginHost {
                 IDispatcher::ICallback* _callback;
                 uint32_t _channelId;
                 string _designator;
+                string _index;
                 bool _oneShot;
             };
             using Destinations = std::vector<Destination>;
@@ -200,16 +228,16 @@ namespace PluginHost {
             bool IsEmpty() const {
                 return ( _designators.empty() );
             }
-            uint32_t Subscribe(const uint32_t id, const string& designator, const bool oneShot) {
+            uint32_t Subscribe(const uint32_t id, const string& designator, const string& index, const bool oneShot) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->ChannelId() != id) || (index->Designator() != designator))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index == _designators.end()) {
-                    _designators.emplace_back(id, designator, oneShot);
+                if (it == _designators.end()) {
+                    _designators.emplace_back(id, designator, index, oneShot);
                 }
                 else {
                     result = Core::ERROR_DUPLICATE_KEY;
@@ -217,16 +245,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Unsubscribe(const uint32_t id, const string& designator) {
+            uint32_t Unsubscribe(const uint32_t id, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->ChannelId() != id) || (index->Designator() != designator))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->ChannelId() != id) || (it->Designator() != designator) || (it->Index() != index))) {
+                    it++;
                 }
 
-                if (index != _designators.end()) {
-                    _designators.erase(index);
+                if (it != _designators.end()) {
+                    _designators.erase(it);
                 }
                 else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -234,16 +262,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Subscribe(IDispatcher::ICallback* callback, const string& designator) {
+            uint32_t Subscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->Designator() != designator) || (index->Callback() == callback))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
                 }
 
-                if (index == _designators.end()) {
-                    _designators.emplace_back(callback, designator);
+                if (it == _designators.end()) {
+                    _designators.emplace_back(callback, designator, index);
                 }
                 else {
                     result = Core::ERROR_DUPLICATE_KEY;
@@ -251,16 +279,16 @@ namespace PluginHost {
 
                 return (result);
             }
-            uint32_t Unsubscribe(IDispatcher::ICallback* callback, const string& designator) {
+            uint32_t Unsubscribe(IDispatcher::ICallback* callback, const string& designator, const string& index) {
                 uint32_t result = Core::ERROR_NONE;
 
-                Destinations::iterator index(_designators.begin());
-                while ((index != _designators.end()) && ((index->Designator() != designator) || (index->Callback() == callback))) {
-                    index++;
+                Destinations::iterator it(_designators.begin());
+                while ((it != _designators.end()) && ((it->Designator() != designator) || (it->Index() != index) || (it->Callback() == callback))) {
+                    it++;
                 }
 
-                if (index != _designators.end()) {
-                    _designators.erase(index);
+                if (it != _designators.end()) {
+                    _designators.erase(it);
                 }
                 else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -284,7 +312,7 @@ namespace PluginHost {
                 Destinations::iterator index = _designators.begin();
                 while (index != _designators.end()) {
                     if ( (index->ChannelId() == channelId) && (index->Callback() == nullptr) ) {
-                        unregistered(index->Designator());
+                        unregistered(index->Designator(), index->Index());
                         index = _designators.erase(index);
                     }
                     else {
@@ -300,10 +328,37 @@ namespace PluginHost {
 
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
-                            parent.Notify(entry.ChannelId(), entry.Designator() + '.' + event, parameter);
+                            parent.Notify(entry.ChannelId(), (entry.Designator() + '.' + event), parameter);
                         }
                         else {
-                            entry.Callback()->Event(event, entry.Designator(), parameter);
+                            entry.Callback()->Event(event, entry.Designator(), _T(""), parameter);
+                        }
+                    }
+
+                    if (entry.IsOneShot() == true) {
+                        index = _designators.erase(index);
+                    }
+                    else {
+                        ++index;
+                    }
+                }
+            }
+            void Event(JSONRPC& parent, const string event, const string& parameter, const SendIfMethodIndexed& sendifmethod) {
+                Destinations::iterator index(_designators.begin());
+
+                while (index != _designators.end()) {
+                    Destination& entry = (*index);
+
+                    if (!sendifmethod || sendifmethod(entry.Designator(), entry.Index())) {
+                        if (entry.Callback() == nullptr) {
+                            string joined = (entry.Designator() + '.' + event);
+                            if (entry.Index().empty() == false) {
+                                joined += "@" + entry.Index();
+                            }
+                            parent.Notify(entry.ChannelId(), joined, parameter);
+                        }
+                        else {
+                            entry.Callback()->Event(event, entry.Designator(), entry.Index(), parameter);
                         }
                     }
 
@@ -632,14 +687,14 @@ namespace PluginHost {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value, int>::type = 0>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value && !std::is_convertible<JSONOBJECT, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
         }
-        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value, int>::type = 0>
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, SENDIFMETHOD method) const
         {
             return InternalNotify(event, _T(""), std::move(method));
@@ -675,8 +730,9 @@ namespace PluginHost {
                 string prefix;
                 string instanceId;
                 string methodName;
+                string index;
 
-                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, nullptr);
+                Core::JSONRPC::Message::Split(method, &callsign, nullptr, &prefix, &instanceId, &methodName, &index);
 
                 const string realMethod = Core::JSONRPC::Message::Join(prefix, methodName);
 
@@ -741,7 +797,7 @@ namespace PluginHost {
                             result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
+                            result = Subscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value(), index);
                             if (result != Core::ERROR_NONE) {
                                 result = Core::ERROR_FAILED_REGISTERED;
                             }
@@ -754,7 +810,7 @@ namespace PluginHost {
                             result = Core::ERROR_INVALID_PARAMETER;
                         }
                         else {
-                            result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value());
+                            result = Unsubscribe(channelId, Core::JSONRPC::Message::Join(prefix, instanceId, info.Event.Value()), info.Id.Value(), index);
                             if (result != Core::ERROR_NONE) {
                                 result = Core::ERROR_FAILED_REGISTERED;
                             }
@@ -770,43 +826,43 @@ namespace PluginHost {
             return (result);
         }
 
-        Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator) override
+        Core::hresult Subscribe(ICallback* callback, const string& eventId, const string& designator, const string& index) override
         {
             uint32_t result;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
+            if (it == _observers.end()) {
+                it = _observers.emplace(std::piecewise_construct,
                     std::forward_as_tuple(eventId),
                     std::forward_as_tuple()).first;
             }
 
-            result = index->second.Subscribe(callback, designator);
+            result = it->second.Subscribe(callback, designator, index);
 
-            if ((result != Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                _observers.erase(index);
+            if ((result != Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                _observers.erase(it);
             }
 
             _adminLock.Unlock();
 
             return (result);
         }
-        Core::hresult Unsubscribe(ICallback* callback, const string& eventId, const string& designator) override
+        Core::hresult Unsubscribe(ICallback* callback, const string& eventId, const string& designator, const string& index) override
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index != _observers.end()) {
-                result = index->second.Unsubscribe(callback, designator);
+            if (it != _observers.end()) {
+                result = it->second.Unsubscribe(callback, designator, index);
 
-                if ((result == Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                    _observers.erase(index);
+                if ((result == Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                    _observers.erase(it);
                 }
             }
             _adminLock.Unlock();
@@ -904,30 +960,30 @@ namespace PluginHost {
         }
 
     public:
-        uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator, const bool oneShot = false)
+        uint32_t Subscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot = false)
         {
-            uint32_t result = ProcessSubscribe(channelId, eventId, designator, oneShot);
+            uint32_t result = ProcessSubscribe(channelId, eventId, designator, index, oneShot);
 
             return (result);
         }
 
-        uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator)
+        uint32_t Unsubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index)
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index != _observers.end()) {
-                result = index->second.Unsubscribe(channelId, designator);
+            if (it != _observers.end()) {
+                result = it->second.Unsubscribe(channelId, designator, index);
 
                 if (result == Core::ERROR_NONE) {
 
-                    ProcessUnsubscribed(channelId, eventId, designator);
+                    ProcessUnsubscribed(channelId, eventId, designator, index);
 
-                    if (index->second.IsEmpty() == true) {
-                        _observers.erase(index);
+                    if (it->second.IsEmpty() == true) {
+                        _observers.erase(it);
                     }
                 }
             }
@@ -938,23 +994,23 @@ namespace PluginHost {
         }
 
     protected:
-        uint32_t DoSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const bool oneShot)
+        uint32_t DoSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot)
         {
             _adminLock.Lock();
 
-            ObserverMap::iterator index = _observers.find(eventId);
+            ObserverMap::iterator it = _observers.find(eventId);
 
-            if (index == _observers.end()) {
-                index = _observers.emplace(std::piecewise_construct,
+            if (it == _observers.end()) {
+                it = _observers.emplace(std::piecewise_construct,
                                       std::forward_as_tuple(eventId),
                                       std::forward_as_tuple())
                             .first;
             }
 
-            uint32_t result = index->second.Subscribe(channelId, designator, oneShot);
+            uint32_t result = it->second.Subscribe(channelId, designator, index, oneShot);
 
-            if ((result != Core::ERROR_NONE) && (index->second.IsEmpty() == true)) {
-                _observers.erase(index);
+            if ((result != Core::ERROR_NONE) && (it->second.IsEmpty() == true)) {
+                _observers.erase(it);
             }
 
             _adminLock.Unlock();
@@ -963,12 +1019,12 @@ namespace PluginHost {
         }
 
     private:
-        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const bool oneShot)
+        virtual uint32_t ProcessSubscribe(const uint32_t channelId, const string& eventId, const string& designator, const string& index, const bool oneShot)
         {
-            return DoSubscribe(channelId, eventId, designator, oneShot);
+            return DoSubscribe(channelId, eventId, designator, index, oneShot);
         }
 
-        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& eventId VARIABLE_IS_NOT_USED, const string& designator VARIABLE_IS_NOT_USED) 
+        virtual void ProcessUnsubscribed(const uint32_t channelId VARIABLE_IS_NOT_USED, const string& eventId VARIABLE_IS_NOT_USED, const string& designator VARIABLE_IS_NOT_USED, const string& index VARIABLE_IS_NOT_USED) 
         {
         }
 
@@ -980,7 +1036,7 @@ namespace PluginHost {
 
             while (index != _observers.end()) {
                 const string& eventId = index->first;
-                index->second.Dropped(channelId, [this, channelId, &eventId](const string& designator) { ProcessUnsubscribed(channelId, eventId, designator); });
+                index->second.Dropped(channelId, [this, channelId, &eventId](const string& designator, const string& index) { ProcessUnsubscribed(channelId, eventId, designator, index); });
 
                 if (index->second.IsEmpty() == true) {
                     index = _observers.erase(index);
@@ -994,7 +1050,8 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t InternalNotify(const string& event, const string& parameters, const SendIfMethod& sendifmethod = nullptr) const
+        template<typename SENDIFMETHOD = SendIfMethod>
+        uint32_t InternalNotify(const string& event, const string& parameters, SENDIFMETHOD sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -1139,7 +1196,7 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t ProcessSubscribe(const uint32_t channel, const string& designator, const string& clientId, const bool oneShot) override
+        uint32_t ProcessSubscribe(const uint32_t channel, const string& designator, const string& clientId, const string& index, const bool oneShot) override
         {
             Core::hresult result = Core::ERROR_PRIVILIGED_REQUEST;
 
@@ -1153,10 +1210,10 @@ namespace PluginHost {
 
             if ((_subscribeAssessor == nullptr) || (_subscribeAssessor(channel, prefix, instanceId, event, clientId) == true)) {
 
-                result = JSONRPC::DoSubscribe(channel, designator, clientId, oneShot);
+                result = JSONRPC::DoSubscribe(channel, designator, clientId, index, oneShot);
 
                 if (result == Core::ERROR_NONE) {
-                    NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, Status::registered);
+                    NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, index, Status::registered);
                 }
             }
 
@@ -1164,7 +1221,7 @@ namespace PluginHost {
 
             return (result);
         }
-        void ProcessUnsubscribed(const uint32_t channel, const string& designator, const string& clientId) override
+        void ProcessUnsubscribed(const uint32_t channel, const string& designator, const string& clientId, const string& index) override
         {
             string prefix;
             string instanceId;
@@ -1174,22 +1231,22 @@ namespace PluginHost {
 
             _adminLock.Lock();
 
-            NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, Status::unregistered);
+            NotifyObservers(channel, Core::JSONRPC::Message::Join(prefix, event), instanceId, clientId, index, Status::unregistered);
 
             _adminLock.Unlock();
         }
 
     private:
-        void NotifyObservers(const uint32_t channel, const string event, const string& instanceId, const string& client, const Status status) const
+        void NotifyObservers(const uint32_t channel, const string event, const string& instanceId, const string& client, const string& index, const Status status) const
         {
             StatusCallbackMap::const_iterator it = _observers.find(event);
             if (it != _observers.cend()) {
-                it->second(channel, instanceId, client, status);
+                it->second(channel, instanceId, client, index, status);
             }
         }
 
     private:
-        using EventStatusCallback = std::function<void(const uint32_t, const string&, const string&, Status status)>;
+        using EventStatusCallback = std::function<void(const uint32_t, const string&, const string&, const string&, Status status)>;
         using SubscribeCallback = std::function<bool(const uint32_t, const string&, const string&, const string&, const string&)>;
         using StatusCallbackMap = std::map<string, EventStatusCallback>;
 
