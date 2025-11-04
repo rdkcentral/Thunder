@@ -312,7 +312,7 @@ namespace Core {
             : JobControl(*this)            
             , _queueSize(queueSize)
             , _dispatcher()
-            , _pool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr, (count > 2 ? (count - 1) : 1), (count > 2 ? (count - 1) : 1))
+            , _pool(count, stackSize, queueSize, &_dispatcher, &_scheduler, nullptr, nullptr, (count > 2 ? (count - 1) : 1), (count > 2 ? (count - 1) : 1), 1)
             , _scheduler(_pool)
         {
         }
