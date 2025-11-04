@@ -184,7 +184,7 @@ This method takes no parameters.
   "id": 42,
   "result": [
     {
-      "name": "JController",
+      "name": "JMyInterface",
       "major": 1,
       "minor": 0,
       "patch": 0
@@ -1625,14 +1625,22 @@ Controller Events interface events:
 
 Notifies of a plugin state change.
 
+### Description
+
+If registered for empty callsign, notifications for all services will be sent.
+
 > This notification may also be triggered by client registration.
+
+### Parameters
+
+> The *callsign* parameter shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
 
 ### Notification Parameters
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
 | params | object | mandatory | *...* |
-| params.callsign | string | mandatory | Plugin callsign |
+| params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Activated, Deactivated, Unavailable*) |
 | params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
 
@@ -1644,7 +1652,7 @@ Notifies of a plugin state change.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.1.register@Messenger",
   "params": {
     "event": "statechange",
     "id": "myid"
@@ -1657,30 +1665,38 @@ Notifies of a plugin state change.
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "myid.statechange",
+  "method": "myid.statechange@Messenger",
   "params": {
-    "callsign": "...",
+    "callsign": "Messenger",
     "state": "Deactivated",
     "reason": "Automatic"
   }
 }
 ```
 
-> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statechange``.
+> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statechange@<callsign>``.
 
 <a id="notification_statecontrolstatechange"></a>
 ## *statecontrolstatechange [<sup>notification</sup>](#head_Notifications)*
 
 Notifies of a plugin state change controlled by IStateControl.
 
+### Description
+
+If registered for empty callsign, notifications for all services will be sent.
+
 > This notification may also be triggered by client registration.
+
+### Parameters
+
+> The *callsign* parameter shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
 
 ### Notification Parameters
 
 | Name | Type | M/O | Description |
 | :-------- | :-------- | :-------- | :-------- |
 | params | object | mandatory | *...* |
-| params.callsign | string | mandatory | Plugin callsign |
+| params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Resumed, Suspended, Unknown*) |
 
 ### Example
@@ -1691,7 +1707,7 @@ Notifies of a plugin state change controlled by IStateControl.
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "Controller.1.register",
+  "method": "Controller.1.register@Messenger",
   "params": {
     "event": "statecontrolstatechange",
     "id": "myid"
@@ -1704,15 +1720,15 @@ Notifies of a plugin state change controlled by IStateControl.
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "myid.statecontrolstatechange",
+  "method": "myid.statecontrolstatechange@Messenger",
   "params": {
-    "callsign": "...",
+    "callsign": "Messenger",
     "state": "Suspended"
   }
 }
 ```
 
-> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statecontrolstatechange``.
+> The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statecontrolstatechange@<callsign>``.
 
 <a id="notification_subsystemchange"></a>
 ## *subsystemchange [<sup>notification</sup>](#head_Notifications)*
