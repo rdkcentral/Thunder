@@ -112,7 +112,7 @@ POP_WARNING()
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize, const string& callsign, const uint8_t additionalThreads = 1)
-            : WorkerPool(threads - 1, stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads), additionalThreads)
+            : WorkerPool((threads - additionalThreads), stackSize, queueSize, &_dispatcher, this, (threads > 2 ? (threads - 1) : threads), (threads > 2 ? (threads - 1) : threads), additionalThreads)
             , _dispatcher(callsign)
             , _sink(*this)
         {
