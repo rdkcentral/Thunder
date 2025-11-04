@@ -140,7 +140,6 @@ set(PUBLIC_HEADERS
         Time.h
         Timer.h
         Trace.h
-        TriState.h
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
