@@ -554,6 +554,7 @@ POP_WARNING()
         ~InvokeServerType() override
         {
             _threadPoolEngine.Stop();
+            _threadPoolEngine.WaitForStop();
         }
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Submit(job, Core::infinite);
@@ -566,7 +567,7 @@ POP_WARNING()
         }
 
         void Stop() {
-             _threadPoolEngine.Stop();
+            _threadPoolEngine.Stop();
         }
 
     private:
