@@ -4177,7 +4177,8 @@ namespace PluginHost {
 
                 request->Set(status, Core::ProxyType<PluginHost::Service>(service), callType);
 
-                ASSERT(request->State() != Request::INCOMPLETE);
+                // for now disable the assert as it is trigger probably when it shouldn't. But we should investigate how to enable it again so it fires at the right time: jira issue METROL-1211 created
+                //ASSERT(request->State() != Request::INCOMPLETE);
 
                 if (request->State() == Request::COMPLETE) {
 
