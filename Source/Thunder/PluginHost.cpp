@@ -298,7 +298,7 @@ POP_WARNING()
         return deviceId;
     }
 
-    extern "C" {
+extern "C" {
 
 #ifndef __WINDOWS__
 
@@ -509,6 +509,9 @@ POP_WARNING()
             #endif
         }
     }
+} // extern "C"
+} // PluginHost
+} // Thunder
 
 #ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
@@ -516,6 +519,9 @@ POP_WARNING()
     int main(int argc, char** argv)
 #endif
     {
+        using namespace Thunder;
+        using namespace Thunder::PluginHost;
+
 #ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));
@@ -1038,6 +1044,3 @@ POP_WARNING()
         return 0;
 
     } // End main.
-    } // extern "C"
-}
-}
