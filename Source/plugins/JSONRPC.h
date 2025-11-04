@@ -328,7 +328,7 @@ namespace PluginHost {
 
                     if (!sendifmethod || sendifmethod(entry.Designator())) {
                         if (entry.Callback() == nullptr) {
-                            parent.Notify(entry.ChannelId(), entry.Designator(),, parameter);
+                            parent.Notify(entry.ChannelId(), (entry.Designator() + '.' + event), parameter);
                         }
                         else {
                             entry.Callback()->Event(event, entry.Designator(), _T(""), parameter);
@@ -351,7 +351,7 @@ namespace PluginHost {
 
                     if (!sendifmethod || sendifmethod(entry.Designator(), entry.Index())) {
                         if (entry.Callback() == nullptr) {
-                            string joined = entry.Designator() + '.' + event;
+                            string joined = (entry.Designator() + '.' + event);
                             if (entry.Index().empty() == false) {
                                 joined += "@" + entry.Index();
                             }
@@ -685,7 +685,7 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         uint32_t Notify(const string& event) const
         {
-            return (InternalNotify(event, _T(""), static_cast<SendIfMethod>(nullptr)));
+            return (InternalNotify(event, _T("")));
         }
         template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value && !std::is_convertible<JSONOBJECT, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
@@ -694,7 +694,7 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
         }
-        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIdexed>::value, int>::type = 0>
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, SENDIFMETHOD method) const
         {
             return InternalNotify(event, _T(""), std::move(method));
@@ -1050,8 +1050,8 @@ namespace PluginHost {
         }
 
     private:
-        template<typename SENDIFMETHOD>
-        uint32_t InternalNotify(const string& event, const string& parameters, SENDIFMETHOD sendifmethod) const
+        template<typename SENDIFMETHOD = SendIfMethod>
+        uint32_t InternalNotify(const string& event, const string& parameters, SENDIFMETHOD sendifmethod = nullptr) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
