@@ -261,7 +261,12 @@ namespace Core {
             auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(finish.time_since_epoch());
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(finish.time_since_epoch());
 
-            struct timespec structTime = { seconds.count(), (nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count() };
+            struct timespec structTime;
+            // Designator initialization avaiable from C++20; order fields is undefined.
+            structTime.tv_sec = static_cast<time_t>(seconds.count());
+
+// TODO: validate range [0, 999999999], type probably long or long long
+            structTime.tv_nsec = static_cast<decltype(structTime.tv_nsec)>((nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count());
 
 #ifdef __POSIX__
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
