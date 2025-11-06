@@ -93,8 +93,8 @@ namespace PluginHost {
                 ASSERT(shell != nullptr);
                 if (shell != nullptr) {
 
-                    _adminLock.Lock();
                     shell->Unregister(this);
+                    _adminLock.Lock();
                     _callsign.clear();
 
                     if (_designated != nullptr) {
