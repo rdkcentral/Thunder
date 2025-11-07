@@ -33,6 +33,46 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
+class TestObjectString : public :: Thunder::Core::JSON::Container {
+public :
+    TestObjectString(const TestObjectString&) = delete;
+    TestObjectString(TestObjectString&&) = delete;
+
+    TestObjectString& operator=(const TestObjectString&) = delete;
+    TestObjectString& operator=(TestObjectString&&) = delete;
+
+    TestObjectString()
+        : Model(true)
+    {
+        Add(_T("model"), &Model);
+    }
+
+    ~TestObjectString() override = default;
+
+    ::Thunder::Core::JSON::String Model;
+};
+
+
+class TestOpaqueString : public :: Thunder::Core::JSON::Container {
+public :
+    TestOpaqueString(const TestOpaqueString&) = delete;
+    TestOpaqueString(TestOpaqueString&&) = delete;
+
+    TestOpaqueString& operator=(const TestOpaqueString&) = delete;
+    TestOpaqueString& operator=(TestOpaqueString&&) = delete;
+
+    TestOpaqueString()
+        : Model(false)
+    {
+        Add(_T("model"), &Model);
+    }
+
+    ~TestOpaqueString() override = default;
+
+    ::Thunder::Core::JSON::String Model;
+};
+
+
 TEST(JSONString, Failure)
 {
     std::string textOut{};
@@ -56,8 +96,10 @@ TEST(METROL_1201, PR1976)
     std::string json_multi_faulthy = R"({"model":"This is \\\\\\" the failure"})";
 
     ::Thunder::Core::OptionalType<::Thunder::Core::JSON::Error> result;
+
     std::string textIn = R"json({   "payload"   :    "This is test\" message"})json";
     std::string textOut = "";
+
     ::Thunder::Core::JSON::String json;
     ::Thunder::Core::JSON::String opaque;
 
@@ -65,119 +107,140 @@ TEST(METROL_1201, PR1976)
     json.FromString(textIn, result);
     json.ToString(textOut);
 
-    printf("------------------------------------------------------------------------------------------------\n");
-    // Print the strings
-    printf("String  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", textIn.c_str());
-    printf("Reverse      => [%s]\n", textOut.c_str());
-
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(textOut.c_str(), R"("{\"payload\":\"This is test\\\" message\"}")");
 
-    printf("------------------------------------------------------------------------------------------------\n");
     opaque.FromString(textIn, result);
     opaque.ToString(textOut);
-    printf("String  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", textIn.c_str());
-    printf("Reverse      => [%s]\n", textOut.c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(textOut.c_str(), R"("{\"payload\":\"This is test\\\" message\"}")");
 
     ::Thunder::Core::JSON::VariantContainer testVariant;
-//	  TestObjectString testObject;
-//    TestOpaqueString testOpaque;
 
-    printf("------------------------------------------------------------------------------------------------\n");
+	  TestObjectString testObject;
+    TestOpaqueString testOpaque;
+
     testVariant.FromString(json_single_begin, result);
-    printf("Variant [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testVariant[_T("model")].Value().c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(testVariant[_T("model")].Value().c_str(), R"("\"This is the single")");
 
-//    testObject.FromString(json_single_begin, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_single_begin, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_single_begin, result);
 
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"("This is the single)");
+
+    testOpaque.FromString(json_single_begin, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("\"This is the single")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
+    testOpaque.Clear();
+    testObject.Clear();
+
     testVariant.FromString(json_single_middle, result);
 
     EXPECT_FALSE(result.IsSet());
 
-//    testObject.FromString(json_single_middle, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_single_middle, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_single_middle, result);
 
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"(This is the " single)");
+
+    testOpaque.FromString(json_single_middle, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("This is the \" single")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
+    testOpaque.Clear();
+    testObject.Clear();
+
     testVariant.FromString(json_single_end, result);
-    printf("Variant [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testVariant[_T("model")].Value().c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(testVariant[_T("model")].Value().c_str(), R"("This is the single\"")");
 
-//    testObject.FromString(json_single_end, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_single_end, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_single_end, result);
 
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"(This is the single")");
+
+    testOpaque.FromString(json_single_end, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("This is the single\"")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
+    testOpaque.Clear();
+    testObject.Clear();
+
     testVariant.FromString(json_multi_begin, result);
-    printf("Variant [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testVariant[_T("model")].Value().c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(testVariant[_T("model")].Value().c_str(), R"("\\\\"This is the multi")");
 
-//    testObject.FromString(json_multi_begin, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_multi_begin, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_multi_begin, result);
 
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"(\\\"This is the multi)");
+
+    testOpaque.FromString(json_multi_begin, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("\\\\"This is the multi")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
+    testOpaque.Clear();
+    testObject.Clear();
+
     testVariant.FromString(json_multi_middle, result);
-    printf("Variant [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testVariant[_T("model")].Value().c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(testVariant[_T("model")].Value().c_str(), R"("This is the \\\\" multi")");
 
-//    testObject.FromString(json_multi_middle, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_multi_middle, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_multi_middle, result);
 
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"(This is the \\\" multi)");
+
+    testOpaque.FromString(json_multi_middle, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("This is the \\\\" multi")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
+    testOpaque.Clear();
+    testObject.Clear();
+
     testVariant.FromString(json_multi_end, result);
-    printf("Variant [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testVariant[_T("model")].Value().c_str());
 
     EXPECT_FALSE(result.IsSet());
     EXPECT_STREQ(testVariant[_T("model")].Value().c_str(), R"("This is the multi\\\\"")");
 
-//    testObject.FromString(json_multi_end, result);
-//    printf("Object  [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
-//    testOpaque.FromString(json_multi_end, result);
-//    printf("Opaque  <%s> => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testOpaque.Model.Value().c_str());
+    testObject.FromString(json_multi_end, result);
 
-	// The following should fail
-    printf("------------------------------------------------------------------------------------------------\n");
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testObject.Model.Value().c_str(), R"(This is the multi\\\")");
+
+    testOpaque.FromString(json_multi_end, result);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STREQ(testOpaque.Model.Value().c_str(), R"("This is the multi\\\\"")");
+
     testVariant.Clear();
-//    testOpaque.Clear();
-//    testObject.Clear();
-//    testObject.FromString(json_multi_faulthy);
-//    printf("Result [%s] => [%s]\n", result.IsSet() ? result.Value().Message().c_str() : "No Error", testObject.Model.Value().c_str());
+    testOpaque.Clear();
+    testObject.Clear();
+
+	  // The following should fail
+    // No error set
+
+    testObject.FromString(json_multi_faulthy);
+
+    EXPECT_FALSE(result.IsSet());
+    EXPECT_STRNE(testObject.Model.Value().c_str(), R"(This is \\\\\" the failure)");
 }
 
 } } } // Thunder::Tests::Core
