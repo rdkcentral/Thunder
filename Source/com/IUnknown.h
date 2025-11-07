@@ -317,38 +317,9 @@ namespace ProxyStub {
 
             return (message);
         }
-        inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
-        {
-    	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 
-            _adminLock.Lock();
-	        Core::ProxyType<Core::IPCChannel> channel (_channel);
-            _adminLock.Unlock();
+        uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const;
 
-            if (channel.IsValid() == true) {
-
-                if (channel->InProgress() == true) {
-                    ASSERT(false && "IPC in progress detected on this channel. Possible deadlock!");
-                    SYSLOG(Logging::Error, (_T("IPC in progress detected on this channel for Interface [0x%X], Method ID [0x%X]. Possible deadlock!"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
-                }
-
-                result = channel->Invoke(message, waitTime);
-
-                if (result != Core::ERROR_NONE) {
-
-                    if (result == Core::ERROR_TIMEDOUT) {
-                        Shutdown();
-                    }
-
-                    result |= COM_ERROR;
-
-                    // Oops something failed on the communication. Report it.
-                    TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
-                }
-            }
-
-            return (result);
-        }
         inline void Complete(RPC::Data::Setup& response)
         {
             uint32_t result = Release();
