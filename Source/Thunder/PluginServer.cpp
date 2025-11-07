@@ -356,7 +356,7 @@ namespace PluginHost {
             if (_handler == nullptr) {
                 SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
-                _reason = reason::INITIALIZATION_FAILED;
+                _reason = reason::INSTANTIATION_FAILED;
                 State(DEACTIVATED);
 
                 Unlock();
