@@ -565,7 +565,7 @@ namespace Core {
         ThreadPool& operator=(ThreadPool&&) = delete;
         ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
             #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
             : _queue(lowPriorityThreadCount, mediumPriorityThreadCount, queueSize)
             #else
@@ -579,8 +579,8 @@ namespace Core {
             , _callback(callback)
             , _unitsSet()
         {
-            // FIXME!!!
-            // ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
+            DEBUG_VARIABLE(additionalThreads);
+            ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
 
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -742,6 +742,20 @@ namespace Core {
                 index->Stop();
                 index++;
             }
+        }
+        bool WaitForStop(uint32_t timeout = Core::infinite) 
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
+            
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+            
+            return allStopped;
         }
         bool HasThreadID(const thread_id id) const
         {

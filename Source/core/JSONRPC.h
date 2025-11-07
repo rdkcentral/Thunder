@@ -180,6 +180,10 @@ namespace Core {
                         Code = ApplicationErrorCodeBase - Core::ERROR_UNAVAILABLE;
                         Text = _T("The service is not active.");
                         break;
+                    case Core::ERROR_NOT_SUPPORTED:
+                        Code = ApplicationErrorCodeBase - Core::ERROR_NOT_SUPPORTED;
+                        Text = _T("The operation is not supported.");
+                        break;
                     default:
                         if ((frameworkError & 0x80000000) == 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
