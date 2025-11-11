@@ -75,7 +75,7 @@ namespace Controller {
 
         // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @default:1 @restrict:1..255 */) = 0;
+        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @restrict:1..255 */) = 0;
 
         // @property
         // @brief SSDP network discovery results
@@ -378,9 +378,9 @@ namespace Controller {
         virtual Core::hresult Proxies(const Core::OptionalType<string>& linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
-        // @text:framework @alt-deprecated:version
+        // @alt-deprecated:version
         // @brief Framework version
-        virtual Core::hresult Version(Data::Version& version /* @out */) const = 0;
+        virtual Core::hresult Framework(Data::Version& version /* @out */) const = 0;
 
         // @property
         // @brief Workerpool threads
