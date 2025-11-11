@@ -315,9 +315,9 @@ namespace Core {
         WorkerPool& operator=(const WorkerPool&) = delete;
 
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount)
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount, additionalThreads)
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
@@ -436,7 +436,10 @@ POP_WARNING()
             #endif
             _threadPool.Stop();
         }
-
+        bool WaitForStop(uint32_t timeout = Core::infinite)
+        {
+            return _threadPool.WaitForStop(timeout);
+        }
     private:
         Scheduler _scheduler;
         ThreadPool _threadPool;
