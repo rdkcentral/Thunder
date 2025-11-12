@@ -314,8 +314,13 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
+            : WorkerPool(threadCount, stackSize, queueSize, dispatcher, callback, threadCount, threadCount, 1)
+        {
+        }
+
 PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
-        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback, const uint16_t lowPriorityThreadCount, const uint16_t mediumPriorityThreadCount, const uint8_t additionalThreads = 0)
             : _scheduler(this, _timer)
             , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount, additionalThreads)
             , _external(_threadPool, dispatcher)
