@@ -262,6 +262,31 @@ namespace Core {
 
                 return (result);
             }
+            /**
+             * @brief Attempt to submit the associated job to the thread pool.
+             *
+             * This function inspects and updates the internal atomic _state to decide
+             * how to handle the submission:
+             * - If the pool state is IDLE, it atomically transitions IDLE -> SUBMITTED
+             *   and returns a ProxyType<IDispatch> that represents the newly submitted job.
+             * - If the pool state is EXECUTING or SCHEDULE, it atomically sets the state
+             *   to RESUBMIT (EXECUTING -> RESUBMIT or SCHEDULE -> RESUBMIT) to request
+             *   a re-run, but does not return a dispatch proxy.
+             * - In any other state (including already RESUBMIT), no state change is made
+             *   and an empty proxy is returned.
+             *
+             * The implementation uses compare_exchange_strong on a shared atomic state
+             * and relies on short-circuit evaluation to perform at most one successful
+             * transition. Callers should inspect the returned ProxyType<IDispatch> to
+             * determine whether this call actually enqueued the job (non-empty) or
+             * merely marked it for resubmission / left it unchanged (empty).
+             *
+             * Thread-safety: safe to call concurrently; state transitions are performed
+             * atomically. No exception guarantees beyond those of ProxyType construction.
+             *
+             * @return ProxyType<IDispatch> Non-empty when the job was transitioned from
+             *         IDLE to SUBMITTED (i.e., submission succeeded). Empty otherwise.
+             */
             ProxyType<IDispatch> Submit() {
 
                 state executing = EXECUTING;
