@@ -8,10 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-# Find Thunder (adjust path as needed)
-# You may need to set Thunder_DIR or adjust this based on your setup
-find_package(Thunder REQUIRED)
-
 # Add the test executable
 add_executable(test_WorkerPool_SelfResubmit
     test_WorkerPool_SelfResubmit.cpp
