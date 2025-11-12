@@ -20,11 +20,6 @@ target_link_libraries(test_WorkerPool_SelfResubmit
     ${NAMESPACE}Core::${NAMESPACE}Core
 )
 
-# Include Thunder headers
-target_include_directories(test_WorkerPool_SelfResubmit PRIVATE
-    ${Thunder_INCLUDE_DIRS}
-)
-
 install(
     TARGETS test_WorkerPool_SelfResubmit
     DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Test)
