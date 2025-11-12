@@ -334,6 +334,7 @@ POP_WARNING()
         ~WorkerPool()
         {
             _threadPool.Stop();
+            _threadPool.WaitForStop();
             delete[] _metadata.Slot;
         }
 
