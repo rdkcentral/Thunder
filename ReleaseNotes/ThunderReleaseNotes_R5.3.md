@@ -10,7 +10,7 @@ This document describes the changes in Thunder, ThunderTools and ThunderInterfac
 
 ##  Process Changes and new Features 
 
-### windows build artifacts cleabup
+### windows build artifacts cleaup
 
 ### scripts before thunder start in cmake
 
@@ -20,6 +20,9 @@ https://github.com/rdkcentral/Thunder/commit/cbe2b251dcc471033c007497c97fddfa4c0
 ### action build with performsance monitorgin feature aan
 
 
+voore meten json rpc perfmance
+
+
 ### copilut scanning and issues fixed
 
 
@@ -27,10 +30,20 @@ https://github.com/rdkcentral/Thunder/commit/cbe2b251dcc471033c007497c97fddfa4c0
 
 ### change process_t pid_t????
 
+deprectated er weer afv en later fixen issue aanmaken om process_t wweer terug te brengen_
 
 ### Feature: Warning reporting for websocket open and close
 
 https://github.com/rdkcentral/Thunder/commit/fb56cf6048d5d866f9a3cbed8fe990bc90d0e2d1
+
+### server certiofivcates for TLS 
+
+nu niet melden, foxen we later wel samen
+
+
+### Change: open comrpc port later
+
+https://github.com/rdkcentral/Thunder/commit/8b78526a13a3d9405c36d6199918660fdc894c26
 
 
 ### make thunder uclib compatible
@@ -59,12 +72,15 @@ https://github.com/rdkcentral/Thunder/commit/4cb7e2be272cd013bb7ac968806c6bcf5f3
 
 https://github.com/rdkcentral/Thunder/commit/9986dcb4b67da4b7deea11fd55613ad0ddebfd5f
 
+### Feature: dooir compisit naar remote plugin 
 
-### ?? https://github.com/rdkcentral/Thunder/commit/19bcbdb8261324b35618bf1aefe4171a11a61b4c
+### version hANDLING FOR distribuited  https://github.com/rdkcentral/Thunder/commit/e4c6a3f28807a745c3bc60ee30d6e44c27c4e42c
 
-### ??? https://github.com/rdkcentral/Thunder/commit/e4c6a3f28807a745c3bc60ee30d6e44c27c4e42c
+sebas details
 
 ### Change: metadata loading confihurable
+
+laod meta data uitxetten
 
 https://github.com/rdkcentral/Thunder/commit/648fa59038a68fb8f9b404afafc3b5aefe22702b
 
@@ -89,15 +105,15 @@ https://github.com/rdkcentral/Thunder/commit/59a06647baede98f8832a18caae34439ae3
 https://github.com/rdkcentral/Thunder/commit/b1e19a25da5ea2f2b0d6aa057a290a83a4be1f57
 https://github.com/rdkcentral/Thunder/commit/c2ab8d2d5dab539e0b12999d17440e287ce62cce
 
-ThunderPlugin confihureerbaar maken issue aanmaken?
+ThunderPlugin confihureerbaar maken issue aanmaken? Issue maken
 
 ### Feature: syslog on comrpc timeout
 
 https://github.com/rdkcentral/Thunder/commit/768e0765ceaebad616dec1d9a7fce64d0d12cf2c
 
-### Feature ??? : https://github.com/rdkcentral/Thunder/commit/02212d7fe50852c62f163baa95d4603e71307662
-
 ### Change: fix exists and version and versions
+
+sebas vragen
 
 https://github.com/rdkcentral/Thunder/commit/7eb4b83541307fb11e39a2a0ed842730ebdf50ec
 https://github.com/rdkcentral/Thunder/commit/41a3d4d33ced679e034be9fa27adc645771f9b65
@@ -105,11 +121,11 @@ https://github.com/rdkcentral/Thunder/commit/e6cc6520f6df854dd32e4a6b1b204603144
 https://github.com/rdkcentral/Thunder/commit/f4c077e2db2ba3d1edff86e644f8ca193c703c1f
 https://github.com/rdkcentral/Thunder/commit/4f858a0b1a920d1282372f0ed5b99d92883dba4d
 
-### Feature ??? : https://github.com/rdkcentral/Thunder/commit/02212d7fe50852c62f163baa95d4603e71307662
-
 ###
 
-alleen bug fix of meer nodig: https://github.com/rdkcentral/Thunder/commit/d500fd921ffb42fb526d0c9a2bce05e9bca38831
+Library and service discovery improvents: https://github.com/rdkcentral/Thunder/commit/d500fd921ffb42fb526d0c9a2bce05e9bca38831
+Service does no need to be unique anymorre
+
 
 ### Feature: allow per callsign registartionin IShell
 
@@ -117,7 +133,7 @@ https://github.com/rdkcentral/Thunder/commit/348dd900d3e52093e4e0f4ab88c8d49ba2a
 
 ""Add optional callsign to Register, notify Activated in Register" laatste deden we toch al
 
-Eh, hebben we unavailable nu ook doorgekoppeld... 
+Eh, hebben we hibernated nu ook doorgekoppeld... nope (en moet destroyed ook, moeten we dit nog voor 5.3 doen?)
 
 aLso Smart types updated to use this feature
 
@@ -130,6 +146,8 @@ Not used, more modern variants available (e.g. optional<bool>)
 https://github.com/rdkcentral/Thunder/commit/06c633faceab10e2fdd0b1f6e1a618eec0e40a27
 
 ### Feature: allow per callsign in IController
+
+sebas vragen voor details?
 
 breaked backward compagtibility?? (zie PR wel intern bwd comp) ook meer snapshots (ben ff vergeten wat we ook alweer hadden afgsproken)
 
@@ -167,18 +185,6 @@ https://github.com/rdkcentral/Thunder/commit/eea443cde3827ec3a44fcc8790176f39bf6
 ### Change: connector timelout setable
 
 In code, makes smartlinktype timeout for xonnwection possible
-
-### Change: websocket ping improvements
-
-https://github.com/rdkcentral/Thunder/commit/b34be3be21f2cb23d2e4a8cd68caf823852ba8dd
-
-https://github.com/rdkcentral/Thunder/commit/842b6a1e13e15e45bd4e72bd278d9c3055c357ba
-
-https://github.com/rdkcentral/Thunder/commit/2cecd49e2e1049e8a778c623d85ca555c6f6c45b
-
-https://github.com/rdkcentral/Thunder/commit/0233336aab43626c7bc78182845f75d1ad58ffee
-
-
 
 ### Change: General bug fixes
 
@@ -366,16 +372,21 @@ ThunderNanoServicesRDK
 all plugins updated for 5.x and where applicable for josn rpoc interface case 
 
 updated for connection closed assert: https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/commit/29e23976212d93e82ad6b1948c152078672c3d82
-Did we update the PSG (I know I discussed with Tym) and the plugins in TNS?
+Did we update the PSG (I know I discussed with Tym) and the plugins in TNS? NOPE WE DID NOT!!
+
+ook: dangling wanneer niet nodig... (ook derived can Comlink::Notification)
+en ook register notificatie bij impl wanneer er geen event is (register method bestaat niet eens)
+en ook geen ICOMLink::Notification register wat dan wel klopt maar botst met punt 1
+    en idd als er wel dangling zou moeten zijn registreren we ook niet...
 
 Monitor bug fixes
 
 MessageControl bug fixes
 
-BridgeLink plugin added (example for composit plugin)
+BridgeLink plugin added (example using thge composit plugin feature to create a distrubted plugin)
 
 OCDM fix
-
+ issue aanmaken om de ocdm lib fix terug te draaien
 
 
 -------------
@@ -387,6 +398,3 @@ Compositor changes
 
 -------------
 
-etc
-
-ThunderLibraries?
