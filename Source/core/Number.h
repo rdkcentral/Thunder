@@ -25,6 +25,8 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
+#include <limits>
+
 namespace Thunder {
 namespace Core {
     extern "C" {
@@ -1049,15 +1051,207 @@ namespace Core {
         uint8_t _size;
     };
 
-}
+    class SInt24 {
+    public:
+        static constexpr uint8_t SizeOf = 3;
+        static constexpr uint32_t Max = 0x7FFFFF;
+        static constexpr int32_t Min = 0xFF800000;
+
+        using InternalType = int32_t;
+
+        SInt24()
+            : _value(0)
+        {
+        }
+        SInt24(const int32_t value)
+            : _value(value | (value & 0x800000 ? 0xFF000000 : 0))
+        {
+            ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
+        }
+        SInt24(const SInt24&) = default;
+        SInt24(SInt24&&) = default;
+        ~SInt24() = default;
+
+    public:
+        SInt24& operator=(const SInt24& value) = default;
+        SInt24& operator=(SInt24&& value) = default;
+        SInt24& operator=(const int32_t value)
+        {
+            ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
+            _value = (value | (value & 0x800000 ? 0xFF000000 : 0));
+            return (*this);
+        }
+        operator int32_t() const
+        {
+            return (_value);
+        }
+
+    private:
+        int32_t _value;
+    };
+
+    class UInt24 {
+    public:
+        static constexpr uint8_t SizeOf = 3;
+        static constexpr uint32_t Max = 0xFFFFFF;
+        static constexpr uint32_t Min = 0;
+
+        using InternalType = uint32_t;
+
+        UInt24()
+            : _value(0)
+        {
+        }
+        UInt24(const UInt24& value) = default;
+        UInt24(UInt24&& value) = default;
+        UInt24(const uint32_t value)
+            : _value(value)
+        {
+            ASSERT((value >> 24) == 0);
+        }
+        ~UInt24() = default;
+
+    public:
+        UInt24& operator=(const UInt24& copy) = default;
+        UInt24& operator=(UInt24&& move) = default;
+        UInt24& operator=(const uint32_t value)
+        {
+            ASSERT((value >> 24) == 0);
+            _value = value;
+            return (*this);
+        }
+        operator uint32_t() const
+        {
+            return (_value);
+        }
+
+    private:
+        uint32_t _value;
+    };
+
+    template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
+    static constexpr uint8_t RealSize()
+    {
+        return (sizeof(T));
+    }
+    template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
+    static constexpr uint8_t RealSize()
+    {
+        return (T::SizeOf);
+    }
+
 } // namespace Core
+} // namespace Thunder
+
+namespace std { // seems to be allowed/mandatory to specialize inside the std namespace
+
+template <>
+class numeric_limits<Thunder::Core::SInt24> {
+
+public:
+    static constexpr bool is_specialized = true;
+
+    static constexpr Thunder::Core::SInt24::InternalType min() noexcept { return Thunder::Core::SInt24::Min; }
+    static constexpr Thunder::Core::SInt24::InternalType max() noexcept { return Thunder::Core::SInt24::Max; }
+    static constexpr Thunder::Core::SInt24::InternalType lowest() noexcept { return min(); }
+
+    static constexpr int digits = 23;
+    static constexpr int digits10 = 6;
+    static constexpr int max_digits10 = 0;
+
+    static constexpr bool is_signed = true;
+    static constexpr bool is_integer = true;
+    static constexpr bool is_exact = true;
+    static constexpr int radix = 2;
+
+    static constexpr Thunder::Core::SInt24::InternalType epsilon() noexcept { return 0; }
+    static constexpr Thunder::Core::SInt24::InternalType round_error() noexcept { return 0; }
+
+    static constexpr int min_exponent = 0;
+    static constexpr int min_exponent10 = 0;
+    static constexpr int max_exponent = 0;
+    static constexpr int max_exponent10 = 0;
+
+    static constexpr bool has_infinity = false;
+    static constexpr bool has_quiet_NaN = false;
+    static constexpr bool has_signaling_NaN = false;
+    static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
+    static constexpr bool has_denorm_loss = false;
+
+    static constexpr Thunder::Core::SInt24::InternalType infinity() noexcept { return static_cast<Thunder::Core::SInt24::InternalType>(0); }
+    static constexpr Thunder::Core::SInt24::InternalType quiet_NaN() noexcept { return static_cast<Thunder::Core::SInt24::InternalType>(0); }
+    static constexpr Thunder::Core::SInt24::InternalType signaling_NaN() noexcept { return static_cast<Thunder::Core::SInt24::InternalType>(0); }
+    static constexpr Thunder::Core::SInt24::InternalType denorm_min() noexcept { return static_cast<Thunder::Core::SInt24::InternalType>(0); }
+
+    static constexpr bool is_iec559 = false;
+    static constexpr bool is_bounded = true;
+    static constexpr bool is_modulo = false;
+
+    static constexpr bool traps = true;
+    static constexpr bool tinyness_before = false;
+    static constexpr std::float_round_style round_style = std::round_toward_zero;
+};
+
+template <>
+class numeric_limits<Thunder::Core::UInt24> {
+
+public:
+    static constexpr bool is_specialized = true;
+
+    static constexpr Thunder::Core::UInt24::InternalType min() noexcept { return Thunder::Core::UInt24::Min; }
+    static constexpr Thunder::Core::UInt24::InternalType max() noexcept { return Thunder::Core::UInt24::Max; }
+    static constexpr Thunder::Core::UInt24::InternalType lowest() noexcept { return min(); }
+
+    static constexpr int digits = 24;
+    static constexpr int digits10 = 7;
+    static constexpr int max_digits10 = 0;
+
+    static constexpr bool is_signed = false;
+    static constexpr bool is_integer = true;
+    static constexpr bool is_exact = true;
+    static constexpr int radix = 2;
+
+    static constexpr Thunder::Core::UInt24::InternalType epsilon() noexcept { return 0; }
+    static constexpr Thunder::Core::UInt24::InternalType round_error() noexcept { return 0; }
+
+    static constexpr int min_exponent = 0;
+    static constexpr int min_exponent10 = 0;
+    static constexpr int max_exponent = 0;
+    static constexpr int max_exponent10 = 0;
+
+    static constexpr bool has_infinity = false;
+    static constexpr bool has_quiet_NaN = false;
+    static constexpr bool has_signaling_NaN = false;
+    static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
+    static constexpr bool has_denorm_loss = false;
+
+    static constexpr Thunder::Core::UInt24::InternalType infinity() noexcept { return static_cast<Thunder::Core::UInt24::InternalType>(0); }
+    static constexpr Thunder::Core::UInt24::InternalType quiet_NaN() noexcept { return static_cast<Thunder::Core::UInt24::InternalType>(0); }
+    static constexpr Thunder::Core::UInt24::InternalType signaling_NaN() noexcept { return static_cast<Thunder::Core::UInt24::InternalType>(0); }
+    static constexpr Thunder::Core::UInt24::InternalType denorm_min() noexcept { return static_cast<Thunder::Core::UInt24::InternalType>(0); }
+
+    static constexpr bool is_iec559 = false;
+    static constexpr bool is_bounded = true;
+    static constexpr bool is_modulo = true;
+
+    static constexpr bool traps = true;
+    static constexpr bool tinyness_before = false;
+    static constexpr std::float_round_style round_style = std::round_toward_zero;
+};
+
+} // namespace std
 
 template <typename NEW_TYPE, typename ORIGINAL_TYPE>
 NEW_TYPE int_cast(const ORIGINAL_TYPE& input)
 {
     ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
     ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+
+    PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
     return (static_cast<NEW_TYPE>(input));
+
+    POP_WARNING()
 }
 
 #endif // __NUMBER_H
