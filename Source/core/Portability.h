@@ -1007,8 +1007,6 @@ namespace Core {
 
     #undef ERROR_CODE
 
-    // Convert error enumerations to string
-
     template<uint32_t N>
     inline const TCHAR* _Err2Str()
     {
@@ -1032,10 +1030,16 @@ namespace Core {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
     };
 
-    inline const TCHAR* ErrorToString(Core::hresult code)
-    {
-        return _bogus_ErrorToString<>(code & (~COM_ERROR));
-    }
+    EXTERNAL string ErrorToString(Core::hresult code);
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    using CustomCodeToStringHandler = const TCHAR* (*)(int32_t code);
+
+    // can only set one, not multithreaded safe
+    EXTERNAL void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler);
+
+#endif
 
     #undef ERROR_CODE
 

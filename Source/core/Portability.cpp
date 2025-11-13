@@ -463,6 +463,31 @@ namespace Core {
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
+namespace {
+
+    static CustomCodeToStringHandler customerrorcodehandler = nullptr;
+
+    string HandleCustomErrorCodeToString(int32_t customncode)
+    {
+        string text;
+        const TCHAR* externaltext = nullptr;
+
+        if (customncode == 0) {
+            text = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((externaltext = customerrorcodehandler(customncode)) == nullptr)) {
+            text = _T("Custom Error: ") + Core::NumberType<int32_t>(customncode).Text();
+        } else {
+            text = externaltext;
+        }
+
+        return text;
+    }
+
+}
+    void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler) {
+        customerrorcodehandler = handler;
+    }
+
     hresult CustomCode(int32_t customCode) {
 
         static_assert(CUSTOM_ERROR == 0x1000000, "Static assert to be assumed 25th bit in code below");
@@ -499,6 +524,18 @@ namespace Core {
     }
 
 #endif
+
+    string ErrorToString(Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int32_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToString(customcode);
+        }
+#endif
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
+    }
 
 } // namespace Core
 } // namespace Thunder
