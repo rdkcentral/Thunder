@@ -33,8 +33,8 @@ namespace Core {
             // in release in case the length does not fit we do not want to send data at all, then it is more obvious to the recipient something is wrong instead of only sending partial data
             NEW_TYPE length = 0;
 
-            if (input <= std::numeric_limits<NEW_TYPE>::max()) {
-                length = int_cast<NEW_TYPE>(input);
+            if (Core::check_and_cast<NEW_TYPE, ORIGINAL_TYPE>(input, length) == false) {
+                length = 0;            
             }
 
             return (length);

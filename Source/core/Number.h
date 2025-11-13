@@ -1086,6 +1086,11 @@ namespace Core {
             return (_value);
         }
 
+        int32_t AsSInt24() const
+        {
+            return (_value & 0xFFFFFF);
+        }
+
     private:
         int32_t _value;
     };
@@ -1125,6 +1130,11 @@ namespace Core {
             return (_value);
         }
 
+        uint32_t AsUInt24() const // just to be consistent with SInt24
+        {
+            return (_value & 0xFFFFFF); // in debug assert should already have fired on assignment
+        }
+
     private:
         uint32_t _value;
     };
@@ -1138,6 +1148,29 @@ namespace Core {
     static constexpr uint8_t RealSize()
     {
         return (T::SizeOf);
+    }
+        
+    template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+    bool check_and_cast(const ORIGINAL_TYPE& input, NEW_TYPE& output)
+    {
+        ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
+        ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+
+        bool success = false;
+
+        if ((input <= std::numeric_limits<NEW_TYPE>::max()) && (input >= std::numeric_limits<NEW_TYPE>::min())) {
+
+            success = true;
+
+            PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
+            output = static_cast<NEW_TYPE>(input);
+
+            POP_WARNING()
+        }
+
+        return success;
+
     }
 
 } // namespace Core

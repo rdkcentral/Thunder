@@ -926,6 +926,16 @@ namespace Core {
     }
 
     #define COM_ERROR (0x80000000)
+    #define CUSTOM_ERROR (0x1000000)
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    // transform a custum code into an hresult
+    EXTERNAL Core::hresult CustomCode(int32_t customCode);
+    // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
+    EXTERNAL int32_t IsCustomCode(Core::hresult code);
+
+#endif
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \

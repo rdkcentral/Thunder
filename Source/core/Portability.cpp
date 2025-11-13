@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "SystemInfo.h"
 #include "Serialization.h"
+#include "Number.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -459,5 +460,45 @@ namespace Core {
 
         return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    hresult CustomCode(int32_t customCode) {
+
+        static_assert(CUSTOM_ERROR == 0x1000000, "Static assert to be assumed 25th bit in code below");
+
+        hresult result = Core::ERROR_NONE;
+
+        if (customCode != 0) {
+            SInt24 code; 
+            if (Core::check_and_cast<SInt24, int32_t>(customCode, code) == true) {
+                result = static_cast<hresult>(code.AsSInt24());
+            } else {
+                result = 0; // set invalid customCode result;
+            }
+            result |= CUSTOM_ERROR; // set custom code bit
+        }
+
+        return result;
+    }
+
+    int32_t IsCustomCode(Core::hresult code) {
+        static_assert(CUSTOM_ERROR == 0x1000000, "Static assert to be assumed 25th bit in code below");
+
+        int32_t result = 0;
+
+        if ((code & CUSTOM_ERROR) != 0) {
+            SInt24 custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
+            result = custumcode;
+            if (result == 0) {
+                result = std::numeric_limits<int32_t>::min();
+            }
+        }
+
+        return result;
+    }
+
+#endif
+
 } // namespace Core
 } // namespace Thunder
