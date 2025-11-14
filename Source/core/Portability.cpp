@@ -467,20 +467,33 @@ namespace {
 
     static CustomCodeToStringHandler customerrorcodehandler = nullptr;
 
-    string HandleCustomErrorCodeToString(int32_t customncode)
+    const TCHAR* HandleCustomErrorCodeToString(int32_t customcode)
     {
-        string text;
-        const TCHAR* externaltext = nullptr;
+        const TCHAR* text = nullptr;
 
-        if (customncode == 0) {
+        if (customcode == std::numeric_limits<int32_t>::min()) {
             text = _T("Invalid Custom ErrorCode set");
-        } else if ((customerrorcodehandler == nullptr) || ((externaltext = customerrorcodehandler(customncode)) == nullptr)) {
-            text = _T("Custom Error: ") + Core::NumberType<int32_t>(customncode).Text();
-        } else {
-            text = externaltext;
-        }
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            text = _T("Undefined Custom Error");
+        } 
 
         return text;
+    }
+
+    string HandleCustomErrorCodeToStringExtended(int32_t customcode)
+    {
+        string result;
+
+        const TCHAR* text = nullptr;
+        if (customcode == std::numeric_limits<int32_t>::min()) {
+            result = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            result = _T("Undefined Custom Error: ") + Core::NumberType<int32_t>(customcode).Text();
+        } else {
+            result = text;
+        }
+
+        return result;
     }
 
 }
@@ -495,8 +508,8 @@ namespace {
         hresult result = Core::ERROR_NONE;
 
         if (customCode != 0) {
-            SInt24 code; 
-            if (Core::check_and_cast<SInt24, int32_t>(customCode, code) == true) {
+            int24_t code; 
+            if (Core::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
                 result = static_cast<hresult>(code.AsSInt24());
             } else {
                 result = 0; // set invalid customCode result;
@@ -513,7 +526,7 @@ namespace {
         int32_t result = 0;
 
         if ((code & CUSTOM_ERROR) != 0) {
-            SInt24 custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
+            int24_t custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
             result = custumcode;
             if (result == 0) {
                 result = std::numeric_limits<int32_t>::min();
@@ -525,7 +538,7 @@ namespace {
 
 #endif
 
-    string ErrorToString(Core::hresult code)
+    const TCHAR* ErrorToString(Core::hresult code)
     {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
         int32_t customcode = IsCustomCode(code);
@@ -536,6 +549,19 @@ namespace {
 #endif
         return _bogus_ErrorToString<>(code & (~COM_ERROR));
     }
+
+    string ErrorToStringExtended(Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int32_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToStringExtended(customcode);
+        }
+#endif
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
+    }
+
 
 } // namespace Core
 } // namespace Thunder

@@ -1274,6 +1274,9 @@ public:
 
 } // namespace std
 
+using uint24_t = Thunder::Core::UInt24;
+using int24_t = Thunder::Core::SInt24;
+
 template <typename NEW_TYPE, typename ORIGINAL_TYPE>
 NEW_TYPE int_cast(const ORIGINAL_TYPE& input)
 {

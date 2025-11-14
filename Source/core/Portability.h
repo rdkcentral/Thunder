@@ -1030,7 +1030,8 @@ namespace Core {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
     };
 
-    EXTERNAL string ErrorToString(Core::hresult code);
+    EXTERNAL const TCHAR* ErrorToString(Core::hresult code);
+    EXTERNAL string ErrorToStringExtended(Core::hresult code);
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
