@@ -423,14 +423,6 @@ namespace Thunder {
         {
             TRACE_L5("Destructor SocketPort <%p>", (this));
 
-            // The Closed(), internal method, run on the ResourceMonitor thread,
-            // will lock and clear the m_State if applicable. We want to make sure
-            // that we can take the lock again, to make sure that the Closed() 
-            // released it. All methods, calling the Closed(), will nolonger refer 
-            // to any members or methods in this class, so it is safe to destruct
-            // after we have aquired the lock!
-            m_syncAdmin.Lock();
-
             // Make sure the socket is closed before you destruct. Otherwise
             // the virtuals might be called, which are destructed at this point !!!!
             ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
@@ -438,7 +430,6 @@ namespace Thunder {
             if (m_Socket != INVALID_SOCKET) {
                 DestroySocket(m_Socket);
             }
-            m_syncAdmin.Unlock();
 
             ::free(m_SendBuffer);
         }
@@ -1306,7 +1297,6 @@ namespace Thunder {
             bool result = true;
 
             ASSERT(m_Socket != INVALID_SOCKET);
-            ASSERT(Core::Thread::ThreadId() == ResourceMonitor::Instance().Id());
 
             m_syncAdmin.Lock();
 
