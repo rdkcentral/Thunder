@@ -559,7 +559,12 @@ namespace {
             return HandleCustomErrorCodeToStringExtended(customcode);
         }
 #endif
-        return _bogus_ErrorToString<>(code & (~COM_ERROR));
+        string result = _bogus_ErrorToString<>(code & (~COM_ERROR));
+
+        if (result.empty() == true) {
+            result = _T("Undefined Thunder error code: ") + Core::NumberType<Core::hresult>(code).Text();
+        }
+        return result;
     }
 
 

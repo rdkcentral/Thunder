@@ -157,7 +157,7 @@ POP_WARNING()
             ASSERT(_customCodeLibrary.IsLoaded() == false);
         }
 
-        void Open(const string& libraryPath)
+        void Load(const string& libraryPath)
         {
             ASSERT(_customCodeToStringHandler == nullptr);
             ASSERT(_customCodeLibrary.IsLoaded() == false);
@@ -176,7 +176,7 @@ POP_WARNING()
             }
         }
 
-        void Close()
+        void Release()
         {
             if (_customCodeToStringHandler != nullptr) {
                 Core::SetCustomCodeToStringHandler(nullptr);
@@ -712,7 +712,7 @@ POP_WARNING()
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
             if (_config->CustomCodeLibrary().empty() == false) {
-                customcodelibraryhandler.Open(_config->CustomCodeLibrary());
+                customcodelibraryhandler.Load(_config->CustomCodeLibrary());
             }
 #endif
 
@@ -1103,7 +1103,7 @@ POP_WARNING()
         }
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-         customcodelibraryhandler.Close();
+         customcodelibraryhandler.Release();
 #endif
  
         ExitHandler::Destruct();
