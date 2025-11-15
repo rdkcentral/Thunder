@@ -185,14 +185,17 @@ namespace Core {
                         Text = _T("The operation is not supported.");
                         break;
                     default:
-                        if ((frameworkError & 0x80000000) == 0) {
-                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-                        } else {
+                        if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        } else if ((frameworkError & CUSTOM_ERROR) != 0) {
+                            int24_t custumcode(frameworkError & 0xFFFFFF); // remove custom error bit before assigning
+                            Code = custumcode;
+                        } else {
+                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
                         }
 
                         if (Text.IsSet() == false) {
-                            Text = Core::ErrorToString(frameworkError);
+                            Text = Core::ErrorToStringExtended(frameworkError);
                         }
                         break;
                     }

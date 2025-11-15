@@ -425,6 +425,9 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 , Hibernate()
 #endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                , CustomCodeLibrary()
+#endif
             {
                 // No IdleTime
                 Add(_T("model"), &Model);
@@ -468,6 +471,9 @@ namespace PluginHost {
                 Add(_T("observe"), &Observe);
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 Add(_T("hibernate"), &Hibernate);
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                Add(_T("customcodelibrary"), &CustomCodeLibrary);
 #endif
             }
             ~JSONConfig() override = default;
@@ -516,6 +522,9 @@ namespace PluginHost {
             Observables Observe;
 #ifdef HIBERNATE_SUPPORT_ENABLED
             HibernateConfig Hibernate;
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            Core::JSON::String CustomCodeLibrary;
 #endif
         };
 
@@ -688,6 +697,9 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
             , _hibernateLocator()
 #endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            , _customCodeLibrary()
+#endif
         {
             JSONConfig config;
 
@@ -702,6 +714,9 @@ namespace PluginHost {
 #endif
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 _hibernateLocator = config.Hibernate.Locator.Value();
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                _customCodeLibrary = config.CustomCodeLibrary.Value();
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
@@ -840,6 +855,12 @@ namespace PluginHost {
 #ifdef HIBERNATE_SUPPORT_ENABLED
         inline const string& HibernateLocator() const {
             return (_hibernateLocator);
+        }
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        inline const string& CustomCodeLibrary() const
+        {
+            return (_customCodeLibrary);
         }
 #endif
         inline const string& VolatilePath() const
@@ -1157,6 +1178,9 @@ namespace PluginHost {
         std::vector<std::string> _linkerPluginPaths;
 #ifdef HIBERNATE_SUPPORT_ENABLED
         string _hibernateLocator;
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        string _customCodeLibrary;
 #endif
     };
 }
