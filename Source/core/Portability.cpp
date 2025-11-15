@@ -467,7 +467,7 @@ namespace {
 
     static CustomCodeToStringHandler customerrorcodehandler = nullptr;
 
-    const TCHAR* HandleCustomErrorCodeToString(int32_t customcode)
+    const TCHAR* HandleCustomErrorCodeToString(const int32_t customcode)
     {
         const TCHAR* text = nullptr;
 
@@ -480,7 +480,7 @@ namespace {
         return text;
     }
 
-    string HandleCustomErrorCodeToStringExtended(int32_t customcode)
+    string HandleCustomErrorCodeToStringExtended(const int32_t customcode)
     {
         string result;
 
@@ -501,9 +501,9 @@ namespace {
         customerrorcodehandler = handler;
     }
 
-    hresult CustomCode(int32_t customCode) {
+    hresult CustomCode(const int32_t customCode) {
 
-        static_assert(CUSTOM_ERROR == 0x1000000, "Static assert to be assumed 25th bit in code below");
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
 
         hresult result = Core::ERROR_NONE;
 
@@ -520,8 +520,8 @@ namespace {
         return result;
     }
 
-    int32_t IsCustomCode(Core::hresult code) {
-        static_assert(CUSTOM_ERROR == 0x1000000, "Static assert to be assumed 25th bit in code below");
+    int32_t IsCustomCode(const Core::hresult code) {
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
 
         int32_t result = 0;
 
@@ -538,7 +538,7 @@ namespace {
 
 #endif
 
-    const TCHAR* ErrorToString(Core::hresult code)
+    const TCHAR* ErrorToString(const Core::hresult code)
     {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
         int32_t customcode = IsCustomCode(code);
@@ -550,7 +550,7 @@ namespace {
         return _bogus_ErrorToString<>(code & (~COM_ERROR));
     }
 
-    string ErrorToStringExtended(Core::hresult code)
+    string ErrorToStringExtended(const Core::hresult code)
     {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
         int32_t customcode = IsCustomCode(code);

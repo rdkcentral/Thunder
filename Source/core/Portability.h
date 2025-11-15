@@ -931,9 +931,9 @@ namespace Core {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
     // transform a custum code into an hresult
-    EXTERNAL Core::hresult CustomCode(int32_t customCode);
+    EXTERNAL Core::hresult CustomCode(const int32_t customCode);
     // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
-    EXTERNAL int32_t IsCustomCode(Core::hresult code);
+    EXTERNAL int32_t IsCustomCode(const Core::hresult code);
 
 #endif
 
@@ -1007,6 +1007,8 @@ namespace Core {
 
     #undef ERROR_CODE
 
+    // Convert error enumerations to string
+
     template<uint32_t N>
     inline const TCHAR* _Err2Str()
     {
@@ -1030,12 +1032,12 @@ namespace Core {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
     };
 
-    EXTERNAL const TCHAR* ErrorToString(Core::hresult code);
-    EXTERNAL string ErrorToStringExtended(Core::hresult code);
+    EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
+    EXTERNAL string ErrorToStringExtended(const Core::hresult code);
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
-    using CustomCodeToStringHandler = const TCHAR* (*)(int32_t code);
+    using CustomCodeToStringHandler = const TCHAR* (*)(const int32_t code);
 
     // can only set one, not multithreaded safe
     EXTERNAL void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler);

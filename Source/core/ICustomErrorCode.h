@@ -18,7 +18,7 @@
  */
 
 /*
-    This file contains the interface that a library must implement in case the "custom error codes" feature is used in Thunder
+    This file contains the interface that a library can implement in case the "custom error codes" feature is used in Thunder and code to string comversion is desired
 */
 
 #pragma once
@@ -46,7 +46,7 @@ extern "C" {
 #include <stdint.h>
 #endif
 
-EXTERNAL const TCHAR* CustomCodeToSting(int32_t code);
+EXTERNAL const TCHAR* CustomCodeToSting(const int32_t code);
 
 #ifdef __cplusplus
 } // extern "C"
