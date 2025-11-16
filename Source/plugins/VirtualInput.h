@@ -23,7 +23,6 @@
 #define __VIRTUAL_INPUT__
 
 #include "Module.h"
-#include "interfaces/IVirtualInput.h"
 
 namespace Thunder {
 namespace PluginHost {

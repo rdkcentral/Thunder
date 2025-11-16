@@ -21,9 +21,6 @@
 
 #include "Module.h"
 #include "System.h"
-#include "IShell.h"
-#include "IPlugin.h"
-#include "IDispatcher.h"
 
 namespace Thunder {
 

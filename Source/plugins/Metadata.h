@@ -22,7 +22,6 @@
 #include "Module.h"
 #include "Configuration.h"
 
-#include "IController.h"
 #include <interfaces/json/JsonData_Metadata.h>
 #include <interfaces/json/JsonData_Discovery.h>
 

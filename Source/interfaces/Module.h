@@ -24,8 +24,6 @@
 #endif
 
 #include <core/core.h>
-#include <com/com.h>
-#include <messaging/messaging.h>
 
 #if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
 #undef EXTERNAL

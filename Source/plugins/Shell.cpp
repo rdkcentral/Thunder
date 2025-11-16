@@ -18,7 +18,6 @@
  */
 
 #include "Module.h"
-#include "interfaces/IShell.h"
 #include "Configuration.h"
 
 namespace Thunder {

@@ -21,10 +21,6 @@
 
 #include "Module.h"
 #include "Config.h"
-#include "interfaces/IPlugin.h"
-#include "interfaces/IShell.h"
-#include "interfaces/ISubSystem.h"
-#include "interfaces/IController.h"
 
 namespace Thunder {
 namespace Plugin {

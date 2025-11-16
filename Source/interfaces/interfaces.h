@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2025 Metrological
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,26 @@
  * limitations under the License.
  */
 
-#pragma once
+ #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
+ #ifndef MODULE_NAME
+ #error "Please define a MODULE_NAME that describes the binary/library you are building."
+ #endif
+ 
+ // Since this header is included, the code using it is external to Thunder core.
+ // So therefore it should use the correct Tracing functionality and not TRACE_L# (which are just fancy printfs).
+ #define CORE_TRACE_NOT_ALLOWED
+ 
+#include "Module.h"
+#include "IController.h"
+#include "IPlugin.h"
+#include "IShell.h"
+#include "IStateControl.h"
+#include "ISubSystem.h"
+#include "IVirtualInput.h"
+#include "IStateController.h"
+#include "IDispatcher.h"
+ 
+#ifdef __WINDOWS__
+#pragma comment(lib, "interfaces.lib")
 #endif
-
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <websocket/websocket.h>
-#include <messaging/messaging.h>
-#include <interfaces/interfaces.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL

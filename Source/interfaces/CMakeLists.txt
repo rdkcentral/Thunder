@@ -1,7 +1,7 @@
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
 #
-# Copyright 2020 Metrological
+# Copyright 2025 Metrological
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TARGET  ${NAMESPACE}Interfaces)
+set(TARGET ${NAMESPACE}Interfaces)
 set(TARGET_PROXYSTUBS ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
@@ -39,10 +39,8 @@ add_library(${TARGET_PROXYSTUBS} SHARED
         Module.cpp
         )
 
-add_library(${TARGET} INTERFACE)
-target_include_directories(${TARGET} INTERFACE
-          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/Source/interfaces>
-          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces>
+add_library(${TARGET} SHARED
+        Module.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -54,10 +52,11 @@ set(PUBLIC_HEADERS
           IStateController.h
           ISubSystem.h
           IVirtualInput.h
+          interfaces.h
           Module.h
         )
 
-# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as erros nowadays) 
+# when compiling proxy/stubs we should ignore deprecated warnings (which are treated as errors nowadays) 
 # as usage of those deprecated methods is valid here
 target_compile_options(${TARGET_PROXYSTUBS} PRIVATE -Wno-deprecated-declarations)
 
@@ -69,10 +68,25 @@ target_link_libraries(${TARGET_PROXYSTUBS}
           ${NAMESPACE}Messaging::${NAMESPACE}Messaging
         )
 
+target_link_libraries(${TARGET}
+        PUBLIC
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}COM::${NAMESPACE}COM
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
+        )
+
 target_include_directories( ${TARGET_PROXYSTUBS}
         PRIVATE
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+        )
+
+target_include_directories( ${TARGET}
+        PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}>
         )
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
@@ -82,36 +96,50 @@ set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
         SOVERSION ${VERSION_MAJOR}
         )
 
+set_target_properties(${TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        FRAMEWORK FALSE
+        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        SOVERSION ${VERSION_MAJOR}
+        )
+
+if(HUMAN_VERSIONED_BINARIES)
+set_target_properties(${TARGET} PROPERTIES
+        VERSION ${VERSION}
+        )
+endif()
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-  TARGETS ${TARGET}
-  EXPORT ${NAMESPACE}PluginsTargets
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces COMPONENT ${NAMESPACE}_Development
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}
 )
- 
+
 install(
-  FILES ${PUBLIC_HEADERS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces
-  COMPONENT ${NAMESPACE}_Development
+        FILES ${JSON_DATA_HEADERS} ${JSON_CODE_HEADERS}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces/json
+        COMPONENT ${NAMESPACE}_Development
 )
- 
+
 install(
-  FILES ${JSON_DATA_HEADERS} ${JSON_CODE_HEADERS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces/json
-  COMPONENT ${NAMESPACE}_Development
-)
- 
-install(
-  TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Development
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/interfaces
+        TARGETS ${TARGET_PROXYSTUBS}  EXPORT ${TARGET_PROXYSTUBS}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Development
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime NAMELINK_COMPONENT ${NAMESPACE}_Development
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${NAMESPACE}_Runtime
+        FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR}/${NAMESPACE_LIB}/proxystubs COMPONENT ${NAMESPACE}_Runtime
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs COMPONENT ${NAMESPACE}_Development
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE}/proxystubs
 )
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
 
+InstallCMakeConfig(TARGETS ${TARGET})
 InstallCMakeConfig(TARGETS ${TARGET_PROXYSTUBS})

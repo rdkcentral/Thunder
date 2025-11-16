@@ -28,6 +28,7 @@
 #include <cryptalgo/cryptalgo.h>
 #include <websocket/websocket.h>
 #include <messaging/messaging.h>
+#include <interfaces/interfaces.h>
 
 #ifdef __CORE_WARNING_REPORTING__
     #include <warningreporting/warningreporting.h>
