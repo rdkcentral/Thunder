@@ -187,11 +187,17 @@ namespace Core {
                     default:
                         if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
-                        } else if ((frameworkError & CUSTOM_ERROR) != 0) {
-                            int24_t custumcode(frameworkError & 0xFFFFFF); // remove custom error bit before assigning
-                            Code = custumcode;
                         } else {
-                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            int32_t customcode = IsCustomCode(frameworkError);
+                            if (customcode != 0) {
+                                Code = (customcode == std::numeric_limits<int32_t>::min() ? 0 : customcode);
+                            } else {
+#endif
+                                Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            }
+#endif
                         }
 
                         if (Text.IsSet() == false) {
