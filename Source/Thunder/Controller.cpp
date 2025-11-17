@@ -1073,7 +1073,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::SUSPEND);
@@ -1460,12 +1460,18 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, state, reason,
-            [&callsign](const string& designator) {
-                const size_t dot = designator.find('.');
-                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
-            });
+
+        // First notify observers that registered for all (notification will include the callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, callsign, state, reason,
+            [](const string&, const string& index) {
+                // Custom sendif lambda to only catch broadcast observers.
+                return (index.empty() == true);
+        });
+
+        // ... then the specific observers (notification will not inlcude a callsign)
+        Exchange::Controller::JLifeTime::Event::StateChange(*this, callsign, {}, state, reason);
     }
 
     void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
@@ -1479,20 +1485,21 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, state,
-            [&callsign](const string& designator) {
-                const size_t dot = designator.find('.');
-                return (dot == string::npos) || (designator.compare(0, dot, callsign) == 0);
-            });
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state,
+            [](const string&, const string& index) {
+                return (index.empty() == true);
+        });
+
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, {}, state);
     }
 
-    void Controller::SendInitialStateSnapshot(const string& client)
+    void Controller::SendInitialStateSnapshot(const string& client, const string& callsign)
     {
-        const size_t dot = client.find('.');
-
-        if (dot == string::npos) {
+        if (callsign.empty() == true) {
             _adminLock.Lock();
+
             ASSERT(_pluginServer != nullptr);
             auto it = _pluginServer->Services().Services();
 
@@ -1501,27 +1508,35 @@ namespace Plugin {
 
                 if (service->State() == PluginHost::IShell::state::ACTIVATED) {
                     const string serviceCallsign = service->Callsign();
-                    Exchange::Controller::JLifeTime::Event::StateChange(*this, serviceCallsign, service->State(), service->Reason(), client);
+
+                    Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, serviceCallsign, service->State(), service->Reason(),
+                        [&client, &serviceCallsign](const string& designator, const string& index) {
+                            // Custom sendif lambda to also catch broadcast observers.
+                            return ((designator == client) && ((index.empty() == true) || (index == serviceCallsign)));
+                    });
                 }
             }
+
             _adminLock.Unlock();
         }
         else {
-            const string callsign(client.substr(0, dot));
             Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
             if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
-                Exchange::Controller::JLifeTime::Event::StateChange(*this, service->Callsign(), service->State(), service->Reason(), client);
+                const string serviceCallsign = service->Callsign();
+
+                Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, {}, service->State(), service->Reason(),
+                    [&client, &serviceCallsign](const string& designator, const string& index) {
+                        // Custom sendif lambda to also catch broadcast observers.
+                        return ((designator == client) && ((index.empty() == true) || (index == serviceCallsign)));
+                });
             }
         }
     }
 
-    void Controller::SendInitialStateControlSnapshot(const string& client)
+    void Controller::SendInitialStateControlSnapshot(const string& client, const string& callsign)
     {
-        const size_t dot = client.find('.');
-
-        if (dot != string::npos) {
-            const string callsign(client.substr(0, dot));
+        if (callsign.empty() == false) {
             Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
 
             if (service.IsValid() == true) {
@@ -1529,7 +1544,7 @@ namespace Plugin {
 
                 if (control != nullptr) {
                     const Exchange::Controller::ILifeTime::state ltState = ToLifeTimeState(control->State());
-                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), ltState, client);
+                    Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, service->Callsign(), {}, ltState, client);
                     control->Release();
                 }
             }

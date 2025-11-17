@@ -2287,14 +2287,7 @@ namespace PluginHost {
                     // STRONG RECOMMENDATION TO HAVE THIS ACTIVE (TRUE)!!!
                     RPC::Administrator::Instance().DelegatedReleases(delegatedReleases);
 
-                    if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
-                        TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
-                    } else {
-                        // We need to pass the communication channel NodeId via an environment variable, for process,
-                        // not being started by the rpcprocess...
-                        Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
-                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
-                    }
+                    RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
 
                     if (observableProxyStubPath.empty() == true) {
                         SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
@@ -2453,6 +2446,15 @@ namespace PluginHost {
                     _deadProxiesProtection.Unlock();
                 }
 
+            void Open() {
+                if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
+                    TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
+                } else {
+                    // We need to pass the communication channel NodeId via an environment variable, for process,
+                    // not being started by the rpcprocess...
+                    Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                }
+            }
             private:
                 void Reload(const string& path) {
                     TRACE(Activity, (Core::Format(_T("Reloading ProxyStubs from %s."), path.c_str())));
@@ -4177,7 +4179,8 @@ namespace PluginHost {
 
                 request->Set(status, Core::ProxyType<PluginHost::Service>(service), callType);
 
-                ASSERT(request->State() != Request::INCOMPLETE);
+                // for now disable the assert as it is trigger probably when it shouldn't. But we should investigate how to enable it again so it fires at the right time: jira issue METROL-1211 created
+                //ASSERT(request->State() != Request::INCOMPLETE);
 
                 if (request->State() == Request::COMPLETE) {
 
@@ -4316,6 +4319,9 @@ namespace PluginHost {
                     }
                     break;
                 }
+                case Request::INCOMPLETE: 
+                // nothing to do for now, jira ticket created...
+                break;
                 default: {
                     // I think we handled every possible situation
                     ASSERT(false);

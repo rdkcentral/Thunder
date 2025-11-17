@@ -262,6 +262,31 @@ namespace Core {
 
                 return (result);
             }
+            /**
+             * @brief Attempt to submit the associated job to the thread pool.
+             *
+             * This function inspects and updates the internal atomic _state to decide
+             * how to handle the submission:
+             * - If the pool state is IDLE, it atomically transitions IDLE -> SUBMITTED
+             *   and returns a ProxyType<IDispatch> that represents the newly submitted job.
+             * - If the pool state is EXECUTING or SCHEDULE, it atomically sets the state
+             *   to RESUBMIT (EXECUTING -> RESUBMIT or SCHEDULE -> RESUBMIT) to request
+             *   a re-run, but does not return a dispatch proxy.
+             * - In any other state (including already RESUBMIT), no state change is made
+             *   and an empty proxy is returned.
+             *
+             * The implementation uses compare_exchange_strong on a shared atomic state
+             * and relies on short-circuit evaluation to perform at most one successful
+             * transition. Callers should inspect the returned ProxyType<IDispatch> to
+             * determine whether this call actually enqueued the job (non-empty) or
+             * merely marked it for resubmission / left it unchanged (empty).
+             *
+             * Thread-safety: safe to call concurrently; state transitions are performed
+             * atomically. No exception guarantees beyond those of ProxyType construction.
+             *
+             * @return ProxyType<IDispatch> Non-empty when the job was transitioned from
+             *         IDLE to SUBMITTED (i.e., submission succeeded). Empty otherwise.
+             */
             ProxyType<IDispatch> Submit() {
 
                 state executing = EXECUTING;
@@ -541,7 +566,7 @@ namespace Core {
                 Thread::Run();
             }
             void Stop () {
-                Thread::Wait(Thread::STOPPED|Thread::BLOCKED, infinite);
+                Thread::Stop();
             }
             Minion& Me() {
                 return (_minion);
@@ -565,7 +590,7 @@ namespace Core {
         ThreadPool& operator=(ThreadPool&&) = delete;
         ThreadPool& operator=(const ThreadPool&) = delete;
 
-        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0)
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize, IDispatcher* dispatcher, IScheduler* scheduler, Minion* external, ICallback* callback, const uint16_t lowPriorityThreadCount = 0, const uint16_t mediumPriorityThreadCount = 0, const uint8_t additionalThreads = 0)
             #if defined(__JOB_QUEUE_STATIC_PRIORITY__) || defined(__JOB_QUEUE_DYNAMIC_PRIORITY__)
             : _queue(lowPriorityThreadCount, mediumPriorityThreadCount, queueSize)
             #else
@@ -579,7 +604,8 @@ namespace Core {
             , _callback(callback)
             , _unitsSet()
         {
-            ASSERT(((lowPriorityThreadCount <= count) && (mediumPriorityThreadCount <= count)) || (count == 0));
+            DEBUG_VARIABLE(additionalThreads);
+            ASSERT(((lowPriorityThreadCount <= (count + additionalThreads)) && (mediumPriorityThreadCount <= (count + additionalThreads))));
 
             const TCHAR* name = _T("WorkerPool::Thread");
             for (uint8_t index = 0; index < count; index++) {
@@ -741,6 +767,20 @@ namespace Core {
                 index->Stop();
                 index++;
             }
+        }
+        bool WaitForStop(uint32_t timeout = Core::infinite) 
+        {
+            std::list<Executor>::iterator index = _units.begin();
+            bool allStopped = true;
+            
+            while (index != _units.end()) {
+                if (!index->Wait(Thread::STOPPED, timeout)) {
+                    allStopped = false;
+                }
+                index++;
+            }
+            
+            return allStopped;
         }
         bool HasThreadID(const thread_id id) const
         {

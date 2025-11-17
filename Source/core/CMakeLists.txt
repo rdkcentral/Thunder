@@ -140,7 +140,6 @@ set(PUBLIC_HEADERS
         Time.h
         Timer.h
         Trace.h
-        TriState.h
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
@@ -205,6 +204,11 @@ endif()
 if (INSTANCE_ID_BITS)
     target_compile_definitions(${TARGET} PUBLIC __CORE_INSTANCE_BITS__=${INSTANCE_ID_BITS})
     message(STATUS "COMRPC instanceid defined as ${INSTANCE_ID_BITS} bits.")
+endif()
+
+if (ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING)
+    target_compile_definitions(${TARGET} PUBLIC __ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING__=${ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING})
+    message(STATUS "json rpc forgiving method handling enabled")
 endif()
 
 if(BLUETOOTH_SUPPORT)

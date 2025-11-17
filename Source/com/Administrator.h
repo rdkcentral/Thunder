@@ -500,7 +500,7 @@ POP_WARNING()
             if (source.InProgress() == true) {
                 // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
                 // the priority as we might be causing a deadlock if the workerpool would be stuffed.
-                SYSLOG(Logging::Notification, (_T("COM-RPC: second call in the same direction detected; raising priority to High")));
+                TRACE_L1("COM-RPC: channel is already occupied, as it has an outgoing COM-RPC call; raising priority to High");
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::High);
             }
             else {
@@ -554,6 +554,7 @@ POP_WARNING()
         ~InvokeServerType() override
         {
             _threadPoolEngine.Stop();
+            _threadPoolEngine.WaitForStop();
         }
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Submit(job, Core::infinite);
@@ -566,7 +567,7 @@ POP_WARNING()
         }
 
         void Stop() {
-             _threadPoolEngine.Stop();
+            _threadPoolEngine.Stop();
         }
 
     private:
@@ -585,7 +586,7 @@ POP_WARNING()
             if (source.InProgress() == true) {
                 // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
                 // the priority as we might be causing a deadlock if the workerpool would be stuffed.
-                SYSLOG(Logging::Notification, (_T("COM-RPC: second call in the same direction detected; raising priority to High")));
+                TRACE_L1("COM-RPC: channel is already occupied, as it has an outgoing COM-RPC call; raising priority to High");
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::High);
             } else {
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::Low);

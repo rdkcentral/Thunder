@@ -97,7 +97,6 @@
     <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Trace.h" />
-    <ClInclude Include="TriState.h" />
     <ClInclude Include="TypeTraits.h" />
     <ClInclude Include="ValueRecorder.h" />
     <ClInclude Include="WarningReportingCategories.h" />
