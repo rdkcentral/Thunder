@@ -24,6 +24,7 @@
     <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="Errors.h" />
     <ClInclude Include="ExtraNumberDefinitions.h" />
     <ClInclude Include="ICustomErrorCode.h" />
     <ClInclude Include="CyclicBuffer.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="DataElementFile.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="DoorBell.cpp" />
+    <ClCompile Include="Errors.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
     <ClCompile Include="JSON.cpp" />

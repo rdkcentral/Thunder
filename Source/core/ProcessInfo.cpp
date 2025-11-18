@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "Errors.h"
 #include "ProcessInfo.h"
 #include "FileSystem.h"
 #include "SystemInfo.h"

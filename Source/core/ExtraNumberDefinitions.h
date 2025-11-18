@@ -42,9 +42,19 @@ namespace Core {
         {
         }
         SInt24(const int32_t value)
+            : _value(value)
+        {
+            bool overflow = ((static_cast<uint32_t>(value) >> 23) != 0) && ((static_cast<uint32_t>(value) >> 23) != 0x1FF);
+            ASSERT(overflow == false);
+            if (overflow == true) {
+                _value = std::numeric_limits<int32_t>::max();
+            }
+        }
+        // if it is an uint32_t it considered a 24 bit only filled value
+        SInt24(const uint32_t value)
             : _value(value | (value & 0x800000 ? 0xFF000000 : 0))
         {
-            bool overflow = ((static_cast<uint32_t>(value) >> 24) != 0) && ((static_cast<uint32_t>(value) >> 24) != 0xFF);
+            bool overflow = ((static_cast<uint32_t>(value) >> 23) != 0) && ((static_cast<uint32_t>(value) >> 23) != 0x1);
             ASSERT(overflow == false);
             if (overflow == true) {
                 _value = std::numeric_limits<int32_t>::max();
@@ -59,8 +69,19 @@ namespace Core {
         SInt24& operator=(SInt24&& value) = default;
         SInt24& operator=(const int32_t value)
         {
+            _value = value;
+            bool overflow = ((static_cast<uint32_t>(value) >> 23) != 0) && ((static_cast<uint32_t>(value) >> 23) != 0x1FF);
+            ASSERT(overflow == false);
+            if (overflow == true) {
+                _value = std::numeric_limits<int32_t>::max();
+            }
+            return (*this);
+        }
+        // if it is an uint32_t it considered a 24 bit only filled value
+        SInt24& operator=(const uint32_t value)
+        {
             _value = (value | (value & 0x800000 ? 0xFF000000 : 0));
-            bool overflow = ((static_cast<uint32_t>(value) >> 24) != 0) && ((static_cast<uint32_t>(value) >> 24) != 0xFF);
+            bool overflow = ((static_cast<uint32_t>(value) >> 23) != 0) && ((static_cast<uint32_t>(value) >> 23) != 0x1);
             ASSERT(overflow == false);
             if (overflow == true) {
                 _value = std::numeric_limits<int32_t>::max();
@@ -244,6 +265,6 @@ public:
 
 } // namespace std
 
-//using uint24_t = Thunder::Core::UInt24;
-//using int24_t = Thunder::Core::SInt24;
+using uint24_t = Thunder::Core::UInt24;
+using int24_t = Thunder::Core::SInt24;
 
