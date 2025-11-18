@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "SystemInfo.h"
 #include "Serialization.h"
+#include "Number.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -457,5 +458,113 @@ namespace Core {
 
         return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+namespace {
+
+    static CustomCodeToStringHandler customerrorcodehandler = nullptr;
+
+    const TCHAR* HandleCustomErrorCodeToString(const int32_t customcode)
+    {
+        const TCHAR* text = nullptr;
+
+        if (customcode == std::numeric_limits<int32_t>::min()) {
+            text = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            text = _T("Undefined Custom Error");
+        } 
+
+        return text;
+    }
+
+    string HandleCustomErrorCodeToStringExtended(const int32_t customcode)
+    {
+        string result;
+
+        const TCHAR* text = nullptr;
+        if (customcode == std::numeric_limits<int32_t>::min()) {
+            result = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            result = _T("Undefined Custom Error: ") + Core::NumberType<int32_t>(customcode).Text();
+        } else {
+            result = text;
+        }
+
+        return result;
+    }
+
+}
+    void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler) {
+        customerrorcodehandler = handler;
+    }
+
+    hresult CustomCode(const int32_t customCode) {
+
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
+
+        hresult result = Core::ERROR_NONE;
+
+        if (customCode != 0) {
+            int24_t code; 
+            if (Core::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
+                result = static_cast<hresult>(code.AsSInt24());
+            } else {
+                result = 0; // set invalid customCode result;
+            }
+            result |= CUSTOM_ERROR; // set custom code bit
+        }
+
+        return result;
+    }
+
+    int32_t IsCustomCode(const Core::hresult code) {
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
+
+        int32_t result = 0;
+
+        if ((code & CUSTOM_ERROR) != 0) {
+            int24_t custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
+            result = custumcode;
+            if (result == 0) {
+                result = std::numeric_limits<int32_t>::min();
+            }
+        }
+
+        return result;
+    }
+
+#endif
+
+    const TCHAR* ErrorToString(const Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int32_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToString(customcode);
+        }
+#endif
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
+    }
+
+    string ErrorToStringExtended(const Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int32_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToStringExtended(customcode);
+        }
+#endif
+        string result = _bogus_ErrorToString<>(code & (~COM_ERROR));
+
+        if (result.empty() == true) {
+            result = _T("Undefined Thunder error code: ") + Core::NumberType<Core::hresult>(code).Text();
+        }
+        return result;
+    }
+
+
 } // namespace Core
 } // namespace Thunder
