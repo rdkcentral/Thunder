@@ -24,6 +24,8 @@
     <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="ExtraNumberDefinitions.h" />
+    <ClInclude Include="ICustomErrorCode.h" />
     <ClInclude Include="CyclicBuffer.h" />
     <ClInclude Include="DataBuffer.h" />
     <ClInclude Include="DataElement.h" />

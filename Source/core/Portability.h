@@ -753,187 +753,198 @@ typedef std::string string;
 #endif
 
 namespace Thunder {
-namespace Core {
+    namespace Core {
 
-    class TextFragment;
+        class TextFragment;
 
-    #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
-    #if __CORE_INSTANCE_BITS__ <= 8
-    typedef uint8_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 16
-    typedef uint16_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 32 
-    typedef uint32_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 64
+#if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
+#if __CORE_INSTANCE_BITS__ <= 8
+        typedef uint8_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 16
+        typedef uint16_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 32
+        typedef uint32_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 64
+        typedef uint64_t instance_id;
+#endif
+#else
+#if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8)
     typedef uint64_t instance_id;
-    #endif
-    #else
-    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
-    typedef uint64_t instance_id;
-    #else
+#else
     typedef uint32_t instance_id;
-    #endif
-    #endif
+#endif
+#endif
 
-    #ifdef __LINUX__
-    typedef pthread_t thread_id;
-    #else
+#ifdef __LINUX__
+        typedef pthread_t thread_id;
+#else
     typedef DWORD thread_id;
-    #endif
+#endif
 
-    typedef uint32_t hresult;
+        typedef uint32_t hresult;
 
-    struct callstack_info {
-        void*    address;
-        string   module;
-        string   function;
-        uint32_t line;
-    };
+        struct callstack_info {
+            void*    address;
+            string   module;
+            string   function;
+            uint32_t line;
+        };
 
 
-    inline void* Alignment(size_t alignment, void* incoming)
-    {
-        const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
-        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~(alignment - 1));
-    }
+        inline void* Alignment(size_t alignment, void* incoming)
+        {
+            const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
+            return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~(alignment - 1));
+        }
 
-    inline uint8_t* PointerAlign(uint8_t* pointer)
-    {
-        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
-        return reinterpret_cast<uint8_t*>(addr);
-    }
+        inline uint8_t* PointerAlign(uint8_t* pointer)
+        {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+            return reinterpret_cast<uint8_t*>(addr);
+        }
 
-    inline const uint8_t* PointerAlign(const uint8_t* pointer)
-    {
-        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
-        return reinterpret_cast<const uint8_t*>(addr);
-    }
+        inline const uint8_t* PointerAlign(const uint8_t* pointer)
+        {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+            return reinterpret_cast<const uint8_t*>(addr);
+        }
 
 #ifdef _UNICODE
-    typedef std::wstring string;
+        typedef std::wstring string;
 #endif
 
 #ifndef _UNICODE
-    typedef std::string string;
+        typedef std::string string;
 #endif
 
-    inline void ToUpper(const string& input, string& output)
-    {
-        // Copy string to output, so we know memory is allocated.
-        output = input;
+        inline void ToUpper(const string& input, string& output)
+        {
+            // Copy string to output, so we know memory is allocated.
+            output = input;
 
-        std::transform(input.begin(), input.end(), output.begin(), ::toupper);
-    }
+            std::transform(input.begin(), input.end(), output.begin(), ::toupper);
+        }
 
-    inline void ToUpper(string& inplace)
-    {
-        std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::toupper);
-    }
+        inline void ToUpper(string& inplace)
+        {
+            std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::toupper);
+        }
 
-    inline void ToLower(const string& input, string& output)
-    {
-        output = input;
+        inline void ToLower(const string& input, string& output)
+        {
+            output = input;
 
-        std::transform(input.begin(), input.end(), output.begin(), ::tolower);
-    }
+            std::transform(input.begin(), input.end(), output.begin(), ::tolower);
+        }
 
-    inline void ToLower(string& inplace)
-    {
-        std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
-    }
+        inline void ToLower(string& inplace)
+        {
+            std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
+        }
 
-    EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
-    EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
-    EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
+        EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+        EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
+        EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
 
-    const uint32_t infinite = -1;
-    static const string emptyString;
+        const uint32_t infinite = -1;
+        static const string emptyString;
 
-    class Void {
-    public:
-        template <typename... Args>
-        inline Void(Args&&...) {}
-        inline Void(const Void&) = default;
-        inline Void(Void&&) = default;
-        inline ~Void() = default;
+        class Void {
+        public:
+            template <typename... Args>
+            inline Void(Args&&...) {}
+            inline Void(const Void&) = default;
+            inline Void(Void&&) = default;
+            inline ~Void() = default;
 
-        inline Void& operator=(const Void&) = default;
-    };
+            inline Void& operator=(const Void&) = default;
+        };
 
-    struct EXTERNAL IReferenceCounted {
-        virtual ~IReferenceCounted() = default;
-        virtual uint32_t AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
-    };
+        struct EXTERNAL IReferenceCounted {
+            virtual ~IReferenceCounted() = default;
+            virtual uint32_t AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
+        };
 
     struct EXTERNAL IUnknown : public IReferenceCounted  {
 
-        enum : uint32_t {
+            enum : uint32_t {
             ID_OFFSET_INTERNAL  = 0x00000000,
             ID_OFFSET_PUBLIC    = 0x00000040,
             ID_OFFSET_CUSTOM    = 0x80000000
+            };
+
+            enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
+
+            ~IUnknown() override = default;
+
+            virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
+
+            template <typename REQUESTEDINTERFACE>
+            REQUESTEDINTERFACE* QueryInterface()
+            {
+                void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
+
+            template <typename REQUESTEDINTERFACE>
+            const REQUESTEDINTERFACE* QueryInterface() const
+            {
+                const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
         };
 
-        enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
-
-        ~IUnknown() override = default;
-
-        virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
-
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* QueryInterface()
-        {
-            void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
-
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-
-        template <typename REQUESTEDINTERFACE>
-        const REQUESTEDINTERFACE* QueryInterface() const
-        {
-            const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
-
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-    };
-
-    namespace memory_order {
-    #ifdef __WINDOWS__
-        static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
-        static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
-        static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
-    #else
+        namespace memory_order {
+#ifdef __WINDOWS__
+            static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
+            static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
+            static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
+#else
         static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
         static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_consume;
         static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_acquire;
         static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
         static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_acq_rel;
         static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
-    #endif
-    }
+#endif
+        }
 
-    #define COM_ERROR (0x80000000)
-    #define CUSTOM_ERROR (0x1000000)
+#define COM_ERROR (0x80000000)
+#define CUSTOM_ERROR (0x1000000)
+
+}  // Core
+}  // Thunder
+
+        // For now make these point to the base type instead of Thunder::Core::UInt24 and Thunder::Core::SInt24 until we make it possible to include these here.
+
+    using uint24_t = uint32_t;
+    using int24_t = int32_t;
+
+namespace Thunder {
+namespace Core {
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
     // transform a custum code into an hresult
-    EXTERNAL Core::hresult CustomCode(const int32_t customCode);
+    EXTERNAL Core::hresult CustomCode(const int24_t customCode);
     // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
-    EXTERNAL int32_t IsCustomCode(const Core::hresult code);
+    EXTERNAL int24_t IsCustomCode(const Core::hresult code);
 
 #endif
 

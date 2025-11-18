@@ -26,6 +26,7 @@
 #include "SystemInfo.h"
 #include "Serialization.h"
 #include "Number.h"
+#include "ExtraNumberDefinitions.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -471,7 +472,7 @@ namespace {
     {
         const TCHAR* text = nullptr;
 
-        if (customcode == std::numeric_limits<int32_t>::min()) {
+        if (customcode == std::numeric_limits<int32_t>::max()) {
             text = _T("Invalid Custom ErrorCode set");
         } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
             text = _T("Undefined Custom Error");
@@ -485,7 +486,7 @@ namespace {
         string result;
 
         const TCHAR* text = nullptr;
-        if (customcode == std::numeric_limits<int32_t>::min()) {
+        if (customcode == std::numeric_limits<int32_t>::max()) {
             result = _T("Invalid Custom ErrorCode set");
         } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
             result = _T("Undefined Custom Error: ") + Core::NumberType<int32_t>(customcode).Text();
@@ -508,8 +509,8 @@ namespace {
         hresult result = Core::ERROR_NONE;
 
         if (customCode != 0) {
-            int24_t code; 
-            if (Core::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
+            Core::SInt24 code; 
+            if (Core::check_and_cast<Core::SInt24, int32_t>(customCode, code) == true) {
                 result = static_cast<hresult>(code.AsSInt24());
             } else {
                 result = 0; // set invalid customCode result;
@@ -526,10 +527,10 @@ namespace {
         int32_t result = 0;
 
         if ((code & CUSTOM_ERROR) != 0) {
-            int24_t custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
+            Core::SInt24 custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
             result = custumcode;
             if (result == 0) {
-                result = std::numeric_limits<int32_t>::min();
+                result = std::numeric_limits<int32_t>::max();
             }
         }
 

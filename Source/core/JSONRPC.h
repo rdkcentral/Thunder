@@ -191,7 +191,7 @@ namespace Core {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
                             int32_t customcode = IsCustomCode(frameworkError);
                             if (customcode != 0) {
-                                Code = (customcode == std::numeric_limits<int32_t>::min() ? 0 : customcode);
+                                Code = (customcode == std::numeric_limits<int32_t>::max() ? 0 : customcode);
                             } else {
 #endif
                                 Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
