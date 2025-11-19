@@ -107,6 +107,9 @@
 #include "WorkerPool.h"
 #include "WarningReportingControl.h"
 #include "WarningReportingCategories.h"
+#include "Number.h"
+#include "ExtraNumberDefinitions.h"
+#include "Errors.h"
 
 #ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")
