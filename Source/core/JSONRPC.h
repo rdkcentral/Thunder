@@ -22,6 +22,8 @@
 #include "JSON.h"
 #include "Module.h"
 #include "TypeTraits.h"
+#include "Errors.h"
+#include "Number.h"
 
 #include <cctype>
 #include <functional>
@@ -189,9 +191,9 @@ namespace Core {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
                         } else {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-                            int32_t customcode = IsCustomCode(frameworkError);
+                            int24_t customcode = IsCustomCode(frameworkError);
                             if (customcode != 0) {
-                                Code = (customcode == std::numeric_limits<int32_t>::min() ? 0 : customcode);
+                                Code = (Core::Overflowed(customcode) == true ? 0 : static_cast<int32_t>(customcode));
                             } else {
 #endif
                                 Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);

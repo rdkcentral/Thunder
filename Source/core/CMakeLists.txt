@@ -58,6 +58,7 @@ add_library(${TARGET}
         WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
+        Errors.cpp
         )
 
 #TODO: Remove all non public headers from this list,
@@ -151,6 +152,8 @@ set(PUBLIC_HEADERS
         TokenizedStringList.h
         MessageStore.h
         ICustomErrorCode.h
+        Errors.h
+        ExtraNumberDefinitions.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 
