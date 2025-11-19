@@ -343,6 +343,8 @@ namespace PluginHost {
             Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 
+            _reason = why;
+
             // Load the interfaces, If we did not load them yet...
             if (_handler == nullptr) {
                 AcquireInterfaces();
@@ -354,6 +356,8 @@ namespace PluginHost {
             if (_handler == nullptr) {
                 SYSLOG(Logging::Startup, (_T("Loading of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
                 result = Core::ERROR_UNAVAILABLE;
+                _reason = reason::INSTANTIATION_FAILED;
+                State(DEACTIVATED);
 
                 Unlock();
 
@@ -361,7 +365,6 @@ namespace PluginHost {
             } else if (_precondition.IsMet() == false) {
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
                 result = Core::ERROR_PENDING_CONDITIONS;
-                _reason = why;
                 State(PRECONDITION);
 
                 if (Thunder::Messaging::LocalLifetimeType<Activity, &Thunder::Core::System::MODULE_NAME, Thunder::Core::Messaging::Metadata::type::TRACING>::IsEnabled() == true) {
@@ -918,6 +921,7 @@ namespace PluginHost {
     // class Server::ServiceMap
     // -----------------------------------------------------------------------------------------------------------------------------------
     void Server::ServiceMap::Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled) {
+        _processAdministrator.Open();
         // Load the metadata for the subsystem information..
         if (Configuration().MetadataDiscovery() == false) {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));

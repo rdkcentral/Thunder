@@ -150,6 +150,7 @@ set(PUBLIC_HEADERS
         CallsignTLS.h
         TokenizedStringList.h
         MessageStore.h
+        ICustomErrorCode.h
         ${CMAKE_CURRENT_BINARY_DIR}/generated/core/Version.h
         )
 

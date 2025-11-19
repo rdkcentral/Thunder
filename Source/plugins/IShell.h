@@ -106,7 +106,8 @@ namespace PluginHost {
             SHUTDOWN,
             CONDITIONS,
             WATCHDOG_EXPIRED,
-            INITIALIZATION_FAILED
+            INITIALIZATION_FAILED,
+            INSTANTIATION_FAILED
         };
 
         /* @stubgen:omit */
