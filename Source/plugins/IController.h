@@ -116,7 +116,7 @@ namespace Controller {
             // @param callsign: Plugin callsign (e.g. Messenger)
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void StateChange(const Core::OptionalType<string>& callsign /* @index */, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
+            virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
 
             // @statuslistener
             // @brief Notifies of a plugin state change controlled by IStateControl
@@ -124,11 +124,11 @@ namespace Controller {
             // @param callsign: Plugin callsign (e.g. Messenger)
             // @param state: New state of the plugin
             // @param reason: Reason for state change
-            virtual void StateControlStateChange(const Core::OptionalType<string>& callsign /* @index */, const state& state) = 0;
+            virtual void StateControlStateChange(const string& callsign, const state& state) = 0;
         };
 
-        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign) = 0;
-        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign) = 0;
+        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
 
         // @brief Activates a plugin
         // @details Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state.

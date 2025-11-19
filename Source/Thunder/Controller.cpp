@@ -1495,9 +1495,9 @@ namespace Plugin {
         Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, {}, state);
     }
 
-    void Controller::SendInitialStateSnapshot(const string& client, const string& callsign)
+    void Controller::SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign)
     {
-        if (callsign.empty() == true) {
+        if (callsign.IsSet() == false) {
             _adminLock.Lock();
 
             ASSERT(_pluginServer != nullptr);
@@ -1519,8 +1519,8 @@ namespace Plugin {
 
             _adminLock.Unlock();
         }
-        else {
-            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+        else if (callsign.Value().empty() == false) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
             if ((service.IsValid() == true) && (service->State() == PluginHost::IShell::state::ACTIVATED)) {
                 const string serviceCallsign = service->Callsign();
@@ -1534,10 +1534,10 @@ namespace Plugin {
         }
     }
 
-    void Controller::SendInitialStateControlSnapshot(const string& client, const string& callsign)
+    void Controller::SendInitialStateControlSnapshot(const string& client, const Core::OptionalType<string>& callsign)
     {
-        if (callsign.empty() == false) {
-            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign);
+        if ((callsign.IsSet() == true) && (callsign.Value().empty() == false)) {
+            Core::ProxyType<PluginHost::IShell> service = FromIdentifier(callsign.Value());
 
             if (service.IsValid() == true) {
                 PluginHost::IStateControl* control = service->QueryInterface<PluginHost::IStateControl>();
