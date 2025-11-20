@@ -164,11 +164,11 @@ POP_WARNING()
 
             _customCodeLibrary = Core::Library(libraryPath.c_str());
             if (_customCodeLibrary.IsLoaded() == true) {
-                _customCodeToStringHandler = reinterpret_cast<Core::CustomCodeToStringHandler>(_customCodeLibrary.LoadFunction(CustomCodeToStingName));
+                _customCodeToStringHandler = reinterpret_cast<Core::CustomCodeToStringHandler>(_customCodeLibrary.LoadFunction(CustomCodeToStringName));
                 if (_customCodeToStringHandler != nullptr) {
                     Core::SetCustomCodeToStringHandler(_customCodeToStringHandler);
                 } else {
-                    SYSLOG(Logging::Error, (_T("Could not find CustomCodeToSting function in Custom Error Code library")));
+                    SYSLOG(Logging::Error, (_T("Could not find CustomCodeToString function in Custom Error Code library")));
                     _customCodeLibrary = Core::Library();
                 }
             } else {
@@ -188,7 +188,7 @@ POP_WARNING()
         }
 
     private:
-        static constexpr const TCHAR* CustomCodeToStingName{ _T("CustomCodeToSting") };
+        static constexpr const TCHAR* CustomCodeToStringName{ _T("CustomCodeToString") };
 
         Core::Library _customCodeLibrary;
         Core::CustomCodeToStringHandler _customCodeToStringHandler;
