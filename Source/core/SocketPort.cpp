@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <net/if.h>
+#include <netinet/tcp.h>
 #define __ERRORRESULT__ errno
 #define __ERROR_AGAIN__ EAGAIN
 #define __ERROR_WOULDBLOCK__ EWOULDBLOCK
@@ -822,11 +823,35 @@ namespace Thunder {
                 // try to restart your server after a crash.
 
                 int optval = 1;
-                socklen_t optionLength = sizeof(optval);
+                socklen_t optionLength = static_cast<socklen_t>(sizeof(optval));
 
                 if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
                     TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
+
+#ifndef ENABLE_NAGGLE
+                // Disable Naggle algorithm (RFC 896)
+
+                optval = 0; // 0 - disable, 1 - enable (non-zero)
+
+                       // TCP, not UDP
+                if (   ::getsockopt(l_Result, SOL_SOCKET /* socket level */, SO_TYPE /* optname */ , &optval /* optval */, &optionLength /* optlen */) == 0
+                    && optval == static_cast<int>(SOCK_STREAM)
+                       // Suported and not active
+                    && ::getsockopt(l_Result, IPPROTO_TCP /* TCP level */, TCP_NODELAY /* optname */ , &optval /* optval */, &optionLength /* optlen */) == 0
+                    && optval == static_cast<int>(0)
+                ) {
+                    optval = 1;
+
+                    if (::setsockopt(l_Result, IPPROTO_TCP /* TCP level */, TCP_NODELAY /* optname */ , &optval /* optval */, optionLength /* optlen */) != 0) {
+                        // Error
+                        VARIABLE_IS_NOT_USED int errval{ errno };
+                    }
+                } else {
+                    // Possible error, UDP, not supported, or possibly default active
+                    VARIABLE_IS_NOT_USED int errval{ errno };
+                }
+#endif
             }
 
 #ifndef __WINDOWS__
