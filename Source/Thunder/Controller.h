@@ -329,13 +329,13 @@ namespace Plugin {
         Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
 
         // JSONRPCSupportsEventStatus overrides
-        void OnStateChangeEventRegistration(const string& client, const string& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        void OnStateChangeEventRegistration(const string& client, const Core::OptionalType<string>& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
                 SendInitialStateSnapshot(client, index);
             }
         }
-        void OnStateControlStateChangeEventRegistration(const string& client, const string& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        void OnStateControlStateChangeEventRegistration(const string& client, const Core::OptionalType<string>& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
                 SendInitialStateControlSnapshot(client, index);
@@ -397,8 +397,8 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void SendInitialStateSnapshot(const string& client, const string& callsign);
-        void SendInitialStateControlSnapshot(const string& client, const string& callsign);
+        void SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign);
+        void SendInitialStateControlSnapshot(const string& client, const Core::OptionalType<string>& callsign);
 
     private:
         Core::CriticalSection _adminLock;
