@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Module.h"
-#include "ISubSystem.h"
 
 namespace Thunder {
 

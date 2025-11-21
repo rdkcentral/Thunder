@@ -18,7 +18,6 @@
  */
 
 #include "Module.h"
-#include "IStateControl.h"
 
 namespace Thunder {
 

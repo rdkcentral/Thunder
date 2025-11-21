@@ -20,7 +20,7 @@
 #include "Controller.h"
 #include "SystemInfo.h"
 
-#include <plugins/json/json_IController.h>
+#include <interfaces/json/json_IController.h>
 
 namespace Thunder {
 

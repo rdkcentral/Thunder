@@ -15,28 +15,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
-#pragma once
+#include "Module.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Application
-#endif
-
-#include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <plugins/plugins.h>
-#include <websocket/websocket.h>
-#include <messaging/messaging.h>
-#include <interfaces/interfaces.h>
-
-#ifdef __CORE_WARNING_REPORTING__
-#include <warningreporting/warningreporting.h>
-#endif
-
-#ifndef TREE_REFERENCE
-#define TREE_REFERENCE engineering_build_for_debug_purpose_only
-#endif
-
-#undef EXTERNAL
-#define EXTERNAL
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)

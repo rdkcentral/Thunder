@@ -21,8 +21,8 @@
 #include "Module.h"
 #include "IShell.h"
 
-// @stubgen:include <plugins/IShell.h>
-// @stubgen:include <plugins/ISubSystem.h>
+// @stubgen:include <interfaces/IShell.h>
+// @stubgen:include <interfaces/ISubSystem.h>
 // @stubgen:include <com/IIteratorType.h>
 
 namespace Thunder {

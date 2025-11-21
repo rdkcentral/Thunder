@@ -18,7 +18,6 @@
  */
 
 #include "Module.h"
-#include "ISubSystem.h"
 
 namespace Thunder {
 

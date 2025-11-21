@@ -22,7 +22,7 @@
 #include <com/ICOM.h>
 #include "IShell.h"
 
-// @stubgen:include <plugins/IShell.h>
+// @stubgen:include <interfaces/IShell.h>
 
 namespace Thunder {
 

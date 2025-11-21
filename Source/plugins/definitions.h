@@ -22,5 +22,5 @@
 // Generated files include this
 
 #include <core/core.h>
-#include <IController.h>
-#include <IStateController.h>
+#include <interfaces/IController.h>
+#include <interfaces/IStateController.h>
