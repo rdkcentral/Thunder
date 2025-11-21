@@ -1474,6 +1474,8 @@ namespace Plugin {
 
     void Controller::NotifyStateControlStateChange(const string& callsign, const Exchange::Controller::ILifeTime::state& state)
     {
+       ASSERT(callsign.empty() == false);
+
        _adminLock.Lock();
 
         for (const auto& entry : _lifeTimeObservers) {
