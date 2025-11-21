@@ -1485,15 +1485,8 @@ namespace Plugin {
         _adminLock.Unlock();
 
         // also notify the JSON RPC listeners (if any)
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state,
-            [](const string&, const string& index) {
-                return (index.empty() == true);
-        });
-
-        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, {}, state,
-            [&callsign](const string&, const string& index) {
-                return (callsign == index);
-        });
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, {}, callsign, state);
+        Exchange::Controller::JLifeTime::Event::StateControlStateChange(*this, callsign, {}, state);
     }
 
     void Controller::SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign)
