@@ -1642,7 +1642,7 @@ If registered for empty callsign, notifications for all services will be sent.
 | params | object | mandatory | *...* |
 | params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Activated, Deactivated, Unavailable*) |
-| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
+| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, InstantiationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
 
 ### Example
 
