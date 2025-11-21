@@ -1463,7 +1463,7 @@ namespace Plugin {
 
         _adminLock.Unlock();
 
-        // also notify the JSON RPC listeners (if any)
+        // also notify the JSON RPC listeners (if any...)
 
         // First notify observers that registered for all (notification will include the callsign)
         Exchange::Controller::JLifeTime::Event::StateChange(*this, {}, callsign, state, reason);
