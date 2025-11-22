@@ -1103,7 +1103,7 @@ namespace Plugin {
                 PluginHost::IStateControl* stateControl = service->QueryInterface<PluginHost::IStateControl>();
 
                 if (stateControl == nullptr) {
-                    result = Core::ERROR_UNAVAILABLE;
+                    result = Core::ERROR_NOT_SUPPORTED;
                 }
                 else {
                     result = stateControl->Request(PluginHost::IStateControl::command::RESUME);
