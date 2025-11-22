@@ -564,9 +564,12 @@ For more details, click [here](../interfaces/#asynchronous-functions)
 
 #### @encode
 
-This tag encodes data into an alternate format.
+This tag encodes or decodes (if an input parameter) data into/from an alternate format.
 
-* `@encode:base64` encodes arrays as base64 JSON-RPC arrays, on the condition that the array base is type `uint8_t`.
+* `@encode:base64` encodes/decodes arrays (or std::vector or iterator) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t`.
+* `@encode:hex` encodes/decodes arrays (or std::vector or iterator) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t`.
+
+@encode:autolookup is another form of encode: it indicates this interface is an interface used as a session object for another interface. See for more info here: [here](../interfaces/#object-lookup)
 
 ##### Example
 

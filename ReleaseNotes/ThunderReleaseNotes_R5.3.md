@@ -22,7 +22,6 @@ A feature was added to the CMake files to enable the inclusion of scripts to be 
 
 The GitHub actions are extended with a build where the Performance Monitoring feature (enables code that will enable a special plugin to measure JSON-RPC performance) is turned on to verify it is not broken by a pull request.
 
-
 ### Feature: Copilot scanning enabled and issues fixed
 
 Next to Coverity also Copilot is now enabled for all Thunder repositories to check the pull requests for issues. The few remarks found when enabled have been cleared up.
@@ -141,33 +140,29 @@ StateChange (which notifies of changes to plugin state that not includes Plugin:
 
 StateControlStateChange (which notifies of changes to plugin state from Plugin::IStateControl, so suspended and resumed) will when registering for notifications for a specific plugin immediately notify about the current state for that plugin and send no current state notification when registering for all plugins.
 
-### Feature: loggign in casze second comrpc call on chennel deadlock
+### Feature: Logging second invoke on COM_RPC channel
 
+Now a message is printed to Syslog when a second COM-RPC invocation is made to a channel warning about this possible deadlock (so in an IPC situation, not in process). This to help in the investigation of these plugin issues.
 
-NOTE: hier gebleven
+### Feature: SinkType now has WaitReleased
 
-https://github.com/rdkcentral/Thunder/commit/8da778df7a574b8e6872ef31d1c2c458689bb0f5
+The SinkType now has a WaitReleased method. This can be used in the special situation when a Service is put into the SinkType but there can be a possible racecondion between closing the channel(s) from which the Service is used and receiving the actual Release call(s) from the using side(s).
+With WaitReleased the server side can now wait for the Release() to be received from the client side(s), with timeout. 
+See for a scenario in which this is useful [here](https://github.com/rdkcentral/ThunderPluginActivator/blob/89f789624305f4473fb5b605e8ae3cc4fa39fd15/source/COMRPCStarter.cpp#L94) and for the actual call to WaitReleased [here](https://github.com/rdkcentral/ThunderPluginActivator/blob/89f789624305f4473fb5b605e8ae3cc4fa39fd15/source/COMRPCStarter.cpp#L152). 
 
-### Feature: Sink now has WaitReleased
+### Change: Improved dead proxies handling
 
-https://github.com/rdkcentral/Thunder/commit/3f85bc5d2adc2da705603f94b9797dc408ecaf93
+Previously calling a COM-RPC method (over an IPC channel) from the (PluginServer) ICOMLink::INotification Dangling notification could lead to a possible deadlock this been fixed now.
+This means that all Dangling handling code (so both in PluginServer as well as CommunicatorServer) is now safe for this usage pattern.
 
-### Change: imporved dangling proxies notification
+### Change: THUNDER_PERFORMANCE code made to work again
 
-https://github.com/rdkcentral/Thunder/commit/bd88dec72296bc867b732b78ed8539d2103dd52f
+The Thunder code using the THUNDER_PERFORMANCE has been made working again (this enables code in Thunder that can be used by a special plugin developed in the past to do JSON-RPC performance measurements)
+The flag has a generic name so that future possible performance measurement code can also be put inside this flag.
 
-now allowed  via comrpc call
+### Change: Connector timeout can be specified.
 
-
-### Change: THUNDER_PERFORMANCE 
-
-working again
-
-https://github.com/rdkcentral/Thunder/commit/5c281b3514bafc3d1bdc9cd6840aa2e1a2e13fb2_
-
-### Change: connector timelout setable
-
-In code, makes smartlinktype timeout for xonnwection possible
+It is now possible to set the timeout to bes used in the SmartLinkType connect and disconnect (before it was always Core::infinite so it would wait indefinitely for the event to happen)
 
 ### Change: General bug fixes
 
@@ -231,98 +226,107 @@ We do not expect this to be used anywhere nor was it used in Thunder internally.
 
 ### Feature: support status listeners for lookup objects
 
-bug fix 
+### StatusListener unregistered also on channel closed event
 
-https://github.com/rdkcentral/ThunderTools/commit/2da9dd7895b7c9961c2548f5be37cc9168ab8d03
-
-See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#object-lookup) for more info and how to use this.
-
-### StatusListener closedc channel 
-
-
-https://github.com/rdkcentral/Thunder/commit/bc8965bf8eded200c3bdcacf9025624b0980ca1a
+When the @statuslistener is used for an event in an interface the status listener is also called with state Status::unregistered when a client explicitly unregisters from the event.
+Starting 5.3 this is also done when the unregister is a result of the channel from which the client registered closing without the client calling unregister explicitly before that (note the internal cleanup inside Thunder did already happen, there were no leaks, just the statuslistener was not called when this happened).
 
 ### Feature: new buffer encoding options
 
-encode:hex and encode:mac (note that it kmight be better to the natiove tupoe that is suported see below) (next to existing ecnode:bas64) wotk with all types that have an arry (arry, vector, even iterator)
+NOTE: Pierre/Sebastian do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
+(after this decision I'll update the Thunder documentation)
 
+There are new encoding tags supported for @encode (next to the already existing base64):
 
-Core::
+@encode:hex will encode/decode the buffer as hex value into/from the JSON_RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or even an iterator 
 
-https://github.com/rdkcentral/ThunderTools/commit/ef7940f4ed23e3f7cbd2cff99840cae5ee2d165e
-
-now also supported in events: https://github.com/rdkcentral/ThunderTools/commit/b7203bd5d4c4bb9a1da82bae75ce9ef94e2fa768
+alle encodings can now also be used in events.
 
 ### Feature: New supported type: class MACAddress
 
-Core::MACAddress
+The newly added Thunder type Core::MACAddress (to hold MAC adrresses) is now fully supported in both COM-RPC and JSON-RPC from the IDL header file by the code generators.
 
-https://github.com/rdkcentral/ThunderTools/commit/7e3bc68e46dd5ce8842c909cdee01d7034fac7b3
+### Change: auto object lookup now requires @encode:autolookup
 
-### Feature: Use string instance id 
+The JSON-RPC session auto lookup feature introduced in Thunder 5.2 now requires the @encode:autolookup tag, this for improved detection and consistency.
+See more [here]() NOTE: add link to autolookup documentation section.
+Note the autolookup introduced in Thunder 5.2 without @encode:autolookup (it should not be breaking as Thunder 5.2 was not used to define new (session based) interfaces).
 
-instance id can be a string now instead of number
-
-https://github.com/rdkcentral/ThunderTools/commit/4ab8b4a458233e4461e87f5ffaa4f8d3b9436734
+NOTE: sebastian the generated documentation is now confusing with the id as number and id1, but perhaps I'm mssing something
+NOTE: to self after published check ik autolook up links in documentation are still still correct now code has changed
+NOTE: to self also document use of handlers and necesity to use special base classes think that is not done yet: https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L39-L42
+NOTE: is this also new 5.3? https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1537
+      (understand how used here but Aquire and Relinquish are also called so just an extra step to get json handling attachyed if I'm right?) did a blame and it is new :)
 
 ### Feature: support custom object lookup
 
-@encode:autolookup see example interfaces -> breaks the 5.2 autollook without autolookup
- @encode:lookup (see add whete the lookup lambda's are registered)
+NOTE: - sebastion: small improvement: make https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L85 
+                   also accessory instance ID to be more in line with the autogenerated comments (makes it easier to connect them together when reading)
+      - sebastian: objectlookup stores nothing, if you want lifetime you do that internally, but what if the channel closes (example is static) and you have them dynamically created on channel, guess you need to also install a callback like autlookup example?
+                   ah, looked into the code, nope that is not possible (indeed what id would you report nothing stored), one would need to listen to the channel closed notifications (but how?)
+      - sebastian: just out of curiosity: why lambda's IUknown?
+      - sebastian: do not completely get how the added/removed notification is supposed to work in the example, Removed is not connected and Added not as I would expect but I could be missing something
 
+ @encode:lookup 
 
-https://github.com/rdkcentral/ThunderTools/commit/be4ad6be7299b4992218ace5b9947e91ca66783f
+ https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleCustomObjects.h
+ https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/GeneratorShowcase.h#L1435
+ https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory
 
-https://github.com/rdkcentral/Thunder/commit/8280f2ac5d38b87bbd5fc3ceb000e0dae9beefd6
+### Feature: Use string instance id 
 
-https://github.com/rdkcentral/Thunder/commit/58f642c8e75906a2a0b9797fc6288cbbae541604
+Next to a number type the instance ID for an custom lookup interface can also be a string.
 
-https://github.com/rdkcentral/Thunder/commit/a6645b4d85c96c60fe295d12226aa40e8f9ad265
+NOTE: sebastian guess only relevant when adding the lamnbdas?
 
-https://github.com/rdkcentral/ThunderTools/commit/b19295114ba37be801464407aa31ebf6bf8e5e44
+### Feature: serialize empty non optional arrays and containers
 
-### Feature: serialize non empty arrays and containers
+Previously empty arrays (and also std::vectors and iterators) and containers (if all members are optional and not set) output parameters are not serialized to the JSON-RPC output at all. 
+Starting 5.3 they will be included by default when empty (as [] and {}) (this on request of the Comcast Thunder user base).
 
-Core::OptionLType (if not optuional bracjest always omited, if optional and not set then null)
+When it is desired they are not included when empty they can be made optional (with OptionalType<>(var)) in the interface, then when not set they will not be included.
 
+Note this is not considered breaking as both are valid JSON (and it is on specific request).
 
-https://github.com/rdkcentral/ThunderTools/commit/0304e4519178956048b6cc9ecf3cd05a38460a49
+### Feature: Allow inclusion of enum and POD from other IDL header file
 
+It is now possible to use an enum or POD (struct with data members) defined in one IDL header file in another by including the other header file with @insert
 
-### include enum/struct from other header file??????
+### Feature: Enable enum <-> string conversion for non JSON-RPC interfaces
 
-@insert 
+Previously the enum to string (and vice versa) conversion tables were only generated when the enum was used in an interface used in JSON-RPC generation (so with @json tag).
+Starting 5.3 they can be generated for COM-RPC only interfaces as well. 
+For this use the @enumsonly tag
 
-### Feature: eneble enum conversion generatrion for non json rpc interfaces
-
-https://github.com/rdkcentral/ThunderTools/commit/e20510ef35356856f7398a7441cd25658efbc65c
+NOTE: sebastian cannot get this to work...
+NOTE: self still add to Thunder documentation
 
 ### Feature: support optional iterators:
 
-what is says
-
-https://github.com/rdkcentral/ThunderTools/commit/49dec3e3ad8b108797e329ae5839d9c364ec93ee
+Iterators in the IDL header file can now also be of OptionalType<>.
 
 ### Feature: support restrict for iterators
 
-see feature above 
-
-https://github.com/rdkcentral/ThunderTools/commit/c8f5665a55d0392cc2f91c5d04f4dbab1834fb34
+The @restrict tag can now, next to strings, arrays and std::vector, also be used to set the minimum and maximum allowed size for iterator types in the IDL header file.
+NOTE: self still add to Thunder documentation (if needed)
 
 ### Feature: allow only lower bound restrict for strings
 
-@nonempty string only (will raise error when not empty)
+When an input string in a method in the IDL is not allowed to be empty (but it is not desirable to set a maximum length, if that is the case the @restrict:x..y tag can be used) it can be flagged with the @restrict:nonempty tag.
+If the string is empty this will already generate an error when validating the input in the generated proxy stub code.
 
-https://github.com/rdkcentral/ThunderTools/commit/4354bda52520bb43519fb125495fa1e59ebdf104
-
-(https://github.com/rdkcentral/ThunderTools/commit/37a5f43d0f2d54d7dc4bdf45348f268ff6a00677)
+NOTE: self still add to Thunder documentation 
 
 ### Feature: colated iterators
+
+NOTE: hier gebleven
+
+NOTE: sebastian: is @ASINTERFACE with capitals? I guess put it as /* ASINTERFACE * after the iterator name?
 
 data in iterators in one go (disabled) -> switch on the generator -> in future 
  --collated-iterators 
 
- @interface means pass it as interface instead all data put after iterator
+ @asinterface means pass it as interface instead all data put after iterator
 
  In 6.0 this might become becom ethe dafult behaviour
 
@@ -373,31 +377,6 @@ legacy or         print("   @default {value}       - set a default value for an 
 ### Change: General bug fixes
 
 A number of fixes and improvements were made to make the generated code more robust and compliant with higher warning levels and compiler versions
-
-??? https://github.com/rdkcentral/ThunderTools/commit/57ea36a3aba1dbcf9806e0c19b72d4e35a4d8054
-
-https://github.com/rdkcentral/ThunderTools/commit/2f99361ea74aa09e6c98af171179b5377f0bb16d @container??
-
-???? https://github.com/rdkcentral/ThunderTools/commit/50913316be0edb83845dc285323b47bee08a1b44
-
-
-???? https://github.com/rdkcentral/ThunderTools/commit/94de3196e5ae4cff676d870457d941ac5b861e98
-
-https://github.com/rdkcentral/ThunderTools/commit/007e2f0f10708ddeda8d78f84ca117724355a5e8 (breaking??? not compared to 4.4 as it was not available)
-
-@optional fixed: https://github.com/rdkcentral/ThunderTools/commit/eb2cc7828bba22775b32db99063cb2f3d8d63f98
-
-
-???? https://github.com/rdkcentral/ThunderTools/commit/3d41cfa3dc8e119db1c7c4a359041acee46d8663
-
-
-???? https://github.com/rdkcentral/ThunderTools/commit/1d483e42d041190a0db8c20d8a3e34205f748037
-
-
-??? https://github.com/rdkcentral/ThunderTools/commit/39f12403dc75d229580db01e0e5d91b983b521ef
-
-
-??? https://github.com/rdkcentral/Thunder/commit/f687888251f54174f6a676e21152b82e39bc5342
 
 # Thunder Interfaces
 

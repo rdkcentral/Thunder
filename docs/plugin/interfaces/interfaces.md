@@ -140,6 +140,7 @@ View [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServices
 Notification registration is a way of tracking updates on a notification.
 
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
+Note the unregistered notification will also be triggered when it is the result of the channel closing on which the client registered without deregistering explicitly beforehand.
 
 Examples: 
 
@@ -204,7 +205,7 @@ For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForE
 Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
 This object interface is brought into JSON-RPC scope with a object ID. This translates the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
 
-Object lookup will happen automatically by the generator when a method is found on the COM-RPC interface that returns an COM-RPC Interface also tagged as JSON-RPC interface as an out parameter and it is expected also a method that takes the same interface as input parameter is available to be able to destroy the created object.
+Object lookup will happen automatically when the @encode:autolookup tag is added to the interface that is to be the session object. The the generator will look for method on that returns that session type as an out parameter as COM-RPC Interface (on an interface in the same file which of course also must be tagged as JSON-RPC interface) and it is expected that there is a method that takes the same interface as input parameter to be available as well to be able to destroy the created object.
 
 The generated JSON-RPC interface will then automatically associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
 
@@ -219,7 +220,7 @@ Meaning to be able to use this COM-RPC interface in JSON-RPC no additional code 
 
 [here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L29) you will see an example of an interface that uses automatic object lookup.
 
-The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L39).
+The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L39) which has the @encode:autolookup tag specified.
 With the [Relinquish](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L78) method the object is destroyed again.
 
 If you look into the generated documentation for this interface which can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
