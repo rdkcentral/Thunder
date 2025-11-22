@@ -22,6 +22,8 @@
 #include "JSON.h"
 #include "Module.h"
 #include "TypeTraits.h"
+#include "Errors.h"
+#include "Number.h"
 
 #include <cctype>
 #include <functional>
@@ -185,14 +187,23 @@ namespace Core {
                         Text = _T("The operation is not supported.");
                         break;
                     default:
-                        if ((frameworkError & 0x80000000) == 0) {
-                            Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
-                        } else {
+                        if ((frameworkError & COM_ERROR) != 0) {
                             Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError & 0x7FFFFFFF) - 500;
+                        } else {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            int24_t customcode = IsCustomCode(frameworkError);
+                            if (customcode != 0) {
+                                Code = (Core::Overflowed(customcode) == true ? 0 : static_cast<int32_t>(customcode));
+                            } else {
+#endif
+                                Code = ApplicationErrorCodeBase - static_cast<int32_t>(frameworkError);
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                            }
+#endif
                         }
 
                         if (Text.IsSet() == false) {
-                            Text = Core::ErrorToString(frameworkError);
+                            Text = Core::ErrorToStringExtended(frameworkError);
                         }
                         break;
                     }

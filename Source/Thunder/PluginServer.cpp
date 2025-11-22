@@ -921,6 +921,7 @@ namespace PluginHost {
     // class Server::ServiceMap
     // -----------------------------------------------------------------------------------------------------------------------------------
     void Server::ServiceMap::Open(std::vector<PluginHost::ISubSystem::subsystem>& externallyControlled) {
+        _processAdministrator.Open();
         // Load the metadata for the subsystem information..
         if (Configuration().MetadataDiscovery() == false) {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));

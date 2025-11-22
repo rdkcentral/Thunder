@@ -1049,15 +1049,73 @@ namespace Core {
         uint8_t _size;
     };
 
-}
+    template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
+    static constexpr uint8_t RealSize()
+    {
+        return (sizeof(T));
+    }
+    template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
+    static constexpr uint8_t RealSize()
+    {
+        return (T::SizeOf);
+    }
+
+    // -----------------------------------------------------
+    // Check for Overflowed member available on number type
+    // -----------------------------------------------------
+    IS_MEMBER_AVAILABLE(Overflowed, hasOverflowed);
+
+    template <typename TYPE>
+    inline typename Core::TypeTraits::enable_if<hasOverflowed<const TYPE, bool>::value, bool>::type
+    Overflowed(TYPE t)
+    {
+        return t.Overflowed();
+    }
+
+    template <typename TYPE>
+    inline typename Core::TypeTraits::enable_if<!hasOverflowed<const TYPE, bool>::value, bool>::type
+    Overflowed(TYPE)
+    {
+        return false;
+    }
+        
+    template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+    bool check_and_cast(const ORIGINAL_TYPE& input, NEW_TYPE& output)
+    {
+        ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
+        ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+
+        bool success = false;
+
+        if ((input <= std::numeric_limits<NEW_TYPE>::max()) && (input >= std::numeric_limits<NEW_TYPE>::min())) {
+
+            success = true;
+
+            PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
+            output = static_cast<NEW_TYPE>(input);
+
+            POP_WARNING()
+        }
+
+        return success;
+
+    }
+
 } // namespace Core
+} // namespace Thunder
 
 template <typename NEW_TYPE, typename ORIGINAL_TYPE>
 NEW_TYPE int_cast(const ORIGINAL_TYPE& input)
 {
     ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
     ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+
+    PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
     return (static_cast<NEW_TYPE>(input));
+
+    POP_WARNING()
 }
 
 #endif // __NUMBER_H
