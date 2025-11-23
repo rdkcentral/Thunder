@@ -224,27 +224,41 @@ We do not expect this to be used anywhere nor was it used in Thunder internally.
 
 ## Changes and new Features 
 
-### Feature: support status listeners for lookup objects
+### Feature: event indexes improvement
 
-### StatusListener unregistered also on channel closed event
+Using indexes for event has improved. 
+The indexes now use @< index > at the end of designator in the JSON-RPC interface.
+This had to be changed as indexes could contain dots itself (e.g. if the index is a callsign) so having it before the first dot in the clientid would not suffice.
+Although the old dot format was in use only for a short time in Thunder 5 the @index:deprecated can be used with an event parameter to indicate it is an index for that event and the deprecated dot format should be used.
 
-When the @statuslistener is used for an event in an interface the status listener is also called with state Status::unregistered when a client explicitly unregisters from the event.
-Starting 5.3 this is also done when the unregister is a result of the channel from which the client registered closing without the client calling unregister explicitly before that (note the internal cleanup inside Thunder did already happen, there were no leaks, just the statuslistener was not called when this happened).
+Indexes now also support OptionalType indexes to indicate subscribing to the index or all is in principle optional. For this to work it is now also allowed to put the @index keyword at the Register and the event is then looked up by name of the indexed parameter.
+(it is also allowed and advised to also put the @index then at the Unregister)
+Please see this section in the Thunder documentation that has been added to describe indexed events: NOTE: add link
 
-### Feature: new buffer encoding options
 
-NOTE: Pierre/Sebastian do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
-(after this decision I'll update the Thunder documentation)
+NOTE: sebasian guess the "rams" use case works as well (did not test)? -> I tested it and it does!!! :)
+NOTE: sebastian with the optional paremeter the documentation is a little inconsistent (not saying we should change that now :) ) notification parameter is optional (which it isn't) and it has this text: "The callsign parameter shall be passed as index to the register call, i.e. register@<callsign>." (shall better to be changed to optionaly?)
+NOTE: question on non optional and optional and send all allowed (not that we should change anything it is nice and flexible) (but just to indicate I now just not explicietly mention the at all without optionaltype in the documentation)
 
-There are new encoding tags supported for @encode (next to the already existing base64):
+NOTE: sebastian:
+for 
+            virtual void StateChange(const string& callsign /* @index */ , const bool marcel) = 0;
 
-@encode:hex will encode/decode the buffer as hex value into/from the JSON_RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or even an iterator 
+            (registers without callsign index but that does not matter for the issue)
 
-alle encodings can now also be used in events.
+it also generates:
+            template<typename MODULE>
+            static void StateChange(const MODULE& module_, const bool marcel, typename MODULE::SendIfMethodIndexed sendIfMethod_ = nullptr)
+            {
+                JsonData::Huppel5::StateChangeParamsData params_;
+                params_.Marcel = marcel;
 
-### Feature: New supported type: class MACAddress
+                StateChange(module_, marcel, params_, sendIfMethod_);
+            }
 
-The newly added Thunder type Core::MACAddress (to hold MAC adrresses) is now fully supported in both COM-RPC and JSON-RPC from the IDL header file by the code generators.
+which I don't understand and also does not compile as StateChange(module_, marcel, params_, sendIfMethod_); is not generated.
+
+If too risky perhaps we should not fix as it is not a problem as long as you don't call it because of the template method :)
 
 ### Change: auto object lookup now requires @encode:autolookup
 
@@ -277,6 +291,52 @@ NOTE: - sebastion: small improvement: make https://github.com/rdkcentral/Thunder
 Next to a number type the instance ID for an custom lookup interface can also be a string.
 
 NOTE: sebastian guess only relevant when adding the lamnbdas?
+
+### Feature: support status listeners for lookup objects
+
+Object lookup (see above) now also supports status listeners to be used for session object creation and destruction. See the object look up section and the code generator examples refered to from there for more information on this.
+
+### Feature: StatusListener unregistered also on channel closed event
+
+When the @statuslistener is used for an event in an interface the status listener is also called with state Status::unregistered when a client explicitly unregisters from the event.
+Starting 5.3 this is also done when the unregister is a result of the channel from which the client registered closing without the client calling unregister explicitly before that (note the internal cleanup inside Thunder did already happen, there were no leaks, just the statuslistener was not called when this happened).
+
+### Beta Feature: PSG with interface parsing
+
+NOTE: Tym updates the Thunder documentation add a link to it here as well (see below).
+
+The Plugin Skeleton Generator has been greatly extended to now parse the IDL interface file(s) you want the generated plugin code to implement and therefore generates code already completely providing all methods for the Plugin, only the implementation needs to be added!
+It does generate code for both COM-RPC and JSON-RPC interfaces just by checking if the interface IDL header file indicates also specifies a JSON-RPC interface should be generated.
+It has also been extended with example code for dangling proxies (if applicable fot the interface it implements) and support for subsystem handling code generation.
+
+Note due to all the permutations possible with the interfaces it can encounter the PSG remains in beta. If you see issues or have doubts on the code it generates please contact us.
+
+Note: see here for the (updated) Thunder documentation on the Plugin Skeleton Generator here
+
+### Feature: wrapped format
+
+The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector, iterator and POD's.
+Of course it is preferable to keep the JSON-RPC interface as whole consistent but this was added as there are interface where workarounds are used to achieve the wrapped effect so having this tag will make it easier to achieve the wrapped format.
+
+See here for more info;
+
+NOTE: add link to documentation.
+
+### Feature: new buffer encoding options
+
+NOTE: Pierre/Sebastian do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
+(after this decision I'll update the Thunder documentation)
+NOTE: sebastian: I might see an issue here, let me show you
+
+There are new encoding tags supported for @encode (next to the already existing base64):
+
+@encode:hex will encode/decode the buffer as hex value into/from the JSON_RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or even an iterator 
+
+alle encodings can now also be used in events.
+
+### Feature: New supported type: class MACAddress
+
+The newly added Thunder type Core::MACAddress (to hold MAC adrresses) is now fully supported in both COM-RPC and JSON-RPC from the IDL header file by the code generators.
 
 ### Feature: serialize empty non optional arrays and containers
 
@@ -330,42 +390,6 @@ https://github.com/rdkcentral/ThunderTools/commit/b87925af70680181ed66b9754f2273
 ### Feature: build in methods in documentation:
 
 The JSON-RPC API documentation generation now for every plugin also includes the Thunder predefined functions ("versions", "exists", "register" and "unregister") so that a complete API overview is created.
-
-### Feature: event indexes improvement
-
-- @ instead of . also deprecated
-- index at register 
-- optional indexes
-
-
-NOTE: hier gebleven
-
-new, being cvhanged
-
-https://github.com/rdkcentral/ThunderTools/commit/01924d640d2f3f8ff6d9ff49615540063b6fb9a8
-
-also mention deprecated
-
-index can be optional on the event (could alreayd be done for the property)
-
-### Beta Feature: PSG with interface parsing
-
-### *** tags ***
-
-https://github.com/rdkcentral/ThunderTools/commit/1cbab5907240b9115de13530f8cdc776a7e69358
-
-fixed  @optional              - indicates that a parameter, struct member or property index is optional (deprecated, use Core::OptionalType instead)")
-legacy or         print("   @default {value}       - set a default value for an optional parameter")
-        print("   @encode {method}       - encodes a buffer, array or vector to a string using the specified method (base64, hex, mac)")
-
-
-  print("   @alt:deprecated {name} - provides an alternative deprecated name a JSON-RPC method can by called by")
-        print("   @alt:obsolete {name}   - provides an alternative obsolete name a JSON-RPC method can by called by")
-        print("   @alt-deprecated {name} - provides an alternative deprecated name a JSON-RPC method can by called by")
-        print("   @alt-obsolete {name}   - provides an alternative obsolete name a JSON-RPC method can by called by")
-
- print("   @retval {desc}         - sets a description for a return value of a JSON-RPC method")
-        print("   @retval {value} {desc} - sets a description for a return value of a JSON-RPC method or property")
         
 ### Change: General bug fixes
 
@@ -441,9 +465,5 @@ Compositor changes
 -------------
 
 - missing still:
-    - new index
-    - wrapped for single out params
-    - CustomCode feature
     - Batch plugin
-    - wrepped
      

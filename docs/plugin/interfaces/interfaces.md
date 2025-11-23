@@ -165,12 +165,12 @@ Note in newer Thunder versions session support was added which in a lot of cases
 
 <hr/>
 
-#### Notification Registration
+#### Notifications
 
 Notification registration is a way of tracking updates on a notification.
 
 When a notification is tagged with the @event keyword it means code will be generated to make it easy to send this notification to registered clients from the C++ code that implements the interface.
-Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins:
+Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins (if documentation is generated for an interface or plugin using that interface containing events, examples for registration and deregistration and the notification itself will be included in the documentation):
 
 ```json
 {
@@ -218,7 +218,181 @@ if the deregistration is successful the following return can be expected (and an
 }
 ```
 
+In the generated J< interface >.h file static helper functions will be generated that one can call in the C++ code to send the notifications to all registered clients. 
+For example suppose we would have this interface:
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test2) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* const sink) = 0;
+        virtual Core::hresult Unregister(const INotification* const sink) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+After including the generated helper file one could notify all registered clients on a StateNotification class by calling the following code:
+
+```cpp
+        Exchange::JTest::Event::StateChange(*this, "test", true);
+```
+
+Note depending on the interface more than one helper function is generated (e.g. also one where you can use the generated params class), check the generated J< interface >.h file for all the options.
+
+##### indexed events
+
 With the above and the generated event notification functions the notification will be sent to all registered clients. It is possible to only notify some clients register for an event.
+If one wants to send some notifications only to some registered clients there must be a parameter in the event that a client uses to indicate if it wants to only receive the notification when that parameter has a certain value.
+That parameter can be flagged with the @index tag to indicate it is used to discriminate registered clients.
+
+Let's discus with an example:
+
+Suppose we have this interface:
+
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test2) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* const sink, const string& callsign /* index */) = 0;
+        virtual Core::hresult Unregister(const INotification* const sink, const string& callsign /* index */) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+From the COM-RPC interface it is clear one can subscribe to be notified on changes for a specific callsign. The @index is put at the COM-RPC Register and Unregister methods, the code generators will do a name lookup up, so in this case "callsign" to find the connected event.
+(the event can have the @index tag as well, as long as the index parameter name matches).
+
+A client can subscribe via JSON-RPC to be notified on a specific callsign like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register@<callsign>",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+where < callsign > should have the specific callsign this client wants to be notified about.
+
+The notification sent will then be like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "myid.stateChange@<callsign>",
+  "params": {
+    "marcel": false
+  }
+}
+```
+
+As with a non indexed event if the documentation is generated for the JSON-RPC interface examples for registering, deregistering and the notification will be included in the document.
+
+Again static helpers are created in the J< interface >.h file that allow one to sent the notifications to all registered clients:
+
+```cpp
+        Exchange::JTest::Event::StateChange(*this, "test", true);
+```
+
+This will only sent a notification to the clients whom registered for the stateChange event with client "test" by adding @test to the registration designator.
+
+It is also possible to use Core::OptionalType to indicate the index is not mandatory (and if not set one registers for all values of the index).
+
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test2) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+for the JSON-RPC registration that does not influence much, one uses:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register@<callsign>",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+to register only to be notified for a specific callsign and:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+to register for all callsigns no matter what the value of callsign is.
+
+The notification is now a little different however:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "myid.stateChange@abc",
+  "params": {
+    "callsign": "...",
+    "marcel": false
+  }
+}
+```
+It will now always include the callsign as parameter (as if the event was for a client that registered for all callsigns the @ part will not be in the event so the callsign must be included as parameter to indicate for which callsign this event is).
+
+As always these examples will also be included in the generated documentation for this interface
+
+And again static helper functions will be included in the generated J< interface >.h file for sending the notifications.
+
+##### statuslisteners
 
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
 Note the unregistered notification will also be triggered when it is the result of the channel closing on which the client registered without deregistering explicitly beforehand.
