@@ -97,6 +97,8 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 
 * `Core::Time` is now supported in the IDL header files.
     * It is presented as an [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) formatted string in JSON-RPC.
+    
+* `Core::MACAddress` is also fully supported 
 
 * `Core::OptionalType<T>` allows a member to be optional (this superseded @optional), and must be used if an attribute is expected to be optional on JSON-RPC. In COM-RPC the OptionalType can be used to see if a value was set, and in JSON-RPC it is then allowed to omit this parameter.
     * A @default tag can be used to provide a value, in the case T is not set. See more [here](../tags/#default).
@@ -111,9 +113,33 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
     * @restrict is mandatory to be used to indicate the maximum allowed size of the std::vector (to make the interface designed think about size consequences and not allow unlimited sized vectors). For COM-RPC it means all the data in the std::vector is transferred at once, if this is not desired best to use an iterator as an alternative.
     * usage of std::vector is also supported in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
     * a std::vector cannot contain a Core::OptionalType (at least not for the code generators) as that would not make sense. Then just do not add the optional elements to the vector.
-
-
+    
 <hr/>
+
+#### Checking if a function exists
+
+With the generically available exists function a client can query if a specific function is available on a given plugin JSON-RPC interface. Call it like
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPlugin.1.exists",
+  "params": {
+    "method": "methodname"
+  }
+}
+```
+
+it will return true or false to indicate whether the method was available or not:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": true
+}
+```
 
 #### Preventing Memory leaks
 
@@ -133,11 +159,64 @@ Examples:
 
 View [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255) to see how ```Core::JSONRPC::Context``` is used.
 
+Note in newer Thunder versions session support was added which in a lot of cases automates this and leaks are prevented automatically, for more info see the [object lookup section](#object-lookup)
+
 <hr/>
 
 #### Notification Registration
 
 Notification registration is a way of tracking updates on a notification.
+
+When a notification is tagged with the @event keyword it means code will be generated to make it easy to send this notification to registered clients from the C++ code that implements the interface.
+Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPlugin.1.register",
+  "params": {
+    "event": "eventname",
+    "id": "myapp"
+  }
+}
+```
+
+if the registration is successful the following return can be expected (and an error response in case the registration failed) :
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+Unregistrering from an even can be done by the client by calling the "unregister"" function, which like the register is generically available for all plugins:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPLugin.1.unregister",
+  "params": {
+    "event": "eventname",
+    "id": "myapp"
+  }
+}
+```
+
+if the deregistration is successful the following return can be expected (and an error response in case the deregistration failed) :
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+With the above and the generated event notification functions the notification will be sent to all registered clients. It is possible to only notify some clients register for an event.
 
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
 Note the unregistered notification will also be triggered when it is the result of the channel closing on which the client registered without deregistering explicitly beforehand.

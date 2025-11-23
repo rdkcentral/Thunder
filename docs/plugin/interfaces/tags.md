@@ -143,7 +143,7 @@ When the function returns, the parameter will have the modified length value. Th
 
 #### @restrict
 
-Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size). Ranges are inclusive.
+Specifies a valid range for a parameter (e.g. for arrays, std::vector, iterators and strings it could specify a valid size). Ranges are inclusive.
 
 If a parameter is outside the valid range, then there are two possibilities:
 
@@ -399,7 +399,7 @@ Indicates that enumerator lists should be packed into into a bit mask.
 #### @index
 Used in conjunction with @property. Allows a property list to be accessed at a given index.
 
-Index should be the first parameter in the function. 
+Index should be the first parameter in the function. It is allowed to make the index a Core::OptionalType<>.
 
 ##### Example
 [IController.h](https://github.com/rdkcentral/Thunder/blob/6fa31a946314fdbad05792a216b33891584fb4b5/Source/plugins/IController.h#L125) sets the `@index` tag on the `index` parameter.
