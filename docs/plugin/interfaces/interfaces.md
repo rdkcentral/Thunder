@@ -114,11 +114,13 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
     * usage of std::vector is also supported in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
     * a std::vector cannot contain a Core::OptionalType (at least not for the code generators) as that would not make sense. Then just do not add the optional elements to the vector.
     
+* With the generically available "versions" function a client can query what versions of what JSON-RPC interfaces a plugin implements. For more info see [here](../versioning/#json-rpc-interface-versioning)
+    
 <hr/>
 
 #### Checking if a function exists
 
-With the generically available exists function a client can query if a specific function is available on a given plugin JSON-RPC interface. Call it like
+With the generically available "exists" function a client can query if a specific function is available on a given plugin JSON-RPC interface. Call it like
 
 ```json
 {
