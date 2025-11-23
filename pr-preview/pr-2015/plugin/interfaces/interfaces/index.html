@@ -1425,10 +1425,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notification-registration" class="md-nav__link">
+  <a href="#notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notification Registration
+        Notifications
       
     </span>
   </a>
@@ -2588,6 +2588,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../utils/customcodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3435,10 +3463,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notification-registration" class="md-nav__link">
+  <a href="#notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notification Registration
+        Notifications
       
     </span>
   </a>
@@ -3733,10 +3761,10 @@ Note: <code>IConnection::INotification</code> can be used to be notified of the 
 <p>Note in newer Thunder versions session support was added which in a lot of cases automates this and leaks are prevented automatically, for more info see the <a href="#object-lookup">object lookup section</a></p>
 <hr/>
 
-<h4 id="notification-registration">Notification Registration</h4>
+<h4 id="notifications">Notifications</h4>
 <p>Notification registration is a way of tracking updates on a notification.</p>
 <p>When a notification is tagged with the @event keyword it means code will be generated to make it easy to send this notification to registered clients from the C++ code that implements the interface.
-Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins:</p>
+Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins (if documentation is generated for an interface or plugin using that interface containing events, examples for registration and deregistration and the notification itself will be included in the documentation):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
@@ -3772,7 +3800,141 @@ Registering for a JSON-RPC event can be done by the client by calling the "regis
 <span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>With the above and the generated event notification functions the notification will be sent to all registered clients. It is possible to only notify some clients register for an event.</p>
+<p>In the generated J&lt; interface &gt;.h file static helper functions will be generated that one can call in the C++ code to send the notifications to all registered clients. 
+For example suppose we would have this interface:
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="c1">// @json 1.0.0</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">ITest</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_TEST</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">        </span><span class="c1">// @event</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">            </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RPC</span><span class="o">::</span><span class="n">ID_TEST_NOTIFICATION</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">            </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">test2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">};</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sink</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sink</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Test</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+</code></pre></div></p>
+<p>After including the generated helper file one could notify all registered clients on a StateNotification class by calling the following code:</p>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+</code></pre></div>
+<p>Note depending on the interface more than one helper function is generated (e.g. also one where you can use the generated params class), check the generated J&lt; interface &gt;.h file for all the options.</p>
+<h5 id="indexed-events">indexed events</h5>
+<p>With the above and the generated event notification functions the notification will be sent to all registered clients. It is possible to only notify some clients register for an event.
+If one wants to send some notifications only to some registered clients there must be a parameter in the event that a client uses to indicate if it wants to only receive the notification when that parameter has a certain value.
+That parameter can be flagged with the @index tag to indicate it is used to discriminate registered clients.</p>
+<p>Let's discus with an example:</p>
+<p>Suppose we have this interface:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="c1">// @json 1.0.0</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">ITest</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_TEST</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">        </span><span class="c1">// @event</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">            </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RPC</span><span class="o">::</span><span class="n">ID_TEST_NOTIFICATION</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">            </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">test2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">};</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sink</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="w"> </span><span class="cm">/* index */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sink</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="w"> </span><span class="cm">/* index */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Test</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+</code></pre></div>
+<p>From the COM-RPC interface it is clear one can subscribe to be notified on changes for a specific callsign. The @index is put at the COM-RPC Register and Unregister methods, the code generators will do a name lookup up, so in this case "callsign" to find the connected event.
+(the event can have the @index tag as well, as long as the index parameter name matches).</p>
+<p>A client can subscribe via JSON-RPC to be notified on a specific callsign like this:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register@&lt;callsign&gt;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>where &lt; callsign &gt; should have the specific callsign this client wants to be notified about.</p>
+<p>The notification sent will then be like this:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid.stateChange@&lt;callsign&gt;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;marcel&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>As with a non indexed event if the documentation is generated for the JSON-RPC interface examples for registering, deregistering and the notification will be included in the document.</p>
+<p>Again static helpers are created in the J&lt; interface &gt;.h file that allow one to sent the notifications to all registered clients:</p>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="n">Exchange</span><span class="o">::</span><span class="n">JTest</span><span class="o">::</span><span class="n">Event</span><span class="o">::</span><span class="n">StateChange</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+</code></pre></div>
+<p>This will only sent a notification to the clients whom registered for the stateChange event with client "test" by adding @test to the registration designator.</p>
+<p>It is also possible to use Core::OptionalType to indicate the index is not mandatory (and if not set one registers for all values of the index).</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="c1">// @json 1.0.0</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">ITest</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID_TEST</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">        </span><span class="c1">// @event</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">EXTERNAL</span><span class="w"> </span><span class="n">INotification</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">IUnknown</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">            </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RPC</span><span class="o">::</span><span class="n">ID_TEST_NOTIFICATION</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">            </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">StateChange</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">test2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">};</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Register</span><span class="p">(</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">sink</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="w"> </span><span class="cm">/* @index */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Unregister</span><span class="p">(</span><span class="n">INotification</span><span class="o">*</span><span class="w"> </span><span class="n">sink</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">OptionalType</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">callsign</span><span class="w"> </span><span class="cm">/* @index */</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Core</span><span class="o">::</span><span class="n">hresult</span><span class="w"> </span><span class="nf">Test</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+</code></pre></div>
+<p>for the JSON-RPC registration that does not influence much, one uses:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register@&lt;callsign&gt;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>to register only to be notified for a specific callsign and:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;plugin&gt;.1.register&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stateChange&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>to register for all callsigns no matter what the value of callsign is.</p>
+<p>The notification is now a little different however:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;myid.stateChange@abc&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;callsign&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;marcel&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+It will now always include the callsign as parameter (as if the event was for a client that registered for all callsigns the @ part will not be in the event so the callsign must be included as parameter to indicate for which callsign this event is).</p>
+<p>As always these examples will also be included in the generated documentation for this interface</p>
+<p>And again static helper functions will be included in the generated J&lt; interface &gt;.h file for sending the notifications.</p>
+<h5 id="statuslisteners">statuslisteners</h5>
 <p>Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
 Note the unregistered notification will also be triggered when it is the result of the channel closing on which the client registered without deregistering explicitly beforehand.</p>
 <p>Examples: </p>
