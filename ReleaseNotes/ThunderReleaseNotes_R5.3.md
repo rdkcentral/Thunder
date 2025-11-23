@@ -44,6 +44,15 @@ In case of anb incorrect configuration, e.g. medium and/or low thresholds higher
 
 As this a relatively new but potentially complex feature to Thunder the Thunder documentation will be extended with a more detailed description than the above.
 
+### Feature: Custom (Error) Codes.
+
+Before Thunder 5.3 error codes used in Thunder were predefined, which sufficed up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes and there was a request to support a more flexible error scheme (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
+So with this new Custom Codes a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
+
+For more info see [here]() in the Thunder documantation.
+
+NOTE: add link above
+
 ### Feature: Warning reporting for WebSocket open and close
 
 We now have added a WarningReporting message when the opening and/or closing of a WebSocket takes longer than an (configurable as always with WarningReporting) minimum amount of time.
