@@ -194,13 +194,13 @@ if the registration is successful the following return can be expected (and an e
 }
 ```
 
-Unregistrering from an even can be done by the client by calling the "unregister"" function, which like the register is generically available for all plugins:
+Unregistering from an event can be done by the client by calling the "unregister" function, which like the register is generically available for all plugins:
 
 ```json
 {
   "jsonrpc": "2.0",
   "id": 42,
-  "method": "MyPLugin.1.unregister",
+  "method": "MyPlugin.1.unregister",
   "params": {
     "event": "eventname",
     "id": "myapp"
@@ -255,7 +255,7 @@ With the above and the generated event notification functions the notification w
 If one wants to send some notifications only to some registered clients there must be a parameter in the event that a client uses to indicate if it wants to only receive the notification when that parameter has a certain value.
 That parameter can be flagged with the @index tag to indicate it is used to discriminate registered clients.
 
-Let's discus with an example:
+Let's discuss with an example:
 
 Suppose we have this interface:
 
@@ -280,7 +280,7 @@ Suppose we have this interface:
     };
 ```
 
-From the COM-RPC interface it is clear one can subscribe to be notified on changes for a specific callsign. The @index is put at the COM-RPC Register and Unregister methods, the code generators will do a name lookup up, so in this case "callsign" to find the connected event.
+From the COM-RPC interface it is clear one can subscribe to be notified on changes for a specific callsign. The @index is put at the COM-RPC Register and Unregister methods, the code generators will do a name lookup, so in this case "callsign" to find the connected event.
 (the event can have the @index tag as well, as long as the index parameter name matches).
 
 A client can subscribe via JSON-RPC to be notified on a specific callsign like this:
@@ -395,7 +395,7 @@ And again static helper functions will be included in the generated J< interface
 ##### statuslisteners
 
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
-Note the unregistered notification will also be triggered when it is the result of the channel closing on which the client registered without deregistering explicitly beforehand.
+Note: the 'unregistered' notification is also triggered if the client disconnects (channel closed) without explicitly calling Unregister beforehand.
 
 Examples: 
 
@@ -460,7 +460,7 @@ For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForE
 Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
 This object interface is brought into JSON-RPC scope with a object ID. This translates the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
 
-Object lookup will happen automatically when the @encode:autolookup tag is added to the interface that is to be the session object. The the generator will look for method on that returns that session type as an out parameter as COM-RPC Interface (on an interface in the same file which of course also must be tagged as JSON-RPC interface) and it is expected that there is a method that takes the same interface as input parameter to be available as well to be able to destroy the created object.
+Object lookup will happen automatically when the @encode:autolookup tag is added to the interface that is to be the session object. The generator will look for methods return the session type as an out parameter as COM-RPC Interface (where the interface must in the same file and of course also must be tagged with @json) and it is expected that there is also a method that takes the same interface as input parameter to be available as well to be able to destroy the created object.
 
 The generated JSON-RPC interface will then automatically associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
 

@@ -12,42 +12,43 @@ This document describes the changes in Thunder, ThunderTools and ThunderInterfac
 
 ### Feature: Windows build artifacts cleanup
 
-The Windows build (Visual Studio Projects) now fully cleanup the build artifacts when the solution is cleaned guaranteeing a complete fresh build after cleaning.
+The Windows build (Visual Studio Projects) now fully cleans up the build artifacts when the solution is cleaned guaranteeing a complete fresh build after cleaning.
 
-### Feature: Scripts before thunder start in CMake
+### Feature: Scripts before Thunder start in CMake
 
-A feature was added to the CMake files to enable the inclusion of scripts to be executed before Thunder startup (Linux).
+A feature was added to the Thunder CMake files to enable the inclusion of scripts to be executed before Thunder is started by the (Linux) startup script. These scripts should be placed [here](https://github.com/rdkcentral/Thunder/tree/master/Source/Thunder/scripts) and see there as well for some exampes.
 
-### Feature: action build with Performance Monitoring feature aan
+### Feature: Actions added that build with Performance Monitoring feature on
 
-The GitHub actions are extended with a build where the Performance Monitoring feature (enables code that will enable a special plugin to measure JSON-RPC performance) is turned on to verify it is not broken by a pull request.
+The GitHub Actions workflow now includes a build with the Performance Monitoring feature enabled (this adds code to Thunder that enables a Performance Monitor plugin to measures JSON-RPC performance) so pull requests are checked for regressions in this area.
 
 ### Feature: Copilot scanning enabled and issues fixed
 
-Next to Coverity also Copilot is now enabled for all Thunder repositories to check the pull requests for issues. The few remarks found when enabled have been cleared up.
+Copilot is now enabled for all Thunder repositories alongside Coverity.  The few remarks found when by Copilot have been addressed.
 
 ## Changes and new Features
 
 ## Feature: WorkerPool PriorityQueue
 
-The Thunder WorkerPool (and therefore the ThreadPool as well) now has the ability to use priorities for its jobs. Three priorities ara available, high medium and low. 
-In the Thunder config the total number of WorkerPool threads used by THunder itself, as well as the thresholds of maximum parallel scheduled jobs for medium and low priority jobs can be configured (note if not overridden here the already existing THREADPOOL_COUNT is still taken into account).
+The Thunder WorkerPool (and therefore the ThreadPool as well) now has the ability to use priorities for its jobs. Three priorities are available, high medium and low. 
+In the Thunder config the total number of WorkerPool threads used by Thunder itself, as well as the thresholds of maximum parallel scheduled jobs for medium and low priority jobs can be configured (note if not overridden here the already existing THREADPOOL_COUNT is still taken into account).
 See more info [here](https://rdkcentral.github.io/Thunder/introduction/config/).
 
 The scheduling algorithm used by the Thunder WorkerPool/ThreadPool can be compile time configured to be either static or dynamic. With static only the maximum number of jobs for that priority will be scheduled in parallel, with dynamic additionally the total load of the system is also taken into account.
-When both static and dynamic are (compile time) compile time disabled the previous non priority solution will be used.
+When both static and dynamic are disabled (at compile time) the previous non priority solution will be used.
 
-Within Thunder itself at the moment only low and high priority jobs are used. When a COM-RPC request is received from a channel (so in an IPC situation, not in process) that has already an outgoing request, the job to handle the incoming request will be submitted with high priority, this to mitigate deadlocks that were seen previously when the thread pool was already filled with COM-RPC jobs that all required a call back into Thunder to be handled before they would be released (note any returning COM-RPC call will be elevated to high when there is already an outgoing call, not only the ones as the result from an outgoing call). Note: this will only mitigate this as one keeps calling (out of process) COM-RPC calls from the returning call depending on the amount of WorkerPool threads configured one might run out of threads to handle them at some point.
+Currently, only low and high priority jobs are used in Thunder. If a COM-RPC request is received from a channel that already has an outgoing request (IPC, not in-process), the job to handle the incoming request is submitted with high priority. This mitigates deadlocks seen previously when the thread pool is filled with COM-RPC jobs that require callbacks into Thunder before they complete. Note: if returning COM-RPC calls keep spawning out-of-process calls, you may still exhaust WorkerPool threads, depending on the configured thread count.
 
-For the previous it is advised to always configure the lower priority threshold to at least one lower than the total amount of worker pool threads to guarantee at least one thread always to be available for the high priority jobs.
-In case of an incorrect configuration, e.g. medium and/or low thresholds higher than the total amount of threads will give an ASSERT.
+For this reason, it is advised to configure the low-priority threshold to be at least one less than the total number of worker pool threads to ensure at least one thread is always available for high-priority jobs.
 
-As this a relatively new but potentially complex feature to Thunder the Thunder documentation will be extended with a more detailed description than the above.
+In case of an incorrect configuration, e.g. medium and/or low thresholds higher than the total amount of threads will trigger an ASSERT.
+
+As this is a relatively new but potentially complex feature, the Thunder documentation will be extended with a more detailed description than the above.
 
 ### Feature: Custom (Error) Codes.
 
 Before Thunder 5.3 error codes used in Thunder were predefined, which sufficed up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes and there was a request to support a more flexible error scheme (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
-So with this new Custom Codes a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
+So with this new Custom Codes feature a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
 
 For more info see [here]() in the Thunder documentation.
 
@@ -63,7 +64,7 @@ We moved the opening of the COM-RPC port to later in the startup of Thunder to p
 
 ### Feature: make Thunder uClibc compatible
 
-Changes where made to the Thunder code to make it uClibc compatible.
+Changes were made to the Thunder code to make it uClibc compatible.
 
 ### Feature: JSON-RPC FlowControl configurable
 
@@ -88,11 +89,11 @@ We now have added a WarningReporting message when the FlowControl feature (see a
 
 ### Change: COMRPCTerminator thread only started when needed
 
-The COM-RPC terminator thread (a cleanup thread used within Thunder) is now only started when required, leading to one less thread in processes that so not need it (like ThunderPlugin)
+The COM-RPC terminator thread (a cleanup thread used within Thunder) is now only started when required, leading to one less thread in processes that do not need it (like ThunderPlugin)
 
 ### Feature: allow per callsign registration IShell
 
-It is now possible when registering via COM-RPC on the IShell interface to be notified on plugin state changes to be notified only for the state changes of a specific plugin instead of changes for all plugins by optionally providing the callsign of the plugin for which the state changes should be sent.
+When registering for plugin state notifications on the IShell interface over COM-RPC, it is now also possible to subscribe to state changes for a single plugin by optionally providing its callsign, next to subscribing to state changes for all plugins.
 This change was made in a way that is backwards compatible with existing code.
 
 Note the applicable SmartInterfaceTypes (which use the IPlugin::INotification internally) have been adopted to use this feature reducing COM-RPC traffic and overhead.
@@ -101,21 +102,21 @@ Note the applicable SmartInterfaceTypes (which use the IPlugin::INotification in
 
 The IController state notifications have been improved (so this also affects the JSON-RPC plugin state notifications)
 
-It is now possible to register only to be updated for the state changes of a specific plugin instead of state changes of all plugins, while the latter of of course is also still possible, by optionally providing the callsign of the plugin for which one wants to receive the notifications.
+It is now possible to register only to be updated for the state changes of a specific plugin instead of state changes of all plugins, while the latter of course is also still possible, by optionally providing the callsign of the plugin for which one wants to receive the notifications.
 This also applies to the JSON-RPC interface, for details here best to consult the generated documentation for the IController interface available in the Thunder repository.
 
-StateChange (which notifies of changes to plugin state that not includes Plugin::IStateControl) will when registering send a notification for all plugins already activated at that moment (when registering to be notified for all plugin state changes). If registering for a specific plugin it will sent a Activated notification in case that specific plugin was already activated at the moment of registering.
+StateChange (which notifies of changes to plugin state that do not includes Plugin::IStateControl) will, when registering, send a notification for all plugins already activated at that moment (when registering to be notified for all plugin state changes). If registering for a specific plugin it will send a Activated notification in case that specific plugin was already activated at the moment of registering.
 
 StateControlStateChange (which notifies of changes to plugin state from Plugin::IStateControl, so suspended and resumed) will when registering for notifications for a specific plugin immediately notify about the current state for that plugin and send no current state notification when registering for all plugins.
 
 ### Feature: MAC Address class
 
-A class was added to Thunder core to represent a MAC Address (and as can be read below is also fully supported by the Thunder code generators)
+A class was added to Thunder core to represent a MAC Address (and as noted below is also fully supported by the Thunder code generators)
 The class can be found [here](https://github.com/rdkcentral/Thunder/blob/d57c0345bb14f2c0c1a845786f6e349bf7a9da47/Source/core/MACAddress.h#L29).
 
 ### Feature: door Composite naar remote plugin 
 
-NOTE: Pierre vragen waarom dit onderwerp er nu ook al weer stond, dit kon toch al?
+NOTE self titel veranderen ThunderUI ook aangepast
 
 Thunder now supports accessing a Plugin living in a remote Thunder instance to be made accessible in the local Thunder instance using the Composite plugin feature (see also the new BridgeLink plugin in the ThunderNanoServicesRDK repository, read the release notes for that here NOTE hier nog link toevoegen)
 
@@ -127,26 +128,26 @@ The plugin version handling now takes the Composite plugin into account. One can
 
 One can now disable the loading of Plugin metadata (plugin version, subsystem being controlled and dependencies) with the Thunder configuration flag "discovery". With this flag set to true (default) means loading the metadata is enabled.
 When disabled this means this information will not be loaded before the plugin is actually activated making some features of Thunder not work correctly.
-This feature on request as on some devices just loading the library to get this information took much longer than in normal situations (so only turn this flag to false in special situations). 
+This feature was added on request because, on some devices, loading the library to read metadata took much longer than normal. So only set this flag to false in special circumstances.
 
 ### Feature: Forgiving JSON-RPC method Pascal/CamelCase handling
 
-A build option was introduced to enable "forgiving" JSON-RPC method casing handling in Thunder. When turned on, default is off, Thunder will accept the method name both as camelCase and PascalCase (to be more forgiving as method name casing was not always done consistently in interfaces).
+A build option was introduced to enable "forgiving" JSON-RPC method casing handling in Thunder. When turned on (disabled by default) Thunder will accept the method name both as camelCase and PascalCase (to be more forgiving as method name casing was not always done consistently in interfaces).
 
-### Change: ICOMLink::INotifcation Revoked notification
+### Change: ICOMLink::INotification Revoked notification
 
-When in the past the ICOMLink::INotifcation Revoked method was renamed to Dangling it was not removed or made deprecated and now might also confuse people with the Revoked notification when an offered interface is revoked from COM-RPC communicator.
+When in the past the ICOMLink::INotification Revoked method was renamed to Dangling it was not removed or made deprecated and now might also confuse people with the Revoked notification when an offered interface is revoked from COM-RPC communicator.
 It is now made deprecated and should in this context not be used anymore (it cannot yet be removed as that would break plugins that implement ICOMLink::INotifcation). When used make sure only Dangling is handled from this notification, Revoked will be removed in Thunder 6.
 
 ### Feature: Syslog on COM-RPC timeout
 
-When a COM-RPC call is canceled because is takes longer than the configured COM-RPC timeout this is now logged as a Syslog message to help the investigation of situations where this happens. 
+When a COM-RPC call is canceled because it takes longer than the configured COM-RPC timeout this is now logged as a Syslog message to help the investigation of situations where this happens. 
 Note: in this case we now also close the connection as can be read above.
 
 ### Change: Improvements to Library and Service Discovery handling
 
 The way Thunder loads the available services from Plugin libraries was improved in general (preventing deadlocks for example which were seen in rare cases by our QA department).
-This now also makes it possible to have services with a duplicate name which previously would have lead to issues.
+This now also makes it possible to have services with a duplicate name which previously would have led to issues.
 
 ### Change: Activate reason
 
@@ -158,23 +159,23 @@ Now a message is printed to Syslog when a second COM-RPC invocation is made to a
 
 ### Feature: SinkType now has WaitReleased
 
-The SinkType now has a WaitReleased method. This can be used in the special situation when a Service is put into the SinkType but there can be a possible racecondion between closing the channel(s) from which the Service is used and receiving the actual Release call(s) from the using side(s).
+The SinkType now has a WaitReleased method. This can be used in the special situation when a Service is put into the SinkType but there can be a possible race condition between closing the channel(s) from which the Service is used and receiving the actual Release call(s) from the using side(s).
 With WaitReleased the server side can now wait for the Release() to be received from the client side(s), with timeout. 
 See for a scenario in which this is useful [here](https://github.com/rdkcentral/ThunderPluginActivator/blob/89f789624305f4473fb5b605e8ae3cc4fa39fd15/source/COMRPCStarter.cpp#L94) and for the actual call to WaitReleased [here](https://github.com/rdkcentral/ThunderPluginActivator/blob/89f789624305f4473fb5b605e8ae3cc4fa39fd15/source/COMRPCStarter.cpp#L152). 
 
 ### Change: Improved dead proxies handling
 
-Previously calling a COM-RPC method (over an IPC channel) from the (PluginServer) ICOMLink::INotification Dangling notification could lead to a possible deadlock this been fixed now.
+Previously calling a COM-RPC method (over an IPC channel) from the (PluginServer) ICOMLink::INotification Dangling notification could lead to a possible deadlock this has been fixed now.
 This means that all Dangling handling code (so both in PluginServer as well as CommunicatorServer) is now safe for this usage pattern.
 
 ### Change: THUNDER_PERFORMANCE code made to work again
 
-The Thunder code using the THUNDER_PERFORMANCE has been made working again (this enables code in Thunder that can be used by a special plugin developed in the past to do JSON-RPC performance measurements)
+The Thunder code using the THUNDER_PERFORMANCE has been corrected so it is functional again (this enables code in Thunder that can be used by a special plugin developed in the past to do JSON-RPC performance measurements)
 The flag has a generic name so that future possible performance measurement code can also be put inside this flag.
 
 ### Change: Connector timeout can be specified.
 
-It is now possible to set the timeout to bes used in the SmartLinkType connect and disconnect (before it was always Core::infinite so it would wait indefinitely for the event to happen)
+It is now possible to set the timeout to be used in the SmartLinkType connect and disconnect (before it was always Core::infinite so it would wait indefinitely for the event to happen)
 
 ### Change: General bug fixes
 
@@ -182,11 +183,11 @@ A number of issues found in Thunder 5.2 have been corrected in Thunder 5.3.
 
 ## Breaking Changes
 
-In principle Thunder 5.3 does not contain breaking changes. There are some changes that are not expected to cause any issue but that do deviate from how they behaved before Thunder 5.3, they are listed below.
+In principle Thunder 5.3 does not contain breaking changes. Some changes alter previous behavior but are not expected to cause any backward compatibility issues; they are listed below.
 
 ### Feature: close channel on COM-RPC timeout
 
-To prevent issue as a result of "collateral damage" after a COM-RPC time out has happened we now close the channel on which the COM-RPC time happen automatically.
+To prevent issue as a result of "collateral damage" after a COM-RPC timeout has happened we now close the channel on which the COM-RPC timeout occurred automatically.
 
 ### Change: Error message changed for suspend and resumed when not supported
 
@@ -238,7 +239,7 @@ We do not expect this to be used anywhere nor was it used in Thunder internally.
 
 ### Feature: event indexes improvement
 
-Using indexes for event has improved. 
+Using indexes for events has been improved. 
 The indexes now use @< index > at the end of designator in the JSON-RPC interface.
 This had to be changed as indexes could contain dots itself (e.g. if the index is a callsign) so having it before the first dot in the clientid would not suffice.
 Although the old dot format was in use only for a short time in Thunder 5 the @index:deprecated can be used with an event parameter to indicate it is an index for that event and the deprecated dot format should be used.
@@ -247,49 +248,21 @@ Indexes now also support OptionalType indexes to indicate subscribing to the ind
 (it is also allowed and advised to also put the @index then at the Unregister)
 Please see this section in the Thunder documentation that has been added to describe indexed events: NOTE: add link
 
-
-NOTE: sebasian guess the "rams" use case works as well (did not test)? -> I tested it and it does!!! :)
-NOTE: sebastian with the optional paremeter the documentation is a little inconsistent (not saying we should change that now :) ) notification parameter is optional (which it isn't) and it has this text: "The callsign parameter shall be passed as index to the register call, i.e. register@<callsign>." (shall better to be changed to optionaly?)
-NOTE: question on non optional and optional and send all allowed (not that we should change anything it is nice and flexible) (but just to indicate I now just not explicietly mention the at all without optionaltype in the documentation)
-
-NOTE: sebastian:
-for 
-            virtual void StateChange(const string& callsign /* @index */ , const bool marcel) = 0;
-
-            (registers without callsign index but that does not matter for the issue)
-
-it also generates:
-            template<typename MODULE>
-            static void StateChange(const MODULE& module_, const bool marcel, typename MODULE::SendIfMethodIndexed sendIfMethod_ = nullptr)
-            {
-                JsonData::Huppel5::StateChangeParamsData params_;
-                params_.Marcel = marcel;
-
-                StateChange(module_, marcel, params_, sendIfMethod_);
-            }
-
-which I don't understand and also does not compile as StateChange(module_, marcel, params_, sendIfMethod_); is not generated.
-
-If too risky perhaps we should not fix as it is not a problem as long as you don't call it because of the template method :)
-
 ### Change: auto object lookup now requires @encode:autolookup
 
 The JSON-RPC session auto lookup feature introduced in Thunder 5.2 now requires the @encode:autolookup tag, this for improved detection and consistency.
 See more [here]() NOTE self: add link to autolookup documentation section.
 Note the autolookup introduced in Thunder 5.2 without @encode:autolookup (it should not be breaking as Thunder 5.2 was not used to define new (session based) interfaces).
 
-NOTE: sebastian the generated documentation is now confusing with the id as number and id1, but perhaps I'm mssing something
 NOTE: to self after published check ik autolook up links in documentation are still still correct now code has changed
 NOTE: to self also document use of handlers and necesity to use special base classes think that is not done yet: https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L39-L42
-NOTE: sebastian is this also new 5.3? https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1537
+NOTE: self document is this also new 5.3? NO, but let's still mention it https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1537
       (understand how used here but Aquire and Relinquish are also called so just an extra step to get json handling attachyed if I'm right?) did a blame and it is new :)
 
 ### Feature: support custom object lookup
 
-NOTE: - sebastion: small improvement: make https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L85 
-                   also accessory instance ID to be more in line with the autogenerated comments (makes it easier to connect them together when reading)
-      - sebastian: objectlookup stores nothing, if you want lifetime you do that internally, but what if the channel closes (example is static) and you have them dynamically created on channel, you would need to get the channel from the context in the lambda and listen to the PluginHost::IShell::IConnectionServer::INotification, right?
-      - sebastian: just out of curiosity: why lambda's IUknown?
+      - objectlookup stores nothing, if you want lifetime you do that internally, but what if the channel closes (example is static) and you have them dynamically created on channel, you would need to get the channel from the context in the lambda and listen to the PluginHost::IShell::IConnectionServer::INotification, right?
+      - just out of curiosity: why lambda's IUknown?
       - sebastian: do not completely get how the added/removed notification is supposed to work in the example, Removed is not connected and Added not as I would expect but I could be missing something
 
  @encode:lookup 
@@ -299,12 +272,6 @@ NOTE: - sebastion: small improvement: make https://github.com/rdkcentral/Thunder
  https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleCustomObjects.h
  https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/GeneratorShowcase.h#L1435
  https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory
-
-### Feature: Use string instance id 
-
-Next to a number type the instance ID for an custom lookup interface can also be a string.
-
-NOTE: sebastian guess only relevant when adding the lamnbdas?
 
 ### Feature: support status listeners for lookup objects
 
@@ -338,9 +305,8 @@ NOTE: add link to documentation.
 
 ### Feature: new buffer encoding options
 
-NOTE: Pierre/Sebastian do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
+NOTE: NOT Document do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
 (after this decision I'll update the Thunder documentation)
-NOTE: sebastian: I might see an issue here, let me show you
 
 There are new encoding tags supported for @encode (next to the already existing base64):
 
@@ -369,9 +335,8 @@ It is now possible to use an enum or POD (struct with data members) defined in o
 
 Previously the enum to string (and vice versa) conversion tables were only generated when the enum was used in an interface used in JSON-RPC generation (so with @json tag).
 Starting 5.3 they can be generated for COM-RPC only interfaces as well. 
-For this use the @enumsonly tag
+For this use the @encode:text tag
 
-NOTE: sebastian cannot get this to work...
 NOTE: self still add to Thunder documentation
 
 ### Feature: support optional iterators:
@@ -398,8 +363,7 @@ With this mode enabled one can by specifying the tag @ASINTERFACE with an iterat
 
 Note in Thunder 6 this mode might become the default, that has not been done yet to give the opportunity to put the @ASINTERFACE at the iterators that potentially deal with huge amounts of data where this might pose a too big of a memory penalty.
 
-NOTE: sebastian: is @ASINTERFACE with capitals? I guess put it as /* ASINTERFACE */ after the iterator name?
-https://github.com/rdkcentral/ThunderTools/commit/b87925af70680181ed66b9754f2273d0c25b9d6b
+NOTE: is @interface with capitals? I guess put it as after the iterator name? also if you put it with the typedef (you would not need to repeat it)
 
 NOTE: self still add to Thunder documentation 
 

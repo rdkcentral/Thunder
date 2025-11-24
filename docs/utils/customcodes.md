@@ -95,7 +95,7 @@ With IsCustomCode one can find out if a Core::hresult is a custom code and what 
 ```
 
  This will return the custom error code as signed 24 bit number when the "custom error bit" was set and 0 if the hresult was not a flexible error. 
- (if the hresult code would have the value 0x1000000 ("custom code bit" set with code 0) IsCustomCode will return an in24_t with overflow value set which can be checked with Core::Overflowed, see the example below.
+ (if the hresult code would have the value 0x1000000 ("custom code bit" set with code 0) IsCustomCode will return an int24_t with overflow value set which can be checked with Core::Overflowed, see the example below.
 
 ```cpp
 {
@@ -139,7 +139,7 @@ This cannot be done in the ErrorToString as it returns a pointer to the text, th
 
 To be able to provide for a custom error code to string conversion (e.g. used for the JSON-RPC error text in the error object or to return a correct string representation when Core::ErrorToString is called) the following infrastructure will be added to Thunder:
 
-In Thunder sources/core a header file "ICustomErorCodes.h" provides the interface to be implemented by an external library to support the custom error codes used in the plugin code for that Thunder instance.
+In Thunder sources/core a header file "ICustomErrorCodes.h" provides the interface to be implemented by an external library to support the custom error codes used in the plugin code for that Thunder instance.
 
 For now there is only only function in this interface called "CustomCodeToString":
 
@@ -165,7 +165,7 @@ For now there is only only function in this interface called "CustomCodeToString
  */
 
 /*
-    This file contains the interface that a library can implement in case the "custom error codes" feature is used in Thunder and code to string comversion is desired
+    This file contains the interface that a library can implement in case the "custom error codes" feature is used in Thunder and code to string conversion is desired
 */
 
 #pragma once
@@ -208,7 +208,7 @@ It should suffice to have static strings which prevents unnecessary string copyi
 
 There is a Thunder config option called "customcodelibrary" that allows you to point Thunder to the library implementing the above interface.
 If it is not provided, or in case CustomCodeToString returns a nullptr for the particular code and a string representation for a custom error code is required the error code will be translated into "Undefined Custom Error: XXXX"  where XXXX is the custom error code.
-Note the existing ErrorToString will return a string without the number included when the string is not provided by the library as that cannot be supported without breaking backwards compatibility, ErrorToStringExtended will howeever (Thunder will of course use the new ErrorToStringExtended version to get the string that will be added to the JSON-RPC error text tag).
+Note the existing ErrorToString will return a string without the number included when the string is not provided by the library as that cannot be supported without breaking backwards compatibility, ErrorToStringExtended will however (Thunder will of course use the new ErrorToStringExtended version to get the string that will be added to the JSON-RPC error text tag).
 Note the custom error code 0 will not be routed through CustomCodeToString but always translate into "Invalid Custom ErrorCode set".
 
 ### JSON-RPC specifics for custom error codes
@@ -217,7 +217,7 @@ In case JSON-RPC is called in terms of COM-RPC (so an IDL C++ header file with a
 
 * The custom error code will be placed as is in the JSON RPC error object "code" tag. (so code 0 means an invalid custom code (too big) was passed). Note it is the responsibility of developers setting the codes not to overlap with JSON RPC specification reserved codes or Thunder codes (1 to 100 in Thunder 4.4 or -31000 to -31999 in Thunder 5 and above) this on explicit request so that codes can be used for API backwards compatibility (a TRACE will be added to warn for these cases though)
 * the JSON-RPC error object "message" tag will contain the string returned by the CustomCodeToString call from the conversion library if configured and does return a text for that specific code, otherwise it will be set to "Undefined Custom Error: XXXX" where XXXX will be the Custom Code set. (of course when the "custom JSON-RPC error messages" feature was used for this call that will override this default behaviour)
-* if the value set with CustomCode() overflowed (too big for a 24bit number) and ASSERTS are not enabled ion the build the error code will be set to 0 and the object "message" tag will be set to "Invalid Custom ErrorCode set"
+* if the value set with CustomCode() overflowed (too big for a 24bit number) and ASSERTS are not enabled in the build the error code will be set to 0 and the object "message" tag will be set to "Invalid Custom ErrorCode set"
 
 ### Example
 
