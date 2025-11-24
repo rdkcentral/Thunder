@@ -5,8 +5,7 @@
 name: Build documentation preview
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 on:
   pull_request:
