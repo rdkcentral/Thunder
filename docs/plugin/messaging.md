@@ -1,3 +1,4 @@
+TEST
 In the past, prior to the R3 version of Thunder, logging, tracing and warning reporting were completely separate issues and were handled individually. However, even though these message types have distinct characteristics, we recognized the advantages of consolidating them into a unified framework, which is now referred to as `Messaging`. In the early versions of R3, we still had tracing enabled by default and messaging was in the early development. It is the R4 version of Thunder where `Messaging` is finally the default framework to handle all types of messages.
 
 ## Advantages of using messaging
