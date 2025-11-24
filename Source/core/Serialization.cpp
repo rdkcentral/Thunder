@@ -155,8 +155,6 @@ POP_WARNING()
         uint32_t index = static_cast<uint32_t>(result.length());
         result.resize(index + (length * 2) + (delimiter == '\0' ? 0 : (length - 1)));
 
-        result[1] = hex_chars[object[0] & 0xF];
-
         for (uint32_t i = 0, j = index; i < length; i++) {
             if ((delimiter != '\0') && (i > 0)) {
                 result[j++] = delimiter;
