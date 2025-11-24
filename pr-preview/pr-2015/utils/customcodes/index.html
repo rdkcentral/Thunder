@@ -3372,8 +3372,8 @@
 <h2 id="introduction">Introduction</h2>
 <p>Error codes used in Thunder are normally predefined, which suffices up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes. The custom code feature supports a more flexible error scheme to be used (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
 There is already a feature for "custom JSON-RPC error messages" which allows for context dependent JSON-RPC messages but also allows to override the error code returned in some form. 
-This however leads to inconsistent error codes between COM-RPC and JSON-RPC for the same handler and is not designed to be used on large scale but for exceptional cases only.
-So with Custom Codes we support a way to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
+This however leads to inconsistent error codes between COM-RPC and JSON-RPC for the same handler and is not designed to be used on a large scale but for exceptional cases only.
+So with Custom Codes we support a way to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terms of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
 (the "custom JSON-RPC error messages" feature will continue to be supported for context dependent JSON-RPC messages).</p>
 <h2 id="custom-error-code-hresults-solution-and-range-provided">Custom Error Code hresults solution and range provided</h2>
 <p>Every COM-RPC method returns a Core::hresult error code. This is an unsigned double word value. 
@@ -3467,7 +3467,7 @@ This cannot be done in the ErrorToString as it returns a pointer to the text, th
 <h2 id="string-representation">String representation</h2>
 <p>To be able to provide for a custom error code to string conversion (e.g. used for the JSON-RPC error text in the error object or to return a correct string representation when Core::ErrorToString is called) the following infrastructure will be added to Thunder:</p>
 <p>In Thunder sources/core a header file "ICustomErrorCodes.h" provides the interface to be implemented by an external library to support the custom error codes used in the plugin code for that Thunder instance.</p>
-<p>For now there is only only function in this interface called "CustomCodeToString":</p>
+<p>For now there is only one function in this interface called "CustomCodeToString":</p>
 <div class="highlight"><pre><span></span><code><span class="cm">/*</span>
 <span class="cm"> * If not stated otherwise in this file or this component&#39;s LICENSE file the</span>
 <span class="cm"> * following copyright and licenses apply:</span>
@@ -3517,7 +3517,7 @@ This cannot be done in the ErrorToString as it returns a pointer to the text, th
 <span class="cp">#endif</span>
 
 <span class="c1">// called from within Thunder to get the string representation for a custom code</span>
-<span class="c1">// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32th bit used as sign bit). </span>
+<span class="c1">// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32nd bit used as sign bit). </span>
 <span class="c1">// in case no special string representation is needed return nullptr (NULL), in that case Thunder will convert the Custom Code to a generic message itself</span>
 <span class="n">EXTERNAL</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">TCHAR</span><span class="o">*</span><span class="w"> </span><span class="n">CustomCodeToString</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">code</span><span class="p">);</span>
 

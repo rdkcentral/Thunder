@@ -3282,6 +3282,20 @@
 <td></td>
 </tr>
 <tr>
+<td>channel_throttle</td>
+<td>maximum number of JSON-RPC requests allowed in parallel per channel (0 is no limit)</td>
+<td>integer</td>
+<td>half the number of available workerpool threads</td>
+<td>3</td>
+</tr>
+<tr>
+<td>throttle</td>
+<td>maximum number of JSON-RPC requests allowed in parallel to a particular plugin, can be overridden for a specific plugin in the plugin configuration (0 is no limit)</td>
+<td>integer</td>
+<td>half the number of available workerpool threads</td>
+<td>3</td>
+</tr>
+<tr>
 <td>softkillcheckwaittime</td>
 <td>When killing an out-of-process plugin, the amount of time to wait after sending a SIGTERM signal to the process before checking &amp; trying again</td>
 <td>integer</td>
