@@ -113,12 +113,12 @@ namespace Core {
     inline const TCHAR* _Err2Str()
     {
         return _T("");
-    };
+    }
 
     #define ERROR_CODE(CODE, VALUE) \
         template<> inline const TCHAR* _Err2Str<VALUE>() { return _T(#CODE); }
 
-    ERROR_CODES;
+    ERROR_CODES
 
     #undef ERROR_CODE
 
@@ -126,13 +126,13 @@ namespace Core {
     inline const TCHAR* _bogus_ErrorToString(uint32_t code)
     {
         return (code == N? _Err2Str<N>() : _bogus_ErrorToString<N-1>(code));
-    };
+    }
 
     template<>
     inline const TCHAR* _bogus_ErrorToString<0u>(uint32_t code)
     {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
-    };
+    }
 
     EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
     EXTERNAL string ErrorToStringExtended(const Core::hresult code);
