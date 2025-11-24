@@ -16,7 +16,7 @@ The Windows build (Visual Studio Projects) now fully cleans up the build artifac
 
 ### Feature: Scripts before Thunder start in CMake
 
-A feature was added to the Thunder CMake files to enable the inclusion of scripts to be executed before Thunder is started by the (Linux) startup script. These scripts should be placed [here](https://github.com/rdkcentral/Thunder/tree/master/Source/Thunder/scripts) and see there as well for some exampes.
+A feature was added to the Thunder CMake files to enable the inclusion of scripts to be executed before Thunder is started by the (Linux) startup script. These scripts should be placed [here](https://github.com/rdkcentral/Thunder/tree/master/Source/Thunder/scripts) and see there as well for some examples.
 
 ### Feature: Actions added that build with Performance Monitoring feature on
 
@@ -48,7 +48,7 @@ As this is a relatively new but potentially complex feature, the Thunder documen
 ### Feature: Custom (Error) Codes.
 
 Before Thunder 5.3 error codes used in Thunder were predefined, which sufficed up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes and there was a request to support a more flexible error scheme (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
-So with this new Custom Codes feature a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
+So with this new Custom Codes feature a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terms of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
 
 For more info see [here]() in the Thunder documentation.
 
@@ -68,20 +68,13 @@ Changes were made to the Thunder code to make it uClibc compatible.
 
 ### Feature: JSON-RPC FlowControl configurable
 
-NOTE: Discuss with Pierre
+The JSON-RPC FlowControl feature (see the the Thunder 5.1 release notes for more info) is now configurable from the Thunder configuration file and plugin configuration file.
 
-Pierre vragen ~0 gewoon zo groot dat je er geen last van hebt? default half worker pool
+With "channel_throttle" in the Thunder configuration file one can configure the maximum number of parallel JSON-RPC requests allowed for any channel.
+With "throttle" in the Thunder configuration file one can configure the maximum number of parallel JSON-RPC requests allowed to a particular plugin.
+The default for both is half the number of workerpool threads (with a minimum of one).
 
-The JSON-RPC FlowControl feature (see the the Thunder 5.1 release notes for more info) is now configurable from the Thunder configuration file.
-Thunder "throttle" en "channel_throttle", plugin "maxrequests" en "throttle"
-
-Missen niet de IsSet checks op sommige plekken (en kan ik het ook uizetten of alleen heel groot zetten (if ((_used < _slots) || (_slots == 0)) {) )
-
-NOTE self: must still be added to Thunder documentation
-
-https://github.com/rdkcentral/Thunder/commit/d28c40a9dc948a33bf02c3a7ddd255f357d7a9ed
-
-https://github.com/rdkcentral/Thunder/commit/eea443cde3827ec3a44fcc8790176f39bf674737#diff-cb405958fdffcb85a8aeaa1bd1204df978e2525eb9bbab4db014266c39825d73
+With the option "throttle" in the plugin configuration file one can for this specific plugin override the generic value set in the Thunder configuration file for the maximum number of parallel JSON-RPC requests allowed.
 
 ### Feature: WarningReporting for JSON-RPC FlowControl
 
@@ -100,7 +93,7 @@ Note the applicable SmartInterfaceTypes (which use the IPlugin::INotification in
 
 ### Feature: allow per callsign state change notifications in IController and improvements
 
-The IController state notifications have been improved (so this also affects the JSON-RPC plugin state notifications)
+The IController state notifications have been improved (so this also affects the JSON-RPC plugin state notifications).
 
 It is now possible to register only to be updated for the state changes of a specific plugin instead of state changes of all plugins, while the latter of course is also still possible, by optionally providing the callsign of the plugin for which one wants to receive the notifications.
 This also applies to the JSON-RPC interface, for details here best to consult the generated documentation for the IController interface available in the Thunder repository.
@@ -114,11 +107,11 @@ StateControlStateChange (which notifies of changes to plugin state from Plugin::
 A class was added to Thunder core to represent a MAC Address (and as noted below is also fully supported by the Thunder code generators)
 The class can be found [here](https://github.com/rdkcentral/Thunder/blob/d57c0345bb14f2c0c1a845786f6e349bf7a9da47/Source/core/MACAddress.h#L29).
 
-### Feature: door Composite naar remote plugin 
+### Feature: Enable to reach remote plugin via the Composite plugin feature
 
-NOTE self titel veranderen ThunderUI ook aangepast
+Thunder now fully supports accessing a Plugin living in a remote Thunder instance to be made accessible in the local Thunder instance using the Composite plugin feature (see also the new BridgeLink plugin in the ThunderNanoServicesRDK repository, read the release notes for that here NOTE hier nog link toevoegen)
 
-Thunder now supports accessing a Plugin living in a remote Thunder instance to be made accessible in the local Thunder instance using the Composite plugin feature (see also the new BridgeLink plugin in the ThunderNanoServicesRDK repository, read the release notes for that here NOTE hier nog link toevoegen)
+The ThunderUI has also been updated to support this feature and will now also show the remote plugins now.
 
 ### Feature: version handling for distributed plugins
 
@@ -133,6 +126,7 @@ This feature was added on request because, on some devices, loading the library 
 ### Feature: Forgiving JSON-RPC method Pascal/CamelCase handling
 
 A build option was introduced to enable "forgiving" JSON-RPC method casing handling in Thunder. When turned on (disabled by default) Thunder will accept the method name both as camelCase and PascalCase (to be more forgiving as method name casing was not always done consistently in interfaces).
+The build option is called ENABLE_JSONRPC_FORGIVING_METHOD_CASE_HANDLING.
 
 ### Change: ICOMLink::INotification Revoked notification
 
@@ -195,7 +189,7 @@ When a Suspend or Resume request for a Plugin was received via the Thunder Contr
 
 ### Change: improved handling when a COM-RPC string is too big
 
-If a COM-RPC string transferred over IPC is too big for the max size that was reserved with @restrict no longer the string will be capped but now this will assert when asserts are enabled in the build and otherwise no data will be sent at all to better indicate to the receiver not the full data was transferred.
+If a COM-RPC string transferred over IPC is too big for the maximum size that was reserved with @restrict no longer the string will be capped but now this will assert when asserts are enabled in the build and otherwise no data will be sent at all to better indicate to the receiver not the full data was transferred.
 
 ### Change: Controller Version change
 
@@ -250,28 +244,24 @@ Please see this section in the Thunder documentation that has been added to desc
 
 ### Change: auto object lookup now requires @encode:autolookup
 
-The JSON-RPC session auto lookup feature introduced in Thunder 5.2 now requires the @encode:autolookup tag, this for improved detection and consistency.
+The JSON-RPC auto object lookup feature now requires the @encode:autolookup tag, this for improved detection and consistency.
 See more [here]() NOTE self: add link to autolookup documentation section.
-Note the autolookup introduced in Thunder 5.2 without @encode:autolookup (it should not be breaking as Thunder 5.2 was not used to define new (session based) interfaces).
+Note the auto object lookup feature was introduced in Thunder 5.2 without needing @encode:autolookup to be specified (it should not be breaking as Thunder 5.2 was not used to define new object based JSON-RPC interfaces with auto object lookup).
 
-NOTE: to self after published check ik autolook up links in documentation are still still correct now code has changed
-NOTE: to self also document use of handlers and necesity to use special base classes think that is not done yet: https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L39-L42
-NOTE: self document is this also new 5.3? NO, but let's still mention it https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1537
-      (understand how used here but Aquire and Relinquish are also called so just an extra step to get json handling attachyed if I'm right?) did a blame and it is new :)
+A new feature for the auto object lookup is that it is now possible to register callbacks to be called when objects are acquired or relinquished in case special handling is needed for JSON-RPC (generic code can be put into the COM-RPC code for Acquire and Relinquish as that is called for both cases).
+
+The (updated) documentation can be found [here]() NOTE: update link
 
 ### Feature: support custom object lookup
 
-      - objectlookup stores nothing, if you want lifetime you do that internally, but what if the channel closes (example is static) and you have them dynamically created on channel, you would need to get the channel from the context in the lambda and listen to the PluginHost::IShell::IConnectionServer::INotification, right?
-      - just out of curiosity: why lambda's IUknown?
-      - sebastian: do not completely get how the added/removed notification is supposed to work in the example, Removed is not connected and Added not as I would expect but I could be missing something
+Next to auto object lookup the Thunder Tooling now also support custom object lookup for JSON-RPC interfaces.
+Where auto lookup takes care of the creation of object ID's and linking them to the objects for you, custom lookup can be used when the objects already have a unique ID internally (e.g a unique name or number ID) that can be used.
+This makes it easier for clients as the now can use a more meaningful ID instead of the abstract ID created by autolookup.
+Custom lookup is indicated by specifying the @encode:lookup with the interface for the object type.
 
- @encode:lookup 
+See the Thunder documentation for more info [here]()
 
- #NOTE self: this must still be fully described in interfaces.md and link added here
-
- https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleCustomObjects.h
- https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/GeneratorShowcase.h#L1435
- https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory
+NOTE: link to be included
 
 ### Feature: support status listeners for lookup objects
 
@@ -284,19 +274,17 @@ Starting 5.3 this is also done when the unregister is a result of the channel fr
 
 ### Beta Feature: PSG with interface parsing
 
-NOTE: Tym updates the Thunder documentation add a link to it here as well (see below).
-
 The Plugin Skeleton Generator has been greatly extended to now parse the IDL interface file(s) you want the generated plugin code to implement and therefore generates code already completely providing all methods for the Plugin, only the implementation needs to be added!
 It does generate code for both COM-RPC and JSON-RPC interfaces just by checking if the interface IDL header file indicates also specifies a JSON-RPC interface should be generated.
-It has also been extended with example code for dangling proxies (if applicable fot the interface it implements) and support for subsystem handling code generation.
+It has also been extended with example code for dangling proxies (if applicable for the interface it implements) and support for subsystem handling code generation.
 
 Note due to all the permutations possible with the interfaces it can encounter the PSG remains in beta. If you see issues or have doubts on the code it generates please contact us.
 
-Note: see here for the (updated) Thunder documentation on the Plugin Skeleton Generator here
+Note: see [here](https://rdkcentral.github.io/Thunder/plugin/devtools/pluginskeletongenerator/) for the (updated) Thunder documentation on the Plugin Skeleton Generator
 
 ### Feature: wrapped format
 
-The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector, iterator and POD's.
+The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector and iterator.
 Of course it is preferable to keep the JSON-RPC interface as whole consistent but this was added as there are interface where workarounds are used to achieve the wrapped effect so having this tag will make it easier to achieve the wrapped format.
 
 See here for more info;
@@ -305,12 +293,9 @@ NOTE: add link to documentation.
 
 ### Feature: new buffer encoding options
 
-NOTE: NOT Document do we still want to remove before the release the encode:mac now we have the natively supported type? (any drawbacks here?)
-(after this decision I'll update the Thunder documentation)
+There is a new encoding tag supported with @encode (next to the already existing base64):
 
-There are new encoding tags supported for @encode (next to the already existing base64):
-
-@encode:hex will encode/decode the buffer as hex value into/from the JSON_RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or even an iterator 
+@encode:hex will encode/decode the buffer as hex value into/from the JSON-RPC string (so works for both input and out parameters). Buffer can be an array, std::vector or buffer+len parameter with base type uint8_t or char.
 
 All encodings can now also be used in events.
 
@@ -335,9 +320,7 @@ It is now possible to use an enum or POD (struct with data members) defined in o
 
 Previously the enum to string (and vice versa) conversion tables were only generated when the enum was used in an interface used in JSON-RPC generation (so with @json tag).
 Starting 5.3 they can be generated for COM-RPC only interfaces as well. 
-For this use the @encode:text tag
-
-NOTE: self still add to Thunder documentation
+For this use the @encode:text tag with the enum in the COM-RPC interface.
 
 ### Feature: support optional iterators:
 
@@ -352,20 +335,14 @@ The @restrict tag can now, next to strings, arrays and std::vector, also be used
 When an input string in a method in the IDL is not allowed to be empty (but it is not desirable to set a maximum length, if that is the case the @restrict:x..y tag can be used) it can be flagged with the @restrict:nonempty tag.
 If the string is empty this will already generate an error when validating the input in the generated proxy stub code.
 
-NOTE: self still add to Thunder documentation 
-
 ### Feature: collated iterators
 
 Iterators in the past always got their values one by one via the COM-RPC interface leading to overhead in an IPC situation as multiple COM-RPC calls are needed while most of the times the iterators were used to in the end get all the values.
 It is now possible to make all the iterators get all the values in one go and after that the COM-RPC calls to get the values will only be local calls.
 To enable this mode for all iterators you can pass the flag --collated-iterators to the proxy stub generator.
-With this mode enabled one can by specifying the tag @ASINTERFACE with an iterator make that one work like it did in the past and get the values one by one.
+With this mode enabled one can by specifying the tag @interface with an iterator or the iterator typedef make that iterator work like it did in the past and get the values one by one.
 
-Note in Thunder 6 this mode might become the default, that has not been done yet to give the opportunity to put the @ASINTERFACE at the iterators that potentially deal with huge amounts of data where this might pose a too big of a memory penalty.
-
-NOTE: is @interface with capitals? I guess put it as after the iterator name? also if you put it with the typedef (you would not need to repeat it)
-
-NOTE: self still add to Thunder documentation 
+Note in Thunder 6 this mode might become the default, that has not been done yet to give the opportunity to put the @interface tag at the iterators that potentially deal with huge amounts of data where this might pose a too big of a memory penalty.
 
 ### Feature: build in methods in documentation:
 
@@ -391,18 +368,11 @@ This also includes new example interfaces for features added in Thunder 5.3.
 ### Change: interfaces updated for lower case legacy
 
 A number of interfaces being used by contributed plugins still used the JSON meta file solution.
-These have been changed in to full IDL header files so the legacy-lowecase feature could be used to make the interfaces backwards compatible in JSON-RPC casing now the default for this has changed.
+These have been changed in to full IDL header files so the legacy-lowercase feature could be used to make the interfaces backwards compatible in JSON-RPC casing now the default for this has changed.
 (among these: timesync, webkit, opencdm, memorymonitor, locationsync, security agent, device-id)
 
 ### Feature: IPluginAsyncStateControl interface added
 
 The [IPluginAsyncStateControl.h](https://github.com/rdkcentral/ThunderInterfaces/blob/R5_3/interfaces/IPluginAsyncStateControl.h) interface was added which can be used by services that want to implement plugin state control functionality.
 
-
--------------
-
-NOTE: remove before final version
-
-- missing still:
-    - Batch plugin (most probably not in time for 5.3)
      

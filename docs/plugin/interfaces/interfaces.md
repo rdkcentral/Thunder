@@ -161,7 +161,7 @@ Examples:
 
 View [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255) to see how ```Core::JSONRPC::Context``` is used.
 
-Note in newer Thunder versions session support was added which in a lot of cases automates this and leaks are prevented automatically, for more info see the [object lookup section](#object-lookup)
+Note in newer Thunder versions session support was added which in a lot of cases automates this and leaks are prevented automatically, for more info see the [object lookup section](#object-lookup) and the [custom object lookup](#custom-object-lookup)
 
 <hr/>
 
@@ -462,7 +462,9 @@ This object interface is brought into JSON-RPC scope with a object ID. This tran
 
 Object lookup will happen automatically when the @encode:autolookup tag is added to the interface that is to be the session object. The generator will look for methods return the session type as an out parameter as COM-RPC Interface (where the interface must in the same file and of course also must be tagged with @json) and it is expected that there is also a method that takes the same interface as input parameter to be available as well to be able to destroy the created object.
 
-The generated JSON-RPC interface will then automatically associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
+The generated JSON-RPC interface will then automatically (therefore the lookup method also described as auto object lookup) associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
+In the JSON-RPC interface the object-ID will then for the function that creates the object be returned as output parameter and for functions to be called on an object the method for the JSON-RPC call should be the name of the interface (to prevent name clashes) and after that add "#< device is >::< object method name >" to specify the method to be called on the object and the object ID on which the method should be called on.
+But easier is to just generate the documentation for this interface with the document generator as that will include examples for all methods.
 
 Note this also works when the interface contains an event. You will then be able to register specifically for the events of a specific object ID and only receive the ones generated for that object ID.
 
@@ -470,6 +472,10 @@ The calls using a certain object ID must be done on the same channel the object 
 To prevent any object leaks a call must be made into the generated code to release any objects still held when the channel closes (in case the destroy function was not called before the channel terminated). See example below on how to do this. It is also possible to pass a callback to this generated method so you are notified on the objects being destroyed, in case you need to trigger specific code for an object being destroyed. 
 
 Meaning to be able to use this COM-RPC interface in JSON-RPC no additional code needs to be written, it is enough to implement the COM-RPC interface and connect the JSON-RPC interface to it as you would normally do, the code generator will take care of the full JSON-RPC interface.
+
+It is also possible to register callbacks to be called when objects are acquired or relinquished in case special handling is needed for JSON-RPC (generic code can be put into the COM-RPC code for Acquire and Relinquish as that is called for both cases).
+
+Note that for the above to work the plugin should derive from the PluginHost::JSONRPCSupportsAutoObjectLookup class instead of the PluginHost::JSONRPC class for its PluginHost::IDispatcher implementation.
 
 ##### Example
 
@@ -492,7 +498,52 @@ To register for an event for a specific Device, so object ID in the JSON-RPC wor
 
 [Here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/GeneratorShowcase.h#L673) you can see how to call the generated Closed method to do cleanup in case the channel closed without all devices being Relinquished. As mentioned it is also possible to pass a callback to the Closed method to get notified on all devices being released here (not demonstrated).
 
+[Here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1534-L1586) is an example of callbacks registered to be called when a JSON-RPC acquire or relinquish request is being handled.
+
 <hr/>
+
+#### Custom Object lookup
+
+As an alternative to "auto object lookup" where the object-id creation and linking to an object is automatically handled for you under the hood there is also a "custom object lookup" feature.
+This can be used when an object already has a logical instance-id itself that can uniquely be used to identify the object (e.g. each object has a unique name of number id).
+Now that logical id can also be exposed to the JSON-RPC world to connect a request to a certain object. One is now self responsible for handing out the id's and connecting them to the object as well as the object lifetime.
+
+To enable custom lookup add the @encode:lookup to the interface representing the object. The code generator will now look for functions or properties where the object interface is returned as output parameter and assume that function is used to retrieve the object by its id (which should be the other parameter of the function or property).
+Two lambdas should be registered in the plugin code that provide the translation from object to object ID and vice versa.
+
+Like for autolookup (indexed) events are fully supported for custom lookup. 
+
+Handling of the object ID's in the JSON-RPC interface is exactly the same as for autolookup, but again easiest is to just generate the documentation for this interface with the document generator as that will include examples for all methods.
+
+Lifetime for the objects must be handled in the implementation of the interface (this can now not be automatic as the generated code does not have any internal storage for the objects).
+If the objects do have a static lifetime (meaning their lifetime is equal to the plugin) this easy and no "relinquish" code or leakage prevention is needed.
+If the objects lifetime is dynamic (meaning they are created and destroyed on the fly) this is more complicated. The COM-RPC method that returns the object by name can now create the object, a "relinquish" method must be added as well, just like for autlookup, as one can not use the COM-RPC "Release" method as that is not exposed to JSON-RPC. And one should probably also want to register for PluginHost::IShell::IConnectionServer::INotification notifications to be able to cleanup objects that were not explicitly relinquished before the channel closed.
+
+If the objects can only be used on a certain channel is up to the implementation. If they are static most likely not, if they are dynamic they most probably will. But this can be completely handled in the implementation as the object ID <-> object lambdas have full access to the JSON-RPC context.
+
+Note that for the above to work the plugin should derive from the PluginHost::JSONRPCSupportsObjectLookup class instead of the PluginHost::JSONRPC class for its PluginHost::IDispatcher implementation.
+
+##### Example
+
+This example uses static objects, therefore no special lifetime handling is required. Also the usage of the objects is not restricted to specific channels.
+
+[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleCustomObjects.h) you will see an example of an interface that uses custom object lookup.
+
+With the @encode:lookup on the [IAccessory](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L33) interface we indicated this interface is used as an object.
+
+The [Accessory](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L86) property on the ISimpleCustomObjects interface allows access to a specific Accessory object by specifying the accessory name.
+
+The Accessory functions or properties like [Pin](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L60) now can be accessed when using JSON-RPC requests passing the object ID retrieved with the Accessory property.
+
+The generated documentation for this interface can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
+The [Accessory](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory) documentation shows that one can retrieve the object ID for an accessory by passing it as index to the property.
+The property will return the object ID as return value.
+Calling for example [Pin](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory__pin) can be done by calling the "accessory" method followed by #< object ID>::pin, and as the pin is an indexed property the index follows after that with a @ delimiter.
+
+The plugin code can be found [here](https://github.com/rdkcentral/ThunderNanoServices/tree/master/examples/GeneratorShowcase)
+
+[Here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L40) we see the plugin derives from  PluginHost::JSONRPCSupportsObjectLookup.
+And [here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1504-L1524) we see the lambdas being registered that take care of the object ID to object conversion and vice versa.
 
 #### Asynchronous Functions
 

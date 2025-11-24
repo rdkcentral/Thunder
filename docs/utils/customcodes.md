@@ -4,8 +4,8 @@
 
 Error codes used in Thunder are normally predefined, which suffices up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes. The custom code feature supports a more flexible error scheme to be used (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
 There is already a feature for "custom JSON-RPC error messages" which allows for context dependent JSON-RPC messages but also allows to override the error code returned in some form. 
-This however leads to inconsistent error codes between COM-RPC and JSON-RPC for the same handler and is not designed to be used on large scale but for exceptional cases only.
-So with Custom Codes we support a way to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terns of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
+This however leads to inconsistent error codes between COM-RPC and JSON-RPC for the same handler and is not designed to be used on a large scale but for exceptional cases only.
+So with Custom Codes we support a way to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terms of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
 (the "custom JSON-RPC error messages" feature will continue to be supported for context dependent JSON-RPC messages).
 
 ## Custom Error Code hresults solution and range provided
@@ -141,7 +141,7 @@ To be able to provide for a custom error code to string conversion (e.g. used fo
 
 In Thunder sources/core a header file "ICustomErrorCodes.h" provides the interface to be implemented by an external library to support the custom error codes used in the plugin code for that Thunder instance.
 
-For now there is only only function in this interface called "CustomCodeToString":
+For now there is only one function in this interface called "CustomCodeToString":
 
 ```cpp
 
@@ -194,7 +194,7 @@ extern "C" {
 #endif
 
 // called from within Thunder to get the string representation for a custom code
-// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32th bit used as sign bit). 
+// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32nd bit used as sign bit). 
 // in case no special string representation is needed return nullptr (NULL), in that case Thunder will convert the Custom Code to a generic message itself
 EXTERNAL const TCHAR* CustomCodeToString(const int32_t code);
 

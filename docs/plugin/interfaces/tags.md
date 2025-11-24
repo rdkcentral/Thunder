@@ -103,7 +103,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@out](#out)|Marks an output parameter | | Yes|Yes|Method Parameter|
 |[@inout](#inout)|Marks as input and output parameter (equivalent to `@in @out`) | | Yes|Yes| Method Parameter|
 |[@restrict](#restrict)|Specifies valid range for a parameter | | Yes |Yes| Method Parameter |
-|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
+|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing or indicates iterator should not be collated |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
@@ -149,6 +149,7 @@ If a parameter is outside the valid range, then there are two possibilities:
 
 * If running a debug build, an ASSERT will be triggered if the value is outside the allowed range
 * If the stub generator is invoked with the `--secure` flag, then the range will be checked on all builds and an error (`ERROR_INVALID_RANGE`) will be returned if the value is outside the range
+* If one just wants to indicate a string must contain at least one character, empty would not be valid, the tag @restrict:nonempty can be used with that parameter.
 
 ##### Example
 
@@ -162,6 +163,10 @@ If a parameter is outside the valid range, then there are two possibilities:
 This tag specifies a parameter holding interface ID value for `void*` interface passing. 
 
 Functions like [Acquire](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#L45) will return the pointer to the queried interface. For such functions, this tag will specify which field to look for to get the corresponding interface id.
+
+A second usage for this tag is to indicate an iterator should not be collated. Iterators can be collated in Thunder (meaning all their values will be transferred in one go and all follow up Next calls will be local instead of remote).
+If this is not desired (e.g. because the iterator holds a huge number of items making this a too big of memory overhead or because you only need a few items from the iterator instead of most of them) one can add the interface with the iterator parameter or with the iterator typedef.
+At the moment the default behavior for the code generators is to have all iterators not collated. By passing the the flag --collated-iterators to the proxy stub generator all iterators will become collated, expect of the course the ones that have the tag @interface.
 
 ##### Example
 
@@ -571,10 +576,25 @@ For more details, click [here](../interfaces/#asynchronous-functions)
 
 This tag encodes or decodes (if an input parameter) data into/from an alternate format.
 
-* `@encode:base64` encodes/decodes arrays (or std::vector or iterator) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t`.
-* `@encode:hex` encodes/decodes arrays (or std::vector or iterator) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t`.
+* `@encode:base64` encodes/decodes arrays (or std::vector or ptr+len buffers) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
 
-@encode:autolookup is another form of encode: it indicates this interface is an interface used as a session object for another interface. See for more info here: [here](../interfaces/#object-lookup)
+@encode:autolookup is another form of encode: it indicates this interface is used as an object in another interface. See for more info [here](../interfaces/#object-lookup)
+
+An alternative to "autolookup" is custom lookup where one can keep track of how an object-id is connected to an object in a custom manor (in autolookup this is automatic and arranged for you under the hood).
+Custom lookup is indicated with the @encode:lookup tag.
+See for more info on custom object lookup [here](../interfaces/#custom-object-lookup)
+
+For COM-RPC `@encode:text` can be used to have conversion code created for an enum (enum to string and vice versa), this can useful for example in case the enum must be added to a Trace or message as string.
+Example:
+```cpp
+ // @encode:text
+        enum state : uint16_t {
+            PLAYING = 0x0001,
+            STOPPED = 0x0002,
+            SUSPENDING = 0x0004
+        };
+```
 
 ##### Example
 
@@ -623,14 +643,14 @@ Example list:
 
 This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
-Note can also be used for array, std::vector, iterator, POD etc. single output parameter.
+Note can also be used for array, std::vector, iterator etc. single output parameter.
 Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.
 
 Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).
 
 #### Example
 
-Without the wrapped tag in case of a single out put parameter the result will be as short as possible to make it as efficient as possible:
+Without the wrapped tag in case of a single output parameter the result will be as short as possible to make it as efficient as possible:
 
 e.g. with this interface (without wrapped):
 
