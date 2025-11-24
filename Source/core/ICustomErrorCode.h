@@ -18,7 +18,7 @@
  */
 
 /*
-    This file contains the interface that a library can implement in case the "custom error codes" feature is used in Thunder and code to string comversion is desired
+    This file contains the interface that a library can implement in case the "custom error codes" feature is used in Thunder and code to string conversion is desired
 */
 
 #pragma once
