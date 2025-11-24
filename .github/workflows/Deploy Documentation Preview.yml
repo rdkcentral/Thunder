@@ -8,6 +8,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  pull-requests: write
 
 # If the documentation build completed successfully, then download the generated artifact
 # and upload it to github pages
