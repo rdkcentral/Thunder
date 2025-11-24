@@ -47,7 +47,7 @@ extern "C" {
 #endif
 
 // called from within Thunder to get the string representation for a custom code
-// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32th bit used as sign bit). 
+// note parameter code is the pure (signed) Custom Code passed to Thunder. no additional bits set (so for signed numbers 32nd bit used as sign bit). 
 // in case no special string representation is needed return nullptr (NULL), in that case Thunder will convert the Custom Code to a generic message itself
 EXTERNAL const TCHAR* CustomCodeToString(const int32_t code);
 
