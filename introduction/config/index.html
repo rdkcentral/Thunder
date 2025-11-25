@@ -2366,6 +2366,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/customcodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3245,6 +3273,27 @@
 <td>integer</td>
 <td>180</td>
 <td>180</td>
+</tr>
+<tr>
+<td>discovery</td>
+<td>enable loading of the plugin metadata on Thunder startup, when disabled metadata will only be available after plugin activation (only turn this feature off when loading the metadata does not work in special circumstances)</td>
+<td>bool</td>
+<td>true</td>
+<td></td>
+</tr>
+<tr>
+<td>channel_throttle</td>
+<td>maximum number of JSON-RPC requests allowed in parallel per channel (0 is no limit)</td>
+<td>integer</td>
+<td>half the number of available workerpool threads</td>
+<td>3</td>
+</tr>
+<tr>
+<td>throttle</td>
+<td>maximum number of JSON-RPC requests allowed in parallel to a particular plugin, can be overridden for a specific plugin in the plugin configuration (0 is no limit)</td>
+<td>integer</td>
+<td>half the number of available workerpool threads</td>
+<td>3</td>
 </tr>
 <tr>
 <td>softkillcheckwaittime</td>
