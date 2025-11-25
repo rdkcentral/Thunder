@@ -1815,7 +1815,7 @@
   <a href="#wrapped" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Wrapped
+        @wrapped
       
     </span>
   </a>
@@ -4116,7 +4116,7 @@
   <a href="#wrapped" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Wrapped
+        @wrapped
       
     </span>
   </a>
@@ -5057,7 +5057,7 @@ Example:
 <code>["mono", "stereo"]</code></p>
 <hr>
 
-<h4 id="wrapped">Wrapped</h4>
+<h4 id="wrapped">@wrapped</h4>
 <p>This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
 Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
