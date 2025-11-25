@@ -321,6 +321,8 @@ Again static helpers are created in the J< interface >.h file that allow one to 
 
 This will only sent a notification to the clients whom registered for the stateChange event with client "test" by adding @test to the registration designator.
 
+This generated static helper uses a lambda internally which will send the notification to all clients who registered for the index passed to the helper function. It is also possible to pass a lambda yourself as last parameter to the static helper function when you want different behaviour.
+
 It is also possible to use Core::OptionalType to indicate the index is not mandatory (and if not set one registers for all values of the index).
 
 ```cpp
