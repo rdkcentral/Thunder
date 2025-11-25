@@ -643,7 +643,8 @@ Example list:
 
 This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
-Note can also be used for array, std::vector, iterator etc. single output parameter.
+Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
+Wrapped cannot be used for properties as that does not make sense.
 Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.
 
 Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).

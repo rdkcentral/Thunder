@@ -284,7 +284,7 @@ Note: see [here](https://rdkcentral.github.io/Thunder/plugin/devtools/pluginskel
 
 ### Feature: wrapped format
 
-The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector and iterator.
+The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector, iterator etc. (see for more info [here]()) NOTE add link after documentation published
 Of course it is preferable to keep the JSON-RPC interface as whole consistent but this was added as there are interface where workarounds are used to achieve the wrapped effect so having this tag will make it easier to achieve the wrapped format.
 
 See here for more info;

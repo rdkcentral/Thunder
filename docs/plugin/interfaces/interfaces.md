@@ -516,7 +516,7 @@ Like for autolookup (indexed) events are fully supported for custom lookup.
 Handling of the object ID's in the JSON-RPC interface is exactly the same as for autolookup, but again easiest is to just generate the documentation for this interface with the document generator as that will include examples for all methods.
 
 Lifetime for the objects must be handled in the implementation of the interface (this can now not be automatic as the generated code does not have any internal storage for the objects).
-If the objects do have a static lifetime (meaning their lifetime is equal to the plugin) this easy and no "relinquish" code or leakage prevention is needed.
+If the objects do have a static lifetime (meaning their lifetime is equal to the plugin) this is easy and no "relinquish" code or leakage prevention is needed.
 If the objects lifetime is dynamic (meaning they are created and destroyed on the fly) this is more complicated. The COM-RPC method that returns the object by name can now create the object, a "relinquish" method must be added as well, just like for autlookup, as one can not use the COM-RPC "Release" method as that is not exposed to JSON-RPC. And one should probably also want to register for PluginHost::IShell::IConnectionServer::INotification notifications to be able to cleanup objects that were not explicitly relinquished before the channel closed.
 
 If the objects can only be used on a certain channel is up to the implementation. If they are static most likely not, if they are dynamic they most probably will. But this can be completely handled in the implementation as the object ID <-> object lambdas have full access to the JSON-RPC context.
