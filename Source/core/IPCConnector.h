@@ -481,6 +481,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory()
                 , _handlers()
+                , _abort(false)
             {
             }
             inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
@@ -503,6 +504,7 @@ POP_WARNING()
                 , _callback(nullptr)
                 , _factory(factory)
                 , _handlers()
+                , _abort(false)
             {
                 // Only creat the IPCFactory with a valid base factory
                 ASSERT(factory.IsValid());
@@ -591,13 +593,11 @@ POP_WARNING()
                 return (result);
             }
 
-            inline bool Flush()
+            inline bool Flush(const bool abort = false)
             {
                 bool result = false;
 
                 _lock.Lock();
-
-                TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
                 _callback = nullptr;
 
@@ -605,9 +605,17 @@ POP_WARNING()
                     _outbound.Release();
                     result = true;
                 }
-                if (_inbound.IsValid() == true) {
-                    _inbound.Release();
+
+                if ((_abort == true) || (abort == true)) {
+
+                    TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
+
+                    if (_inbound.IsValid() == true) {
+                        _inbound.Release();
+                    }
+
                     result = true;
+                    _abort = false;
                 }
 
                 _lock.Unlock();
@@ -673,6 +681,7 @@ POP_WARNING()
                 _lock.Lock();
 
                 if (_callback != nullptr) {
+                    _abort = true;
                     _callback->Dispatch(*_outbound);
                     _callback = nullptr;
                 }
@@ -687,6 +696,7 @@ POP_WARNING()
             IDispatchType<IIPC>* _callback;
             Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
             Servers _handlers;
+            bool _abort;
         };
 
     protected:
@@ -1004,7 +1014,7 @@ POP_WARNING()
 
                     success = Core::ERROR_NONE;
                 } else {
-                    _administration.Flush();
+                    _administration.Flush(true);
 
                     success = Core::ERROR_CONNECTION_CLOSED;
                 }
@@ -1032,7 +1042,7 @@ POP_WARNING()
                 success = sink.Wait(waitTime);
             }
             else {
-                _administration.Flush();
+                _administration.Flush(true);
 
                 success = Core::ERROR_CONNECTION_CLOSED;
             }
