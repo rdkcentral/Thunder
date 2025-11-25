@@ -639,7 +639,7 @@ Example list:
 
 <hr>
 
-#### Wrapped
+#### @wrapped
 
 This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
 Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
