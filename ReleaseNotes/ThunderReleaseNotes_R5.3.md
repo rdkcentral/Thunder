@@ -50,9 +50,7 @@ As this is a relatively new but potentially complex feature, the Thunder documen
 Before Thunder 5.3 error codes used in Thunder were predefined, which sufficed up to now. These error codes (due to the "JSON-RPC in terms of COM-RPC" feature) are also translated into JSON-RPC error codes and there was a request to support a more flexible error scheme (mainly to have more flexibility in the error codes reported in the JSON-RPC error object).
 So with this new Custom Codes feature a mechanism was introduced to have custom error codes that are consistent for both COM-RPC and JSON-RPC (or any other future protocol that will be implemented in terms of COM-RPC), allow for custom (not hardcoded inside Thunder) code to string translation and allow for direct influence on the error code returned by JSON-RPC.
 
-For more info see [here]() in the Thunder documentation.
-
-NOTE self: add link above
+For more info see [here](https://rdkcentral.github.io/Thunder/utils/customcodes/) in the Thunder documentation.
 
 ### Feature: Warning reporting for WebSocket open and close
 
@@ -109,7 +107,7 @@ The class can be found [here](https://github.com/rdkcentral/Thunder/blob/d57c034
 
 ### Feature: Enable to reach remote plugin via the Composite plugin feature
 
-Thunder now fully supports accessing a Plugin living in a remote Thunder instance to be made accessible in the local Thunder instance using the Composite plugin feature (see also the new BridgeLink plugin in the ThunderNanoServicesRDK repository, read the release notes for that here NOTE hier nog link toevoegen)
+Thunder now fully supports accessing a Plugin living in a remote Thunder instance to be made accessible in the local Thunder instance using the Composite plugin feature (see also the new BridgeLink plugin in the ThunderNanoServicesRDK repository, read the release notes for that [here](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/ReleaseNotes/ThunderReleaseNotes_R5.3_rdkservices.md) )
 
 The ThunderUI has also been updated to support this feature and will now also show the remote plugins now.
 
@@ -240,17 +238,16 @@ Although the old dot format was in use only for a short time in Thunder 5 the @i
 
 Indexes now also support OptionalType indexes to indicate subscribing to the index or all is in principle optional. For this to work it is now also allowed to put the @index keyword at the Register and the event is then looked up by name of the indexed parameter.
 (it is also allowed and advised to also put the @index then at the Unregister)
-Please see this section in the Thunder documentation that has been added to describe indexed events: NOTE: add link
+Please see [this section](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#indexed-events) in the Thunder documentation that has been added to describe indexed events.
 
 ### Change: auto object lookup now requires @encode:autolookup
 
 The JSON-RPC auto object lookup feature now requires the @encode:autolookup tag, this for improved detection and consistency.
-See more [here]() NOTE self: add link to autolookup documentation section.
 Note the auto object lookup feature was introduced in Thunder 5.2 without needing @encode:autolookup to be specified (it should not be breaking as Thunder 5.2 was not used to define new object based JSON-RPC interfaces with auto object lookup).
 
 A new feature for the auto object lookup is that it is now possible to register callbacks to be called when objects are acquired or relinquished in case special handling is needed for JSON-RPC (generic code can be put into the COM-RPC code for Acquire and Relinquish as that is called for both cases).
 
-The (updated) documentation can be found [here]() NOTE: update link
+The (updated) documentation can be found [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#object-lookup)
 
 ### Feature: support custom object lookup
 
@@ -259,9 +256,7 @@ Where auto lookup takes care of the creation of object ID's and linking them to 
 This makes it easier for clients as the now can use a more meaningful ID instead of the abstract ID created by autolookup.
 Custom lookup is indicated by specifying the @encode:lookup with the interface for the object type.
 
-See the Thunder documentation for more info [here]()
-
-NOTE: link to be included
+See the Thunder documentation for more info [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/interfaces/#custom-object-lookup)
 
 ### Feature: support status listeners for lookup objects
 
@@ -284,12 +279,10 @@ Note: see [here](https://rdkcentral.github.io/Thunder/plugin/devtools/pluginskel
 
 ### Feature: wrapped format
 
-The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector, iterator etc. (see for more info [here]()) NOTE add link after documentation published
+The newly added wrapped tag will for a single output parameter also add the parameter name to the result, making it always a JSON object. It can also be used for arrays, std::vector, iterator etc. 
 Of course it is preferable to keep the JSON-RPC interface as whole consistent but this was added as there are interface where workarounds are used to achieve the wrapped effect so having this tag will make it easier to achieve the wrapped format.
 
-See here for more info;
-
-NOTE: add link to documentation.
+See [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/tags/#wrapped) for more info.
 
 ### Feature: new buffer encoding options
 
