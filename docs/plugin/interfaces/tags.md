@@ -103,7 +103,7 @@ Ddefines a literal as a known identifier (equivalent of `#define` in C++ code)
 |[@out](#out)|Marks an output parameter | | Yes|Yes|Method Parameter|
 |[@inout](#inout)|Marks as input and output parameter (equivalent to `@in @out`) | | Yes|Yes| Method Parameter|
 |[@restrict](#restrict)|Specifies valid range for a parameter | | Yes |Yes| Method Parameter |
-|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing |  | Yes | No |Method paramter|
+|[@interface](#interface)| Specifies a parameter holding interface ID value for void* interface passing or indicates iterator should not be collated |  | Yes | No |Method paramter|
 |[@length](#length)|Specifies the expression to evaluate length of an array parameter (can be other parameter name, or constant, or math expression)|  | No | Yes | Method Parameter|
 |[@maxlength](#maxlength)|Specifies a maximum buffer length value |  | No | Yes |Method parameter|
 |[@default](#default)|Provides a default value for an unset optional type |  | Yes | Yes |Method parameter|
@@ -143,12 +143,13 @@ When the function returns, the parameter will have the modified length value. Th
 
 #### @restrict
 
-Specifies a valid range for a parameter (e.g. for buffers and strings it could specify a valid size). Ranges are inclusive.
+Specifies a valid range for a parameter (e.g. it can indicate a valid size for buffers, strings, arrays, std::vector, or iterators). Ranges are inclusive.
 
 If a parameter is outside the valid range, then there are two possibilities:
 
 * If running a debug build, an ASSERT will be triggered if the value is outside the allowed range
 * If the stub generator is invoked with the `--secure` flag, then the range will be checked on all builds and an error (`ERROR_INVALID_RANGE`) will be returned if the value is outside the range
+* If one just wants to indicate a string must contain at least one character, empty would not be valid, the tag @restrict:nonempty can be used with that parameter.
 
 ##### Example
 
@@ -162,6 +163,10 @@ If a parameter is outside the valid range, then there are two possibilities:
 This tag specifies a parameter holding interface ID value for `void*` interface passing. 
 
 Functions like [Acquire](https://github.com/rdkcentral/Thunder/blob/master/Source/com/ICOM.h#L45) will return the pointer to the queried interface. For such functions, this tag will specify which field to look for to get the corresponding interface id.
+
+A second usage for this tag is to indicate an iterator should not be collated. Iterators can be collated in Thunder (meaning all their values will be transferred in one go and all follow up Next calls will be local instead of remote).
+If this is not desired (e.g. because the iterator holds a huge number of items making this a too big of memory overhead or because you only need a few items from the iterator instead of most of them) one can add the interface with the iterator parameter or with the iterator typedef.
+At the moment the default behavior for the code generators is to have all iterators not collated. By passing the the flag --collated-iterators to the proxy stub generator all iterators will become collated, expect of the course the ones that have the tag @interface.
 
 ##### Example
 
@@ -269,6 +274,7 @@ In [IController.h](https://github.com/rdkcentral/Thunder/blob/master/Source/plug
 |[@statuslistener](#statuslistener)| Notifies when a JSON-RPC client registers/unregisters from an notification | | No | Yes | Method |
 |[@async](#async)| Indicates a method is asynchronous for the JSON-RPC interface | | No | Yes | Method |
 |[@encode](#encode)|Encodes data into a different format |  | Yes | Yes |Method parameter|
+|[@wrapped](#wrapped)|Encodes a single out parameter in a wrapped format |  | No | Yes |Class and Method parameter|
 
 #### @json
 This tag helps to generate JSON-RPC files for the given Class/Struct/enum.
@@ -399,7 +405,11 @@ Indicates that enumerator lists should be packed into into a bit mask.
 #### @index
 Used in conjunction with @property. Allows a property list to be accessed at a given index.
 
-Index should be the first parameter in the function. 
+Index should be the first parameter in the function. It is allowed to make the index a Core::OptionalType<>.
+
+The @index tag can also be used to mark an event parameter to be indexed, so clients can subscribe to the event for a specific value of that indexed parameter: for more info see [here](../interfaces/#indexed-events)
+
+As for a short amount of time the @index for events generated code for the JSON-RPC interface that expected a dot (.) as a separator for the index in the clientid instead of a '@' in the designator, @index:deprecated can be put at the indexed event parameter (so instead of just @index) to indicate this indexed event should generate code that uses the old deprecated index format (see the generated documentation for what the interface would be like). Only use this for backwards compatibility reasons. 
 
 ##### Example
 [IController.h](https://github.com/rdkcentral/Thunder/blob/6fa31a946314fdbad05792a216b33891584fb4b5/Source/plugins/IController.h#L125) sets the `@index` tag on the `index` parameter.
@@ -564,9 +574,27 @@ For more details, click [here](../interfaces/#asynchronous-functions)
 
 #### @encode
 
-This tag encodes data into an alternate format.
+This tag encodes or decodes (if an input parameter) data into/from an alternate format.
 
-* `@encode:base64` encodes arrays as base64 JSON-RPC arrays, on the condition that the array base is type `uint8_t`.
+* `@encode:base64` encodes/decodes arrays (or std::vector or ptr+len buffers) as base64 JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+* `@encode:hex` encodes/decodes arrays (or std::vector or ptr+len buffers) as a Hex JSON-RPC string, on the condition that the array base is type `uint8_t` or `char`.
+
+@encode:autolookup is another form of encode: it indicates this interface is used as an object in another interface. See for more info [here](../interfaces/#object-lookup)
+
+An alternative to "autolookup" is custom lookup where one can keep track of how an object-id is connected to an object in a custom manor (in autolookup this is automatic and arranged for you under the hood).
+Custom lookup is indicated with the @encode:lookup tag.
+See for more info on custom object lookup [here](../interfaces/#custom-object-lookup)
+
+For COM-RPC `@encode:text` can be used to have conversion code created for an enum (enum to string and vice versa), this can useful for example in case the enum must be added to a Trace or message as string.
+Example:
+```cpp
+ // @encode:text
+        enum state : uint16_t {
+            PLAYING = 0x0001,
+            STOPPED = 0x0002,
+            SUSPENDING = 0x0004
+        };
+```
 
 ##### Example
 
@@ -610,6 +638,65 @@ Example list:
 `["mono", "stereo"]`
 
 <hr>
+
+#### Wrapped
+
+This tag can be placed at class or method level, where at class level is by far preferable as it prevents inconsistencies in JSON-RPC function handling.
+Wrapped will for a single output parameter also add the parameter name to the result, making it always a JSON object.
+Note can also be used for array, std::vector, iterator etc. single output parameter. As for a POD it does not immediately make sense to have it wrapped, it becomes a JSON object inside an object, wrapped will be ignored for POD when the wrapped is put on class level. If put on method level however the POD is wrapped as that than is the clear expectation of the interface designer.
+Wrapped cannot be used for properties as that does not make sense.
+Incorrect or inconsistent usage will lead to an error raised by the code generators. Of course the documentation generators do take the wrapped tag into account.
+
+Remark: of course it is preferable to keep the JSON-RPC interface as whole consistent so for that reason be hesitant when using this tag (it was added as there are interface where workarounds are used to achieve the wrapped effect).
+
+#### Example
+
+Without the wrapped tag in case of a single output parameter the result will be as short as possible to make it as efficient as possible:
+
+e.g. with this interface (without wrapped):
+
+```cpp
+    // @json 1.0.0 
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        virtual Core::hresult Test(uint8_t& test /* @out */ ) const = 0;
+    };
+```
+this is the returned JSON-RPC result for the Test function
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": 0
+}
+```
+
+if we enable the wrapped tag for this interface:
+
+```cpp
+    // @json 1.0.0 @wrapped
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        virtual Core::hresult Test(uint8_t& test /* @out */ ) const = 0;
+    };
+```
+
+the returned JSON-RPC result for the Test function has changed to this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": {
+    "test": 0
+  }
+}
+```
 
 ### JSON-RPC Documentation Related Tags
 
