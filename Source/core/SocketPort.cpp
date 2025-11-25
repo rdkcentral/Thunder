@@ -1330,8 +1330,6 @@ namespace Thunder {
             }
 
 
-            ASSERT (m_State == 0);
-
             m_syncAdmin.Unlock();
 
             return (result);
