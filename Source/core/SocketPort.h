@@ -287,7 +287,8 @@ POP_WARNING()
             uint32_t WaitForOpen(const uint32_t time) const;
             uint32_t WaitForClosure(const uint32_t time) const;
             uint32_t WaitForWriteComplete(const uint32_t time) const;
-
+            void DestroySocket();
+            
         private:
             NodeId m_LocalNode;
             NodeId m_RemoteNode;

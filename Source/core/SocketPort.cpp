@@ -402,7 +402,7 @@ namespace Thunder {
             ASSERT(refConnector != INVALID_SOCKET);
 
             if ((SetNonBlocking(m_Socket) == false) || (::getsockname(m_Socket, (struct sockaddr*)&localAddress, &localSize) == SOCKET_ERROR)) {
-                DestroySocket(m_Socket);
+                DestroySocket();
 
                 TRACE_L1("Error on preparing the port for communication. Error %d", __ERRORRESULT__);
             }
@@ -436,7 +436,7 @@ namespace Thunder {
             ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
 
             if (m_Socket != INVALID_SOCKET) {
-                DestroySocket(m_Socket);
+                DestroySocket();
             }
             m_syncAdmin.Unlock();
 
@@ -597,7 +597,7 @@ namespace Thunder {
 
             }
             else {
-                DestroySocket(m_Socket);
+                DestroySocket();
             }
 
             return (nStatus);
@@ -933,7 +933,7 @@ namespace Thunder {
                     return (l_Result);
                 }
 
-                DestroySocket(l_Result);
+                DestroySocket();
             }
 
             return (INVALID_SOCKET);
@@ -1323,7 +1323,7 @@ namespace Thunder {
             if (m_State != 0) {
                 result = false;
             } else {
-                DestroySocket(m_Socket);
+                DestroySocket();
                 ResourceMonitor::Instance().Unregister(*this);
 
                 // Remove socket descriptor for UNIX domain datagram socket.
@@ -1396,7 +1396,7 @@ namespace Thunder {
             SOCKET result;
 
             if (((result = Accept(newConnection)) != INVALID_SOCKET) && (SetNonBlocking(result) == true)) {
-                DestroySocket(m_Socket);
+                DestroySocket();
 
                 m_Socket = result;
                 m_State = (SocketPort::UPDATE | SocketPort::MONITOR | SocketPort::LINK | SocketPort::OPEN | SocketPort::READ | SocketPort::WRITESLOT);
@@ -1418,7 +1418,7 @@ namespace Thunder {
             ASSERT(m_Socket != INVALID_SOCKET);
 
             // Current socket can be destroyed
-            DestroySocket(m_Socket);
+            DestroySocket();
 
             m_Socket = ConstructSocket(m_LocalNode, emptyString);
 
@@ -1534,6 +1534,11 @@ namespace Thunder {
 
             return (true);
         }
+
+        void SocketPort::DestroySocket() {
+                ASSERT (m_State == 0);
+                Core::DestroySocket(m_Socket);
+            }; 
 
         }
     } // namespace Solution::Core
