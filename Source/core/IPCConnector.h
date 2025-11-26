@@ -593,9 +593,11 @@ POP_WARNING()
                 return (result);
             }
 
-            inline bool Flush(const bool abort = false)
+            inline void Flush()
             {
                 bool result = false;
+
+                TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
                 _lock.Lock();
 
@@ -606,16 +608,35 @@ POP_WARNING()
                     result = true;
                 }
 
-                if ((_abort == true) || (abort == true)) {
-
-                    TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
-
-                    if (_inbound.IsValid() == true) {
-                        _inbound.Release();
-                    }
-
+                if (_inbound.IsValid() == true) {
+                    _inbound.Release();
                     result = true;
+                }
+
+                _lock.Unlock();
+
+                return (result);
+            }
+
+            inline uint32_t Finalize(const uint32_t status)
+            {
+                uint32_t result = status;
+
+                _lock.Lock();
+
+                if (_abort == true) {
+                    Flush();
                     _abort = false;
+                    result = Core::ERROR_ASYNC_FAILED;
+                }
+                else if (_outbound.IsValid() == true) {
+                    ASSERT(status != Core::ERROR_NONE);
+                    ASSERT(_callback != nullptr);
+                    _callback = nullptr;
+                    _outbound.Release();
+                }
+                else {
+                    ASSERT(_callback == nullptr);
                 }
 
                 _lock.Unlock();
@@ -860,18 +881,8 @@ POP_WARNING()
         public:
             uint32_t Wait(const uint32_t waitTime)
             {
-                uint32_t result = Core::ERROR_NONE;
-
                 // Now we wait for ever, to get a signal that we are done :-)
-                if (_signal.Lock(waitTime) != Core::ERROR_NONE) {
-                    _administration.Flush();
-
-                    result = Core::ERROR_TIMEDOUT;
-                } else if (_administration.Flush() == true) {
-                    result = Core::ERROR_ASYNC_FAILED;
-                }
-
-                return (result);
+                return (_administration.Finalize(_signal.Lock(waitTime)));
             }
             void Dispatch(IIPC& /* element */) override
             {
@@ -997,7 +1008,7 @@ POP_WARNING()
 
         uint32_t Execute(const ProxyType<IIPC>& command, IDispatchType<IIPC>* completed) override
         {
-            uint32_t success = Core::ERROR_UNAVAILABLE;
+            uint32_t success = Core::ERROR_NONE;
 
             _serialize.Lock();
 
@@ -1011,10 +1022,9 @@ POP_WARNING()
 
                 if (_link.IsOpen() == true) {
                     _link.Submit(command->IParameters());
-
-                    success = Core::ERROR_NONE;
-                } else {
-                    _administration.Flush(true);
+                }
+                else {
+                    _administration.Flush();
 
                     success = Core::ERROR_CONNECTION_CLOSED;
                 }
@@ -1042,9 +1052,7 @@ POP_WARNING()
                 success = sink.Wait(waitTime);
             }
             else {
-                _administration.Flush(true);
-
-                success = Core::ERROR_CONNECTION_CLOSED;
+                _administration.Flush();
             }
 
             _serialize.Unlock();
