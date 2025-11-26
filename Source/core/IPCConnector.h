@@ -595,8 +595,6 @@ POP_WARNING()
 
             inline void Flush()
             {
-                bool result = false;
-
                 TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
                 _lock.Lock();
@@ -605,17 +603,13 @@ POP_WARNING()
 
                 if (_outbound.IsValid() == true) {
                     _outbound.Release();
-                    result = true;
                 }
 
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
-                    result = true;
                 }
 
                 _lock.Unlock();
-
-                return (result);
             }
 
             inline uint32_t Finalize(const uint32_t status)
