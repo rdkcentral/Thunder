@@ -261,42 +261,6 @@ namespace Thunder {
     #endif
 
     #define VERIFY(expr) ASSERT(expr)
-
-    #ifdef __WINDOWS__
-        #define CC_ASSERT(expr)                                                                                                              \
-            do {                                                                                                                             \
-                if (!(expr)) {                                                                                                               \
-                    fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                    fflush(stderr);                                                                                                          \
-                    ASSERT(expr);                                                                                                            \
-                }                                                                                                                            \
-            } while(0)
-
-        #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                                              \
-            do {                                                                                                                                                                  \
-                if (!(expr)) {                                                                                                                                                    \
-                    fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-                    fflush(stderr);                                                                                                                                               \
-                    ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                                  \
-                }                                                                                                                                                                 \
-            } while(0)
-    #else
-        #define CC_ASSERT(expr)                                                                                                            \
-            do {                                                                                                                           \
-                if (!(expr)) {                                                                                                             \
-                    syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                    ASSERT(expr);                                                                                                          \
-                }                                                                                                                          \
-            } while(0)
-
-        #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                               \
-            do {                                                                                                                                                   \
-                if (!(expr)) {                                                                                                                                     \
-                    syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s) " #format, TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-                    ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                   \
-                }                                                                                                                                                  \
-            } while(0)
-    #endif
 #else
     #define ASSERT(x)
 
@@ -310,10 +274,42 @@ namespace Thunder {
                 ASSERT_LOGGER("===== $$ [%d]: VERIFY FAILED [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
         }                                                                                                                  \
         } while(0)
+#endif
 
-    #define CC_ASSERT(x)
+#ifdef __WINDOWS__
+    #define CC_ASSERT(expr)                                                                                                              \
+        do {                                                                                                                             \
+            if (!(expr)) {                                                                                                               \
+                fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+                fflush(stderr);                                                                                                          \
+                ASSERT(expr);                                                                                                            \
+            }                                                                                                                            \
+        } while(0)
 
-    #define CC_ASSERT_VERBOSE(x, y, ...)
+    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                                              \
+        do {                                                                                                                                                                  \
+            if (!(expr)) {                                                                                                                                                    \
+                fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+                fflush(stderr);                                                                                                                                               \
+                ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                                  \
+            }                                                                                                                                                                 \
+        } while(0)
+#else
+    #define CC_ASSERT(expr)                                                                                                            \
+        do {                                                                                                                           \
+            if (!(expr)) {                                                                                                             \
+                syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+                ASSERT(expr);                                                                                                          \
+            }                                                                                                                          \
+        } while(0)
+
+    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                               \
+        do {                                                                                                                                                   \
+            if (!(expr)) {                                                                                                                                     \
+                syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s) " #format, TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+                ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                   \
+            }                                                                                                                                                  \
+        } while(0)
 #endif
 
 #define LOG(LEVEL, MESSAGE)                                                         \
