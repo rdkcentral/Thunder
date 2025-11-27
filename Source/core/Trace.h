@@ -158,55 +158,110 @@ namespace Thunder {
 #undef VERIFY
 #endif
 
+#ifdef __DEBUG__
+    #define ASSERT_ABORT abort();
+#else
+    #define ASSERT_ABORT
+#endif
+
+#define DIRECT_ASSERT                                                                                   \
+    std::list<Thunder::Core::callstack_info> entries;                                                   \
+    DumpCallStack(0, entries);                                                                          \
+    for(const Thunder::Core::callstack_info& entry : entries) {                                         \
+        fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
+    }                                                                                                   \
+    fflush(stderr);                                                                                     \
+    ASSERT_ABORT
+
+#ifdef __APPLE__
+    #define PROGRAM_NAME getprogname()
+#elif defined(__WINDOWS__)
+    #define PROGRAM_NAME Thunder::Core::GetProgramName()
+#else
+    #define PROGRAM_NAME program_invocation_short_name
+#endif
+
+#define ASSERT_METADATA                                                                                            \
+    Thunder::Core::Messaging::MessageInfo __messageInfo__(                                                         \
+        Thunder::Assertion::BaseAssertType::Metadata());                                                           \
+    std::list<Thunder::Core::callstack_info> __entries__;                                                          \
+    DumpCallStack(0, __entries__);                                                                                 \
+    std::string __callstack__;                                                                                     \
+    for (const Thunder::Core::callstack_info& entry : __entries__) {                                               \
+        __callstack__ += "[" + entry.module + "]:[" + entry.function + "]:[" + std::to_string(entry.line) + "]\n"; \
+    }                                                                                                              \
+    Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
+        __messageInfo__,                                                                                           \
+        TRACE_PROCESS_ID,                                                                                          \
+        PROGRAM_NAME,                                                                                              \
+        __FILE__,                                                                                                  \
+        __LINE__,                                                                                                  \
+        __callstack__);
+
+#define ASSERT_SENT                                                                                     \
+    Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
+        __assertMetadata__,                                                                             \
+        __message__);                                                                                   \
+
+#ifdef __WINDOWS__
+    #define CC_SYSLOG(format, ...)                       \
+        do {                                             \
+            fprintf(stderr, format "\n", ##__VA_ARGS__); \
+            fflush(stderr);                              \
+        } while(0)
+#else
+    #define CC_SYSLOG(format, ...) syslog(LOG_ERR, format, ##__VA_ARGS__)
+#endif
+
+#ifdef __CORE_MESSAGING__
+    #define CC_ASSERT(expr)                                                                                                      \
+        do {                                                                                                                     \
+            if (!(expr)) {                                                                                                       \
+                CC_SYSLOG("===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                                           \
+                    ASSERT_METADATA                                                                                              \
+                    Thunder::Core::Messaging::TextMessage __message__(#expr);                                                    \
+                    ASSERT_SENT                                                                                                  \
+                }                                                                                                                \
+                ASSERT_ABORT                                                                                                     \
+            }                                                                                                                    \
+        } while(0)
+
+    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                         \
+        do {                                                                                                                                             \
+            if (!(expr)) {                                                                                                                               \
+                CC_SYSLOG("===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s) " #format, TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+                if (Thunder::Assertion::BaseAssertType::IsEnabled()) {                                                                                   \
+                    ASSERT_METADATA                                                                                                                      \
+                    char __buffer__[256];                                                                                                                \
+                    std::snprintf(__buffer__, sizeof(__buffer__), "%s: " #format, #expr, ##__VA_ARGS__);                                                 \
+                    Thunder::Core::Messaging::TextMessage __message__(__buffer__);                                                                       \
+                    ASSERT_SENT                                                                                                                          \
+                }                                                                                                                                        \
+                ASSERT_ABORT                                                                                                                             \
+            }                                                                                                                                            \
+        } while(0)
+#else
+    #define CC_ASSERT(expr)                                                                                                      \
+        do {                                                                                                                     \
+            if (!(expr)) {                                                                                                       \
+                CC_SYSLOG("===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+                DIRECT_ASSERT                                                                                                    \
+            }                                                                                                                    \
+        } while(0)
+
+    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                         \
+        do {                                                                                                                                             \
+            if (!(expr)) {                                                                                                                               \
+                CC_SYSLOG("===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s) " #format, TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+                DIRECT_ASSERT                                                                                                                            \
+            }                                                                                                                                            \
+        } while(0)
+#endif
+
 #if defined(__DEBUG__) || defined(_THUNDER_PRODUCTION)
 
-    #ifdef __DEBUG__
-        #define ASSERT_ABORT abort();
-    #else
-        #define ASSERT_ABORT
-    #endif
-
-    #define DIRECT_ASSERT                                                                                   \
-        std::list<Thunder::Core::callstack_info> entries;                                                   \
-        DumpCallStack(0, entries);                                                                          \
-        for(const Thunder::Core::callstack_info& entry : entries) {                                         \
-            fprintf(stderr, "[%s]:[%s]:[%d]\n", entry.module.c_str(), entry.function.c_str(), entry.line);  \
-        }                                                                                                   \
-        fflush(stderr);                                                                                     \
-        ASSERT_ABORT
-
     #ifdef __CORE_MESSAGING__
-
-        #ifdef __APPLE__
-            #define PROGRAM_NAME getprogname()
-        #elif defined(__WINDOWS__)
-            #define PROGRAM_NAME Thunder::Core::GetProgramName()
-        #else
-            #define PROGRAM_NAME program_invocation_short_name
-        #endif
-
-        #define ASSERT_METADATA                                                                                            \
-            Thunder::Core::Messaging::MessageInfo __messageInfo__(                                                         \
-                Thunder::Assertion::BaseAssertType::Metadata());                                                           \
-            std::list<Thunder::Core::callstack_info> __entries__;                                                          \
-            DumpCallStack(0, __entries__);                                                                                 \
-            std::string __callstack__;                                                                                     \
-            for (const Thunder::Core::callstack_info& entry : __entries__) {                                               \
-                __callstack__ += "[" + entry.module + "]:[" + entry.function + "]:[" + std::to_string(entry.line) + "]\n"; \
-            }                                                                                                              \
-            Thunder::Core::Messaging::IStore::Assert __assertMetadata__(                                                   \
-                __messageInfo__,                                                                                           \
-                TRACE_PROCESS_ID,                                                                                          \
-                PROGRAM_NAME,                                                                                              \
-                __FILE__,                                                                                                  \
-                __LINE__,                                                                                                  \
-                __callstack__);
-
-        #define ASSERT_SENT                                                                                     \
-            Thunder::Assertion::AssertionUnitProxy::Instance().AssertionEvent(                                  \
-                __assertMetadata__,                                                                             \
-                __message__);
-
         #define ASSERT(expr)                                                                                    \
             do {                                                                                                \
                 if (!(expr)) {                                                                                  \
@@ -273,42 +328,6 @@ namespace Thunder {
             if(!(expr)) {                                                                                                  \
                 ASSERT_LOGGER("===== $$ [%d]: VERIFY FAILED [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
         }                                                                                                                  \
-        } while(0)
-#endif
-
-#ifdef __WINDOWS__
-    #define CC_ASSERT(expr)                                                                                                              \
-        do {                                                                                                                             \
-            if (!(expr)) {                                                                                                               \
-                fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                fflush(stderr);                                                                                                          \
-                ASSERT(expr);                                                                                                            \
-            }                                                                                                                            \
-        } while(0)
-
-    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                                              \
-        do {                                                                                                                                                                  \
-            if (!(expr)) {                                                                                                                                                    \
-                fprintf(stderr, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-                fflush(stderr);                                                                                                                                               \
-                ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                                  \
-            }                                                                                                                                                                 \
-        } while(0)
-#else
-    #define CC_ASSERT(expr)                                                                                                            \
-        do {                                                                                                                           \
-            if (!(expr)) {                                                                                                             \
-                syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s)", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
-                ASSERT(expr);                                                                                                          \
-            }                                                                                                                          \
-        } while(0)
-
-    #define CC_ASSERT_VERBOSE(expr, format, ...)                                                                                                               \
-        do {                                                                                                                                                   \
-            if (!(expr)) {                                                                                                                                     \
-                syslog(LOG_ERR, "===== $$ [%d]: Critical Condition ASSERT [%s:%d] (%s) " #format, TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
-                ASSERT_VERBOSE(expr, format, ##__VA_ARGS__);                                                                                                   \
-            }                                                                                                                                                  \
         } while(0)
 #endif
 
