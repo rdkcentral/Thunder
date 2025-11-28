@@ -285,6 +285,16 @@ namespace Thunder {
             Core::LogMessage(Core::ToString(__FILE__).c_str(), __LINE__, MESSAGE)); \
     }
 
+#ifdef __WINDOWS__
+    #define CC_SYSLOG(format, ...)                                              \
+        do {                                                                    \
+            fprintf(stderr, "CRITICAL CONDITION! " format "\n", ##__VA_ARGS__); \
+            fflush(stderr);                                                     \
+        } while(0)
+#else
+    #define CC_SYSLOG(format, ...) syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__)
+#endif
+
 namespace Thunder {
 namespace Core {
     EXTERNAL const char* FileNameOnly(const char fileName[]);
