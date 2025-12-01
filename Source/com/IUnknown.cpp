@@ -105,28 +105,23 @@ namespace ProxyStub {
         uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 
         _adminLock.Lock();
-	Core::ProxyType<Core::IPCChannel> channel (_channel);
+	    Core::ProxyType<Core::IPCChannel> channel (_channel);
         _adminLock.Unlock();
 
         if (channel.IsValid() == true) {
+            result = channel->Invoke(message, waitTime);
 
-	    if (channel->InProgress() == true) {
-	        ASSERT(false && "IPC in progress detected on this channel. Possible deadlock!");
-	        SYSLOG(Logging::Error, (_T("IPC in progress detected on this channel for Interface [0x%X], Method ID [0x%X]. Possible deadlock!"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
-	    }
+            if (result != Core::ERROR_NONE) {
 
-	    result = channel->Invoke(message, waitTime);
-	    if (result != Core::ERROR_NONE) {
+                if (result == Core::ERROR_TIMEDOUT) {
+                Shutdown();
+                }
 
-	        if (result == Core::ERROR_TIMEDOUT) {
-		    Shutdown();
-	        }
+                result |= COM_ERROR;
 
-	        result |= COM_ERROR;
-
-	        // Oops something failed on the communication. Report it.
-	        TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
-	    }
+                // Oops something failed on the communication. Report it.
+                TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
+            }
         }
 
         return (result);

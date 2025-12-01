@@ -1034,6 +1034,10 @@ POP_WARNING()
 
             _serialize.Lock();
 
+            if (_administration.InProgress() == true) {
+                CC_SYSLOG("IPC in progress detected on this channel. Incoming deadlock!");
+                ASSERT(false);
+            }
             IPCTrigger sink(_administration);
 
             // We need to accept a CONST object to avoid an additional object creation
