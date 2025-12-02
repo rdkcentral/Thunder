@@ -296,8 +296,8 @@ namespace Thunder {
 #else
     #define CC_SYSLOG(format, ...)                                          \
         do {                                                                \
-            CC_SYSLOG_COMMON(format, ##__VA_ARGS__);                        \
             syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__);  \
+            CC_SYSLOG_COMMON(format, ##__VA_ARGS__);                        \
         } while(0)
 #endif
 
