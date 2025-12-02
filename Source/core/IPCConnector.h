@@ -1039,7 +1039,7 @@ POP_WARNING()
             Core::thread_id owner = _serializeOwner.load(std::memory_order_acquire);
 
             if ((owner != 0) && (owner != self)) {
-                TRACE_L1("Thread 0x%lx about to wait for IPC lock held by thread 0x%lx", static_cast<unsigned long>(self), static_cast<unsigned long>(owner));
+                TRACE_L1("Thread 0x%" PRIxPTR " about to wait for IPC lock held by thread 0x%" PRIxPTR, (Core::instance_id)self, (Core::instance_id)owner);
             }
 
             _serialize.Lock();
@@ -1057,7 +1057,7 @@ POP_WARNING()
                 success = sink.Wait(waitTime);
 
                 if (success == Core::ERROR_TIMEDOUT) {
-                    CC_SYSLOG("IPC call timed out - possible deadlock. Lock holder: 0x%lx, Waiter: 0x%lx", static_cast<unsigned long>(_serializeOwner.load()), static_cast<unsigned long>(self));
+                    CC_SYSLOG("IPC call timed out - possible deadlock. Lock holder: 0x%" PRIxPTR ", Waiter: 0x%" PRIxPTR, (Core::instance_id)_serializeOwner.load(), (Core::instance_id)self);
                 }
             }
             else {
