@@ -896,6 +896,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         IPCChannelType(Args&&... args)
             : IPCChannel()
+            , _serialize()
+            , _serializeOwner(0)
             , _link(this, &_administration, std::forward<Args>(args)...)
             , _extension(this)
         {
@@ -903,6 +905,8 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         template <typename... Args>
         IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, Args&&... args)
             : IPCChannel(factory)
+            , _serialize()
+            , _serializeOwner(0)
             , _link(this, &_administration, std::forward<Args>(args)...)
             , _extension(this)
         {
@@ -1031,13 +1035,16 @@ POP_WARNING()
         uint32_t Execute(const ProxyType<IIPC>& command, const uint32_t waitTime) override
         {
             uint32_t success = Core::ERROR_CONNECTION_CLOSED;
+            Core::thread_id self = Thread::ThreadId();
+            Core::thread_id owner = _serializeOwner.load(std::memory_order_acquire);
+
+            if ((owner != 0) && (owner != self)) {
+                TRACE_L1("Thread 0x%lx about to wait for IPC lock held by thread 0x%lx", static_cast<unsigned long>(self), static_cast<unsigned long>(owner));
+            }
 
             _serialize.Lock();
+            _serializeOwner.store(self, std::memory_order_release);
 
-            if (_administration.InProgress() == true) {
-                CC_SYSLOG("IPC in progress detected on this channel. Incoming deadlock!");
-                ASSERT(false);
-            }
             IPCTrigger sink(_administration);
 
             // We need to accept a CONST object to avoid an additional object creation
@@ -1048,11 +1055,16 @@ POP_WARNING()
                 _link.Submit(command->IParameters());
 
                 success = sink.Wait(waitTime);
+
+                if (success == Core::ERROR_TIMEDOUT) {
+                    CC_SYSLOG("IPC call timed out - possible deadlock. Lock holder: 0x%lx, Waiter: 0x%lx", static_cast<unsigned long>(_serializeOwner.load()), static_cast<unsigned long>(self));
+                }
             }
             else {
                 _administration.Flush();
             }
 
+            _serializeOwner.store(0, std::memory_order_release);
             _serialize.Unlock();
 
             return (success);
@@ -1064,6 +1076,7 @@ POP_WARNING()
 
     private:
         CriticalSection _serialize;
+        std::atomic<Core::thread_id> _serializeOwner;
         IPCLink _link;
         EXTENSION _extension;
     };
