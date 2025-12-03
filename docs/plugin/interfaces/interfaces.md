@@ -1,4 +1,4 @@
-Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins). 
+Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins).
 
 In Thunder, plugins can expose their interfaces over two communication channels:
 
