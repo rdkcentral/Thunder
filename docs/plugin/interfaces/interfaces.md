@@ -231,7 +231,7 @@ For example suppose we would have this interface:
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* const sink) = 0;
@@ -270,7 +270,7 @@ Suppose we have this interface:
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* const sink, const string& callsign /* index */) = 0;
@@ -306,7 +306,7 @@ The notification sent will then be like this:
   "jsonrpc": "2.0",
   "method": "myid.stateChange@<callsign>",
   "params": {
-    "marcel": false
+    "test": false
   }
 }
 ```
@@ -319,7 +319,7 @@ Again static helpers are created in the J< interface >.h file that allow one to 
         Exchange::JTest::Event::StateChange(*this, "test", true);
 ```
 
-This will only sent a notification to the clients whom registered for the stateChange event with client "test" by adding @test to the registration designator.
+This will only sent a notification to the clients who registered for the stateChange event with client "test" by adding @test to the registration designator.
 
 This generated static helper uses a lambda internally which will send the notification to all clients who registered for the index passed to the helper function. It is also possible to pass a lambda yourself as last parameter to the static helper function when you want different behaviour.
 
@@ -336,7 +336,7 @@ It is also possible to use Core::OptionalType to indicate the index is not manda
 
             enum { ID = RPC::ID_TEST_NOTIFICATION };
 
-            virtual void StateChange(const string& callsign, const bool test2) = 0;
+            virtual void StateChange(const string& callsign, const bool test) = 0;
         };
 
         virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
@@ -384,7 +384,7 @@ The notification is now a little different however:
   "method": "myid.stateChange@abc",
   "params": {
     "callsign": "...",
-    "marcel": false
+    "test": false
   }
 }
 ```
