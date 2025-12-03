@@ -261,12 +261,18 @@ namespace Core {
             auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(finish.time_since_epoch());
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(finish.time_since_epoch());
 
-            struct timespec structTime;
-            // Designator initialization avaiable from C++20; order fields is undefined.
-            structTime.tv_sec = static_cast<time_t>(seconds.count());
+            // Possible narrowing conversion
+            static_assert(__cplusplus < 201703L, "C++17 has well-defined type and ranges");
 
-// TODO: validate range [0, 999999999], type probably long or long long
-            structTime.tv_nsec = static_cast<decltype(structTime.tv_nsec)>((nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count());
+            using common_sec_t = std::common_type<time_t, decltype(seconds.count())>::type;
+            ASSERT(static_cast<common_sec_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_sec_t>(seconds.count()));
+
+            using common_nsec_t = std::common_type<long, decltype(nanoseconds.count())>::type;
+            ASSERT(static_cast<common_nsec_t>(std::numeric_limits<long>::max()) >= static_cast<common_nsec_t>(nanoseconds.count()));
+
+            struct timespec structTime;
+            structTime.tv_sec = static_cast<time_t>(seconds.count());
+            structTime.tv_nsec = static_cast<long>((nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count());
 
 #ifdef __POSIX__
             if (pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime) != 0) {
