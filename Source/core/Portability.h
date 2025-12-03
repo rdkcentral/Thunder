@@ -182,6 +182,8 @@
 #define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_(4100)
 // W4 - 'function': unreferenced function with internal linkage has been removed
 #define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_(5242)
+// W3 - 'argument': conversion from 'type' to 'type', possible loss of data
+#define DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA PUSH_WARNING_ARG_(4267)
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
 #define DISABLE_WARNING_UNUSED_RESULT
@@ -230,6 +232,8 @@
 #define DISABLE_WARNING_FREE_NONHEAP_OBJECT PUSH_WARNING_ARG_("-Wfree-nonheap-object")
 #define DISABLE_WARNING_ARRAY_BOUNDS PUSH_WARNING_ARG_("-Warray-bounds")
 #define DISABLE_WARNING_IMPLICIT_FALLTHROUGH PUSH_WARNING_ARG_("-Wimplicit-fallthrough")
+#define DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA PUSH_WARNING_ARG_("-Wconversion")
+
 
 #endif
 
@@ -749,281 +753,178 @@ typedef std::string string;
 #endif
 
 namespace Thunder {
-namespace Core {
+    namespace Core {
 
-    class TextFragment;
+        class TextFragment;
 
-    #if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
-    #if __CORE_INSTANCE_BITS__ <= 8
-    typedef uint8_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 16
-    typedef uint16_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 32 
-    typedef uint32_t instance_id;
-    #elif __CORE_INSTANCE_BITS__ <= 64
+#if defined(__CORE_INSTANCE_BITS__) && (__CORE_INSTANCE_BITS__ != 0)
+#if __CORE_INSTANCE_BITS__ <= 8
+        typedef uint8_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 16
+        typedef uint16_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 32
+        typedef uint32_t instance_id;
+#elif __CORE_INSTANCE_BITS__ <= 64
+        typedef uint64_t instance_id;
+#endif
+#else
+#if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8)
     typedef uint64_t instance_id;
-    #endif
-    #else
-    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
-    typedef uint64_t instance_id;
-    #else
+#else
     typedef uint32_t instance_id;
-    #endif
-    #endif
+#endif
+#endif
 
-    #ifdef __LINUX__
-    typedef pthread_t thread_id;
-    #else
+#ifdef __LINUX__
+        typedef pthread_t thread_id;
+#else
     typedef DWORD thread_id;
-    #endif
+#endif
 
-    typedef uint32_t hresult;
+        typedef uint32_t hresult;
 
-    struct callstack_info {
-        void*    address;
-        string   module;
-        string   function;
-        uint32_t line;
-    };
+        struct callstack_info {
+            void*    address;
+            string   module;
+            string   function;
+            uint32_t line;
+        };
 
 
-    inline void* Alignment(size_t alignment, void* incoming)
-    {
-        const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
-        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~(alignment - 1));
-    }
+        inline void* Alignment(size_t alignment, void* incoming)
+        {
+            const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
+            return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~(alignment - 1));
+        }
 
-    inline uint8_t* PointerAlign(uint8_t* pointer)
-    {
-        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
-        return reinterpret_cast<uint8_t*>(addr);
-    }
+        inline uint8_t* PointerAlign(uint8_t* pointer)
+        {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+            return reinterpret_cast<uint8_t*>(addr);
+        }
 
-    inline const uint8_t* PointerAlign(const uint8_t* pointer)
-    {
-        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
-        return reinterpret_cast<const uint8_t*>(addr);
-    }
+        inline const uint8_t* PointerAlign(const uint8_t* pointer)
+        {
+            uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+            addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+            return reinterpret_cast<const uint8_t*>(addr);
+        }
 
 #ifdef _UNICODE
-    typedef std::wstring string;
+        typedef std::wstring string;
 #endif
 
 #ifndef _UNICODE
-    typedef std::string string;
+        typedef std::string string;
 #endif
 
-    inline void ToUpper(const string& input, string& output)
-    {
-        // Copy string to output, so we know memory is allocated.
-        output = input;
+        inline void ToUpper(const string& input, string& output)
+        {
+            // Copy string to output, so we know memory is allocated.
+            output = input;
 
-        std::transform(input.begin(), input.end(), output.begin(), ::toupper);
-    }
+            std::transform(input.begin(), input.end(), output.begin(), ::toupper);
+        }
 
-    inline void ToUpper(string& inplace)
-    {
-        std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::toupper);
-    }
+        inline void ToUpper(string& inplace)
+        {
+            std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::toupper);
+        }
 
-    inline void ToLower(const string& input, string& output)
-    {
-        output = input;
+        inline void ToLower(const string& input, string& output)
+        {
+            output = input;
 
-        std::transform(input.begin(), input.end(), output.begin(), ::tolower);
-    }
+            std::transform(input.begin(), input.end(), output.begin(), ::tolower);
+        }
 
-    inline void ToLower(string& inplace)
-    {
-        std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
-    }
+        inline void ToLower(string& inplace)
+        {
+            std::transform(inplace.begin(), inplace.end(), inplace.begin(), ::tolower);
+        }
 
-    EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
-    EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
-    EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
+        EXTERNAL extern string Format(const TCHAR formatter[], ...) PRINTF_FORMAT(1, 2);
+        EXTERNAL extern void Format(string& dst, const TCHAR format[], ...) PRINTF_FORMAT(2, 3);
+        EXTERNAL extern void Format(string& dst, const TCHAR format[], va_list ap);
 
-    const uint32_t infinite = -1;
-    static const string emptyString;
+        const uint32_t infinite = -1;
+        static const string emptyString;
 
-    class Void {
-    public:
-        template <typename... Args>
-        inline Void(Args&&...) {}
-        inline Void(const Void&) = default;
-        inline Void(Void&&) = default;
-        inline ~Void() = default;
+        class Void {
+        public:
+            template <typename... Args>
+            inline Void(Args&&...) {}
+            inline Void(const Void&) = default;
+            inline Void(Void&&) = default;
+            inline ~Void() = default;
 
-        inline Void& operator=(const Void&) = default;
-    };
+            inline Void& operator=(const Void&) = default;
+        };
 
-    struct EXTERNAL IReferenceCounted {
-        virtual ~IReferenceCounted() = default;
-        virtual uint32_t AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
-    };
+        struct EXTERNAL IReferenceCounted {
+            virtual ~IReferenceCounted() = default;
+            virtual uint32_t AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
+        };
 
     struct EXTERNAL IUnknown : public IReferenceCounted  {
 
-        enum : uint32_t {
+            enum : uint32_t {
             ID_OFFSET_INTERNAL  = 0x00000000,
             ID_OFFSET_PUBLIC    = 0x00000040,
             ID_OFFSET_CUSTOM    = 0x80000000
+            };
+
+            enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
+
+            ~IUnknown() override = default;
+
+            virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
+
+            template <typename REQUESTEDINTERFACE>
+            REQUESTEDINTERFACE* QueryInterface()
+            {
+                void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
+
+            template <typename REQUESTEDINTERFACE>
+            const REQUESTEDINTERFACE* QueryInterface() const
+            {
+                const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
+
+                if (baseInterface != nullptr) {
+                    return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
+                }
+
+                return (nullptr);
+            }
         };
 
-        enum { ID = (ID_OFFSET_INTERNAL + 0x0000) };
-
-        ~IUnknown() override = default;
-
-        virtual void* QueryInterface(const uint32_t interfaceNumber) = 0;
-
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* QueryInterface()
-        {
-            void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
-
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-
-        template <typename REQUESTEDINTERFACE>
-        const REQUESTEDINTERFACE* QueryInterface() const
-        {
-            const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
-
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-    };
-
-    namespace memory_order {
-    #ifdef __WINDOWS__
-        static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
-        static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
-        static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_seq_cst;
-        static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
-    #else
+        namespace memory_order {
+#ifdef __WINDOWS__
+            static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
+            static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
+            static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_seq_cst;
+            static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
+#else
         static constexpr std::memory_order memory_order_relaxed = std::memory_order::memory_order_relaxed;
         static constexpr std::memory_order memory_order_consume = std::memory_order::memory_order_consume;
         static constexpr std::memory_order memory_order_acquire = std::memory_order::memory_order_acquire;
         static constexpr std::memory_order memory_order_release = std::memory_order::memory_order_release;
         static constexpr std::memory_order memory_order_acq_rel = std::memory_order::memory_order_acq_rel;
         static constexpr std::memory_order memory_order_seq_cst = std::memory_order::memory_order_seq_cst;
-    #endif
-    }
+#endif
+        }
 
-    #define COM_ERROR (0x80000000)
-
-    #define ERROR_CODES \
-        ERROR_CODE(ERROR_NONE, 0) \
-        ERROR_CODE(ERROR_GENERAL, 1) \
-        ERROR_CODE(ERROR_UNAVAILABLE, 2) \
-        ERROR_CODE(ERROR_ASYNC_FAILED, 3) \
-        ERROR_CODE(ERROR_ASYNC_ABORTED, 4) \
-        ERROR_CODE(ERROR_ILLEGAL_STATE, 5) \
-        ERROR_CODE(ERROR_OPENING_FAILED, 6) \
-        ERROR_CODE(ERROR_ACCEPT_FAILED, 7) \
-        ERROR_CODE(ERROR_PENDING_SHUTDOWN, 8) \
-        ERROR_CODE(ERROR_ALREADY_CONNECTED, 9) \
-        ERROR_CODE(ERROR_CONNECTION_CLOSED, 10) \
-        ERROR_CODE(ERROR_TIMEDOUT, 11) \
-        ERROR_CODE(ERROR_INPROGRESS, 12) \
-        ERROR_CODE(ERROR_COULD_NOT_SET_ADDRESS, 13) \
-        ERROR_CODE(ERROR_INCORRECT_HASH, 14) \
-        ERROR_CODE(ERROR_INCORRECT_URL, 15) \
-        ERROR_CODE(ERROR_INVALID_INPUT_LENGTH, 16) \
-        ERROR_CODE(ERROR_DESTRUCTION_SUCCEEDED, 17) \
-        ERROR_CODE(ERROR_DESTRUCTION_FAILED, 18) \
-        ERROR_CODE(ERROR_CLOSING_FAILED, 19) \
-        ERROR_CODE(ERROR_PROCESS_TERMINATED, 20) \
-        ERROR_CODE(ERROR_PROCESS_KILLED, 21) \
-        ERROR_CODE(ERROR_UNKNOWN_KEY, 22) \
-        ERROR_CODE(ERROR_INCOMPLETE_CONFIG, 23) \
-        ERROR_CODE(ERROR_PRIVILIGED_REQUEST, 24) \
-        ERROR_CODE(ERROR_RPC_CALL_FAILED, 25) \
-        ERROR_CODE(ERROR_UNREACHABLE_NETWORK, 26) \
-        ERROR_CODE(ERROR_REQUEST_SUBMITTED, 27) \
-        ERROR_CODE(ERROR_UNKNOWN_TABLE, 28) \
-        ERROR_CODE(ERROR_DUPLICATE_KEY, 29) \
-        ERROR_CODE(ERROR_BAD_REQUEST, 30) \
-        ERROR_CODE(ERROR_PENDING_CONDITIONS, 31) \
-        ERROR_CODE(ERROR_SURFACE_UNAVAILABLE, 32) \
-        ERROR_CODE(ERROR_PLAYER_UNAVAILABLE, 33) \
-        ERROR_CODE(ERROR_FIRST_RESOURCE_NOT_FOUND, 34) \
-        ERROR_CODE(ERROR_SECOND_RESOURCE_NOT_FOUND, 35) \
-        ERROR_CODE(ERROR_ALREADY_RELEASED, 36) \
-        ERROR_CODE(ERROR_NEGATIVE_ACKNOWLEDGE, 37) \
-        ERROR_CODE(ERROR_INVALID_SIGNATURE, 38) \
-        ERROR_CODE(ERROR_READ_ERROR, 39) \
-        ERROR_CODE(ERROR_WRITE_ERROR, 40) \
-        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41) \
-        ERROR_CODE(ERROR_UNAUTHENTICATED, 42) \
-        ERROR_CODE(ERROR_NOT_EXIST, 43) \
-        ERROR_CODE(ERROR_NOT_SUPPORTED, 44) \
-        ERROR_CODE(ERROR_INVALID_RANGE, 45) \
-        ERROR_CODE(ERROR_HIBERNATED, 46) \
-        ERROR_CODE(ERROR_INPROC, 47) \
-        ERROR_CODE(ERROR_FAILED_REGISTERED, 48) \
-        ERROR_CODE(ERROR_FAILED_UNREGISTERED, 49) \
-        ERROR_CODE(ERROR_PARSE_FAILURE, 50) \
-        ERROR_CODE(ERROR_PRIVILIGED_DEFERRED, 51) \
-        ERROR_CODE(ERROR_INVALID_ENVELOPPE, 52) \
-        ERROR_CODE(ERROR_UNKNOWN_METHOD, 53) \
-        ERROR_CODE(ERROR_INVALID_PARAMETER, 54) \
-        ERROR_CODE(ERROR_INTERNAL_JSONRPC, 55) \
-        ERROR_CODE(ERROR_PARSING_ENVELOPPE, 56) \
-        ERROR_CODE(ERROR_COMPOSIT_OBJECT, 57) \
-        ERROR_CODE(ERROR_ABORTED, 58)
-
-    #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
-
-    enum ErrorCodes {
-        ERROR_CODES
-        ERROR_COUNT
-    };
-
-    #undef ERROR_CODE
-
-    // Convert error enumerations to string
-
-    template<uint32_t N>
-    inline const TCHAR* _Err2Str()
-    {
-        return _T("");
-    };
-
-    #define ERROR_CODE(CODE, VALUE) \
-        template<> inline const TCHAR* _Err2Str<VALUE>() { return _T(#CODE); }
-
-    ERROR_CODES;
-
-    template<uint32_t N = (ERROR_COUNT - 1)>
-    inline const TCHAR* _bogus_ErrorToString(uint32_t code)
-    {
-        return (code == N? _Err2Str<N>() : _bogus_ErrorToString<N-1>(code));
-    };
-
-    template<>
-    inline const TCHAR* _bogus_ErrorToString<0u>(uint32_t code)
-    {
-        return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
-    };
-
-    inline const TCHAR* ErrorToString(Core::hresult code)
-    {
-        return _bogus_ErrorToString<>(code & (~COM_ERROR));
-    }
-
-    #undef ERROR_CODE
 
     EXTERNAL TextFragment Demangled(const char name[]); 
     EXTERNAL TextFragment ClassName(const char name[]); 
@@ -1031,6 +932,8 @@ namespace Core {
     
 }
 }
+
+// code to make (to some extend) old code whioch still uses the WPEFramework instead of Thunder still compile
 
 namespace WPEFramework {
     using namespace Thunder;

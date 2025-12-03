@@ -26,7 +26,7 @@
 namespace Thunder {
 namespace Core {
 
-    typedef DEPRECATED pid_t process_t;
+    typedef pid_t process_t;
 
     class EXTERNAL ProcessInfo {
     public:

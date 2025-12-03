@@ -38,13 +38,13 @@ namespace Thunder {
 
                 enum { ID = RPC::ID_DISPATCHER_CALLBACK };
 
-                virtual Core::hresult Event(const string& event, const string& designator, const string& parameters /* @restrict:(4M-1) */) = 0;
+                virtual Core::hresult Event(const string& event, const string& designator, const string& index, const string& parameters /* @restrict:(4M-1) */) = 0;
             };
 
             virtual uint32_t Invoke(const uint32_t channelid, const uint32_t id, const string& token, const string& method, const string& parameters, string& response /* @out */) = 0;
 
-            virtual Core::hresult Subscribe(ICallback* callback, const string& event, const string& designator) = 0;
-            virtual Core::hresult Unsubscribe(ICallback* callback, const string& event, const string& designator) = 0;
+            virtual Core::hresult Subscribe(ICallback* callback, const string& event, const string& designator, const string& index) = 0;
+            virtual Core::hresult Unsubscribe(ICallback* callback, const string& event, const string& designator, const string& index) = 0;
 
             // Lifetime managment of the IDispatcher.
             // Attach is to be called prior to receiving JSONRPC requests!

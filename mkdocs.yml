@@ -65,6 +65,7 @@ nav:
     - Processes: utils/processes.md
     - Protocols:
       - WebSocket: rfc/websocket.md
+    - Custom Codes: utils/customcodes.md
   - Client Development:
     - Introduction: client/intro.md
     - JSON-RPC App: client/json-rpc.md

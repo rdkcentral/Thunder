@@ -329,16 +329,16 @@ namespace Plugin {
         Core::hresult Subsystems(ISubsystems::ISubsystemsIterator*& outSubsystems) const override;
 
         // JSONRPCSupportsEventStatus overrides
-        void OnStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        void OnStateChangeEventRegistration(const string& client, const Core::OptionalType<string>& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
-                SendInitialStateSnapshot(client);
+                SendInitialStateSnapshot(client, index);
             }
         }
-        void OnStateControlStateChangeEventRegistration(const string& client, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
+        void OnStateControlStateChangeEventRegistration(const string& client, const Core::OptionalType<string>& index, const PluginHost::JSONRPCSupportsEventStatus::Status status) override
         {
             if (status == PluginHost::JSONRPCSupportsEventStatus::Status::registered) {
-                SendInitialStateControlSnapshot(client);
+                SendInitialStateControlSnapshot(client, index);
             }
         }
 
@@ -349,7 +349,7 @@ namespace Plugin {
         Core::hresult CallStack(const uint8_t threadId, IMetadata::Data::ICallStackIterator*& callstack) const override;
         Core::hresult Threads(IMetadata::Data::IThreadsIterator*& threads) const override;
         Core::hresult PendingRequests(IMetadata::Data::IPendingRequestsIterator*& requests) const override;
-        Core::hresult Version(IMetadata::Data::Version& version) const override;
+        Core::hresult Framework(IMetadata::Data::Version& version) const override;
         Core::hresult BuildInfo(IMetadata::Data::BuildInfo& buildInfo) const override;
 
         // IShells overrides
@@ -397,8 +397,8 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StartupResume(const string& callsign, PluginHost::IShell* plugin);
         void NotifyStateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void SendInitialStateSnapshot(const string& client);
-        void SendInitialStateControlSnapshot(const string& client);
+        void SendInitialStateSnapshot(const string& client, const Core::OptionalType<string>& callsign);
+        void SendInitialStateControlSnapshot(const string& client, const Core::OptionalType<string>& callsign);
 
     private:
         Core::CriticalSection _adminLock;
