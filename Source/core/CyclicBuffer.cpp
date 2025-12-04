@@ -264,11 +264,13 @@ namespace Core {
             // Possible narrowing conversion
             static_assert(__cplusplus < 201703L, "C++17 has well-defined type and ranges");
 
+#ifdef __DEBUG__
             using common_sec_t = std::common_type<time_t, decltype(seconds.count())>::type;
             ASSERT(static_cast<common_sec_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_sec_t>(seconds.count()));
 
             using common_nsec_t = std::common_type<long, decltype(nanoseconds.count())>::type;
             ASSERT(static_cast<common_nsec_t>(std::numeric_limits<long>::max()) >= static_cast<common_nsec_t>(nanoseconds.count()));
+#endif
 
             struct timespec structTime;
             structTime.tv_sec = static_cast<time_t>(seconds.count());
