@@ -3815,7 +3815,9 @@ namespace Core {
             {
                 JSONElementList::iterator index(_data.begin());
 
-                while ((index != _data.end()) && (index->first != label)) {
+                while (   (index != _data.end()) 
+                       && (strncmp(index->first, label, std::min(strlen(label), strlen(index->first))) != 0)
+                ) {
                     index++;
                 }
 
@@ -4861,7 +4863,9 @@ namespace Core {
 
             bool HasLabel(const TCHAR labelName[]) const
             {
-                return (Find(labelName) != _elements.end());
+                return (   Find(labelName) != _elements.end()
+                        && Container::HasLabel(labelName) != false
+                       );
             }
 
             Iterator Variants() const
@@ -4875,6 +4879,17 @@ namespace Core {
                 _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
+
+
+            void Remove(const TCHAR label[])
+            {
+                Elements::iterator index = Find(label);
+                if (index != _elements.end()) {
+                    _elements.erase(index);
+                }
+
+                Container::Remove(label);
+            }
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])
