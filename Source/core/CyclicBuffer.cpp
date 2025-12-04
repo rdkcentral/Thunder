@@ -257,17 +257,29 @@ namespace Core {
         uint32_t result = 0;
 
         if (waitTime != Core::infinite) {
-#ifdef __POSIX__
             auto start = std::chrono::steady_clock::now();
             auto finish = start + std::chrono::milliseconds(waitTime);
 
             auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(finish.time_since_epoch());
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(finish.time_since_epoch());
 
-            struct timespec structTime = { seconds.count(), (nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count() };
+            // Possible narrowing conversion
+            static_assert(__cplusplus < 201703L, "C++17 has well-defined type and ranges");
 
+#ifdef __DEBUG__
+            using common_sec_t = std::common_type<time_t, decltype(seconds.count())>::type;
+            ASSERT(static_cast<common_sec_t>(std::numeric_limits<time_t>::max()) >= static_cast<common_sec_t>(seconds.count()));
+
+            using common_nsec_t = std::common_type<long, decltype(nanoseconds.count())>::type;
+            ASSERT(static_cast<common_nsec_t>(std::numeric_limits<long>::max()) >= static_cast<common_nsec_t>(nanoseconds.count()));
+#endif
+
+            struct timespec structTime;
+            structTime.tv_sec = static_cast<time_t>(seconds.count());
+            structTime.tv_nsec = static_cast<long>((nanoseconds - std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)).count());
+
+#ifdef __POSIX__
             int retval = 0;
-
             if ((retval = pthread_cond_timedwait(&(_administration->_signal), &(_administration->_mutex), &structTime)) != 0) {
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
