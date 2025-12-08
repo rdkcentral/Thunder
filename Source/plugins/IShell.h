@@ -26,6 +26,7 @@
 #include <com/ICOM.h>
 
 // @insert <com/ICOM.h>
+// @insert "ISubSystem.h"
 
 namespace Thunder {
 
