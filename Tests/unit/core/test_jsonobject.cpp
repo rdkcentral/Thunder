@@ -101,6 +101,86 @@ namespace Core {
         EXPECT_FALSE(container.HasLabel("Age"));
     }
 
+    TEST(JSONOBJECT, KeyValueAccess)
+    {
+        JsonObject container;
+
+        ::Thunder::Core::JSON::Variant intType{ 123 };
+        ::Thunder::Core::JSON::Variant floatType{ 123.456f };
+        ::Thunder::Core::JSON::Variant doubleType{ 123.456 }; // defaults to double with omitted suffix
+        ::Thunder::Core::JSON::Variant boolType{ true };
+        ::Thunder::Core::JSON::Variant stringType{ "scribble" };
+
+        // An empty JsonObject is valid
+        EXPECT_TRUE(container.IsValid());
+
+        /* void */ container.Set("integer", intType);
+        /* void */ container.Set("float", floatType);
+        /* void */ container.Set("double", doubleType);
+        /* void */ container.Set("boolean", boolType);
+        /* void */ container.Set("string", stringType);
+
+        // All contained elements are valid
+        EXPECT_TRUE(container.IsValid());
+
+        ::Thunder::Core::JSON::Variant intFound     = container.Get("integer");
+        // Create and add if it does not exist otherwise return the existing element
+        ::Thunder::Core::JSON::Variant& intRefFound = container["integer"];
+
+        EXPECT_TRUE(intFound.Content() == ::Thunder::Core::JSON::Variant::type::NUMBER);
+        EXPECT_EQ(intFound.Number(), 123);
+        EXPECT_TRUE(intFound == intRefFound);
+
+        ::Thunder::Core::JSON::Variant floatFound = container.Get("float");
+        ::Thunder::Core::JSON::Variant& floatRefFound = container["float"];
+        EXPECT_TRUE(floatFound.Content() == ::Thunder::Core::JSON::Variant::type::FLOAT);
+        EXPECT_FLOAT_EQ(floatFound.Float(), 123.456);
+        EXPECT_TRUE(floatFound == floatRefFound);
+
+        ::Thunder::Core::JSON::Variant doubleFound = container.Get("double");
+        ::Thunder::Core::JSON::Variant& doubleRefFound = container["double"];
+        EXPECT_TRUE(doubleFound.Content() == ::Thunder::Core::JSON::Variant::type::DOUBLE);
+        EXPECT_FLOAT_EQ(doubleFound.Float(), 123.456);
+        EXPECT_TRUE(doubleFound == doubleRefFound);
+
+        ::Thunder::Core::JSON::Variant boolFound = container.Get("boolean");
+        ::Thunder::Core::JSON::Variant& boolRefFound = container["boolean"];
+        EXPECT_TRUE(boolFound.Content() == ::Thunder::Core::JSON::Variant::type::BOOLEAN);
+        EXPECT_EQ(boolFound.Boolean(), true);
+        EXPECT_TRUE(boolFound == boolRefFound);
+
+        ::Thunder::Core::JSON::Variant stringFound = container.Get("string");
+        ::Thunder::Core::JSON::Variant& stringRefFound = container["string"];
+        EXPECT_TRUE(stringFound.Content() == ::Thunder::Core::JSON::Variant::type::STRING);
+        EXPECT_STREQ(stringFound.String().c_str(), "scribble");
+        EXPECT_TRUE(stringFound == stringRefFound);
+
+        container.Clear();
+
+        // It does not exist so a default constructed variant is returned
+        // Create and add a default variant with the label 'integer'
+        ::Thunder::Core::JSON::Variant& intRefCreated = container["integer"];
+        EXPECT_TRUE(container.HasLabel("integer"));
+        EXPECT_TRUE(intRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+
+        ::Thunder::Core::JSON::Variant& floatRefCreated = container["float"];
+        EXPECT_TRUE(container.HasLabel("float"));
+        EXPECT_TRUE(floatRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+
+        ::Thunder::Core::JSON::Variant& doubleRefCreated = container["double"];
+        EXPECT_TRUE(container.HasLabel("double"));
+        EXPECT_TRUE(doubleRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+
+        ::Thunder::Core::JSON::Variant& boolRefCreated = container["boolean"];
+        EXPECT_TRUE(container.HasLabel("boolean"));
+        EXPECT_TRUE(boolRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+
+        ::Thunder::Core::JSON::Variant& stringRefCreated = container["string"];
+        EXPECT_TRUE(container.HasLabel("string"));
+        EXPECT_TRUE(stringRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+    }
+
+
 } // Core
 } // Tests
 } // Thunder
