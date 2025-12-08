@@ -33,7 +33,7 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-    TEST(METROL_1231, FirstKeyRemove)
+    TEST(JSONOBJECT, FirstKeyRemove)
     {
         const std::string keyValues = R"({"Name": "Your full name", "Age": 0, "Gender": "Undisclosed"})";
 
@@ -50,7 +50,7 @@ namespace Core {
         EXPECT_FALSE(container.HasLabel("Name"));
     }
 
-    TEST(METROL_1231, SecondKeyRemove)
+    TEST(JSONOBJECT, SecondKeyRemove)
     {
         const std::string keyValues = R"({"Name": "Your full name", "Age": 0, "Gender": "Undisclosed"})";
 
@@ -67,7 +67,7 @@ namespace Core {
         EXPECT_FALSE(container.HasLabel("Age"));
     }
 
-    TEST(METROL_1231, ThirdKeyRemove)
+    TEST(JSONOBJECT, ThirdKeyRemove)
     {
         const std::string keyValues = R"({"Name": "Your full name", "Age": 0, "Gender": "Undisclosed"})";
 
@@ -84,7 +84,7 @@ namespace Core {
         EXPECT_FALSE(container.HasLabel("Gender"));
     }
 
-    TEST(METROL_1231, IdenticalKeyValueRemove)
+    TEST(JSONOBJECT, IdenticalKeyValueRemove)
     {
         const std::string keyValues = R"({"Name": "Your full name", "Age": "Age", "Gender": "Undisclosed"})";
 
