@@ -19,6 +19,7 @@
 
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
+#include "Thread.h"
 
 namespace Thunder {
 namespace Core {
@@ -64,7 +65,10 @@ namespace Core {
 
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
@@ -154,6 +158,11 @@ namespace Core {
 
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
 
                 pthread_mutexattr_t mutex_attr;
 
@@ -315,10 +324,11 @@ namespace Core {
 #else
             ReleaseSemaphore(_signal, _administration->_agents.load(), nullptr);
 #endif
+            uint8_t count = 0;
 
             // Wait till all waiters have seen the trigger..
             while (_administration->_agents.load() > 0) {
-                std::this_thread::yield();
+                Core::Thread::Yield(count);
             }
         }
     }

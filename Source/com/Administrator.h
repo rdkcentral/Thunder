@@ -131,6 +131,7 @@ namespace RPC {
         using ReferenceMap = std::unordered_map<uint32_t, std::list< RecoverySet > >;
         using Stubs = std::unordered_map<uint32_t, ProxyStub::UnknownStub*>;
         using Factories = std::unordered_map<uint32_t, IMetadata*>;
+        using Danglings = std::vector<std::pair<uint32_t, Core::IUnknown*>>;
 
     public:
         Administrator(Administrator&&) = delete;
@@ -233,7 +234,7 @@ POP_WARNING()
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Proxies& pendingProxies);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, Danglings& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl)
@@ -495,14 +496,25 @@ POP_WARNING()
             Core::ProxyType<Job> job(Job::Instance());
 
             job->Set(source, message);
-            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
+
+            if (source.InProgress() == true) {
+                // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
+                // the priority as we might be causing a deadlock if the workerpool would be stuffed.
+                TRACE_L1("COM-RPC: channel is already occupied, as it has an outgoing COM-RPC call; raising priority to High");
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::High);
+            }
+            else {
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::ThreadPool::Priority::Low);
+            }
         }
 
     private:
         Core::IWorkerPool& _threadPoolEngine;
     };
 
-    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
+    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS,
+              const uint8_t LOWPRIORITYTHREADCOUNT = (THREADPOOLCOUNT > 2 ? (THREADPOOLCOUNT - 1) : 1),
+              const uint8_t MEDIUMPRIORITYTHREADCOUNT = (THREADPOOLCOUNT > 2 ? (THREADPOOLCOUNT - 1) : 1)>
     class InvokeServerType : public IIPCServer {
     private:
         class Dispatcher : public Core::ThreadPool::IDispatcher {
@@ -526,20 +538,23 @@ POP_WARNING()
         };
 
     public:
-        InvokeServerType(InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
-        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
-        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&&) = delete;
-        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType(InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&&) = delete;
+        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>& operator=(InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&&) = delete;
+        InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>& operator=(const InvokeServerType<THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT>&) = delete;
 
         InvokeServerType()
             : _dispatcher()
-            , _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr)
+            , _threadPoolEngine(THREADPOOLCOUNT, STACKSIZE, MESSAGESLOTS, &_dispatcher, nullptr, nullptr, nullptr, LOWPRIORITYTHREADCOUNT, MEDIUMPRIORITYTHREADCOUNT)
         {
+            static_assert(THREADPOOLCOUNT > 0, "ThreadPool count has to be above zero");
+
             _threadPoolEngine.Run();
         }
         ~InvokeServerType() override
         {
             _threadPoolEngine.Stop();
+            _threadPoolEngine.WaitForStop();
         }
         void Submit(const Core::ProxyType<Core::IDispatch>& job) override {
             _threadPoolEngine.Submit(job, Core::infinite);
@@ -552,7 +567,7 @@ POP_WARNING()
         }
 
         void Stop() {
-             _threadPoolEngine.Stop();
+            _threadPoolEngine.Stop();
         }
 
     private:
@@ -567,7 +582,15 @@ POP_WARNING()
             Core::ProxyType<RPC::Job> job(Job::Instance());
 
             job->Set(source, message);
-            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
+
+            if (source.InProgress() == true) {
+                // If this is on an already occupied channel, it has an outgoing COM-RPC call, raise
+                // the priority as we might be causing a deadlock if the workerpool would be stuffed.
+                TRACE_L1("COM-RPC: channel is already occupied, as it has an outgoing COM-RPC call; raising priority to High");
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::High);
+            } else {
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite, Core::ThreadPool::Priority::Low);
+            }
         }
 
     private:

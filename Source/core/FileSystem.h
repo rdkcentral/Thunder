@@ -444,7 +444,8 @@ namespace Core {
                 Close();
 
 #ifdef __POSIX__
-                result = (remove(_name.c_str()) == 0);
+               int errval{0};
+               result = ((errval = remove(_name.c_str())) == 0) || (errval == -1 && (errno == ENOENT));
 #endif
 #ifdef __WINDOWS__
                 result = (::DeleteFile(_name.c_str()) != FALSE);
@@ -525,7 +526,7 @@ namespace Core {
 #endif
 #ifdef __WINDOWS__
             DWORD readBytes = 0;
-            ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
+            (void) ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
             return static_cast<uint32_t>(readBytes);
 #endif
         }

@@ -20,6 +20,8 @@
 #include "Library.h"
 #include "Sync.h"
 #include "Trace.h"
+#include "Thread.h"
+#include "Time.h"
 
 #ifdef __LINUX__
 #include <fstream>
@@ -172,7 +174,7 @@ namespace Core {
         return (*this);
     }
 
-    void* Library::LoadFunction(const TCHAR functionName[])
+    void* Library::LoadFunction(const TCHAR functionName[]) const
     {
         void* function = nullptr;
 
@@ -202,6 +204,22 @@ namespace Core {
 #endif
 
         return (function);
+    }
+
+    uint32_t Library::WaitUnloaded(const uint32_t timeout)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        uint64_t now = Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond;
+        uint8_t count = 0;
+        while (IsLoaded() == true) {
+            Core::Thread::Yield(count, 100);
+            if ((timeout != Core::infinite) && ((Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond) - now > timeout)) {
+                result = Core::ERROR_TIMEDOUT;
+                break;
+            }
+        };
+
+        return result;
     }
 
     void Library::AddRef()

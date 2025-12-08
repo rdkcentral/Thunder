@@ -99,6 +99,39 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
+
+    uint32_t UnknownProxy::Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime) const
+    {
+        uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
+
+        _adminLock.Lock();
+	Core::ProxyType<Core::IPCChannel> channel (_channel);
+        _adminLock.Unlock();
+
+        if (channel.IsValid() == true) {
+
+	    if (channel->InProgress() == true) {
+	        ASSERT(false && "IPC in progress detected on this channel. Possible deadlock!");
+	        SYSLOG(Logging::Error, (_T("IPC in progress detected on this channel for Interface [0x%X], Method ID [0x%X]. Possible deadlock!"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+	    }
+
+	    result = channel->Invoke(message, waitTime);
+	    if (result != Core::ERROR_NONE) {
+
+	        if (result == Core::ERROR_TIMEDOUT) {
+		    Shutdown();
+	        }
+
+	        result |= COM_ERROR;
+
+	        // Oops something failed on the communication. Report it.
+	        TRACE_L1("IPC method invocation failed for 0x%X, Method ID 0x%X error: %d", message->Parameters().InterfaceId(), message->Parameters().MethodId(), result);
+	    }
+        }
+
+        return (result);
+    }
+
     uint32_t UnknownProxy::Id() const
     {
         uint32_t id = 0;
@@ -106,6 +139,19 @@ namespace ProxyStub {
             id = _channel->Id();
         }
         return (id);
+    }
+
+    void UnknownProxy::Shutdown() const
+    {
+        _adminLock.Lock();
+        if (_channel.IsValid() == true) {
+            RPC::Communicator::Client* comchannel = dynamic_cast<RPC::Communicator::Client*>(_channel.operator->());
+            if (comchannel != nullptr) {
+                SYSLOG(Logging::Error, (_T("Shutting down the socket to avoid side-effects likely because an IPC method Invoke failed due to timeout. Execution of code may or may not have happened.")));
+                comchannel->Source().Close(0);
+            }
+        }
+        _adminLock.Unlock();
     }
 
     static class UnknownInstantiation {

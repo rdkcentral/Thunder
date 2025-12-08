@@ -75,7 +75,7 @@ namespace Controller {
 
         // @brief Starts SSDP network discovery
         // @param ttl: Time to live, parameter for SSDP discovery
-        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @default:1 @restrict:1..255 */) = 0;
+        virtual Core::hresult StartDiscovery(const Core::OptionalType<uint8_t>& ttl /* @restrict:1..255 */) = 0;
 
         // @property
         // @brief SSDP network discovery results
@@ -110,21 +110,25 @@ namespace Controller {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = RPC::ID_CONTROLLER_LIFETIME_NOTIFICATION };
 
+            // @statuslistener
             // @brief Notifies of a plugin state change
-            // @param callsign: Plugin callsign
+            // @details If registered for empty callsign, notifications for all services will be sent.
+            // @param callsign: Plugin callsign (e.g. Messenger)
             // @param state: New state of the plugin
             // @param reason: Reason for state change
             virtual void StateChange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason) = 0;
 
+            // @statuslistener
             // @brief Notifies of a plugin state change controlled by IStateControl
-            // @param callsign: Plugin callsign
+            // @details If registered for empty callsign, notifications for all services will be sent.
+            // @param callsign: Plugin callsign (e.g. Messenger)
             // @param state: New state of the plugin
             // @param reason: Reason for state change
             virtual void StateControlStateChange(const string& callsign, const state& state) = 0;
         };
 
-        virtual Core::hresult Register(INotification* sink) = 0;
-        virtual Core::hresult Unregister(INotification* sink) = 0;
+        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
 
         // @brief Activates a plugin
         // @details Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state.
@@ -376,8 +380,9 @@ namespace Controller {
         virtual Core::hresult Proxies(const Core::OptionalType<string>& linkID /* @index */, Data::IProxiesIterator*& proxies /* @out */) const = 0;
 
         // @property
+        // @alt-deprecated:version
         // @brief Framework version
-        virtual Core::hresult Version(Data::Version& version /* @out */) const = 0;
+        virtual Core::hresult Framework(Data::Version& version /* @out */) const = 0;
 
         // @property
         // @brief Workerpool threads

@@ -1651,6 +1651,8 @@ POP_WARNING()
         void LoadProxyStubs(const string& pathName);
 
     public:
+        using Danglings = Administrator::Danglings;
+
         Communicator() = delete;
         Communicator(Communicator&&) = delete;
         Communicator(const Communicator&) = delete;
@@ -1667,6 +1669,7 @@ POP_WARNING()
             const Core::ProxyType<Core::IIPCServer>& handler,
             const TCHAR* sourceName = nullptr);
             virtual ~Communicator();
+
 
     public:
         // void action(const Client& client)
@@ -1740,18 +1743,13 @@ POP_WARNING()
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
-            Administrator::Proxies deadProxies;
+            Danglings deadProxies;
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
-                
-            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-            while (loop != deadProxies.end()) {
-                Dangling((*loop)->Parent(), (*loop)->InterfaceId());
 
-                // To avoid race conditions, the creation of the deadProxies took a reference
-                // on the interfaces, we presented here. Do not forget to release this reference.
-                (*loop)->Parent()->Release();
-                loop++;
+            if(!deadProxies.empty())
+            {
+                Dangling(std::move(deadProxies));
             }
         }
         virtual void* Acquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
@@ -1762,7 +1760,15 @@ POP_WARNING()
         }
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        virtual void Dangling(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
+        virtual void Dangling(Danglings&& proxies){
+            TRACE_L1("Implement this to gracefully handle the dangling proxies acquired through this channel!!!");
+            Danglings::const_iterator loop(proxies.begin());
+            while (loop != proxies.end()) {
+                // To avoid race conditions, the creation of the deadProxies took a reference
+                // on the interfaces, we presented here. Do not forget to release this reference.
+                (*loop).second->Release();
+                loop++;
+            }
         }
 
     private:
@@ -1991,18 +1997,12 @@ POP_WARNING()
 
         uint32_t Close(const uint32_t waitTime);
 
-        virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        virtual void* Acquire(const string&, const uint32_t, const uint32_t)
         {
-            Core::Library emptyLibrary;
-            // Allright, respond with the interface.
-            void* result = Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId);
-
-            if (result != nullptr) {
-                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
-                Administrator::Instance().RegisterInterface(baseChannel, result, interfaceId);
-            }
-
-            return (result);
+            // This would be a Server, asking a client for a service (interface)... Interesting. I guess the 
+	    // derived version of this interface should implement this :-)
+	    ASSERT(false);
+	    return (nullptr);
         }
 
     private:

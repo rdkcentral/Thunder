@@ -423,6 +423,14 @@ namespace Thunder {
         {
             TRACE_L5("Destructor SocketPort <%p>", (this));
 
+            // The Closed(), internal method, run on the ResourceMonitor thread,
+            // will lock and clear the m_State if applicable. We want to make sure
+            // that we can take the lock again, to make sure that the Closed() 
+            // released it. All methods, calling the Closed(), will nolonger refer 
+            // to any members or methods in this class, so it is safe to destruct
+            // after we have aquired the lock!
+            m_syncAdmin.Lock();
+
             // Make sure the socket is closed before you destruct. Otherwise
             // the virtuals might be called, which are destructed at this point !!!!
             ASSERT((m_Socket == INVALID_SOCKET) || (IsClosed()));
@@ -430,6 +438,7 @@ namespace Thunder {
             if (m_Socket != INVALID_SOCKET) {
                 DestroySocket(m_Socket);
             }
+            m_syncAdmin.Unlock();
 
             ::free(m_SendBuffer);
         }
@@ -1065,8 +1074,11 @@ namespace Thunder {
                 }
 
                 if ((IsForcedClosing() == true) && (Closed() == true)) {
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that 
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any* 
+                    // operation on the socket members anymore!!!
                     result = 0;
-                    m_State &= ~SocketPort::MONITOR;
                 }
                 else {
 
@@ -1092,6 +1104,10 @@ namespace Thunder {
 
 #ifdef __WINDOWS__
                 if ((flagsSet & FD_CLOSE) != 0) {
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that 
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any* 
+                    // operation on the socket members anymore!!!
                     Closed();
                 }
                 else if (IsListening()) {
@@ -1114,6 +1130,10 @@ namespace Thunder {
 #else
                 if ((flagsSet & POLLHUP) != 0) {
                     TRACE_L3("HUP event received on socket %u", static_cast<uint32_t>(m_Socket));
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that 
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any* 
+                    // operation on the socket members anymore!!!
                     Closed();
                 }
                 else if ((flagsSet & POLLRDHUP) != 0) {
@@ -1240,7 +1260,8 @@ namespace Thunder {
 
                 if (l_Size == 0) {
                     if ((m_State & SocketPort::LINK) != 0) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED );
+                        StateChange();
                     }
                 }
                 else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
@@ -1253,7 +1274,8 @@ namespace Thunder {
                         m_State |= SocketPort::READ;
                     }
                     else if (l_Result == __ERROR_CONNRESET__) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED);
+                        StateChange();
                     }
                     else if (l_Result != 0) {
                         printf("Read exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));
@@ -1284,6 +1306,7 @@ namespace Thunder {
             bool result = true;
 
             ASSERT(m_Socket != INVALID_SOCKET);
+            ASSERT(Core::Thread::ThreadId() == ResourceMonitor::Instance().Id());
 
             m_syncAdmin.Lock();
 
@@ -1295,24 +1318,27 @@ namespace Thunder {
 
             m_State &= (~SHUTDOWN);
 
+            // In StateChange, the socket may get destroyed and recreated and moved to 
+            // listening state. In such scenario, m_State will not be 0.
             if (m_State != 0) {
                 result = false;
-            }
-            else {
+            } else {
                 DestroySocket(m_Socket);
                 ResourceMonitor::Instance().Unregister(*this);
+
                 // Remove socket descriptor for UNIX domain datagram socket.
                 if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
                     ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
                     !m_SystemdSocket) {
                     TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
-#ifdef __WINDOWS__
+    #ifdef __WINDOWS__
                     _unlink(m_LocalNode.HostName().c_str());
-#else
+    #else
                     unlink(m_LocalNode.HostName().c_str());
-#endif
+    #endif
                 }
             }
+
 
             m_syncAdmin.Unlock();
 

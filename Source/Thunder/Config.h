@@ -123,7 +123,10 @@ namespace PluginHost {
                     , Priority(0)
                     , OOMAdjust(0)
                     , Policy()
+                    , ThreadPoolCount(THREADPOOL_COUNT)
                     , StackSize(0)
+                    , LowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+                    , MediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
                     , Umask(1)
                 {
                     Add(_T("user"), &User);
@@ -131,7 +134,10 @@ namespace PluginHost {
                     Add(_T("priority"), &Priority);
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
+                    Add(_T("threadpoolcount"), &ThreadPoolCount);
                     Add(_T("stacksize"), &StackSize);
+                    Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
+                    Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(const ProcessSet& copy)
@@ -141,7 +147,10 @@ namespace PluginHost {
                     , Priority(copy.Priority)
                     , OOMAdjust(copy.OOMAdjust)
                     , Policy(copy.Policy)
+                    , ThreadPoolCount(copy.ThreadPoolCount)
                     , StackSize(copy.StackSize)
+                    , LowPriorityThreadCount(copy.LowPriorityThreadCount)
+                    , MediumPriorityThreadCount(copy.MediumPriorityThreadCount)
                     , Umask(copy.Umask)
                 {
                     Add(_T("user"), &User);
@@ -149,7 +158,10 @@ namespace PluginHost {
                     Add(_T("priority"), &Priority);
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
+                    Add(_T("threadpoolcount"), &ThreadPoolCount);
                     Add(_T("stacksize"), &StackSize);
+                    Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
+                    Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
                     Add(_T("umask"), &Umask);
                 }
                 ProcessSet(ProcessSet&& move) noexcept
@@ -159,7 +171,10 @@ namespace PluginHost {
                     , Priority(std::move(move.Priority))
                     , OOMAdjust(std::move(move.OOMAdjust))
                     , Policy(std::move(move.Policy))
+                    , ThreadPoolCount(std::move(move.ThreadPoolCount))
                     , StackSize(std::move(move.StackSize))
+                    , LowPriorityThreadCount(std::move(move.LowPriorityThreadCount))
+                    , MediumPriorityThreadCount(std::move(move.MediumPriorityThreadCount))
                     , Umask(std::move(move.Umask))
                 {
                     Add(_T("user"), &User);
@@ -167,7 +182,10 @@ namespace PluginHost {
                     Add(_T("priority"), &Priority);
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
+                    Add(_T("threadpoolcount"), &ThreadPoolCount);
                     Add(_T("stacksize"), &StackSize);
+                    Add(_T("lowprioritythreadcount"), &LowPriorityThreadCount);
+                    Add(_T("mediumprioritythreadcount"), &MediumPriorityThreadCount);
                     Add(_T("umask"), &Umask);
                 }
 
@@ -180,7 +198,10 @@ namespace PluginHost {
                     Priority = RHS.Priority;
                     Policy = RHS.Policy;
                     OOMAdjust = RHS.OOMAdjust;
+                    ThreadPoolCount = RHS.ThreadPoolCount;
                     StackSize = RHS.StackSize;
+                    LowPriorityThreadCount = RHS.LowPriorityThreadCount;
+                    MediumPriorityThreadCount = RHS.MediumPriorityThreadCount;
                     Umask = RHS.Umask;
 
                     return (*this);
@@ -194,7 +215,10 @@ namespace PluginHost {
                         Priority = std::move(move.Priority);
                         Policy = std::move(move.Policy);
                         OOMAdjust = std::move(move.OOMAdjust);
+                        ThreadPoolCount = std::move(move.ThreadPoolCount);
                         StackSize = std::move(move.StackSize);
+                        LowPriorityThreadCount = std::move(move.LowPriorityThreadCount);
+                        MediumPriorityThreadCount = std::move(move.MediumPriorityThreadCount);
                         Umask = std::move(move.Umask);
                     }
                     return (*this);
@@ -205,7 +229,10 @@ namespace PluginHost {
                 Core::JSON::DecSInt8 Priority;
                 Core::JSON::DecSInt8 OOMAdjust;
                 Core::JSON::EnumType<Core::ProcessInfo::scheduler> Policy;
+                Core::JSON::DecUInt8 ThreadPoolCount;
                 Core::JSON::DecUInt32 StackSize;
+                Core::JSON::DecUInt8 LowPriorityThreadCount;
+                Core::JSON::DecUInt8 MediumPriorityThreadCount;
                 Core::JSON::DecUInt16 Umask;
             };
 
@@ -387,8 +414,9 @@ namespace PluginHost {
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
                 , DelegatedReleases(true)
-                , Throttle(0)
-                , ChannelThrottle(0)
+                , Throttle((Process.ThreadPoolCount.Value() > 1) ? (Process.ThreadPoolCount.Value() / 2) : 1)
+                , ChannelThrottle(((Process.ThreadPoolCount.Value() > 1) ? (Process.ThreadPoolCount.Value() / 2) : 1))
+                , MetadataDiscovery(true)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -396,6 +424,9 @@ namespace PluginHost {
                 , Observe()
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 , Hibernate()
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                , CustomCodeLibrary()
 #endif
             {
                 // No IdleTime
@@ -432,6 +463,7 @@ namespace PluginHost {
                 Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
                 Add(_T("throttle"), &Throttle);
                 Add(_T("channel_throttle"), &ChannelThrottle);
+                Add(_T("discovery"), &MetadataDiscovery);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -439,6 +471,9 @@ namespace PluginHost {
                 Add(_T("observe"), &Observe);
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 Add(_T("hibernate"), &Hibernate);
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                Add(_T("customcodelibrary"), &CustomCodeLibrary);
 #endif
             }
             ~JSONConfig() override = default;
@@ -479,6 +514,7 @@ namespace PluginHost {
             Core::JSON::Boolean DelegatedReleases;
             Core::JSON::DecUInt8 Throttle;
             Core::JSON::DecUInt8 ChannelThrottle;
+            Core::JSON::Boolean MetadataDiscovery;
 #ifdef PROCESSCONTAINERS_ENABLED
             Core::JSON::String ProcessContainers;
 #endif
@@ -486,6 +522,9 @@ namespace PluginHost {
             Observables Observe;
 #ifdef HIBERNATE_SUPPORT_ENABLED
             HibernateConfig Hibernate;
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            Core::JSON::String CustomCodeLibrary;
 #endif
         };
 
@@ -637,7 +676,10 @@ namespace PluginHost {
             , _softKillCheckWaitTime(3)
             , _hardKillCheckWaitTime(10)
             , _outOfProcessWaitTime(3000)
+            , _threadPoolCount(THREADPOOL_COUNT)
             , _stackSize(0)
+            , _lowPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
+            , _mediumPriorityThreadCount(THREADPOOL_COUNT > 1 ? THREADPOOL_COUNT - 1 : 1)
             , _inputInfo()
             , _processInfo()
             , _plugins()
@@ -645,14 +687,18 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
-            , _throttle(0)
-            , _channelThrottle(0)
+            , _throttle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
+            , _channelThrottle((_threadPoolCount > 1) ? (_threadPoolCount / 2) : 1)
+            , _metadataDiscovery(true)
 #ifdef PROCESSCONTAINERS_ENABLED
             , _processContainersConfig()
 #endif
             , _linkerPluginPaths()
 #ifdef HIBERNATE_SUPPORT_ENABLED
             , _hibernateLocator()
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            , _customCodeLibrary()
 #endif
         {
             JSONConfig config;
@@ -668,6 +714,9 @@ namespace PluginHost {
 #endif
 #ifdef HIBERNATE_SUPPORT_ENABLED
                 _hibernateLocator = config.Hibernate.Locator.Value();
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                _customCodeLibrary = config.CustomCodeLibrary.Value();
 #endif
                 _volatilePath = Core::Directory::Normalize(config.VolatilePath.Value());
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
@@ -693,13 +742,17 @@ namespace PluginHost {
                 _binding = config.Binding.Value();
                 _interface = config.Interface.Value();
                 _portNumber = config.Port.Value();
+                _threadPoolCount = config.Process.IsSet() ? config.Process.ThreadPoolCount.Value() : 4;
                 _stackSize = config.Process.IsSet() ? config.Process.StackSize.Value() : 0;
+                _lowPriorityThreadCount = config.Process.IsSet() ? config.Process.LowPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
+                _mediumPriorityThreadCount = config.Process.IsSet() ? config.Process.MediumPriorityThreadCount.Value() : (_threadPoolCount > 1 ? (_threadPoolCount - 1) : 1);
                 _inputInfo.Set(config.Input);
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
                 _delegatedReleases = config.DelegatedReleases.Value();
                 _throttle = config.Throttle.Value();
                 _channelThrottle = config.ChannelThrottle.Value();
+                _metadataDiscovery = config.MetadataDiscovery.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -804,6 +857,12 @@ namespace PluginHost {
             return (_hibernateLocator);
         }
 #endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        inline const string& CustomCodeLibrary() const
+        {
+            return (_customCodeLibrary);
+        }
+#endif
         inline const string& VolatilePath() const
         {
             return (_volatilePath);
@@ -898,8 +957,20 @@ namespace PluginHost {
         inline const string& URL() const {
             return (_URL);
         }
+        inline uint8_t ThreadPoolCount() const
+        {
+            return (_threadPoolCount);
+        }
         inline uint32_t StackSize() const {
             return (_stackSize);
+        }
+        inline uint8_t LowPriorityThreadCount() const
+        {
+            return (_lowPriorityThreadCount);
+        }
+        inline uint8_t MediumPriorityThreadCount() const
+        {
+            return (_mediumPriorityThreadCount);
         }
         inline string EthernetCard() const {
             return _ethernetCard;
@@ -912,6 +983,9 @@ namespace PluginHost {
         }
         inline uint8_t ChannelThrottle() const {
             return(_channelThrottle);
+        }
+        inline bool MetadataDiscovery() const {
+            return (_metadataDiscovery);
         }
         inline const InputInfo& Input() const {
             return(_inputInfo);
@@ -1083,7 +1157,10 @@ namespace PluginHost {
         uint8_t _softKillCheckWaitTime;
         uint8_t _hardKillCheckWaitTime;
         uint16_t _outOfProcessWaitTime;
+        uint8_t _threadPoolCount;
         uint32_t _stackSize;
+        uint8_t _lowPriorityThreadCount;
+        uint8_t _mediumPriorityThreadCount;
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;
@@ -1093,6 +1170,7 @@ namespace PluginHost {
         bool _delegatedReleases;
         uint8_t _throttle;
         uint8_t _channelThrottle;
+        bool _metadataDiscovery;
 
 #ifdef PROCESSCONTAINERS_ENABLED
         string _processContainersConfig;
@@ -1100,6 +1178,9 @@ namespace PluginHost {
         std::vector<std::string> _linkerPluginPaths;
 #ifdef HIBERNATE_SUPPORT_ENABLED
         string _hibernateLocator;
+#endif
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        string _customCodeLibrary;
 #endif
     };
 }

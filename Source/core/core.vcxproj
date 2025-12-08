@@ -24,6 +24,9 @@
     <ClInclude Include="CallsignTLS.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="Errors.h" />
+    <ClInclude Include="ExtraNumberDefinitions.h" />
+    <ClInclude Include="ICustomErrorCode.h" />
     <ClInclude Include="CyclicBuffer.h" />
     <ClInclude Include="DataBuffer.h" />
     <ClInclude Include="DataElement.h" />
@@ -97,7 +100,6 @@
     <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Trace.h" />
-    <ClInclude Include="TriState.h" />
     <ClInclude Include="TypeTraits.h" />
     <ClInclude Include="ValueRecorder.h" />
     <ClInclude Include="WarningReportingCategories.h" />
@@ -113,6 +115,7 @@
     <ClCompile Include="DataElementFile.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="DoorBell.cpp" />
+    <ClCompile Include="Errors.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
     <ClCompile Include="JSON.cpp" />

@@ -224,7 +224,10 @@ namespace ProxyStub {
                         result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                         if (result != Core::ERROR_NONE) {
-                            TRACE_L1("Could not remote release the Proxy.");
+                            if (result == Core::ERROR_TIMEDOUT) {
+                                Shutdown();
+                            }
+                            TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
                             result |= COM_ERROR;
                         }
                         else {
@@ -241,12 +244,10 @@ namespace ProxyStub {
                 _adminLock.Unlock();
 
                 // Remove our selves from the Administration, we are done..
-                bool removed = RPC::Administrator::Instance().UnregisterUnknownProxy(*this, channelId);
+                VARIABLE_IS_NOT_USED bool removed = RPC::Administrator::Instance().UnregisterUnknownProxy(*this, channelId);
 
-                ASSERT (removed == true);
-                if ( removed == true ) {
-                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-                }
+                ASSERT ((removed == true) || (_channel.IsValid() == false));
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             }
 
             return (result);
@@ -316,33 +317,9 @@ namespace ProxyStub {
 
             return (message);
         }
-        inline uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const
-        {
-    	    uint32_t result = Core::ERROR_UNAVAILABLE | COM_ERROR;
 
-            _adminLock.Lock();
-	        Core::ProxyType<Core::IPCChannel> channel (_channel);
-            _adminLock.Unlock();
+        uint32_t Invoke(Core::ProxyType<RPC::InvokeMessage>& message, const uint32_t waitTime = RPC::CommunicationTimeOut) const;
 
-            if (channel.IsValid() == true) {
-
-                result = channel->Invoke(message, waitTime);
-
-                if (result != Core::ERROR_NONE) {
-
-                    if (result == Core::ERROR_TIMEDOUT) {
-                        SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X). Execution of code may or may not have happened. Side effects are to be expected after this message"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
-                    }
-
-                    result |= COM_ERROR;
-
-                    // Oops something failed on the communication. Report it.
-                    TRACE_L1("IPC method invocation failed for 0x%X, error: %d", message->Parameters().InterfaceId(), result);
-                }
-            }
-
-            return (result);
-        }
         inline void Complete(RPC::Data::Setup& response)
         {
             uint32_t result = Release();
@@ -464,7 +441,9 @@ namespace ProxyStub {
             _adminLock.Unlock();
             return(succeeded);
         }
- 
+
+        void Shutdown() const;
+
     private:
         mutable Core::CriticalSection _adminLock;
         mutable uint32_t _refCount;
