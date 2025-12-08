@@ -157,6 +157,10 @@ namespace Core {
 
         container.Clear();
 
+        // The container should have nothing to index
+        ::Thunder::Core::JSON::VariantContainer::Iterator it = container.Variants();
+        EXPECT_FALSE(it.IsValid());
+
         // It does not exist so a default constructed variant is returned
         // Create and add a default variant with the label 'integer'
         ::Thunder::Core::JSON::Variant& intRefCreated = container["integer"];
