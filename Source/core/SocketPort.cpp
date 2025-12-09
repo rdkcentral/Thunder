@@ -1316,24 +1316,29 @@ namespace Thunder {
 
             StateChange();
 
-            DestroySocket(m_Socket);
-            ResourceMonitor::Instance().Unregister(*this);
-
-            // Remove socket descriptor for UNIX domain datagram socket.
-            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
-                ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
-                !m_SystemdSocket) {
-                TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
-#ifdef __WINDOWS__
-                _unlink(m_LocalNode.HostName().c_str());
-#else
-                unlink(m_LocalNode.HostName().c_str());
-#endif
-            }
-
             m_State &= (~SHUTDOWN);
 
-            ASSERT (m_State == 0);
+            // In StateChange, the socket may get destroyed and recreated and moved to 
+            // listening state. In such scenario, m_State will not be 0.
+            if (m_State != 0) {
+                result = false;
+            } else {
+                DestroySocket(m_Socket);
+                ResourceMonitor::Instance().Unregister(*this);
+
+                // Remove socket descriptor for UNIX domain datagram socket.
+                if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
+                    ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
+                    !m_SystemdSocket) {
+                    TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
+    #ifdef __WINDOWS__
+                    _unlink(m_LocalNode.HostName().c_str());
+    #else
+                    unlink(m_LocalNode.HostName().c_str());
+    #endif
+                }
+            }
+
 
             m_syncAdmin.Unlock();
 

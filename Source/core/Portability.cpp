@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "SystemInfo.h"
 #include "Serialization.h"
+//#include "Number.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -459,5 +460,7 @@ namespace Core {
 
         return (lastIndex < (index - 1) ? TextFragment(result, lastIndex + 1, result.Length() - (lastIndex + 1)) : result);
     }
+
+
 } // namespace Core
 } // namespace Thunder

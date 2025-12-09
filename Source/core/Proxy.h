@@ -26,6 +26,7 @@
 
 // ---- Include local include files ----
 #include "Portability.h"
+#include "Errors.h"
 #include "StateTrigger.h"
 #include "Sync.h"
 #include "TypeTraits.h"

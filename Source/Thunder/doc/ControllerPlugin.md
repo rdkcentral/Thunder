@@ -225,7 +225,7 @@ This method will return *True* for the following methods/properties: *environmen
   "id": 42,
   "method": "Controller.1.exists",
   "params": {
-    "method": "environment"
+    "method": "methodName"
   }
 }
 ```
@@ -279,7 +279,7 @@ This method supports the following event names: *[statechange](#notification_sta
   "id": 42,
   "method": "Controller.1.register",
   "params": {
-    "event": "statechange",
+    "event": "eventName",
     "id": "myapp"
   }
 }
@@ -334,7 +334,7 @@ This method supports the following event names: *[statechange](#notification_sta
   "id": 42,
   "method": "Controller.1.unregister",
   "params": {
-    "event": "statechange",
+    "event": "eventName",
     "id": "myapp"
   }
 }
@@ -1633,7 +1633,7 @@ If registered for empty callsign, notifications for all services will be sent.
 
 ### Parameters
 
-> The *callsign* parameter shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
+> The *callsign* parameter is optional. If set it shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
 
 ### Notification Parameters
 
@@ -1642,7 +1642,7 @@ If registered for empty callsign, notifications for all services will be sent.
 | params | object | mandatory | *...* |
 | params?.callsign | string | optional | Plugin callsign |
 | params.state | string | mandatory | New state of the plugin (must be one of the following: *Activated, Deactivated, Unavailable*) |
-| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
+| params.reason | string | mandatory | Reason for state change (must be one of the following: *Automatic, Conditions, Failure, InitializationFailed, InstantiationFailed, MemoryExceeded, Requested, Shutdown, Startup, WatchdogExpired*) |
 
 ### Example
 
@@ -1676,6 +1676,8 @@ If registered for empty callsign, notifications for all services will be sent.
 
 > The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statechange@<callsign>``.
 
+> The *callsign* parameter is optionally passed as index within the notification designator, i.e. ``<client-id>.statechange@<callsign>``.
+
 <a id="notification_statecontrolstatechange"></a>
 ## *statecontrolstatechange [<sup>notification</sup>](#head_Notifications)*
 
@@ -1689,7 +1691,7 @@ If registered for empty callsign, notifications for all services will be sent.
 
 ### Parameters
 
-> The *callsign* parameter shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
+> The *callsign* parameter is optional. If set it shall be passed as index to the ``register`` call, i.e. ``register@<callsign>``.
 
 ### Notification Parameters
 
@@ -1729,6 +1731,8 @@ If registered for empty callsign, notifications for all services will be sent.
 ```
 
 > The *client ID* parameter is passed within the notification designator, i.e. ``<client-id>.statecontrolstatechange@<callsign>``.
+
+> The *callsign* parameter is optionally passed as index within the notification designator, i.e. ``<client-id>.statecontrolstatechange@<callsign>``.
 
 <a id="notification_subsystemchange"></a>
 ## *subsystemchange [<sup>notification</sup>](#head_Notifications)*

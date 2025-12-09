@@ -136,6 +136,66 @@ POP_WARNING()
         Core::AdapterObserver _observer;
     };
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    class CustomCodeLibrary {
+    public:
+
+        CustomCodeLibrary(const CustomCodeLibrary&) = delete;
+        CustomCodeLibrary& operator=(const CustomCodeLibrary&) = delete;
+        CustomCodeLibrary(CustomCodeLibrary&&) = delete;
+        CustomCodeLibrary& operator=(CustomCodeLibrary&&) = delete;
+
+        CustomCodeLibrary()
+            : _customCodeLibrary()
+            , _customCodeToStringHandler(nullptr)
+        {
+        }
+        ~CustomCodeLibrary()
+        {
+            ASSERT(_customCodeToStringHandler == nullptr);
+            ASSERT(_customCodeLibrary.IsLoaded() == false);
+        }
+
+        void Load(const string& libraryPath)
+        {
+            ASSERT(_customCodeToStringHandler == nullptr);
+            ASSERT(_customCodeLibrary.IsLoaded() == false);
+
+            _customCodeLibrary = Core::Library(libraryPath.c_str());
+            if (_customCodeLibrary.IsLoaded() == true) {
+                _customCodeToStringHandler = reinterpret_cast<Core::CustomCodeToStringHandler>(_customCodeLibrary.LoadFunction(CustomCodeToStringName));
+                if (_customCodeToStringHandler != nullptr) {
+                    Core::SetCustomCodeToStringHandler(_customCodeToStringHandler);
+                } else {
+                    SYSLOG(Logging::Error, (_T("Could not find CustomCodeToString function in Custom Error Code library")));
+                    _customCodeLibrary = Core::Library();
+                }
+            } else {
+                SYSLOG(Logging::Error, (_T("Could not load Custom Error Code library")));
+            }
+        }
+
+        void Release()
+        {
+            if (_customCodeToStringHandler != nullptr) {
+                Core::SetCustomCodeToStringHandler(nullptr);
+                _customCodeToStringHandler = nullptr;
+            }
+            if (_customCodeLibrary.IsLoaded() == true) {
+                _customCodeLibrary = Core::Library();
+            }
+        }
+
+    private:
+        static constexpr const TCHAR* CustomCodeToStringName{ _T("CustomCodeToString") };
+
+        Core::Library _customCodeLibrary;
+        Core::CustomCodeToStringHandler _customCodeToStringHandler;
+    };
+
+#endif
+
     class ExitHandler : public Core::Thread {
     private:
         ExitHandler() = delete;
@@ -596,6 +656,10 @@ POP_WARNING()
             }
         }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        CustomCodeLibrary customcodelibraryhandler;
+#endif
+
         if (_config != nullptr) {
 
             if (_config->Process().IsSet() == true) {
@@ -645,6 +709,12 @@ POP_WARNING()
             if (postMortemPath.Next() != true) {
                 postMortemPath.CreatePath();
             }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            if (_config->CustomCodeLibrary().empty() == false) {
+                customcodelibraryhandler.Load(_config->CustomCodeLibrary());
+            }
+#endif
 
             MessagingInitialization(options.configFile, options.flushMode);
 
@@ -1031,6 +1101,10 @@ POP_WARNING()
             fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
             fflush(stderr);
         }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+         customcodelibraryhandler.Release();
+#endif
  
         ExitHandler::Destruct();
         std::set_terminate(nullptr);
