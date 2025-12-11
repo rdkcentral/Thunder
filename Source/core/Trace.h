@@ -285,14 +285,20 @@ namespace Thunder {
             Core::LogMessage(Core::ToString(__FILE__).c_str(), __LINE__, MESSAGE)); \
     }
 
+#define CC_SYSLOG_COMMON(format, ...)                                       \
+    do {                                                                    \
+        fprintf(stderr, "CRITICAL CONDITION! " format "\n", ##__VA_ARGS__); \
+        fflush(stderr);                                                     \
+    } while(0)
+
 #ifdef __WINDOWS__
-    #define CC_SYSLOG(format, ...)                                              \
-        do {                                                                    \
-            fprintf(stderr, "CRITICAL CONDITION! " format "\n", ##__VA_ARGS__); \
-            fflush(stderr);                                                     \
-        } while(0)
+    #define CC_SYSLOG(format, ...) CC_SYSLOG_COMMON(format, ##__VA_ARGS__)
 #else
-    #define CC_SYSLOG(format, ...) syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__)
+    #define CC_SYSLOG(format, ...)                                          \
+        do {                                                                \
+            syslog(LOG_ERR, "CRITICAL CONDITION! " format, ##__VA_ARGS__);  \
+            CC_SYSLOG_COMMON(format, ##__VA_ARGS__);                        \
+        } while(0)
 #endif
 
 namespace Thunder {
