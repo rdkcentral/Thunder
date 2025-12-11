@@ -23,6 +23,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -125,7 +126,6 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 {
     int cd;
     int ret;
-    struct sockaddr_in addr = { 0 };
     resp->respCode = MEMCR_ERROR;
 
     cd = Connect(serverLocator, timeoutMs);
@@ -136,14 +136,14 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
 
     ret = write(cd, cmd, sizeof(ServerRequest));
     if (ret != sizeof(ServerRequest)) {
-        LOGERR("Socket write failed: ret %d, %m", ret);
+        LOGERR("Socket write failed: ret %d, errno %d", ret, errno);
         close(cd);
         return false;
     }
 
     ret = read(cd, resp, sizeof(ServerResponse));
     if (ret != sizeof(ServerResponse)) {
-        LOGERR("Socket read failed: ret %d, %m", ret);
+        LOGERR("Socket read failed: ret %d, errno %d", ret, errno);
         resp->respCode = MEMCR_SOCKET_READ_ERROR;
         close(cd);
         return false;
@@ -154,7 +154,7 @@ static bool SendRcvCmd(const ServerRequest* cmd, ServerResponse* resp, uint32_t 
     return (resp->respCode == MEMCR_OK);
 }
 
-uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[] __attribute__((unused)), void** storage __attribute__((unused)))
 {
     ServerRequest req = {
         .reqCode = MEMCR_CHECKPOINT,
@@ -174,7 +174,7 @@ uint32_t HibernateProcess(const uint32_t timeout, const pid_t pid, const char da
     }
 }
 
-uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[], void** storage)
+uint32_t WakeupProcess(const uint32_t timeout, const pid_t pid, const char data_dir[], const char volatile_dir[] __attribute__((unused)), void** storage __attribute__((unused)))
 {
     ServerRequest req = {
         .reqCode = MEMCR_RESTORE,
