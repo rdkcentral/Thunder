@@ -80,7 +80,8 @@ static int Connect(const char* serverLocator, uint32_t timeoutMs)
         }
 
         addrUn.sun_family = PF_UNIX;
-        strncpy(addrUn.sun_path, serverLocator, sizeof(addrUn.sun_path));
+        strncpy(addrUn.sun_path, serverLocator, sizeof(addrUn.sun_path) - 1);
+        addrUn.sun_path[sizeof(addrUn.sun_path) - 1] = '\0';
         addr = (struct sockaddr*)&addrUn;
         addrSize = sizeof(struct sockaddr_un);
     } else {
