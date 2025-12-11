@@ -584,9 +584,15 @@ namespace PluginHost {
                 break;
             }
             default: {
+                using type_t = std::underlying_type<PluginHost::ISubSystem::subsystem>::type; 
+
                 if (type >= NEGATIVE_START) {
-                    SYSLOG(Logging::Error, (_T("Setting a subsystem to disabled is not supported!")));
-                    result = Core::ERROR_NOT_SUPPORTED;
+                    if ((result = Unset(static_cast<PluginHost::ISubSystem::subsystem>(static_cast<type_t>(type) - static_cast<type_t>(NEGATIVE_START)))) == Core::ERROR_NONE) {
+                        SYSLOG(Logging::Error, (_T("Deprecated use of negative subsystem value, eg,  'Set(NOT_type)'. Use 'Unset(type)' instead. Successfully tried 'Unset(type)'.")));
+                    } else {
+                        SYSLOG(Logging::Error, (_T("Setting a subsystem to disabled is not supported!")));
+                        result = Core::ERROR_NOT_SUPPORTED;
+                    }
                 }
                 else {
                     ASSERT(false && "Unknown event");
