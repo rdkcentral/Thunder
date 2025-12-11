@@ -91,11 +91,12 @@ static int Connect(const char* serverLocator, uint32_t timeoutMs)
             return -1;
         }
 
-        strncpy(host, serverLocator, 64);
+        strncpy(host, serverLocator, sizeof(host) - 1);
+        host[sizeof(host) - 1] = '\0';
         port = strstr(host, ":");
         if (port == NULL) {
             LOGERR("Invalid Server Ip Address: %s", host);
-            return false;
+            return -1;
         }
 
         // Add NULL delimer between host and port
