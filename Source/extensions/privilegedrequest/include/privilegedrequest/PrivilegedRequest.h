@@ -335,9 +335,9 @@ namespace Core {
                 }
 
                 ASSERT(strlen(binder) < MaxFilePathLength);
-
+PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT)
                 ::mkstemp(binder);
-
+POP_WARNING()
                 return (string(binder));
             }
             int OpenDomainSocket(const string& connector) const
