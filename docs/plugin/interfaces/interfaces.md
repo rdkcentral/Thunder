@@ -1,4 +1,4 @@
-Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins). 
+Thunder plugins are built around the concept of interfaces. An interface acts as a contract between the plugin and the outside world (this could be external client applications or other plugins).
 
 In Thunder, plugins can expose their interfaces over two communication channels:
 
@@ -97,6 +97,8 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
 
 * `Core::Time` is now supported in the IDL header files.
     * It is presented as an [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) formatted string in JSON-RPC.
+    
+* `Core::MACAddress` is also fully supported 
 
 * `Core::OptionalType<T>` allows a member to be optional (this superseded @optional), and must be used if an attribute is expected to be optional on JSON-RPC. In COM-RPC the OptionalType can be used to see if a value was set, and in JSON-RPC it is then allowed to omit this parameter.
     * A @default tag can be used to provide a value, in the case T is not set. See more [here](../tags/#default).
@@ -111,9 +113,35 @@ In older Thunder versions (<R4), JSON-RPC interfaces were defined using separate
     * @restrict is mandatory to be used to indicate the maximum allowed size of the std::vector (to make the interface designed think about size consequences and not allow unlimited sized vectors). For COM-RPC it means all the data in the std::vector is transferred at once, if this is not desired best to use an iterator as an alternative.
     * usage of std::vector is also supported in notifications (JSON-RPC event). Please use judiciously, see the interface guidelines section on why that is (e.g. [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic) and [here](https://rdkcentral.github.io/Thunder/plugin/interfaces/guidelines/#StaticAndDynamic)). 
     * a std::vector cannot contain a Core::OptionalType (at least not for the code generators) as that would not make sense. Then just do not add the optional elements to the vector.
-
-
+    
+* With the generically available "versions" function a client can query what versions of what JSON-RPC interfaces a plugin implements. For more info see [here](../versioning/#json-rpc-interface-versioning)
+    
 <hr/>
+
+#### Checking if a function exists
+
+With the generically available "exists" function a client can query if a specific function is available on a given plugin JSON-RPC interface. Call it like
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPlugin.1.exists",
+  "params": {
+    "method": "methodname"
+  }
+}
+```
+
+it will return true or false to indicate whether the method was available or not:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": true
+}
+```
 
 #### Preventing Memory leaks
 
@@ -133,13 +161,243 @@ Examples:
 
 View [Messenger.h](https://github.com/WebPlatformForEmbedded/ThunderNanoServicesRDK/blob/master/Messenger/Messenger.h#L254-L255) to see how ```Core::JSONRPC::Context``` is used.
 
+Note in newer Thunder versions session support was added which in a lot of cases automates this and leaks are prevented automatically, for more info see the [object lookup section](#object-lookup) and the [custom object lookup](#custom-object-lookup)
+
 <hr/>
 
-#### Notification Registration
+#### Notifications
 
 Notification registration is a way of tracking updates on a notification.
 
+When a notification is tagged with the @event keyword it means code will be generated to make it easy to send this notification to registered clients from the C++ code that implements the interface.
+Registering for a JSON-RPC event can be done by the client by calling the "register" function which is generically available for all plugins (if documentation is generated for an interface or plugin using that interface containing events, examples for registration and deregistration and the notification itself will be included in the documentation):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPlugin.1.register",
+  "params": {
+    "event": "eventname",
+    "id": "myapp"
+  }
+}
+```
+
+if the registration is successful the following return can be expected (and an error response in case the registration failed) :
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+Unregistering from an event can be done by the client by calling the "unregister" function, which like the register is generically available for all plugins:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "MyPlugin.1.unregister",
+  "params": {
+    "event": "eventname",
+    "id": "myapp"
+  }
+}
+```
+
+if the deregistration is successful the following return can be expected (and an error response in case the deregistration failed) :
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "result": null
+}
+```
+
+In the generated J< interface >.h file static helper functions will be generated that one can call in the C++ code to send the notifications to all registered clients. 
+For example suppose we would have this interface:
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* const sink) = 0;
+        virtual Core::hresult Unregister(const INotification* const sink) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+After including the generated helper file one could notify all registered clients on a StateNotification class by calling the following code:
+
+```cpp
+        Exchange::JTest::Event::StateChange(*this, "test", true);
+```
+
+Note depending on the interface more than one helper function is generated (e.g. also one where you can use the generated params class), check the generated J< interface >.h file for all the options.
+
+##### indexed events
+
+With the above and the generated event notification functions the notification will be sent to all registered clients. It is possible to only notify some clients register for an event.
+If one wants to send some notifications only to some registered clients there must be a parameter in the event that a client uses to indicate if it wants to only receive the notification when that parameter has a certain value.
+That parameter can be flagged with the @index tag to indicate it is used to discriminate registered clients.
+
+Let's discuss with an example:
+
+Suppose we have this interface:
+
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* const sink, const string& callsign /* index */) = 0;
+        virtual Core::hresult Unregister(const INotification* const sink, const string& callsign /* index */) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+From the COM-RPC interface it is clear one can subscribe to be notified on changes for a specific callsign. The @index is put at the COM-RPC Register and Unregister methods, the code generators will do a name lookup, so in this case "callsign" to find the connected event.
+(the event can have the @index tag as well, as long as the index parameter name matches).
+
+A client can subscribe via JSON-RPC to be notified on a specific callsign like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register@<callsign>",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+where < callsign > should have the specific callsign this client wants to be notified about.
+
+The notification sent will then be like this:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "myid.stateChange@<callsign>",
+  "params": {
+    "test": false
+  }
+}
+```
+
+As with a non indexed event if the documentation is generated for the JSON-RPC interface examples for registering, deregistering and the notification will be included in the document.
+
+Again static helpers are created in the J< interface >.h file that allow one to sent the notifications to all registered clients:
+
+```cpp
+        Exchange::JTest::Event::StateChange(*this, "test", true);
+```
+
+This will only sent a notification to the clients who registered for the stateChange event with client "test" by adding @test to the registration designator.
+
+This generated static helper uses a lambda internally which will send the notification to all clients who registered for the index passed to the helper function. It is also possible to pass a lambda yourself as last parameter to the static helper function when you want different behaviour.
+
+It is also possible to use Core::OptionalType to indicate the index is not mandatory (and if not set one registers for all values of the index).
+
+```cpp
+    // @json 1.0.0
+    struct EXTERNAL ITest : virtual public Core::IUnknown {
+
+        enum { ID = ID_TEST };
+
+        // @event
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+
+            enum { ID = RPC::ID_TEST_NOTIFICATION };
+
+            virtual void StateChange(const string& callsign, const bool test) = 0;
+        };
+
+        virtual Core::hresult Register(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+        virtual Core::hresult Unregister(INotification* sink, const Core::OptionalType<string>& callsign /* @index */) = 0;
+
+        virtual Core::hresult Test() const = 0;
+    };
+```
+
+for the JSON-RPC registration that does not influence much, one uses:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register@<callsign>",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+to register only to be notified for a specific callsign and:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "<plugin>.1.register",
+  "params": {
+    "event": "stateChange",
+    "id": "myid"
+  }
+}
+```
+
+to register for all callsigns no matter what the value of callsign is.
+
+The notification is now a little different however:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "myid.stateChange@abc",
+  "params": {
+    "callsign": "...",
+    "test": false
+  }
+}
+```
+It will now always include the callsign as parameter (as if the event was for a client that registered for all callsigns the @ part will not be in the event so the callsign must be included as parameter to indicate for which callsign this event is).
+
+As always these examples will also be included in the generated documentation for this interface
+
+And again static helper functions will be included in the generated J< interface >.h file for sending the notifications.
+
+##### statuslisteners
+
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
+Note: the 'unregistered' notification is also triggered if the client disconnects (channel closed) without explicitly calling Unregister beforehand.
 
 Examples: 
 
@@ -204,9 +462,11 @@ For a more detailed view, visit [Messenger.h](https://github.com/WebPlatformForE
 Object lookup defines the ability to create a JSON-RPC interface to access dynamically created objects (or sessions).
 This object interface is brought into JSON-RPC scope with a object ID. This translates the Object Oriented domain (used in COM-RPC interfaces) to the functional domain (JSON-RPC).
 
-Object lookup will happen automatically by the generator when a method is found on the COM-RPC interface that returns an COM-RPC Interface also tagged as JSON-RPC interface as an out parameter and it is expected also a method that takes the same interface as input parameter is available to be able to destroy the created object.
+Object lookup will happen automatically when the @encode:autolookup tag is added to the interface that is to be the session object. The generator will look for methods return the session type as an out parameter as COM-RPC Interface (where the interface must in the same file and of course also must be tagged with @json) and it is expected that there is also a method that takes the same interface as input parameter to be available as well to be able to destroy the created object.
 
-The generated JSON-RPC interface will then automatically associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
+The generated JSON-RPC interface will then automatically (therefore the lookup method also described as auto object lookup) associate the method with the interface out parameter as a creation function for an object that implements the interface of the out parameter and will return an object ID for JSON-RPC to identify the created object. This object ID can then be used in subsequent calls on methods available on the type of the interface to indicate the object you want the function to be called upon. the JSON-RPC generator associates the COM-RPC method with the input interface pointer as the method that will destroy the created object, on JSON-RPC level the object ID to destroy is expected as an input parameter.
+In the JSON-RPC interface the object-ID will then for the function that creates the object be returned as output parameter and for functions to be called on an object the method for the JSON-RPC call should be the name of the interface (to prevent name clashes) and after that add "#< device is >::< object method name >" to specify the method to be called on the object and the object ID on which the method should be called on.
+But easier is to just generate the documentation for this interface with the document generator as that will include examples for all methods.
 
 Note this also works when the interface contains an event. You will then be able to register specifically for the events of a specific object ID and only receive the ones generated for that object ID.
 
@@ -215,11 +475,15 @@ To prevent any object leaks a call must be made into the generated code to relea
 
 Meaning to be able to use this COM-RPC interface in JSON-RPC no additional code needs to be written, it is enough to implement the COM-RPC interface and connect the JSON-RPC interface to it as you would normally do, the code generator will take care of the full JSON-RPC interface.
 
+It is also possible to register callbacks to be called when objects are acquired or relinquished in case special handling is needed for JSON-RPC (generic code can be put into the COM-RPC code for Acquire and Relinquish as that is called for both cases).
+
+Note that for the above to work the plugin should derive from the PluginHost::JSONRPCSupportsAutoObjectLookup class instead of the PluginHost::JSONRPC class for its PluginHost::IDispatcher implementation.
+
 ##### Example
 
 [here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L29) you will see an example of an interface that uses automatic object lookup.
 
-The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L39).
+The [Acquire](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L73) method on COM-RPC creates an object of type [IDevice](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L39) which has the @encode:autolookup tag specified.
 With the [Relinquish](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleInstanceObjects.h#L78) method the object is destroyed again.
 
 If you look into the generated documentation for this interface which can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
@@ -236,7 +500,52 @@ To register for an event for a specific Device, so object ID in the JSON-RPC wor
 
 [Here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/GeneratorShowcase.h#L673) you can see how to call the generated Closed method to do cleanup in case the channel closed without all devices being Relinquished. As mentioned it is also possible to pass a callback to the Closed method to get notified on all devices being released here (not demonstrated).
 
+[Here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1534-L1586) is an example of callbacks registered to be called when a JSON-RPC acquire or relinquish request is being handled.
+
 <hr/>
+
+#### Custom Object lookup
+
+As an alternative to "auto object lookup" where the object-id creation and linking to an object is automatically handled for you under the hood there is also a "custom object lookup" feature.
+This can be used when an object already has a logical instance-id itself that can uniquely be used to identify the object (e.g. each object has a unique name of number id).
+Now that logical id can also be exposed to the JSON-RPC world to connect a request to a certain object. One is now self responsible for handing out the id's and connecting them to the object as well as the object lifetime.
+
+To enable custom lookup add the @encode:lookup to the interface representing the object. The code generator will now look for functions or properties where the object interface is returned as output parameter and assume that function is used to retrieve the object by its id (which should be the other parameter of the function or property).
+Two lambdas should be registered in the plugin code that provide the translation from object to object ID and vice versa.
+
+Like for autolookup (indexed) events are fully supported for custom lookup. 
+
+Handling of the object ID's in the JSON-RPC interface is exactly the same as for autolookup, but again easiest is to just generate the documentation for this interface with the document generator as that will include examples for all methods.
+
+Lifetime for the objects must be handled in the implementation of the interface (this can now not be automatic as the generated code does not have any internal storage for the objects).
+If the objects do have a static lifetime (meaning their lifetime is equal to the plugin) this is easy and no "relinquish" code or leakage prevention is needed.
+If the objects lifetime is dynamic (meaning they are created and destroyed on the fly) this is more complicated. The COM-RPC method that returns the object by name can now create the object, a "relinquish" method must be added as well, just like for autlookup, as one can not use the COM-RPC "Release" method as that is not exposed to JSON-RPC. And one should probably also want to register for PluginHost::IShell::IConnectionServer::INotification notifications to be able to cleanup objects that were not explicitly relinquished before the channel closed.
+
+If the objects can only be used on a certain channel is up to the implementation. If they are static most likely not, if they are dynamic they most probably will. But this can be completely handled in the implementation as the object ID <-> object lambdas have full access to the JSON-RPC context.
+
+Note that for the above to work the plugin should derive from the PluginHost::JSONRPCSupportsObjectLookup class instead of the PluginHost::JSONRPC class for its PluginHost::IDispatcher implementation.
+
+##### Example
+
+This example uses static objects, therefore no special lifetime handling is required. Also the usage of the objects is not restricted to specific channels.
+
+[here](https://github.com/rdkcentral/ThunderInterfaces/blob/master/example_interfaces/ISimpleCustomObjects.h) you will see an example of an interface that uses custom object lookup.
+
+With the @encode:lookup on the [IAccessory](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L33) interface we indicated this interface is used as an object.
+
+The [Accessory](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L86) property on the ISimpleCustomObjects interface allows access to a specific Accessory object by specifying the accessory name.
+
+The Accessory functions or properties like [Pin](https://github.com/rdkcentral/ThunderInterfaces/blob/8de7db327a585f27c6a7e1e4eb944aa29ccef070/example_interfaces/ISimpleCustomObjects.h#L60) now can be accessed when using JSON-RPC requests passing the object ID retrieved with the Accessory property.
+
+The generated documentation for this interface can be found [here](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md)
+The [Accessory](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory) documentation shows that one can retrieve the object ID for an accessory by passing it as index to the property.
+The property will return the object ID as return value.
+Calling for example [Pin](https://github.com/rdkcentral/ThunderNanoServices/blob/master/examples/GeneratorShowcase/doc/GeneratorShowcasePlugin.md#property_accessory__pin) can be done by calling the "accessory" method followed by #< object ID>::pin, and as the pin is an indexed property the index follows after that with a @ delimiter.
+
+The plugin code can be found [here](https://github.com/rdkcentral/ThunderNanoServices/tree/master/examples/GeneratorShowcase)
+
+[Here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L40) we see the plugin derives from  PluginHost::JSONRPCSupportsObjectLookup.
+And [here](https://github.com/rdkcentral/ThunderNanoServices/blob/fd91c5f012bfecac1ee4f9fa40cf7db6e7fb90ec/examples/GeneratorShowcase/GeneratorShowcase.h#L1504-L1524) we see the lambdas being registered that take care of the object ID to object conversion and vice versa.
 
 #### Asynchronous Functions
 
