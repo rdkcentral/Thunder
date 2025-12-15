@@ -153,17 +153,20 @@ jobs:
         -DPROXYSTUB_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/proxystubs" \
         -DSYSTEM_PATH="${PWD}/${{matrix.build_type}}/install/usr/lib/wpeframework/plugins" \
         -DVOLATILE_PATH="tmp" \
-        -DBLUETOOTH_SUPPORT=ON \
         -DBLUETOOTH=ON \
-        -DDOWNLOAD_BLUEZ_UTIL_HEADERS=ON \
         -DBLUETOOTH_AUDIO_SUPPORT=ON \
         -DBLUETOOTH_GATT_SUPPORT=ON \
+        -DBLUETOOTH_SUPPORT=ON \
+        -DBROADCAST=ON \
+        -DDOWNLOAD_BLUEZ_UTIL_HEADERS=ON \
+        -DHIBERNATESUPPORT=ON \
+        -DHIBERNATE_CHECKPOINTSERVER=ON \
         -DLOCALTRACER=ON \
-        -DWARNING_REPORTING=ON \
+        -DPERFORMANCE_MONITOR=ON \
+        -DPRIVILEGEDREQUEST=ON \
         -DPROCESSCONTAINERS=ON \
         -DPROCESSCONTAINERS_RUNC=ON \
-        -DBROADCAST=ON \
-        -DPERFORMANCE_MONITOR=ON \
+        -DWARNING_REPORTING=ON \
         ${{steps.regexthunder.outputs.first_match}}
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
