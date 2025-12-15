@@ -1146,6 +1146,7 @@ namespace Plugin {
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1247,6 +1248,7 @@ namespace Plugin {
         if (callStackInfo.empty() == false) {
 
             std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1288,7 +1290,7 @@ namespace Plugin {
 
         if (meta.Length() > 0) {
             std::vector<IMetadata::Data::Link> links;
-
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1359,7 +1361,7 @@ namespace Plugin {
         if (meta.ThreadPoolRuns.Length() > 0) {
 
             std::vector<IMetadata::Data::Thread> threads;
-
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1388,7 +1390,7 @@ namespace Plugin {
         if (meta.PendingRequests.Length() > 0) {
 
             std::vector<string> requests;
-
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1415,7 +1417,7 @@ namespace Plugin {
 
         if (subSystem != nullptr) {
             std::vector<ISubsystems::Subsystem> subsystems;
-
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
