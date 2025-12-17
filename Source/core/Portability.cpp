@@ -456,12 +456,7 @@ namespace {
         hresult result = Core::ERROR_NONE;
 
         if (customCode != 0) {
-            int24_t code; 
-            // if (Core::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
-            //     result = static_cast<hresult>(customCode);
-            // } else {
-            //     result = 0; // set invalid customCode result;
-            // }
+            result = static_cast<hresult>(customCode);
             result |= CUSTOM_ERROR; // set custom code bit
         }
 
