@@ -173,6 +173,8 @@
 #define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_(4100)
 // W4 - 'function': unreferenced function with internal linkage has been removed
 #define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_(5242)
+/ W3 - 'argument': conversion from 'type' to 'type', possible loss of data
+#define DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA PUSH_WARNING_ARG_(4267)
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
 #define DISABLE_WARNING_UNUSED_RESULT
@@ -203,6 +205,7 @@
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR PUSH_WARNING_ARG_("-Wnon-virtual-dtor")
 #define DISABLE_WARNING_TYPE_LIMITS PUSH_WARNING_ARG_("-Wtype-limits")
 #define DISABLE_WARNING_STRING_OPERATION_OVERREAD PUSH_WARNING_ARG_("-Wstringop-overread")
+#define DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA PUSH_WARNING_ARG_("-Wconversion")
 #endif
 #endif
 
@@ -572,6 +575,9 @@ typedef DEPRECATED signed long long sint64;
 #define HANDLE int
 #endif
 
+using uint24_t = uint32_t;
+using int24_t = int32_t;
+
 template <unsigned int TYPE>
 struct TemplateIntToType {
     enum { value = TYPE };
@@ -824,6 +830,16 @@ namespace Core {
     }
 
     #define COM_ERROR (0x80000000)
+    #define CUSTOM_ERROR (0x1000000)
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    // transform a custum code into an hresult
+    EXTERNAL Core::hresult CustomCode(const int32_t customCode);
+    // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
+    EXTERNAL int32_t IsCustomCode(const Core::hresult code);
+
+#endif
 
     #define ERROR_CODES \
         ERROR_CODE(ERROR_NONE, 0) \
@@ -915,11 +931,17 @@ namespace Core {
         return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
     };
 
-    inline const TCHAR* ErrorToString(uint32_t code)
-    {
-        return _bogus_ErrorToString<>(code);
-    }
+    EXTERNAL const TCHAR* ErrorToString(const Core::hresult code);
+    EXTERNAL string ErrorToStringExtended(const Core::hresult code);
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
+    using CustomCodeToStringHandler = const TCHAR* (*)(const int32_t code);
+
+    // can only set one, not multithreaded safe
+    EXTERNAL void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler);
+
+#endif
     #undef ERROR_CODE
 }
 }

@@ -141,7 +141,7 @@ namespace Core {
                         } else {
                             Code = static_cast<int32_t>(frameworkError & 0x7FFFFFFF) + 500;
                         }                       
-                        Text = Core::ErrorToString(frameworkError);
+                        Text = Core::ErrorToStringExtended(frameworkError);
                         break;
                     }
                 }
