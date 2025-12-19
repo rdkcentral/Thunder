@@ -98,6 +98,29 @@ namespace Core {
         static constexpr uint8_t RealSize() {
             return (T::SizeOf);
         }
+
+        template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+        bool check_and_cast(const ORIGINAL_TYPE& input, NEW_TYPE& output) {
+
+            ASSERT(input <= std::numeric_limits<NEW_TYPE>::max());
+            ASSERT(input >= std::numeric_limits<NEW_TYPE>::min());
+
+            bool success = false;
+
+            if ((input <= std::numeric_limits<NEW_TYPE>::max()) && (input >= std::numeric_limits<NEW_TYPE>::min())) {
+
+                success = true;
+
+                PUSH_WARNING(DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA)
+
+                output = static_cast<NEW_TYPE>(input);
+
+                POP_WARNING()
+            }
+
+            return success;
+
+        }
     }
 
     template <const uint32_t BLOCKSIZE, const bool BIG_ENDIAN_ORDERING = true, typename SIZE_CONTEXT = uint16_t>

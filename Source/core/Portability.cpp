@@ -26,6 +26,7 @@
 #include "SystemInfo.h"
 #include "Serialization.h"
 #include "Number.h"
+#include "Frame.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -456,7 +457,12 @@ namespace {
         hresult result = Core::ERROR_NONE;
 
         if (customCode != 0) {
-            result = static_cast<hresult>(customCode);
+            int24_t code;
+            if (Core::Frame::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
+                result = static_cast<hresult>(code & 0xFFFFFF);
+            } else {
+                result = 0; // set invalid customCode result;
+            }
             result |= CUSTOM_ERROR; // set custom code bit
         }
 
