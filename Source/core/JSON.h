@@ -4238,8 +4238,6 @@ namespace Core {
             mutable String _fieldName;
         };
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
         class VariantContainer;
 
         class EXTERNAL Variant : public JSON::String {
@@ -4533,8 +4531,11 @@ namespace Core {
                 return String::IsSet();
             }
 
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
             string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
 
+#endif
         private:
             // IElement iface:
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override;
@@ -5137,7 +5138,7 @@ namespace Core {
             }
         };
 
-#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+//#endif // __DISABLE_USE_COMPLEMENTARY_CODE_SET__
 
     } // namespace JSON
 } // namespace Core
