@@ -26,7 +26,6 @@
 #include "SystemInfo.h"
 #include "Serialization.h"
 #include "Number.h"
-#include "Frame.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -35,6 +34,9 @@
 #endif
 
 using namespace WPEFramework;
+
+constexpr int24_t INT24_MIN = -(1 << 23);   // -8,388,608
+constexpr int24_t INT24_MAX =  (1 << 23) - 1; //  8,388,607
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
@@ -411,7 +413,6 @@ namespace Core {
     }
     
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-
 namespace {
 
     static CustomCodeToStringHandler customerrorcodehandler = nullptr;
@@ -444,11 +445,23 @@ namespace {
 
         return result;
     }
-
 }
     void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler) {
         customerrorcodehandler = handler;
     }
+
+    int32_t ToInt24_Truncate(int32_t value) {
+
+        value &= 0x00FFFFFF;          // keep lower 24 bits
+
+        // sign-extend if negative
+        if (value & 0x00800000) {
+            value |= 0xFF000000;
+        }
+
+        return value;
+    }
+
 
     hresult CustomCode(const int32_t customCode) {
 
@@ -457,30 +470,30 @@ namespace {
         hresult result = Core::ERROR_NONE;
 
         if (customCode != 0) {
-            int24_t code;
-            if (Core::Frame::check_and_cast<int24_t, int32_t>(customCode, code) == true) {
-                result = static_cast<hresult>(code & 0xFFFFFF);
-            } else {
-                result = 0; // set invalid customCode result;
-            }
+
+            ASSERT(customCode >= INT24_MIN && customCode <= INT24_MAX);
+
+            result = static_cast<hresult>(ToInt24_Truncate(customCode)) & 0x00FFFFFF;
+
             result |= CUSTOM_ERROR; // set custom code bit
         }
 
         return result;
     }
-
-    int32_t IsCustomCode(const Core::hresult code) {
+    
+    int24_t IsCustomCode(const Core::hresult code)
+    {
         static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
 
-        int32_t result = 0;
+        int24_t result = 0;
 
         if ((code & CUSTOM_ERROR) != 0) {
-            int24_t custumcode(code & 0xFFFFFF); // remove custom error bit before assigning
-            result = custumcode;
+            result = static_cast<int32_t>(ToInt24_Truncate(code)); // remove custom error bit before assigning
             if (result == 0) {
-                result = std::numeric_limits<int32_t>::min();
+                result = std::numeric_limits<int32_t>::max(); // this will assert in debug, but if that happens one managed to fill an hresult with an overflowed core result, that should have asserted already when using CustomCode to fill it, os this is probably caused by either manually incorrectly filling the hresult or memory corruption
             }
         }
+
         return result;
     }
 
@@ -501,7 +514,7 @@ namespace {
     string ErrorToStringExtended(const Core::hresult code)
     {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-        int32_t customcode = IsCustomCode(code);
+        int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
             return HandleCustomErrorCodeToStringExtended(customcode);

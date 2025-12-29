@@ -837,7 +837,7 @@ namespace Core {
     // transform a custum code into an hresult
     EXTERNAL Core::hresult CustomCode(const int32_t customCode);
     // query if the hresult is a custom code and if so extract the value, returns 0 if the hresult was not a custom code
-    EXTERNAL int32_t IsCustomCode(const Core::hresult code);
+    EXTERNAL int24_t IsCustomCode(const Core::hresult code);
 
 #endif
 
