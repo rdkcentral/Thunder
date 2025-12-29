@@ -421,7 +421,7 @@ namespace {
     {
         const TCHAR* text = nullptr;
 
-        if (customcode == std::numeric_limits<int32_t>::min()) {
+        if (customcode == std::numeric_limits<int32_t>::max()) {
             text = _T("Invalid Custom ErrorCode set");
         } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
             text = _T("Undefined Custom Error");
@@ -432,10 +432,11 @@ namespace {
 
     string HandleCustomErrorCodeToStringExtended(const int32_t customcode)
     {
+
         string result;
 
         const TCHAR* text = nullptr;
-        if (customcode == std::numeric_limits<int32_t>::min()) {
+        if (customcode == std::numeric_limits<int32_t>::max()) {
             result = _T("Invalid Custom ErrorCode set");
         } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
             result = _T("Undefined Custom Error: ") + Core::NumberType<int32_t>(customcode).Text();
@@ -488,7 +489,7 @@ namespace {
         int24_t result = 0;
 
         if ((code & CUSTOM_ERROR) != 0) {
-            result = static_cast<int32_t>(ToInt24_Truncate(code)); // remove custom error bit before assigning
+            result = static_cast<uint32_t>(ToInt24_Truncate(code)); // remove custom error bit before assigning
             if (result == 0) {
                 result = std::numeric_limits<int32_t>::max(); // this will assert in debug, but if that happens one managed to fill an hresult with an overflowed core result, that should have asserted already when using CustomCode to fill it, os this is probably caused by either manually incorrectly filling the hresult or memory corruption
             }
@@ -502,7 +503,7 @@ namespace {
     const TCHAR* ErrorToString(const Core::hresult code)
     {
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-        int32_t customcode = IsCustomCode(code);
+        int24_t customcode = IsCustomCode(code);
 
         if (customcode != 0) {
             return HandleCustomErrorCodeToString(customcode);
