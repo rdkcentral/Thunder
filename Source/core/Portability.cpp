@@ -25,6 +25,7 @@
 #include "Sync.h"
 #include "SystemInfo.h"
 #include "Serialization.h"
+#include "Number.h"
 
 #ifdef __LINUX__
 #include <atomic>
@@ -33,6 +34,9 @@
 #endif
 
 using namespace WPEFramework;
+
+constexpr int24_t INT24_MIN = -(1 << 23);   // -8,388,608
+constexpr int24_t INT24_MAX =  (1 << 23) - 1; //  8,388,607
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
@@ -407,5 +411,123 @@ namespace Core {
     {
         toString(dst, format, ap);
     }
+    
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+namespace {
+
+    static CustomCodeToStringHandler customerrorcodehandler = nullptr;
+
+    const TCHAR* HandleCustomErrorCodeToString(const int32_t customcode)
+    {
+        const TCHAR* text = nullptr;
+
+        if (customcode == std::numeric_limits<int32_t>::max()) {
+            text = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            text = _T("Undefined Custom Error");
+        } 
+
+        return text;
+    }
+
+    string HandleCustomErrorCodeToStringExtended(const int32_t customcode)
+    {
+
+        string result;
+
+        const TCHAR* text = nullptr;
+        if (customcode == std::numeric_limits<int32_t>::max()) {
+            result = _T("Invalid Custom ErrorCode set");
+        } else if ((customerrorcodehandler == nullptr) || ((text = customerrorcodehandler(customcode)) == nullptr)) {
+            result = _T("Undefined Custom Error: ") + Core::NumberType<int32_t>(customcode).Text();
+        } else {
+            result = text;
+        }
+
+        return result;
+    }
+}
+    void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler) {
+        customerrorcodehandler = handler;
+    }
+
+    int32_t ToInt24_Truncate(int32_t value) {
+
+        value &= 0x00FFFFFF;          // keep lower 24 bits
+
+        // sign-extend if negative
+        if (value & 0x00800000) {
+            value |= 0xFF000000;
+        }
+
+        return value;
+    }
+
+
+    hresult CustomCode(const int32_t customCode) {
+
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
+
+        hresult result = Core::ERROR_NONE;
+
+        if (customCode != 0) {
+
+            ASSERT(customCode >= INT24_MIN && customCode <= INT24_MAX);
+
+            result = static_cast<hresult>(ToInt24_Truncate(customCode)) & 0x00FFFFFF;
+
+            result |= CUSTOM_ERROR; // set custom code bit
+        }
+
+        return result;
+    }
+    
+    int24_t IsCustomCode(const Core::hresult code)
+    {
+        static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
+
+        int24_t result = 0;
+
+        if ((code & CUSTOM_ERROR) != 0) {
+            result = static_cast<uint32_t>(ToInt24_Truncate(code)); // remove custom error bit before assigning
+            if (result == 0) {
+                result = std::numeric_limits<int32_t>::max(); // this will assert in debug, but if that happens one managed to fill an hresult with an overflowed core result, that should have asserted already when using CustomCode to fill it, os this is probably caused by either manually incorrectly filling the hresult or memory corruption
+            }
+        }
+
+        return result;
+    }
+
+#endif
+
+    const TCHAR* ErrorToString(const Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int24_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToString(customcode);
+        }
+#endif
+        return _bogus_ErrorToString<>(code & (~COM_ERROR));
+    }
+
+    string ErrorToStringExtended(const Core::hresult code)
+    {
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+        int24_t customcode = IsCustomCode(code);
+
+        if (customcode != 0) {
+            return HandleCustomErrorCodeToStringExtended(customcode);
+        }
+#endif
+        string result = _bogus_ErrorToString<>(code & (~COM_ERROR));
+
+        if (result.empty() == true) {
+            result = _T("Undefined Thunder error code: ") + Core::NumberType<Core::hresult>(code).Text();
+        }
+        return result;
+    }
+
 }
 }
