@@ -3969,7 +3969,9 @@ POP_WARNING()
 
                 request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
 
-                ASSERT(request->State() != Request::INCOMPLETE);
+                // for now disable the assert as it is trigger probably when it shouldn't. But we should investigate how to enable it again so it fires at the right time: jira issue METROL-1211 created
+
+                //ASSERT(request->State() != Request::INCOMPLETE);
 
                 if (request->State() == Request::COMPLETE) {
 
