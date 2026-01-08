@@ -68,6 +68,7 @@ namespace WPEFramework {
                 LINK = 0x040,
                 MONITOR = 0x080,
                 WRITESLOT = 0x100,
+                REMOTE_CLOSED = 0x200,
                 UPDATE = 0x8000
 
             } enumState;
@@ -139,7 +140,8 @@ namespace WPEFramework {
             }
             inline bool IsSuspended() const
             {
-                return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::SHUTDOWN);
+                return (((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION| SocketPort::REMOTE_CLOSED)) == (SocketPort::SHUTDOWN)) ||
+                ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION| SocketPort::REMOTE_CLOSED)) == (SocketPort::REMOTE_CLOSED)));
             }
             inline bool IsForcedClosing() const
             {
