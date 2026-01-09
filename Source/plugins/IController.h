@@ -262,7 +262,7 @@ namespace Controller {
                 enum extensiontype : uint8_t {
                     WARNING_REPORTING = 1,
                     BLUETOOTH = 2,
-                    HIBERBATE = 4,
+                    HIBERNATE = 4,
                     PROCESS_CONTAINERS = 8
                 };
 
