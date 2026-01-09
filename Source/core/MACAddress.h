@@ -43,6 +43,9 @@ namespace Thunder {
             inline explicit MACAddress(const TCHAR input[]) {
                 FromCString(input);
             }
+            inline explicit MACAddress(const string& input) {
+                FromCString(input.c_str());
+            }
             inline explicit MACAddress(const uint8_t address[6]) {
                 ::memcpy(_address, address, sizeof(_address));
             }
