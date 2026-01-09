@@ -97,7 +97,7 @@ namespace Core {
             inline void Reset()
             {
                 _atHead = true;
-                _iterator = _clients->begin();
+                _iterator = _clients.begin();
             }
             inline bool Next()
             {
@@ -179,6 +179,13 @@ namespace Core {
             }
 
         public:
+            inline uint32_t AllocateId() {
+                _lock.Lock();
+                uint32_t slotId = _nextClient++;
+                _lock.Unlock();
+
+                return (slotId);
+            }
             inline uint32_t Count() const
             {
                 return (static_cast<uint32_t>(_clients.size()));
@@ -219,6 +226,10 @@ namespace Core {
             inline void LocalNode(const Core::NodeId& localNode)
             {
                 SocketListner::LocalNode(localNode);
+            }
+            inline const Core::NodeId& LocalNode() const
+            {
+                return (SocketListner::LocalNode());
             }
             inline Core::ProxyType<HANDLECLIENT> Client(const uint32_t ID)
             {
@@ -367,6 +378,9 @@ namespace Core {
         ~SocketServerType() = default;
 
     public:
+        inline uint32_t AllocateId() {
+            return (_handler.AllocateId());
+        }
         inline uint32_t Open(const uint32_t waitTime)
         {
             return (_handler.Open(waitTime));
@@ -392,6 +406,10 @@ namespace Core {
         inline void LocalNode(const Core::NodeId& localNode)
         {
             _handler.LocalNode(localNode);
+        }
+        inline const Core::NodeId& LocalNode() const
+        {
+            return (_handler.LocalNode());
         }
         template <typename PACKAGE>
         inline uint32_t Submit(const uint32_t ID, PACKAGE package)

@@ -67,11 +67,13 @@ namespace PluginHost {
             void Register(IShell* shell)
             {
                 ASSERT(shell != nullptr);
+                ASSERT(_callsign.empty() == false);
+
                 _adminLock.Lock();
                 _state = state::REGISTRING;
                 _adminLock.Unlock();
 
-                shell->Register(this);
+                shell->Register(this, _callsign);
 
                 _adminLock.Lock();
                 if (_state == state::LOADED) {
@@ -91,10 +93,12 @@ namespace PluginHost {
             void Unregister(IShell* shell)
             {
                 ASSERT(shell != nullptr);
+                ASSERT(_callsign.empty() == false);
+
                 if (shell != nullptr) {
 
                     _adminLock.Lock();
-                    shell->Unregister(this);
+                    shell->Unregister(this, _callsign);
                     _callsign.clear();
 
                     if (_designated != nullptr) {
@@ -283,7 +287,6 @@ namespace RPC {
             : _controller(nullptr)
             , _administrator(channelWaitTime)
             , _monitor(*this)
-            , _connectionId(~0)
         {
         }
 POP_WARNING()
@@ -293,10 +296,6 @@ POP_WARNING()
         }
 
     public:
-        DEPRECATED uint32_t ConnectionId() const
-        {
-            return (_connectionId);
-        }
         bool IsOperational() const
         {
             return (_monitor.IsOperational());
@@ -317,10 +316,6 @@ POP_WARNING()
             }
             if (_controller != nullptr) {
                 _monitor.Register(_controller, callsign);
-                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
-                if (channel.IsValid() == true) {
-                    _connectionId = channel->ConnectionId();
-                }
             }
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
@@ -396,7 +391,6 @@ POP_WARNING()
         PluginHost::IShell* _controller;
         ConnectorType<ENGINE> _administrator;
         Monitor _monitor;
-        uint32_t _connectionId;
     };
 
 /*
@@ -561,7 +555,6 @@ POP_WARNING()
         explicit SmartControllerInterfaceType(const uint32_t channelWaitTime = Core::infinite)
             : _controller(nullptr)
             , _administrator(channelWaitTime)
-            , _connectionId(~0)
         {
         }
         
@@ -571,10 +564,6 @@ POP_WARNING()
         }
 
     public:
-        DEPRECATED uint32_t ConnectionId() const
-        {
-            return (_connectionId);
-        }
         bool IsOperational() const
         {
             return (_controller != nullptr);
@@ -592,12 +581,6 @@ POP_WARNING()
             }
             if (_controller == nullptr) {
                 _controller = _administrator.template Acquire<PluginHost::IShell>(waitTime, node, _T(""), ~0);
-            }
-            if (_controller != nullptr) {
-                Core::ProxyType<CommunicatorClient> channel(_administrator.Communicator(node));
-                if (channel.IsValid() == true) {
-                    _connectionId = channel->ConnectionId();
-                }
             }
 
             return (_controller != nullptr ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
@@ -647,7 +630,6 @@ POP_WARNING()
     private:
         PluginHost::IShell* _controller;
         ConnectorType<ENGINE> _administrator;
-        uint32_t _connectionId;
     };
 
 }

@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2020 Metrological
+ * Copyright 2020 Metrological 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,93 +27,19 @@ namespace Core {
 
     namespace Frame {
 
-        class SInt24 {
-        public:
-            static constexpr uint8_t SizeOf = 3;
-            static constexpr uint32_t Max = 0x7FFFFF;
+        template <typename NEW_TYPE, typename ORIGINAL_TYPE>
+        NEW_TYPE buffer_length_cast(const ORIGINAL_TYPE& input)
+        {
+            // in release in case the length does not fit we do not want to send data at all, then it is more obvious to the recipient something is wrong instead of only sending partial data
+            NEW_TYPE length = 0;
 
-            SInt24()
-                : _value(0)
-            {
-            }
-            SInt24(const int32_t value)
-                : _value(value | (value & 0x800000? 0xFF000000 : 0))
-            {
-                ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
-            }
-            SInt24(const SInt24&) = default;
-            SInt24(SInt24&&) = default;
-            ~SInt24() = default;
-
-        public:
-            SInt24& operator=(const SInt24& value) = default;
-            SInt24& operator=(SInt24&& value) = default;
-            SInt24& operator=(const int32_t value)
-            {
-                ASSERT(((static_cast<uint32_t>(value) >> 24) == 0) || ((static_cast<uint32_t>(value) >> 24) == 0xFF));
-                _value = (value | (value & 0x800000? 0xFF000000 : 0));
-                return (*this);
-            }
-            operator int32_t() const {
-                return (_value);
+            if (Core::check_and_cast<NEW_TYPE, ORIGINAL_TYPE>(input, length) == false) {
+                length = 0;            
             }
 
-        private:
-            int32_t _value;
-        };
-
-        class UInt24 {
-        public:
-            static constexpr uint8_t SizeOf = 3;
-            static constexpr uint32_t Max = 0xFFFFFF;
-
-            UInt24()
-                : _value(0)
-            {
-            }
-            UInt24(const UInt24& value) = default;
-            UInt24(UInt24&& value) = default;
-            UInt24(const uint32_t value)
-                : _value(value)
-            {
-                ASSERT((value >> 24) == 0);
-            }
-            ~UInt24() = default;
-
-        public:
-            UInt24& operator=(const UInt24& copy) = default;
-            UInt24& operator=(UInt24&& move) = default;
-            UInt24& operator=(const uint32_t value)
-            {
-                ASSERT((value >> 24) == 0);
-                _value = value;
-                return (*this);
-            }
-            operator uint32_t() const {
-                return (_value);
-            }
-
-        private:
-            uint32_t _value;
-        };
-
-        template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
-        static constexpr uint8_t RealSize() {
-            return (sizeof(T));
-        }
-        template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
-        static constexpr uint8_t RealSize() {
-            return (T::SizeOf);
+            return (length);
         }
 
-        template <typename T, typename std::enable_if<std::is_scalar<T>::value, int>::type = 0>
-        static constexpr uint32_t Max() {
-            return (std::numeric_limits<T>::max());
-        }
-        template <typename T, typename std::enable_if<T::SizeOf != 0, int>::type = 0>
-        static constexpr uint32_t Max() {
-            return (T::Max);
-        }
     }
 
     template <const uint32_t BLOCKSIZE, const bool BIG_ENDIAN_ORDERING = true, typename SIZE_CONTEXT = uint16_t>
@@ -310,7 +236,7 @@ namespace Core {
                 result = _container->GetBuffer<TYPENAME>(_offset, maxLength, buffer);
                 _offset += result;
 
-                return (static_cast<TYPENAME>(result - Frame::RealSize<TYPENAME>()));
+                return (static_cast<TYPENAME>(result - Core::RealSize<TYPENAME>()));
             }
             void Copy(const SIZE_CONTEXT length, uint8_t buffer[]) const
             {
@@ -617,9 +543,9 @@ namespace Core {
         template <typename TYPENAME>
         uint32_t SetBuffer(const SIZE_CONTEXT offset, const TYPENAME length, const uint8_t buffer[])
         {
-            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(Frame::RealSize<TYPENAME>() + length));
+            SIZE_CONTEXT requiredLength(static_cast<SIZE_CONTEXT>(Core::RealSize<TYPENAME>() + length));
 
-            static_assert(Frame::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            static_assert(Core::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
@@ -629,7 +555,7 @@ namespace Core {
 
             if (length != 0) {
                 ASSERT(buffer != nullptr);
-                ::memcpy(&(_data[offset + Frame::RealSize<TYPENAME>()]), buffer, length);
+                ::memcpy(&(_data[offset + Core::RealSize<TYPENAME>()]), buffer, length);
             }
 
             return (requiredLength);
@@ -655,8 +581,7 @@ namespace Core {
         SIZE_CONTEXT SetText(const SIZE_CONTEXT offset, const string& value)
         {
             std::string convertedText(Core::ToString(value));
-            ASSERT(convertedText.length() <= Frame::Max<TYPENAME>());
-            return (SetBuffer<TYPENAME>(offset, static_cast<TYPENAME>(convertedText.length() <= Frame::Max<TYPENAME>()? convertedText.length() : 0), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
+            return (SetBuffer<TYPENAME>(offset, Frame::buffer_length_cast<TYPENAME>(convertedText.length()), reinterpret_cast<const uint8_t*>(convertedText.c_str())));
         }
 
         SIZE_CONTEXT SetNullTerminatedText(const SIZE_CONTEXT offset, const string& value, const SIZE_CONTEXT maxLength)
@@ -678,42 +603,42 @@ namespace Core {
         {
             TYPENAME textLength;
 
-            ASSERT((offset + Frame::RealSize<TYPENAME>()) <= _size);
-            static_assert(Frame::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            ASSERT((offset + Core::RealSize<TYPENAME>()) <= _size);
+            static_assert(Core::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, textLength);
 
-            ASSERT((textLength + offset + Frame::RealSize<TYPENAME>()) <= _size);
+            ASSERT((textLength + offset + Core::RealSize<TYPENAME>()) <= _size);
 
-            if ((textLength + offset + Frame::RealSize<TYPENAME>()) > _size) {
-                textLength = (_size - (offset + Frame::RealSize<TYPENAME>()));
+            if ((textLength + offset + Core::RealSize<TYPENAME>()) > _size) {
+                textLength = (_size - (offset + Core::RealSize<TYPENAME>()));
             }
 
-            memcpy(buffer, &(_data[offset + Frame::RealSize<TYPENAME>()]), (textLength > length ? length : textLength));
+            memcpy(buffer, &(_data[offset + Core::RealSize<TYPENAME>()]), (textLength > length ? length : textLength));
 
-            return (static_cast<SIZE_CONTEXT>(Frame::RealSize<TYPENAME>() + textLength));
+            return (static_cast<SIZE_CONTEXT>(Core::RealSize<TYPENAME>() + textLength));
         }
 
         template <typename TYPENAME = uint16_t>
         SIZE_CONTEXT GetText(const SIZE_CONTEXT offset, string& result) const
         {
             TYPENAME textLength;
-            ASSERT((offset + Frame::RealSize<TYPENAME>()) <= _size);
-            static_assert(Frame::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
+            ASSERT((offset + Core::RealSize<TYPENAME>()) <= _size);
+            static_assert(Core::RealSize<TYPENAME>() <= sizeof(SIZE_CONTEXT), "Make sure the logic can handle the size (enlarge the SIZE_CONTEXT)");
 
             GetNumber<TYPENAME>(offset, textLength);
 
-            ASSERT((textLength + offset + Frame::RealSize<TYPENAME>()) <= _size);
+            ASSERT((textLength + offset + Core::RealSize<TYPENAME>()) <= _size);
 
-            if (textLength + offset + Frame::RealSize<TYPENAME>() > _size) {
-                textLength = static_cast<TYPENAME>(_size - (offset + Frame::RealSize<TYPENAME>()));
+            if (textLength + offset + Core::RealSize<TYPENAME>() > _size) {
+                textLength = static_cast<TYPENAME>(_size - (offset + Core::RealSize<TYPENAME>()));
             }
 
-            std::string convertedText(reinterpret_cast<const char*>(&(_data[offset + Frame::RealSize<TYPENAME>()])), textLength);
+            std::string convertedText(reinterpret_cast<const char*>(&(_data[offset + Core::RealSize<TYPENAME>()])), textLength);
 
             result = Core::ToString(convertedText);
 
-            return (static_cast<SIZE_CONTEXT>(Frame::RealSize<TYPENAME>() + textLength));
+            return (static_cast<SIZE_CONTEXT>(Core::RealSize<TYPENAME>() + textLength));
         }
 
         SIZE_CONTEXT GetNullTerminatedText(const SIZE_CONTEXT offset, string& result) const
@@ -749,7 +674,7 @@ namespace Core {
             uint8_t index = 0;
             TYPENAME value = number;
 
-            static_assert(Frame::RealSize<TYPENAME>() <= ((sizeof(bytes) * 7) / 8), "Make sure the size is not too large (not much bigger than uint64_t)");
+            static_assert(Core::RealSize<TYPENAME>() <= ((sizeof(bytes) * 7) / 8), "Make sure the size is not too large (not much bigger than uint64_t)");
 
             do {
                 bytes[index++] = ( static_cast<uint8_t>(value % 128) | 0x80 );
@@ -760,7 +685,7 @@ namespace Core {
             bytes[index - 1] ^= 0x80;
 
             if ((offset + index) >= _size) {
-                Size(offset + Frame::RealSize<TYPENAME>());
+                Size(offset + Core::RealSize<TYPENAME>());
             }
 
             if ( (BIG_ENDIAN_ORDERING == true) && (index > 1) ) {
@@ -811,7 +736,7 @@ namespace Core {
                 index++;
             }
 
-            ASSERT(((index * 7) / 8) <= Frame::RealSize<TYPENAME>());
+            ASSERT(((index * 7) / 8) <= Core::RealSize<TYPENAME>());
 
             ++index;
 
@@ -832,13 +757,13 @@ namespace Core {
         template <typename TYPENAME>
         inline SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number)
         {
-            return (SetNumber(offset, number, TemplateIntToType<Frame::RealSize<TYPENAME>() == 1>()));
+            return (SetNumber(offset, number, TemplateIntToType<Core::RealSize<TYPENAME>() == 1>()));
         }
 
         template <typename TYPENAME>
         inline SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& number) const
         {
-            return (GetNumber(offset, number, TemplateIntToType<Frame::RealSize<TYPENAME>() == 1>()));
+            return (GetNumber(offset, number, TemplateIntToType<Core::RealSize<TYPENAME>() == 1>()));
         }
 
 #ifdef __DEBUG__
@@ -876,9 +801,9 @@ namespace Core {
         template <typename TYPENAME>
         void SetNumberLittleEndianPlatform(const SIZE_CONTEXT offset, const TYPENAME number) {
             const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-            uint8_t* destination = &(_data[offset + Frame::RealSize<TYPENAME>() - 1]);
+            uint8_t* destination = &(_data[offset + Core::RealSize<TYPENAME>() - 1]);
 
-            for (uint8_t index = 0; index < Frame::RealSize<TYPENAME>(); index++) {
+            for (uint8_t index = 0; index < Core::RealSize<TYPENAME>(); index++) {
                 *destination-- = *source++;
             }
         }
@@ -888,7 +813,7 @@ namespace Core {
             const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
             uint8_t* destination = &(_data[offset]);
 
-            for (uint8_t index = 0; index < Frame::RealSize<TYPENAME>(); index++) {
+            for (uint8_t index = 0; index < Core::RealSize<TYPENAME>(); index++) {
                 *destination++ = *source++;
             }
         }
@@ -897,8 +822,8 @@ namespace Core {
         template <typename TYPENAME>
         SIZE_CONTEXT SetNumber(const SIZE_CONTEXT offset, const TYPENAME number, const TemplateIntToType<false>&)
         {
-            if ((offset + Frame::RealSize<TYPENAME>()) >= _size) {
-                Size(offset + Frame::RealSize<TYPENAME>());
+            if ((offset + Core::RealSize<TYPENAME>()) >= _size) {
+                Size(offset + Core::RealSize<TYPENAME>());
             }
 
             if (BIG_ENDIAN_ORDERING == true) {
@@ -916,14 +841,14 @@ namespace Core {
 #endif
             }
 
-            return (Frame::RealSize<TYPENAME>());
+            return (Core::RealSize<TYPENAME>());
         }
 
         template <typename TYPENAME>
         SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& number, const TemplateIntToType<true>&) const
         {
             // Only on package level allowed to pass the boundaries!!!
-            ASSERT((offset + Frame::RealSize<TYPENAME>()) <= _size);
+            ASSERT((offset + Core::RealSize<TYPENAME>()) <= _size);
 
             number = static_cast<TYPENAME>(_data[offset]);
 
@@ -935,9 +860,9 @@ namespace Core {
         {
             TYPENAME result = static_cast<TYPENAME>(0);
             const uint8_t* source = &(_data[offset]);
-            uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[Frame::RealSize<TYPENAME>() - 1]);
+            uint8_t* destination = &(reinterpret_cast<uint8_t*>(&result)[Core::RealSize<TYPENAME>() - 1]);
 
-            for (uint8_t index = 0; index < Frame::RealSize<TYPENAME>(); index++) {
+            for (uint8_t index = 0; index < Core::RealSize<TYPENAME>(); index++) {
                 *destination-- = *source++;
             }
 
@@ -953,7 +878,7 @@ namespace Core {
             const uint8_t* source = &(_data[offset]);
             uint8_t* destination = reinterpret_cast<uint8_t*>(&result);
 
-            for (uint8_t index = 0; index < Frame::RealSize<TYPENAME>(); index++) {
+            for (uint8_t index = 0; index < Core::RealSize<TYPENAME>(); index++) {
                 *destination++ = *source++;
             }
 
@@ -963,7 +888,7 @@ namespace Core {
         template <typename TYPENAME>
         inline SIZE_CONTEXT GetNumber(const SIZE_CONTEXT offset, TYPENAME& value, const TemplateIntToType<false>&) const
         {
-            if ((offset + Frame::RealSize<TYPENAME>()) > _size) {
+            if ((offset + Core::RealSize<TYPENAME>()) > _size) {
                 value = static_cast<TYPENAME>(0);
             }
             else if (BIG_ENDIAN_ORDERING == true) {
@@ -981,7 +906,7 @@ namespace Core {
 #endif
             }
 
-            return (Frame::RealSize<TYPENAME>());
+            return (Core::RealSize<TYPENAME>());
         }
 
     private:

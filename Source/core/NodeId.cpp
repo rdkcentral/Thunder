@@ -68,7 +68,7 @@ static bool IsIPv4Address(const TCHAR hostname[]) {
     }
 
     // last entry a dot and than no digit is not an IPv4 :-)
-    return (result && (isdigit(hostname[index-1])));
+    return (result && (index > 0) && (isdigit(hostname[index-1])));
 }
 
 static bool IsIPv6Address(const TCHAR hostname[]) {

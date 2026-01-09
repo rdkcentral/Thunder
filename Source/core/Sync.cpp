@@ -37,6 +37,7 @@
 #include "Sync.h"
 #include "ProcessInfo.h"
 #include "Trace.h"
+#include "Errors.h"
 
 #ifdef __CORE_CRITICAL_SECTION_LOG__
 #include "Thread.h"

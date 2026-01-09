@@ -106,6 +106,7 @@ namespace Core {
 
         virtual thread_id Id(const uint8_t index) const = 0;
         virtual void Submit(const Core::ProxyType<IDispatch>& job) = 0;
+        virtual void Submit(const Core::ProxyType<IDispatch>& job, const ThreadPool::Priority priority) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual bool Reschedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
@@ -313,10 +314,15 @@ namespace Core {
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback = nullptr)
+            : WorkerPool(threadCount, stackSize, queueSize, dispatcher, callback, threadCount, threadCount, 1)
+        {
+        }
+
+PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize, ThreadPool::IDispatcher* dispatcher, ThreadPool::ICallback* callback, const uint16_t lowPriorityThreadCount, const uint16_t mediumPriorityThreadCount, const uint8_t additionalThreads = 0)
             : _scheduler(this, _timer)
-            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback)
+            , _threadPool(threadCount, stackSize, queueSize, dispatcher, &_scheduler, &_external, callback, lowPriorityThreadCount, mediumPriorityThreadCount, additionalThreads)
             , _external(_threadPool, dispatcher)
             , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
             , _metadata()
@@ -333,6 +339,7 @@ POP_WARNING()
         ~WorkerPool()
         {
             _threadPool.Stop();
+            _threadPool.WaitForStop();
             delete[] _metadata.Slot;
         }
 
@@ -343,6 +350,13 @@ POP_WARNING()
             ASSERT(_timer.HasEntry(Timer(this, job)) == false);
 
             _threadPool.Submit(job, Core::infinite);
+        }
+        void Submit(const Core::ProxyType<IDispatch>& job, const ThreadPool::Priority priority) override
+        {
+            ASSERT(_timer.HasEntry(Timer(this, job)) == false);
+
+            // Forward to thread pool with priority (falls back to normal submit if priority queues are disabled)
+            _threadPool.Submit(job, Core::infinite, priority);
         }
         void Schedule(const Core::Time& time, const Core::ProxyType<IDispatch>& job) override
         {
@@ -383,7 +397,9 @@ POP_WARNING()
         void Join() override
         {
             _joined = Thread::ThreadId();
+            _threadPool.Announce(_joined);
             _external.Process();
+            _threadPool.Revoke(_joined);
             _joined = 0;
         }
         thread_id Id(const uint8_t index) const override
@@ -426,7 +442,10 @@ POP_WARNING()
             #endif
             _threadPool.Stop();
         }
-
+        bool WaitForStop(uint32_t timeout = Core::infinite)
+        {
+            return _threadPool.WaitForStop(timeout);
+        }
     private:
         Scheduler _scheduler;
         ThreadPool _threadPool;

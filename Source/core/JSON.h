@@ -1867,7 +1867,11 @@ namespace Core {
                                 if (codeSize < 0) {
                                     // Oops it is a bad code thingy, Skip it..
                                     // TODO: report an error
-                                    codeSize = -codeSize;
+                                    if((static_cast<uint32_t>(-codeSize)) <= length) {
+                                        codeSize = -codeSize;
+                                    } else {
+                                        codeSize = length;
+                                    }
                                 }
 
                                 ASSERT(codeSize <= 7);
@@ -2016,7 +2020,7 @@ namespace Core {
                             // We are assumed to be opaque, but all quoted string stuff is enclosed between quotes
                             // and should be considered for scope counting.
                             // Check if we are entering or leaving a quoted area in the opaque object
-                            if ((current == '\"') && ((_value.empty() == true) || IsEscaped(_value))) {
+                            if ((current == '\"') && (IsEscaped(_value) == false)) {
                                 // This is not an "escaped" quote, so it should be considered a real quote. It means
                                 // we are now entering or leaving a quoted area within the opaque struct...
                                 _flagsAndCounters ^= QuotedAreaBit;
@@ -2215,17 +2219,28 @@ namespace Core {
 
         private:
             bool IsEscaped(const string& value) const {
-                // This code determines if a lot of back slashes to esscape the backslash
-                // Is odd or even, so does it escape the last character..
-                // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
-                //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
-                //      'Test \" and \" and than \\\"' are all escaped quotes 
-                uint32_t index = static_cast<uint32_t>(value.length() - 1);
-                uint32_t start = index;
-                while ( (index != static_cast<uint32_t>(~0)) && (value[index] == '\\') ) {
-                    index--;
+                bool escaped(false);
+
+                if (_value.empty() == false) {
+                    // This code determines if a lot of back slashes to esscape the backslash
+                    // Is odd or even, so does it escape the last character..
+                    // e.g. 'Test \\\\\\\\\\"' is not the escaping of the quote (")
+                    //      'Test \\\\\\\\\" continued"'  is the escaping of th quote..
+                    //      'Test \" and \" and than \\\"' are all escaped quotes
+                    // Subtracting 2 here, because the length is always counted by 
+                    // starting @1, so to a zero based buffer, i need to substract 1 
+                    // however that will give us the last character. This is the character
+                    // for which we would like to know if is is escaped, so I need to go 
+                    // even one position before that one, hence -2
+                    uint32_t index = static_cast<uint32_t>(value.length() - 2);
+                    uint32_t count = 0;
+                    while ((index != static_cast<uint32_t>(~0)) && (value[index] == '\\')) {
+                        index--;
+                        count++;
+                    }
+                    escaped =  ((count % 2) != 0);
                 }
-                return (((start - index) % 2) == 0);
+                return (escaped);
             }
             bool InScope(const ScopeBracket mode) {
                 bool added = false;
@@ -3800,7 +3815,9 @@ namespace Core {
             {
                 JSONElementList::iterator index(_data.begin());
 
-                while ((index != _data.end()) && (index->first != label)) {
+                while (   (index != _data.end()) 
+                       && (strncmp(index->first, label, std::min(strlen(label), strlen(index->first))) != 0)
+                ) {
                     index++;
                 }
 
@@ -4846,7 +4863,9 @@ namespace Core {
 
             bool HasLabel(const TCHAR labelName[]) const
             {
-                return (Find(labelName) != _elements.end());
+                return (   Find(labelName) != _elements.end()
+                        && Container::HasLabel(labelName) != false
+                       );
             }
 
             Iterator Variants() const
@@ -4860,6 +4879,17 @@ namespace Core {
                 _elements.clear();
             }
             string GetDebugString(int indent = 0) const;
+
+
+            void Remove(const TCHAR label[])
+            {
+                Elements::iterator index = Find(label);
+                if (index != _elements.end()) {
+                    _elements.erase(index);
+                }
+
+                Container::Remove(label);
+            }
 
         private:
             Elements::iterator Find(const TCHAR fieldName[])

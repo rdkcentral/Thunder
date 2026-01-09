@@ -65,7 +65,10 @@ namespace Core {
 
                 ret = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
-
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
 
@@ -155,6 +158,11 @@ namespace Core {
 
                 ret = pthread_cond_init(&(_administration->_signal), &cond_attr);
                 ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+
+#ifndef __APPLE__
+                ret = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+                ASSERT(ret == 0); DEBUG_VARIABLE(ret);
+#endif
 
                 pthread_mutexattr_t mutex_attr;
 
