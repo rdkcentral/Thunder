@@ -200,10 +200,9 @@ namespace RPC {
 
         ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);
 
-        uint16_t methodId = message->Parameters().MethodId();
-
         if (stub != nullptr) {
-            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            uint16_t methodId = message->Parameters().MethodId();
+            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
         } 
     }
 
@@ -436,7 +435,7 @@ namespace RPC {
 
     // make sure the security setting is only set once, in a thread safe way without locking...
     struct Administrator::ProxyStubSecuritySettingSetter {
-        ProxyStubSecuritySettingSetter(Administrator& administrator, SecureProxyStubType secure)
+        ProxyStubSecuritySettingSetter(Administrator& administrator, const SecureProxyStubType secure)
         {
             administrator._securitySettingProxyStubs = secure;
         }
@@ -467,7 +466,7 @@ namespace RPC {
             _adminLock.Unlock();
         } else {
 
-            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U was generated with a different proxystub security setting then the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
+            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U were generated with a different proxystub security setting than the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
         }
     }
 
