@@ -406,7 +406,7 @@ namespace RPC {
             Core::ProxyType<InvokeMessage> message(data);
             ASSERT(message.IsValid() == true);
             if (message->Parameters().IsValid() == false) {
-                message = std::move(Core::ProxyType<InvokeMessage>());
+                message = Core::ProxyType<InvokeMessage>();
             }
             return message;
         }
