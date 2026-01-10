@@ -438,6 +438,7 @@ namespace RPC {
             if (invokemessage.IsValid() == true) {
                 Core::IUnknown* instance = _administrator.ExtractIUnknown(_channel, invokemessage);
                 if (instance != nullptr) {
+                    // note Set is called from the Monitor thread so we know the channel is still valid and there is no possible race confition with the channel closing and Release due to that as that is also handled in the ResourceMonitor
                     _instance = Core::ProxyType<Core::IUnknown>(*instance);
                 }
             }
