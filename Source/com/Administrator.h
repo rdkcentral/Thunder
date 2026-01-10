@@ -40,10 +40,18 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
+    enum class SecureProxyStubType : uint8_t {
+        PROXYSTUBS_SECURITY_NONE = 0,
+        PROXYSTUBS_SECURITY_SECURE = 1, 
+        PROXYSTUBS_SECURITY_COHERENT = 2 
+    };
+
     struct InstanceRecord {
         Core::instance_id instance;
         uint32_t interface;
     };
+
+    class Job;
 
     class EXTERNAL Administrator {
     private:
@@ -144,6 +152,14 @@ namespace RPC {
         static Administrator& Instance();
 
     public:
+        bool SecureProxyStubs() const {
+            return ((static_cast<uint8_t>(_securitySettingProxyStubs) & static_cast<uint8_t>(SecureProxyStubType::PROXYSTUBS_SECURITY_SECURE)) != 0);
+        }
+        bool CoherentProxyStubs() const
+        {
+            return ((static_cast<uint8_t>(_securitySettingProxyStubs) & static_cast<uint8_t>(SecureProxyStubType::PROXYSTUBS_SECURITY_COHERENT)) != 0);
+        }
+
         bool DelegatedReleases() const {
             return (_delegatedReleases);
         }
@@ -185,48 +201,15 @@ namespace RPC {
         }
 
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
-        void Announce()
+        void Announce(const SecureProxyStubType secure = SecureProxyStubType::PROXYSTUBS_SECURITY_NONE)
         {
-            _adminLock.Lock();
-
-#ifdef __DEBUG__
-            if (_stubs.find(ACTUALINTERFACE::ID) != _stubs.end()) {
-                TRACE_L1("Interface (stub) %d, gets registered multiple times !!!", ACTUALINTERFACE::ID);
-            }
-            else if (_proxy.find(ACTUALINTERFACE::ID) != _proxy.end()) {
-                TRACE_L1("Interface (proxy) %d, gets registered multiple times !!!", ACTUALINTERFACE::ID);
-            }
-#endif
-            _stubs.insert(std::pair<uint32_t, ProxyStub::UnknownStub*>(ACTUALINTERFACE::ID, new STUB()));
-            _proxy.insert(std::pair<uint32_t, IMetadata*>(ACTUALINTERFACE::ID, new ProxyType<PROXY>()));
-
-            _adminLock.Unlock();
+            Announce(ACTUALINTERFACE::ID, new STUB(), new ProxyType<PROXY>(), secure);
         }
 
         template <typename ACTUALINTERFACE>
         void Recall()
         {
-            _adminLock.Lock();
-
-            Stubs::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
-            if (stub != _stubs.end()) {
-PUSH_WARNING(DISABLE_WARNING_DELETE_INCOMPLETE)
-                delete stub->second;
-POP_WARNING()
-                _stubs.erase(ACTUALINTERFACE::ID);
-            } else {
-                TRACE_L1("Failed to find a Stub for %d.", ACTUALINTERFACE::ID);
-            }
-
-            Factories::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
-            if (proxy != _proxy.end()) {
-                delete proxy->second;
-                _proxy.erase(ACTUALINTERFACE::ID);
-            } else {
-                TRACE_L1("Failed to find a Proxy for %d.", ACTUALINTERFACE::ID);
-            }
-
-            _adminLock.Unlock();
+            Recall(ACTUALINTERFACE::ID);
         }
 
         Core::ProxyType<InvokeMessage> Message()
@@ -311,13 +294,22 @@ POP_WARNING()
         bool UnregisterUnknownProxy(const ProxyStub::UnknownProxy& proxy, uint32_t channelId);
 
    private:
+        friend class Thunder::RPC::Job;
+
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
+       void Announce(uint32_t interfaceID, ProxyStub::UnknownStub* stub, IMetadata* proxy, const SecureProxyStubType secure);
+        void Recall(uint32_t interfaceID);
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         const Core::IUnknown* Convert(void* rawImplementation, const uint32_t id) const;
         void RegisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
         void UnregisterUnknown(const Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId, const uint32_t dropCount);
+        Core::IUnknown* ExtractIUnknown(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message) const;
+        ProxyStub::UnknownStub* ExtractStub(const uint32_t interfaceId) const;
+
+    private:
+        struct ProxyStubSecuritySettingSetter;
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
@@ -328,6 +320,7 @@ POP_WARNING()
         ChannelMap _channelProxyMap;
         ReferenceMap _channelReferenceMap;
         Proxies _danglingProxies;
+        SecureProxyStubType _securitySettingProxyStubs;
 
         // Delegated release, if enabled, will release references held by connections 
         // that close but still have references on objects in this process space.
@@ -375,21 +368,19 @@ POP_WARNING()
         Job()
             : _message()
             , _channel()
-        {
-        }
-        Job(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message)
-            : _message(message)
-            , _channel(channel)
+            , _instance()
         {
         }
         Job(Job&& move) noexcept
             : _message(std::move(move._message))
             , _channel(std::move(move._channel))
+            , _instance(std::move(move._instance))
         {
         }
         Job(const Job& copy)
             : _message(copy._message)
             , _channel(copy._channel)
+            , _instance(copy._instance)
         {
         }
         ~Job() override = default;
@@ -397,14 +388,27 @@ POP_WARNING()
         Job& operator=(Job&& rhs) noexcept {
             _message = std::move(rhs._message);
             _channel = std::move(rhs._channel);
+            _instance = std::move(rhs._instance);
 
             return (*this);
         }
         Job& operator=(const Job& rhs) {
             _message = rhs._message;
             _channel = rhs._channel;
+            _instance = rhs._instance;
 
             return (*this);
+        }
+
+    private:
+        static Core::ProxyType<InvokeMessage> ExtractInvokeMessage(const Core::ProxyType<Core::IIPC>& data)
+        {
+            Core::ProxyType<InvokeMessage> message(data);
+            ASSERT(message.IsValid() == true);
+            if (message->Parameters().IsValid() == false) {
+                message = std::move(Core::ProxyType<InvokeMessage>());
+            }
+            return message;
         }
 
     public:
@@ -416,11 +420,23 @@ POP_WARNING()
         {
             _message.Release();
             _channel.Release();
+            _instance.Release();
         }
         void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message)
         {
+            ASSERT(_message->Label() == InvokeMessage::Id());
+
             _message = message;
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
+            Core::ProxyType<InvokeMessage> invokemessage = { ExtractInvokeMessage(message) };
+            if (invokemessage.IsValid() == true) {
+                Core::IUnknown* instance = _administrator.ExtractIUnknown(_channel, invokemessage);
+                if (instance != nullptr) {
+                    _instance = Core::ProxyType<Core::IUnknown>(*instance);
+                }
+            }
+            // if the above could not successfully do the addref because finding the instance failed, we just do nothing as we cannot report an error back here (we do not know if the method being invoked returns an hresult..
+            // in the end the job will run and the invoke will fail as well as teh instance cannot be found and the error will be reported (and in that case it is not an issue if we could not do the addref here as the instance will never be used...
         }
         string Identifier() const override {
             string identifier;
@@ -442,20 +458,19 @@ POP_WARNING()
 
         static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
         {
-            Core::ProxyType<InvokeMessage> message(data);
-            ASSERT(message.IsValid() == true);
-            if (message->Parameters().IsValid() == false) {
-                SYSLOG(Logging::Error, (_T("COMRPC Announce message incorrectly formatted!")));
-            }
-            else {
+            Core::ProxyType<InvokeMessage> message = { ExtractInvokeMessage(data) };
+            if (message.IsValid() == true) {
                 _administrator.Invoke(channel, message);
                 channel->ReportResponse(data);
+            } else {
+                SYSLOG(Logging::Error, (_T("COMRPC Invoke message incorrectly formatted!")));
             }
         }
 
     private:
         Core::ProxyType<Core::IIPC> _message;
         Core::ProxyType<Core::IPCChannel> _channel;
+        Core::ProxyType<Core::IUnknown> _instance;
 
         static Core::ProxyPoolType<Job> _factory;
         static Administrator& _administrator;
