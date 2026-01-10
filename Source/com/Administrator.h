@@ -418,13 +418,19 @@ namespace RPC {
         }
         void Clear()
         {
-            _message.Release();
-            _channel.Release();
-            _instance.Release();
+            if (_message.IsValid() == true) {
+                _message.Release();
+            }
+            if (_channel.IsValid() == true) {
+                _channel.Release();
+            }
+            if (_instance.IsValid() == true) {
+                _instance.Release();
+            }
         }
         void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message)
         {
-            ASSERT(_message->Label() == InvokeMessage::Id());
+            ASSERT(message->Label() == InvokeMessage::Id());
 
             _message = message;
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
@@ -458,12 +464,15 @@ namespace RPC {
 
         static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
         {
-            Core::ProxyType<InvokeMessage> message = { ExtractInvokeMessage(data) };
-            if (message.IsValid() == true) {
-                _administrator.Invoke(channel, message);
-                channel->ReportResponse(data);
-            } else {
-                SYSLOG(Logging::Error, (_T("COMRPC Invoke message incorrectly formatted!")));
+            ASSERT(channel.IsValid() == true); 
+            if (channel->IsOpen() == true) { // if the channel has closed in the mean time no need to process the message... (note this is an optimization and not thread safe, the AddRef we do in Set makes sure the instance is still valid)
+                Core::ProxyType<InvokeMessage> message = { ExtractInvokeMessage(data) };
+                if (message.IsValid() == true) {
+                    _administrator.Invoke(channel, message);
+                    channel->ReportResponse(data);
+                } else {
+                    SYSLOG(Logging::Error, (_T("COMRPC Invoke message incorrectly formatted!")));
+                }
             }
         }
 
