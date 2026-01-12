@@ -44,7 +44,8 @@ namespace RPC {
             , _index(0)
         {
             TRACE_L1("Thunder::RPC::IteratorType: Using std::list as a source container is less efficient than using std::vector.");
-            std::copy(container.begin(), container.end(), std::back_inserter(_container));
+            _container.reserve(container.size());
+            std::move(container.begin(), container.end(), std::back_inserter(_container));
             _iterator = _container.begin();
         }
         template <typename CONTAINER, typename PREDICATE>
