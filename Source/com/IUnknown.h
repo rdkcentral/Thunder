@@ -454,6 +454,7 @@ namespace ProxyStub {
         // Invalidate(), It is safe to use it on the _channel in an unlocked
         // fashion!!
         uint32_t Id() const;
+
         bool Invalidate() {
             bool succeeded = false;
             ASSERT(_refCount > 0);
