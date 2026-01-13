@@ -180,6 +180,10 @@ namespace RPC {
 
     Core::IUnknown* Administrator::ExtractIUnknown(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message) const
     {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
         Core::IUnknown* result = nullptr;
 
         uint32_t interfaceId(message->Parameters().InterfaceId());
@@ -196,6 +200,10 @@ namespace RPC {
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
     {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
         uint32_t interfaceId(message->Parameters().InterfaceId());
 
         ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);

@@ -243,16 +243,15 @@ namespace ProxyStub {
                             if (result == Core::ERROR_TIMEDOUT) {
                                 Shutdown();
                             }
-                            TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
-                            result |= COM_ERROR;
+                            SYSLOG(Logging::Error, (_T("Could not remote release the Proxy for Interface [0x%X]"), message->Parameters().InterfaceId()));
                         }
                         else {
                             // Pass the remote release return value through
                             RPC::Data::Frame::Reader reader(message->Response().Reader());
                             if ((RPC::Administrator::Instance().CoherentProxyStubs() == true) && (reader.Length() < (Core::RealSize<uint32_t>()))) {
-                                result = (COM_ERROR | Core::ERROR_READ_ERROR);
+                                SYSLOG(Logging::Error, (_T("Incoherent Release invoke message received for interface [0x%X]"), message->Parameters().InterfaceId()));
                             } else {
-                                result = reader.Number<uint32_t>();
+                                reader.Number<uint32_t>();
                             }
                         }
                     }
