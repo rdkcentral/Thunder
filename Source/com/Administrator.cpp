@@ -168,11 +168,8 @@ namespace RPC {
         if (index != _stubs.end()) {
             result = index->second;
         } else {
-            // Oops this is an unknown interface, Do not think this could happen.
-            TRACE_L1("Unknown interface. %d", interfaceId);
-            if (CoherentProxyStubs() == true) {
-                SYSLOG(Logging::Error, (_T("COMRPC received Invoke message with invalid interface ID , interface ID [%u]"), interfaceId));
-            }
+            // Oops this is an unknown interface, 
+            SYSLOG(Logging::Error, (_T("Unknown interface received, either the received COMRPC Invoke message had an invalid interface ID or the interface was not registered, interface ID [%u]"), interfaceId));
         }
         return (result);
     }
