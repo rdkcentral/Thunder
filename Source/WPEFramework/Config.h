@@ -386,6 +386,7 @@ namespace PluginHost {
                 , Latitude(51832547) // Divider 1.000.000
                 , Longitude(5674899) // Divider 1.000.000
                 , DelegatedReleases(true)
+                , MetadataDiscovery(true)
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -429,6 +430,7 @@ namespace PluginHost {
                 Add(_T("latitude"), &Latitude);
                 Add(_T("longitude"), &Longitude);
                 Add(_T("ccdr"), &DelegatedReleases); /* COMRPC channel delegated releases */
+                Add(_T("discovery"), &MetadataDiscovery);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -476,6 +478,7 @@ namespace PluginHost {
             Core::JSON::DecSInt32 Latitude;
             Core::JSON::DecSInt32 Longitude;
             Core::JSON::Boolean DelegatedReleases;
+            Core::JSON::Boolean MetadataDiscovery;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -640,6 +643,7 @@ namespace PluginHost {
             , _substituter(*this)
             , _configLock()
             , _delegatedReleases(true)
+            , _metadataDiscovery(true)
             #ifdef PROCESSCONTAINERS_ENABLED
             , _ProcessContainersLogging()
             #endif
@@ -696,6 +700,7 @@ namespace PluginHost {
                 _processInfo.Set(config.Process);
                 _ethernetCard = config.EthernetCard.Value();
                 _delegatedReleases = config.DelegatedReleases.Value();
+                _metadataDiscovery = config.MetadataDiscovery.Value();
                 if( config.Latitude.IsSet() || config.Longitude.IsSet() ) {
                     SYSLOG(Logging::Error, (_T("Support for Latitude and Longitude moved from Thunder configuration to plugin providing ILocation support")));
                 }
@@ -906,6 +911,9 @@ POP_WARNING()
         inline bool DelegatedReleases() const {
             return(_delegatedReleases);
         }
+        inline bool MetadataDiscovery() const {
+            return (_metadataDiscovery);
+        }
         inline const InputInfo& Input() const {
             return(_inputInfo);
         }
@@ -1083,6 +1091,7 @@ POP_WARNING()
         Substituter _substituter;
         mutable Core::CriticalSection _configLock;
         bool _delegatedReleases;
+        bool _metadataDiscovery;
 
 #ifdef PROCESSCONTAINERS_ENABLED
         string _ProcessContainersLogging;

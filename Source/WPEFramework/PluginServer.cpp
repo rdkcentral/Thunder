@@ -1088,21 +1088,26 @@ POP_WARNING()
 
         ServiceMap::Iterator iterator(_services.Services());
 
-        // Load the metadata for the subsystem information..
-        while (iterator.Next() == true)
-        {
-            iterator->LoadMetadata();
-            for (const PluginHost::ISubSystem::subsystem& entry : iterator->SubSystemControl()) {
-                Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
-                if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), iterator->Callsign().c_str())));
-                }
-                else if (entry >= PluginHost::ISubSystem::END_LIST) {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), iterator->Callsign().c_str())));
-                }
-                else {
-                    SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), iterator->Callsign().c_str())));
-                    externallyControlled.emplace_back(entry);
+        if (Configuration().MetadataDiscovery() == false) {
+            SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
+        }
+        else {
+            // Load the metadata for the subsystem information..
+            while (iterator.Next() == true)
+            {
+                iterator->LoadMetadata();
+                for (const PluginHost::ISubSystem::subsystem& entry : iterator->SubSystemControl()) {
+                    Core::EnumerateType<PluginHost::ISubSystem::subsystem> name(entry);
+                    if (std::find(externallyControlled.begin(), externallyControlled.end(), entry) != externallyControlled.end()) {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] controlled by multiple plugins. Second: [%s]. Configuration error!!!"), name.Data(), iterator->Callsign().c_str())));
+                    }
+                    else if (entry >= PluginHost::ISubSystem::END_LIST) {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsystem [%s] can not be used as a control value in [%s]!!!"), name.Data(), iterator->Callsign().c_str())));
+                    }
+                    else {
+                        SYSLOG(Logging::Startup, (Core::Format(_T("Subsytem [%s] controlled by plugin [%s]"), name.Data(), iterator->Callsign().c_str())));
+                        externallyControlled.emplace_back(entry);
+                    }
                 }
             }
         }
