@@ -286,16 +286,21 @@ namespace PluginHost
             result = static_cast<PluginHost::IShell*>(this);
         }
         else {
-
             _pluginHandling.Lock();
-
+            
             if (State() == ACTIVATED) {
-                if (_handler != nullptr) {
+                if (id == PluginHost::IDispatcher::ID) {
+                    if (_jsonrpc != nullptr) {
+                        _jsonrpc->AddRef();
+                        result = _jsonrpc;
+                    }
+                }
+                else if (_handler != nullptr) {
                     result = _handler->QueryInterface(id);
                 }
-            }            
-
+            }
             _pluginHandling.Unlock();
+
         }
 
         return (result);
@@ -1080,6 +1085,7 @@ POP_WARNING()
         _config.Security(securityProvider);
 
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
+
         ServiceMap::Iterator iterator(_services.Services());
 
         // Load the metadata for the subsystem information..
