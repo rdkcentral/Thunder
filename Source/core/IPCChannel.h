@@ -100,19 +100,11 @@ namespace Core {
         {
             return (BaseClass::Source().Close(waitTime));
         }
-        bool IsOpen() const
-        {
-            return (BaseClass::Source().IsOpen());
-        }
-        bool IsClosed() const
-        {
-            return (BaseClass::Source().IsClosed());
-        }
         template <typename ACTUALELEMENT>
         void CreateFactory(const uint32_t initialSize)
         {
             ASSERT(_factory.IsValid());
-            ASSERT(BaseClass::Source().IsOpen() == false);
+            ASSERT(BaseClass::IsOpen() == false);
 
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
 
@@ -123,7 +115,7 @@ namespace Core {
         {
 
             ASSERT(_factory.IsValid());
-            ASSERT(BaseClass::Source().IsOpen() == false);
+            ASSERT(BaseClass::IsOpen() == false);
 
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
 

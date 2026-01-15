@@ -49,8 +49,15 @@ namespace ProxyStub {
         virtual ~UnknownStub() = default;
 
     public:
+        enum class StubMethodsIndexType : uint8_t {
+            ADRREF          = 0,
+            RELEASE         = 1,
+            QUERYINTERFACE  = 2 // when this list is extended and this is no longer the last entry, update the Length() method as well
+        };
+
+    public:
         inline uint16_t Length() const {
-            return (3);
+            return (static_cast<uint16_t>(StubMethodsIndexType::QUERYINTERFACE) + 1);
         }
         virtual Core::IUnknown* Convert(void* incomingData) const {
             return (reinterpret_cast<Core::IUnknown*>(incomingData));
@@ -59,6 +66,11 @@ namespace ProxyStub {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
+
+    private:
+        friend class Thunder::RPC::Administrator;
+
+        Core::IUnknown* ExtractInstance(Core::ProxyType<Core::IPCChannel>& channel, const Core::ProxyType<RPC::InvokeMessage>& message, const bool log) const;
     };
 
     template <typename INTERFACE, MethodHandler METHODS[]>
@@ -107,6 +119,10 @@ namespace ProxyStub {
                 ASSERT(handler != nullptr);
 
                 handler(channel, message);
+            } else {
+                // if we get here, the message was already checked for validness, so just log the error with the interface id
+                SYSLOG(Logging::Error, (_T("COMRPC received Invoke message with invalid method index , interface ID [%u]"), message->Parameters().InterfaceId()));
+                TRACE_L1("Warning: This COM-RPC failure will not propagate!");
             }
         }
 
@@ -215,7 +231,7 @@ namespace ProxyStub {
                         // We have reached "0", signal the other side..
                         Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
-                        message->Parameters().Set(_implementation, _interfaceId, 1);
+                        message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::RELEASE));
 
                         // Pass on the number of reference we need to drop, this is indicated by the amount of times this proxy had to be created
                         message->Parameters().Writer().Number<uint32_t>(_remoteReferences);
@@ -227,12 +243,16 @@ namespace ProxyStub {
                             if (result == Core::ERROR_TIMEDOUT) {
                                 Shutdown();
                             }
-                            TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
-                            result |= COM_ERROR;
+                            SYSLOG(Logging::Error, (_T("Could not remote release the Proxy for Interface [0x%X]"), message->Parameters().InterfaceId()));
                         }
                         else {
                             // Pass the remote release return value through
-                            result = message->Response().Reader().Number<uint32_t>();
+                            RPC::Data::Frame::Reader reader(message->Response().Reader());
+                            if ((RPC::Administrator::Instance().CoherentProxyStubs() == true) && (reader.Length() < (Core::RealSize<uint32_t>()))) {
+                                SYSLOG(Logging::Error, (_T("Incoherent Release invoke message received for interface [0x%X]"), message->Parameters().InterfaceId()));
+                            } else {
+                                reader.Number<uint32_t>();
+                            }
                         }
                     }
 
@@ -258,7 +278,7 @@ namespace ProxyStub {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, _interfaceId, 2);
+            message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE));
             parameters.Number<uint32_t>(id);
 
             _adminLock.Lock();
@@ -268,12 +288,17 @@ namespace ProxyStub {
             }
             else {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
-                Core::instance_id impl = response.Number<Core::instance_id>();
-                _adminLock.Unlock();
 
-                // From what is returned, we need to create a proxy
-                RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
-
+                if ((RPC::Administrator::Instance().CoherentProxyStubs() == false) || (response.Length() >= (Core::RealSize<Core::instance_id>()))) {
+                    Core::instance_id impl = response.Number<Core::instance_id>();
+                    _adminLock.Unlock();
+                    // From what is returned, we need to create a proxy
+                    RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
+                } else {
+                    _adminLock.Unlock();
+                    SYSLOG(Logging::Error, (_T("COMRPC Coherency check failed, QueryInterface message incomplete, interface ID [%u]"), message->Parameters().InterfaceId()));
+                    TRACE_L1("Warning: This COM-RPC failure will not propagate!");
+                }
             }
             return (result);
         }

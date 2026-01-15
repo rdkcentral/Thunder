@@ -34,6 +34,7 @@ namespace RPC {
         , _channelProxyMap()
         , _channelReferenceMap()
         , _danglingProxies()
+        , _securitySettingProxyStubs(SecureProxyStubType::PROXYSTUBS_SECURITY_NONE)
         , _delegatedReleases(true)
     {
     }
@@ -158,20 +159,56 @@ namespace RPC {
         return removed;
     }
 
-    void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
+    ProxyStub::UnknownStub* Administrator::ExtractStub(const uint32_t interfaceId) const
     {
-        uint32_t interfaceId(message->Parameters().InterfaceId());
+        ProxyStub::UnknownStub* result = nullptr;
 
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
-        Stubs::iterator index(_stubs.find(interfaceId));
-
+        Stubs::const_iterator index(_stubs.find(interfaceId));
         if (index != _stubs.end()) {
-            uint32_t methodId(message->Parameters().MethodId());
-            REPORT_DURATION_WARNING({ index->second->Handle(methodId, channel, message); },  WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+            result = index->second;
         } else {
-            // Oops this is an unknown interface, Do not think this could happen.
-            TRACE_L1("Unknown interface. %d", interfaceId);
+            // Oops this is an unknown interface, 
+            SYSLOG(Logging::Error, (_T("Unknown interface received, either the received COMRPC Invoke message had an invalid interface ID or the interface was not registered, interface ID [%u]"), interfaceId));
         }
+        return (result);
+    }
+
+
+    Core::IUnknown* Administrator::ExtractIUnknown(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message) const
+    {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
+        Core::IUnknown* result = nullptr;
+
+        uint32_t interfaceId(message->Parameters().InterfaceId());
+
+        ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);
+
+        if (stub != nullptr) {
+            result = stub->ExtractInstance(channel, message, false);
+        }
+
+        return result;
+    }
+
+
+    void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
+    {
+        ASSERT(channel.IsValid() == true);
+        ASSERT(message.IsValid() == true);
+        ASSERT(message->Parameters().IsValid() == true);
+
+        uint32_t interfaceId(message->Parameters().InterfaceId());
+
+        ProxyStub::UnknownStub* stub = ExtractStub(interfaceId);
+
+        if (stub != nullptr) {
+            uint16_t methodId = message->Parameters().MethodId();
+            REPORT_DURATION_WARNING({ stub->Handle(methodId, channel, message); }, WarningReporting::TooLongInvokeRPC, interfaceId, methodId);
+        } 
     }
 
     bool Administrator::IsValid(const Core::ProxyType<Core::IPCChannel>& channel, const Core::instance_id& impl, const uint32_t id) const
@@ -399,6 +436,68 @@ namespace RPC {
         } else {
             printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
         }
+    }
+
+    // make sure the security setting is only set once, in a thread safe way without locking...
+    struct Administrator::ProxyStubSecuritySettingSetter {
+        ProxyStubSecuritySettingSetter(Administrator& administrator, const SecureProxyStubType secure)
+        {
+            administrator._securitySettingProxyStubs = secure;
+        }
+    };
+
+    void Administrator::Announce(uint32_t interfaceID, ProxyStub::UnknownStub* stub, IMetadata* proxy, const SecureProxyStubType secure)
+    {
+        static ProxyStubSecuritySettingSetter securitytypesetter(*this, secure);
+
+        ASSERT(stub != nullptr);
+        ASSERT(proxy != nullptr);
+
+        if (secure == _securitySettingProxyStubs) {
+
+            _adminLock.Lock();
+
+#ifdef __DEBUG__
+            if (_stubs.find(interfaceID) != _stubs.end()) {
+                TRACE_L1("Interface (stub) %d, gets registered multiple times !!!", interfaceID);
+            } else if (_proxy.find(interfaceID) != _proxy.end()) {
+                TRACE_L1("Interface (proxy) %d, gets registered multiple times !!!", interfaceID);
+            }
+#endif
+            _stubs.insert(std::pair<uint32_t, ProxyStub::UnknownStub*>(interfaceID, stub));
+            stub = nullptr;
+            _proxy.insert(std::pair<uint32_t, IMetadata*>(interfaceID, proxy));
+            proxy = nullptr;
+            _adminLock.Unlock();
+        } else {
+
+            SYSLOG(Logging::Error, (_T("Proxy and Stubs for interface %U were generated with a different proxystub security setting than the other Proxy and Stubs, it will be ignored (so expect errors due to this)")));
+        }
+    }
+
+    void Administrator::Recall(uint32_t interfaceID)
+    {
+        _adminLock.Lock();
+
+        Stubs::iterator stub(_stubs.find(interfaceID));
+        if (stub != _stubs.end()) {
+            PUSH_WARNING(DISABLE_WARNING_DELETE_INCOMPLETE)
+            delete stub->second;
+            POP_WARNING()
+            _stubs.erase(interfaceID);
+        } else {
+            TRACE_L1("Failed to find a Stub for %d.", interfaceID);
+        }
+
+        Factories::iterator proxy(_proxy.find(interfaceID));
+        if (proxy != _proxy.end()) {
+            delete proxy->second;
+            _proxy.erase(interfaceID);
+        } else {
+            TRACE_L1("Failed to find a Proxy for %d.", interfaceID);
+        }
+
+        _adminLock.Unlock();
     }
 
     Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id)
