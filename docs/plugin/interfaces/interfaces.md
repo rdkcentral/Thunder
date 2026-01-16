@@ -394,6 +394,9 @@ As always these examples will also be included in the generated documentation fo
 
 And again static helper functions will be included in the generated J< interface >.h file for sending the notifications.
 
+Please note putting the @index tag on the Register method (if desired in combination with putting it on the parameter in the event method itself) is the preferred way to indicate a parameter is used as an index. 
+As it is not mandatory for JSON-RPC events to work to have a COM-RPC Register method perse (as JSON-RPC is in the functional domain the Register function is always there and provided by Thunder, not the interface) it is supported to only have the @index on the parameter in the event method. In case the code generator does find a Register for the event class with the same index parameter it will however put out a warning as it is desired for consistency to put the @index with the Register method in that case.
+
 ##### statuslisteners
 
 Tagging a notification with @statuslistener will emit additional code that will allow you to be notified when a JSON-RPC client has registered (or unregistered) from this notification. As a result, an additional IHandler interface is generated, providing the callbacks.
