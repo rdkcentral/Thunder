@@ -520,6 +520,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -536,6 +537,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
@@ -554,6 +556,7 @@ namespace RPC {
 
         if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
             result = Core::ERROR_OPENING_FAILED;
+            BaseClass::Close(0);
         }
 
         return (result);
