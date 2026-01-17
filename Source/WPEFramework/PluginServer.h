@@ -2415,14 +2415,7 @@ namespace PluginHost {
                     // STRONG RECOMMENDATION TO HAVE THIS ACTIVE (TRUE)!!!
                     RPC::Administrator::Instance().DelegatedReleases(delegatedReleases);
 
-                    if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
-                        TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
-                    } else {
-                        // We need to pass the communication channel NodeId via an environment variable, for process,
-                        // not being started by the rpcprocess...
-                        Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
-                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
-                    }
+                    RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
 
                     if (observableProxyStubPath.empty() == true) {
                         SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
@@ -2573,7 +2566,15 @@ namespace PluginHost {
                     _deadProxiesProtection.Unlock();
                 }
 
-
+                void Open() {
+                    if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
+                        TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
+                    } else {
+                        // We need to pass the communication channel NodeId via an environment variable, for process,
+                        // not being started by the rpcprocess...
+                    Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                   }
+                }
             private:
                 void Reload(const string& path) {
                     TRACE(Activity, (Core::Format(_T("Reloading ProxyStubs from %s."), path.c_str())));
@@ -2904,6 +2905,10 @@ POP_WARNING()
             }
 
         public:
+            inline void Open()
+            {
+                _processAdministrator.Open();
+            }
             inline void Security(const bool enabled)
             {
                 _adminLock.Lock();

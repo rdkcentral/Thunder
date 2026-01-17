@@ -1088,6 +1088,8 @@ POP_WARNING()
 
         ServiceMap::Iterator iterator(_services.Services());
 
+        _services.Open();
+
         if (Configuration().MetadataDiscovery() == false) {
             SYSLOG(Logging::Startup, (_T("Automatic metadata discovery and plugin versioning is DISABLED!!!")));
         }
