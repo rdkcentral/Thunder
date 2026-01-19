@@ -29,7 +29,7 @@
 
 #include <core/core.h>
 
-namespace Thunder {
+namespace WPEFramework {
 namespace Tests {
 namespace Core {
 
@@ -105,11 +105,11 @@ namespace Core {
     {
         JsonObject container;
 
-        ::Thunder::Core::JSON::Variant intType{ 123 };
-        ::Thunder::Core::JSON::Variant floatType{ 123.456f };
-        ::Thunder::Core::JSON::Variant doubleType{ 123.456 }; // defaults to double with omitted suffix
-        ::Thunder::Core::JSON::Variant boolType{ true };
-        ::Thunder::Core::JSON::Variant stringType{ "scribble" };
+        ::WPEFramework::Core::JSON::Variant intType{ 123 };
+        ::WPEFramework::Core::JSON::Variant floatType{ 123.456f };
+        ::WPEFramework::Core::JSON::Variant doubleType{ 123.456 }; // defaults to double with omitted suffix
+        ::WPEFramework::Core::JSON::Variant boolType{ true };
+        ::WPEFramework::Core::JSON::Variant stringType{ "scribble" };
 
         // An empty JsonObject is valid
         EXPECT_TRUE(container.IsValid());
@@ -123,68 +123,68 @@ namespace Core {
         // All contained elements are valid
         EXPECT_TRUE(container.IsValid());
 
-        ::Thunder::Core::JSON::Variant intFound     = container.Get("integer");
+        ::WPEFramework::Core::JSON::Variant intFound     = container.Get("integer");
         // Create and add if it does not exist otherwise return the existing element
-        ::Thunder::Core::JSON::Variant& intRefFound = container["integer"];
+        ::WPEFramework::Core::JSON::Variant& intRefFound = container["integer"];
 
-        EXPECT_TRUE(intFound.Content() == ::Thunder::Core::JSON::Variant::type::NUMBER);
+        EXPECT_TRUE(intFound.Content() == ::WPEFramework::Core::JSON::Variant::type::NUMBER);
         EXPECT_EQ(intFound.Number(), 123);
         EXPECT_TRUE(intFound == intRefFound);
 
-        ::Thunder::Core::JSON::Variant floatFound = container.Get("float");
-        ::Thunder::Core::JSON::Variant& floatRefFound = container["float"];
-        EXPECT_TRUE(floatFound.Content() == ::Thunder::Core::JSON::Variant::type::FLOAT);
+        ::WPEFramework::Core::JSON::Variant floatFound = container.Get("float");
+        ::WPEFramework::Core::JSON::Variant& floatRefFound = container["float"];
+        EXPECT_TRUE(floatFound.Content() == ::WPEFramework::Core::JSON::Variant::type::FLOAT);
         EXPECT_FLOAT_EQ(floatFound.Float(), 123.456);
         EXPECT_TRUE(floatFound == floatRefFound);
 
-        ::Thunder::Core::JSON::Variant doubleFound = container.Get("double");
-        ::Thunder::Core::JSON::Variant& doubleRefFound = container["double"];
-        EXPECT_TRUE(doubleFound.Content() == ::Thunder::Core::JSON::Variant::type::DOUBLE);
+        ::WPEFramework::Core::JSON::Variant doubleFound = container.Get("double");
+        ::WPEFramework::Core::JSON::Variant& doubleRefFound = container["double"];
+        EXPECT_TRUE(doubleFound.Content() == ::WPEFramework::Core::JSON::Variant::type::DOUBLE);
         EXPECT_FLOAT_EQ(doubleFound.Float(), 123.456);
         EXPECT_TRUE(doubleFound == doubleRefFound);
 
-        ::Thunder::Core::JSON::Variant boolFound = container.Get("boolean");
-        ::Thunder::Core::JSON::Variant& boolRefFound = container["boolean"];
-        EXPECT_TRUE(boolFound.Content() == ::Thunder::Core::JSON::Variant::type::BOOLEAN);
+        ::WPEFramework::Core::JSON::Variant boolFound = container.Get("boolean");
+        ::WPEFramework::Core::JSON::Variant& boolRefFound = container["boolean"];
+        EXPECT_TRUE(boolFound.Content() == ::WPEFramework::Core::JSON::Variant::type::BOOLEAN);
         EXPECT_EQ(boolFound.Boolean(), true);
         EXPECT_TRUE(boolFound == boolRefFound);
 
-        ::Thunder::Core::JSON::Variant stringFound = container.Get("string");
-        ::Thunder::Core::JSON::Variant& stringRefFound = container["string"];
-        EXPECT_TRUE(stringFound.Content() == ::Thunder::Core::JSON::Variant::type::STRING);
+        ::WPEFramework::Core::JSON::Variant stringFound = container.Get("string");
+        ::WPEFramework::Core::JSON::Variant& stringRefFound = container["string"];
+        EXPECT_TRUE(stringFound.Content() == ::WPEFramework::Core::JSON::Variant::type::STRING);
         EXPECT_STREQ(stringFound.String().c_str(), "scribble");
         EXPECT_TRUE(stringFound == stringRefFound);
 
         container.Clear();
 
         // The container should have nothing to index
-        ::Thunder::Core::JSON::VariantContainer::Iterator it = container.Variants();
+        ::WPEFramework::Core::JSON::VariantContainer::Iterator it = container.Variants();
         EXPECT_FALSE(it.IsValid());
 
         // It does not exist so a default constructed variant is returned
         // Create and add a default variant with the label 'integer'
-        ::Thunder::Core::JSON::Variant& intRefCreated = container["integer"];
+        ::WPEFramework::Core::JSON::Variant& intRefCreated = container["integer"];
         EXPECT_TRUE(container.HasLabel("integer"));
-        EXPECT_TRUE(intRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+        EXPECT_TRUE(intRefCreated.Content() == ::WPEFramework::Core::JSON::Variant::type::EMPTY);
 
-        ::Thunder::Core::JSON::Variant& floatRefCreated = container["float"];
+        ::WPEFramework::Core::JSON::Variant& floatRefCreated = container["float"];
         EXPECT_TRUE(container.HasLabel("float"));
-        EXPECT_TRUE(floatRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+        EXPECT_TRUE(floatRefCreated.Content() == ::WPEFramework::Core::JSON::Variant::type::EMPTY);
 
-        ::Thunder::Core::JSON::Variant& doubleRefCreated = container["double"];
+        ::WPEFramework::Core::JSON::Variant& doubleRefCreated = container["double"];
         EXPECT_TRUE(container.HasLabel("double"));
-        EXPECT_TRUE(doubleRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+        EXPECT_TRUE(doubleRefCreated.Content() == ::WPEFramework::Core::JSON::Variant::type::EMPTY);
 
-        ::Thunder::Core::JSON::Variant& boolRefCreated = container["boolean"];
+        ::WPEFramework::Core::JSON::Variant& boolRefCreated = container["boolean"];
         EXPECT_TRUE(container.HasLabel("boolean"));
-        EXPECT_TRUE(boolRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+        EXPECT_TRUE(boolRefCreated.Content() == ::WPEFramework::Core::JSON::Variant::type::EMPTY);
 
-        ::Thunder::Core::JSON::Variant& stringRefCreated = container["string"];
+        ::WPEFramework::Core::JSON::Variant& stringRefCreated = container["string"];
         EXPECT_TRUE(container.HasLabel("string"));
-        EXPECT_TRUE(stringRefCreated.Content() == ::Thunder::Core::JSON::Variant::type::EMPTY);
+        EXPECT_TRUE(stringRefCreated.Content() == ::WPEFramework::Core::JSON::Variant::type::EMPTY);
     }
 
 
 } // Core
 } // Tests
-} // Thunder
+} // WPEFramework
