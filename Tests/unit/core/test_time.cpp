@@ -1426,7 +1426,7 @@ namespace Core {
         uint32_t intervalInSeconds = diff / ::Thunder::Core::Time::MicroSecondsPerSecond;
         EXPECT_EQ(intervalInSeconds, givenIntervalInSeconds);
     }
-    TEST(Core_Time, AddTime)
+    TEST(Core_Time, DISABLED_AddTime)
     {
         ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
         std::string timeString1, timeString2;

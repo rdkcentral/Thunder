@@ -1013,17 +1013,29 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     Time::Time(const microsecondsfromepoch time)
         : _time()
     {
+        using common_t = std::common_type<microsecondsfromepoch, std::time_t, uint32_t /* static constexpr types in Time.h */, long>::type;
+
+        ASSERT(static_cast<common_t>(time) >= static_cast<common_t>(OffsetTicksForEpoch));
+
         // This is the seconds since 1970...
-        time_t epochTimestamp = static_cast<time_t>((time - OffsetTicksForEpoch) / MicroSecondsPerSecond);
+        const common_t epochTimestamp = (static_cast<common_t>(time) - static_cast<common_t>(OffsetTicksForEpoch)) / static_cast<common_t>(MicroSecondsPerSecond);
 
-        _time.tv_sec = epochTimestamp; 
+        ASSERT(epochTimestamp <= static_cast<common_t>(std::numeric_limits<std::time_t>::max()));
 
-        _time.tv_nsec = (time % MicroSecondsPerSecond) * NanoSecondsPerMicroSecond;
+        _time.tv_sec = static_cast<std::time_t>(epochTimestamp);
+
+        common_t remainderMicroseconds = (static_cast<common_t>(time) - static_cast<common_t>(OffsetTicksForEpoch)) % static_cast<common_t>(MicroSecondsPerSecond);
+        ASSERT(   remainderMicroseconds <= 999999 // Defined by the standard
+               && NanoSecondsPerMicroSecond == 1000
+               && 999999000 <=std::numeric_limits<long>::max()
+        );
+
+        _time.tv_nsec = static_cast<long>(static_cast<common_t>(remainderMicroseconds) * static_cast<common_t>(NanoSecondsPerMicroSecond));
     }
 
     Time::microsecondsfromepoch Time::Ticks() const
     {
-        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond ) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
+        return ((static_cast<microsecondsfromepoch>(_time.tv_sec) * MicroSecondsPerSecond) + (static_cast<microsecondsfromepoch>(_time.tv_nsec)/NanoSecondsPerMicroSecond));
     }
 
     uint8_t Time::DayOfWeek() const
@@ -1129,7 +1141,8 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     struct tm Time::TMHandle() const 
     {
         struct tm tmtime{};
-        gmtime_r(&_time.tv_sec, &tmtime);
+        VARIABLE_IS_NOT_USED struct tm* result = gmtime_r(&_time.tv_sec, &tmtime);
+        ASSERT(result != nullptr);
         return tmtime;
     }
 
@@ -1147,15 +1160,24 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
+        static_assert(   MicroSecondsPerMilliSecond == 1000
+                      && std::is_same<uint64_t, microsecondsfromepoch>::value, ""
+        );
+
+        ASSERT((std::numeric_limits<uint64_t>::max() - Ticks()) >= (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)));
+
         // Calculate the new time !!
-        uint64_t newTime = Ticks() + static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
+        const uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
+
         return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
+        ASSERT(Ticks() >= (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)));
+
         // Calculate the new time !!
-        uint64_t newTime = Ticks() - static_cast<uint64_t>(timeInMilliseconds) * MilliSecondsPerSecond;
+        const uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
     }
 
