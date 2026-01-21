@@ -230,9 +230,6 @@ namespace ProxyStub {
                     result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                     if (result != Core::ERROR_NONE) {
-                        if (result == Core::ERROR_TIMEDOUT) {
-                            Shutdown();
-                        }
                         TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
                         result |= COM_ERROR;
                     }
@@ -426,8 +423,6 @@ namespace ProxyStub {
                 delete &_parent;
             }
         }
-
-        void Shutdown() const;
 
     private:
         mutable Core::CriticalSection _adminLock;
