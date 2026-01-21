@@ -230,7 +230,7 @@ namespace ProxyStub {
                     result = _channel->Invoke(message, RPC::CommunicationTimeOut);
 
                     if (result != Core::ERROR_NONE) {
-                        TRACE_L1("Could not remote release the Proxy for Interface [0x%X]", message->Parameters().InterfaceId());
+                        TRACE_L1("Could not remote release the Proxy.");
                         result |= COM_ERROR;
                     }
                     else {
