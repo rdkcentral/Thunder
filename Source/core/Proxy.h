@@ -1468,7 +1468,7 @@ POP_WARNING()
                 for (uint32_t index = 0; index < initialQueueSize; index++) {
                     Core::ProxyType<ContainerElement> newElement;
 
-                    Core::ProxyType<ContainerElement>::CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ContainerElement>::template CreateMove(newElement, 0, *this, std::forward<Args>(args)...);
                     _queue.emplace_back(std::move(newElement));
                     ASSERT(_queue.back().IsValid() == true);
                 }
@@ -1520,7 +1520,7 @@ POP_WARNING()
 
                     _lock.Unlock();
 
-                    Core::ProxyType<ContainerElement>::CreateMove(element, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ContainerElement>::template CreateMove(element, 0, *this, std::forward<Args>(args)...);
 
                     result = Core::ProxyType<PROXYELEMENT>(element);
                 }
@@ -1638,7 +1638,7 @@ POP_WARNING()
                 if (index == _map.end()) {
                     // Oops we do not have such an element, create it...
                     Core::ProxyType<ActualElement> newItem;
-                    Core::ProxyType<ActualElement>CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
+                    Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
                     if (newItem.IsValid() == true) {
 
@@ -1799,7 +1799,7 @@ POP_WARNING()
                 Core::ProxyType<ACTUALOBJECT> result;
 
                 Core::ProxyType<ActualElement> newItem;
-                Core::ProxyType<ActualElement>::CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
+                Core::ProxyType<ActualElement>::template CreateMove(newItem, 0, *this, std::forward<Args>(args)...);
 
                 if (newItem.IsValid() == true) {
 
