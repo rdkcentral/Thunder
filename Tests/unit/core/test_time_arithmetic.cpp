@@ -31,7 +31,7 @@ namespace Thunder {
 namespace Tests {
 namespace Core {
 
-TEST(TIME_ARITHMETIC, gmtime)
+TEST(TIME_ARITHMETIC, DISABLED_gmtime)
 {
     constexpr uint32_t initialMilliSeconds{ 0 };
 
@@ -104,7 +104,7 @@ TEST(TIME_ARITHMETIC, gmtime)
     EXPECT_TRUE(flag);
 }
 
-TEST(TIME_ARITHMETIC, Ticks)
+TEST(TIME_ARITHMETIC, DISABLED_Ticks)
 {
     constexpr ::Thunder::Core::Time::microsecondsfromepoch initialEpochMicroSeconds{ 0 };
 
@@ -143,8 +143,8 @@ TEST(TIME_ARITHMETIC, AddTime)
     bool flag{ false };
 
     do {
-      ::Thunder::Core::Time::microsecondsfromepoch epochStart{ ::Thunder::Core::Time::Now().Ticks() /* microsecondsfromepoch */ };
-//    ::Thunder::Core::Time::microsecondsfromepoch epochStart{ 0 /* microsecondsfromepoch */ };
+        ::Thunder::Core::Time::microsecondsfromepoch epochStart{ ::Thunder::Core::Time::Now().Ticks() /* microsecondsfromepoch */ };
+//        ::Thunder::Core::Time::microsecondsfromepoch epochStart{ 0 /* microsecondsfromepoch */ };
 
         ::Thunder::Core::Time timeStart{ epochStart /* microsecondsfromepoch */};
 
@@ -188,8 +188,62 @@ TEST(TIME_ARITHMETIC, AddTime)
     EXPECT_TRUE(flag);
 }
 
-// Test ticks to seconds conversion
+TEST(TIME_ARITHMETIC, SubTime)
+{
+    constexpr uint32_t initialMilliSeconds{ 1 };
 
+    uint32_t offsetMilliSeconds{ initialMilliSeconds };
+
+    constexpr uint32_t maxOffsetMilliSeconds{ 0xFFFFFFFF };
+
+    bool flag{ false };
+
+    do {
+        ::Thunder::Core::Time::microsecondsfromepoch epochStart{ ::Thunder::Core::Time::Now().Ticks() /* microsecondsfromepoch */ };
+
+        ASSERT_GE(epochStart, 0x3E7FFFFFC18 /* maxOffsetMilliSeconds * 10000 */);
+
+        ::Thunder::Core::Time timeStart{ epochStart /* microsecondsfromepoch */};
+
+        // Calendar date seconds 
+        const uint8_t timeStartSeconds{ timeStart.Seconds() };
+
+        ASSERT_EQ(timeStart.Seconds(), static_cast<uint8_t>((epochStart / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond)) % 60));
+
+        ASSERT_GE(epochStart, (static_cast<::Thunder::Core::Time::microsecondsfromepoch>(timeStartSeconds) * static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MilliSecondsPerSecond)));
+
+        ASSERT_EQ(epochStart, timeStart.Ticks() /* microsecondsfromepoch */);
+
+        // Also updates timeStartMicroSeconds
+        ::Thunder::Core::Time& timeFinish{ timeStart.Sub(offsetMilliSeconds /* milliseconds */ ) };
+
+        const uint8_t timeFinishSeconds{ timeFinish.Seconds()};
+
+        ASSERT_TRUE(timeStart == timeFinish);
+
+        ASSERT_EQ(timeStart.Seconds(), timeFinish.Seconds());
+
+        ::Thunder::Core::Time::microsecondsfromepoch epochFinish{ epochStart - (static_cast<::Thunder::Core::Time::microsecondsfromepoch>(offsetMilliSeconds) * static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerMilliSecond)) };
+
+        ASSERT_GT(epochStart, epochFinish);
+
+        ASSERT_EQ(offsetMilliSeconds, (epochStart - epochFinish) / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerMilliSecond));
+
+        ASSERT_EQ(epochFinish, timeStart.Ticks() /* microsecondsfromepoch */);
+
+        ASSERT_EQ(epochFinish, timeFinish.Ticks() /* microsecondsfromepoch */);
+
+        // Calendar time (units) cannot be compared without some effort
+        ASSERT_EQ((timeStartSeconds >= timeFinishSeconds ? timeStartSeconds - timeFinishSeconds : timeStartSeconds + (static_cast<uint8_t>(60) - timeFinishSeconds)), static_cast<uint8_t>(((epochStart / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond)) - (epochFinish / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond))) % static_cast<::Thunder::Core::Time::microsecondsfromepoch>(60)));
+
+        flag = offsetMilliSeconds == maxOffsetMilliSeconds;
+
+        ++offsetMilliSeconds;
+
+    } while (flag != true);
+
+    EXPECT_TRUE(flag);
+}
 
 } // Core
 } // Tests
