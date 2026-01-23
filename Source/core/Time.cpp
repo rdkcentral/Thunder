@@ -1013,24 +1013,15 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     Time::Time(const microsecondsfromepoch time)
         : _time()
     {
-        using common_t = std::common_type<microsecondsfromepoch, std::time_t, uint32_t /* static constexpr types in Time.h */, long>::type;
-
-        ASSERT(static_cast<common_t>(time) >= static_cast<common_t>(OffsetTicksForEpoch));
-
         // This is the seconds since 1970...
-        const common_t epochTimestamp = (static_cast<common_t>(time) - static_cast<common_t>(OffsetTicksForEpoch)) / static_cast<common_t>(MicroSecondsPerSecond);
-
-        ASSERT(epochTimestamp <= static_cast<common_t>(std::numeric_limits<std::time_t>::max()));
+        const microsecondsfromepoch epochTimestamp = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) / static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
 
         _time.tv_sec = static_cast<std::time_t>(epochTimestamp);
 
-        common_t remainderMicroseconds = (static_cast<common_t>(time) - static_cast<common_t>(OffsetTicksForEpoch)) % static_cast<common_t>(MicroSecondsPerSecond);
-        ASSERT(   remainderMicroseconds <= 999999 // Defined by the standard
-               && NanoSecondsPerMicroSecond == 1000
-               && 999999000 <=std::numeric_limits<long>::max()
-        );
+        const microsecondsfromepoch remainderMicroseconds = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) % static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
+        ASSERT(remainderMicroseconds <= 999999 /* Defined by the standard */);
 
-        _time.tv_nsec = static_cast<long>(static_cast<common_t>(remainderMicroseconds) * static_cast<common_t>(NanoSecondsPerMicroSecond));
+        _time.tv_nsec = (static_cast<long>(remainderMicroseconds) * static_cast<long>(NanoSecondsPerMicroSecond));
     }
 
     Time::microsecondsfromepoch Time::Ticks() const
@@ -1160,22 +1151,13 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
-        static_assert(   MicroSecondsPerMilliSecond == 1000
-                      && std::is_same<uint64_t, microsecondsfromepoch>::value, ""
-        );
-
-        ASSERT((std::numeric_limits<uint64_t>::max() - Ticks()) >= (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)));
-
         // Calculate the new time !!
         const uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
-
         return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
-        ASSERT(Ticks() >= (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)));
-
         // Calculate the new time !!
         const uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
