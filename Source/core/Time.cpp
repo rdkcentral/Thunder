@@ -1014,12 +1014,11 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
         : _time()
     {
         // This is the seconds since 1970...
-        const microsecondsfromepoch epochTimestamp = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) / static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
+        microsecondsfromepoch epochTimestamp = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) / static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
 
         _time.tv_sec = static_cast<std::time_t>(epochTimestamp);
 
-        const microsecondsfromepoch remainderMicroseconds = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) % static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
-        ASSERT(remainderMicroseconds <= 999999 /* Defined by the standard */);
+        microsecondsfromepoch remainderMicroseconds = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) % static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
 
         _time.tv_nsec = (static_cast<long>(remainderMicroseconds) * static_cast<long>(NanoSecondsPerMicroSecond));
     }
@@ -1152,14 +1151,14 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
     Time& Time::Add(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
-        const uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
+        uint64_t newTime = Ticks() + (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
     }
 
     Time& Time::Sub(const uint32_t timeInMilliseconds)
     {
         // Calculate the new time !!
-        const uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
+        uint64_t newTime = Ticks() - (static_cast<uint64_t>(timeInMilliseconds) * static_cast<uint64_t>(MicroSecondsPerMilliSecond));
         return (operator=(Time(newTime)));
     }
 
