@@ -50,6 +50,24 @@ namespace Core {
         EXPECT_FALSE(container.HasLabel("Name"));
     }
 
+    TEST(JSONOBJECT, KeyRemoveWithPartialMatch)
+    {
+        const std::string keyValues = R"({"Service": "Wifi", "Wifi_ssid": "ssid-name", "Wifi_key": 0, "status": "Connected"})";
+
+        JsonObject container;
+
+        EXPECT_TRUE(container.FromString(keyValues));
+
+        EXPECT_FALSE(container.HasLabel("Wifi"));
+
+        EXPECT_TRUE(container.HasLabel("Wifi_ssid"));
+
+        /* void */ container.Remove("Wifi");
+
+        EXPECT_TRUE(container.HasLabel("Wifi_ssid"));
+
+    }
+
     TEST(JSONOBJECT, SecondKeyRemove)
     {
         const std::string keyValues = R"({"Name": "Your full name", "Age": 0, "Gender": "Undisclosed"})";
