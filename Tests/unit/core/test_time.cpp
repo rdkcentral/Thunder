@@ -74,22 +74,6 @@ namespace Core {
         return systemTime;
     }
 
-    TEST(Core_Time, DISABLED_Ctor_TimeSpec)
-    {
-#ifdef __POSIX__
-        struct timespec ts;
-        timespec_get(&ts, TIME_UTC);
-        ::Thunder::Core::Time time(ts);
-
-        string local;
-        time.ToString(local, true);
-        string utc;
-        time.ToString(utc, false);
-
-        EXPECT_STREQ(local.c_str(), GetSystemTime(true).c_str());
-        EXPECT_STREQ(utc.c_str(), GetSystemTime(false).c_str());
-#endif
-    }
     TEST(Core_Time, Ctor_Copy)
     {
         char* currentZone = getenv("TZ");
@@ -1426,58 +1410,7 @@ namespace Core {
         uint32_t intervalInSeconds = diff / ::Thunder::Core::Time::MicroSecondsPerSecond;
         EXPECT_EQ(intervalInSeconds, givenIntervalInSeconds);
     }
-    TEST(Core_Time, AddTime)
-    {
-        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
-        std::string timeString1, timeString2;
-        time.ToString(timeString1);
-        uint32_t currentTime = time.MilliSeconds();
-        uint32_t timeTobeAdded = 2;
-        time.Add(timeTobeAdded);
-        uint32_t newTime = time.MilliSeconds();
-        time.ToString(timeString2);
-        EXPECT_EQ(newTime, currentTime + timeTobeAdded);
-        currentTime = time.Seconds();
-        timeTobeAdded = 3;
-        time.Add(timeTobeAdded * 1000);
-        time.ToString(timeString1);
-        EXPECT_STRNE(timeString1.c_str(), timeString2.c_str());
-        uint32_t expectedAddedTime = 0;
-        if (currentTime + timeTobeAdded >= 60) {
-            expectedAddedTime = (currentTime + timeTobeAdded) - 60;
-        } else {
-            expectedAddedTime = (currentTime + timeTobeAdded);
-        }
 
-        newTime = time.Seconds();
-        EXPECT_EQ(newTime, expectedAddedTime);
-    }
-    TEST(Core_Time, DISABLED_SubTime)
-    {
-        ::Thunder::Core::Time time(::Thunder::Core::Time::Now());
-        std::string timeString1, timeString2;
-        time.ToString(timeString1);
-        uint32_t currentTime = time.MilliSeconds();
-        uint32_t timeTobeSubtracted = 4;
-        time.Sub(timeTobeSubtracted);
-        uint32_t newTime = time.MilliSeconds();
-        time.ToString(timeString2);
-        EXPECT_EQ(newTime, currentTime - timeTobeSubtracted);
-        currentTime = time.Seconds();
-        timeTobeSubtracted = 6;
-        time.Sub(timeTobeSubtracted * 1000);
-        time.ToString(timeString1);
-        EXPECT_STRNE(timeString1.c_str(), timeString2.c_str());
-        uint32_t expectedSubtractedTime = 0;
-        if (currentTime <= timeTobeSubtracted) {
-            expectedSubtractedTime = 60 - (timeTobeSubtracted - currentTime);
-            expectedSubtractedTime = (expectedSubtractedTime == 60) ? 0 : expectedSubtractedTime;
-        } else {
-            expectedSubtractedTime = (currentTime - timeTobeSubtracted);
-        }
-        newTime = time.Seconds();
-        EXPECT_EQ(newTime, expectedSubtractedTime);;
-    }
     TEST(Core_Time, NTPTime)
     {
         ::Thunder::Core::Time time(1970, 1, 1, 0, 0, 0, 1, true);

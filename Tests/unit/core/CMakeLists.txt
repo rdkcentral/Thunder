@@ -74,6 +74,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_thread.cpp
    test_threadpool.cpp
    test_time.cpp
+   test_time_arithmetic.cpp
    test_timer.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
