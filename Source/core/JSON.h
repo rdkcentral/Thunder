@@ -3816,8 +3816,7 @@ namespace Core {
             {
                 JSONElementList::iterator index(_data.begin());
 
-                while ((index != _data.end())
-                       &&(strncmp(index->first, label, std::min(strlen(label), strlen(index->first))) != 0)) {
+                while (index != _data.end() && (strlen(index->first) != strlen(label) || strcmp(index->first, label) != 0)) {
                     index++;
                 }
 
