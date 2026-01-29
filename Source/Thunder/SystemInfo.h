@@ -119,8 +119,8 @@ namespace PluginHost {
             {
             }
 
-            Provisioning(std::list<std::string>&& labels, const std::string& storage)
-                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(labels)
+            Provisioning(std::vector<std::string>&& labels, const std::string& storage)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(std::move(labels))
                 , _storage(storage)
             {
             }
@@ -493,7 +493,7 @@ namespace PluginHost {
                         _provisioning = nullptr;
                     }
 
-                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::list<std::string>(), "");
+                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::vector<std::string>(), "");
 
                     _adminLock.Unlock();
                 } else {
