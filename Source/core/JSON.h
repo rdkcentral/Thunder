@@ -1142,7 +1142,11 @@ namespace Core {
                 _set = 0;
                 _value = 0;
             }
-
+// Workaround: O3 may fail with array out of bounds on certain compilers
+#ifdef __GNUC__
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+#endif
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
@@ -1167,6 +1171,9 @@ namespace Core {
 
                 return loaded;
             }
+#ifdef __GNUC__
+#pragma GCC pop_options
+#endif
 
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
