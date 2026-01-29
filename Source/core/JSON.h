@@ -1142,11 +1142,7 @@ namespace Core {
                 _set = 0;
                 _value = 0;
             }
-// Workaround: O3 may fail with array out of bounds on certain compilers
-#ifdef __GNUC__
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-#endif
+
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint32_t& offset) const override
@@ -1155,11 +1151,13 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED) != 0 ||
+                if (((_set & UNDEFINED) != 0 ||
                     std::isinf(_value) ||
-                    std::isnan(_value))
+                    std::isnan(_value)
+                    )
+                    && (offset >= sizeof(IElement::NullTag)) != true
+                   )
                 {
-                    ASSERT(offset < (sizeof(IElement::NullTag) - 1));
                     loaded = std::min(static_cast<uint16_t>((sizeof(IElement::NullTag) - 1) - offset), maxLength);
                     ::memcpy(stream, &(IElement::NullTag[offset]), loaded);
                     offset = (((offset + loaded) == (sizeof(IElement::NullTag) - 1)) ? 0 : offset + loaded);
@@ -1171,9 +1169,6 @@ namespace Core {
 
                 return loaded;
             }
-#ifdef __GNUC__
-#pragma GCC pop_options
-#endif
 
             uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint32_t& offset, Core::OptionalType<Error>& error) override
             {
