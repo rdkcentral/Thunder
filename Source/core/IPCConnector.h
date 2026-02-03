@@ -758,6 +758,10 @@ POP_WARNING()
         {
             _customData = data;
         }
+        bool InProgress() const
+        {
+            return (_administration.InProgress());
+        }
 
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
 
