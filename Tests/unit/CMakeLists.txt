@@ -18,10 +18,10 @@
 find_package(GTest REQUIRED)
 
 # TODO: coverage causes attempt to write on invalid location, -keep-static-functions is not recognized by buildroot compiler
-set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} --coverage -fno-inline -fno-inline-small-functions -fno-default-inline -I${PARENT_DIR}/Source")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
-
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs")
+add_compile_options(--coverage -fno-inline -fno-inline-small-functions -fno-default-inline)
+add_link_options(-fprofile-arcs)
+add_compile_options(-pthread)
+add_link_options(-pthread)
 
 #set(GTEST_INCLUDE_DIR /usr/include/gtest)
 
