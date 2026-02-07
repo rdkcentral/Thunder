@@ -31,7 +31,11 @@ include(CMakePackageConfigHelpers)
 #
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?(Clang)|(GNU)$")
-        target_compile_options(CompileSettingsDebug INTERFACE -O0 -g)
+        if(DEFINED FORTIFY_SOURCES AND FORTIFY_SOURCES OR CMAKE_C_FLAGS MATCHES "_FORTIFY_SOURCE" OR CMAKE_CXX_FLAGS MATCHES "_FORTIFY_SOURCE")
+            target_compile_options(CompileSettingsDebug INTERFACE -g -Og)
+        else()
+            target_compile_options(CompileSettingsDebug INTERFACE -g -O0)
+        endif()
     endif()
 
 elseif("${CMAKE_BUILD_TYPE}" STREQUAL "DebugOptimized")
