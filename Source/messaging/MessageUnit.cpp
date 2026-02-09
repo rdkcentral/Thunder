@@ -334,16 +334,17 @@ namespace Thunder {
             if ((_settings.IsDirect() == true) || (_dispatcher == nullptr)) {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
-                uint8_t serializationBuffer[TempDataBufferSize];
+                const uint16_t tempDataBufferSize = _settings.TempDataBufferSizeValue();
+                uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(tempDataBufferSize));
                 uint16_t length = 0;
 
                 ASSERT(messageInfo.Type() != Core::Messaging::Metadata::type::INVALID);
 
-                length = messageInfo.Serialize(serializationBuffer, sizeof(serializationBuffer));
+                length = messageInfo.Serialize(serializationBuffer, tempDataBufferSize);
 
                 //only serialize message if the information could fit
                 if (length != 0) {
-                    length += message->Serialize(serializationBuffer + length, sizeof(serializationBuffer) - length);
+                    length += message->Serialize(serializationBuffer + length, tempDataBufferSize - length);
 
                     if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
                         TRACE_L1("Unable to push message data!");

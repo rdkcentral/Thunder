@@ -62,7 +62,7 @@ namespace Thunder {
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
-                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MetadataBufferSize)
+                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MessageUnit::Instance()._settings.MetadataBufferSizeValue())
                 {
                 }
                 ~Buffer() = default;
@@ -376,6 +376,10 @@ namespace Thunder {
                         , Out(true)
                         , Error(true)
                         , DataSize(20 * 1024)
+                        , MetadataBufferSize(0)
+                        , TempMetadataBufferSize(0)
+                        , MaxDataBufferSize(0)
+                        , TempDataBufferSize(0)
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
@@ -387,6 +391,10 @@ namespace Thunder {
                         Add(_T("stdout"), &Out);
                         Add(_T("stderr"), &Error);
                         Add(_T("datasize"), &DataSize);
+                        Add(_T("metadatabuffersize"), &MetadataBufferSize);
+                        Add(_T("tempmetadatabuffersize"), &TempMetadataBufferSize);
+                        Add(_T("maxdatabuffersize"), &MaxDataBufferSize);
+                        Add(_T("tempdatabuffersize"), &TempDataBufferSize);
                     }
                     ~Config() = default;
                     Config(const Config& other) = delete;
@@ -403,6 +411,10 @@ namespace Thunder {
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
                     Core::JSON::DecUInt16 DataSize;
+                    Core::JSON::DecUInt16 MetadataBufferSize;
+                    Core::JSON::DecUInt16 TempMetadataBufferSize;
+                    Core::JSON::DecUInt16 MaxDataBufferSize;
+                    Core::JSON::DecUInt16 TempDataBufferSize;
                 };
 
             public:
@@ -418,6 +430,10 @@ namespace Thunder {
                     , _permission(0)
                     , _mode(static_cast<mode>(0))
                     , _dataSize()
+                    , _metadataBufferSize(MessageUnit::MetadataBufferSize)
+                    , _tempMetadataBufferSize(MessageUnit::TempMetadataBufferSize)
+                    , _maxDataBufferSize(MessageUnit::MaxDataBufferSize)
+                    , _tempDataBufferSize(MessageUnit::TempDataBufferSize)
                 {
                 }
                 ~Settings() = default;
@@ -441,6 +457,22 @@ namespace Thunder {
 
                 uint16_t Permission() const {
                     return (_permission);
+                }
+
+                uint16_t MetadataBufferSizeValue() const {
+                    return (_metadataBufferSize);
+                }
+
+                uint16_t TempMetadataBufferSizeValue() const {
+                    return (_tempMetadataBufferSize);
+                }
+
+                uint16_t MaxDataBufferSizeValue() const {
+                    return (_maxDataBufferSize);
+                }
+
+                uint16_t TempDataBufferSizeValue() const {
+                    return (_tempDataBufferSize);
                 }
 
                 bool IsBackground() const {
@@ -486,9 +518,22 @@ namespace Thunder {
                             (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
                             (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
-                    if (jsonParsed.DataSize.Value() > MaxDataBufferSize) {
+                    _metadataBufferSize = (jsonParsed.MetadataBufferSize.Value() > 0)
+                        ? jsonParsed.MetadataBufferSize.Value()
+                        : MessageUnit::MetadataBufferSize;
+                    _tempMetadataBufferSize = (jsonParsed.TempMetadataBufferSize.Value() > 0)
+                        ? jsonParsed.TempMetadataBufferSize.Value()
+                        : MessageUnit::TempMetadataBufferSize;
+                    _maxDataBufferSize = (jsonParsed.MaxDataBufferSize.Value() > 0)
+                        ? jsonParsed.MaxDataBufferSize.Value()
+                        : MessageUnit::MaxDataBufferSize;
+                    _tempDataBufferSize = (jsonParsed.TempDataBufferSize.Value() > 0)
+                        ? jsonParsed.TempDataBufferSize.Value()
+                        : MessageUnit::TempDataBufferSize;
+
+                    if (jsonParsed.DataSize.Value() > _maxDataBufferSize) {
                         TRACE_L1("Data buffer size set in the config is too large! The maximum has been used instead");
-                        _dataSize = MaxDataBufferSize;
+                        _dataSize = _maxDataBufferSize;
 
                         ASSERT(false);
                     }
@@ -575,7 +620,11 @@ namespace Thunder {
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
-                               Core::NumberType<uint16_t>(_dataSize).Text();
+                               Core::NumberType<uint16_t>(_dataSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_metadataBufferSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_tempMetadataBufferSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_maxDataBufferSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_tempDataBufferSize).Text();
 
                     for (auto& entry : _settings) {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
@@ -598,6 +647,10 @@ namespace Thunder {
                     _socketPort = 0;
                     _mode = 0;
                     _dataSize = 0;
+                    _metadataBufferSize = MessageUnit::MetadataBufferSize;
+                    _tempMetadataBufferSize = MessageUnit::TempMetadataBufferSize;
+                    _maxDataBufferSize = MessageUnit::MaxDataBufferSize;
+                    _tempDataBufferSize = MessageUnit::TempDataBufferSize;
                     _settings.clear();
 
                     if (iterator.Next() == true) {
@@ -610,6 +663,18 @@ namespace Thunder {
                                     _mode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                     if (iterator.Next() == true) {
                                         _dataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                        if (iterator.Next() == true) {
+                                            _metadataBufferSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                            if (iterator.Next() == true) {
+                                                _tempMetadataBufferSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                                if (iterator.Next() == true) {
+                                                    _maxDataBufferSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                                    if (iterator.Next() == true) {
+                                                        _tempDataBufferSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -715,6 +780,10 @@ namespace Thunder {
                 uint16_t _permission;
                 uint8_t _mode;
                 uint16_t _dataSize;
+                uint16_t _metadataBufferSize;
+                uint16_t _tempMetadataBufferSize;
+                uint16_t _maxDataBufferSize;
+                uint16_t _tempDataBufferSize;
             };
 
             class EXTERNAL Client : public MessageDataBuffer {
@@ -730,7 +799,7 @@ namespace Thunder {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBuffer(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataBufferSize) {
+                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::Instance()._settings.MetadataBufferSizeValue()) {
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
@@ -764,18 +833,19 @@ namespace Thunder {
 
                     if (_channel.IsOpen() == true) {
 
-                        uint8_t dataBuffer[TempMetadataBufferSize];
+                        const uint16_t tempMetadataBufferSize = MessageUnit::Instance()._settings.TempMetadataBufferSizeValue();
+                        uint8_t* dataBuffer = static_cast<uint8_t*>(ALLOCA(tempMetadataBufferSize));
 
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
-                        Core::FrameType<0> frame(dataBuffer, TempMetadataBufferSize, TempMetadataBufferSize);
+                        Core::FrameType<0> frame(dataBuffer, tempMetadataBufferSize, tempMetadataBufferSize);
                         Core::FrameType<0>::Writer writer(frame, 0);
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::UPDATE);
 
                         Control message(control, enabled);
-                        uint16_t length = message.Serialize(dataBuffer + writer.Offset(), sizeof(dataBuffer) - writer.Offset());
+                        uint16_t length = message.Serialize(dataBuffer + writer.Offset(), tempMetadataBufferSize - writer.Offset());
 
                         metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
 
@@ -897,7 +967,8 @@ namespace Thunder {
                     public:
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
-                            uint8_t outBuffer[MetadataBufferSize];
+                            const uint16_t metadataBufferSize = _parent._settings.MetadataBufferSizeValue();
+                            uint8_t* outBuffer = static_cast<uint8_t*>(ALLOCA(metadataBufferSize));
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
 
@@ -916,11 +987,11 @@ namespace Thunder {
                             else if (protocol == metadataFrameProtocol::CONTROLS) {
                                 ASSERT(reader.HasData());
                                 string module = reader.NullTerminatedText();
-                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
+                                uint16_t length = _parent.Serialize(outBuffer, metadataBufferSize, module);
                                 message->Response().Set(length, outBuffer);
                             }
                             else if (protocol == metadataFrameProtocol::MODULES) {
-                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
+                                uint16_t length = _parent.Serialize(outBuffer, metadataBufferSize);
                                 message->Response().Set(length, outBuffer);
                             }
                             else {
@@ -939,7 +1010,7 @@ namespace Thunder {
                     MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
                     MetaDataBuffer(MessageUnit& parent, const string& binding)
-                        : BaseClass(Core::NodeId(binding.c_str()), MetadataBufferSize)
+                        : BaseClass(Core::NodeId(binding.c_str()), parent._settings.MetadataBufferSizeValue())
                         , _handler(parent)
                     {
                         _handler.AddRef();
