@@ -35,10 +35,12 @@ namespace Messaging {
         , _identifier(identifer)
         , _basePath(basePath)
         , _socketPort(socketPort)
+        , _readBufferSize(MessageUnit::Instance()._settings.MessageSize())
+        , _readBuffer(new uint8_t[_readBufferSize])
         , _clients()
         , _factories()
     {
-        ::memset(_readBuffer, 0, sizeof(_readBuffer));
+        ::memset(_readBuffer.get(), 0, _readBufferSize);
     }
 
     /**
@@ -181,13 +183,13 @@ namespace Messaging {
 
         for (auto& client : _clients) {
             client.second.Validate();
-            uint16_t size = sizeof(_readBuffer);
+            uint16_t size = _readBufferSize;
 
-            while (client.second.PopData(size, _readBuffer) != Core::ERROR_READ_ERROR) {
+            while (client.second.PopData(size, _readBuffer.get()) != Core::ERROR_READ_ERROR) {
                 ASSERT(size != 0);
 
-                if (size > sizeof(_readBuffer)) {
-                    size = sizeof(_readBuffer);
+                if (size > _readBufferSize) {
+                    size = _readBufferSize;
                 }
 
                 const Core::Messaging::Metadata::type type = static_cast<Core::Messaging::Metadata::type>(_readBuffer[0]);
@@ -206,7 +208,7 @@ namespace Messaging {
                     metadata = factory->second->GetMetadata();
                     message = factory->second->GetMessage();
 
-                    length = metadata->Deserialize(_readBuffer, size);
+                    length = metadata->Deserialize(_readBuffer.get(), size);
                     length += message->Deserialize((&_readBuffer[length]), (size - length));
 
                     handler(metadata, message);
@@ -216,7 +218,7 @@ namespace Messaging {
                     client.second.FlushDataBuffer();
                 }
 
-                size = sizeof(_readBuffer);
+                size = _readBufferSize;
             }
         }
  
