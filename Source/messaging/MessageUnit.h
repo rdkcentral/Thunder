@@ -1092,6 +1092,10 @@ namespace Thunder {
                 return (_settings.DataSize());
             }
 
+            uint16_t MessageSize() const {
+                return (_settings.MessageSize());
+            }
+
             uint32_t Open(const string& pathName, const Settings::Config& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();

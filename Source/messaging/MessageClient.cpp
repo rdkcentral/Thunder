@@ -35,7 +35,7 @@ namespace Messaging {
         , _identifier(identifer)
         , _basePath(basePath)
         , _socketPort(socketPort)
-        , _readBufferSize(MessageUnit::Instance()._settings.MessageSize())
+        , _readBufferSize(MessageUnit::Instance().MessageSize())
         , _readBuffer(new uint8_t[_readBufferSize])
         , _clients()
         , _factories()
