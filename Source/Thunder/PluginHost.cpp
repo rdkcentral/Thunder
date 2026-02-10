@@ -28,10 +28,10 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace Thunder {
-    static PluginHost::Config* _config = nullptr;
-    static PluginHost::Server* _dispatcher = nullptr;
-    static bool _background = false;
-    static bool _atExitActive = true;
+static PluginHost::Config* _config = nullptr;
+static PluginHost::Server* _dispatcher = nullptr;
+static bool _background = false;
+static bool _atExitActive = true;
 
 namespace PluginHost {
 
@@ -88,7 +88,7 @@ namespace PluginHost {
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
-PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
+        PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
         AdapterObserver(string interface)
             : _signal(false, true)
             , _interface(interface)
@@ -102,7 +102,7 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
                 _signal.SetEvent();
             }
         }
-POP_WARNING()
+        POP_WARNING()
         ~AdapterObserver() override
         {
             _observer.Close();
@@ -250,7 +250,7 @@ POP_WARNING()
             else {
                 ExitHandler* destructor = _instance;
                 _instance = nullptr;
- 
+
                 _adminLock.Unlock();
 
                 delete destructor; //It will wait till the worker execution completed
@@ -326,11 +326,11 @@ POP_WARNING()
 
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
-    
-    #ifndef __WINDOWS__
+
+#ifndef __WINDOWS__
     struct sigaction _originalSegmentationHandler;
     struct sigaction _originalAbortHandler;
-    #endif
+#endif
 
     static string GetDeviceId(PluginHost::Server* dispatcher)
     {
@@ -344,7 +344,7 @@ POP_WARNING()
                     uint8_t buffer[64];
 
                     buffer[0] = static_cast<const PluginHost::ISubSystem::IIdentifier*>(id)
-                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+                                    ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
 
                     if (buffer[0] != 0) {
                         deviceId = Core::SystemInfo::Instance().Id(buffer, ~0);
@@ -466,7 +466,7 @@ POP_WARNING()
 #ifndef __WINDOWS__
             if (_background) {
                 syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request. No regular shutdown. Errors to follow are collateral damage errors !!!!!!");
-            } else 
+            } else
 #endif
             {
                 fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to an atexit request.\nNo regular shutdown.\nErrors to follow are collateral damage errors !!!!!!\n");
@@ -523,11 +523,11 @@ POP_WARNING()
         uint32_t messagingErrorCode = Messaging::MessageUnit::Instance().Open(_config->VolatilePath(), jsonParsed, _background, flushMode);
 
         if ( messagingErrorCode != Core::ERROR_NONE){
-        #ifndef __WINDOWS__
+#ifndef __WINDOWS__
             if (_background == true) {
                 syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable messaging/tracing functionality!");
             } else
-        #endif
+#endif
             {
                 fprintf(stdout, "Could not enable messaging/tracing functionality!\n");
             }
@@ -535,7 +535,7 @@ POP_WARNING()
         else {
             Assertion::AssertionUnit::Instance();
 
-            #ifdef __CORE_WARNING_REPORTING__
+#ifdef __CORE_WARNING_REPORTING__
             class GlobalConfig : public Core::JSON::Container {
             public:
                 class ReportingSettings : public Core::JSON::Container {
@@ -559,440 +559,446 @@ POP_WARNING()
                     Add("reporting", &WarningReporting);
                 }
 
-             public:
+            public:
                 ReportingSettings WarningReporting;
             } gc;
 
             gc.FromString(messagingSettings);
 
             WarningReporting::WarningReportingUnit::Instance().Defaults(gc.WarningReporting.Settings.Value());
-            #endif
+#endif
         }
     }
+    } // extern "C"
+}
+}
+
+using namespace Thunder;
+using namespace Thunder::PluginHost;
 
 #ifdef __WINDOWS__
-    int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, _TCHAR* argv[])
 #else
-    int main(int argc, char** argv)
+int main(int argc, char** argv)
 #endif
-    {
+{
 #ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
-        setlogmask(LOG_UPTO(LOG_NOTICE));
-        openlog(argv[0], LOG_PID, LOG_USER);
+    setlogmask(LOG_UPTO(LOG_NOTICE));
+    openlog(argv[0], LOG_PID, LOG_USER);
 
-        setsid();
+    setsid();
 #endif
 
-        ConsoleOptions options(argc, argv);
+    ConsoleOptions options(argc, argv);
 
-        if (options.RequestUsage()) {
+    if (options.RequestUsage()) {
 #ifndef __WINDOWS__
-            syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
+        syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
-            if ((_background == false) && (options.RequestUsage())) {
-                fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
-                fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
-                fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
-                fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
-                fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
-            }
-            exit(EXIT_FAILURE);
+        if ((_background == false) && (options.RequestUsage())) {
+            fprintf(stderr, "Usage: " EXPAND_AND_QUOTE(APPLICATION_NAME) " [-c <config file>] [-b] [-fF]\n");
+            fprintf(stderr, "       -c <config file>  Define the configuration file to use.\n");
+            fprintf(stderr, "       -b                Run " EXPAND_AND_QUOTE(APPLICATION_NAME) " in the background.\n");
+            fprintf(stderr, "       -f                Flush messaging information also to syslog/console, none abbreviated\n");
+            fprintf(stderr, "       -F                Flush messaging information also to syslog/console, abbreviated\n");
         }
+        exit(EXIT_FAILURE);
+    }
 #ifndef __WINDOWS__
-        else {
-            struct sigaction sa;
-            memset(&sa, 0, sizeof(struct sigaction));
-            sigemptyset(&sa.sa_mask);
-            sa.sa_handler = ExitDaemonHandler;
-            sa.sa_flags = 0; // not SA_RESTART!;
+    else {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(struct sigaction));
+        sigemptyset(&sa.sa_mask);
+        sa.sa_handler = ExitDaemonHandler;
+        sa.sa_flags = 0; // not SA_RESTART!;
 
-            sigaction(SIGINT, &sa, nullptr);
-            sigaction(SIGTERM, &sa, nullptr);
-            sigaction(SIGQUIT, &sa, nullptr);
-            sigaction(SIGUSR1, &sa, nullptr);
-            sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
-            sigaction(SIGABRT, &sa, &_originalAbortHandler);
-        }
+        sigaction(SIGINT, &sa, nullptr);
+        sigaction(SIGTERM, &sa, nullptr);
+        sigaction(SIGQUIT, &sa, nullptr);
+        sigaction(SIGUSR1, &sa, nullptr);
+        sigaction(SIGSEGV, &sa, &_originalSegmentationHandler);
+        sigaction(SIGABRT, &sa, &_originalAbortHandler);
+    }
 
-        if (atexit(ForcedExit) != 0) {
-            TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            ExitHandler::Destruct();
-            exit(EXIT_FAILURE);
-        } 
+    if (atexit(ForcedExit) != 0) {
+        TRACE_L1("Could not register @exit handler. Argc %d.", argc);
+        ExitHandler::Destruct();
+        exit(EXIT_FAILURE);
+    }
 
-        if (_background == true) {
+    if (_background == true) {
             //Close Standard File Descriptors
             // close(STDIN_FILENO);
             // close(STDOUT_FILENO);
             // close(STDERR_FILENO);
-            syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon starting");
-        } else
+        syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon starting");
+    } else
 #endif
 
         std::set_terminate(UncaughtExceptions);
 
-        // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
-        Core::File configFile(string(options.configFile));
-        if (configFile.Open(true) == true) {
-            Core::OptionalType<Core::JSON::Error> error;
-            _config = new Config(configFile, _background, error);
+    // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
+    Core::File configFile(string(options.configFile));
+    if (configFile.Open(true) == true) {
+        Core::OptionalType<Core::JSON::Error> error;
+        _config = new Config(configFile, _background, error);
 
-            if (error.IsSet() == true) {
-                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-                delete _config;
-                _config = nullptr;
-            }
+        if (error.IsSet() == true) {
+            SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            delete _config;
+            _config = nullptr;
+        }
 
-            configFile.Close();
-        } else {
+        configFile.Close();
+    } else {
 #ifndef __WINDOWS__
-            if (_background == true) {
-                syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Config file.");
-            } else
+        if (_background == true) {
+            syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Config file.");
+        } else
 #endif
-            {
-                fprintf(stdout, "Config file [%s] could not be opened.\n", options.configFile);
+        {
+            fprintf(stdout, "Config file [%s] could not be opened.\n", options.configFile);
+        }
+    }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+    CustomCodeLibrary customcodelibraryhandler;
+#endif
+
+    if (_config != nullptr) {
+
+        if (_config->Process().IsSet() == true) {
+
+            Core::ProcessCurrent myself;
+
+            if (_config->Process().OOMAdjust() != 0) {
+                myself.OOMAdjust(_config->Process().OOMAdjust());
             }
+            if (_config->Process().Priority() != 0) {
+                myself.Priority(_config->Process().Priority());
+            }
+
+            if (_config->Process().Group().empty() == false) {
+                myself.Group(_config->Process().Group());
+            }
+
+            if (_config->Process().User().empty() == false) {
+                myself.User(_config->Process().User());
+            }
+
+            if (_config->StackSize() != 0) {
+                Core::Thread::DefaultStackSize(_config->StackSize());
+            }
+
+#ifndef __WINDOWS__
+            if (_config->Process().UMask().IsSet() == true) {
+                ::umask(_config->Process().UMask().Value());
+            }
+#endif
+            myself.Policy(_config->Process().Policy());
+        }
+
+        // Time to start loading the config of the plugins.
+        string pluginPath(_config->ConfigsPath());
+
+        if (pluginPath.empty() == true) {
+            pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
+            pluginPath += Server::PluginConfigDirectory;
+            }
+            else {
+            pluginPath = Core::Directory::Normalize(pluginPath);
+        }
+
+        // Create PostMortem path
+        Core::Directory postMortemPath(_config->PostMortemPath().c_str());
+        if (postMortemPath.Next() != true) {
+            postMortemPath.CreatePath();
         }
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-        CustomCodeLibrary customcodelibraryhandler;
+        if (_config->CustomCodeLibrary().empty() == false) {
+            customcodelibraryhandler.Load(_config->CustomCodeLibrary());
+        }
 #endif
 
-        if (_config != nullptr) {
+        MessagingInitialization(options.configFile, options.flushMode);
 
-            if (_config->Process().IsSet() == true) {
-
-                Core::ProcessCurrent myself;
-
-                if (_config->Process().OOMAdjust() != 0) {
-                    myself.OOMAdjust(_config->Process().OOMAdjust());
-                }
-                if (_config->Process().Priority() != 0) {
-                    myself.Priority(_config->Process().Priority());
-                }
-
-                if (_config->Process().Group().empty() == false) {
-                    myself.Group(_config->Process().Group());
-                }
-
-                if (_config->Process().User().empty() == false) {
-                    myself.User(_config->Process().User());
-                }
-
-                if (_config->StackSize() != 0) {
-                    Core::Thread::DefaultStackSize(_config->StackSize()); 
-                }
-
-#ifndef __WINDOWS__
-                if (_config->Process().UMask().IsSet() == true) {
-                    ::umask(_config->Process().UMask().Value());
-                }
-#endif
-                myself.Policy(_config->Process().Policy());
-            }
-
-            // Time to start loading the config of the plugins.
-            string pluginPath(_config->ConfigsPath());
-
-            if (pluginPath.empty() == true) {
-                pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
-                pluginPath += Server::PluginConfigDirectory;
+        SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
+        SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+        SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
+        SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
+        SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
+        SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
+        if (_config->MessagingCategoriesFile() == false) {
+            SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
             }
             else {
-                pluginPath = Core::Directory::Normalize(pluginPath);
-            }
+            SYSLOG(Logging::Startup, (_T("Messages [EXT]:  %s"), _config->MessagingCategories().c_str()));
+        }
 
-            // Create PostMortem path
-            Core::Directory postMortemPath(_config->PostMortemPath().c_str());
-            if (postMortemPath.Next() != true) {
-                postMortemPath.CreatePath();
-            }
+        // Before we do any translation of IP, make sure we have the right network info...
+        if (_config->IPv6() == false) {
+            SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
+            Core::NodeId::ClearIPV6Enabled();
+        }
 
-#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-            if (_config->CustomCodeLibrary().empty() == false) {
-                customcodelibraryhandler.Load(_config->CustomCodeLibrary());
-            }
-#endif
-
-            MessagingInitialization(options.configFile, options.flushMode);
-
-            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
-            SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
-            SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
-            SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-            SYSLOG(Logging::Startup, (_T("Version:       %d:%d:%d"), Versioning::Major, Versioning::Minor, Versioning::Minor));
-            if (_config->MessagingCategoriesFile() == false) {
-                SYSLOG(Logging::Startup, (_T("Messages [INT]:  %s"), options.configFile));
-            }
-            else {
-                SYSLOG(Logging::Startup, (_T("Messages [EXT]:  %s"), _config->MessagingCategories().c_str()));
-            }
-
-            // Before we do any translation of IP, make sure we have the right network info...
-            if (_config->IPv6() == false) {
-                SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
-                Core::NodeId::ClearIPV6Enabled();
-            }
-
-            // Load plugin configs from a directory.
-            LoadPlugins(pluginPath, *_config);
+        // Load plugin configs from a directory.
+        LoadPlugins(pluginPath, *_config);
 
 #ifndef __WINDOWS__
-            // We need at least the loopback interface before we continue...
-            StartLoopbackInterface();
+        // We need at least the loopback interface before we continue...
+        StartLoopbackInterface();
 #endif
 
-            // Startup/load/initialize what we found in the configuration.
-            _dispatcher = new PluginHost::Server(*_config, _background);
+        // Startup/load/initialize what we found in the configuration.
+        _dispatcher = new PluginHost::Server(*_config, _background);
 
-            SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
+        SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
-            // If we have handlers open up the gates to analyze...
-            _dispatcher->Open();
+        // If we have handlers open up the gates to analyze...
+        _dispatcher->Open();
 
-            string id = GetDeviceId(_dispatcher);
-            if (id.empty() == false) {
-                SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
-            }
+        string id = GetDeviceId(_dispatcher);
+        if (id.empty() == false) {
+            SYSLOG(Logging::Startup, (_T("SystemId:      %s"), id.c_str()));
+        }
 
 #ifndef __WINDOWS__
-            if (_background == true) {
-                Core::WorkerPool::Instance().Join();
-            } else
+        if (_background == true) {
+            Core::WorkerPool::Instance().Join();
+        } else
 #endif
-            {
-                char keyPress;
+        {
+            char keyPress;
 
-                do {
-                    keyPress = toupper(getchar());
+            do {
+                keyPress = toupper(getchar());
 
-                    switch (keyPress) {
-                    case 'A': {
-                        Core::JSON::ArrayType<Metadata::Channel> channels;
+                switch (keyPress) {
+                case 'A': {
+                    Core::JSON::ArrayType<Metadata::Channel> channels;
 
-                        _dispatcher->Metadata(channels);
+                    _dispatcher->Metadata(channels);
 
-                        Core::JSON::ArrayType<Metadata::Channel>::Iterator index(channels.Elements());
+                    Core::JSON::ArrayType<Metadata::Channel>::Iterator index(channels.Elements());
 
-                        printf("COMRPC Links:\n");
-                        printf("============================================================\n");
-                        while (index.Next() == true) {
-                            if (index.Current().State.Value() == Metadata::Channel::state::COMRPC) {
-                                printf("Link: %s\n", index.Current().Remote.Value().c_str());
-                                printf("------------------------------------------------------------\n");
+                    printf("COMRPC Links:\n");
+                    printf("============================================================\n");
+                    while (index.Next() == true) {
+                        if (index.Current().State.Value() == Metadata::Channel::state::COMRPC) {
+                            printf("Link: %s\n", index.Current().Remote.Value().c_str());
+                            printf("------------------------------------------------------------\n");
 
-                                RPC::Administrator::Instance().Allocations(index.Current().Name.Value(), [](const string& origin, const std::vector<ProxyStub::UnknownProxy*>& proxies) {
+                            RPC::Administrator::Instance().Allocations(index.Current().Name.Value(), [](const string& origin, const std::vector<ProxyStub::UnknownProxy*>& proxies) {
                                     for (const auto& proxy: proxies) {
                                     Core::instance_id instanceId = proxy->Implementation();
                                     printf("[%s] InstanceId: 0x%" PRIx64 ", RefCount: %d, InterfaceId %d [0x%X], Origin: %s\n", proxy->Name().c_str(), static_cast<uint64_t>(instanceId), proxy->ReferenceCount(), proxy->InterfaceId(), proxy->InterfaceId(), origin.c_str());
                                 }
                                 printf("\n");
-                                });
-                            }
+                            });
                         }
-                        break;
                     }
-                    case 'C': {
-                        Core::JSON::ArrayType<Metadata::Channel> metaData;
-                        _dispatcher->Metadata(metaData);
-                        Core::JSON::ArrayType<Metadata::Channel>::Iterator index(metaData.Elements());
+                    break;
+                }
+                case 'C': {
+                    Core::JSON::ArrayType<Metadata::Channel> metaData;
+                    _dispatcher->Metadata(metaData);
+                    Core::JSON::ArrayType<Metadata::Channel>::Iterator index(metaData.Elements());
 
-                        printf("\nChannels:\n");
-                        printf("============================================================\n");
-                        while (index.Next() == true) {
-                            printf("ID:         %d\n", index.Current().ID.Value());
-                            printf("State:      %s\n", Core::EnumerateType<Metadata::Channel::state>(index.Current().State.Value()).Data());
-                            printf("Active:     %s\n", (index.Current().Activity.Value() == true ? _T("true") : _T("false")));
-                            printf("Remote:     %s\n", (index.Current().Remote.Value().c_str()));
-                            printf("Name:       %s\n\n", (index.Current().Name.Value().c_str()));
-                        }
-                        break;
+                    printf("\nChannels:\n");
+                    printf("============================================================\n");
+                    while (index.Next() == true) {
+                        printf("ID:         %d\n", index.Current().ID.Value());
+                        printf("State:      %s\n", Core::EnumerateType<Metadata::Channel::state>(index.Current().State.Value()).Data());
+                        printf("Active:     %s\n", (index.Current().Activity.Value() == true ? _T("true") : _T("false")));
+                        printf("Remote:     %s\n", (index.Current().Remote.Value().c_str()));
+                        printf("Name:       %s\n\n", (index.Current().Name.Value().c_str()));
                     }
-                    case 'E': {
-                        uint32_t requests, responses, filebodies, jsonrequests;
-                        _dispatcher->Statistics(requests, responses, filebodies, jsonrequests);
-                        printf("\nProxyPool Elements:\n");
-                        printf("============================================================\n");
-                        printf("HTTP requests:    %d\n", requests);
-                        printf("HTTP responses:   %d\n", responses);
-                        printf("HTTP Files:       %d\n", filebodies);
-                        printf("JSONRPC messages: %d\n", jsonrequests);
+                    break;
+                }
+                case 'E': {
+                    uint32_t requests, responses, filebodies, jsonrequests;
+                    _dispatcher->Statistics(requests, responses, filebodies, jsonrequests);
+                    printf("\nProxyPool Elements:\n");
+                    printf("============================================================\n");
+                    printf("HTTP requests:    %d\n", requests);
+                    printf("HTTP responses:   %d\n", responses);
+                    printf("HTTP Files:       %d\n", filebodies);
+                    printf("JSONRPC messages: %d\n", jsonrequests);
 
-                        break;
-                    }
-                    case 'P': {
-                        Core::JSON::ArrayType<Metadata::Service> metaData;
-                        _dispatcher->Services().GetMetadata(metaData);
-                        Core::JSON::ArrayType<Metadata::Service>::Iterator index(metaData.Elements());
+                    break;
+                }
+                case 'P': {
+                    Core::JSON::ArrayType<Metadata::Service> metaData;
+                    _dispatcher->Services().GetMetadata(metaData);
+                    Core::JSON::ArrayType<Metadata::Service>::Iterator index(metaData.Elements());
 
-                        printf("\nPlugins:\n");
-                        printf("============================================================\n");
-                        while (index.Next() == true) {
-                            printf("Callsign:   %s\n", index.Current().Callsign.Value().c_str());
-                            printf("State:      %s\n", index.Current().JSONState.Data().c_str());
-                            printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
-                            printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
-                            printf("StartMode:  %s\n", index.Current().StartMode.Data());
-                            printf("Observers:  %d\n", index.Current().Observers.Value());
+                    printf("\nPlugins:\n");
+                    printf("============================================================\n");
+                    while (index.Next() == true) {
+                        printf("Callsign:   %s\n", index.Current().Callsign.Value().c_str());
+                        printf("State:      %s\n", index.Current().JSONState.Data().c_str());
+                        printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
+                        printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
+                        printf("StartMode:  %s\n", index.Current().StartMode.Data());
+                        printf("Observers:  %d\n", index.Current().Observers.Value());
 
 #if THUNDER_RUNTIME_STATISTICS
-                            printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
-                            printf("JSON:       %d\n", index.Current().ProcessedObjects.Value());
+                        printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
+                        printf("JSON:       %d\n", index.Current().ProcessedObjects.Value());
 #endif
-                            printf("\n");
-                        }
-                        break;
+                        printf("\n");
                     }
-                    case 'S': {
-                        const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
-                        PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
+                    break;
+                }
+                case 'S': {
+                    const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
+                    PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
 
-                        printf("\nServer statistics:\n");
-                        printf("============================================================\n");
+                    printf("\nServer statistics:\n");
+                    printf("============================================================\n");
 #ifdef SOCKET_TEST_VECTORS
-                        printf("Monitorruns: %d\n", Core::ResourceMonitor::Instance().Runs());
+                    printf("Monitorruns: %d\n", Core::ResourceMonitor::Instance().Runs());
 #endif
-                        if (status != nullptr) {
-                            uint8_t buffer[64] = {};
+                    if (status != nullptr) {
+                        uint8_t buffer[64] = {};
 
-                            const PluginHost::ISubSystem::IIdentifier* id(status->Get<PluginHost::ISubSystem::IIdentifier>());
-                            const PluginHost::ISubSystem::IInternet* internet(status->Get<PluginHost::ISubSystem::IInternet>());
-                            const PluginHost::ISubSystem::ILocation* location(status->Get<PluginHost::ISubSystem::ILocation>());
-                            const PluginHost::ISubSystem::ITime* time(status->Get<PluginHost::ISubSystem::ITime>());
+                        const PluginHost::ISubSystem::IIdentifier* id(status->Get<PluginHost::ISubSystem::IIdentifier>());
+                        const PluginHost::ISubSystem::IInternet* internet(status->Get<PluginHost::ISubSystem::IInternet>());
+                        const PluginHost::ISubSystem::ILocation* location(status->Get<PluginHost::ISubSystem::ILocation>());
+                        const PluginHost::ISubSystem::ITime* time(status->Get<PluginHost::ISubSystem::ITime>());
 
-                            if (id != nullptr) {
-                                buffer[0] = static_cast<const ISubSystem::IIdentifier*>(id)
-                                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
-                            }
-
-                            string identifier = Core::SystemInfo::Instance().Id(buffer, ~0);
-
-                            printf("------------------------------------------------------------\n");
-                            printf("State:\n");
-                            printf("Platform:     %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
-                                                                                             : "Unavailable");
-                            printf("Security:     %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
-                                                                                             : "Unavailable");
-                            printf("Network:      %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
-                                                                                            : "Unavailable");
-                            printf("Identifier:   %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) ? "Available"
-                                                                                               : "Unavailable");
-                            printf("Internet  :   %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) ? "Available"
-                                                                                             : "Unavailable");
-                            printf("Graphics:     %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::GRAPHICS) == true) ? "Available"
-                                                                                             : "Unavailable");
-                            printf("Location:     %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::LOCATION) == true) ? "Available"
-                                                                                             : "Unavailable");
-                            printf("Time:         %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::TIME) == true) ? "Available"
-                                                                                         : "Unavailable");
-                            printf("Provisioning: %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::PROVISIONING) == true) ? "Available"
-                                                                                                 : "Unavailable");
-                            printf("Decryption:   %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::DECRYPTION) == true) ? "Available"
-                                                                                               : "Unavailable");
-                            printf("WebSource:    %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
-                                                                                              : "Unavailable");
-                            printf("Streaming:    %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
-                                                                                              : "Unavailable");
-                            printf("Bluetooth:    %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
-                                                                                              : "Unavailable");
-                            printf("Cryptography: %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
-                                                                                              : "Unavailable");
-                            printf("Installation: %s\n",
-                                (status->IsActive(PluginHost::ISubSystem::INSTALLATION) == true) ? "Available"
-                                                                                              : "Unavailable");
-
-                            printf("------------------------------------------------------------\n");
-                            if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
-                                printf("Network Type: %s\n",
-                                    (internet->NetworkType() == PluginHost::ISubSystem::IInternet::UNKNOWN ? "Unknown" : (internet->NetworkType() == PluginHost::ISubSystem::IInternet::IPV6 ? "IPv6" : "IPv4")));
-                                printf("Public IP:   %s\n", internet->PublicIPAddress().c_str());
-                            }
-
-                            printf("------------------------------------------------------------\n");
-                            if (status->IsActive(PluginHost::ISubSystem::LOCATION) == true) {
-                                printf("TimeZone:    %s\n", location->TimeZone().c_str());
-                                printf("Country:     %s\n", location->Country().c_str());
-                                printf("Region:      %s\n", location->Region().c_str());
-                                printf("City:        %s\n", location->City().c_str());
-                                printf("Latitude:    %u\n", location->Latitude());
-                                printf("Longitude:   %u\n", location->Longitude());
-                            }
-
-                            printf("------------------------------------------------------------\n");
-                            if (status->IsActive(PluginHost::ISubSystem::TIME) == true) {
-                                uint64_t lastSync = time->TimeSync();
-
-                                if (lastSync != 0) {
-                                    printf("Time sync:   %s\n", Core::Time(lastSync).ToRFC1123(false).c_str());
-                                } else {
-                                    printf("Time sync:   NOT SYNCHRONISED\n");
-                                }
-                            }
-
-                            printf("------------------------------------------------------------\n");
-                            if (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
-                                printf("Identifier:  %s\n", identifier.c_str());
-                            }
-
-                            printf("------------------------------------------------------------\n");
-                            status->Release();
-                        } else {
-                            printf("------------------------------------------------------------\n");
-                            printf("SystemState: UNKNOWN\n");
-                            printf("------------------------------------------------------------\n");
+                        if (id != nullptr) {
+                            buffer[0] = static_cast<const ISubSystem::IIdentifier*>(id)
+                                            ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
                         }
-                        printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
-                        printf("Poolruns:\n");
-                        for (uint8_t index = 0; index < metaData.Slots; index++) {
-                            printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(Metadata::InstanceId(metaData.Slot[index].WorkerId)), metaData.Slot[index].Runs);
 
-                            if (metaData.Slot[index].Job.IsSet() == false) {
-                                printf("\n");
+                        string identifier = Core::SystemInfo::Instance().Id(buffer, ~0);
+
+                        printf("------------------------------------------------------------\n");
+                        printf("State:\n");
+                        printf("Platform:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Security:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Network:      %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
+                                                                                        : "Unavailable");
+                        printf("Identifier:   %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) ? "Available"
+                                                                                           : "Unavailable");
+                        printf("Internet  :   %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Graphics:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::GRAPHICS) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Location:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::LOCATION) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Time:         %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::TIME) == true) ? "Available"
+                                                                                     : "Unavailable");
+                        printf("Provisioning: %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::PROVISIONING) == true) ? "Available"
+                                                                                             : "Unavailable");
+                        printf("Decryption:   %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::DECRYPTION) == true) ? "Available"
+                                                                                           : "Unavailable");
+                        printf("WebSource:    %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
+                                                                                          : "Unavailable");
+                        printf("Streaming:    %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
+                                                                                          : "Unavailable");
+                        printf("Bluetooth:    %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
+                                                                                          : "Unavailable");
+                        printf("Cryptography: %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::CRYPTOGRAPHY) == true) ? "Available"
+                                                                                             : "Unavailable");
+                        printf("Installation: %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::INSTALLATION) == true) ? "Available"
+                                                                                             : "Unavailable");
+
+                        printf("------------------------------------------------------------\n");
+                        if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
+                            printf("Network Type: %s\n",
+                                (internet->NetworkType() == PluginHost::ISubSystem::IInternet::UNKNOWN ? "Unknown" : (internet->NetworkType() == PluginHost::ISubSystem::IInternet::IPV6 ? "IPv6" : "IPv4")));
+                            printf("Public IP:   %s\n", internet->PublicIPAddress().c_str());
+                        }
+
+                        printf("------------------------------------------------------------\n");
+                        if (status->IsActive(PluginHost::ISubSystem::LOCATION) == true) {
+                            printf("TimeZone:    %s\n", location->TimeZone().c_str());
+                            printf("Country:     %s\n", location->Country().c_str());
+                            printf("Region:      %s\n", location->Region().c_str());
+                            printf("City:        %s\n", location->City().c_str());
+                            printf("Latitude:    %u\n", location->Latitude());
+                            printf("Longitude:   %u\n", location->Longitude());
+                        }
+
+                        printf("------------------------------------------------------------\n");
+                        if (status->IsActive(PluginHost::ISubSystem::TIME) == true) {
+                            uint64_t lastSync = time->TimeSync();
+
+                            if (lastSync != 0) {
+                                printf("Time sync:   %s\n", Core::Time(lastSync).ToRFC1123(false).c_str());
+                            } else {
+                                printf("Time sync:   NOT SYNCHRONISED\n");
+                            }
+                        }
+
+                        printf("------------------------------------------------------------\n");
+                        if (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) {
+                            printf("Identifier:  %s\n", identifier.c_str());
+                        }
+
+                        printf("------------------------------------------------------------\n");
+                        status->Release();
+                    } else {
+                        printf("------------------------------------------------------------\n");
+                        printf("SystemState: UNKNOWN\n");
+                        printf("------------------------------------------------------------\n");
+                    }
+                    printf("Pending:     %d\n", static_cast<uint32_t>(metaData.Pending.size()));
+                    printf("Poolruns:\n");
+                    for (uint8_t index = 0; index < metaData.Slots; index++) {
+                        printf("  Thread%02d|0x%16" PRIu64 ": %10d", (index), static_cast<uint64_t>(Metadata::InstanceId(metaData.Slot[index].WorkerId)), metaData.Slot[index].Runs);
+
+                        if (metaData.Slot[index].Job.IsSet() == false) {
+                            printf("\n");
                             }
                             else {
-                                printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
-                            }
+                            printf(" [%s]\n", metaData.Slot[index].Job.Value().c_str());
                         }
-                        break;
                     }
-                    case 'T': {
-                        printf("Triggering the Resource Monitor to do an evaluation.\n");
-                        Core::ResourceMonitor::Instance().Break();
-                        break;
-                    }
-                    case 'M': {
-                        printf("\nResource Monitor Entry states:\n");
-                        printf("============================================================\n");
-                        Core::ResourceMonitor& monitor = Core::ResourceMonitor::Instance();
-                        printf("Currently monitoring: %d resources\n", monitor.Count());
-                        uint32_t index = 0;
-                        Core::ResourceMonitor::Metadata info;
+                    break;
+                }
+                case 'T': {
+                    printf("Triggering the Resource Monitor to do an evaluation.\n");
+                    Core::ResourceMonitor::Instance().Break();
+                    break;
+                }
+                case 'M': {
+                    printf("\nResource Monitor Entry states:\n");
+                    printf("============================================================\n");
+                    Core::ResourceMonitor& monitor = Core::ResourceMonitor::Instance();
+                    printf("Currently monitoring: %d resources\n", monitor.Count());
+                    uint32_t index = 0;
+                    Core::ResourceMonitor::Metadata info;
 
-                        info.classname = _T("");
-                        info.descriptor = ~0;
-                        info.events = 0;
-                        info.monitor = 0;
+                    info.classname = _T("");
+                    info.descriptor = ~0;
+                    info.events = 0;
+                    info.monitor = 0;
 
-                        while (monitor.Info(index, info) == true) {
+                    while (monitor.Info(index, info) == true) {
 #ifdef __WINDOWS__
-                            TCHAR flags[12];
+                        TCHAR flags[12];
                             flags[0]  = (info.monitor & FD_CLOSE   ? 'C' : '-');
                             flags[1]  = (info.monitor & FD_READ    ? 'R' : '-');
                             flags[2]  = (info.monitor & FD_WRITE   ? 'W' : '-');
@@ -1003,10 +1009,10 @@ POP_WARNING()
                             flags[7]  = (info.events & FD_READ    ? 'R' : '-');
                             flags[8]  = (info.events & FD_WRITE   ? 'W' : '-');
                             flags[9]  = (info.events & FD_ACCEPT  ? 'A' : '-');
-                            flags[10] = (info.events & FD_CONNECT ? 'O' : '-');
-                            flags[11] = '\0';
+                        flags[10] = (info.events & FD_CONNECT ? 'O' : '-');
+                        flags[11] = '\0';
 #else
-                            TCHAR flags[8];
+                        TCHAR flags[8];
                             flags[0] = (info.monitor & POLLIN     ? 'I' : '-');
                             flags[1] = (info.monitor & POLLOUT    ? 'O' : '-');
                             flags[2] = (info.monitor & POLLHUP    ? 'H' : '-');
@@ -1014,104 +1020,101 @@ POP_WARNING()
                             flags[4] = (info.events & POLLIN     ? 'I' : '-');
                             flags[5] = (info.events & POLLOUT    ? 'O' : '-');
                             flags[6] = (info.events & POLLHUP    ? 'H' : '-');
-                            flags[7] = '\0';
+                        flags[7] = '\0';
 #endif
-                      
+
                             printf ("%6d %s[%s]: %s\n", info.descriptor, info.filename, flags, Core::ClassNameOnly(info.classname).Text().c_str());
-                            index++;
-                        }
-                        break;
+                        index++;
                     }
-                    case 'Q':
-                        break;
-                    case 'R': {
-                        printf("\nMonitor callstack:\n");
-                        printf("============================================================\n");
+                    break;
+                }
+                case 'Q':
+                    break;
+                case 'R': {
+                    printf("\nMonitor callstack:\n");
+                    printf("============================================================\n");
+                    uint8_t counter = 0;
+                    std::list<Core::callstack_info> stackList;
+                    ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
+                    for (const Core::callstack_info& entry : stackList) {
+                        printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
+                        if (entry.line != static_cast<uint32_t>(~0)) {
+                            printf(" [%d]\n", entry.line);
+                            }
+                            else {
+                            printf("\n");
+                        }
+                        counter++;
+                    }
+                    break;
+                }
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': {
+                    Core::thread_id threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
+                    printf("\nThreadPool thread[%c] callstack:\n", keyPress);
+                    printf("============================================================\n");
+                    if (threadId != (Core::thread_id)(~0)) {
                         uint8_t counter = 0;
                         std::list<Core::callstack_info> stackList;
-                        ::DumpCallStack(Core::ResourceMonitor::Instance().Id(), stackList);
+                        ::DumpCallStack(threadId, stackList);
                         for (const Core::callstack_info& entry : stackList) {
                             printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
                             if (entry.line != static_cast<uint32_t>(~0)) {
-                                    printf(" [%d]\n", entry.line);
-                            }
-                            else {
-                                    printf("\n");
+                                printf(" [%d]\n", entry.line);
+                                }
+                                else {
+                                printf("\n");
                             }
                             counter++;
                         }
-                        break;
-                    }
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8': 
-                    case '9': {
-                        Core::thread_id threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
-                        printf("\nThreadPool thread[%c] callstack:\n", keyPress);
-                        printf("============================================================\n");
-                        if (threadId != (Core::thread_id)(~0)) {
-                            uint8_t counter = 0;
-                            std::list<Core::callstack_info> stackList;
-                            ::DumpCallStack(threadId, stackList);
-                            for (const Core::callstack_info& entry : stackList) {
-                                printf("[%03d] [%p] %.30s %s", counter, entry.address, entry.module.c_str(), entry.function.c_str());
-                                if (entry.line != static_cast<uint32_t>(~0)) {
-                                    printf(" [%d]\n", entry.line);
-                                }
-                                else {
-                                    printf("\n");
-                                }
-                                counter++;
-                            }
-                        } else {
-                            printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", _config->ThreadPoolCount() + 1);
-                        }
-
-                        break;
-                    }
-                    case '?':
-                        printf("\nOptions are: \n");
-                        printf("  [A]ctive Proxy list\n");
-                        printf("  [P]lugins\n");
-                        printf("  [C]hannels\n");
-                        printf("  [S]erver stats\n");
-                        printf("  [E]lements in the ProxyPools\n");
-                        printf("  [T]rigger resource monitor\n");
-                        printf("  [M]etadata resource monitor\n");
-                        printf("  [R]esource monitor stack\n");
-                        printf("  [0..%d] Threadpool stacks\n", _config->ThreadPoolCount() + 1);
-                        printf("  [Q]uit\n\n");
-                        break;
-
-                    default:
-                        break;
+                    } else {
+                        printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", _config->ThreadPoolCount() + 1);
                     }
 
-                } while (keyPress != 'Q');
-            }
+                    break;
+                }
+                case '?':
+                    printf("\nOptions are: \n");
+                    printf("  [A]ctive Proxy list\n");
+                    printf("  [P]lugins\n");
+                    printf("  [C]hannels\n");
+                    printf("  [S]erver stats\n");
+                    printf("  [E]lements in the ProxyPools\n");
+                    printf("  [T]rigger resource monitor\n");
+                    printf("  [M]etadata resource monitor\n");
+                    printf("  [R]esource monitor stack\n");
+                    printf("  [0..%d] Threadpool stacks\n", _config->ThreadPoolCount() + 1);
+                    printf("  [Q]uit\n\n");
+                    break;
+
+                default:
+                    break;
+                }
+
+            } while (keyPress != 'Q');
         }
+    }
 
-        if (_background == false) {
-            fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
-            fflush(stderr);
-        }
+    if (_background == false) {
+        fprintf(stderr, EXPAND_AND_QUOTE(APPLICATION_NAME) " shutting down due to a 'Q' press in the terminal. Regular shutdown\n");
+        fflush(stderr);
+    }
 
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-         customcodelibraryhandler.Release();
+    customcodelibraryhandler.Release();
 #endif
- 
-        ExitHandler::Destruct();
-        std::set_terminate(nullptr);
-        _atExitActive = false;
-        return 0;
 
-    } // End main.
-    } // extern "C"
-}
-}
+    ExitHandler::Destruct();
+    std::set_terminate(nullptr);
+    _atExitActive = false;
+    return 0;
+
+} // End main.
