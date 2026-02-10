@@ -35,8 +35,6 @@ message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
 
 option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
-option(ENABLE_STRICT_COMPILER_SETTINGS
-    "Enable compiler flags to get the warnings/errors due to improper condition in the code" OFF) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
@@ -66,6 +64,7 @@ endif()
 
 include(platform)
 include(CmakeHelperFunctions)
+include(CompileSettingsStrict)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
@@ -90,18 +89,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 message(VERBOSE "CMake build type: '${CMAKE_BUILD_TYPE}'")
-
-# Remove optimization flags added by the build system
-string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "(-g[0123])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-string(REGEX REPLACE "\\-\\g$" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "\\-\\g$" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-# FIX_ME: Disable fortify source.
-#         https://jira.rdkcentral.com/jira/browse/METROL-483
-#         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.
-#         https://www.redhat.com/en/blog/enhance-application-security-fortifysource
-string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-3]" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 # make sure others can make use of the JSON creation tools as well!!!
 configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/project.cmake.in"
