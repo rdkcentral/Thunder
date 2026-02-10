@@ -76,7 +76,7 @@ namespace Messaging {
         const string _basePath;
         const uint16_t _socketPort;
 
-        uint8_t _readBuffer[Messaging::MessageUnit::MessageSize];
+        uint8_t _readBuffer[Messaging::MessageUnit::TempDataBufferSize];
 
         Clients _clients;
         Factories _factories;
