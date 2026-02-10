@@ -315,11 +315,12 @@ namespace Core {
         struct sysinfo info;
         sysinfo(&info);
 
+        const uint64_t unit = (info.mem_unit != 0) ? info.mem_unit : 1;
         m_uptime = info.uptime;
-        m_freeram = info.freeram;
-        m_totalram = info.totalram;
-        m_totalswap = info.totalswap;
-        m_freeswap = info.freeswap;
+        m_freeram = info.freeram * unit;
+        m_totalram = info.totalram * unit;
+        m_totalswap = info.totalswap * unit;
+        m_freeswap = info.freeswap * unit;
         m_cpuloadavg[0] = info.loads[0];
         m_cpuloadavg[1] = info.loads[1];
         m_cpuloadavg[2] = info.loads[2];
