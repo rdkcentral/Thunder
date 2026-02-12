@@ -956,5 +956,7 @@ namespace std {
 #endif
 
 #define THUNDER_VERSION 4
+#define THUNDER_VERSION_MAJOR 4
+#define THUNDER_VERSION_MINOR 4
 
 #endif // __PORTABILITY_H
