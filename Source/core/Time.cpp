@@ -1119,7 +1119,7 @@ POP_WARNING()
     /* static */ Time Time::Now()
     {
         struct timespec currentTime{};
-        clock_gettime(CLOCK_REALTIME, &currentTime);
+        clock_gettime(CLOCK_MONOTONIC, &currentTime);
 
         return (Time(currentTime));
     }
