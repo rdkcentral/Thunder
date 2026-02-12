@@ -84,11 +84,6 @@ else()
     message(FATAL_ERROR "Invalid CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
 endif()
 
-# Remove optimization flags added by the build system
-string(REGEX REPLACE "(-g[0123])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "(-g[0123])" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-string(REGEX REPLACE "\\-\\g$" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "\\-\\g$" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 # FIX_ME: Disable fortify source.
 #         https://jira.rdkcentral.com/jira/browse/METROL-483
 #         Enabled in upstream buildroot, generates a lot of warnings, caused by missing optimalisation flags.
