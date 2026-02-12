@@ -233,17 +233,8 @@ namespace Core {
         string MessageInfo::ToString(const abbreviate abbreviate) const
         {
             string result;
-            const Core::Time now(TimeStamp());
-            string time;
 
-            if (abbreviate == abbreviate::ABBREVIATED) {
-                time = now.ToTimeOnly(true);
-            }
-            else {
-                time = now.ToRFC1123(true);
-            }
-            result = Core::Format("[%s]:[%s]:[%s]: ",
-                    time.c_str(),
+            result = Core::Format("[%s]:[%s]: ",
                     Module().c_str(),
                     Category().c_str());
 
@@ -299,19 +290,14 @@ namespace Core {
         string IStore::Tracing::ToString(const abbreviate abbreviate) const
         {
             string result;
-            const Core::Time now(TimeStamp());
 
             if (abbreviate == abbreviate::ABBREVIATED) {
-                const string time(now.ToTimeOnly(true));
-                result = Core::Format("[%s]:[%s]:[%s]: ",
-                        time.c_str(),
+                result = Core::Format("[%s]:[%s]: ",
                         Module().c_str(),
                         Category().c_str());
             }
             else {
-                const string time(now.ToRFC1123(true));
-                result = Core::Format("[%s]:[%s]:[%s:%u]:[%s]:[%s]: ",
-                        time.c_str(),
+                result = Core::Format("[%s]:[%s:%u]:[%s]:[%s]: ",
                         Module().c_str(),
                         Core::FileNameOnly(FileName().c_str()),
                         LineNumber(),
@@ -367,19 +353,14 @@ namespace Core {
         string IStore::WarningReporting::ToString(const abbreviate abbreviate) const
         {
             string result;
-            const Core::Time now(TimeStamp());
 
             if (abbreviate == abbreviate::ABBREVIATED) {
-                const string time(now.ToTimeOnly(true));
-                result = Core::Format("[%s]:[%s]:[%s]: ",
-                        time.c_str(),
+                result = Core::Format("[%s]:[%s]: ",
                         Module().c_str(),
                         Category().c_str());
             }
             else {
-                const string time(now.ToRFC1123(true));
-                result = Core::Format("[%s]:[%s]:[%s]:[%s]: ",
-                        time.c_str(),
+                result = Core::Format("[%s]:[%s]:[%s]: ",
                         Module().c_str(),
                         Callsign().c_str(),
                         Category().c_str());

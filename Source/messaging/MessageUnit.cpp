@@ -252,6 +252,10 @@ namespace WPEFramework {
         */
         /* virtual */ void MessageUnit::Push(const Core::Messaging::MessageInfo& messageInfo, const Core::Messaging::IEvent* message)
         {
+#if 1
+            _direct.Mode(false, _settings.IsAbbreviated());
+            _direct.Output(messageInfo, message);
+#else
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
             if (_settings.IsDirect() == true) {
@@ -276,6 +280,7 @@ namespace WPEFramework {
                     TRACE_L1("Unable to push data, buffer is too small!");
                 }
             }
+#endif
         }
     } // namespace Messaging
 }
