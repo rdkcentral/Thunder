@@ -129,6 +129,10 @@ namespace WPEFramework {
             {
                 return (m_SocketType);
             }
+            inline SOCKET Socket() const
+            {
+                return m_Socket;
+            }
             inline bool IsListening() const
             {
                 return ((State() & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION | SocketPort::OPEN | SocketPort::LINK | SocketPort::ACCEPT)) == (SocketPort::OPEN | SocketPort::ACCEPT));
