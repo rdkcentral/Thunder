@@ -30,7 +30,8 @@ add_executable(${TARGET}
         SystemInfo.cpp
         PostMortem.cpp
         )
-
+separate_arguments(BREAKPAD_LDFLAGS)
+target_link_libraries(${TARGET} PRIVATE "${BREAKPAD_LDFLAGS}")
 target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
