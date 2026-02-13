@@ -74,6 +74,7 @@ namespace PluginHost {
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
+    /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extension/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
@@ -951,11 +952,11 @@ namespace PluginHost {
     {
         _adminLock.Lock();
 
-        // First, move them all to deactivated except Controller
         Core::ProxyType<Service> controller(_server.Controller());
 
         TRACE_L1("Destructing %d plugins", static_cast<uint32_t>(_services.size()));
 
+        // first we move all non priority plugins to deactivated, 
         while (_services.empty() == false) {
 
             auto index = _services.begin();
@@ -964,16 +965,54 @@ namespace PluginHost {
 
             ASSERT(service.IsValid());
 
-            if (index->first.c_str() != controller->Callsign()) {
+            if ((service->PriorityStart() == false) && (index->first != controller->Callsign())) {
                 _adminLock.Unlock();
 
                 index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
 
                 _adminLock.Lock();
+
+                _services.erase(index);
             }
 
-            _services.erase(index);
         }
+
+        // now we do the priority ones that have no specific order
+        while (_services.empty() == false) {
+
+            auto index = _services.begin();
+
+            Core::ProxyType<Service> service(index->second);
+
+            ASSERT(service.IsValid());
+
+            if ((std::find(_prioritystartorder.begin(), _prioritystartorder.end(), index->first) == _prioritystartorder.end()) && (index->first != controller->Callsign()))
+            {
+                _adminLock.Unlock();
+
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+                _adminLock.Lock();
+
+                _services.erase(index);
+            }
+
+        }
+
+        // and now the priority ones with order in reverse order
+        for (auto it = _prioritystartorder.rbegin(); it != _prioritystartorder.rend(); ++it) {
+            Plugins::iterator index = _services.find(*it);
+            if (index != _services.end()) {
+                _adminLock.Unlock();
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+                _adminLock.Lock();
+                _services.erase(index);
+            } 
+        }
+
+        // and now only the controller is left...
+        ASSERT((_services.size() == 1) && (_services.begin()->first == controller->Callsign()));
+        _services.clear();
 
         _adminLock.Unlock();
 
@@ -1048,35 +1087,66 @@ namespace PluginHost {
         return (result);
     }
 
+    void Server::ServiceMap::ActivateService(Core::ProxyType<PluginHost::Server::Service>& service)
+    {
+        ASSERT(service.IsValid() == true);
+
+        if ((service->State() != PluginHost::Service::state::UNAVAILABLE) && (service->State() != PluginHost::Service::state::ACTIVATED)) { // 2nd prevents the controller from tried to activate twice
+            if (service->StartMode() == PluginHost::IShell::startmode::ACTIVATED) {
+                SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"), service->ClassName().c_str(), service->Callsign().c_str()));
+                service->Activate(PluginHost::IShell::STARTUP);
+            } else {
+                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, start mode is %s"), service->ClassName().c_str(), service->Callsign().c_str(), Core::EnumerateType<PluginHost::IShell::startmode>(service->StartMode()).Data()));
+            }
+        }
+    }
+
+    bool Server::ServiceMap::AutoActivateAllowed(Core::ProxyType<PluginHost::Server::Service>& service) const
+    {
+        ASSERT(service.IsValid() == true);
+
+        return (service->AutoActivationAlwaysEnabled() || (_disablePluginAutoActivation == false));
+    }
+
     void Server::ServiceMap::Startup() {
+
+        //first we start the priority start plugins in the requested order (if any)
+        for (const string& prioservice : _prioritystartorder) {
+            if (prioservice != PluginHost::Config::AllExtensionsAuthorized) {
+                Plugins::iterator index = _services.find(prioservice);
+                if ((index != _services.end()) && (AutoActivateAllowed(index->second) == true)) {
+                    ActivateService(index->second);
+                } 
+            }
+        }
 
         // sort plugins based on StartupOrder from configuration
         std::vector<Core::ProxyType<Service>> configured_services;
 
-        for (auto service : _services) {
-            configured_services.emplace_back(service.second);
-        }
+        bool needssorting = false;
 
-        std::sort(configured_services.begin(), configured_services.end(),
-            [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>& rhs)
-            {
-                return lhs->StartupOrder() < rhs->StartupOrder();
-            });
-
-        for (auto service : configured_services)
-        {
-            if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
-                if (service->StartMode() == PluginHost::IShell::startmode::ACTIVATED) {
-                    SYSLOG(Logging::Startup, (_T("Activating plugin [%s]:[%s]"),
-                        service->ClassName().c_str(), service->Callsign().c_str()));
-                    service->Activate(PluginHost::IShell::STARTUP);
+        for (auto& service : _services) {  
+            if (service.second->PriorityStart() == true) {
+                if ((AutoActivateAllowed(service.second) == true) && (std::find(_prioritystartorder.begin(), _prioritystartorder.end(), service.second->Callsign()) == _prioritystartorder.end())) {
+                    ActivateService(service.second);
                 }
-                else {
-                    SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] delayed, start mode is %s"),
-                        service->ClassName().c_str(), service->Callsign().c_str(),
-                        Core::EnumerateType<PluginHost::IShell::startmode>(service->StartMode()).Data()));
+            } else if (AutoActivateAllowed(service.second) == true) {
+                configured_services.emplace_back(service.second);
+                if (service.second->StartupOrderSet() == true) {
+                    needssorting = true;
                 }
             }
+        }
+
+        if ((needssorting == true) && (configured_services.size() != 0)) {
+            std::sort(configured_services.begin(), configured_services.end(),
+                [](const Core::ProxyType<Service>& lhs, const Core::ProxyType<Service>& rhs) {
+                    return lhs->StartupOrder() < rhs->StartupOrder();
+                });
+        }
+
+        for (auto& service : configured_services) {
+            ActivateService(service);
         }
     }
 
@@ -1091,6 +1161,7 @@ namespace PluginHost {
         , _requestClose(false)
         , _jobs()
     {
+        TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
 
         _jobs.Slots(static_cast<ChannelMap&>(*parent).MaxRequests());
@@ -1112,6 +1183,36 @@ namespace PluginHost {
         }
 
         Close(Core::infinite);
+    }
+
+    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension)
+    {
+        while (index.Next() == true) {
+            Plugin::Config& entry(index.Current());
+
+            if ((entry.ClassName.Value().empty() == true) && (entry.Locator.Value().empty() == true)) {
+
+                // This is a definition/configuration for the Controller or an incorrect entry :-).
+                // Read and define the Controller.
+                if (metaDataConfig.Callsign.Value().empty() == true) {
+                    // Oke, this is the first time we "initialize" it.
+                    metaDataConfig.Callsign = (entry.Callsign.Value().empty() == true ? string(_defaultControllerCallsign) : entry.Callsign.Value());
+                    metaDataConfig.Configuration = entry.Configuration;
+                } else {
+// Let's raise an error, this is a bit strange, again, the controller is initialized !!!
+#ifndef __WINDOWS__
+                    if (background == true) {
+                        syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
+                    } else
+#endif
+                    {
+                        fprintf(stdout, "Configuration error. Controller is defined multiple times [%s].\n", entry.Callsign.Value().c_str());
+                    }
+                }
+            } else {
+                _services.Insert(entry, Service::mode::CONFIGURED, thunderextension);
+            }
+        }
     }
 
     //
@@ -1138,40 +1239,17 @@ namespace PluginHost {
         // Lets assign a workerpool, we created it...
         Core::WorkerPool::Assign(&_dispatcher);
 
-        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins();
-
-        // First register all services, than if we got them, start "activating what is required.
-        // Whatever plugin is needed, we at least have our Metadata plugin available (as the first entry :-).
         Plugin::Config metaDataConfig;
 
         metaDataConfig.ClassName = Core::ClassNameOnly(typeid(Plugin::Controller).name()).Text();
 
-        while (index.Next() == true) {
-            Plugin::Config& entry(index.Current());
+        Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Extensions();
 
-            if ((entry.ClassName.Value().empty() == true) && (entry.Locator.Value().empty() == true)) {
+        InsertLoadPluginConfig(index, metaDataConfig, true);
 
-                // This is a definition/configuration for the Controller or an incorrect entry :-).
-                // Read and define the Controller.
-                if (metaDataConfig.Callsign.Value().empty() == true) {
-                    // Oke, this is the first time we "initialize" it.
-                    metaDataConfig.Callsign = (entry.Callsign.Value().empty() == true ? string(_defaultControllerCallsign) : entry.Callsign.Value());
-                    metaDataConfig.Configuration = entry.Configuration;
-                } else {
-                    // Let's raise an error, this is a bit strange, again, the controller is initialized !!!
-                    #ifndef __WINDOWS__
-                    if (background == true) {
-                        syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
-                    } else
-                    #endif
-                    {
-                        fprintf(stdout, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
-                    }
-                }
-            } else {
-                _services.Insert(entry, Service::mode::CONFIGURED);
-            }
-        }
+        index = configuration.Plugins();
+
+        InsertLoadPluginConfig(index, metaDataConfig, false);
 
         if (metaDataConfig.Callsign.Value().empty() == true) {
             // Oke, this is the first time we "initialize" it.
@@ -1192,7 +1270,7 @@ namespace PluginHost {
         Channel::Initialize(_config.WebPrefix());
 
         // Add the controller as a service to the services.
-        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED);
+        _controller = _services.Insert(metaDataConfig, Service::mode::CONFIGURED, true);
 
 #ifdef PROCESSCONTAINERS_ENABLED
         // turn on ProcessContainer logging
@@ -1274,6 +1352,7 @@ namespace PluginHost {
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
         _services.Open(externallyControlled);
 
+        SYSLOG(Logging::Startup, (_T("Activating controller")));
         _controller->Activate(PluginHost::IShell::STARTUP);
 
         Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();

@@ -125,6 +125,7 @@ namespace PluginHost {
     public:
         static const TCHAR* ConfigFile;
         static const TCHAR* PluginOverrideFile;
+        static const TCHAR* ExtensionsConfigDirectory;
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
@@ -1398,6 +1399,19 @@ namespace PluginHost {
                 return (_composit);
             }
 
+            bool virtual Cloneable() const {
+                return true;
+            }
+
+            bool virtual PriorityStart() const {
+                return false;
+            }
+
+            bool virtual AutoActivationAlwaysEnabled() const
+            {
+                return false;
+            }
+
         private:
             uint32_t Wakeup(const uint32_t timeout);
 
@@ -1669,6 +1683,40 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
+
+
+        class ThunderExtensionService : public Service {
+        public:
+            ThunderExtensionService() = delete;
+            ThunderExtensionService(ThunderExtensionService&&) = delete;
+            ThunderExtensionService(const ThunderExtensionService&) = delete;
+            ThunderExtensionService& operator=(ThunderExtensionService&&) = delete;
+            ThunderExtensionService& operator=(const ThunderExtensionService&) = delete;
+
+            ThunderExtensionService(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
+                : Service(server, plugin, administrator, type, handler)
+            {
+            }
+
+            ~ThunderExtensionService() override = default;
+
+        public:
+            bool Cloneable() const override
+            {
+                return false;
+            }
+
+            bool virtual PriorityStart() const
+            {
+                return true;
+            }
+
+            bool AutoActivationAlwaysEnabled() const override
+            {
+                return true;
+            }
+        };
+
         class Override : public Core::JSON::Container {
         private:
             class Plugin : public Core::JSON::Container {
@@ -2772,21 +2820,21 @@ namespace PluginHost {
                 , _notifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
-                    *this,
-                    server._config.Communicator(),
-                    server._config.PersistentPath(),
-                    server._config.SystemPath(),
-                    server._config.DataPath(),
-                    server._config.VolatilePath(),
-                    server._config.AppPath(),
-                    server._config.ProxyStubPath(),
-                    server._config.ObservableProxyStubPath(),
-                    server._config.PostMortemPath(),
-                    server._config.LinkerPluginPaths(),
-                    server._config.SoftKillCheckWaitTime(),
-                    server._config.HardKillCheckWaitTime(),
-                    server._config.DelegatedReleases(),
-                    _engine)
+                      *this,
+                      server._config.Communicator(),
+                      server._config.PersistentPath(),
+                      server._config.SystemPath(),
+                      server._config.DataPath(),
+                      server._config.VolatilePath(),
+                      server._config.AppPath(),
+                      server._config.ProxyStubPath(),
+                      server._config.ObservableProxyStubPath(),
+                      server._config.PostMortemPath(),
+                      server._config.LinkerPluginPaths(),
+                      server._config.SoftKillCheckWaitTime(),
+                      server._config.HardKillCheckWaitTime(),
+                      server._config.DelegatedReleases(),
+                      _engine)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, server._config.PluginConfigPath())
@@ -2795,11 +2843,16 @@ namespace PluginHost {
                 , _opened()
                 , _closed()
                 , _job(*this)
+                , _disablePluginAutoActivation(server._config.DisablePluginAutoActivation())
+                , _prioritystartorder(server._config.AuthorizedExtensions())
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
                 } else if (_configObserver.IsValid() == false) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
+                }
+                if (_disablePluginAutoActivation == true) {
+                    SYSLOG(Logging::Startup, (_T("Plugin Auto Activation disabled.")));
                 }
             }
             POP_WARNING()
@@ -3128,10 +3181,18 @@ namespace PluginHost {
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
-            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
+            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode, const bool thunderExtension)
             {
                 // Whatever plugin is needse, we at least have our Metadata plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
+                Core::ProxyType<Service> newService;
+                
+                if (thunderExtension == false) {
+                    newService = Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine);
+                }
+                else
+                {
+                    newService = Core::ProxyType<Service>(Core::ProxyType<ThunderExtensionService>::Create(Configuration(), configuration, *this, mode, _engine ));
+                }
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
@@ -3153,7 +3214,7 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
+                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end()) && (original->Cloneable() == true)) {
                     // Copy original configuration
                     Plugin::Config newConfiguration(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
@@ -3172,8 +3233,16 @@ namespace PluginHost {
 
                         result = Core::ERROR_NONE;
                     }
+                    _adminLock.Unlock();
                 }
-                _adminLock.Unlock();
+                else {
+                    _adminLock.Unlock();
+                    string origname("unknown");
+                    if (original.IsValid() == true) {
+                        origname = original->Callsign();
+                    }
+                    SYSLOG(Logging::Error, (_T("Cannot clone plugin [%s] into [%s]"), origname.c_str(), newCallsign.c_str()));
+                }
 
                 return (result);
             }
@@ -3363,6 +3432,8 @@ namespace PluginHost {
             void Startup();
             void Close();
             void Destroy();
+            void ActivateService(Core::ProxyType<PluginHost::Server::Service>& service);
+            bool AutoActivateAllowed(Core::ProxyType<PluginHost::Server::Service>& service) const;
 
             void Opened(const uint32_t id)
             {
@@ -3473,7 +3544,7 @@ namespace PluginHost {
                                     pluginConfig.Callsign = Core::File::FileName(file.FileName());
                                 }
 
-                                Insert(pluginConfig, Service::mode::DYNAMIC);
+                                Insert(pluginConfig, Service::mode::DYNAMIC, false);
                             }
                             file.Close();
                         }
@@ -3564,6 +3635,8 @@ namespace PluginHost {
             Channels _opened;
             Channels _closed;
             Core::WorkerPool::JobType<ServiceMap&> _job;
+            bool _disablePluginAutoActivation;
+            std::vector<string> _prioritystartorder;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4831,6 +4904,9 @@ namespace PluginHost {
         {
             return (_config.Security());
         }
+
+    private:
+        void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension);
 
     private:
         Core::NodeId _accessor;

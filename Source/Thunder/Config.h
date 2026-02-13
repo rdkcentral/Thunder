@@ -407,6 +407,9 @@ namespace PluginHost {
                 , DefaultMessagingCategories(false)
                 , Process()
                 , Input()
+                , DisablePluginAutoActivation(false)
+                , AuthorizedExtensions()
+                , ExtensionConfigs()
                 , Configs()
                 , EthernetCard()
                 , Environments()
@@ -453,6 +456,10 @@ namespace PluginHost {
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
+                Add(_T("disablepluginautoactivation"), &DisablePluginAutoActivation);
+                Add(_T("authorizedextensions"), &AuthorizedExtensions);
+                Add(_T("extensionconfigs"), &ExtensionConfigs);
+                Add(_T("extensions"), &Extensions);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
                 Add(_T("ethernetcard"), &EthernetCard);
@@ -504,6 +511,10 @@ namespace PluginHost {
             Core::JSON::String DefaultMessagingCategories; 
             ProcessSet Process;
             InputConfig Input;
+            Core::JSON::Boolean DisablePluginAutoActivation;
+            Core::JSON::ArrayType<Core::JSON::String> AuthorizedExtensions;
+            Core::JSON::String ExtensionConfigs;
+            Core::JSON::ArrayType<Plugin::Config> Extensions;
             Core::JSON::String Configs;
             Core::JSON::String EthernetCard;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
@@ -636,6 +647,9 @@ namespace PluginHost {
         };
 
     public:
+        static constexpr TCHAR AllExtensionsAuthorized[] = _T("*");
+
+    public:
         Config() = delete;
         Config(const Config&) = delete;
         Config& operator=(const Config&) = delete;
@@ -652,6 +666,10 @@ namespace PluginHost {
             , _hashKey()
             , _appPath()
             , _systemPath()
+            , _disablePluginAutoActivation()
+            , _authorizedExtensions()
+            , _extensionsPath()
+            , _extensions()
             , _configsPath()
             , _proxyStubPath()
             , _observableProxyStubPath()
@@ -722,6 +740,42 @@ namespace PluginHost {
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
+                _disablePluginAutoActivation = config.DisablePluginAutoActivation.Value();
+
+                if ((config.AuthorizedExtensions.IsSet() == true) && (config.AuthorizedExtensions.Length() > 0)) {
+                    Core::JSON::ArrayType<Core::JSON::String>::Iterator index(config.AuthorizedExtensions.Elements());
+                    _authorizedExtensions.reserve(config.AuthorizedExtensions.Length());
+
+                    while (index.Next() == true) {
+                        if (index.Current().Value() == AllExtensionsAuthorized) {
+                            if (_authorizedExtensions.size() != (index.Count()-1)) {
+                                SYSLOG(Logging::Startup, (_T("All Extensions Authorized indication found at position other then last, ignored")));
+                            }
+                            else {
+                                _authorizedExtensions.push_back(index.Current().Value());
+                            }
+                        } else {
+                            _authorizedExtensions.push_back(index.Current().Value());
+                        }
+                    }
+                }
+
+                _extensionsPath = Core::Directory::Normalize(config.ExtensionConfigs.Value());
+
+
+                if ((config.Extensions.IsSet() == true) && (config.Extensions.Length() > 0)) {
+                    Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator index(config.Extensions.Elements());
+
+                    while (index.Next() == true) {
+
+                        if (ExtensionAuthorized(index.Current().Callsign.Value()) == true) {
+                            _extensions.Add(index.Current());
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Extension:%s is not authorized to be loaded, ignoring"), index.Current().Callsign.Value().c_str()));
+                        }
+                    }
+                }
+
                 _configsPath = Core::Directory::Normalize(config.Configs.Value());
                 _proxyStubPath = Core::Directory::Normalize(config.ProxyStubPath.Value());
                 if (config.Observe.IsSet() == true) {
@@ -900,6 +954,32 @@ namespace PluginHost {
         {
             return (_systemPath);
         }
+        inline bool DisablePluginAutoActivation() const
+        {
+            return (_disablePluginAutoActivation);
+        }
+        inline const std::vector<std::string>& AuthorizedExtensions() const
+        {
+            return (_authorizedExtensions);
+        }
+        inline const string& ExtensionsPath() const
+        {
+            return (_extensionsPath);
+        }
+        const Plugin::Config* Extension(const string& name) const
+        {
+            Core::JSON::ArrayType<Plugin::Config>::ConstIterator index(_extensions.Elements());
+
+            // Check if there is already an extension config with this callsign
+            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                ;
+
+            return (index.IsValid() ? &(index.Current()) : nullptr);
+        }
+        Core::JSON::ArrayType<Plugin::Config>::Iterator Extensions()
+        {
+            return (_extensions.Elements());
+        }
         inline const string& ConfigsPath() const
         {
             return (_configsPath);
@@ -1011,20 +1091,43 @@ namespace PluginHost {
         Core::JSON::ArrayType<Plugin::Config>::Iterator Plugins() {
             return (_plugins.Elements());
         }
-        bool Add(const Plugin::Config& plugin) {
+        bool Add(const Plugin::Config& plugin, bool thunderextension) {
 
             bool added = false;
             const string& name (plugin.Callsign.Value());
 
-            Core::JSON::ArrayType<Plugin::Config>::Iterator index(_plugins.Elements());
+            Core::JSON::ArrayType<Plugin::Config>::Iterator index;
 
-            // Check if there is already a plugin config with this callsign
-            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */ ;
+            bool addingallowed = true;
+            if (thunderextension == true) {
 
-            if (index.IsValid()  == false) {
-                added = true;
-                _plugins.Add(plugin);
+                index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+
+                if (ExtensionAuthorized(name) == false) {
+                    SYSLOG(Logging::Startup, (_T("Extension:%s is not authorized to be loaded, ignoring"), name.c_str()));
+                    addingallowed = false;
+                } 
+
+            } else {
+                index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
             }
+
+            if (addingallowed == true) {
+                // Check if there is already a plugin config with this callsign
+                while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                    ;
+                if (index.IsValid() == false) {
+                    added = true;
+                    if (thunderextension == true) {
+                        _extensions.Add(plugin);
+                    } else {
+                        _plugins.Add(plugin);
+                    }
+                } else {
+                    SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined, ignoring"), name.c_str()));
+                }
+            } 
+
             return (added);
         }
         void UpdateAccessor() {
@@ -1094,6 +1197,25 @@ namespace PluginHost {
     private:
         friend class Server;
 
+        bool ExtensionAuthorized(const string& extensionname) const
+        {
+            bool allowed = false;
+
+            if ((AuthorizedExtensions().empty() == false) && (AuthorizedExtensions().back() != AllExtensionsAuthorized)) {
+                for (auto& allowedextension : AuthorizedExtensions()) {
+                    if (extensionname == allowedextension) {
+                        allowed = true;
+                        break;
+                    }
+                }
+            } else {
+                allowed = true;
+            }
+
+            return allowed;
+        }
+
+
         inline void UpdateBinder() {
             // Update binding address
             if (_interface.empty() == false) {
@@ -1133,6 +1255,10 @@ namespace PluginHost {
         string _hashKey;
         string _appPath;
         string _systemPath;
+        bool _disablePluginAutoActivation;
+        std::vector<std::string> _authorizedExtensions;
+        string _extensionsPath;
+        Core::JSON::ArrayType<Plugin::Config> _extensions;
         string _configsPath;
         string _proxyStubPath;
         string _observableProxyStubPath;
