@@ -1434,6 +1434,8 @@ POP_WARNING()
         void LoadProxyStubs(const string& pathName);
 
     public:
+        using Danglings = Administrator::Danglings;
+
         Communicator() = delete;
         Communicator(Communicator&&) = delete;
         Communicator(const Communicator&) = delete;
@@ -1519,18 +1521,13 @@ POP_WARNING()
     private:
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
-            Administrator::Proxies deadProxies;
+            Danglings deadProxies;
 
             RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
                 
-            std::vector<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-            while (loop != deadProxies.end()) {
-                Dangling((*loop)->Parent(), (*loop)->InterfaceId());
-
-                // To avoid race conditions, the creation of the deadProxies took a reference
-                // on the interfaces, we presented here. Do not forget to release this reference.
-                (*loop)->Parent()->Release();
-                loop++;
+            if(!deadProxies.empty())
+            {
+                Dangling(std::move(deadProxies));
             }
         }
         virtual void* Acquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
@@ -1541,7 +1538,15 @@ POP_WARNING()
         }
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
-        virtual void Dangling(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
+        virtual void Dangling(Danglings&& proxies){
+            TRACE_L1("Implement this to gracefully handle the dangling proxies acquired through this channel!!!");
+            Danglings::const_iterator loop(proxies.begin());
+            while (loop != proxies.end()) {
+                // To avoid race conditions, the creation of the deadProxies took a reference
+                // on the interfaces, we presented here. Do not forget to release this reference.
+                (*loop).second->Release();
+                loop++;
+            }
         }
 
     private:
