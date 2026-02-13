@@ -281,6 +281,14 @@ namespace PluginHost
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
     {
         void* result = nullptr;
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+        Lock();
+        if(IsHibernated())
+        {
+            Wakeup();
+        }
+        Unlock();
+#endif
         if (id == Core::IUnknown::ID) {
             AddRef();
             result = static_cast<IUnknown*>(this);
@@ -336,7 +344,7 @@ namespace PluginHost
             Unlock();
             result = Core::ERROR_ILLEGAL_STATE;
         } else if (currentState == IShell::state::HIBERNATED) {
-            result = Wakeup(3000);
+            result = Wakeup();
             Unlock();
         } else if ((currentState == IShell::state::DEACTIVATED) || (currentState == IShell::state::PRECONDITION)) {
 

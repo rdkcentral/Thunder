@@ -84,6 +84,7 @@ if (PROCESSCONTAINERS)
 endif(PROCESSCONTAINERS)
 
 if(HIBERNATESUPPORT)
+    option(HIBERNATESUPPORT_AUTOWAKEUP "Auto-wakeup for Hibernate" OFF)
     target_link_libraries(${TARGET} PRIVATE
         ${NAMESPACE}Hibernate::${NAMESPACE}Hibernate)
     target_compile_definitions(${TARGET} PUBLIC

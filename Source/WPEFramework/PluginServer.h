@@ -1440,12 +1440,16 @@ namespace PluginHost {
                 Core::ProxyType<Core::JSONRPC::Message> response;
 
                 Lock();
-
-                if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                if ( (_jsonrpc == nullptr) || (IsActive() == false
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                 && IsHibernated() == false
+#endif
+                 ) ) {
+                    bool isHibernated = IsHibernated();
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if(IsHibernated() == true)
+                    if(isHibernated)
                     {
                         response->Error.SetError(Core::ERROR_HIBERNATED);
                         response->Error.Text = _T("Service is hibernated");
@@ -1458,6 +1462,12 @@ namespace PluginHost {
                     response->Id = message.Id;
                 }
                 else {
+#ifdef HIBERNATE_SUPPORT_AUTOWAKEUP_ENABLED
+                    if (IsHibernated())
+                    {
+                        Wakeup();
+                    }
+#endif
                     Unlock();
 
 #if THUNDER_RUNTIME_STATISTICS
@@ -1803,7 +1813,7 @@ namespace PluginHost {
             }
 
         private:
-            uint32_t Wakeup(const uint32_t timeout);
+            uint32_t Wakeup(const uint32_t timeout = 10000 /*ms*/);
 #ifdef HIBERNATE_SUPPORT_ENABLED
             uint32_t HibernateChildren(const Core::process_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const Core::process_t parentPID, const uint32_t timeout);
