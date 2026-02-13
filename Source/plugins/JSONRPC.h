@@ -28,6 +28,23 @@
 namespace WPEFramework {
 
 namespace PluginHost {
+namespace {
+
+        template<typename JSONRPCERRORASSESSORTYPE>
+        uint32_t InvokeOnHandler(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, JSONRPCERRORASSESSORTYPE errorhandler) 
+        {
+            uint32_t result = handler.Invoke(context, method, parameters, response);
+            if(result != Core::ERROR_NONE) {
+                result = errorhandler(context, method, parameters, result, response);
+            }
+            return result;
+        }
+        template<>
+        uint32_t InvokeOnHandler<void*>(const Core::JSONRPC::Context& context, const string& method, const string& parameters, string& response, Core::JSONRPC::Handler& handler, void*)
+        {
+            return handler.Invoke(context, method, parameters, response);
+        }
+    }
 
     struct EXTERNAL ILocalDispatcher : public IDispatcher {
         virtual ~ILocalDispatcher() override = default;
@@ -426,7 +443,14 @@ namespace PluginHost {
             }
             return (Core::ERROR_NONE);
         }
-        Core::hresult Invoke(IDispatcher::ICallback*, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override {
+        Core::hresult Invoke(IDispatcher::ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return InvokeHandler(callback, channelId, id, token, method, parameters, response);
+        }
+
+        template<typename JSONRPCERRORASSESSORTYPE = void*>
+        Core::hresult InvokeHandler(IDispatcher::ICallback*, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response, JSONRPCERRORASSESSORTYPE errorhandler = nullptr) 
+        {
             uint32_t result(Core::ERROR_UNKNOWN_METHOD);
             Core::JSONRPC::Handler* handler(Handler(method));
             string realMethod(Core::JSONRPC::Message::Method(method));
@@ -445,7 +469,7 @@ namespace PluginHost {
             }
             else if (handler->Exists(realMethod) == Core::ERROR_NONE) {
                 Core::JSONRPC::Context context(channelId, id, token);
-                result = handler->Invoke(context, Core::JSONRPC::Message::FullMethod(method), parameters, response);
+                result = InvokeOnHandler<JSONRPCERRORASSESSORTYPE>(context, Core::JSONRPC::Message::FullMethod(method), parameters, response, *handler, errorhandler);
             }
             return (result);
         }
@@ -834,6 +858,56 @@ namespace PluginHost {
 
         mutable Core::CriticalSection _adminLock;
         StatusCallbackMap _observers;
+    };
+
+    namespace JSONRPCErrorAssessorTypes {
+        using FunctionCallbackType  = uint32_t (*) (const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&);
+        using StdFunctionCallbackType = std::function<int32_t(const Core::JSONRPC::Context&, const string&, const string&, const uint32_t errorcode, string&)>;
+    }
+    template<typename JSONRPCERRORASSESSORTYPE>
+    class EXTERNAL JSONRPCErrorAssessor : public JSONRPC {
+    public:
+        JSONRPCErrorAssessor(JSONRPCERRORASSESSORTYPE errorhandler) 
+            : JSONRPC()
+            , _errorhandler(errorhandler)
+            {
+            }
+        ~JSONRPCErrorAssessor() override = default;
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor &operator=(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
+        JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
+        Core::hresult Invoke(IDispatcher::ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return JSONRPC::InvokeHandler<JSONRPCERRORASSESSORTYPE>(callback, channelId, id, token, method, parameters, response, _errorhandler);
+        }
+        private:
+            JSONRPCERRORASSESSORTYPE _errorhandler;
+    };
+    template<>
+    class EXTERNAL JSONRPCErrorAssessor<JSONRPCErrorAssessorTypes::StdFunctionCallbackType> : public JSONRPC {
+    public:
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessorTypes::StdFunctionCallbackType& errorhandler)
+            : JSONRPC()
+            , _errorhandler(errorhandler)
+            {
+            }
+        JSONRPCErrorAssessor(JSONRPCErrorAssessorTypes::StdFunctionCallbackType&& errorhandler)
+            : JSONRPC()
+            , _errorhandler(std::move(errorhandler))
+            {
+            }
+        ~JSONRPCErrorAssessor() override = default;
+        JSONRPCErrorAssessor(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor &operator=(const JSONRPCErrorAssessor&) = delete;
+        JSONRPCErrorAssessor(JSONRPCErrorAssessor&&) = delete;
+        JSONRPCErrorAssessor &operator=(JSONRPCErrorAssessor&&) = delete;
+        Core::hresult Invoke(IDispatcher::ICallback* callback, const uint32_t channelId, const uint32_t id, const string& token, const string& method, const string& parameters, string& response) override 
+        {
+            return JSONRPC::InvokeHandler<const JSONRPCErrorAssessorTypes::StdFunctionCallbackType&>(callback, channelId, id, token, method, parameters, response, _errorhandler);
+        }
+        private:
+            JSONRPCErrorAssessorTypes::StdFunctionCallbackType _errorhandler;
     };
 
 } // namespace WPEFramework::PluginHost
