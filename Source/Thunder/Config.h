@@ -747,9 +747,10 @@ namespace PluginHost {
                     Core::JSON::ArrayType<Core::JSON::String>::Iterator index(config.AuthorizedExtensions.Elements());
                     _authorizedExtensions.reserve(config.AuthorizedExtensions.Length());
 
+                    uint32_t pos = 0; // no way to find out with the arrayiterator if I'm at the last pos, using Reset for positioning too expensive and I don't want to change Array iterator now
                     while (index.Next() == true) {
                         if (index.Current().Value() == AllExtensionsAuthorized) {
-                            if (_authorizedExtensions.size() != (index.Count()-1)) {
+                            if (pos != (index.Count()-1)) {
                                 SYSLOG(Logging::Startup, (_T("All Extensions Authorized indication found at position other then last, ignored")));
                             }
                             else {
@@ -758,6 +759,7 @@ namespace PluginHost {
                         } else {
                             _authorizedExtensions.push_back(index.Current().Value());
                         }
+                        ++pos;
                     }
                 }
 
