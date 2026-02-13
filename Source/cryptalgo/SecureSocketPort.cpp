@@ -212,7 +212,7 @@ void SecureSocketPort::Handler::ValidateHandShake() {
 
 void SecureSocketPort::Handler::Update() {
     if (IsOpen() == true) {
-        int result;
+        int result = 1;
 
         if (_handShaking == IDLE) {
             SSL_set_tlsext_host_name(static_cast<SSL*>(_ssl), RemoteNode().HostName().c_str());
