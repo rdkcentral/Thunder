@@ -43,6 +43,8 @@ namespace WPEFramework {
     }
 }
 
+#define TRACE_LOG_FLAG  "/opt/WPEFramework/enableTrace"
+
 #ifdef __WINDOWS__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
 #define TRACE_THREAD_ID ::GetCurrentThreadId()
@@ -77,8 +79,11 @@ namespace WPEFramework {
 #else
 #define TRACE_FORMATTING_IMPL(fmt, ...)                                                                                                     \
     do {                                                                                                                                    \
-        ::fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n\033[0m", &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__);  \
-        fflush(stderr);                                                                                                                     \
+        if (0 == access(TRACE_LOG_FLAG, F_OK)) {                                                                                   \
+            ::fprintf(stderr, "[%s:%d](%s)<PID:%d><TID:%d>" fmt "\n",                                            \
+                      &__FILE__[WPEFramework::Core::FileNameOffset(__FILE__)], __LINE__, __FUNCTION__, TRACE_PROCESS_ID, TRACE_THREAD_ID, ##__VA_ARGS__); \
+            fflush(stderr);                                                                                                           \
+        }                                                                                                                         \
     } while (0)
 #endif
 #
