@@ -873,6 +873,7 @@ namespace Plugin {
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
+                SYSLOG(Logging::Startup, (_T("Activating plugin [%s] Requested"),callsign.c_str()));
                 result = service->Activate(PluginHost::IShell::REQUESTED);
 
                 // Normalise return code
@@ -887,6 +888,7 @@ namespace Plugin {
         else {
             result = Core::ERROR_PRIVILIGED_REQUEST;
         }
+        SYSLOG(Logging::Startup, (_T("Activating plugin [%s] returned %u"),callsign.c_str(), result));
         return result;
     }
 
