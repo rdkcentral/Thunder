@@ -4481,11 +4481,13 @@ POP_WARNING()
                 data.Callstacks.Add(dump);
             }
 
-            // Drop the workerpool info (what is currently running and what is pending) to a file..
-            Core::File dumpFile(_config.PostMortemPath() + "ThunderInternals.json");
-            if (dumpFile.Create(false) == true) {
-                data.IElement::ToFile(dumpFile);
-            }
+            // Drop the workerpool info (what is currently running and what is pending) to a wpeframework.log
+            string jsonContent;
+            data.IElement::ToString(jsonContent);
+            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info started!!!!!!\n")));
+            SYSLOG(Logging::Shutdown, (_T("[%s]\n"), jsonContent.c_str()));
+            SYSLOG(Logging::Shutdown, (_T("!!!!!!WPEFramework/Thunder Workerpool info Ended!!!!!!\n")));
+            fflush(stderr);
         }
         inline ServiceMap& Services()
         {
