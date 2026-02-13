@@ -79,20 +79,40 @@ if boolean('@MESSAGING@'):
   messaging.add("port", '@MESSAGING_PORT@')
 
   __notification = {
-       "category" : "AnyCategory",
-       "enabled" : False
-      }
-  
-  __fatal = {
-       "category" : "AnyCategory",
+       "category" : "Notification",
        "enabled" : True
       }
 
-  __tracing = {
-       "module" : "Plugin_AnyModule",
+  __startup = {
+       "category" : "Startup",
+       "enabled" : True
+      }
+
+  __shutdown = {
+       "category" : "Shutdown",
+       "enabled" : True
+      }
+
+  __error = {
+       "category" : "Error",
+       "enabled" : True
+      }
+
+  __parsingError = {
+       "category" : "ParsingError",
+       "enabled" : True
+      }
+
+  __crash = {
+       "category" : "Crash",
        "enabled" : True
       }
   
+  __fatal = {
+       "category" : "Fatal",
+       "enabled" : True
+      }
+
   __warningReporting = {
        "category" : "AnyCategory",
        "enabled" : False
@@ -100,6 +120,12 @@ if boolean('@MESSAGING@'):
 
   __logging_settings = []
   __logging_settings.append(__notification)
+  __logging_settings.append(__startup)
+  __logging_settings.append(__shutdown)
+  __logging_settings.append(__error)
+  __logging_settings.append(__parsingError)
+  __logging_settings.append(__crash)
+  __logging_settings.append(__fatal)
   
   __logging = JSON()
   __logging.add("abbreviated", True)
@@ -107,9 +133,38 @@ if boolean('@MESSAGING@'):
   
   messaging.add("logging", __logging)
   
+  __info_LS= {
+       "category" : "Information",
+       "module" : "Plugin_LocationSync",
+       "enabled" : True
+      }
+
+  __warn_LS= {
+       "category" : "Warning",
+       "module" : "Plugin_LocationSync",
+       "enabled" : True
+      }
+
+  __info_MES= {
+       "category" : "Information",
+       "module" : "Plugin_Messenger",
+       "enabled" : True
+      }
+
+  __warn_MES= {
+       "category" : "Warning",
+       "module" : "Plugin_Messenger",
+       "enabled" : True
+      }
+
   __tracing_settings = []
   __tracing_settings.append(__fatal)
-  __tracing_settings.append(__tracing)
+  __tracing_settings.append(__error)
+  __tracing_settings.append(__warn_LS)
+  __tracing_settings.append(__info_LS)
+  __tracing_settings.append(__warn_MES)
+  __tracing_settings.append(__info_MES)
+
   
   __tracing = JSON()
   __tracing.add("settings", __tracing_settings)
