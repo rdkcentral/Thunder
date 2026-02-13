@@ -74,7 +74,7 @@ namespace PluginHost {
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
-    /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extension/");
+    /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
@@ -957,9 +957,8 @@ namespace PluginHost {
         TRACE_L1("Destructing %d plugins", static_cast<uint32_t>(_services.size()));
 
         // first we move all non priority plugins to deactivated, 
-        while (_services.empty() == false) {
-
-            auto index = _services.begin();
+        auto index = _services.begin();
+        while (index != _services.end()) {
 
             Core::ProxyType<Service> service(index->second);
 
@@ -972,15 +971,16 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                _services.erase(index);
+                index = _services.erase(index);
+            } else {
+                ++index;
             }
 
         }
 
         // now we do the priority ones that have no specific order
-        while (_services.empty() == false) {
-
-            auto index = _services.begin();
+        index = _services.begin();
+        while (index != _services.end()) {
 
             Core::ProxyType<Service> service(index->second);
 
@@ -994,7 +994,9 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                _services.erase(index);
+                index = _services.erase(index);
+            } else {
+                ++index;
             }
 
         }
@@ -1161,7 +1163,6 @@ namespace PluginHost {
         , _requestClose(false)
         , _jobs()
     {
-        TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
 
         _jobs.Slots(static_cast<ChannelMap&>(*parent).MaxRequests());
