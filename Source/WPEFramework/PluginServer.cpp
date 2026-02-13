@@ -1139,6 +1139,7 @@ POP_WARNING()
             return lhs->StartupOrder() < rhs->StartupOrder();
           });
 
+#if 0
         for (auto service : configured_services)
         {
             if (service->State() != PluginHost::Service::state::UNAVAILABLE) {
@@ -1153,6 +1154,7 @@ POP_WARNING()
                 }
             }
         }
+#endif
 #ifdef SYSTEMD_FOUND
         SYSLOG(Logging::Startup, (_T("Notify that WPEFramework Systemd Service is Ready")));
         sd_notify(0, "READY=1");
