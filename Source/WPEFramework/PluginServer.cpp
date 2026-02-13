@@ -24,6 +24,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef SYSTEMD_FOUND
+#include <systemd/sd-daemon.h>
+#endif /* SYSTEMD_FOUND */
+
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
 #endif
@@ -1149,6 +1153,10 @@ POP_WARNING()
                 }
             }
         }
+#ifdef SYSTEMD_FOUND
+        SYSLOG(Logging::Startup, (_T("Notify that WPEFramework Systemd Service is Ready")));
+        sd_notify(0, "READY=1");
+#endif /* SYSTEMD_FOUND */
     }
 
     void Server::Close()

@@ -90,6 +90,15 @@ if(HIBERNATESUPPORT)
          HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
+find_package(Systemd)
+if (SYSTEMD_FOUND)
+    target_link_libraries( ${TARGET}
+            PRIVATE
+            Systemd::Systemd
+            )
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSYSTEMD_FOUND")
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
