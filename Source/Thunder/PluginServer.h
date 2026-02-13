@@ -1420,6 +1420,8 @@ namespace PluginHost {
             uint32_t WakeupChildren(const pid_t parentPID, const uint32_t timeout);
             #endif
 
+        public: // do not restrict visibility for a virtual in a derived class
+
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
                 std::vector<string> searchPaths;
@@ -1456,6 +1458,7 @@ namespace PluginHost {
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
             }
 
+        private:
             const Core::IService* LoadLibrary(const string& name, Core::Library& library) {
                 Core::IService* result(nullptr);
 
@@ -1651,6 +1654,16 @@ namespace PluginHost {
                 }
             }
 
+        protected:
+            ServiceMap& Administrator() {
+                return (_administrator);
+            }
+            const ServiceMap& Administrator() const
+            {
+                return (_administrator);
+            }
+
+
         private:
             mutable Core::CriticalSection _pluginHandling;
 
@@ -1701,6 +1714,34 @@ namespace PluginHost {
             ~ThunderExtensionService() override = default;
 
         public:
+
+            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
+            {
+
+                // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
+                // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
+
+                RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
+
+                ASSERT(paths != nullptr);
+
+                std::vector<string> searchPaths;
+
+                string path;
+                while (paths->Next(path) == true) {
+                    searchPaths.push_back(path);
+                };
+
+                paths->Release();
+                paths = nullptr;
+
+                const string normalized(Core::File::Normalize(locator));
+                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
+
+                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
+            }
+
             bool Cloneable() const override
             {
                 return false;
@@ -3197,11 +3238,17 @@ namespace PluginHost {
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
 
-                    // Fire up the interface. Let it handle the messages.
-                    _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
-
-                    _adminLock.Unlock();
-                }
+                    // there cannot be a duplicate...
+                    if (_services.find(configuration.Callsign.Value()) == _services.end()) {
+                        // Fire up the interface. Let it handle the messages.
+                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
+                        _adminLock.Unlock();
+                    }
+                    else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Plugin with callsign [%s] already exists, will be ignored"), configuration.Callsign.Value().c_str()));
+                    }
+               }
 
                 return (newService);
             }

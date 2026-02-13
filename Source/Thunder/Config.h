@@ -410,6 +410,7 @@ namespace PluginHost {
                 , DisablePluginAutoActivation(false)
                 , AuthorizedExtensions()
                 , ExtensionConfigs()
+                , Extensions()
                 , Configs()
                 , EthernetCard()
                 , Environments()
@@ -771,7 +772,7 @@ namespace PluginHost {
                         if (ExtensionAuthorized(index.Current().Callsign.Value()) == true) {
                             _extensions.Add(index.Current());
                         } else {
-                            SYSLOG(Logging::Startup, (_T("Extension:%s is not authorized to be loaded, ignoring"), index.Current().Callsign.Value().c_str()));
+                            SYSLOG(Logging::Startup, (_T("Extension %s is not authorized to be loaded, ignoring"), index.Current().Callsign.Value().c_str()));
                         }
                     }
                 }
@@ -847,7 +848,20 @@ namespace PluginHost {
                 UpdateBinder();
 
                 // Get all in the config configure Plugins..
-                _plugins = config.Plugins;
+                if ((config.Plugins.IsSet() == true) && (config.Plugins.Length() > 0)) {
+                    Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator index(config.Plugins.Elements());
+
+                    while (index.Next() == true) {
+                        Core::JSON::ArrayType<Thunder::Plugin::Config>::Iterator  index2 = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+                        while ((index2.Next() == true) && (index2.Current().Callsign.Value() != index.Current().Callsign.Value())) /* INTENTIONALLY */
+                            ;
+                        if (index2.IsValid() == false) {
+                            _plugins.Add(index.Current());
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Plugin %s already exists as Extension, ignoring"), index.Current().Callsign.Value().c_str()));
+                        }
+                    }
+                }
 
                 Core::JSON::ArrayType<Core::JSON::String>::Iterator itr(config.LinkerPluginPaths.Elements());
                 while (itr.Next() == true) {
@@ -1119,9 +1133,18 @@ namespace PluginHost {
                 if (index.IsValid() == false) {
                     added = true;
                     if (thunderextension == true) {
+                        // extensions should be loaded before plugins, no need to check for duplicate plugins (and impossible to write a simple ASSERT without changing ArrayType)
                         _extensions.Add(plugin);
                     } else {
-                        _plugins.Add(plugin);
+                        // plugins cannot have the same callsign as extensions, so we need to check for that as well
+                        index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
+                        while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                            ;
+                        if (index.IsValid() == false) {
+                            _plugins.Add(plugin);
+                        } else {
+                            SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined as Thunder extension, ignoring"), name.c_str()));
+                        }
                     }
                 } else {
                     SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined, ignoring"), name.c_str()));
