@@ -1520,6 +1520,26 @@ namespace PluginHost {
                                     response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
                                     response->Error.Text = _T("Unregister was already done!!!.");
                                     break;
+                                case Core::ERROR_INVALID_PARAMETER:
+                                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                                    response->Error.Text = _T("Invalid Parameter");
+                                    break;
+                                case Core::ERROR_INVALID_DEVICENAME:
+                                    response->Error.SetError(Core::ERROR_INVALID_DEVICENAME);
+                                    response->Error.Text = _T("Invalid device name");
+                                    break;
+                                case Core::ERROR_INVALID_MOUNTPOINT:
+                                    response->Error.SetError(Core::ERROR_INVALID_MOUNTPOINT);
+                                    response->Error.Text = _T("Invalid mount path");
+                                    break;
+                                case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
+                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_INPROGRESS);
+                                    response->Error.Text = _T("Firmware update already in progress");
+                                    break;
+                                case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
+                                    response->Error.SetError(Core::ERROR_FIRMWAREUPDATE_UPTODATE);
+                                    response->Error.Text = _T("Firmware is already upto date");
+                                    break;
                                 default:
                                     response->Error.SetError(result);
                                     break;

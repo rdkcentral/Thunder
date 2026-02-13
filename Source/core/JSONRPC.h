@@ -124,6 +124,18 @@ namespace Core {
                         Code = Core::ERROR_HIBERNATED;
                         Text = _T("The service is in an Hibernated state!!!.");
                         break;
+                    case Core::ERROR_INVALID_DEVICENAME:
+                        Code = -32001; // Invalid device name
+                        break;
+                    case Core::ERROR_INVALID_MOUNTPOINT:
+                        Code = -32002; // Invalid mount path
+                        break;
+                    case Core::ERROR_FIRMWAREUPDATE_INPROGRESS:
+                        Code = -32003; // Firmware update inprogress
+                        break;
+                    case Core::ERROR_FIRMWAREUPDATE_UPTODATE:
+                        Code = -32004; // Firmware upto date
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         Text = Core::ErrorToString(frameworkError);
