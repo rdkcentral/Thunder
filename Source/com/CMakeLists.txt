@@ -16,8 +16,8 @@
 # limitations under the License.
 
 set(TARGET ${NAMESPACE}COM)
-
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated" PROJECT_DIR ${PROJECT_DIR})
 
 add_library(${TARGET} SHARED
     Administrator.cpp
