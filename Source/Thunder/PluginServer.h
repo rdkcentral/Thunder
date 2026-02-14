@@ -1299,7 +1299,12 @@ namespace PluginHost {
             string SystemPath() const override {
                 return (_administrator.Configuration().SystemPath());
             }
-            string PluginPath() const override {
+            virtual string ExtensionPath() const
+            {
+                return string();
+            }
+            string PluginPath() const override
+            {
                 return (_administrator.Configuration().AppPath() + _T("Plugins/"));
             }
             string HashKey() const override {
@@ -1318,7 +1323,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), _administrator.Configuration().LinkerPluginPaths()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), ExtensionPath(), _administrator.Configuration().LinkerPluginPaths()));
 
                 if (result != nullptr) {
                     _connection = _administrator.RemoteConnection(sessionId);
@@ -1737,9 +1742,15 @@ namespace PluginHost {
 
                 const string normalized(Core::File::Normalize(locator));
                 const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
                 searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
 
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
+            }
+
+            string ExtensionPath() const override
+            {
+                return (Administrator().Configuration().ExtensionPath());
             }
 
             bool Cloneable() const override
@@ -1755,6 +1766,20 @@ namespace PluginHost {
             bool AutoActivationAlwaysEnabled() const override
             {
                 return true;
+            }
+
+        private:
+            virtual bool AllowedLocal() const
+            {
+                return true;
+            }
+            virtual bool AllowedDistributed() const
+            {
+                return false;
+            }
+            virtual bool AllowedContainer() const
+            {
+                return false;
             }
         };
 
@@ -2266,7 +2291,7 @@ namespace PluginHost {
                                 }
 
                                 uint32_t id;
-                                RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
+                                RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), _T(""), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
                                 RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, std::move(environmentList));
                                 RPC::Communicator::Process process(requestId, config, instance);
 
@@ -2406,9 +2431,9 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath, const std::vector<string>& linkerPaths)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath, linkerPaths), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, extensionPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath, linkerPaths), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -3124,9 +3149,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
+            void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath, const std::vector<string>& linkerPaths)
             {
-                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, linkerPaths));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, extensionPath, linkerPaths));
             }
             void Destroy(const uint32_t id) {
                 _processAdministrator.Destroy(id);

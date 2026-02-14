@@ -54,6 +54,9 @@ namespace PluginHost {
                 _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) {
                     return (config.SystemPath());
                 }));
+                _variables.insert(std::make_pair("extensionpath", [](const Config& config, const Plugin::Config*) {
+                    return (config.ExtensionPath());
+                }));
                 _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) {
                     return (info == nullptr ? config.VolatilePath() : info->VolatilePath(config.VolatilePath()));
                 }));
@@ -384,6 +387,7 @@ namespace PluginHost {
                 , PersistentPath()
                 , DataPath()
                 , SystemPath()
+                , ExtensionPath()
 #ifdef __WINDOWS__
                 , VolatilePath(_T("c:/temp"))
 #else
@@ -442,6 +446,7 @@ namespace PluginHost {
                 Add(_T("persistentpath"), &PersistentPath);
                 Add(_T("datapath"), &DataPath);
                 Add(_T("systempath"), &SystemPath);
+                Add(_T("extensionpath"), &ExtensionPath);
                 Add(_T("volatilepath"), &VolatilePath);
                 Add(_T("proxystubpath"), &ProxyStubPath);
                 Add(_T("postmortempath"), &PostMortemPath);
@@ -497,6 +502,7 @@ namespace PluginHost {
             Core::JSON::String PersistentPath;
             Core::JSON::String DataPath;
             Core::JSON::String SystemPath;
+            Core::JSON::String ExtensionPath;
             Core::JSON::String VolatilePath;
             Core::JSON::String ProxyStubPath;
             Core::JSON::String PostMortemPath;
@@ -671,6 +677,7 @@ namespace PluginHost {
             , _hashKey()
             , _appPath()
             , _systemPath()
+            , _extensionPath()
             , _disablePluginAutoActivation()
             , _authorizedExtensions()
             , _extensionsPath()
@@ -745,6 +752,7 @@ namespace PluginHost {
                 _persistentPath = Core::Directory::Normalize(config.PersistentPath.Value());
                 _dataPath = Core::Directory::Normalize(config.DataPath.Value());
                 _systemPath = Core::Directory::Normalize(config.SystemPath.Value());
+                _extensionPath = Core::Directory::Normalize(config.ExtensionPath.Value());
                 _disablePluginAutoActivation = config.DisablePluginAutoActivation.Value();
 
                 if ((config.AuthorizedExtensions.IsSet() == true) && (config.AuthorizedExtensions.Length() > 0)) {
@@ -973,6 +981,10 @@ namespace PluginHost {
         inline const string& SystemPath() const
         {
             return (_systemPath);
+        }
+        inline const string& ExtensionPath() const
+        {
+            return (_extensionPath);
         }
         inline bool DisablePluginAutoActivation() const
         {
@@ -1298,6 +1310,7 @@ namespace PluginHost {
         string _hashKey;
         string _appPath;
         string _systemPath;
+        string _extensionPath;
         bool _disablePluginAutoActivation;
         std::vector<std::string> _authorizedExtensions;
         string _extensionsPath;
