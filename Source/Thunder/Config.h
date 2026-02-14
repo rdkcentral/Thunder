@@ -648,7 +648,11 @@ namespace PluginHost {
         };
 
     public:
-        static constexpr TCHAR AllExtensionsAuthorized[] = _T("*");
+        // until we have c++17 inline var support...
+        static const TCHAR* AllExtensionsAuthorized() {
+            static constexpr TCHAR allExtensionsAuthorized[] = _T("*");
+            return allExtensionsAuthorized;
+        }
 
     public:
         Config() = delete;
@@ -749,7 +753,7 @@ namespace PluginHost {
 
                     uint32_t pos = 0; // no way to find out with the arrayiterator if I'm at the last pos, using Reset for positioning too expensive and I don't want to change Array iterator now
                     while (index.Next() == true) {
-                        if (index.Current().Value() == AllExtensionsAuthorized) {
+                        if (index.Current().Value() == AllExtensionsAuthorized()) {
                             if (pos != (index.Count()-1)) {
                                 SYSLOG(Logging::Startup, (_T("All Extensions Authorized indication found at position other then last, ignored")));
                             }
@@ -1240,7 +1244,7 @@ namespace PluginHost {
         {
             bool allowed = false;
 
-            if ((AuthorizedExtensions().empty() == false) && (AuthorizedExtensions().back() != AllExtensionsAuthorized)) {
+            if ((AuthorizedExtensions().empty() == false) && (AuthorizedExtensions().back() != AllExtensionsAuthorized())) {
                 for (auto& allowedextension : AuthorizedExtensions()) {
                     if (extensionname == allowedextension) {
                         allowed = true;

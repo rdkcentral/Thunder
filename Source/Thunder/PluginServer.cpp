@@ -1114,7 +1114,7 @@ namespace PluginHost {
 
         //first we start the priority start plugins in the requested order (if any)
         for (const string& prioservice : _prioritystartorder) {
-            if (prioservice != PluginHost::Config::AllExtensionsAuthorized) {
+            if (prioservice != PluginHost::Config::AllExtensionsAuthorized()) {
                 Plugins::iterator index = _services.find(prioservice);
                 if ((index != _services.end()) && (AutoActivateAllowed(index->second) == true)) {
                     ActivateService(index->second);
@@ -1186,7 +1186,7 @@ namespace PluginHost {
         Close(Core::infinite);
     }
 
-    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension)
+    void Server::InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background)
     {
         while (index.Next() == true) {
             Plugin::Config& entry(index.Current());
@@ -1246,11 +1246,11 @@ namespace PluginHost {
 
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Extensions();
 
-        InsertLoadPluginConfig(index, metaDataConfig, true);
+        InsertLoadPluginConfig(index, metaDataConfig, true, background);
 
         index = configuration.Plugins();
 
-        InsertLoadPluginConfig(index, metaDataConfig, false);
+        InsertLoadPluginConfig(index, metaDataConfig, false, background);
 
         if (metaDataConfig.Callsign.Value().empty() == true) {
             // Oke, this is the first time we "initialize" it.

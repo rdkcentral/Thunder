@@ -4953,7 +4953,7 @@ namespace PluginHost {
         }
 
     private:
-        void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension);
+        void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background);
 
     private:
         Core::NodeId _accessor;
