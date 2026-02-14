@@ -1133,10 +1133,23 @@ namespace PluginHost {
                 while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
                     ;
                 if (index.IsValid() == false) {
-                    added = true;
                     if (thunderextension == true) {
-                        // extensions should be loaded before plugins, no need to check for duplicate plugins (and impossible to write a simple ASSERT without changing ArrayType)
                         _extensions.Add(plugin);
+                        added = true;
+                        // extensions should be loaded before plugins, duplicates with plugins can only exist if the plugins were brought in with "plugins" config which is unexpected if the extensions are loaded by file, but anyway let's take care of it
+                        index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
+                        while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) /* INTENTIONALLY */
+                            ;
+                        if (index.IsValid() == true) {
+                            // we found an existing plugin with same callsign as let's remove the plugin
+                            Core::JSON::ArrayType<Plugin::Config> newplugins;
+                            index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_plugins.Elements());
+                            while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) {
+                                newplugins.Add(index.Current());
+                            };
+                            _plugins = newplugins;
+                            SYSLOG(Logging::Startup, (_T("Extension:%s was already defined as plugin, plugin being ignored"), name.c_str()));
+                        }
                     } else {
                         // plugins cannot have the same callsign as extensions, so we need to check for that as well
                         index = Core::JSON::ArrayType<Plugin::Config>::Iterator(_extensions.Elements());
@@ -1144,6 +1157,7 @@ namespace PluginHost {
                             ;
                         if (index.IsValid() == false) {
                             _plugins.Add(plugin);
+                            added = true;
                         } else {
                             SYSLOG(Logging::Startup, (_T("Plugin:%s is already defined as Thunder extension, ignoring"), name.c_str()));
                         }
