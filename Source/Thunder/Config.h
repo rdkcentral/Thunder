@@ -34,7 +34,7 @@ namespace PluginHost {
         class Substituter {
         private:
             static constexpr TCHAR Delimeter = _T('%');
-            typedef string (*ValueHandler)(const Config& config, const Plugin::Config* info);
+            typedef const string (*ValueHandler)(const Config& config, const Plugin::Config* info);
             typedef std::map<string, ValueHandler> VariableMap;
 
         public:
@@ -45,25 +45,25 @@ namespace PluginHost {
             Substituter(const Config& parent)
                 : _parent(parent)
             {
-                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("datapath", [](const Config& config, const Plugin::Config* info) -> const string { 
                     return (info == nullptr ? config.DataPath() : info->DataPath(config.DataPath()));
                 }));
-                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) { 
+                _variables.insert(std::make_pair("persistentpath", [](const Config& config, const Plugin::Config* info) -> const string { 
                     return (info == nullptr ? config.PersistentPath() : info->PersistentPath(config.PersistentPath()));
                 }));
-                _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("systempath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.SystemPath());
                 }));
-                _variables.insert(std::make_pair("extensionpath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("extensionpath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.ExtensionPath());
                 }));
-                _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) {
+                _variables.insert(std::make_pair("volatilepath", [](const Config& config, const Plugin::Config* info) -> const string {
                     return (info == nullptr ? config.VolatilePath() : info->VolatilePath(config.VolatilePath()));
                 }));
-                _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("proxystubpath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.ProxyStubPath());
                 }));
-                _variables.insert(std::make_pair("postmortempath", [](const Config& config, const Plugin::Config*) {
+                _variables.insert(std::make_pair("postmortempath", [](const Config& config, const Plugin::Config*) -> const string {
                     return (config.PostMortemPath());
                 }));
             }
@@ -1163,7 +1163,7 @@ namespace PluginHost {
                             while ((index.Next() == true) && (index.Current().Callsign.Value() != name)) {
                                 newplugins.Add(index.Current());
                             };
-                            _plugins = newplugins;
+                            _plugins = std::move(newplugins);
                             SYSLOG(Logging::Startup, (_T("Extension:%s was already defined as plugin, plugin being ignored"), name.c_str()));
                         }
                     } else {
