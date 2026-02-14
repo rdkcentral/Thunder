@@ -1758,7 +1758,7 @@ namespace PluginHost {
                 return false;
             }
 
-            bool virtual PriorityStart() const
+            bool PriorityStart() const override
             {
                 return true;
             }
@@ -1769,15 +1769,15 @@ namespace PluginHost {
             }
 
         private:
-            virtual bool AllowedLocal() const
+            bool AllowedLocal() const override
             {
                 return true;
             }
-            virtual bool AllowedDistributed() const
+            bool AllowedDistributed() const override
             {
                 return false;
             }
-            virtual bool AllowedContainer() const
+            bool AllowedContainer() const override
             {
                 return false;
             }
