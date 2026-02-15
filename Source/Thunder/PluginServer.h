@@ -19,7 +19,6 @@
 
 #ifndef __WEBBRIDGEPLUGINSERVER_H
 #define __WEBBRIDGEPLUGINSERVER_H
-
 #include "Module.h"
 #include "SystemInfo.h"
 #include "Config.h"
@@ -124,7 +123,7 @@ namespace PluginHost {
     class Server {
     public:
         static const TCHAR* ConfigFile;
-        static const TCHAR* PluginOverrideFile;
+        static const TCHAR* PluginOverrideDirectory;
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
@@ -1677,7 +1676,11 @@ namespace PluginHost {
 
                 Plugin()
                     : Core::JSON::Container()
+                    #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                    , Configuration()
+                #else
                     , Configuration(_T("{}"), false)
+                #endif
                     , SystemRootPath()
                     , StartMode()
                     , Resumed()
@@ -1689,7 +1692,11 @@ namespace PluginHost {
                 }
                 Plugin(const string& config, const string& systemRootPath, const PluginHost::IShell::startmode value, const bool resumed)
                     : Core::JSON::Container()
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                    , Configuration(config)
+#else
                     , Configuration(config, false)
+#endif
                     , SystemRootPath(systemRootPath)
                     , StartMode(value)
                     , Resumed(resumed)
@@ -1727,7 +1734,11 @@ namespace PluginHost {
                 ~Plugin() override = default;
 
             public:
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+                Core::JSON::Variant Configuration;
+#else
                 Core::JSON::String Configuration;
+#endif
                 Core::JSON::String SystemRootPath;
                 Core::JSON::EnumType<PluginHost::IShell::startmode> StartMode;
                 Core::JSON::Boolean Resumed;
@@ -1739,36 +1750,20 @@ namespace PluginHost {
             Override(const Override&) = delete;
             Override& operator=(const Override&) = delete;
 
-            Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persitentFile)
+            Override(PluginHost::Config& serverconfig, ServiceMap& services, const string& persistentFolder)
                 : Services()
                 , Prefix(serverconfig.Prefix())
                 , IdleTime(serverconfig.IdleTime())
                 , _services(services)
                 , _serverconfig(serverconfig)
-                , _fileName(persitentFile)
+                , _persistentFolder(persistentFolder)
                 , _callsigns()
+                , _defaultPrefix(serverconfig.Prefix())
+                , _defaultIdleTime(serverconfig.IdleTime())
             {
                 Add(_T("Services"), &Services);
-
-                // Add all service names (callsigns) that are not yet in there...
-                ServiceMap::Iterator service(services.Services());
-
-                while (service.Next() == true) {
-                    const string& name(service->Callsign());
-
-                    // Create an element for this service with its callsign.
-                    Callsigns::iterator index(_callsigns.emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(name),
-                        std::forward_as_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false)).first);
-
-                    // Store the override config in the JSON String created in the map
-                    Services.Add(index->first.c_str(), &(index->second));
-                }
-
                 Add(_T("prefix"), &Prefix);
                 Add(_T("idletime"), &IdleTime);
-
             }
             ~Override() = default;
 
@@ -1777,111 +1772,330 @@ namespace PluginHost {
             {
                 uint32_t result = Core::ERROR_NONE;
 
-                Core::File storage(_fileName);
+                LoadPluginHostConfig();
 
-                if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+                ServiceMap::Iterator indexService(_services.Services());
+                while (indexService.Next() == true) {
+                    const string& currentCallsign = indexService->Callsign();
 
-                    result = true;
+                    auto indexCallsigns = RegisterService(currentCallsign);
+                    ASSERT(indexCallsigns != _callsigns.end());
 
-                    // Clear all currently set values, they might be from the precious run.
-                    Clear();
+                    Core::File storage(CreateOverridePath(currentCallsign));
 
-                    // Red the file and parse it into this object.
-                    IElement::FromFile(storage);
+                    if (storage.Exists() == true) {
+                        if (storage.Open(true) == true) {
 
-                    _serverconfig.SetPrefix(Prefix.Value());
-                    _serverconfig.SetIdleTime(IdleTime.Value());
-                    // Convey the real JSON struct information into the specific services.
-                    ServiceMap::Iterator index(_services.Services());
+                            indexCallsigns->second.Clear();
+                            indexCallsigns->second.IElement::FromFile(storage);
 
-                    while (index.Next() == true) {
-
-                        Callsigns::const_iterator current(_callsigns.find(index->Callsign()));
-
-                        // ServiceMap should *NOT* change runtime...
-                        ASSERT(current != _callsigns.end());
-
-                        if (current->second.IsSet() == true) {
-                            if (current->second.Configuration.IsSet() == true) {
-                                index->ConfigLine(current->second.Configuration.Value());
+                            if (indexCallsigns->second.IsSet() == true) {
+                                if (indexCallsigns->second.Configuration.IsSet() == true) {
+                                    indexService->ConfigLine(indexCallsigns->second.Configuration.Value());
+                                }
+                                if (indexCallsigns->second.SystemRootPath.IsSet() == true) {
+                                    indexService->SystemRootPath(indexCallsigns->second.SystemRootPath.Value());
+                                }
+                                if (indexCallsigns->second.StartMode.IsSet() == true) {
+                                    indexService->StartMode(indexCallsigns->second.StartMode.Value());
+                                }
+                                if (indexCallsigns->second.Resumed.IsSet() == true) {
+                                    indexService->Resumed(indexCallsigns->second.Resumed.Value());
+                                }
                             }
-                            if (current->second.SystemRootPath.IsSet() == true) {
-                                index->SystemRootPath(current->second.SystemRootPath.Value());
-                            }
-                            if (current->second.StartMode.IsSet() == true) {
-                                index->StartMode(current->second.StartMode.Value());
-                            }
-                            if (current->second.Resumed.IsSet() == true) {
-                                index->Resumed(current->second.Resumed.Value());
-                            }
+
+                            storage.Close();
+                        }
+                        else if (result == Core::ERROR_NONE) {
+                            result = storage.ErrorCode();
                         }
                     }
-
-                    storage.Close();
-                } else {
-                    result = storage.ErrorCode();
                 }
-
-                return (result);
+                return result;
             }
 
-            bool Save()
+            bool Save(const Core::OptionalType<string>& callsign)
             {
                 uint32_t result = Core::ERROR_NONE;
 
-                Core::File storage(_fileName);
-
-                if (storage.Create() == true) {
-
-                    // Clear all currently set values, they might be from the precious run.
-                    Clear();
-
-                    Prefix    = _serverconfig.Prefix();
-                    IdleTime  = _serverconfig.IdleTime();
-
-                    // Convey the real information from he specific services into the JSON struct.
-                    ServiceMap::Iterator index(_services.Services());
-
-                    while (index.Next() == true) {
-
-                        Callsigns::iterator current(_callsigns.find(index->Callsign()));
-
-                        // ServiceMap should *NOT* change runtime...
-                        ASSERT(current != _callsigns.end());
-
-                        string config(index->ConfigLine());
-
-                        if (config.empty() == true) {
-                            current->second.Configuration = _T("{}");
-                        } else {
-                            current->second.Configuration = config;
-                        }
-                        current->second.SystemRootPath = index->SystemRootPath();
-                        current->second.StartMode = index->StartMode();
-                        current->second.Resumed = index->Resumed();
-                    }
-
-                    // Persist the currently set information
-                    IElement::ToFile(storage);
-
-                    storage.Close();
-                } else {
-                    result = storage.ErrorCode();
+                if (!callsign.IsSet() || callsign.Value() == "PluginHost") {
+                    SavePluginHostConfig();
                 }
 
-                return (result);
+                if (callsign.IsSet() == true && callsign.Value() != "PluginHost") {
+                    bool found = false;
+                    const string& raw = callsign.Value();
+                    const string target = raw.empty() ? _T("Controller") : raw;
+
+                    ServiceMap::Iterator index(_services.Services());
+                    while (index.Next() == true) {
+                        if (index->Callsign() == target) {
+                            auto shell = index.Current();
+                            PersistOverride(*shell, result);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found == false) {
+                        result = Core::ERROR_GENERAL;
+                    }
+                }
+                else {
+                    ServiceMap::Iterator index(_services.Services());
+                    while (index.Next() == true) {
+                        auto shell = index.Current();
+                        PersistOverride(*shell, result);
+                    }
+                }
+
+                return result;
+            }
+
+            bool Destroy(const Core::OptionalType<string>& callsign)
+            {
+                uint32_t result = Core::ERROR_NONE;
+
+                if ((!callsign.IsSet()) || (callsign.Value() == "PluginHost")) {
+                    DestroyOverride("PluginHost", result);
+                }
+
+                if (callsign.IsSet() == true && (callsign.Value() != "PluginHost")) {
+                    bool found = false;
+                    const string& raw = callsign.Value();
+                    const string target = raw.empty() ? _T("Controller") : raw;
+
+                    ServiceMap::Iterator index(_services.Services());
+                    while (index.Next() == true) {
+                        if (index->Callsign() == target) {
+                            DestroyOverride(target, result);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found == false) {
+                        result = Core::ERROR_GENERAL;
+                    }
+                }
+                else {
+                    ServiceMap::Iterator index(_services.Services());
+                    while (index.Next() == true) {
+                        DestroyOverride(index->Callsign(), result);
+                    }
+                }
+
+                return result;
             }
 
             Core::JSON::Container Services;
-
             Core::JSON::String Prefix;
             Core::JSON::DecUInt16 IdleTime;
 
         private:
+
+        void PersistOverride(PluginHost::IShell& shell, uint32_t& result)
+        {
+            const string config = shell.ConfigLine();
+            if (config.empty()) {
+                return;
+            }
+
+            const string& callsign = shell.Callsign();
+            const Thunder::Plugin::Config* readOnlyConfig = _serverconfig.Plugin(callsign);
+            if (readOnlyConfig == nullptr) {
+                return;
+            }
+
+#ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+            auto ParseAndUnwrap = [](const string& json, Core::JSON::Variant& out) -> bool {
+                Core::OptionalType<Core::JSON::Error> err;
+                Core::JSON::Variant root;
+                root.FromString(json, err);
+
+                if (err.IsSet() == true) {
+                    return false;
+                }
+
+                // configuration is wrapped as {"configuration": X}, so need to unwrap the X part
+                if (root.Content() == Core::JSON::Variant::type::OBJECT) {
+                    const Core::JSON::VariantContainer obj = root.Object();
+                    const Core::JSON::Variant* inner = obj.FindValue(_T("configuration"));
+                    if (inner != nullptr) {
+                        out = *inner;
+                        return true;
+                    }
+                }
+
+                out = std::move(root);
+                return true;
+            };
+
+            auto PersistVariant = [&](const Core::JSON::Variant& configurationValue) {
+                Core::File storage(CreateOverridePath(callsign));
+                if (storage.Create() == true) {
+                    auto it = RegisterService(callsign);
+                    ASSERT(it != _callsigns.end());
+
+                    it->second.Configuration = configurationValue;
+                    it->second.SystemRootPath = shell.SystemRootPath();
+                    it->second.StartMode = shell.StartMode();
+                    it->second.Resumed = shell.Resumed();
+
+                    it->second.IElement::ToFile(storage);
+                    storage.Close();
+                } else if (result == Core::ERROR_NONE) {
+                    result = storage.ErrorCode();
+                }
+            };
+
+            auto PersistString = [&](const string& configurationValue) {
+                Core::File storage(CreateOverridePath(callsign));
+                if (storage.Create() == true) {
+                    auto it = RegisterService(callsign);
+                    ASSERT(it != _callsigns.end());
+
+                    it->second.Configuration = configurationValue;
+                    it->second.SystemRootPath = shell.SystemRootPath();
+                    it->second.StartMode = shell.StartMode();
+                    it->second.Resumed = shell.Resumed();
+
+                    it->second.IElement::ToFile(storage);
+                    storage.Close();
+                } else if (result == Core::ERROR_NONE) {
+                    result = storage.ErrorCode();
+                }
+            };
+
+            Core::JSON::Variant runtimeVariant;
+            Core::JSON::Variant defaultVariant;
+
+            const bool runtimeIsJson = ParseAndUnwrap(config, runtimeVariant);
+            if (runtimeIsJson == false) {
+                if (config != readOnlyConfig->Configuration.Value()) {
+                    PersistString(config);
+                }
+                return;
+            }
+
+            const bool defaultIsJson = ParseAndUnwrap(readOnlyConfig->Configuration.Value(), defaultVariant);
+
+            bool differs = true;
+            if (defaultIsJson == false) {
+                differs = (config != readOnlyConfig->Configuration.Value());
+            } else if ((runtimeVariant.Content() == Core::JSON::Variant::type::OBJECT) &&
+                       (defaultVariant.Content() == Core::JSON::Variant::type::OBJECT)) {
+                differs = !(runtimeVariant.Object() == defaultVariant.Object());
+            } else {
+                differs = (runtimeVariant.Value() != defaultVariant.Value());
+            }
+
+            if (differs == true) {
+                PersistVariant(runtimeVariant);
+            }
+#else
+            // Compares raw string
+            if (config == readOnlyConfig->Configuration.Value()) {
+                return;
+            }
+
+            Core::File storage(CreateOverridePath(callsign));
+            if (storage.Create() == true) {
+
+                auto it = RegisterService(callsign);
+                ASSERT(it != _callsigns.end());
+
+                it->second.Configuration = config;
+                it->second.SystemRootPath = shell.SystemRootPath();
+                it->second.StartMode = shell.StartMode();
+                it->second.Resumed = shell.Resumed();
+
+                it->second.IElement::ToFile(storage);
+                storage.Close();
+            } else if (result == Core::ERROR_NONE) {
+                result = storage.ErrorCode();
+            }
+#endif
+        }
+
+            void DestroyOverride(const string& target, uint32_t& result)
+            {
+                Core::File storage(CreateOverridePath(target));
+                if (storage.Exists() == true) {
+                    if (storage.Destroy() == false) {
+                        result = storage.ErrorCode();
+                    }
+                }
+            }
+
+            void LoadPluginHostConfig()
+            {
+                Core::File storage(CreateOverridePath("PluginHost"));
+                if (storage.Exists() && storage.Open(true) == true) {
+                    Clear();
+
+                    IElement::FromFile(storage);
+
+                    if (Prefix.IsSet() == true) {
+                        _serverconfig.SetPrefix(Prefix.Value());
+                    }
+                    if (IdleTime.IsSet() == true) {
+                        _serverconfig.SetIdleTime(IdleTime.Value());
+                    }
+
+                    storage.Close();
+                }
+            }
+
+            void SavePluginHostConfig()
+            {
+                const string& currentPrefix = _serverconfig.Prefix();
+                const uint16_t currentIdleTime = _serverconfig.IdleTime();
+
+                const bool differs = (currentPrefix != _defaultPrefix) || (currentIdleTime != _defaultIdleTime);
+
+                if (differs == false) {
+                    return;
+                } 
+
+                Core::File storage(CreateOverridePath("PluginHost"));
+                if (storage.Create()) {
+                    Clear();
+                    Prefix   = currentPrefix;
+                    IdleTime = currentIdleTime;
+                    IElement::ToFile(storage);
+                    storage.Close();
+                }
+            }
+
+            string CreateOverridePath(const string& callsign) const {
+                string outPath;
+                outPath.reserve(_persistentFolder.size() + callsign.size() + 5); // 5 = strlen of .json
+                outPath.append(_persistentFolder).append(callsign).append(".json");
+                return outPath;
+            }
+
+            Callsigns::iterator RegisterService(const std::string& name) {
+                auto it = _callsigns.find(name);
+                if (it == _callsigns.end()) {
+                    auto res = _callsigns.emplace(
+                        std::piecewise_construct,
+                        std::make_tuple(name),
+                        std::make_tuple(_T("{}"), "", PluginHost::IShell::startmode::UNAVAILABLE, false));
+                    it = res.first;
+        
+                    if (res.second) {
+                        Services.Add(it->first.c_str(), &it->second);
+                    }
+                }
+                return it;
+            }
+
             ServiceMap& _services;
             PluginHost::Config& _serverconfig;
-            string _fileName;
+            const string _persistentFolder;
             Callsigns _callsigns;
+            const string _defaultPrefix;
+            const uint16_t _defaultIdleTime;
         };
 
         class ServiceMap {
@@ -4785,16 +4999,21 @@ namespace PluginHost {
 
         void StateControlStateChange(const string& callsign, const IStateControl::state state);
 
-        uint32_t Persist()
+        uint32_t Persist(const Core::OptionalType<string>& callsign)
         {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
-            return (infoBlob.Save());
+            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
+            return (infoBlob.Save(callsign));
         }
+
+        uint32_t Restore(const Core::OptionalType<string>& callsign)
+        {
+            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
+            return (infoBlob.Destroy(callsign));
+        }
+
         uint32_t Load()
         {
-            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideFile);
-
+            Override infoBlob(_config, _services, Configuration().PersistentPath() + PluginOverrideDirectory);
             return (infoBlob.Load());
         }
 

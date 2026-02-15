@@ -87,8 +87,13 @@ namespace Controller {
         enum { ID = RPC::ID_CONTROLLER_CONFIGURATION };
 
         // @alt storeconfig
-        // @brief Stores all configuration to the persistent memory
-        virtual Core::hresult Persist() = 0;
+        // @brief Stores configuration to the persistent memory
+        // @param callsign: Callsign to persist
+        virtual Core::hresult Persist(const Core::OptionalType<string>& callsign = {}) = 0;
+
+        // @brief Restores configuration back to default
+        // @param callsign: Callsign to restore
+        virtual Core::hresult Restore(const Core::OptionalType<string>& callsign = {}) = 0;
 
         // @property
         // @brief Service configuration

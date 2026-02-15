@@ -72,9 +72,8 @@ namespace PluginHost {
 #else
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
-
-    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
+    /* static */ const TCHAR* Server::PluginOverrideDirectory = _T(EXPAND_AND_QUOTE(NAMESPACE) "/plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
@@ -1128,8 +1127,8 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
-        // See if the persitent path for our-selves exist, if not we will create it :-)
-        Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
+        // See if the persistent path for our-selves exist, if not we will create it :-)
+        Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
 
         if (persistentPath.IsDirectory() == false) {
             Core::Directory(persistentPath.Name().c_str()).Create();
