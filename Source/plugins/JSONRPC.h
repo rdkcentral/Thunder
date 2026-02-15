@@ -381,12 +381,62 @@ namespace PluginHost {
 
         class VersionInfo : public Core::JSON::Container {
         public:
+#ifndef _THUNDER_PRODUCTION
+            class StatsInfo : public Core::JSON::Container {
+            public:
+                StatsInfo()
+                    : Core::JSON::Container()
+                    , Total()
+                {
+                    Init();
+                }
+                StatsInfo(const StatsInfo& copy)
+                    : Core::JSON::Container()
+                    , Total(copy.Total)
+                {
+                    Init();
+                }
+                StatsInfo(StatsInfo&& move) noexcept
+                    : Core::JSON::Container()
+                    , Total(std::move(move.Total))
+                {
+                    Init();
+                }
+                StatsInfo& operator=(const StatsInfo& rhs)
+                {
+                    Total = rhs.Total;
+                    return (*this);
+                }
+                StatsInfo& operator=(StatsInfo&& move) noexcept
+                {
+                    if (this != &move) {
+                        Total = std::move(move.Total);
+                    }
+                    return (*this);
+                }
+                ~StatsInfo() = default;
+
+            private:
+                void Init()
+                {
+                    Add(_T("total"), &Total);
+                }
+
+            public:
+                Core::JSON::ArrayType<Core::JSON::DecUInt8> Total;
+            };
+#endif // _THUNDER_PRODUCTION
+
+        public:
             VersionInfo()
                 : Core::JSON::Container()
                 , Name()
                 , Major()
                 , Minor()
                 , Patch()
+#ifndef _THUNDER_PRODUCTION
+                , Stats()
+#endif
             {
                 Init();
             }
@@ -396,7 +446,10 @@ namespace PluginHost {
                 , Major(copy.Major)
                 , Minor(copy.Minor)
                 , Patch(copy.Patch)
-            {
+#ifndef _THUNDER_PRODUCTION
+                , Stats(copy.Stats)
+#endif
+                {
                 Init();
             }
             VersionInfo(VersionInfo&& move) noexcept
@@ -405,6 +458,9 @@ namespace PluginHost {
                 , Major(std::move(move.Major))
                 , Minor(std::move(move.Minor))
                 , Patch(std::move(move.Patch))
+#ifndef _THUNDER_PRODUCTION
+                , Stats(std::move(move.Stats))
+#endif
             {
                 Init();
             }
@@ -422,6 +478,9 @@ namespace PluginHost {
                 Major = rhs.Major;
                 Minor = rhs.Minor;
                 Patch = rhs.Patch;
+#ifndef _THUNDER_PRODUCTION
+                Stats = rhs.Stats;
+#endif
                 return (*this);
             }
             VersionInfo& operator=(VersionInfo&& move) noexcept
@@ -431,7 +490,10 @@ namespace PluginHost {
                     Major = std::move(move.Major);
                     Minor = std::move(move.Minor);
                     Patch = std::move(move.Patch);
-		}
+#ifndef _THUNDER_PRODUCTION
+                    Stats = std::move(move.Stats);
+#endif
+                }
                 return (*this);
             }
             ~VersionInfo() = default;
@@ -443,6 +505,9 @@ namespace PluginHost {
                 Add(_T("major"), &Major);
                 Add(_T("minor"), &Minor);
                 Add(_T("patch"), &Patch);
+#ifndef _THUNDER_PRODUCTION
+                Add(_T("stats"), &Stats);
+#endif
             }
 
         public:
@@ -450,6 +515,9 @@ namespace PluginHost {
             Core::JSON::DecUInt8 Major;
             Core::JSON::DecUInt8 Minor;
             Core::JSON::DecUInt8 Patch;
+#ifndef _THUNDER_PRODUCTION
+            StatsInfo Stats;
+#endif
         };
 
         using VersionList = Core::JSON::ArrayType<VersionInfo>;
@@ -629,13 +697,29 @@ namespace PluginHost {
         //
         // Register/Unregister methods for interface versioning..
         // ------------------------------------------------------------------------------------------------------------------------------
-        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch)
+
+        void RegisterVersion(const string& name, const uint8_t major, const uint8_t minor, const uint8_t patch,
+                const uint8_t methods = -1, const uint8_t properties = -1, const uint8_t events = -1)
         {
             VersionInfo& version = _versions.Add();
             version.Name = name;
             version.Major = major;
             version.Minor = minor;
             version.Patch = patch;
+
+#ifndef _THUNDER_PRODUCTION
+            Core::JSON::DecUInt8 count;
+            count = methods;
+            version.Stats.Total.Add(count);
+            count = properties;
+            version.Stats.Total.Add(count);
+            count = events;
+            version.Stats.Total.Add(count);
+#else
+            DEBUG_VARIABLE(methods);
+            DEBUG_VARIABLE(properties);
+            DEBUG_VARIABLE(events);
+#endif
         }
 
         //
