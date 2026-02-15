@@ -1127,7 +1127,7 @@ namespace PluginHost {
     {
         IFactories::Assign(&_factoriesImplementation);
 
-        // See if the persitent path for our-selves exist, if not we will create it :-)
+        // See if the persistent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + PluginOverrideDirectory);
 
         if (persistentPath.IsDirectory() == false) {

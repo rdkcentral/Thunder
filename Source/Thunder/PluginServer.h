@@ -1822,7 +1822,7 @@ namespace PluginHost {
                     SavePluginHostConfig();
                 }
 
-                if (callsign.IsSet() == true) {
+                if (callsign.IsSet() == true && callsign.Value() != "PluginHost") {
                     bool found = false;
                     const string& raw = callsign.Value();
                     const string target = raw.empty() ? _T("Controller") : raw;
@@ -1849,7 +1849,7 @@ namespace PluginHost {
                     }
                 }
 
-                return (result == Core::ERROR_NONE);
+                return result;
             }
 
             bool Destroy(const Core::OptionalType<string>& callsign)
@@ -1860,7 +1860,7 @@ namespace PluginHost {
                     DestroyOverride("PluginHost", result);
                 }
 
-                if (callsign.IsSet() == true) {
+                if (callsign.IsSet() == true && (callsign.Value() != "PluginHost")) {
                     bool found = false;
                     const string& raw = callsign.Value();
                     const string target = raw.empty() ? _T("Controller") : raw;
@@ -1884,7 +1884,7 @@ namespace PluginHost {
                     }
                 }
 
-                return (result == Core::ERROR_NONE);
+                return result;
             }
 
             Core::JSON::Container Services;
@@ -1926,7 +1926,7 @@ namespace PluginHost {
                     }
                 }
 
-                out = root;
+                out = std::move(root);
                 return true;
             };
 
@@ -2069,7 +2069,7 @@ namespace PluginHost {
 
             string CreateOverridePath(const string& callsign) const {
                 string outPath;
-                outPath.reserve(_persistentFolder.size() + callsign.size() + sizeof(".json") - 1);
+                outPath.reserve(_persistentFolder.size() + callsign.size() + 5); // 5 = strlen of .json
                 outPath.append(_persistentFolder).append(callsign).append(".json");
                 return outPath;
             }
