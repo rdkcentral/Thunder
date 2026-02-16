@@ -828,7 +828,7 @@ namespace PluginHost {
             Service& operator=(Service&&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode /* type */, const Core::ProxyType<RPC::InvokeServer>& handler)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
                 , _handler(nullptr)
@@ -852,6 +852,7 @@ namespace PluginHost {
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
+                , _type(type)
             {
                 _jobs.Slots(_metadata.MaxRequests());
             }
@@ -883,6 +884,9 @@ namespace PluginHost {
             }
 
         public:
+            inline const mode Type() const {
+                return (_type);
+            }
             inline const RPC::Communicator& COMServer() const {
                 return (_external);
             }
@@ -1709,6 +1713,7 @@ namespace PluginHost {
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
             Jobs _jobs;
+            mode _type;
 
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
@@ -3348,11 +3353,20 @@ namespace PluginHost {
                 Plugins::iterator index(_services.find(callSign));
 
                 if (index != _services.end()) {
-                    index->second->Destroy();
-                    _services.erase(index);
+
+                    if (index->second->Type() == Service::mode::CLONED) {
+
+                        index->second->Destroy();
+                        _services.erase(index);
+                        _adminLock.Unlock();
+                    } else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not cloned "), callSign.c_str()));
+                    }
+                } else {
+                    SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not found "), callSign.c_str()));
                 }
 
-                _adminLock.Unlock();
             }
             inline Core::ProxyType<Service> GetService(const string& callsign)
             {
