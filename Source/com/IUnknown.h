@@ -330,6 +330,9 @@ namespace ProxyStub {
 	            result = channel->Invoke(message, waitTime);
 	
 	            if (result != Core::ERROR_NONE) {
+                    if (result == Core::ERROR_TIMEDOUT) {
+                        SYSLOG(Logging::Error, (_T("IPC method Invoke failed due to timeout (Interface ID 0x%X, Method ID 0x%X). Execution of code may or may not have happened. Side effects are to be expected after this message"), message->Parameters().InterfaceId(), message->Parameters().MethodId()));
+                    }
 	                result |= COM_ERROR;
 	
 	                // Oops something failed on the communication. Report it.
