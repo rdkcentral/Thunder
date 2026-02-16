@@ -3364,6 +3364,7 @@ namespace PluginHost {
                         SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not cloned "), callSign.c_str()));
                     }
                 } else {
+                    _adminLock.Unlock();
                     SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not found "), callSign.c_str()));
                 }
 
