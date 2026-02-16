@@ -513,28 +513,28 @@ namespace Thunder {
 
                     _metadataBufferSize = jsonParsed.MetadataBufferSize.Value();
                     if (_metadataBufferSize > MessageUnit::MaxMetadataBufferSize) {
-                        TRACE_L1("MetadataBufferSize (%d) exceeds maximum (%d)! Using maximum instead.", _metadataBufferSize, MessageUnit::MaxMetadataBufferSize);
+                        TRACE_L1("MetadataBufferSize (%u) exceeds maximum (%u)! Using maximum instead.", _metadataBufferSize, MessageUnit::MaxMetadataBufferSize);
                         _metadataBufferSize = MessageUnit::MaxMetadataBufferSize;
                         ASSERT(false);
                     }
 
                     _metadataSize = jsonParsed.MetadataSize.Value();
                     if (_metadataSize > MessageUnit::MaxMetadataSize) {
-                        TRACE_L1("MetadataSize (%d) exceeds maximum (%d)! Using maximum instead.", _metadataSize, MessageUnit::MaxMetadataSize);
+                        TRACE_L1("MetadataSize (%u) exceeds maximum (%u)! Using maximum instead.", _metadataSize, MessageUnit::MaxMetadataSize);
                         _metadataSize = MessageUnit::MaxMetadataSize;
                         ASSERT(false);
                     }
 
                     _messageSize = jsonParsed.MessageSize.Value();
                     if (_messageSize > MessageUnit::MaxMessageSize) {
-                        TRACE_L1("MessageSize (%d) exceeds maximum (%d)! Using maximum instead.", _messageSize, MessageUnit::MaxMessageSize);
+                        TRACE_L1("MessageSize (%u) exceeds maximum (%u)! Using maximum instead.", _messageSize, MessageUnit::MaxMessageSize);
                         _messageSize = MessageUnit::MaxMessageSize;
                         ASSERT(false);
                     }
 
                     _dataSize = jsonParsed.DataSize.Value();
                     if (_dataSize > MessageUnit::MaxDataBufferSize) {
-                        TRACE_L1("DataSize (%d) exceeds maximum (%d)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
+                        TRACE_L1("DataSize (%u) exceeds maximum (%u)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
                         _dataSize = MessageUnit::MaxDataBufferSize;
                         ASSERT(false);
                     }
