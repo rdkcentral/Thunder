@@ -333,7 +333,7 @@ namespace Plugin {
             , PersistentPathPostfix()
             , VolatilePathPostfix()
             , SystemRootPath()
-            , StartupOrder(50)
+            , StartupOrder(1000) // Will we ever have more than 1000 plugins? :) (number cannot be too high or low as you want to be able to explicitely set a startup order number to let plugins with startup order go before or after plugins that don't have a startup order
             , Throttle(~0)
             , StartMode(PluginHost::IShell::startmode::ACTIVATED)
             , Communicator()

@@ -169,7 +169,7 @@ POP_WARNING()
         ConsoleOptions& operator= (const ConsoleOptions&&) = delete;
 
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:C:r:p:s:X:d:a:m:i:u:g:t:e:E:x:V:v:P:S:f:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , Callsign(nullptr)
@@ -179,6 +179,7 @@ POP_WARNING()
             , Exchange(0)
             , PersistentPath()
             , SystemPath()
+            , ExtensionPath()
             , DataPath()
             , VolatilePath()
             , AppPath()
@@ -204,6 +205,7 @@ POP_WARNING()
         uint32_t Exchange;
         string PersistentPath;
         string SystemPath;
+        string ExtensionPath;
         string DataPath;
         string VolatilePath;
         string AppPath;
@@ -249,6 +251,9 @@ POP_WARNING()
                 break;
             case 's':
                 SystemPath = Core::Directory::Normalize(Strip(argument));
+                break;
+            case 'X':
+                ExtensionPath = Core::Directory::Normalize(Strip(argument));
                 break;
             case 'd':
                 DataPath = Core::Directory::Normalize(Strip(argument));
@@ -352,10 +357,16 @@ POP_WARNING()
                     result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.SystemPath) + options.Locator), options);
 
                     if (result == nullptr) {
-                        result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+                        if (options.ExtensionPath.empty() == false) {
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.ExtensionPath) + options.Locator), options);
+                        }
 
                         if (result == nullptr) {
-                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.DataPath) + options.Locator), options);
+
+                            if (result == nullptr) {
+                                result = CheckInstance((Core::Directory::Normalize(options.SystemRootPath + options.AppPath + _T("Plugins")) + options.Locator), options);
+                            }
                         }
                     }
                 }
@@ -601,6 +612,7 @@ int main(int argc, char** argv)
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
+        printf("        [-X <extension path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-v <volatile path>]\n");
         printf("        [-f <linker_path>...\n");
