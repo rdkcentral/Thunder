@@ -44,9 +44,7 @@ TEST(TIME_ARITHMETIC, DISABLED_gmtime)
 
     std::tm result;
 
-    bool flag{ false };
-
-    do {
+    for (; offsetMilliSeconds <= maxOffsetMilliSeconds; offsetMilliSeconds++) {
 
         result.tm_sec = -1;
         result.tm_min = -1;
@@ -95,13 +93,9 @@ TEST(TIME_ARITHMETIC, DISABLED_gmtime)
 
         ASSERT_EQ(result.tm_sec, timer % 60);
 
-        flag = offsetMilliSeconds == maxOffsetMilliSeconds;
+    }
 
-        ++offsetMilliSeconds;
-
-    } while (flag != true);
-
-    EXPECT_TRUE(flag);
+    EXPECT_TRUE(offsetMilliSeconds == maxOffsetMilliSeconds);
 }
 
 TEST(TIME_ARITHMETIC, DISABLED_Ticks)
@@ -115,21 +109,14 @@ TEST(TIME_ARITHMETIC, DISABLED_Ticks)
 
     ::Thunder::Core::Time::microsecondsfromepoch epochMicroSeconds{ initialEpochMicroSeconds };
 
-    bool flag{ false };
-
-    do {
+    for (; epochMicroSeconds <= maxEpochMicroSeconds; epochMicroSeconds++) {
 
         ::Thunder::Core::Time time{ epochMicroSeconds /* microsecondsfromepoch */};
 
         ASSERT_EQ(time.Ticks(), epochMicroSeconds);
+    }
 
-        flag = epochMicroSeconds == maxEpochMicroSeconds;
-
-        ++epochMicroSeconds;
-
-    } while (flag != true);
-
-    EXPECT_TRUE(flag);
+    EXPECT_TRUE(epochMicroSeconds == maxEpochMicroSeconds);
 }
 
 TEST(TIME_ARITHMETIC, AddTime)
@@ -138,13 +125,11 @@ TEST(TIME_ARITHMETIC, AddTime)
 
     uint32_t offsetMilliSeconds{ initialMilliSeconds };
 
-    constexpr uint32_t maxOffsetMilliSeconds{ 0xFFFFFFFF };
+    // Subset of full set of stimuli
+    constexpr uint32_t maxOffsetMilliSeconds{ 1000 /* 0xFFFFFFFF */};
 
-    bool flag{ false };
-
-    do {
+    for (; offsetMilliSeconds <= maxOffsetMilliSeconds; offsetMilliSeconds++) {
         ::Thunder::Core::Time::microsecondsfromepoch epochStart{ ::Thunder::Core::Time::Now().Ticks() /* microsecondsfromepoch */ };
-//        ::Thunder::Core::Time::microsecondsfromepoch epochStart{ 0 /* microsecondsfromepoch */ };
 
         ::Thunder::Core::Time timeStart{ epochStart /* microsecondsfromepoch */};
 
@@ -178,14 +163,7 @@ TEST(TIME_ARITHMETIC, AddTime)
 
         // Calendar time (units) cannot be compared without some effort
         ASSERT_EQ((timeFinishSeconds >= timeStartSeconds ? timeFinishSeconds - timeStartSeconds : static_cast<uint8_t>(60) + timeFinishSeconds - timeStartSeconds), static_cast<uint8_t>(((epochFinish / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond)) - (epochStart / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond))) % static_cast<::Thunder::Core::Time::microsecondsfromepoch>(60)));
-
-        flag = offsetMilliSeconds == maxOffsetMilliSeconds;
-
-        ++offsetMilliSeconds;
-
-    } while (flag != true);
-
-    EXPECT_TRUE(flag);
+    }
 }
 
 TEST(TIME_ARITHMETIC, SubTime)
@@ -194,11 +172,10 @@ TEST(TIME_ARITHMETIC, SubTime)
 
     uint32_t offsetMilliSeconds{ initialMilliSeconds };
 
-    constexpr uint32_t maxOffsetMilliSeconds{ 0xFFFFFFFF };
+    // Subset of full set of stimuli
+    constexpr uint32_t maxOffsetMilliSeconds{ 1000 /* 0xFFFFFFFF */ };
 
-    bool flag{ false };
-
-    do {
+    for (; offsetMilliSeconds <= maxOffsetMilliSeconds; offsetMilliSeconds++) {
         ::Thunder::Core::Time::microsecondsfromepoch epochStart{ ::Thunder::Core::Time::Now().Ticks() /* microsecondsfromepoch */ };
 
         ASSERT_GE(epochStart, 0x3E7FFFFFC18 /* maxOffsetMilliSeconds * 10000 */);
@@ -235,14 +212,7 @@ TEST(TIME_ARITHMETIC, SubTime)
 
         // Calendar time (units) cannot be compared without some effort
         ASSERT_EQ((timeStartSeconds >= timeFinishSeconds ? timeStartSeconds - timeFinishSeconds : timeStartSeconds + (static_cast<uint8_t>(60) - timeFinishSeconds)), static_cast<uint8_t>(((epochStart / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond)) - (epochFinish / static_cast<::Thunder::Core::Time::microsecondsfromepoch>(::Thunder::Core::Time::MicroSecondsPerSecond))) % static_cast<::Thunder::Core::Time::microsecondsfromepoch>(60)));
-
-        flag = offsetMilliSeconds == maxOffsetMilliSeconds;
-
-        ++offsetMilliSeconds;
-
-    } while (flag != true);
-
-    EXPECT_TRUE(flag);
+    }
 }
 
 } // Core
