@@ -884,7 +884,7 @@ namespace PluginHost {
             }
 
         public:
-            inline const mode Type() const {
+            inline mode Type() const {
                 return (_type);
             }
             inline const RPC::Communicator& COMServer() const {
