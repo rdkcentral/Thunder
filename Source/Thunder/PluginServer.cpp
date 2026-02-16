@@ -670,44 +670,42 @@ namespace PluginHost {
     Core::hresult Server::Service::Unavailable(const reason why) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
-        Lock();
+        if (AllowedUnavailable() == true) {
 
-        IShell::state currentState(State());
+            Lock();
 
-        if ((currentState == IShell::state::DEACTIVATION) ||
-            (currentState == IShell::state::ACTIVATION)   ||
-            (currentState == IShell::state::DESTROYED)    ||
-            (currentState == IShell::state::ACTIVATED)    ||
-            (currentState == IShell::state::PRECONDITION) ||
-            (currentState == IShell::state::HIBERNATED)   ) {
-            result = Core::ERROR_ILLEGAL_STATE;
-        }
-        else if (currentState == IShell::state::DEACTIVATED) {
+            IShell::state currentState(State());
 
-            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
+            if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED)) {
+                result = Core::ERROR_ILLEGAL_STATE;
+            } else if (currentState == IShell::state::DEACTIVATED) {
 
-            const string className(PluginHost::Service::Configuration().ClassName.Value());
-            const string callSign(PluginHost::Service::Configuration().Callsign.Value());
+                const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
-            _reason = why;
+                const string className(PluginHost::Service::Configuration().ClassName.Value());
+                const string callSign(PluginHost::Service::Configuration().Callsign.Value());
 
-            SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                _reason = why;
 
-            TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+                SYSLOG(Logging::Shutdown, (_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
-            State(UNAVAILABLE);
-            _administrator.Unavailable(callSign, this);
+                TRACE(Activity, (Core::Format(_T("Unavailable plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
+
+                State(UNAVAILABLE);
+                _administrator.Unavailable(callSign, this);
+
+                Unlock();
+
+#ifdef THUNDER_RESTFULL_API
+                Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+#endif
+                Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            }
 
             Unlock();
-
-            #ifdef THUNDER_RESTFULL_API
-            Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
-            #endif
-            Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+        } else {
+            result = Core::ERROR_NOT_SUPPORTED;
         }
-
-        Unlock();
-
         return (result);
 
     }
@@ -715,70 +713,72 @@ namespace PluginHost {
     Core::hresult Server::Service::Hibernate(const uint32_t timeout VARIABLE_IS_NOT_USED) /* override */ {
         Core::hresult result = Core::ERROR_NONE;
 
-        Lock();
+        if (AllowedHibernate() == true) {
 
-        IShell::state currentState(State());
+            Lock();
 
-        if (currentState != IShell::state::ACTIVATED) {
-            result = Core::ERROR_ILLEGAL_STATE;
-        }
-        else if (_connection == nullptr) {
-            result = Core::ERROR_INPROC;
-        }
-        else {
-            // Oke we have an Connection so there is something to Hibernate..
-            RPC::IMonitorableProcess* local = _connection->QueryInterface< RPC::IMonitorableProcess>();
+            IShell::state currentState(State());
 
-            if (local == nullptr) {
-                result = Core::ERROR_BAD_REQUEST;
-            }
-            else {
-                State(IShell::HIBERNATED);
+            if (currentState != IShell::state::ACTIVATED) {
+                result = Core::ERROR_ILLEGAL_STATE;
+            } else if (_connection == nullptr) {
+                result = Core::ERROR_INPROC;
+            } else {
+                // Oke we have an Connection so there is something to Hibernate..
+                RPC::IMonitorableProcess* local = _connection->QueryInterface<RPC::IMonitorableProcess>();
+
+                if (local == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                } else {
+                    State(IShell::HIBERNATED);
 #ifdef HIBERNATE_SUPPORT_ENABLED
-                pid_t parentPID = local->ParentPID();
-                local->Release();
-                Unlock();
+                    pid_t parentPID = local->ParentPID();
+                    local->Release();
+                    Unlock();
 
-                TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                Lock();
-                if (State() != IShell::HIBERNATED) {
-                    SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
-                    result = Core::ERROR_ABORTED;
-                }
-                Unlock();
-
-                if (result == HIBERNATE_ERROR_NONE) {
-                    result = HibernateChildren(parentPID, timeout);
-                }
-
-                if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
-                    // try to wakeup Parent process to revert Hibernation and recover
-                    TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
-                    WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
-                }
-
-                Lock();
-#else
-                local->Release();
-                result = Core::ERROR_NONE;
-#endif
-                if (result == Core::ERROR_NONE) {
-                    if (State() == IShell::state::HIBERNATED) {
-                        SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
-                    } else {
-                        // wakeup occured right after hibernation finished
-                        SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                    TRACE(Activity, (_T("Hibernation of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
+                    result = HibernateProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    Lock();
+                    if (State() != IShell::HIBERNATED) {
+                        SYSLOG(Logging::Startup, (_T("Hibernation aborted of plugin [%s] process [%u]"), Callsign().c_str(), parentPID));
                         result = Core::ERROR_ABORTED;
                     }
-                }
-                else if (State() == IShell::state::HIBERNATED) {
-                    State(IShell::ACTIVATED);
-                    SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    Unlock();
+
+                    if (result == HIBERNATE_ERROR_NONE) {
+                        result = HibernateChildren(parentPID, timeout);
+                    }
+
+                    if (result != Core::ERROR_NONE && result != Core::ERROR_ABORTED) {
+                        // try to wakeup Parent process to revert Hibernation and recover
+                        TRACE(Activity, (_T("Wakeup plugin [%s] process [%u] on Hibernate error [%d]"), Callsign().c_str(), parentPID, result));
+                        WakeupProcess(timeout, parentPID, _administrator.Configuration().HibernateLocator().c_str(), _T(""), &_hibernateStorage);
+                    }
+
+                    Lock();
+#else
+                    local->Release();
+                    result = Core::ERROR_NONE;
+#endif
+                    if (result == Core::ERROR_NONE) {
+                        if (State() == IShell::state::HIBERNATED) {
+                            SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                        } else {
+                            // wakeup occured right after hibernation finished
+                            SYSLOG(Logging::Startup, ("Hibernation aborted of plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
+                            result = Core::ERROR_ABORTED;
+                        }
+                    } else if (State() == IShell::state::HIBERNATED) {
+                        State(IShell::ACTIVATED);
+                        SYSLOG(Logging::Startup, (_T("Hibernation error [%d] of [%s]:[%s]"), result, ClassName().c_str(), Callsign().c_str()));
+                    }
                 }
             }
+            Unlock();
+        } else {
+        
+            result = Core::ERROR_NOT_SUPPORTED;
         }
-        Unlock();
 
         return (result);
 

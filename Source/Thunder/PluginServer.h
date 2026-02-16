@@ -1404,15 +1404,27 @@ namespace PluginHost {
                 return (_composit);
             }
 
-            bool virtual Cloneable() const {
+            virtual bool Cloneable() const
+            {
                 return true;
             }
 
-            bool virtual PriorityStart() const {
+            virtual bool AllowedHibernate() const
+            {
+                return true;
+            }
+
+            virtual bool AllowedUnavailable() const
+            {
+                return true;
+            }
+
+            virtual bool PriorityStart() const
+            {
                 return false;
             }
 
-            bool virtual AutoActivationAlwaysEnabled() const
+             virtual bool AutoActivationAlwaysEnabled() const
             {
                 return false;
             }
@@ -1754,6 +1766,16 @@ namespace PluginHost {
             }
 
             bool Cloneable() const override
+            {
+                return false;
+            }
+
+            bool AllowedHibernate() const override
+            {
+                return false;
+            }
+
+            bool AllowedUnavailable() const override
             {
                 return false;
             }
