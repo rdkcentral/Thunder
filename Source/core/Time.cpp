@@ -1020,7 +1020,7 @@ PUSH_WARNING(DISABLE_WARNING_DEPRECATED_USE)
 
         microsecondsfromepoch remainderMicroseconds = (time - static_cast<microsecondsfromepoch>(OffsetTicksForEpoch)) % static_cast<microsecondsfromepoch>(MicroSecondsPerSecond);
 
-        _time.tv_nsec = (static_cast<long>(remainderMicroseconds) * static_cast<long>(NanoSecondsPerMicroSecond));
+        _time.tv_nsec = remainderMicroseconds * NanoSecondsPerMicroSecond;
     }
 
     Time::microsecondsfromepoch Time::Ticks() const
