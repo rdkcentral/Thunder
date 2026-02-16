@@ -1093,6 +1093,7 @@ POP_WARNING()
         std::vector<PluginHost::ISubSystem::subsystem> externallyControlled;
         ServiceMap::Iterator iterator(_services.Services());
 
+#if 0
         // Load the metadata for the subsystem information..
         while (iterator.Next() == true)
         {
@@ -1111,6 +1112,7 @@ POP_WARNING()
                 }
             }
         }
+#endif
 
         _controller->Activate(PluginHost::IShell::STARTUP);
 
