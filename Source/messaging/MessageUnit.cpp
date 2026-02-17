@@ -335,6 +335,7 @@ namespace Thunder {
                 _direct.Output(messageInfo, message);
             } else if (_dispatcher != nullptr) {
                 const uint16_t messageSize = _settings.MessageSize();
+                ASSERT(messageSize != 0);
                 uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
                 uint16_t length = 0;
 

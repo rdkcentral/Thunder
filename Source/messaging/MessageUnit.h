@@ -74,6 +74,7 @@ namespace Thunder {
                 Buffer()
                     : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MessageUnit::Instance()._settings.MetadataBufferSize())
                 {
+                    ASSERT(MessageUnit::Instance()._settings.MetadataBufferSize() != 0);
                 }
                 ~Buffer() = default;
 
@@ -821,7 +822,10 @@ namespace Thunder {
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
                     : MessageDataBuffer(identifier, instanceId, baseDirectory, MessageUnit::Instance()._settings.DataSize(), socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::Instance()._settings.MetadataBufferSize()) {
+                    , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::Instance()._settings.MetadataBufferSize())
+                {
+                    ASSERT(MessageUnit::Instance()._settings.DataSize() != 0);
+                    ASSERT(MessageUnit::Instance()._settings.MetadataBufferSize() != 0);
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
@@ -856,6 +860,7 @@ namespace Thunder {
                     if (_channel.IsOpen() == true) {
 
                         const uint16_t metadataSize = MessageUnit::Instance()._settings.MetadataSize();
+                        ASSERT(metadataSize != 0);
                         uint8_t* dataBuffer = static_cast<uint8_t*>(ALLOCA(metadataSize));
 
                         // We got a connection to the spawned process side, get the list of traces from
@@ -874,7 +879,7 @@ namespace Thunder {
                             result = _channel.Invoke(metaDataFrame, waitTime);
                         }
                         else {
-                            result = ERROR_GENERAL;
+                            result = Core::ERROR_GENERAL;
                         }
                     }
 
@@ -994,6 +999,7 @@ namespace Thunder {
                         void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
                         {
                             const uint16_t metadataBufferSize = _parent._settings.MetadataBufferSize();
+                            ASSERT(metadataBufferSize != 0);
                             uint8_t* outBuffer = static_cast<uint8_t*>(ALLOCA(metadataBufferSize));
 
                             auto message = Core::ProxyType<MetadataFrame>(data);
@@ -1039,6 +1045,7 @@ namespace Thunder {
                         : BaseClass(Core::NodeId(binding.c_str()), parent._settings.MetadataBufferSize())
                         , _handler(parent)
                     {
+                        ASSERT(parent._settings.MetadataBufferSize() != 0);
                         _handler.AddRef();
                         CreateFactory<MetadataFrame>(1);
                         Register(MetadataFrame::Id(), Core::ProxyType<Core::IIPCServer>(_handler));

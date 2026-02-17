@@ -40,6 +40,7 @@ namespace Messaging {
         , _clients()
         , _factories()
     {
+        ASSERT(_readBufferSize != 0);
         ::memset(_readBuffer.get(), 0, _readBufferSize);
     }
 
