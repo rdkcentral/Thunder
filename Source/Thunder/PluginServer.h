@@ -1739,15 +1739,19 @@ namespace PluginHost {
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
-
                 // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
                 // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
+
+                std::vector<string> searchPaths;
+
+                const string normalized(Core::File::Normalize(locator));
+                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
 
                 RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
 
                 ASSERT(paths != nullptr);
-
-                std::vector<string> searchPaths;
 
                 string path;
                 while (paths->Next(path) == true) {
@@ -1756,11 +1760,6 @@ namespace PluginHost {
 
                 paths->Release();
                 paths = nullptr;
-
-                const string normalized(Core::File::Normalize(locator));
-                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
-                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
-                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
 
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
             }
