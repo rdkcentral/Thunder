@@ -869,9 +869,13 @@ namespace Thunder {
                         Control message(control, enabled);
                         uint16_t length = message.Serialize(dataBuffer + writer.Offset(), metadataSize - writer.Offset());
 
-                        metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
-
-                        result = _channel.Invoke(metaDataFrame, waitTime);
+                        if (length != 0) {
+                            metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
+                            result = _channel.Invoke(metaDataFrame, waitTime);
+                        }
+                        else {
+                            result = ERROR_GENERAL;
+                        }
                     }
 
                     return (result);
