@@ -47,6 +47,16 @@ namespace Thunder {
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
             static constexpr uint16_t MaxMessageSize = 32 * 1024;
 
+            static constexpr uint16_t DefaultMetadataBufferSize = (MaxMetadataBufferSize / 4);
+            static constexpr uint16_t DefaultMetadataSize = (MaxMetadataSize / 4);
+            static constexpr uint16_t DefaultDataBufferSize = (MaxDataBufferSize / 4);
+            static constexpr uint16_t DefaultMessageSize = (MaxMessageSize / 4);
+
+            static constexpr uint16_t MinMetadataBufferSize = (DefaultMetadataBufferSize / 4);
+            static constexpr uint16_t MinMetadataSize = (DefaultMetadataSize / 4);
+            static constexpr uint16_t MinDataBufferSize = (DefaultDataBufferSize / 4);
+            static constexpr uint16_t MinMessageSize = (DefaultMessageSize / 4);
+
             enum metadataFrameProtocol : uint8_t {
                 UPDATE      = 0,
                 CONTROLS    = 1,
@@ -375,10 +385,10 @@ namespace Thunder {
                         , Flush(false)
                         , Out(true)
                         , Error(true)
-                        , DataSize(20 * 1024)
-                        , MetadataBufferSize(4 * 1024)
-                        , MetadataSize(128)
-                        , MessageSize(8 * 1024)
+                        , DataSize(MessageUnit::DefaultDataBufferSize)
+                        , MetadataBufferSize(MessageUnit::DefaultMetadataBufferSize)
+                        , MetadataSize(MessageUnit::DefaultMetadataSize)
+                        , MessageSize(MessageUnit::DefaultMessageSize)
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
@@ -517,11 +527,21 @@ namespace Thunder {
                         _metadataBufferSize = MessageUnit::MaxMetadataBufferSize;
                         ASSERT(false);
                     }
+                    else if (_metadataBufferSize < MessageUnit::MinMetadataBufferSize) {
+                        TRACE_L1("MetadataBufferSize (%u) is below minimum (%u)! Using minimum instead.", _metadataBufferSize, MessageUnit::MinMetadataBufferSize);
+                        _metadataBufferSize = MessageUnit::MinMetadataBufferSize;
+                        ASSERT(false);
+                    }
 
                     _metadataSize = jsonParsed.MetadataSize.Value();
                     if (_metadataSize > MessageUnit::MaxMetadataSize) {
                         TRACE_L1("MetadataSize (%u) exceeds maximum (%u)! Using maximum instead.", _metadataSize, MessageUnit::MaxMetadataSize);
                         _metadataSize = MessageUnit::MaxMetadataSize;
+                        ASSERT(false);
+                    }
+                    else if (_metadataSize < MessageUnit::MinMetadataSize) {
+                        TRACE_L1("MetadataSize (%u) is below minimum (%u)! Using minimum instead.", _metadataSize, MessageUnit::MinMetadataSize);
+                        _metadataSize = MessageUnit::MinMetadataSize;
                         ASSERT(false);
                     }
 
@@ -531,11 +551,21 @@ namespace Thunder {
                         _messageSize = MessageUnit::MaxMessageSize;
                         ASSERT(false);
                     }
+                    else if (_messageSize < MessageUnit::MinMessageSize) {
+                        TRACE_L1("MessageSize (%u) is below minimum (%u)! Using minimum instead.", _messageSize, MessageUnit::MinMessageSize);
+                        _messageSize = MessageUnit::MinMessageSize;
+                        ASSERT(false);
+                    }
 
                     _dataSize = jsonParsed.DataSize.Value();
                     if (_dataSize > MessageUnit::MaxDataBufferSize) {
                         TRACE_L1("DataSize (%u) exceeds maximum (%u)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
                         _dataSize = MessageUnit::MaxDataBufferSize;
+                        ASSERT(false);
+                    }
+                    else if (_dataSize < MessageUnit::MinDataBufferSize) {
+                        TRACE_L1("DataSize (%u) is below minimum (%u)! Using minimum instead.", _dataSize, MessageUnit::MinDataBufferSize);
+                        _dataSize = MessageUnit::MinDataBufferSize;
                         ASSERT(false);
                     }
 
