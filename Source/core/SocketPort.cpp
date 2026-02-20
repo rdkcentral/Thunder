@@ -1018,6 +1018,10 @@ namespace WPEFramework {
                 }
 
                 if ((IsForcedClosing() == true) && (Closed() == true)) {
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any*
+                    // operation on the socket members anymore!!!
                     result = 0;
                     m_State &= ~SocketPort::MONITOR;
                 }
@@ -1043,6 +1047,10 @@ namespace WPEFramework {
 
 #ifdef __WINDOWS__
                 if ((flagsSet & FD_CLOSE) != 0) {
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any*
+                    // operation on the socket members anymore!!!
                     Closed();
                 }
                 else if (IsListening()) {
@@ -1065,6 +1073,10 @@ namespace WPEFramework {
                 }
 #else
                 if ((flagsSet & POLLHUP) != 0) {
+                    // In the Closed() method, which is only run on the Resouce Monitor Thread, the unregister
+                    // happens. After the Unregister the last bit in the _state is cleared which means that
+                    // there is nolonger a guarantee that the socket is alive anymore. Do not execute *any*
+                    // operation on the socket members anymore!!!
                     TRACE_L3("HUP event received on socket %u", static_cast<uint32_t>(m_Socket));
                     Closed();
                 }
@@ -1192,7 +1204,8 @@ namespace WPEFramework {
 
                 if (l_Size == 0) {
                     if ((m_State & SocketPort::LINK) != 0) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED );
+                        StateChange();
                     }
                 }
                 else if (l_Size != static_cast<uint32_t>(SOCKET_ERROR)) {
@@ -1205,7 +1218,8 @@ namespace WPEFramework {
                         m_State |= SocketPort::READ;
                     }
                     else if (l_Result == __ERROR_CONNRESET__) {
-                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::EXCEPTION);
+                        m_State = ((m_State & (~SocketPort::OPEN)) | SocketPort::REMOTE_CLOSED );
+                        StateChange();
                     }
                     else if (l_Result != 0) {
                         printf("Read exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));
@@ -1245,26 +1259,22 @@ namespace WPEFramework {
 
             StateChange();
 
-            m_State &= (~SHUTDOWN);
+            DestroySocket(m_Socket);
+            ResourceMonitor::Instance().Unregister(*this);
 
-            if (m_State != 0) {
-                result = false;
-            }
-            else {
-                DestroySocket(m_Socket);
-                ResourceMonitor::Instance().Unregister(*this);
-                // Remove socket descriptor for UNIX domain datagram socket.
-                if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
-                    ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
-                    !m_SystemdSocket) {
-                    TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
+            // Remove socket descriptor for UNIX domain datagram socket.
+            if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) &&
+                ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM)) &&
+                !m_SystemdSocket) {
+                TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
 #ifdef __WINDOWS__
-                    _unlink(m_LocalNode.HostName().c_str());
+                _unlink(m_LocalNode.HostName().c_str());
 #else
-                    unlink(m_LocalNode.HostName().c_str());
+                unlink(m_LocalNode.HostName().c_str());
 #endif
-                }
             }
+
+            m_State &= (~SHUTDOWN);
 
             m_syncAdmin.Unlock();
 
