@@ -413,6 +413,7 @@ namespace Core {
     }
     
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
+
 namespace {
 
     static CustomCodeToStringHandler customerrorcodehandler = nullptr;
@@ -447,7 +448,9 @@ namespace {
         return result;
     }
 }
-    void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler) {
+
+    void SetCustomCodeToStringHandler(CustomCodeToStringHandler handler)
+    {
         customerrorcodehandler = handler;
     }
 
@@ -463,8 +466,7 @@ namespace {
         return value;
     }
 
-
-    hresult CustomCode(const int32_t customCode) {
+    hresult CustomCode(const int24_t customCode) {
 
         static_assert(CUSTOM_ERROR == 0x1000000, "Code below assumes 25th bit used for CUSTOM_ERROR");
 
@@ -472,10 +474,11 @@ namespace {
 
         if (customCode != 0) {
 
-            ASSERT(customCode >= INT24_MIN && customCode <= INT24_MAX);
-
-            result = static_cast<hresult>(ToInt24_Truncate(customCode)) & 0x00FFFFFF;
-
+            if (customCode != std::numeric_limits<int32_t>::max()) {
+                result = static_cast<hresult>(customCode & 0xFFFFFF);
+            } else {
+                result = 0; // set invalid customCode result;
+            }
             result |= CUSTOM_ERROR; // set custom code bit
         }
 
