@@ -27,7 +27,7 @@ namespace RPC {
     template<typename INTERFACE>
     class IteratorType : public INTERFACE {
     public:
-        using Container = typename std::list<typename INTERFACE::Element>;
+        using Container = typename std::vector<typename INTERFACE::Element>;
 
         IteratorType() = delete;
         IteratorType(const IteratorType&) = delete;
@@ -37,6 +37,21 @@ namespace RPC {
             : _container(std::forward<Container>(container))
             , _index(0)
         {
+            _iterator = _container.begin();
+        }
+        IteratorType(std::list<typename INTERFACE::Element>&& container)
+            : _container()
+            , _index(0)
+        {
+            TRACE_L1("Thunder::RPC::IteratorType: Using std::list as a source container is less efficient than using std::vector.");
+
+            _container.reserve(container.size());
+
+            std::move(
+                std::make_move_iterator(container.begin()),
+                std::make_move_iterator(container.end()),
+                std::back_inserter(_container));
+
             _iterator = _container.begin();
         }
         template <typename CONTAINER, typename PREDICATE>
@@ -166,8 +181,34 @@ POP_WARNING()
 
             return (*_iterator);
         }
-        void Add(const typename INTERFACE::Element& element) {
+        void Add(const typename INTERFACE::Element& element)
+        {
+            const bool wasValid = IsValid();
+            const bool wasBeforeFirst = (_index == 0);
+            const bool wasPastEnd = (_index == (Count() + 1));
+            size_t offset = 0;
+
+            if (wasValid == true) {
+                offset = static_cast<size_t>(std::distance(_container.begin(), _iterator));
+            }
+
+            const auto oldCap = _container.capacity();
             _container.push_back(element);
+
+            if (_container.capacity() != oldCap) {
+
+                if (wasValid == true) {
+                    _iterator = _container.begin() + offset;
+                }
+                else if (wasBeforeFirst == true) {
+                    _iterator = _container.begin();
+                }
+            }
+
+            if (wasPastEnd == true) {
+                _iterator = _container.end();
+                _index = Count() + 1;
+            }
         }
 
         BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
