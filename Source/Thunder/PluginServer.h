@@ -125,6 +125,7 @@ namespace PluginHost {
     public:
         static const TCHAR* ConfigFile;
         static const TCHAR* PluginOverrideFile;
+        static const TCHAR* ExtensionsConfigDirectory;
         static const TCHAR* PluginConfigDirectory;
         static const TCHAR* CommunicatorConnector;
 
@@ -827,7 +828,7 @@ namespace PluginHost {
             Service& operator=(Service&&) = delete;
             Service& operator=(const Service&) = delete;
 
-            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode /* type */, const Core::ProxyType<RPC::InvokeServer>& handler)
+            Service(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
                 : PluginHost::Service(plugin, server.WebPrefix(), server.PersistentPath(), server.DataPath(), server.VolatilePath())
                 , _pluginHandling()
                 , _handler(nullptr)
@@ -851,6 +852,7 @@ namespace PluginHost {
                 , _administrator(administrator)
                 , _composit(*this)
                 , _jobs(administrator)
+                , _type(type)
             {
                 _jobs.Slots(_metadata.MaxRequests());
             }
@@ -882,6 +884,9 @@ namespace PluginHost {
             }
 
         public:
+            inline mode Type() const {
+                return (_type);
+            }
             inline const RPC::Communicator& COMServer() const {
                 return (_external);
             }
@@ -1298,7 +1303,12 @@ namespace PluginHost {
             string SystemPath() const override {
                 return (_administrator.Configuration().SystemPath());
             }
-            string PluginPath() const override {
+            virtual string ExtensionPath() const
+            {
+                return string();
+            }
+            string PluginPath() const override
+            {
                 return (_administrator.Configuration().AppPath() + _T("Plugins/"));
             }
             string HashKey() const override {
@@ -1317,7 +1327,7 @@ namespace PluginHost {
             {
                 ASSERT(_connection == nullptr);
 
-                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), _administrator.Configuration().LinkerPluginPaths()));
+                void* result(_administrator.Instantiate(object, waitTime, sessionId, DataPath(), PersistentPath(), VolatilePath(), ExtensionPath(), _administrator.Configuration().LinkerPluginPaths()));
 
                 if (result != nullptr) {
                     _connection = _administrator.RemoteConnection(sessionId);
@@ -1398,6 +1408,31 @@ namespace PluginHost {
                 return (_composit);
             }
 
+            virtual bool Cloneable() const
+            {
+                return true;
+            }
+
+            virtual bool AllowedHibernate() const
+            {
+                return true;
+            }
+
+            virtual bool AllowedUnavailable() const
+            {
+                return true;
+            }
+
+            virtual bool PriorityStart() const
+            {
+                return false;
+            }
+
+             virtual bool AutoActivationAlwaysEnabled() const
+            {
+                return false;
+            }
+
         private:
             uint32_t Wakeup(const uint32_t timeout);
 
@@ -1405,6 +1440,8 @@ namespace PluginHost {
             uint32_t HibernateChildren(const pid_t parentPID, const uint32_t timeout);
             uint32_t WakeupChildren(const pid_t parentPID, const uint32_t timeout);
             #endif
+
+        public: // do not restrict visibility for a virtual in a derived class
 
             RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
             {
@@ -1442,6 +1479,7 @@ namespace PluginHost {
                 return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
             }
 
+        private:
             const Core::IService* LoadLibrary(const string& name, Core::Library& library) {
                 Core::IService* result(nullptr);
 
@@ -1637,6 +1675,16 @@ namespace PluginHost {
                 }
             }
 
+        protected:
+            ServiceMap& Administrator() {
+                return (_administrator);
+            }
+            const ServiceMap& Administrator() const
+            {
+                return (_administrator);
+            }
+
+
         private:
             mutable Core::CriticalSection _pluginHandling;
 
@@ -1665,10 +1713,102 @@ namespace PluginHost {
             ServiceMap& _administrator;
             Core::SinkType<Composit> _composit;
             Jobs _jobs;
+            mode _type;
 
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
+
+
+        class ThunderExtensionService : public Service {
+        public:
+            ThunderExtensionService() = delete;
+            ThunderExtensionService(ThunderExtensionService&&) = delete;
+            ThunderExtensionService(const ThunderExtensionService&) = delete;
+            ThunderExtensionService& operator=(ThunderExtensionService&&) = delete;
+            ThunderExtensionService& operator=(const ThunderExtensionService&) = delete;
+
+            ThunderExtensionService(const PluginHost::Config& server, const Plugin::Config& plugin, ServiceMap& administrator, const mode type, const Core::ProxyType<RPC::InvokeServer>& handler)
+                : Service(server, plugin, administrator, type, handler)
+            {
+            }
+
+            ~ThunderExtensionService() override = default;
+
+        public:
+
+            RPC::IStringIterator* GetLibrarySearchPaths(const string& locator) const override
+            {
+                // we allow all paths for normal plugins but also extensions. Extensions are not secure by definition (anybody who can put a file into a folder and change some configuration can make ny plugin to be an extension). But it is good enough
+                // and one could make a plugin locator point direclty to the extension folder if needed, but okay it will at least not work out of the box
+
+                std::vector<string> searchPaths;
+
+                const string normalized(Core::File::Normalize(locator));
+                const string rootPath(Core::Directory::Normalize(PluginHost::Service::Configuration().SystemRootPath));
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + ExtensionPath()) + normalized);
+                searchPaths.push_back(Core::Directory::Normalize(rootPath + Administrator().Configuration().AppPath() + _T("Extensions/")) + normalized);
+
+                RPC::IStringIterator* paths = Service::GetLibrarySearchPaths(locator);
+
+                ASSERT(paths != nullptr);
+
+                string path;
+                while (paths->Next(path) == true) {
+                    searchPaths.push_back(path);
+                };
+
+                paths->Release();
+                paths = nullptr;
+
+                return (Core::ServiceType<RPC::StringIterator>::Create<RPC::IStringIterator>(searchPaths));
+            }
+
+            string ExtensionPath() const override
+            {
+                return (Administrator().Configuration().ExtensionPath());
+            }
+
+            bool Cloneable() const override
+            {
+                return false;
+            }
+
+            bool AllowedHibernate() const override
+            {
+                return false;
+            }
+
+            bool AllowedUnavailable() const override
+            {
+                return false;
+            }
+
+            bool PriorityStart() const override
+            {
+                return true;
+            }
+
+            bool AutoActivationAlwaysEnabled() const override
+            {
+                return true;
+            }
+
+        private:
+            bool AllowedLocal() const override
+            {
+                return true;
+            }
+            bool AllowedDistributed() const override
+            {
+                return false;
+            }
+            bool AllowedContainer() const override
+            {
+                return false;
+            }
+        };
+
         class Override : public Core::JSON::Container {
         private:
             class Plugin : public Core::JSON::Container {
@@ -2177,7 +2317,7 @@ namespace PluginHost {
                                 }
 
                                 uint32_t id;
-                                RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
+                                RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), _T(""), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath(), _comms.PostMortemPath(), _comms.LinkerPaths());
                                 RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, systemRootPath, _T(""), configuration, std::move(environmentList));
                                 RPC::Communicator::Process process(requestId, config, instance);
 
@@ -2317,9 +2457,9 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const uint32_t waitTime, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath, const std::vector<string>& linkerPaths)
                 {
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath, linkerPaths), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, extensionPath, dataPath, volatilePath, _appPath, RPC::Communicator::ProxyStubPath(), _postMortemPath, linkerPaths), waitTime));
                 }
                 const string& PersistentPath() const
                 {
@@ -2772,21 +2912,21 @@ namespace PluginHost {
                 , _notifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(
-                    *this,
-                    server._config.Communicator(),
-                    server._config.PersistentPath(),
-                    server._config.SystemPath(),
-                    server._config.DataPath(),
-                    server._config.VolatilePath(),
-                    server._config.AppPath(),
-                    server._config.ProxyStubPath(),
-                    server._config.ObservableProxyStubPath(),
-                    server._config.PostMortemPath(),
-                    server._config.LinkerPluginPaths(),
-                    server._config.SoftKillCheckWaitTime(),
-                    server._config.HardKillCheckWaitTime(),
-                    server._config.DelegatedReleases(),
-                    _engine)
+                      *this,
+                      server._config.Communicator(),
+                      server._config.PersistentPath(),
+                      server._config.SystemPath(),
+                      server._config.DataPath(),
+                      server._config.VolatilePath(),
+                      server._config.AppPath(),
+                      server._config.ProxyStubPath(),
+                      server._config.ObservableProxyStubPath(),
+                      server._config.PostMortemPath(),
+                      server._config.LinkerPluginPaths(),
+                      server._config.SoftKillCheckWaitTime(),
+                      server._config.HardKillCheckWaitTime(),
+                      server._config.DelegatedReleases(),
+                      _engine)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
                 , _configObserver(*this, server._config.PluginConfigPath())
@@ -2795,11 +2935,16 @@ namespace PluginHost {
                 , _opened()
                 , _closed()
                 , _job(*this)
+                , _disablePluginAutoActivation(server._config.DisablePluginAutoActivation())
+                , _prioritystartorder(server._config.AuthorizedExtensions())
             {
                 if (server._config.PluginConfigPath().empty() == true) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs disabled.")));
                 } else if (_configObserver.IsValid() == false) {
                     SYSLOG(Logging::Startup, (_T("Dynamic configs failed. Can not observe: [%s]"), server._config.PluginConfigPath().c_str()));
+                }
+                if (_disablePluginAutoActivation == true) {
+                    SYSLOG(Logging::Startup, (_T("Plugin Auto Activation disabled.")));
                 }
             }
             POP_WARNING()
@@ -3030,9 +3175,9 @@ namespace PluginHost {
                 return (result);
             }
 
-            void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const std::vector<string>& linkerPaths)
+            void* Instantiate(RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath, const string& extensionPath, const std::vector<string>& linkerPaths)
             {
-                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, linkerPaths));
+                return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath, extensionPath, linkerPaths));
             }
             void Destroy(const uint32_t id) {
                 _processAdministrator.Destroy(id);
@@ -3128,19 +3273,33 @@ namespace PluginHost {
             {
                 return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
-            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode)
+            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration, const Service::mode mode, const bool thunderExtension)
             {
                 // Whatever plugin is needse, we at least have our Metadata plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine));
+                Core::ProxyType<Service> newService;
+                
+                if (thunderExtension == false) {
+                    newService = Core::ProxyType<Service>::Create(Configuration(), configuration, *this, mode, _engine);
+                }
+                else
+                {
+                    newService = Core::ProxyType<Service>(Core::ProxyType<ThunderExtensionService>::Create(Configuration(), configuration, *this, mode, _engine ));
+                }
 
                 if (newService.IsValid() == true) {
                     _adminLock.Lock();
 
-                    // Fire up the interface. Let it handle the messages.
-                    _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
-
-                    _adminLock.Unlock();
-                }
+                    // there cannot be a duplicate...
+                    if (_services.find(configuration.Callsign.Value()) == _services.end()) {
+                        // Fire up the interface. Let it handle the messages.
+                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
+                        _adminLock.Unlock();
+                    }
+                    else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Plugin with callsign [%s] already exists, will be ignored"), configuration.Callsign.Value().c_str()));
+                    }
+               }
 
                 return (newService);
             }
@@ -3153,7 +3312,7 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end())) {
+                if ((original.IsValid() == true) && (_services.find(newCallsign) == _services.end()) && (original->Cloneable() == true)) {
                     // Copy original configuration
                     Plugin::Config newConfiguration(original->Configuration());
                     newConfiguration.Callsign = newCallsign;
@@ -3172,8 +3331,16 @@ namespace PluginHost {
 
                         result = Core::ERROR_NONE;
                     }
+                    _adminLock.Unlock();
                 }
-                _adminLock.Unlock();
+                else {
+                    _adminLock.Unlock();
+                    string origname("unknown");
+                    if (original.IsValid() == true) {
+                        origname = original->Callsign();
+                    }
+                    SYSLOG(Logging::Error, (_T("Cannot clone plugin [%s] into [%s]"), origname.c_str(), newCallsign.c_str()));
+                }
 
                 return (result);
             }
@@ -3185,11 +3352,21 @@ namespace PluginHost {
                 Plugins::iterator index(_services.find(callSign));
 
                 if (index != _services.end()) {
-                    index->second->Destroy();
-                    _services.erase(index);
+
+                    if (index->second->Type() == Service::mode::CLONED) {
+
+                        index->second->Destroy();
+                        _services.erase(index);
+                        _adminLock.Unlock();
+                    } else {
+                        _adminLock.Unlock();
+                        SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not cloned "), callSign.c_str()));
+                    }
+                } else {
+                    _adminLock.Unlock();
+                    SYSLOG(Logging::Error, (_T("Could not destroy plugin [%s], it was not found "), callSign.c_str()));
                 }
 
-                _adminLock.Unlock();
             }
             inline Core::ProxyType<Service> GetService(const string& callsign)
             {
@@ -3363,6 +3540,8 @@ namespace PluginHost {
             void Startup();
             void Close();
             void Destroy();
+            void ActivateService(Core::ProxyType<PluginHost::Server::Service>& service);
+            bool AutoActivateAllowed(Core::ProxyType<PluginHost::Server::Service>& service) const;
 
             void Opened(const uint32_t id)
             {
@@ -3473,7 +3652,7 @@ namespace PluginHost {
                                     pluginConfig.Callsign = Core::File::FileName(file.FileName());
                                 }
 
-                                Insert(pluginConfig, Service::mode::DYNAMIC);
+                                Insert(pluginConfig, Service::mode::DYNAMIC, false);
                             }
                             file.Close();
                         }
@@ -3564,6 +3743,8 @@ namespace PluginHost {
             Channels _opened;
             Channels _closed;
             Core::WorkerPool::JobType<ServiceMap&> _job;
+            bool _disablePluginAutoActivation;
+            std::vector<string> _prioritystartorder;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -4831,6 +5012,9 @@ namespace PluginHost {
         {
             return (_config.Security());
         }
+
+    private:
+        void InsertLoadPluginConfig(Core::JSON::ArrayType<Plugin::Config>::Iterator index, Plugin::Config& metaDataConfig, const bool thunderextension, const bool background);
 
     private:
         Core::NodeId _accessor;
