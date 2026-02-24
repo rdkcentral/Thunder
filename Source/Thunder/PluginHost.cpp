@@ -407,7 +407,7 @@ namespace PluginHost {
 
 #endif
 
-    void LoadPlugins(const string& name, PluginHost::Config& config)
+    void LoadPlugins(const string& name, PluginHost::Config& config, bool thunderextensions)
     {
         Core::Directory pluginDirectory(name.c_str(), _T("*.json"));
 
@@ -418,7 +418,7 @@ namespace PluginHost {
             if (file.Exists()) {
                 if (file.IsDirectory()) {
                     if ((file.FileName() != ".") && (file.FileName() != "..")) {
-                        LoadPlugins(file.Name(), config);
+                        LoadPlugins(file.Name(), config, thunderextensions);
                     }
                 } else if (file.Open(true) == false) {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
@@ -438,7 +438,7 @@ namespace PluginHost {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
 
-                        if (config.Add(pluginConfig) == false) {
+                        if (config.Add(pluginConfig, thunderextensions) == false) {
                             SYSLOG(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
                         }
                     }
@@ -699,8 +699,17 @@ int main(int argc, char** argv)
             myself.Policy(_config->Process().Policy());
         }
 
-        // Time to start loading the config of the plugins.
-        string pluginPath(_config->ConfigsPath());
+            // Time to start loading the config of the plugins and extensions
+            string extensionPath(_config->ExtensionsPath());
+
+            if (extensionPath.empty() == true) {
+                extensionPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
+                extensionPath += Server::ExtensionsConfigDirectory;
+            } else {
+                extensionPath = Core::Directory::Normalize(extensionPath);
+            }
+
+            string pluginPath(_config->ConfigsPath());
 
         if (pluginPath.empty() == true) {
             pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
@@ -743,8 +752,9 @@ int main(int argc, char** argv)
             Core::NodeId::ClearIPV6Enabled();
         }
 
-        // Load plugin configs from a directory.
-        LoadPlugins(pluginPath, *_config);
+            // Load plugin configs from a directory.
+            LoadPlugins(extensionPath, *_config, true);
+            LoadPlugins(pluginPath, *_config, false);
 
 #ifndef __WINDOWS__
         // We need at least the loopback interface before we continue...
