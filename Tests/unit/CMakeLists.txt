@@ -23,6 +23,9 @@ add_link_options(-fprofile-arcs)
 add_compile_options(-pthread)
 add_link_options(-pthread)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED YES
+
 #set(GTEST_INCLUDE_DIR /usr/include/gtest)
 
 if(NOT APPLE)
