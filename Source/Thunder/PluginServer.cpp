@@ -694,6 +694,8 @@ namespace PluginHost {
                 State(UNAVAILABLE);
                 _administrator.Unavailable(callSign, this);
 
+                Unlock();
+
 #ifdef THUNDER_RESTFULL_API
                 Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 #endif
