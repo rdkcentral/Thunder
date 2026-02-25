@@ -43,7 +43,7 @@ namespace Core
         uint16_t srcLength = sourceLength;
         uint16_t dstLength = destinationLength;
 
-        while ((*source != '\0') && (srcLength != 0) && (dstLength >= 3)) {
+        while ((*source != '\0') && (srcLength != 0) && (dstLength != 0)) {
             TCHAR current = *source++;
 
             if ((isalnum(current) != 0) || (current == '-') || (current == '_') || (current == '.') || (current == '~')) {
@@ -53,6 +53,7 @@ namespace Core
                 *destination++ = '+';
                 dstLength--;
             } else {
+                if (dstLength < 3) break;
                 *destination++ = '%';
                 *destination++ = hex[(current >> 4) & 0x0F];
                 *destination++ = hex[(current & 0x0F)];
@@ -83,16 +84,17 @@ namespace Core
                     *destination++ = (((isdigit(source[0]) ? (source[0] - '0') : (tolower(source[0]) - 'a' + 10)) & 0x0F) << 4) | ((isdigit(source[1]) ? (source[1] - '0') : (tolower(source[1]) - 'a' + 10)) & 0x0F);
                     source += 2;
                     srcLength -= 3;
+                    dstLength--;
                 }
             } else if (current == '+') {
                 *destination++ = ' ';
                 srcLength--;
+                dstLength--;
             } else {
                 *destination++ = current;
                 srcLength--;
+                dstLength--;
             }
-
-            dstLength--;
         }
 
         if (dstLength != 0) {
