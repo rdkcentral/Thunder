@@ -235,7 +235,7 @@ namespace Core
         uint32_t length = urlStr.Length();
 
         // find he first part, the scheme
-        if (((offset = urlStr.ForwardFind(':', 0)) >= length) || (urlStr[offset+1] != '/') || (urlStr[offset+2] != '/')) {
+        if (((offset = urlStr.ForwardFind(':', 0)) >= length) || ((offset + 2) >= length) || (urlStr[offset+1] != '/') || (urlStr[offset+2] != '/')) {
             _scheme = SCHEME_UNKNOWN;
         }
         else {
@@ -273,7 +273,7 @@ namespace Core
                     _password = Core::TextFragment(urlStr, user + 1, hostname - user - 1).Text();
                 }
  
-                ParseDomain(Core::TextFragment(urlStr, atsign + 1, marker - atsign - 1));
+                ParseDomain(Core::TextFragment(urlStr, hostname + 1, marker - hostname - 1));
             }
             else {
                 ParseDomain(Core::TextFragment(urlStr, offset, marker - offset));
