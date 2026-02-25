@@ -45,9 +45,7 @@ namespace Core {
                 , _queue(queueSize)
             {
             }
-            ~SerializerImpl() override {
-                _queue.Clear();
-            };
+            ~SerializerImpl() override = default;
 
         public:
             void Submit(const Core::ProxyType<OUTBOUND>& element)
