@@ -197,11 +197,18 @@ namespace Core
 
     inline static uint32_t CopyFragment(TCHAR* destination, const uint32_t maxLength, uint32_t index, const string& data)
     {
-        const uint32_t count = (data.length() > static_cast<unsigned int>(maxLength) ? maxLength : static_cast<uint32_t>(data.length()));
+        if (index >= maxLength) {
+            return index;
+        }
 
-        ::memcpy(&(destination[index]), data.c_str(), (count * sizeof(TCHAR)));
+        const uint32_t remaining = maxLength - index;
+        const uint32_t count = std::min<uint32_t>(remaining, static_cast<uint32_t>(data.length()));
 
-        return (index + count);
+        if (count > 0) {
+            ::memcpy(&(destination[index]), data.data(), count * sizeof(TCHAR));
+        }
+
+        return index + count;
     }
 
     inline static uint32_t FindNext(const TextFragment& url, const uint32_t start, const uint32_t end) 
@@ -329,8 +336,9 @@ namespace Core
                     index = CopyFragment(url, url_len, index + 1, _password.Value());
                 }
 
-                url[index] = '@';
-                index += 1;
+                if (index < url_len) {
+                    url[index++] = '@';
+                }
             }
 
             if (_host.IsSet()) {
@@ -342,8 +350,9 @@ namespace Core
                 }
             }
 
-            url[index] = '/';
-            index += 1;
+            if (index < url_len) {
+                url[index++] = '/';
+            }
 
             if (_path.IsSet()) {
                 index = CopyFragment(url, url_len, index, _path.Value());
@@ -358,8 +367,10 @@ namespace Core
                 index = CopyFragment(url, url_len, index + 1, _ref.Value());
             }
 
-            if (index < url_len) {
+            if (index <= url_len) {
                 url[index] = '\0';
+            } else {
+                url[url_len] = '\0';
             }
 
             result = string(url);
