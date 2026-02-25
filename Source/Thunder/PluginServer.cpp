@@ -678,6 +678,7 @@ namespace PluginHost {
 
             if ((currentState == IShell::state::DEACTIVATION) || (currentState == IShell::state::ACTIVATION) || (currentState == IShell::state::DESTROYED) || (currentState == IShell::state::ACTIVATED) || (currentState == IShell::state::PRECONDITION) || (currentState == IShell::state::HIBERNATED)) {
                 result = Core::ERROR_ILLEGAL_STATE;
+                Unlock();
             } else if (currentState == IShell::state::DEACTIVATED) {
 
                 const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
@@ -700,9 +701,9 @@ namespace PluginHost {
                 Notify(EMPTY_STRING, string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
 #endif
                 Notify(_T("statechange"), string(_T("{\"state\":\"unavailable\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
+            } else {
+                Unlock();
             }
-
-            Unlock();
         } else {
             result = Core::ERROR_NOT_SUPPORTED;
         }
