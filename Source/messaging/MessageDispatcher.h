@@ -123,14 +123,14 @@ namespace Messaging {
             if (dataSize != 0) {
                 // clang-format off
                 _dataBuffer.reset(new DataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
-                                                                              Core::File::USER_WRITE   |
-                                                                              Core::File::USER_EXECUTE |
-                                                                              Core::File::GROUP_READ   |
-                                                                              Core::File::GROUP_WRITE  |
-                                                                              Core::File::OTHERS_READ  |
-                                                                              Core::File::OTHERS_WRITE |
-                                                                              Core::File::SHAREABLE,
-                                                                              (initialize == true ? dataSize : 0), true));
+                                                                                        Core::File::USER_WRITE   |
+                                                                                        Core::File::USER_EXECUTE |
+                                                                                        Core::File::GROUP_READ   |
+                                                                                        Core::File::GROUP_WRITE  |
+                                                                                        Core::File::OTHERS_READ  |
+                                                                                        Core::File::OTHERS_WRITE |
+                                                                                        Core::File::SHAREABLE,
+                                                                                        (initialize == true ? dataSize : 0), true));
                 // clang-format on
 
                 if (_dataBuffer->IsValid() == true) {
