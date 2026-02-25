@@ -118,40 +118,49 @@ namespace Messaging {
             : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
             , _dataLock()
             , _initialize(initialize)
-            // clang-format off
-            , _dataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
-                                                                 Core::File::USER_WRITE   |
-                                                                 Core::File::USER_EXECUTE |
-                                                                 Core::File::GROUP_READ   |
-                                                                 Core::File::GROUP_WRITE  |
-                                                                 Core::File::OTHERS_READ  |
-                                                                 Core::File::OTHERS_WRITE |
-                                                                 Core::File::SHAREABLE,
-                                                                 (initialize == true ? dataSize : 0), true)
-            // clang-format on
+            , _dataBuffer()
         {
-            if (_dataBuffer.IsValid() == true) {
-                if ( (initialize == false) && (_dataBuffer.Used() > 0) ) {
-                    TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer.Used(), instanceId);
-                    _dataBuffer.Ring();
+            if (dataSize != 0) {
+                // clang-format off
+                _dataBuffer.reset(new DataBuffer(_filenames.doorBell, _filenames.data,  Core::File::USER_READ    |
+                                                                              Core::File::USER_WRITE   |
+                                                                              Core::File::USER_EXECUTE |
+                                                                              Core::File::GROUP_READ   |
+                                                                              Core::File::GROUP_WRITE  |
+                                                                              Core::File::OTHERS_READ  |
+                                                                              Core::File::OTHERS_WRITE |
+                                                                              Core::File::SHAREABLE,
+                                                                              (initialize == true ? dataSize : 0), true));
+                // clang-format on
+
+                if (_dataBuffer->IsValid() == true) {
+                    if ( (initialize == false) && (_dataBuffer->Used() > 0) ) {
+                        TRACE_L1("%d bytes already in the buffer instance %d", _dataBuffer->Used(), instanceId);
+                        _dataBuffer->Ring();
+                    }
+                }
+                else {
+                    if (initialize == false) {
+                        TRACE_L1("MessageDispatcher instance %d (client) is not valid, probably because the server has not created a file yet", instanceId);
+                    }
+                    else {
+                        TRACE_L1("MessageDispatcher instance %d (server) is not valid, possible issues when creating a file", instanceId);
+                    }
                 }
             }
             else {
-                if (initialize == false) {
-                    TRACE_L1("MessageDispatcher instance %d (client) is not valid, probably because the server has not created a file yet", instanceId);
-                }
-                else {
-                    TRACE_L1("MessageDispatcher instance %d (server) is not valid, possible issues when creating a file", instanceId);
-                }
+                TRACE_L1("MessageDispatcher instance %d has no data buffer, because DirectOutput is used", instanceId);
             }
         }
         ~MessageDataBuffer()
         {
-            _dataBuffer.Relinquish();
+            if (_dataBuffer != nullptr) {
+                _dataBuffer->Relinquish();
+            }
 
-            if (_initialize == true) {
+            if ((_initialize == true) && (_dataBuffer != nullptr)) {
                 _dataLock.Lock();
-                _dataBuffer.Unlink();
+                _dataBuffer->Unlink();
                 _dataLock.Unlock();
             }
         }
@@ -168,34 +177,39 @@ namespace Messaging {
         * @param length length of message
         * @param value buffer
         * @return uint32_t ERROR_WRITE_ERROR: failed to reserve enough space - eg, value size is exceeding max cyclic buffer size
+        *                  ERROR_UNAVAILABLE: data buffer is not available due to the use of DirectOutput
         *                  ERROR_NONE: OK
         */
         uint32_t PushData(const uint16_t length, const uint8_t* value)
         {
-            uint32_t result = Core::ERROR_WRITE_ERROR;
+            uint32_t result = Core::ERROR_UNAVAILABLE;
             const uint16_t fullLength = sizeof(length) + length; // headerLength + informationLength
 
             INTERNAL_ASSERT(length > 0);
             INTERNAL_ASSERT(value != nullptr);
 
-            _dataLock.Lock();
+            if (_dataBuffer != nullptr) {
+                result = Core::ERROR_WRITE_ERROR;
 
-            if (_dataBuffer.IsValid() == true) {
-                const uint16_t reservedLength = _dataBuffer.Reserve(fullLength);
+                _dataLock.Lock();
 
-                if (reservedLength >= fullLength) {
-                    //no need to serialize because we can write to CyclicBuffer step by step
-                    _dataBuffer.Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
-                    _dataBuffer.Write(value, length); //value
-                    _dataBuffer.Ring();
-                    result = Core::ERROR_NONE;
+                if (_dataBuffer->IsValid() == true) {
+                    const uint16_t reservedLength = _dataBuffer->Reserve(fullLength);
+
+                    if (reservedLength >= fullLength) {
+                        //no need to serialize because we can write to CyclicBuffer step by step
+                        _dataBuffer->Write(reinterpret_cast<const uint8_t*>(&fullLength), sizeof(fullLength)); //fullLength
+                        _dataBuffer->Write(value, length); //value
+                        _dataBuffer->Ring();
+                        result = Core::ERROR_NONE;
+                    }
+                    else {
+                        TRACE_L1("Buffer to small to fit message!");
+                    }
                 }
-                else {
-                    TRACE_L1("Buffer to small to fit message!");
-                }
+
+                _dataLock.Unlock();
             }
-
-            _dataLock.Unlock();
 
             return (result);
         }
@@ -206,66 +220,75 @@ namespace Messaging {
          * @param outLength ERROR_NONE - read bytes.
          *                  ERROR_GENERAL - mimimal required bytes to fit whole message.
          *                  ERROR_READ_ERROR - the same value as passed in
+         *                  ERROR_UNAVAILABLE - the same value as passed in
          * @param outValue buffer
          * @return uint32_t ERROR_READ_ERROR - no data or data is corrupted
          *                  ERROR_NONE - OK
          *                  ERROR_GENERAL - buffer too small to fit whole message at once
+         *                  ERROR_UNAVAILABLE - data buffer is not available due to the use of DirectOutput
          */
         uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
         {
-            uint32_t result = Core::ERROR_READ_ERROR;
+            uint32_t result = Core::ERROR_UNAVAILABLE;
 
             ASSERT(outLength != 0);
             ASSERT(outValue != nullptr);
 
-            _dataLock.Lock();
+            if (_dataBuffer != nullptr) {
+                result = Core::ERROR_READ_ERROR;
 
-            if (_dataBuffer.IsValid() == true) {
-                const uint32_t length = _dataBuffer.Read(outValue, outLength, true);
-                
-                if (length > 0) {
-                    if (length > outLength) {
-                        TRACE_L1("Lost part of the message");
-                        result = Core::ERROR_GENERAL;
+                _dataLock.Lock();
+
+                if (_dataBuffer->IsValid() == true) {
+                    const uint32_t length = _dataBuffer->Read(outValue, outLength, true);
+
+                    if (length > 0) {
+                        if (length > outLength) {
+                            TRACE_L1("Lost part of the message");
+                            result = Core::ERROR_GENERAL;
+                        }
+                        else {
+                            result = Core::ERROR_NONE;
+                        }
                     }
-                    else {
-                        result = Core::ERROR_NONE;
-                    }
+
+                    outLength = length;
                 }
 
-                outLength = length;
+                _dataLock.Unlock();
             }
-
-            _dataLock.Unlock();
 
             return (result);
         }
 
         void Ring() {
-            _dataBuffer.Ring();
+            if (_dataBuffer != nullptr) {
+                _dataBuffer->Ring();
+            }
         }
 
         uint32_t Wait(const uint32_t waitTime) {
-            return (_dataBuffer.Wait(waitTime));
+            return (_dataBuffer != nullptr ? _dataBuffer->Wait(waitTime) : static_cast<uint32_t>(Core::ERROR_TIMEDOUT));
         }
 
         void FlushDataBuffer()
         {
             _dataLock.Lock();
             
-            if (_dataBuffer.IsValid() == true) {
-                _dataBuffer.Flush();
+            if ((_dataBuffer != nullptr) && (_dataBuffer->IsValid() == true)) {
+                _dataBuffer->Flush();
             }
 
             _dataLock.Unlock();
         }
 
+        // If there is no data buffer, we must be in direct output mode, so the state is always valid
         bool IsValid() const {
-            return (_dataBuffer.IsValid());
+            return (_dataBuffer != nullptr ? _dataBuffer->IsValid() : true);
         }
 
         bool Validate() {
-            return (_dataBuffer.Open());
+            return (_dataBuffer != nullptr ? _dataBuffer->Open() : true);
         }
 
         const string& MetadataName() const {
@@ -317,7 +340,7 @@ namespace Messaging {
     private:
         mutable Core::CriticalSection _dataLock;
         bool _initialize;
-        DataBuffer _dataBuffer;
+        std::unique_ptr<DataBuffer> _dataBuffer;
     };
 
 } // namespace Messaging 
