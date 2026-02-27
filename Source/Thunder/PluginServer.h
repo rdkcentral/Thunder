@@ -3017,15 +3017,14 @@ namespace PluginHost {
             {
                 _notificationLock.Lock();
 
-                Notifiers::iterator index(_notifiers.begin());
-
-                while (index != _notifiers.end()) {
-                    PluginHost::IPlugin::ILifeTime* lifetime = (*index).first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
-                    if (lifetime != nullptr) {
-                        lifetime->Initialize(callsign, entry);
-                        lifetime->Release();
+                for (auto& n : _notifiers) {
+                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
+                        PluginHost::IPlugin::ILifeTime* lifetime = n.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                        if (lifetime != nullptr) {
+                            lifetime->Initialize(callsign, entry);
+                            lifetime->Release();
+                        }
                     }
-                    index++;
                 }
 
                 _notificationLock.Unlock();
@@ -3034,15 +3033,14 @@ namespace PluginHost {
             {
                 _notificationLock.Lock();
 
-                Notifiers::iterator index(_notifiers.begin());
-
-                while (index != _notifiers.end()) {
-                    PluginHost::IPlugin::ILifeTime* lifetime = (*index).first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
-                    if (lifetime != nullptr) {
-                        lifetime->Deinitialized(callsign, entry);
-                        lifetime->Release();
+                for (auto& n : _notifiers) {
+                    if ((n.second.IsSet() == false) || (n.second.Value() == callsign)) {
+                        PluginHost::IPlugin::ILifeTime* lifetime = n.first->QueryInterface<PluginHost::IPlugin::ILifeTime>();
+                        if (lifetime != nullptr) {
+                            lifetime->Deinitialized(callsign, entry);
+                            lifetime->Release();
+                        }
                     }
-                    index++;
                 }
 
                 _notificationLock.Unlock();
