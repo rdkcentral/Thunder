@@ -236,6 +236,13 @@ namespace Thunder {
                 // let all announced controls know, whether they should push messages
                 Update();
 
+                TRACE_L1("Messaging transport initialized: controls(metadata)=%s [buffer=%u], messages(data)=%s [buffer=%u], directOutput=%s",
+                    (_settings.MetadataBufferSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.MetadataBufferSize()),
+                    (_settings.DataSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.DataSize()),
+                    (_settings.IsDirect() ? _T("true") : _T("false")));
+
                 // Redirect the standard out and standard error if requested
                 if (_settings.HasRedirectedError() == true) {
                     Messaging::ConsoleStandardError::Instance().Open();

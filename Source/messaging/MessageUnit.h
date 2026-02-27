@@ -558,16 +558,21 @@ namespace Thunder {
                         ASSERT(false);
                     }
 
-                    _dataSize = jsonParsed.DataSize.Value();
-                    if (_dataSize > MessageUnit::MaxDataBufferSize) {
-                        TRACE_L1("DataSize (%u) exceeds maximum (%u)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
-                        _dataSize = MessageUnit::MaxDataBufferSize;
-                        ASSERT(false);
+                    if (IsDirect() == true) {
+                        _dataSize = 0;
                     }
-                    else if (_dataSize < MessageUnit::MinDataBufferSize) {
-                        TRACE_L1("DataSize (%u) is below minimum (%u)! Using minimum instead.", _dataSize, MessageUnit::MinDataBufferSize);
-                        _dataSize = MessageUnit::MinDataBufferSize;
-                        ASSERT(false);
+                    else {
+                        _dataSize = jsonParsed.DataSize.Value();
+                        if (_dataSize > MessageUnit::MaxDataBufferSize) {
+                            TRACE_L1("DataSize (%u) exceeds maximum (%u)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
+                            _dataSize = MessageUnit::MaxDataBufferSize;
+                            ASSERT(false);
+                        }
+                        else if (_dataSize < MessageUnit::MinDataBufferSize) {
+                            TRACE_L1("DataSize (%u) is below minimum (%u)! Using minimum instead.", _dataSize, MessageUnit::MinDataBufferSize);
+                            _dataSize = MessageUnit::MinDataBufferSize;
+                            ASSERT(false);
+                        }
                     }
 
                     FromConfig(jsonParsed);
@@ -824,7 +829,6 @@ namespace Thunder {
                     : MessageDataBuffer(identifier, instanceId, baseDirectory, MessageUnit::Instance()._settings.DataSize(), socketPort, false)
                     , _channel(Core::NodeId(MetadataName().c_str()), MessageUnit::Instance()._settings.MetadataBufferSize())
                 {
-                    ASSERT(MessageUnit::Instance()._settings.DataSize() != 0);
                     ASSERT(MessageUnit::Instance()._settings.MetadataBufferSize() != 0);
                     _channel.Open(Core::infinite);
                 }
