@@ -43,7 +43,7 @@ namespace Core
         uint16_t srcLength = sourceLength;
         uint16_t dstLength = destinationLength;
 
-        while ((*source != '\0') && (srcLength != 0) && (dstLength >= 3)) {
+        while ((*source != '\0') && (srcLength != 0) && (dstLength != 0)) {
             TCHAR current = *source++;
 
             if ((isalnum(current) != 0) || (current == '-') || (current == '_') || (current == '.') || (current == '~')) {
@@ -53,6 +53,7 @@ namespace Core
                 *destination++ = '+';
                 dstLength--;
             } else {
+                if (dstLength < 3) break;
                 *destination++ = '%';
                 *destination++ = hex[(current >> 4) & 0x0F];
                 *destination++ = hex[(current & 0x0F)];
@@ -83,16 +84,17 @@ namespace Core
                     *destination++ = (((isdigit(source[0]) ? (source[0] - '0') : (tolower(source[0]) - 'a' + 10)) & 0x0F) << 4) | ((isdigit(source[1]) ? (source[1] - '0') : (tolower(source[1]) - 'a' + 10)) & 0x0F);
                     source += 2;
                     srcLength -= 3;
+                    dstLength--;
                 }
             } else if (current == '+') {
                 *destination++ = ' ';
                 srcLength--;
+                dstLength--;
             } else {
                 *destination++ = current;
                 srcLength--;
+                dstLength--;
             }
-
-            dstLength--;
         }
 
         if (dstLength != 0) {
@@ -197,11 +199,18 @@ namespace Core
 
     inline static uint32_t CopyFragment(TCHAR* destination, const uint32_t maxLength, uint32_t index, const string& data)
     {
-        const uint32_t count = (data.length() > static_cast<unsigned int>(maxLength) ? maxLength : static_cast<uint32_t>(data.length()));
+        if (index >= maxLength) {
+            return index;
+        }
 
-        ::memcpy(&(destination[index]), data.c_str(), (count * sizeof(TCHAR)));
+        const uint32_t remaining = maxLength - index;
+        const uint32_t count = std::min<uint32_t>(remaining, static_cast<uint32_t>(data.length()));
 
-        return (index + count);
+        if (count > 0) {
+            ::memcpy(&(destination[index]), data.data(), count * sizeof(TCHAR));
+        }
+
+        return index + count;
     }
 
     inline static uint32_t FindNext(const TextFragment& url, const uint32_t start, const uint32_t end) 
@@ -228,7 +237,7 @@ namespace Core
         uint32_t length = urlStr.Length();
 
         // find he first part, the scheme
-        if (((offset = urlStr.ForwardFind(':', 0)) >= length) || (urlStr[offset+1] != '/') || (urlStr[offset+2] != '/')) {
+        if (((offset = urlStr.ForwardFind(':', 0)) >= length) || ((offset + 2) >= length) || (urlStr[offset+1] != '/') || (urlStr[offset+2] != '/')) {
             _scheme = SCHEME_UNKNOWN;
         }
         else {
@@ -266,7 +275,7 @@ namespace Core
                     _password = Core::TextFragment(urlStr, user + 1, hostname - user - 1).Text();
                 }
  
-                ParseDomain(Core::TextFragment(urlStr, atsign + 1, marker - atsign - 1));
+                ParseDomain(Core::TextFragment(urlStr, hostname + 1, marker - hostname - 1));
             }
             else {
                 ParseDomain(Core::TextFragment(urlStr, offset, marker - offset));
@@ -329,8 +338,9 @@ namespace Core
                     index = CopyFragment(url, url_len, index + 1, _password.Value());
                 }
 
-                url[index] = '@';
-                index += 1;
+                if (index < url_len) {
+                    url[index++] = '@';
+                }
             }
 
             if (_host.IsSet()) {
@@ -342,8 +352,9 @@ namespace Core
                 }
             }
 
-            url[index] = '/';
-            index += 1;
+            if (index < url_len) {
+                url[index++] = '/';
+            }
 
             if (_path.IsSet()) {
                 index = CopyFragment(url, url_len, index, _path.Value());
@@ -358,8 +369,10 @@ namespace Core
                 index = CopyFragment(url, url_len, index + 1, _ref.Value());
             }
 
-            if (index < url_len) {
+            if (index <= url_len) {
                 url[index] = '\0';
+            } else {
+                url[url_len] = '\0';
             }
 
             result = string(url);
