@@ -1142,10 +1142,11 @@ namespace Plugin {
 
     Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        std::list<IDiscovery::Data::DiscoveryResult> results;
+        std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1176,7 +1177,7 @@ namespace Plugin {
     Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
-        std::list<IMetadata::Data::Service> services;
+        std::vector<IMetadata::Data::Service> services;
 
         if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
@@ -1196,10 +1197,11 @@ namespace Plugin {
                     IMetadata::Data::Service service(meta);
 
                     // Make sure the list is sorted..
-                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < cs)) {
-                        index++;
-                    }
+                    auto index = std::lower_bound(
+                        services.begin(), services.end(), cs,
+                        [](const IMetadata::Data::Service& a, const std::string& b) {
+                            return a.Callsign < b;
+                        });
                     services.insert(index, service);
                 }
             }
@@ -1245,7 +1247,8 @@ namespace Plugin {
 
         if (callStackInfo.empty() == false) {
 
-            std::list<IMetadata::Data::CallStack> callstack;
+            std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1286,8 +1289,8 @@ namespace Plugin {
         _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
-            std::list<IMetadata::Data::Link> links;
-
+            std::vector<IMetadata::Data::Link> links;
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1357,8 +1360,8 @@ namespace Plugin {
 
         if (meta.ThreadPoolRuns.Length() > 0) {
 
-            std::list<IMetadata::Data::Thread> threads;
-
+            std::vector<IMetadata::Data::Thread> threads;
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1386,8 +1389,8 @@ namespace Plugin {
 
         if (meta.PendingRequests.Length() > 0) {
 
-            std::list<string> requests;
-
+            std::vector<string> requests;
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1413,8 +1416,8 @@ namespace Plugin {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<ISubsystems::Subsystem> subsystems;
-
+            std::vector<ISubsystems::Subsystem> subsystems;
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
