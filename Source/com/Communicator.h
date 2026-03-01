@@ -1558,7 +1558,14 @@ namespace RPC {
             public:
                 void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override {
 
-                    Core::ProxyType<AnnounceMessage> message(data);
+                    // Use static_cast + label check instead of dynamic_cast
+                    // to avoid cross-dylib RTTI failure on macOS (see
+                    // Administrator.h ExtractInvokeMessage for details).
+                    ASSERT(data.IsValid() && data->Label() == AnnounceMessage::Id());
+                    AnnounceMessage* rawMsg =
+                        static_cast<AnnounceMessage*>(const_cast<Core::IIPC*>(data.operator->()));
+                    Core::ProxyType<AnnounceMessage> message(
+                        static_cast<Core::IReferenceCounted&>(*rawMsg), *rawMsg);
 
                     ASSERT(message.IsValid() == true);
                     ASSERT(dynamic_cast<Client*>(&channel) != nullptr);
@@ -1842,7 +1849,14 @@ POP_WARNING()
             {
                 // Oke, see if we can reference count the IPCChannel
                 Core::ProxyType<Core::IPCChannel> refChannel(channel);
-                Core::ProxyType<RPC::AnnounceMessage> message(data);
+
+                // Use static_cast + label check instead of dynamic_cast
+                // (see Administrator.h ExtractInvokeMessage for rationale).
+                ASSERT(data.IsValid() && data->Label() == RPC::AnnounceMessage::Id());
+                RPC::AnnounceMessage* rawMsg =
+                    static_cast<RPC::AnnounceMessage*>(const_cast<Core::IIPC*>(data.operator->()));
+                Core::ProxyType<RPC::AnnounceMessage> message(
+                    static_cast<Core::IReferenceCounted&>(*rawMsg), *rawMsg);
 
                 ASSERT(refChannel.IsValid());
 
