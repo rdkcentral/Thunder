@@ -262,6 +262,8 @@ namespace PluginHost {
         // on the controller.
         virtual void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
         virtual void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {}) = 0;
+        virtual void Register(IPlugin::INotification* sink, const uint32_t interface_id) = 0;
+        virtual void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) = 0;
         virtual state State() const = 0;
         virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
@@ -411,6 +413,16 @@ namespace PluginHost {
             }
 
             return (nullptr);
+        }
+        template <typename REQUESTEDINTERFACE>
+        void Register(IPlugin::INotification* sink)
+        {
+            Register(sink, REQUESTEDINTERFACE::ID);
+        }
+        template <typename REQUESTEDINTERFACE>
+        void Unregister(IPlugin::INotification* sink)
+        {
+            Unregister(sink, REQUESTEDINTERFACE::ID);
         }
 
         virtual RPC::IStringIterator* GetLibrarySearchPaths(const string&) const = 0;
