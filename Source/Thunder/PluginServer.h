@@ -1287,6 +1287,8 @@ namespace PluginHost {
  
             void Register(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
             void Unregister(IPlugin::INotification* sink, const Core::OptionalType<string>& callsign) override;
+            void Register(IPlugin::INotification* sink, const uint32_t interface_id) override;
+            void Unregister(IPlugin::INotification* sink, const uint32_t interface_id) override;
 
             string Model() const override {
                 return (_administrator.Configuration().Model());
@@ -2121,9 +2123,185 @@ namespace PluginHost {
             }; 
 
         private:
+            class Notifier {
+            private:
+                class AllNotifier {
+                public:
+                    AllNotifier() = default;
+                    ~AllNotifier() = default;
+
+                    bool SendNotification(const string&, PluginHost::IShell*) const
+                    {
+                        return true;
+                    }
+                };
+                class CallsignNotifier {
+                public:
+                    CallsignNotifier(const string& callsign)
+                        : _callsign(callsign) 
+                    {
+                    }
+                    CallsignNotifier(string&& callsign)
+                        : _callsign(std::move(callsign))
+                    {
+                    }
+                    ~CallsignNotifier() = default;
+
+                    bool SendNotification(const string&, PluginHost::IShell*) const
+                    {
+                        return true;
+                    }
+
+                private:
+                    string _callsign;
+                };
+                class InterfaceNotifier {
+                public:
+                    InterfaceNotifier(const uint32_t interface_id)
+                        : _interface_id(interface_id)
+                    {
+                    }
+                    ~InterfaceNotifier() = default;
+
+                    bool SendNotification(const string&, PluginHost::IShell*) const
+                    {
+                        return true;
+                    }
+
+                private:
+                    uint32_t _interface_id;
+                };
+            public:
+                Notifier()
+                    : _type(Type::ALL)
+                    , _allnotifier()
+                {
+                }
+                Notifier(const string& callsign) 
+                    : _type(Type::CALLSIGN)
+                    , _callsignnotifier(callsign)
+                {
+                }
+                Notifier(string&& callsign)
+                    : _type(Type::CALLSIGN)
+                    , _callsignnotifier(std::move(callsign))
+                {
+                }
+                Notifier(const uint32_t interface_id)
+                    : _type(Type::INTERFACE)
+                    , _interfacenotifier(interface_id)
+                {
+                }
+                ~Notifier()
+                {
+                    switch (_type) 
+                    {
+                        case Type::ALL:
+                            _allnotifier.~AllNotifier();
+                            break;
+                        case Type::CALLSIGN:
+                            _callsignnotifier.~CallsignNotifier();
+                            break;
+                        case Type::INTERFACE:
+                            _interfacenotifier.~InterfaceNotifier();
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                }
+
+            public:
+                bool SendNotification(const string& callsign, PluginHost::IShell* entry) const
+                {
+                    bool send = false;
+                    switch (_type) {
+                    case Type::ALL:
+                        _allnotifier.SendNotification(callsign, entry);
+                        break;
+                    case Type::CALLSIGN:
+                        _callsignnotifier.SendNotification(callsign, entry);
+                        break;
+                    case Type::INTERFACE:
+                        _interfacenotifier.SendNotification(callsign, entry);
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return send;
+                }
+
+            private:
+                enum class Type : uint8_t { ALL, CALLSIGN, INTERFACE };
+
+                Type _type;
+
+                union {
+                    AllNotifier _allnotifier;
+                    CallsignNotifier _callsignnotifier;
+                    InterfaceNotifier _interfacenotifier;
+                };
+            };
+
+            class Notifiers
+            {
+            public:
+                Notifiers()
+                    : _notifiers()
+                    , _notificationLock()
+                {
+                }
+                ~Notifiers() = default;
+
+                Notifiers(Notifiers&&) = delete;
+                Notifiers(const Notifiers&) = delete;
+                Notifiers& operator=(Notifiers&&) = delete;
+                Notifiers& operator=(const Notifiers&) = delete;
+
+                //return true when added 
+                bool Add(PluginHost::IPlugin::INotification* notification)
+                {
+                }
+                bool Add(PluginHost::IPlugin::INotification* notification, const string& callsign)
+                {
+                }
+                bool Add(PluginHost::IPlugin::INotification* notification, string&& callsign)
+                {
+                }
+                bool Add(PluginHost::IPlugin::INotification* notification, const uint32_t interface_id)
+                {
+                }
+                // return true when removed
+                bool Remove(PluginHost::IPlugin::INotification* notification)
+                {
+                }
+                bool Remove(PluginHost::IPlugin::INotification* notification, const string& callsign)
+                {
+                }
+                bool Remove(PluginHost::IPlugin::INotification* notification, string&& callsign)
+                {
+                }
+                bool Remove(PluginHost::IPlugin::INotification* notification, const uint32_t interface_id)
+                {
+                }
+                void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin)) const
+                {
+
+                }
+                void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::ILifeTime::*notificatonmethod)(const string& callsign, IShell* plugin)) const
+                {
+                }
+
+
+            private:
+                std::unordered_multimap<PluginHost::IPlugin::INotification*, Notifier> _notifiers;
+                Core::CriticalSection _notificationLock;
+            };
+
+
             using Plugins = std::unordered_map<string, Core::ProxyType<Service>>;
-            using Notifier = std::pair<PluginHost::IPlugin::INotification*, Core::OptionalType<string>>;
-            using Notifiers = std::vector<Notifier>;
+//            using Notifier = std::pair<PluginHost::IPlugin::INotification*, Core::OptionalType<string>>;
+//            using Notifiers = std::vector<Notifier>;
+//            using Notifiers = std::unordered_multimap<PluginHost::IPlugin::INotification*, Notifier>;
             using RemoteInstantiators = std::unordered_map<string, IRemoteInstantiation*>;
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;

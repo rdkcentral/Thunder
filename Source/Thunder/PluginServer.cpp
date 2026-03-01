@@ -323,6 +323,15 @@ namespace PluginHost {
         _administrator.Unregister(sink, callsign);
     }
 
+    void Register(IPlugin::INotification* sink, const uint32_t interface_id)
+    {
+
+    }
+    void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
+    {
+
+    }
+
     // Methods to stop/start/update the service.
     Core::hresult Server::Service::Activate(const PluginHost::IShell::reason why) /* override */
     {
