@@ -27,7 +27,7 @@
 
 namespace Thunder {
 namespace Core {
-    class RoutingTable {
+    class EXTERNAL RoutingTable {
     public:
         class Route {
         public:
@@ -210,7 +210,7 @@ namespace Core {
 #endif
     };
 
-#if defined(__WINDOWS__) || defined(__APPLE__)
+#if defined(__WINDOWS__)
 
     class EXTERNAL IPV4AddressIterator {
     public:
@@ -311,7 +311,6 @@ namespace Core {
         uint16_t _section3;
     };
 
-#if defined(__WINDOWS__)
     class EXTERNAL IPV6AddressIterator {
     public:
         inline IPV6AddressIterator()
@@ -409,10 +408,6 @@ namespace Core {
         uint16_t _section2;
         uint16_t _section3;
     };
-
-#else
-    using IPV6AddressIterator = IPV4AddressIterator;
-#endif
 
     class EXTERNAL AdapterIterator {
     public:
@@ -524,6 +519,334 @@ namespace Core {
 
     private:
         uint16_t _index;
+    };
+
+#elif defined(__APPLE__)
+
+    class EXTERNAL IPV4AddressIterator {
+    public:
+        inline IPV4AddressIterator()
+            : _reset(true)
+            , _list()
+            , _index() {
+        }
+        IPV4AddressIterator(const std::list<IPNode>& container)
+            : _reset(true)
+            , _list(container)
+            , _index(_list.begin()) {
+        }
+        inline IPV4AddressIterator(const IPV4AddressIterator& copy)
+            : _reset(true)
+            , _list(copy._list)
+            , _index(_list.begin()) {
+        }
+        inline IPV4AddressIterator(IPV4AddressIterator&& move)
+            : _reset(move._reset)
+            , _list(std::move(move._list))
+            , _index(std::move(move._index)) {
+            move._reset = true;
+        }
+        inline ~IPV4AddressIterator() = default;
+
+        inline IPV4AddressIterator& operator=(const IPV4AddressIterator& RHS)
+        {
+            _reset = RHS._reset;
+            _list = RHS._list;
+            if (RHS._index != RHS._list.end()) {
+                _index = find(_list.begin(), _list.end(), *(RHS._index));
+            } else {
+                _index = _list.begin();
+            }
+
+            return (*this);
+        }
+
+        inline IPV4AddressIterator& operator=(IPV4AddressIterator&& move)
+        {
+            if (this != &move) {
+                _reset = move._reset;
+                _list = std::move(move._list);
+                _index = std::move(move._index);
+
+                move._reset = true;
+            }
+            return (*this);
+        }
+
+    public:
+        inline bool IsValid() const
+        {
+            return ((_reset != true) && (_index != _list.end()));
+        }
+        inline void Reset()
+        {
+            _reset = true;
+            _index = _list.begin();
+        }
+        inline bool Next()
+        {
+            if (_reset == true) {
+                _reset = false;
+            } else if (_index != _list.end()) {
+                _index++;
+            }
+
+            return (_index != _list.end());
+        }
+        inline uint16_t Count() const
+        {
+            return (_list.size());
+        }
+        IPNode Address() const {
+            ASSERT (IsValid() == true);
+            return (*_index);
+        }
+
+    private:
+        bool _reset;
+        std::list<IPNode> _list;
+        std::list<IPNode>::const_iterator _index;
+    };
+
+    using IPV6AddressIterator = IPV4AddressIterator;
+
+    class EXTERNAL Network {
+    public:
+        Network() = delete;
+        Network(const Network&) = delete;
+        Network& operator=(const Network&) = delete;
+
+        Network(const string& name, const uint32_t index);
+        ~Network() = default;
+
+    public:
+        inline bool IsValid() const
+        {
+            return (_index != 0);
+        }
+        inline uint32_t Id() const
+        {
+            return (_index);
+        }
+        inline string Name() const
+        {
+            return (_name);
+        }
+        inline void MAC(uint8_t buffer[], const uint8_t length) const
+        {
+            ASSERT(length >= sizeof(_MAC));
+
+            ::memcpy(buffer, _MAC, (length >= sizeof(_MAC) ? sizeof(_MAC) : length));
+
+            if (length > sizeof(_MAC)) {
+                ::memset(&buffer[sizeof(_MAC)], 0, length - sizeof(_MAC));
+            }
+        }
+        inline IPV4AddressIterator IPv4Nodes() const
+        {
+            return (IPV4AddressIterator(_ipv4Nodes));
+        }
+        inline IPV6AddressIterator IPv6Nodes() const
+        {
+            return (IPV6AddressIterator(_ipv6Nodes));
+        }
+        inline bool Added(const IPNode& address) {
+            bool result = false;
+
+            if (address.Type() == Core::NodeId::TYPE_IPV4) {
+                std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
+                if (index == _ipv4Nodes.end()) {
+                    _ipv4Nodes.push_back(address);
+                    result = true;
+                }
+            }
+            else if (address.Type() == Core::NodeId::TYPE_IPV6) {
+                std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
+                if (index == _ipv6Nodes.end()) {
+                    _ipv6Nodes.push_back(address);
+                    result = true;
+                }
+            }
+
+            return (result);
+        }
+        inline bool Removed(const IPNode& address) {
+            bool result = false;
+
+            if (address.Type() == Core::NodeId::TYPE_IPV4) {
+                std::list<IPNode>::iterator index (std::find(_ipv4Nodes.begin(), _ipv4Nodes.end(), address));
+                if (index != _ipv4Nodes.end()) {
+                    _ipv4Nodes.erase(index);
+                    result = true;
+                }
+            }
+            else if (address.Type() == Core::NodeId::TYPE_IPV6) {
+                std::list<IPNode>::iterator index (std::find(_ipv6Nodes.begin(), _ipv6Nodes.end(), address));
+                if (index != _ipv6Nodes.end()) {
+                    _ipv6Nodes.erase(index);
+                    result = true;
+                }
+            }
+
+            return (result);
+        }
+
+        void SetMAC(const uint8_t mac[], const uint8_t length);
+
+        bool IsUp() const;
+        bool IsRunning() const;
+        uint32_t Up(const bool enabled);
+        uint32_t Broadcast(const Core::NodeId& address);
+        uint32_t Add(const IPNode& address);
+        uint32_t Delete(const IPNode& address);
+        uint32_t Gateway(const IPNode& network, const NodeId& gateway);
+        uint32_t MAC(const uint8_t buffer[6]);
+
+    private:
+        const uint32_t _index;
+        uint8_t _MAC[6];
+        string _name;
+        std::list<IPNode> _ipv4Nodes;
+        std::list<IPNode> _ipv6Nodes;
+    };
+
+    class EXTERNAL AdapterIterator {
+    public:
+        static uint8_t constexpr MacSize = 6;
+
+    public:
+        AdapterIterator();
+        AdapterIterator(const uint16_t index);
+        AdapterIterator(const string& name);
+        AdapterIterator(const AdapterIterator& copy);
+        AdapterIterator(AdapterIterator&& move);
+        ~AdapterIterator() = default;
+
+        AdapterIterator& operator=(const AdapterIterator& RHS);
+        AdapterIterator& operator=(AdapterIterator&& move);
+
+    public:
+        inline bool IsValid() const
+        {
+            return ((_reset == false) && (_index != _list.end()));
+        }
+        inline void Reset()
+        {
+            _reset = true;
+            _index = _list.begin();
+        }
+        inline bool Next()
+        {
+            if (_reset == true) {
+                _reset = false;
+            } else if (_index != _list.end()) {
+                _index++;
+            }
+
+            return (_index != _list.end());
+        }
+        inline uint16_t Count() const {
+            return (_list.size());
+        }
+        inline uint16_t Index() const {
+            ASSERT (IsValid());
+            return ((*_index)->Id());
+        }
+
+        inline string Name() const {
+            ASSERT (IsValid());
+            return ((*_index)->Name());
+        }
+        inline string MACAddress(const char delimiter) const
+        {
+            uint8_t MAC[MacSize];
+            string result;
+
+            ASSERT(IsValid());
+
+            (*_index)->MAC(MAC, sizeof(MAC));
+
+            ConvertMACToString(MAC, sizeof(MAC), delimiter, result);
+
+            return (result);
+        }
+        inline void MACAddress(uint8_t buffer[], const uint8_t length) const
+        {
+            ASSERT(IsValid());
+
+            (*_index)->MAC(buffer, length);
+        }
+        uint32_t MACAddress(const uint8_t buffer[6])
+        {
+            ASSERT(IsValid());
+
+            return((*_index)->MAC(buffer));
+        }
+        inline IPV4AddressIterator IPV4Addresses() const {
+            ASSERT(IsValid());
+
+            return ((*_index)->IPv4Nodes());
+        }
+        inline IPV6AddressIterator IPV6Addresses() const {
+            ASSERT(IsValid());
+
+            return ((*_index)->IPv6Nodes());
+        }
+        inline bool IsUp() const {
+            ASSERT(IsValid());
+
+            return ((*_index)->IsUp());
+        }
+        inline bool IsRunning() const {
+            ASSERT(IsValid());
+
+            return ((*_index)->IsRunning());
+        }
+        inline uint32_t Up(const bool enabled) {
+            ASSERT(IsValid());
+
+            return ((*_index)->Up(enabled));
+        }
+        inline uint32_t Broadcast(const Core::NodeId& address) {
+            ASSERT(IsValid());
+
+            return ((*_index)->Broadcast(address));
+        }
+        inline uint32_t Add(const IPNode& address) {
+            ASSERT(IsValid());
+
+            return ((*_index)->Add(address));
+        }
+        inline uint32_t Delete(const IPNode& address) {
+            ASSERT(IsValid());
+
+            return ((*_index)->Delete(address));
+        }
+        inline uint32_t Gateway(const IPNode& network, const NodeId& gateway) {
+            ASSERT(IsValid());
+
+            return ((*_index)->Gateway(network, gateway));
+        }
+        bool HasMAC() const;
+
+    private:
+        inline void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output) const
+        {
+            for (uint8_t i = 0; i < length; i++) {
+                uint8_t highNibble = ((address[i] & 0xF0) >> 4);
+                uint8_t lowNibble = (address[i] & 0x0F);
+                if ((i != 0) && (delimiter != '\0')) {
+                    output += delimiter;
+                }
+                output += static_cast<char>(highNibble + (highNibble >= 10 ? ('A' - 10) : '0'));
+                output += static_cast<char>(lowNibble + (lowNibble >= 10 ? ('A' - 10) : '0'));
+            }
+        }
+
+    private:
+        bool _reset;
+        std::list<Core::ProxyType<Network> > _list;
+        std::list<Core::ProxyType<Network> >::iterator _index;
     };
 
 #else

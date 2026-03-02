@@ -958,7 +958,7 @@ POP_WARNING()
                 memcpy(&(m_structInfo.IPV4Socket), result->ai_addr, (result->ai_family == AF_INET6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)));
                 m_structInfo.IPV4Socket.sin_family = result->ai_family;
 
-            } else if (error == -2) {
+            } else if (error == EAI_NONAME) {
                 m_structInfo.IPV4Socket.sin_family = TYPE_EMPTY;
             } else {
                 TRACE_L1("Function ::getaddrinfo() for %s failed, error %s", text.c_str(), gai_strerror(error));

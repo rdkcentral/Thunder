@@ -35,7 +35,18 @@
 #pragma comment(lib, "iphlpapi.lib")
 #elif defined(__APPLE__)
 #include <ifaddrs.h>
+#include <net/if.h>
 #include <net/if_dl.h>
+#include <net/route.h>
+#include <netinet/in.h>
+#include <netinet6/in6_var.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
+#include <list>
+#include <map>
 #elif defined(__POSIX__)
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -535,16 +546,14 @@ namespace Core {
     }
 
 #elif defined(__APPLE__)
-    using AdapterAddresses = std::vector<struct ifaddrs*>;
-    using Adapters = std::map<string, AdapterAddresses>;
 
-    inline void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output)
+    // -------------------------------------------------------------------------
+    // macOS implementation using getifaddrs(), ioctl(), sysctl()
+    // -------------------------------------------------------------------------
+
+    static void ConvertMACToString(const uint8_t address[], const uint8_t length, const char delimiter, string& output)
     {
         for (uint8_t i = 0; i < length; i++) {
-            // Reason for the low-level approch is performance.
-            // In stead of using string operations, we know that each byte exists of 2 nibbles,
-            // lets just translate these nibbles to Hexadecimal numbers and add them to the output.
-            // This saves a setup of several string manipulation operations.
             uint8_t highNibble = ((address[i] & 0xF0) >> 4);
             uint8_t lowNibble = (address[i] & 0x0F);
             if ((i != 0) && (delimiter != '\0')) {
@@ -555,170 +564,547 @@ namespace Core {
         }
     }
 
-    static uint8_t LoadAdapterInfo(const uint16_t adapterIndex, AdapterAddresses& addresses)
+    // Compute subnet mask length from a sockaddr
+    static uint8_t MaskFromNetmask(const struct sockaddr* netmask, sa_family_t family)
     {
-        struct ifaddrs *interfaces;
-        Adapters adapters;
-        if (!getifaddrs(&interfaces)) {
+        uint8_t mask = 0;
 
-            struct ifaddrs* index = interfaces->ifa_next;
-            while (index != nullptr) {
+        if (netmask == nullptr) {
+            return 0;
+        }
 
-                Adapters::iterator adapterIndex = adapters.find(index->ifa_name);
-                if (adapterIndex == adapters.end()) {
-                    AdapterAddresses addresses;
-                    addresses.push_back(index);
-                    adapters.emplace(std::piecewise_construct, std::forward_as_tuple(index->ifa_name), std::forward_as_tuple(addresses));
+        if (family == AF_INET) {
+            uint32_t addr = ntohl(reinterpret_cast<const struct sockaddr_in*>(netmask)->sin_addr.s_addr);
+            while (addr & 0x80000000) {
+                mask++;
+                addr <<= 1;
+            }
+        } else if (family == AF_INET6) {
+            const uint8_t* bytes = reinterpret_cast<const struct sockaddr_in6*>(netmask)->sin6_addr.s6_addr;
+            for (int i = 0; i < 16; i++) {
+                uint8_t byte = bytes[i];
+                if (byte == 0xFF) {
+                    mask += 8;
                 } else {
-                    AdapterAddresses& addresses = adapterIndex->second;
-                    addresses.push_back(index);
-                }
-                index = index->ifa_next;
-            }
-
-            if (adapters.size() > 0) {
-                if (adapterIndex < adapters.size()) {
-                    Adapters::iterator index = adapters.begin();
-                    std::advance(index, adapterIndex);
-                    addresses = index->second;
+                    while (byte & 0x80) {
+                        mask++;
+                        byte <<= 1;
+                    }
+                    break;
                 }
             }
         }
-        return adapters.size();
+
+        return mask;
     }
 
-    IPV4AddressIterator::IPV4AddressIterator(const uint16_t adapter)
-        : _adapter(adapter)
+    // Scan getifaddrs() and populate a Network object with addresses and MAC
+    static void LoadNetworkInterfaces(std::map<string, Core::ProxyType<Network>>& networks)
     {
+        struct ifaddrs* interfaces = nullptr;
+
+        if (::getifaddrs(&interfaces) == 0) {
+            for (struct ifaddrs* ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+                if (ifa->ifa_addr == nullptr) {
+                    continue;
+                }
+
+                string name(ifa->ifa_name);
+                auto it = networks.find(name);
+
+                if (it == networks.end()) {
+                    uint32_t ifindex = ::if_nametoindex(ifa->ifa_name);
+                    Core::ProxyType<Network> network = Core::ProxyType<Network>::Create(name, ifindex);
+                    auto result = networks.emplace(name, network);
+                    it = result.first;
+                }
+
+                Core::ProxyType<Network>& network = it->second;
+
+                if (ifa->ifa_addr->sa_family == AF_INET) {
+                    uint8_t mask = MaskFromNetmask(ifa->ifa_netmask, AF_INET);
+                    IPNode node(NodeId(*reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr)), mask);
+                    network->Added(node);
+                } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+                    uint8_t mask = MaskFromNetmask(ifa->ifa_netmask, AF_INET6);
+                    IPNode node(NodeId(*reinterpret_cast<struct sockaddr_in6*>(ifa->ifa_addr)), mask);
+                    network->Added(node);
+                } else if (ifa->ifa_addr->sa_family == AF_LINK) {
+                    const struct sockaddr_dl* sdl = reinterpret_cast<const struct sockaddr_dl*>(ifa->ifa_addr);
+                    if (sdl->sdl_alen == 6) {
+                        network->SetMAC(reinterpret_cast<const uint8_t*>(LLADDR(sdl)), 6);
+                    }
+                }
+            }
+            ::freeifaddrs(interfaces);
+        }
     }
 
-    IPNode IPV4AddressIterator::Address() const
-    {
-        IPNode result;
-        AdapterAddresses addresses;
-        LoadAdapterInfo(_adapter, addresses);
+    // ---- Network class ----
 
-        if (addresses.size() > 0) {
-            for (auto& address: addresses) {
-                 if (address->ifa_addr->sa_family == static_cast<uint8_t>(AF_INET)) {
-                      result = IPNode(NodeId(*reinterpret_cast<struct sockaddr_in*>(address->ifa_addr)), 0);
-                      break;
-                 } else if (address->ifa_addr->sa_family == static_cast<uint8_t>(AF_INET6)) {
-                      result = IPNode(NodeId(*reinterpret_cast<struct sockaddr_in6*>(address->ifa_addr)), 0);
-                 }
+    Network::Network(const string& name, const uint32_t index)
+        : _index(index)
+        , _MAC()
+        , _name(name)
+        , _ipv4Nodes()
+        , _ipv6Nodes()
+    {
+        ::memset(_MAC, 0, sizeof(_MAC));
+    }
+
+    void Network::SetMAC(const uint8_t mac[], const uint8_t length)
+    {
+        ::memcpy(_MAC, mac, (length >= sizeof(_MAC) ? sizeof(_MAC) : length));
+    }
+
+    bool Network::IsUp() const
+    {
+        bool result = false;
+        int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+            struct ifreq ifr;
+            ::memset(&ifr, 0, sizeof(ifr));
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+
+            if (::ioctl(sockfd, SIOCGIFFLAGS, &ifr) >= 0) {
+                result = ((ifr.ifr_flags & IFF_UP) == IFF_UP);
+            }
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    bool Network::IsRunning() const
+    {
+        bool result = false;
+        int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+            struct ifreq ifr;
+            ::memset(&ifr, 0, sizeof(ifr));
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+
+            if (::ioctl(sockfd, SIOCGIFFLAGS, &ifr) >= 0) {
+                result = ((ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING));
+            }
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Up(const bool enabled)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+        int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+            struct ifreq ifr;
+            ::memset(&ifr, 0, sizeof(ifr));
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+
+            if (::ioctl(sockfd, SIOCGIFFLAGS, &ifr) >= 0) {
+                if (enabled == true) {
+                    ifr.ifr_flags |= (IFF_UP | IFF_RUNNING);
+                } else {
+                    ifr.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+                }
+
+                if (::ioctl(sockfd, SIOCSIFFLAGS, &ifr) >= 0) {
+                    result = Core::ERROR_NONE;
+                } else {
+                    result = Core::ERROR_BAD_REQUEST;
+                }
+            }
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Broadcast(const Core::NodeId& address)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+        int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+
+        if (sockfd >= 0) {
+            struct ifreq ifr;
+            ::memset(&ifr, 0, sizeof(ifr));
+            ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+
+            ifr.ifr_flags = IFF_BROADCAST;
+            ::memcpy(&ifr.ifr_broadaddr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr));
+
+            if (::ioctl(sockfd, SIOCSIFBRDADDR, &ifr) >= 0) {
+                result = Core::ERROR_NONE;
+            }
+            ::close(sockfd);
+        }
+
+        return (result);
+    }
+
+    uint32_t Network::Add(const IPNode& address)
+    {
+        uint32_t result = Core::ERROR_GENERAL;
+
+        if (address.Type() == Core::NodeId::TYPE_IPV4) {
+            int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+            if (sockfd >= 0) {
+                struct ifaliasreq ifra;
+                ::memset(&ifra, 0, sizeof(ifra));
+                ::strncpy(ifra.ifra_name, _name.c_str(), IFNAMSIZ - 1);
+
+                // Address
+                ::memcpy(&ifra.ifra_addr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr_in));
+
+                // Netmask
+                struct sockaddr_in* mask = reinterpret_cast<struct sockaddr_in*>(&ifra.ifra_mask);
+                mask->sin_family = AF_INET;
+                mask->sin_len = sizeof(struct sockaddr_in);
+                if (address.Mask() > 0) {
+                    mask->sin_addr.s_addr = htonl(~((1u << (32 - address.Mask())) - 1));
+                }
+
+                if (::ioctl(sockfd, SIOCAIFADDR, &ifra) >= 0) {
+                    Added(address);
+                    result = Core::ERROR_NONE;
+                }
+                ::close(sockfd);
+            }
+        } else if (address.Type() == Core::NodeId::TYPE_IPV6) {
+            int sockfd = ::socket(AF_INET6, SOCK_DGRAM, 0);
+            if (sockfd >= 0) {
+                struct in6_aliasreq ifra6;
+                ::memset(&ifra6, 0, sizeof(ifra6));
+                ::strncpy(ifra6.ifra_name, _name.c_str(), IFNAMSIZ - 1);
+
+                // Address
+                ::memcpy(&ifra6.ifra_addr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr_in6));
+
+                // Prefix length to mask
+                struct sockaddr_in6* mask6 = &ifra6.ifra_prefixmask;
+                mask6->sin6_family = AF_INET6;
+                mask6->sin6_len = sizeof(struct sockaddr_in6);
+                uint8_t prefixLen = address.Mask();
+                for (int i = 0; i < 16; i++) {
+                    if (prefixLen >= 8) {
+                        mask6->sin6_addr.s6_addr[i] = 0xFF;
+                        prefixLen -= 8;
+                    } else if (prefixLen > 0) {
+                        mask6->sin6_addr.s6_addr[i] = static_cast<uint8_t>(0xFF << (8 - prefixLen));
+                        prefixLen = 0;
+                    } else {
+                        mask6->sin6_addr.s6_addr[i] = 0;
+                    }
+                }
+
+                ifra6.ifra_lifetime.ia6t_vltime = 0xFFFFFFFF;
+                ifra6.ifra_lifetime.ia6t_pltime = 0xFFFFFFFF;
+
+                if (::ioctl(sockfd, SIOCAIFADDR_IN6, &ifra6) >= 0) {
+                    Added(address);
+                    result = Core::ERROR_NONE;
+                }
+                ::close(sockfd);
             }
         }
 
         return (result);
     }
 
-    uint16_t AdapterIterator::Count() const
+    uint32_t Network::Delete(const IPNode& address)
     {
-        AdapterAddresses addresses;
-        uint8_t adapterCount = LoadAdapterInfo(_index, addresses);
-        return adapterCount;
-    }
+        uint32_t result = Core::ERROR_GENERAL;
 
-    string AdapterIterator::Name() const
-    {
-        ASSERT(IsValid());
-        string result(_T("Unknown"));
-        AdapterAddresses addresses;
-        LoadAdapterInfo(_index, addresses);
+        if (address.Type() == Core::NodeId::TYPE_IPV4) {
+            int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+            if (sockfd >= 0) {
+                struct ifreq ifr;
+                ::memset(&ifr, 0, sizeof(ifr));
+                ::strncpy(ifr.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+                ::memcpy(&ifr.ifr_addr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr_in));
 
-        if (addresses.size() > 0) {
-            ToString(addresses[0]->ifa_name, result);
-        }
-
-        return (result);
-    }
-
-    string AdapterIterator::MACAddress(const char delimiter) const
-    {
-        ASSERT(IsValid());
-        string result(_T("0:0:0:0"));
-        AdapterAddresses addresses;
-        LoadAdapterInfo(_index, addresses);
-
-        if (addresses.size() > 0) {
-            for (auto& address: addresses) {
-                 if (address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
-                     uint8_t MAC[6];
-                     memcpy(MAC, &address->ifa_addr->sa_data[9], 6);
-                     ConvertMACToString(MAC, sizeof(MAC), delimiter, result);
-                 }
-            }
-        }
-
-        return (result);
-    }
-
-    void AdapterIterator::MACAddress(uint8_t buffer[], const uint8_t /* length */) const
-    {
-        ASSERT(IsValid());
-        AdapterAddresses addresses;
-        LoadAdapterInfo(_index, addresses);
-
-        if (addresses.size() > 0) {
-            for (auto& address: addresses) {
-                if (address->ifa_addr->sa_family == AF_LINK && address->ifa_addr->sa_len >= 15) {
-                    memcpy(buffer, &address->ifa_addr->sa_data[9], 6);
+                if (::ioctl(sockfd, SIOCDIFADDR, &ifr) >= 0) {
+                    Removed(address);
+                    result = Core::ERROR_NONE;
                 }
+                ::close(sockfd);
+            }
+        } else if (address.Type() == Core::NodeId::TYPE_IPV6) {
+            int sockfd = ::socket(AF_INET6, SOCK_DGRAM, 0);
+            if (sockfd >= 0) {
+                struct in6_ifreq ifr6;
+                ::memset(&ifr6, 0, sizeof(ifr6));
+                ::strncpy(ifr6.ifr_name, _name.c_str(), IFNAMSIZ - 1);
+                ::memcpy(&ifr6.ifr_ifru.ifru_addr, static_cast<const struct sockaddr*>(address), sizeof(struct sockaddr_in6));
+                ifr6.ifr_ifru.ifru_addr.sin6_len = sizeof(struct sockaddr_in6);
+
+                if (::ioctl(sockfd, SIOCDIFADDR_IN6, &ifr6) >= 0) {
+                    Removed(address);
+                    result = Core::ERROR_NONE;
+                }
+                ::close(sockfd);
             }
         }
+
+        return (result);
     }
 
-    uint32_t AdapterIterator::Up(const bool)
+    uint32_t Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
-        // TODO: Implement
-        ASSERT(IsValid());
+        uint32_t result = Core::ERROR_GENERAL;
 
-        return (Core::ERROR_NONE);
+        // On macOS, use a PF_ROUTE socket to add a route
+        int sockfd = ::socket(PF_ROUTE, SOCK_RAW, 0);
+        if (sockfd >= 0) {
+            struct {
+                struct rt_msghdr hdr;
+                struct sockaddr_in dst;
+                struct sockaddr_in gw;
+                struct sockaddr_in mask;
+            } rtmsg;
+
+            ::memset(&rtmsg, 0, sizeof(rtmsg));
+
+            rtmsg.hdr.rtm_msglen = sizeof(rtmsg);
+            rtmsg.hdr.rtm_version = RTM_VERSION;
+            rtmsg.hdr.rtm_type = RTM_ADD;
+            rtmsg.hdr.rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;
+            rtmsg.hdr.rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+            rtmsg.hdr.rtm_pid = getpid();
+            rtmsg.hdr.rtm_seq = 1;
+
+            // Destination
+            rtmsg.dst.sin_len = sizeof(struct sockaddr_in);
+            rtmsg.dst.sin_family = AF_INET;
+            ::memcpy(&rtmsg.dst.sin_addr, &(reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(network))->sin_addr), sizeof(struct in_addr));
+
+            // Gateway
+            rtmsg.gw.sin_len = sizeof(struct sockaddr_in);
+            rtmsg.gw.sin_family = AF_INET;
+            ::memcpy(&rtmsg.gw.sin_addr, &(reinterpret_cast<const struct sockaddr_in*>(static_cast<const struct sockaddr*>(gateway))->sin_addr), sizeof(struct in_addr));
+
+            // Netmask
+            rtmsg.mask.sin_len = sizeof(struct sockaddr_in);
+            rtmsg.mask.sin_family = AF_INET;
+            if (network.Mask() > 0) {
+                rtmsg.mask.sin_addr.s_addr = htonl(~((1u << (32 - network.Mask())) - 1));
+            }
+
+            if (::write(sockfd, &rtmsg, sizeof(rtmsg)) > 0) {
+                result = Core::ERROR_NONE;
+            }
+            ::close(sockfd);
+        }
+
+        return (result);
     }
 
-    bool AdapterIterator::IsUp() const
+    uint32_t Network::MAC(const uint8_t buffer[6])
     {
-        // TODO: Implement
-        ASSERT(false);
-
-        return (false);
-    }
-
-    bool AdapterIterator::IsRunning() const
-    {
-        return (true);
-    }
-
-    uint32_t AdapterIterator::MACAddress(const uint8_t[6]) {
+        // macOS does not support SIOCSIFHWADDR; setting MAC requires IOKit
+        // which needs elevated privileges and is uncommon on macOS
         return (Core::ERROR_NOT_SUPPORTED);
     }
 
-    uint32_t AdapterIterator::Add(const IPNode& /* address */)
+    // ---- AdapterIterator ----
+
+    static void LoadAdapters(std::list<Core::ProxyType<Network>>& list)
     {
-        uint32_t result = Core::ERROR_NONE;
+        std::map<string, Core::ProxyType<Network>> networks;
+        LoadNetworkInterfaces(networks);
+
+        for (auto& entry : networks) {
+            list.push_back(entry.second);
+        }
+    }
+
+    AdapterIterator::AdapterIterator()
+        : _reset(true)
+        , _list()
+        , _index() {
+        LoadAdapters(_list);
+        _index = _list.begin();
+    }
+
+    AdapterIterator::AdapterIterator(const uint16_t index)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Index() != index) ) { /* Intentionally left empty */ }
+    }
+
+    AdapterIterator::AdapterIterator(const string& name)
+        : AdapterIterator() {
+        while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+    }
+
+    AdapterIterator::AdapterIterator(const AdapterIterator& copy)
+        : AdapterIterator() {
+        if (copy.IsValid() == true) {
+            const string name (copy.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+    }
+
+    AdapterIterator::AdapterIterator(AdapterIterator&& move)
+        : AdapterIterator() {
+        _reset = move._reset;
+        _list = std::move(move._list);
+        _index = std::move(move._index);
+
+         move._reset = 0;
+    }
+
+    AdapterIterator& AdapterIterator::operator=(const AdapterIterator& RHS)
+    {
+        _reset = true;
+        _list = RHS._list;
+        _index = _list.begin();
+
+        if (RHS.IsValid()) {
+            string name (RHS.Name());
+            while ( (Next() == true) && (Name() != name) ) { /* Intentionally left empty */ }
+        }
+
+        return (*this);
+    }
+
+    AdapterIterator& AdapterIterator::operator=(AdapterIterator&& move)
+    {
+        if (this != &move) {
+            _reset = move._reset;
+            _list = std::move(move._list);
+            _index = std::move(move._index);
+
+            move._reset = 0;
+        }
+
+        return (*this);
+    }
+
+    // ---- RoutingTable (macOS sysctl-based) ----
+
+    // On macOS, Route constructor parses a BSD rt_msghdr2 from sysctl(NET_RT_DUMP)
+    RoutingTable::Route::Route(const uint8_t stream[], const uint16_t length)
+        : _source()
+        , _destination()
+        , _preferred()
+        , _gateway()
+        , _priority(0)
+        , _interface(0)
+        , _metrics(0)
+        , _table(0)
+        , _mask(0)
+        , _flags(0)
+        , _protocol(0)
+        , _scope(0)
+    {
+        if (length < sizeof(struct rt_msghdr2)) {
+            return;
+        }
+
+        const struct rt_msghdr2* rtm = reinterpret_cast<const struct rt_msghdr2*>(stream);
+        _flags = static_cast<uint8_t>(rtm->rtm_flags & 0xFF);
+        _interface = rtm->rtm_index;
+
+        // Walk the socket addresses following the rt_msghdr2
+        const uint8_t* ptr = stream + sizeof(struct rt_msghdr2);
+        const uint8_t* end = stream + length;
+
+        for (int i = 0; i < RTAX_MAX && ptr < end; i++) {
+            if (!(rtm->rtm_addrs & (1 << i))) {
+                continue;
+            }
+
+            const struct sockaddr* sa = reinterpret_cast<const struct sockaddr*>(ptr);
+
+            // Skip entries with invalid or zero length
+            size_t saLen = (sa->sa_len > 0) ? sa->sa_len : sizeof(uint32_t);
+            // Round up to nearest 4-byte boundary
+            saLen = (saLen + 3) & ~3;
+
+            if (sa->sa_len > 0) {
+                switch (i) {
+                case RTAX_DST:
+                    if (sa->sa_family == AF_INET) {
+                        _destination = Core::NodeId(*reinterpret_cast<const struct sockaddr_in*>(sa));
+                    } else if (sa->sa_family == AF_INET6) {
+                        _destination = Core::NodeId(*reinterpret_cast<const struct sockaddr_in6*>(sa));
+                    }
+                    break;
+                case RTAX_GATEWAY:
+                    if (sa->sa_family == AF_INET) {
+                        _gateway = Core::NodeId(*reinterpret_cast<const struct sockaddr_in*>(sa));
+                    } else if (sa->sa_family == AF_INET6) {
+                        _gateway = Core::NodeId(*reinterpret_cast<const struct sockaddr_in6*>(sa));
+                    }
+                    break;
+                case RTAX_NETMASK:
+                    if (sa->sa_family == AF_INET || sa->sa_len >= sizeof(struct sockaddr_in)) {
+                        uint32_t maskAddr = ntohl(reinterpret_cast<const struct sockaddr_in*>(sa)->sin_addr.s_addr);
+                        uint8_t bits = 0;
+                        while (maskAddr & 0x80000000) {
+                            bits++;
+                            maskAddr <<= 1;
+                        }
+                        _mask = bits;
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            ptr += saLen;
+        }
+    }
+
+    string RoutingTable::Route::Interface() const
+    {
+        string result;
+        if (_interface != 0) {
+            char buffer[IF_NAMESIZE + 1];
+            if (::if_indextoname(_interface, buffer) != nullptr) {
+                ToString(buffer, result);
+            }
+        }
         return (result);
     }
 
-    uint32_t AdapterIterator::Delete(const IPNode& /* address */)
+    RoutingTable::RoutingTable(const bool ipv4)
     {
-        uint32_t result = Core::ERROR_NONE;
-        return (result);
-    }
+        int mib[] = { CTL_NET, PF_ROUTE, 0, ipv4 ? AF_INET : AF_INET6, NET_RT_DUMP, 0 };
+        size_t needed = 0;
 
-    uint32_t AdapterIterator::Gateway(const IPNode& /* network */, const NodeId& /* gateway */)
-    {
-        //TODO: Needs implementation
-        ASSERT(false);
+        // First call to determine buffer size
+        if (::sysctl(mib, 6, nullptr, &needed, nullptr, 0) < 0) {
+            return;
+        }
 
-        return (Core::ERROR_BAD_REQUEST);
-    }
+        if (needed == 0) {
+            return;
+        }
 
-    uint32_t AdapterIterator::Broadcast(const Core::NodeId& /* address */)
-    {
-        //TODO: Needs implementation
-        ASSERT(false);
+        std::vector<uint8_t> buffer(needed);
+        if (::sysctl(mib, 6, buffer.data(), &needed, nullptr, 0) < 0) {
+            return;
+        }
 
-        return (Core::ERROR_BAD_REQUEST);
+        const uint8_t* ptr = buffer.data();
+        const uint8_t* end = ptr + needed;
+
+        while (ptr < end) {
+            const struct rt_msghdr2* rtm = reinterpret_cast<const struct rt_msghdr2*>(ptr);
+            if (rtm->rtm_msglen == 0) {
+                break;
+            }
+            if (rtm->rtm_type == RTM_GET2) {
+                _table.emplace_back(ptr, static_cast<uint16_t>(rtm->rtm_msglen));
+            }
+            ptr += rtm->rtm_msglen;
+        }
     }
 
 #elif defined(__LINUX__)
