@@ -125,7 +125,7 @@ The IPC framework is built on a type-erased message hierarchy:
 - **Unregister timing**: `Unregister()` may be called from the `Handle()` callback itself (re-entrant safe), but the resource must not be destroyed until `Unregister()` returns.
 
 ## New File Checklist
-- Include guard: `#ifndef __MYFILE_H` / `#define __MYFILE_H` / `#endif` (double-underscore, no `#pragma once`).
+- Include guard for new headers: use classic guards `#ifndef __MYFILE_H` / `#define __MYFILE_H` / `#endif` (double-underscore); existing headers that already use `#pragma once` may remain unchanged.
 - License header (Apache 2.0, Metrological copyright) at top.
 - `EXTERNAL` macro on any class/function exported from the shared library.
 - Export the new header from `core/core.h` if it is part of the public API.
