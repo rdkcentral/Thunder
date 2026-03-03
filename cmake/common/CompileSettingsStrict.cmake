@@ -43,7 +43,7 @@ option(ENABLE_STRICT_COMPILER_SETTINGS "Enable strict compiler warnings and trea
 if(ENABLE_STRICT_COMPILER_SETTINGS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         message(STATUS "Enabling strict compiler settings for Clang")
-        set(_STRICT_OPTS -Wall -Wextra -Werror=return-type -Werror=array-bounds -Wnon-virtual-dtor -Wmisleading-indentation)
+        set(_STRICT_OPTS -Wall -Wextra -Wpedantic -Werror -Werror=return-type -Werror=array-bounds -Wnon-virtual-dtor -Wmisleading-indentation)
         if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 12)
             list(APPEND _STRICT_OPTS -Wrange-loop-construct)
         endif()
