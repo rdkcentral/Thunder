@@ -386,7 +386,6 @@ POP_WARNING()
 
            if (report == Core::ERROR_UNKNOWN_KEY) {
                 if (_joined == Thread::ThreadId()) {
-                    // We are trying to revoke a job from the current thread, this is not allowed, return an error.
                     result = Core::ERROR_NONE;
                 } else {
                     report = _external.Completed(job, waitTime);
