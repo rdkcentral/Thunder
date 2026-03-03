@@ -51,7 +51,7 @@ applyTo: 'Source/core/**'
 - `TRACE_L1(fmt, ...)` for lightweight diagnostic prints (compiled out in `MinSizeRel`).
 
 ## Platform Portability
-- Use `Thunder::string` (not `std::string` directly) where the code must be wide-char-safe on Windows.
+- Use `string` from `Portability.h` (not `std::string` directly) where the code must be wide-char-safe on Windows.
 - Use `_T("literal")` for string literals passed to Thunder APIs.
 - Integer widths: prefer `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t` — never `int` for protocol fields.
 - File paths: use `Core::FileSystem` helpers, never hardcode separators.
