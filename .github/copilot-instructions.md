@@ -317,7 +317,7 @@ POP_WARNING()
 Other common suppressors: `DISABLE_WARNING_DEPRECATED_USE`, `DISABLE_WARNING_MULTIPLE_INHERITANCE_OF_BASE_CLASS`.
 
 ### Include Guards
-Use the `__UPPER_CASE_H__` double-underscore pattern — **not** `#pragma once`:
+Use the `__UPPER_CASE_H__` double-underscore pattern for new headers — existing headers that already use `#pragma once` may remain unchanged:
 ```cpp
 #ifndef __MYPLUGIN_H__
 #define __MYPLUGIN_H__
