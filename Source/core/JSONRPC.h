@@ -25,6 +25,7 @@
 
 #include <cctype>
 #include <functional>
+#include <limits>
 #include <vector>
 
 namespace WPEFramework {
@@ -136,9 +137,9 @@ namespace Core {
                             int32_t customcode = IsCustomCode(frameworkError);
                             if (customcode != 0) {
                                 Code = (customcode == std::numeric_limits<int32_t>::max() ? 0 : customcode);
-                            }
+                            } else
 #endif
-                            else if( frameworkError <= 999 ) {
+                            if (frameworkError <= 999) {
                                 Code = static_cast<int32_t>(frameworkError);
                             } else {
                                 Code = -31000 - static_cast<int32_t>(frameworkError);
@@ -147,11 +148,12 @@ namespace Core {
                             Code = static_cast<int32_t>(frameworkError & 0x7FFFFFFF) + 500;
                         }
 #ifndef __DISABLE_USE_COMPLEMENTARY_CODE_SET__
-                    if (Text.IsSet() == false) {
-                        Text = Core::ErrorToStringExtended(frameworkError);
-                    }
-#endif
+                        if (Text.IsSet() == false) {
+                            Text = Core::ErrorToStringExtended(frameworkError);
+                        }
+#else
                         Text = Core::ErrorToString(frameworkError);
+#endif
                         break;
                     }
                 }
