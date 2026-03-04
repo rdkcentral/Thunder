@@ -173,7 +173,7 @@
 #define DISABLE_WARNING_UNUSED_PARAMETERS PUSH_WARNING_ARG_(4100)
 // W4 - 'function': unreferenced function with internal linkage has been removed
 #define DISABLE_WARNING_UNUSED_FUNCTIONS PUSH_WARNING_ARG_(5242)
-/ W3 - 'argument': conversion from 'type' to 'type', possible loss of data
+// W3 - 'argument': conversion from 'type' to 'type', possible loss of data
 #define DISABLE_WARNING_CONVERSION_POSSIBLE_LOSS_OF_DATA PUSH_WARNING_ARG_(4267)
 #define DISABLE_WARNING_DEPRECATED_COPY
 #define DISABLE_WARNING_NON_VIRTUAL_DESTRUCTOR
