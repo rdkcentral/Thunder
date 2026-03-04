@@ -842,7 +842,7 @@ namespace Thunder {
 
             public:
                 bool IsValid() const {
-                    return (_channel.IsOpen());
+                    return ((_dataBuffer == nullptr || _dataBuffer->IsValid() == true) && _channel.IsOpen() == true);
                 }
 
                 void Validate()

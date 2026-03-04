@@ -32,14 +32,14 @@ namespace Messaging {
     };
 
     /**
-    * @brief Prepare filenames for messaging components
-    *
-    * @param baseDirectory directory where those files are stored (this directory should already exist)
-    * @param identifier identifier of the instance
-    * @param instanceId number of the instance
-    * @param socketPort triggers the use of IP socket instead of a domain socket if the port value is not 0
-    * @return MessageFilenames containing doorBell, metaData, and data filenames
-    */
+     * @brief Prepare filenames for messaging components
+     *
+     * @param baseDirectory directory where those files are stored (this directory should already exist)
+     * @param identifier identifier of the instance
+     * @param instanceId number of the instance
+     * @param socketPort triggers the use of IP socket instead of a domain socket if the port value is not 0
+     * @return MessageFilenames containing doorBell, metaData, and data filenames
+     */
     inline MessageFilenames PrepareFilenames(const string& baseDirectory, const string& identifier, const uint32_t instanceId, const uint16_t socketPort)
     {
         ASSERT(Core::File(baseDirectory).IsDirectory() && "Directory for message files does not exist");
@@ -60,7 +60,7 @@ namespace Messaging {
 
         string dataFilename = instancePath + _T(".data");
 
-        return { doorBellFilename, metaDataFilename, dataFilename };
+        return { std::move(doorBellFilename), std::move(metaDataFilename), std::move(dataFilename) };
     }
 
     class EXTERNAL MessageDataBuffer {
