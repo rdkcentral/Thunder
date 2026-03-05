@@ -127,6 +127,33 @@ void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) ove
 - **`Create()`**: spawns an OOP process and waits for its announce message (with timeout via `Core::Event`).
 - Observer pattern: `IRemoteConnection::INotification` (`Activated`, `Deactivated`, `Terminated`) — register in plugin `Initialize()`, unregister in `Deinitialize()`.
 
+## `Channel` vs. `Communicator` Lifecycle
+
+- `Communicator::Server` owns the listening socket — it lives for the duration of the daemon.
+- Each connected `Channel` is created by `Communicator::Server` on accept and destroyed on disconnect.
+- `Channel` holds the per-connection state: IPC framing, in-flight call tracking, reference to `RemoteConnection`.
+- When a channel disconnects (socket error, remote close), `RemoteConnectionMap::Closed()` is called automatically.
+- Do not cache `Channel*` pointers across calls — channels can be destroyed at any time on disconnect.
+
+## Manual Proxy/Stub Registration (Edge Case)
+
+For unusual cases where the generator is not used (e.g. a synthesized interface for testing):
+```cpp
+// In a .cpp file, in an anonymous namespace:
+namespace {
+    class Instantiation {
+    public:
+        Instantiation()
+        {
+            RPC::Administrator::Instance().Announce<MyManualProxy, MyManualStub>();
+        }
+    } _announcement;
+}
+```
+- `MyManualProxy` must inherit `ProxyStub::UnknownProxyType<IMyInterface>`.
+- `MyManualStub` must inherit `ProxyStub::UnknownStubType<IMyInterface, N>` where `N` = number of methods.
+- This is a last resort — always prefer the generator for correctness and maintainability.
+
 ## `SmartInterfaceType<T>` — COM-RPC Client Helper
 For external tools/clients connecting to Thunder via COM-RPC, `SmartInterfaceType<T>` provides automatic connection management:
 ```cpp
@@ -147,3 +174,10 @@ auto* iface = client.Interface();  // returns Exchange::INetworkControl*
 3. Add `@stubgen:omit` on any method that cannot be marshalled (raw pointers, callbacks not expressible as COM).
 4. Run `ProxyStubGenerator` to regenerate proxy/stub pair.
 5. Verify the stub is announced in `ProxyStubs.h` / the generated `.cpp`.
+
+## Cross-Reference
+
+- For interface design rules and annotation tags: see `07-interface-driven-development.md`.
+- For ref-counting contract and `ProxyType` macOS caveats: see `05-object-lifecycle-and-memory.md`.
+- For COM-RPC usage from the plugin layer: see `06-comrpc-fundamentals.md`.
+- For the OOP announce handshake sequence: see `01-architecture.md`.

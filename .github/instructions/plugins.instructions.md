@@ -212,3 +212,110 @@ examples/MyTest/
     CMakeLists.txt
     MyTest.cpp           # main() using CommunicatorClient or SmartInterfaceType
 ```
+
+## `ISubSystem` — Full Pattern
+
+```cpp
+class Notification : public PluginHost::ISubSystem::INotification {
+public:
+    explicit Notification(MyPlugin* parent) : _parent(*parent) { ASSERT(parent != nullptr); }
+    ~Notification() override = default;
+    void Updated() override { _parent.OnSubsystemUpdate(); }
+
+    BEGIN_INTERFACE_MAP(Notification)
+        INTERFACE_ENTRY(PluginHost::ISubSystem::INotification)
+    END_INTERFACE_MAP
+private:
+    MyPlugin& _parent;
+};
+
+const string Initialize(PluginHost::IShell* service) override
+{
+    PluginHost::ISubSystem* subsystems = service->SubSystems();
+    ASSERT(subsystems != nullptr);
+
+    // Query a subsystem's current state
+    bool networkReady = (subsystems->IsActive(PluginHost::ISubSystem::NETWORK) == true);
+
+    // Set a subsystem active (plugin must declare it in metadata 'control' list)
+    subsystems->Set(PluginHost::ISubSystem::TIME, nullptr);
+
+    // Subscribe to subsystem state changes
+    subsystems->Register(&_subSink);
+
+    subsystems->Release();  // SubSystems() returns a ref — must Release
+    return {};
+}
+
+void Deinitialize(PluginHost::IShell* service) override
+{
+    PluginHost::ISubSystem* subsystems = service->SubSystems();
+    if (subsystems != nullptr) {
+        subsystems->Unregister(&_subSink);
+        subsystems->Release();
+    }
+}
+```
+
+## `IShell::COMLink()` — In-Process Direct COM Access
+
+`IShell::ICOMLink` provides direct COM-RPC access within the same process (bypassing JSON-RPC overhead):
+
+```cpp
+// Only available in in-process mode — always null-check
+PluginHost::IShell::ICOMLink* link = service->QueryInterface<PluginHost::IShell::ICOMLink>();
+if (link != nullptr) {
+    // Connect directly to a remote Thunder instance or another in-process service
+    Exchange::IMyInterface* iface = link->Acquire<Exchange::IMyInterface>(
+        5000 /* timeout ms */,
+        Core::NodeId("/tmp/communicator"),
+        _T("MyPlugin"),
+        ~0 /* any version */
+    );
+    if (iface != nullptr) {
+        iface->DoSomething();
+        iface->Release();
+    }
+    link->Release();
+}
+```
+
+## `IShell::QueryInterfaceByCallsign<T>()` — Cross-Plugin Interface Acquisition
+
+```cpp
+// ✅ Correct — standard pattern for acquiring another plugin's interface
+Exchange::INetworkControl* ctrl =
+    service->QueryInterfaceByCallsign<Exchange::INetworkControl>(_T("NetworkControl"));
+if (ctrl == nullptr) {
+    return _T("NetworkControl plugin not available or not activated");
+}
+// ctrl carries one ref — store it; no extra AddRef needed
+_networkCtrl = ctrl;
+
+// In Deinitialize():
+if (_networkCtrl != nullptr) {
+    _networkCtrl->Release();
+    _networkCtrl = nullptr;
+}
+```
+
+If the target plugin can deactivate independently, subscribe to `IPlugin::INotification` and release in the `Deactivated()` callback for that callsign.
+
+## `IPlugin::INotification::Unavailable()` — Must Always Be Implemented
+
+```cpp
+// ✅ Must implement — it is pure virtual even if behavior is a no-op
+void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
+{
+    // Implementation may be empty, but the method must be present
+}
+
+// ❌ Wrong — not providing this method causes a linker error
+```
+
+## Cross-Reference
+
+- For complete plugin development workflow: see `10-plugin-development.md`.
+- For subsystem config (`precondition`, `termination`): see `11-configuration-and-metadata.md`.
+- For JSON-RPC event notification patterns: see `10-plugin-development.md` (JSON-RPC Events section).
+- For interface design: see `07-interface-driven-development.md`.

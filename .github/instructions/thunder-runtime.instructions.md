@@ -120,6 +120,29 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 - `SecurityAgent` plugin provides the `ISecurity` implementation — the daemon uses it via `QueryInterface`.
 - Never bypass `ISecurity` for convenience — gate every new channel type through it.
 
+## Hot-Reload Details
+
+- **Plugin config hot-reload**: `FileObserver` watches the `configs` directory. On change, `ConfigObserver` calls `Service::ConfigUpdated()` → plugin is deactivated, config updated, re-activated (if autostart). This is non-atomic — there is a brief window where the plugin is inactive.
+- **Proxy stub hot-load**: when a new `.so`/`.dylib` appears in `proxystubpath`, it is loaded via `Core::Library` and its `Instantiation` static object fires, registering stubs. Already-loaded stubs are **never unloaded** — removing a proxy stub file does not deregister it.
+- **Daemon config**: `config.json` is read once at startup — changes require a daemon restart.
+
+## `Controller` — Built-in Management Plugin
+
+Controller is the only plugin that is part of `Source/Thunder/` itself. Key JSON-RPC methods it exposes:
+
+| Method | Purpose |
+|--------|---------|
+| `activate` | Activate a plugin by callsign |
+| `deactivate` | Deactivate a plugin by callsign |
+| `status` | Query plugin status, version, state |
+| `configuration` | Read/write plugin config JSON |
+| `storeconfig` | Persist plugin config to disk |
+| `discovery` | List all known plugins |
+| `harakiri` | Request daemon self-termination |
+
+- All state transitions to plugins **must** go through `Service::Activate()` / `Service::Deactivate()` public methods or Controller's JSON-RPC — never force-set `_state` directly.
+- Controller's callsign is `"Controller"` (configurable but conventionally fixed).
+
 ## Adding a New Daemon-Level Feature Checklist
 1. Add config fields to `Config.h` (daemon config) or `PluginServer.h` (runtime state).
 2. Lock with `_adminLock` when accessing `ServiceMap` state; `_pluginHandling` when accessing plugin interface pointers.
@@ -128,3 +151,10 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 5. Add the new feature to `Controller`'s JSON-RPC interface if external management is needed.
 6. Update `ExampleConfigLinux.json` / `ExampleConfigAll.json` with the new config option.
 7. Test on both Linux and macOS — especially any code that touches shared libraries, `dynamic_cast`, or process spawning.
+
+## Cross-Reference
+
+- For the complete OOP plugin lifecycle: see `01-architecture.md` (OOP Announce Handshake).
+- For `_adminLock` / `_pluginHandling` locking discipline: see `08-threading-and-synchronization.md`.
+- For adding daemon config fields: see `11-configuration-and-metadata.md`.
+- For security and ISecurity interface: see `Source/plugins/ISecurity.h`.

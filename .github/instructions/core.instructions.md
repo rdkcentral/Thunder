@@ -130,3 +130,45 @@ The IPC framework is built on a type-erased message hierarchy:
 - `EXTERNAL` macro on any class/function exported from the shared library.
 - Export the new header from `core/core.h` if it is part of the public API.
 - If the feature has platform-specific behavior, provide both `__LINUX__` and `__APPLE__` implementations from the start.
+
+## Dependency Inversion Rule
+
+`Source/core/` is a **provider of abstractions** — it must never depend on upper layers. Upper layers (`com/`, `plugins/`, `Thunder/`) implement the abstractions. Concretely:
+- `core/` defines `IWorkerPool`, `IResource`, `IDispatch` — it does not implement a `WorkerPool` that knows about plugins.
+- `com/` and `Thunder/` provide the concrete `WorkerPool` and `ResourceMonitor` implementations that are injected at runtime.
+- If a new abstraction in `core/` needs a concrete implementation, define an interface in `core/` and provide the implementation in `Thunder/` or `com/`.
+
+## Singleton Pattern in `core/`
+
+`Core::Singleton<T>` provides a process-lifetime singleton with explicit disposal:
+```cpp
+// Access:
+T& instance = Core::Singleton<T>::Instance();
+
+// Disposal (must be called at process exit to ensure proper shutdown order):
+Core::Singleton::Dispose();
+```
+
+- Use singletons only for process-lifetime services: `WorkerPool`, `ResourceMonitor`, `Administrator`.
+- Do **not** use `Core::Singleton<T>` for objects that have a meaningful lifetime shorter than the process.
+- Prefer passing instances explicitly over using singletons in new code where possible.
+- `Core::Singleton::Dispose()` must be called in `main()` after all other cleanup — it tears down all registered singletons in reverse construction order.
+
+## `FileSystem`, `File`, `Directory` Utilities
+
+- Use `Core::File` for file operations — never `fopen`/`fclose` directly.
+- Use `Core::Directory` for directory traversal.
+- Use `Core::FileSystem::PathName()` / `Core::FileSystem::FileName()` for path manipulation — never `strchr`/`strrchr` on path strings.
+- `Core::FileObserver` registers for file change notifications via `IResource` — use it for hot-reload patterns.
+
+## `DataElement` and `DataElementFile`
+
+- `Core::DataElement` is a reference-counted view over a raw byte buffer — used for zero-copy IPC payload passing.
+- `Core::DataElementFile` memory-maps a file as a `DataElement`.
+- Never copy large binary payloads — pass `Core::DataElement` or `Core::ProxyType<Core::DataElement>` instead.
+
+## Cross-Reference
+
+- For IPC message type safety and macOS `dynamic_cast` failure: see `05-object-lifecycle-and-memory.md`.
+- For `ResourceMonitor` usage in plugin context: see `08-threading-and-synchronization.md`.
+- For `NodeId` and `NetworkInfo` usage from the plugin layer: see `06-comrpc-fundamentals.md` (Communicator socket configuration).
