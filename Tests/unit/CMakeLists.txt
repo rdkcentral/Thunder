@@ -36,7 +36,7 @@ SET(BASEPATH "${CMAKE_SOURCE_DIR}")
 
 include_directories(${BASEPATH}/Source)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD ${CXX_STD})
 
 enable_testing()
 

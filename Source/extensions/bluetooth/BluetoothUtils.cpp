@@ -205,9 +205,9 @@ int BtUtilsBa2Oui(const bdaddr_t* ba, char* str)
 
 void BtUtilsBaswap(bdaddr_t* dst, const bdaddr_t* src)
 {
-	register unsigned char* d = (unsigned char*)dst;
-	register const unsigned char* s = (const unsigned char*)src;
-	register int i;
+	unsigned char* d = (unsigned char*)dst;
+	const unsigned char* s = (const unsigned char*)src;
+	int i;
 
 	for (i = 0; i < 6; i++)
 		d[i] = s[5 - i];
