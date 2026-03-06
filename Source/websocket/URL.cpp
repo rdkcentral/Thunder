@@ -80,11 +80,13 @@ namespace Core
             TCHAR current = *source++;
 
             if (current == '%') {
-                if ((source[0] != '\0') && (source[1] != '\0')) {
+                if ((srcLength >= 3) && isxdigit(source[0]) && isxdigit(source[1])) {
                     *destination++ = (((isdigit(source[0]) ? (source[0] - '0') : (tolower(source[0]) - 'a' + 10)) & 0x0F) << 4) | ((isdigit(source[1]) ? (source[1] - '0') : (tolower(source[1]) - 'a' + 10)) & 0x0F);
                     source += 2;
                     srcLength -= 3;
                     dstLength--;
+                } else {
+                    break; // bail on malformed input
                 }
             } else if (current == '+') {
                 *destination++ = ' ';
