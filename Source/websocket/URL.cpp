@@ -39,7 +39,7 @@ namespace Core
     /* Returns a url-encoded version of source */
     /* static */ uint16_t URL::Encode(const TCHAR* source, const uint16_t sourceLength, TCHAR* destination, const uint16_t destinationLength)
     {
-        static char hex[] = "0123456789abcdef";
+        static char hex[] = "0123456789ABCDEF";
         uint16_t srcLength = sourceLength;
         uint16_t dstLength = destinationLength;
 
