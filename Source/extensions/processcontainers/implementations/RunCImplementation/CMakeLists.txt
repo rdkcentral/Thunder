@@ -27,7 +27,7 @@ add_library(${TARGET} STATIC
     )
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
     )
 

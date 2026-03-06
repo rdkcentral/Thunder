@@ -23,7 +23,7 @@ target_link_libraries(redirect
         )
 
 set_target_properties(redirect PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         )
 

@@ -125,7 +125,7 @@ target_include_directories( ${TARGET_PROXYSTUBS}
         )
 
 set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
@@ -139,7 +139,7 @@ set_target_properties(${TARGET} PROPERTIES
 endif()
 
 set_target_properties(${TARGET_PROXYSTUBS} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         SOVERSION ${VERSION_MAJOR}

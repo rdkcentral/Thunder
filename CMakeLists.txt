@@ -29,6 +29,16 @@ set(VERSION_MAJOR ${${PROJECT_NAME}_VERSION_MAJOR})
 set(VERSION_MINOR ${${PROJECT_NAME}_VERSION_MINOR})
 set(VERSION_PATCH ${${PROJECT_NAME}_VERSION_PATCH})
 
+option(ENABLE_CXX17 "Build with C++17 support" ON)
+
+if(ENABLE_CXX17)
+    set(CXX_STD 17)
+else()
+    set(CXX_STD 11)
+endif()
+
+message(STATUS "Building with C++${CXX_STD} support")
+
 string(TIMESTAMP BUILD_TIMESTAMP UTC)
 
 message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
