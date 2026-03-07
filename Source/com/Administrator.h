@@ -401,14 +401,51 @@ namespace RPC {
         }
 
     private:
+        // Convert a ProxyType<IIPC> to ProxyType<InvokeMessage> using
+        // static_cast rather than dynamic_cast.
+        //
+        // On macOS, Apple Clang unconditionally emits typeinfo for
+        // implicit template instantiations as "weak private external"
+        // (hidden), regardless of -fvisibility settings or explicit
+        // visibility annotations.  Apple's libc++ compares typeinfo by
+        // pointer only for hidden symbols (no strcmp fallback like
+        // libstdc++ on Linux), so dynamic_cast across dylib boundaries
+        // fails for template types like IPCMessageType.
+        //
+        // The label check (IIPC::Label() == InvokeMessage::Id()) provides
+        // the same runtime type guarantee that dynamic_cast would, and
+        // static_cast correctly adjusts for the multiple-inheritance
+        // layout (IPCMessageType inherits both IIPC and IReferenceCounted).
         static Core::ProxyType<InvokeMessage> ExtractInvokeMessage(const Core::ProxyType<Core::IIPC>& data)
         {
-            Core::ProxyType<InvokeMessage> message(data);
-            ASSERT(message.IsValid() == true);
-            if (message->Parameters().IsValid() == false) {
-                message = Core::ProxyType<InvokeMessage>();
+            if (data.IsValid() == false) {
+                return Core::ProxyType<InvokeMessage>();
             }
-            return message;
+
+            Core::IIPC* raw = const_cast<Core::IIPC*>(data.operator->());
+            ASSERT(raw->Label() == InvokeMessage::Id());
+
+            if (raw->Label() != InvokeMessage::Id()) {
+                return Core::ProxyType<InvokeMessage>();
+            }
+
+            InvokeMessage* message = static_cast<InvokeMessage*>(raw);
+            if (message->Parameters().IsValid() == false) {
+                return Core::ProxyType<InvokeMessage>();
+            }
+            return Core::ProxyType<InvokeMessage>(
+                static_cast<Core::IReferenceCounted&>(*message), *message);
+        }
+        static Core::ProxyType<InvokeMessage> ToInvokeMessage(const Core::ProxyType<Core::IIPC>& data)
+        {
+            if ((data.IsValid() == false) || (data->Label() != InvokeMessage::Id())) {
+                return Core::ProxyType<InvokeMessage>();
+            }
+
+            InvokeMessage* message =
+                static_cast<InvokeMessage*>(const_cast<Core::IIPC*>(data.operator->()));
+            return Core::ProxyType<InvokeMessage>(
+                static_cast<Core::IReferenceCounted&>(*message), *message);
         }
 
     public:
@@ -447,7 +484,7 @@ namespace RPC {
         }
         string Identifier() const override {
             string identifier;
-            Core::ProxyType<InvokeMessage> message(_message);
+            Core::ProxyType<InvokeMessage> message(ToInvokeMessage(_message));
             if (message.IsValid() == false) {
                 identifier = _T("{ \"type\": \"COMRPC\" }");
             }
