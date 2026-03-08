@@ -2134,6 +2134,11 @@ namespace PluginHost {
                     {
                         return true;
                     }
+
+                    bool ConsideredDuplicate(const Notifier&) const
+                    {
+                        return true;
+                    }
                 };
                 class CallsignNotifier {
                 public:
@@ -2151,6 +2156,11 @@ namespace PluginHost {
                     bool SendNotification(const string& callsign, PluginHost::IShell*) const
                     {
                         return (_callsign == callsign);
+                    }
+
+                    bool ConsideredDuplicate(const Notifier&) const
+                    {
+                        return true;
                     }
 
                 private:
@@ -2178,6 +2188,11 @@ namespace PluginHost {
                         }
 
                         return hasinterface;
+                    }
+
+                    bool ConsideredDuplicate(const Notifier&) const
+                    {
+                        return true;
                     }
 
                 private:
@@ -2242,6 +2257,27 @@ namespace PluginHost {
                     return send;
                 }
 
+                // checks duplicate for new callsign notifier
+                template <typename... Args>
+                bool ConsideredDuplicate(const Notifier& other, Args&&... args) const
+                {
+                    bool duplicate = true;
+                    switch (_type) {
+                    case Type::ALL:
+                        duplicate = _allnotifier.ConsideredDuplicate(other, std::forward(args));
+                        break;
+                    case Type::CALLSIGN:
+                        duplicate = _callsignnotifier.ConsideredDuplicate(other, std::forward(args));
+                        break;
+                    case Type::INTERFACE:
+                        duplicate = _interfacenotifier.ConsideredDuplicate(other, std::forward(args));
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return duplicate;
+                }
+
             private:
                 enum class Type : uint8_t { ALL, CALLSIGN, INTERFACE };
 
@@ -2289,6 +2325,24 @@ namespace PluginHost {
                     return allowed;
                 }
                 // return true when removed
+                template <typename... Args>
+                bool Remove(PluginHost::IPlugin::INotification* notification, Args&&... args)
+                {
+                    _notificationLock.Lock();
+
+                    bool allowed = RegistrationAllowed(notification);
+
+                    ASSERT(allowed == true);
+
+                    if (allowed == true) {
+                        notification->AddRef();
+                        _notifiers.emplace(notification, Notifier(std::forward(args)...);
+                    }
+
+                    _notificationLock.Unlock();
+
+                    return allowed;
+                }
                 bool Remove(PluginHost::IPlugin::INotification* notification)
                 {
                 }
@@ -2330,15 +2384,14 @@ namespace PluginHost {
                 }
 
             private:
-                // for now it is only allowed to have on registration per notification, having duplictates on callsign makes no sense at all and was not allowed already. Duplicate per interface and callsign also
-                // does not make sense but if ever needed make the unordered_map an unordered_multimap, look for equal_range and add a IsDuplicate allowed method to all the "Notifier" type classes to check for duplicates
                 bool RegistrationAllowed(PluginHost::IPlugin::INotification* notification) const 
                 {
+
                     return _notifiers.find(notification) == _notifiers.end();
                 }
 
             private:
-                std::unordered_map<PluginHost::IPlugin::INotification*, Notifier> _notifiers;
+                std::unordered_multimap<PluginHost::IPlugin::INotification*, Notifier> _notifiers;
                 mutable Core::CriticalSection _notificationLock;
             };
 
