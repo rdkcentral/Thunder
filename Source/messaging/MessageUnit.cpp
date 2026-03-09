@@ -264,6 +264,10 @@ namespace Thunder {
  
                 result = Core::ERROR_NONE;
             }
+            else {
+                _dataBuffer.reset();
+                _metaDataBuffer.reset();
+            }
 
             return (result);
         }
@@ -303,6 +307,10 @@ namespace Thunder {
                     Update();
 
                     result = Core::ERROR_NONE;
+                }
+                else {
+                    _dataBuffer.reset();
+                    _metaDataBuffer.reset();
                 }
             }
 
