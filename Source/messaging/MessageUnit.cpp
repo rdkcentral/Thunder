@@ -227,12 +227,14 @@ namespace Thunder {
             MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), identifier, 0, _settings.SocketPort());
 
             _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+            ASSERT(_metaDataBuffer != nullptr);
 
             if (_settings.DataSize() != 0) {
                 _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
+                ASSERT(_dataBuffer != nullptr);
             }
 
-            if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true) && ((_dataBuffer == nullptr) || (_dataBuffer->IsValid() == true))) {
+            if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -283,12 +285,14 @@ namespace Thunder {
                 MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), _settings.Identifier(), instanceId, _settings.SocketPort());
 
                 _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+                ASSERT(_metaDataBuffer != nullptr);
 
                 if (_settings.DataSize() != 0) {
                     _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), false));
+                    ASSERT(_dataBuffer != nullptr);
                 }
 
-                if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true) && ((_dataBuffer == nullptr) || (_dataBuffer->IsValid() == true))) {
+                if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
 
                     _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -351,7 +355,7 @@ namespace Thunder {
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if ((_settings.IsDirect() == true) || (_dataBuffer == nullptr)) {
+            if (_dataBuffer == nullptr) {
                 _direct.Output(messageInfo, message);
             } else {
                 const uint16_t messageSize = _settings.MessageSize();
