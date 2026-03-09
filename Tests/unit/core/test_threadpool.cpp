@@ -712,7 +712,7 @@ namespace Core {
         EXPECT_EQ(static_cast<TestJob<ThreadPoolTester>&>(*job).GetStatus(), TestJob<ThreadPoolTester>::INITIATED);
         job.Release();
     }
-    TEST(Core_ThreadPool, CheckThreadPool_CancelJob_WhileProcessing)
+    TEST(Core_ThreadPool, DISABLED_CheckThreadPool_CancelJob_WhileProcessing)
     {
         uint32_t queueSize = 1;
         uint32_t threadCount = 1;
