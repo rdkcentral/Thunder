@@ -40,6 +40,16 @@ set(Thunder_VERSION_MINOR @Thunder_VERSION_MINOR@)
 set(Thunder_VERSION_PATCH @Thunder_VERSION_PATCH@)
 set(Thunder_VERSION @Thunder_VERSION@)
 
+option(ENABLE_CXX17 "Build with C++17 support" @ENABLE_CXX17@)
+
+if(ENABLE_CXX17)
+    set(CXX_STD 17 CACHE INTERNAL "" FORCE)
+else()
+    set(CXX_STD 11 CACHE INTERNAL "" FORCE)
+endif()
+
+message(STATUS "Building with C++${CXX_STD} support")
+
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
   return()
