@@ -229,12 +229,12 @@ namespace Thunder {
             _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
             ASSERT(_metaDataBuffer != nullptr);
 
-            if (_settings.DataSize() != 0) {
-                _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
-                ASSERT(_dataBuffer != nullptr);
-            }
-
             if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                if (_settings.DataSize() != 0) {
+                    _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
+                    ASSERT(_dataBuffer != nullptr);
+                }
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -265,7 +265,6 @@ namespace Thunder {
                 result = Core::ERROR_NONE;
             }
             else {
-                _dataBuffer.reset();
                 _metaDataBuffer.reset();
             }
 
@@ -291,12 +290,12 @@ namespace Thunder {
                 _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
                 ASSERT(_metaDataBuffer != nullptr);
 
-                if (_settings.DataSize() != 0) {
-                    _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), false));
-                    ASSERT(_dataBuffer != nullptr);
-                }
-
                 if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                    if (_settings.DataSize() != 0) {
+                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), false));
+                        ASSERT(_dataBuffer != nullptr);
+                    }
 
                     _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -309,7 +308,6 @@ namespace Thunder {
                     result = Core::ERROR_NONE;
                 }
                 else {
-                    _dataBuffer.reset();
                     _metaDataBuffer.reset();
                 }
             }
