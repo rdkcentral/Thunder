@@ -260,11 +260,13 @@ namespace PluginHost {
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
-        }
-
+#ifdef __DEBUG__
+        TRACE_L1("Pending notifiers are %u", _notifiers.Size());
+        _notifiers.Visit([](const PluginHost::IPlugin::INotification* notification) {
+            ASSERT(notification != nullptr);
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notification).name()).Text().c_str());
+        });
+#endif
         _processAdministrator.Close(Core::infinite);
 
         _processAdministrator.Destroy();
@@ -323,13 +325,13 @@ namespace PluginHost {
         _administrator.Unregister(sink, callsign);
     }
 
-    void Register(IPlugin::INotification* sink, const uint32_t interface_id)
+    void Server::Service::Register(IPlugin::INotification * sink, const uint32_t interface_id)
     {
-
+        _administrator.Register(sink, interface_id);
     }
-    void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
+    void Server::Service::Unregister(IPlugin::INotification * sink, const uint32_t interface_id)
     {
-
+        _administrator.Unregister(sink, interface_id);
     }
 
     // Methods to stop/start/update the service.
@@ -1030,10 +1032,13 @@ namespace PluginHost {
         // Now deactivate controller plugin, once other plugins are deactivated
         controller->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        TRACE_L1("Pending notifiers are %zu", _notifiers.size());
-        for (VARIABLE_IS_NOT_USED auto& notifier : _notifiers) {
-            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notifier.first).name()).Text().c_str());
-        }
+#ifdef __DEBUG__
+        TRACE_L1("Pending notifiers are %u", _notifiers.Size());
+        _notifiers.Visit([](const PluginHost::IPlugin::INotification* notification) {
+            ASSERT(notification != nullptr);
+            TRACE_L1("   -->  %s", Core::ClassNameOnly(typeid(*notification).name()).Text().c_str());
+        });
+#endif
 
         _processAdministrator.Close(Core::infinite);
 

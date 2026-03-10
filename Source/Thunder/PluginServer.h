@@ -2135,10 +2135,22 @@ namespace PluginHost {
                         return true;
                     }
 
-                    bool ConsideredDuplicate(const Notifier&) const
+                    template <typename... Args>
+                    bool ConsideredDuplicate(Args&&...) const
                     {
                         return true;
                     }
+
+                    bool operator==(const AllNotifier&) const
+                    {
+                        return true;
+                    }
+
+                    bool operator!=(const AllNotifier& other) const
+                    {
+                        return !(*this == other);
+                    }
+
                 };
                 class CallsignNotifier {
                 public:
@@ -2158,9 +2170,29 @@ namespace PluginHost {
                         return (_callsign == callsign);
                     }
 
-                    bool ConsideredDuplicate(const Notifier&) const
+                    bool ConsideredDuplicate() const
                     {
                         return true;
+                    }
+
+                    bool ConsideredDuplicate(const string& callsign) const
+                    {
+                        return (_callsign == callsign);
+                    }
+
+                    bool ConsideredDuplicate(const uint32_t) const
+                    {
+                        return true;
+                    }
+
+                    bool operator==(const CallsignNotifier& other) const
+                    {
+                        return _callsign == other._callsign;
+                    }
+
+                    bool operator!=(const CallsignNotifier& other) const
+                    {
+                        return !(*this == other);
                     }
 
                 private:
@@ -2178,26 +2210,47 @@ namespace PluginHost {
                     {
                         ASSERT(shell != nullptr);
 
-                        bool hasinterface = false;
+                        bool hasinterface = true;
 
-                        void* baseInterface = shell->QueryInterface(_interface_id);
+                        if (_interface_id != PluginHost::IShell::ID) {
 
-                        if (baseInterface != nullptr) {
-                            hasinterface = true;
-                            static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
+                            void* baseInterface = shell->QueryInterface(_interface_id);
+
+                            if (baseInterface != nullptr) {
+                                hasinterface = true;
+                                static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
+                            }
                         }
-
                         return hasinterface;
                     }
 
-                    bool ConsideredDuplicate(const Notifier&) const
+                    bool ConsideredDuplicate() const
                     {
                         return true;
+                    }
+                    bool ConsideredDuplicate(const string&) const
+                    {
+                        return true;
+                    }
+                    bool ConsideredDuplicate(const uint32_t interface_id) const
+                    {
+                        return (_interface_id == interface_id);
+                    }
+
+                    bool operator==(const InterfaceNotifier& other) const
+                    {
+                        return _interface_id == other._interface_id;
+                    }
+
+                    bool operator!=(const InterfaceNotifier& other) const
+                    {
+                        return !(*this == other);
                     }
 
                 private:
                     uint32_t _interface_id;
                 };
+
             public:
                 Notifier()
                     : _type(Type::ALL)
@@ -2259,24 +2312,76 @@ namespace PluginHost {
 
                 // checks duplicate for new callsign notifier
                 template <typename... Args>
-                bool ConsideredDuplicate(const Notifier& other, Args&&... args) const
+                bool ConsideredDuplicate(Args&&... args) const
                 {
                     bool duplicate = true;
                     switch (_type) {
                     case Type::ALL:
-                        duplicate = _allnotifier.ConsideredDuplicate(other, std::forward(args));
+                        duplicate = _allnotifier.ConsideredDuplicate(std::forward<Args>(args)...);
                         break;
                     case Type::CALLSIGN:
-                        duplicate = _callsignnotifier.ConsideredDuplicate(other, std::forward(args));
+                        duplicate = _callsignnotifier.ConsideredDuplicate(std::forward<Args>(args)...);
                         break;
                     case Type::INTERFACE:
-                        duplicate = _interfacenotifier.ConsideredDuplicate(other, std::forward(args));
+                        duplicate = _interfacenotifier.ConsideredDuplicate(std::forward<Args>(args)...);
                         break;
                     default:
                         ASSERT(false);
                     }
                     return duplicate;
                 }
+
+                bool IsEqual() const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                        same = true;
+                        break;
+                    case Type::CALLSIGN:
+                    case Type::INTERFACE:
+                        same = false;
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
+                bool IsEqual(const string& callsign) const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                    case Type::INTERFACE:
+                        same = false;
+                        break;
+                    case Type::CALLSIGN:
+                        same = (_callsignnotifier == CallsignNotifier(callsign));
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
+                bool IsEqual(const uint32_t interface_id) const
+                {
+                    bool same = true;
+                    switch (_type) {
+                    case Type::ALL:
+                    case Type::CALLSIGN:
+                        same = false;
+                        break;
+                    case Type::INTERFACE:
+                        same = (_interfacenotifier == InterfaceNotifier(interface_id));
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                    return same;
+                }
+
 
             private:
                 enum class Type : uint8_t { ALL, CALLSIGN, INTERFACE };
@@ -2305,55 +2410,86 @@ namespace PluginHost {
                 Notifiers& operator=(Notifiers&&) = delete;
                 Notifiers& operator=(const Notifiers&) = delete;
 
+                uint32_t Size() const
+                {
+                    _notificationLock.Lock();
+                    uint32_t size = static_cast<uint32_t>(_notifiers.size());
+                    _notificationLock.Unlock();
+                    return size;
+                }
+
                 //return true when added 
                 template <typename... Args>
                 bool Add(PluginHost::IPlugin::INotification* notification, Args&&... args)
                 {
                     _notificationLock.Lock();
 
-                    bool allowed = RegistrationAllowed(notification);
+                    bool allowed = RegistrationAllowed(notification, std::forward<Args>(args)...);
 
                     ASSERT(allowed == true);
 
                     if (allowed == true) {
                         notification->AddRef();
-                        _notifiers.emplace(notification, Notifier(std::forward(args)...);
+                        _notifiers.emplace(std::piecewise_construct,
+                            std::forward_as_tuple(notification),
+                            std::forward_as_tuple(std::forward<Args>(args)...));
                     }
 
                     _notificationLock.Unlock();
 
                     return allowed;
                 }
+
                 // return true when removed
                 template <typename... Args>
-                bool Remove(PluginHost::IPlugin::INotification* notification, Args&&... args)
+                bool Remove(const PluginHost::IPlugin::INotification* const notification, Args&&... args)
+                {
+                    bool found = false;
+
+                    _notificationLock.Lock();
+
+                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    for (auto it = range.first; it != range.second; ++it) {
+                        if (it->second.IsEqual(std::forward<Args>(args)...) == true) {
+                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                            found = true;
+                            break; // there can only be one equal..
+                        }
+                    }
+                    _notificationLock.Unlock();
+
+                    return found;
+                }
+                void RemoveAll(const PluginHost::IPlugin::INotification* const notification)
                 {
                     _notificationLock.Lock();
 
-                    bool allowed = RegistrationAllowed(notification);
+                    auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
+                    for (auto it = range.first; it != range.second; ++it) {
+                        PluginHost::IPlugin::INotification* foundnotification = it->first;
+                        _notifiers.erase(it);
+                        foundnotification->Release();
+                        foundnotification = nullptr;
+                    }
+                    _notificationLock.Unlock();
+                }
+                void RemoveAll(const Core::IUnknown* const notification)
+                {
+                    _notificationLock.Lock();
 
-                    ASSERT(allowed == true);
-
-                    if (allowed == true) {
-                        notification->AddRef();
-                        _notifiers.emplace(notification, Notifier(std::forward(args)...);
+                    for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
+                        if (static_cast<const Core::IUnknown*>(it->first) == notification) {
+                            PluginHost::IPlugin::INotification* foundnotification = it->first;
+                            _notifiers.erase(it);
+                            foundnotification->Release();
+                            foundnotification = nullptr;
+                        }
                     }
 
                     _notificationLock.Unlock();
-
-                    return allowed;
-                }
-                bool Remove(PluginHost::IPlugin::INotification* notification)
-                {
-                }
-                bool Remove(PluginHost::IPlugin::INotification* notification, const string& callsign)
-                {
-                }
-                bool Remove(PluginHost::IPlugin::INotification* notification, string&& callsign)
-                {
-                }
-                bool Remove(PluginHost::IPlugin::INotification* notification, const uint32_t interface_id)
-                {
                 }
                 void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin)) const
                 {
@@ -2364,8 +2500,10 @@ namespace PluginHost {
                             (notifier.first->*notificatonmethod)(callsign, entry);
                         }
                     }
+
                     _notificationLock.Unlock();
                 }
+
                 void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::ILifeTime::*notificatonmethod)(const string& callsign, IShell* plugin)) const
                 {
                     _notificationLock.Lock();
@@ -2383,11 +2521,31 @@ namespace PluginHost {
                     _notificationLock.Unlock();
                 }
 
-            private:
-                bool RegistrationAllowed(PluginHost::IPlugin::INotification* notification) const 
+                template<typename FUNCTION>
+                void Visit(FUNCTION function) const
                 {
+                    _notificationLock.Lock();
 
-                    return _notifiers.find(notification) == _notifiers.end();
+                    for (const auto& notifier : _notifiers) {
+                        function(notifier.first);
+                    }
+
+                    _notificationLock.Unlock();
+                }
+
+            private:
+                template <typename... Args>
+                bool RegistrationAllowed(PluginHost::IPlugin::INotification* notification, Args&&... args) const 
+                {
+                    bool notallowed = false; 
+                    auto range = _notifiers.equal_range(notification);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        notallowed = it->second.ConsideredDuplicate(std::forward<Args>(args)...);
+                        if (notallowed == true) {
+                            break;
+                        }
+                    }
+                    return (notallowed == false);
                 }
 
             private:
@@ -2438,6 +2596,62 @@ namespace PluginHost {
                     }
                     _adminLock.Unlock();
                 }
+            }
+
+            void Snapshot(PluginHost::IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                ASSERT(sink != nullptr);
+
+                _adminLock.Lock();
+
+                for (auto& index : _services) {
+                    ASSERT(index.second.IsValid());
+
+                    Core::ProxyType<Service> service(index.second);
+
+                    ASSERT(service.IsValid());
+
+                    if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
+
+                        bool hasinterface = true;
+
+                        if (interface_id != PluginHost::IShell::ID) {
+
+                            void* baseInterface = service.operator->()->QueryInterface(interface_id);
+
+                            if (baseInterface != nullptr) {
+                                hasinterface = true;
+                                static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
+                            }
+                        }
+
+                        if (hasinterface == true) {
+                            sink->Activated(service->Callsign(), service.operator->());
+                        }
+
+                        // Report any composite plugins that are active..
+                        service->Composits().Visit([&](const string& callsign, IShell* proxy) {
+                            if (proxy->State() == IShell::ACTIVATED) {
+                                bool hasinterface = true;
+
+                                if (interface_id != PluginHost::IShell::ID) {
+
+                                    void* baseInterface = proxy->QueryInterface(interface_id);
+
+                                    if (baseInterface != nullptr) {
+                                        hasinterface = true;
+                                        static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
+                                    }
+                                }
+
+                                if (hasinterface == true) {
+                                    sink->Activated(callsign, proxy);
+                                }
+                            }
+                        });
+                    }
+                }
+                _adminLock.Unlock();
             }
 
             class CommunicatorServer : public RPC::Communicator {
@@ -3331,7 +3545,7 @@ namespace PluginHost {
             {
                 bool registered = false;
 
-                if (callsign.IsSet() = true) {
+                if (callsign.IsSet() == true) {
                     registered = _notifiers.Add(sink, callsign.Value());
                 }
                 else {
@@ -3344,24 +3558,21 @@ namespace PluginHost {
             }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
             {
-                _notificationLock.Lock();
-
-                auto match = [&](const Notifier& entry) -> bool {
-                    return ((entry.first == sink) &&
-                            ((callsign.IsSet() == false) ?
-                                (entry.second.IsSet() == false) :
-                                ((entry.second.IsSet() == true) && (entry.second.Value() == callsign.Value()))));
-                };
-
-                for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
-                    if (match(*it) == true) {
-                        it->first->Release();
-                        _notifiers.erase(it);
-                        break;
-                    }
+                if (callsign.IsSet() == true) {
+                    _notifiers.Remove(sink, callsign.Value());
+                } else {
+                    _notifiers.Remove(sink);
                 }
-
-                _notificationLock.Unlock();
+            }
+            void Register(IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                if( _notifiers.Add(sink, interface_id)  == true) {
+                    Snapshot(sink, interface_id);
+                }
+            }
+            void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
+            {
+                _notifiers.Remove(sink, interface_id);
             }
             inline void* QueryInterfaceByCallsign(const uint32_t id, const string& name)
             {
@@ -3778,19 +3989,7 @@ namespace PluginHost {
                 Core::IUnknown* result = nullptr;
 
                 if (interfaceId == PluginHost::IPlugin::INotification::ID) {
-                    _notificationLock.Lock();
-
-                    for (auto it = _notifiers.begin(); it != _notifiers.end();) {
-
-                        if (static_cast<const Core::IUnknown*>(it->first) == remote) {
-                            it->first->Release();
-                            it = _notifiers.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-
-                    _notificationLock.Unlock();
+                    _notifiers.RemoveAll(remote);
                 }
                 else if (interfaceId == IShell::IConnectionServer::INotification::ID) {
 
