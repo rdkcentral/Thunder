@@ -849,7 +849,7 @@ namespace Core {
     }
 
 #ifndef __WINDOWS__
-    SharedSemaphore::SharedSemaphore(void* storage, const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
+    SharedSemaphore::SharedSemaphore(void* storage, VARIABLE_IS_NOT_USED const uint32_t initCount, VARIABLE_IS_NOT_USED const uint32_t maxCount)
         : _semaphore(storage), _name("")
     {
         ASSERT(storage != nullptr);
