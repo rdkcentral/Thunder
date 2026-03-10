@@ -855,9 +855,11 @@ namespace Core {
         ASSERT(storage != nullptr);
         ASSERT(initCount <= 1);
         ASSERT(maxCount == 1);
+#ifndef __APPLE__
         memset(_semaphore, 0, sizeof(sem_t));
         VARIABLE_IS_NOT_USED int result = sem_init(static_cast<sem_t*>(_semaphore), 1, initCount); 
         ASSERT(result != -1);
+#endif
     }
 
     SharedSemaphore::SharedSemaphore(void* storage) 
@@ -879,18 +881,22 @@ namespace Core {
             sem_close(static_cast<sem_t*>(_semaphore));
             sem_unlink(_name.c_str());
         }
+#ifndef __APPLE__
         else { 
             sem_destroy(static_cast<sem_t*>(_semaphore));
         }
+#endif
 #endif
     }
 
     size_t SharedSemaphore::Size()
     {
 #ifdef __WINDOWS__
-        return sizeof(HANDLE);
+    return sizeof(HANDLE);
+#elif defined(__APPLE__)
+    return 0;
 #else
-        return sizeof(sem_t);
+    return sizeof(sem_t);
 #endif
     }
 
@@ -924,6 +930,8 @@ namespace Core {
     {
 #ifdef __WINDOWS__
         return (_windowsAPI.GetSemaphoreCount(_semaphore));
+#elif defined(__APPLE__)
+        return 0; 
 #else
         int semValue = 0;
         sem_getvalue(static_cast<sem_t*>(_semaphore), &semValue);
