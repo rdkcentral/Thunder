@@ -45,8 +45,6 @@ message(STATUS "Setting up ${PROJECT_NAME} v${Thunder_VERSION}")
 
 option(HIDE_NON_EXTERNAL_SYMBOLS
     "Hide all non EXTERNAL tagged symbols" ON)
-option(ENABLE_STRICT_COMPILER_SETTINGS
-    "Enable compiler flags to get the warnings/errors due to improper condition in the code" ON) 
 option(LEGACY_CONFIG_GENERATOR
     "Use the legacy config generator and all its needed CMake sub-components. 
      If switched OFF, plugins need to use the new python-based templates. (*.conf.in)" OFF)
