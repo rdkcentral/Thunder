@@ -30,14 +30,6 @@ option(PROCESSCONTAINERS
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
 
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
-endif()
-
-if(BROADCAST)
-    add_subdirectory(broadcast)
-endif()
-
 if(HIBERNATESUPPORT)
     add_subdirectory(hibernate)
 endif()
