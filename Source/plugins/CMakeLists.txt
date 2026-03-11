@@ -56,6 +56,10 @@ add_library(${TARGET_PROXYSTUBS} SHARED
         Module.cpp
         )
 
+# ProxyStubs should alwasy be a shared object, so define BUILD_SHARED_LIBS
+# to get the proper Module.cpp version  
+target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
+
 set(PUBLIC_HEADERS
         Channel.h
         Config.h
