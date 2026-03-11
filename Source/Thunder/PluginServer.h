@@ -853,6 +853,7 @@ namespace PluginHost {
                 , _composit(*this)
                 , _jobs(administrator)
                 , _type(type)
+                , _initDeinitDone(true, true)
             {
                 _jobs.Slots(_metadata.MaxRequests());
             }
@@ -1675,6 +1676,8 @@ namespace PluginHost {
                 }
             }
 
+            IShell::state waitForInitializationStateChange(int timeMaxMs);
+
         protected:
             ServiceMap& Administrator() {
                 return (_administrator);
@@ -1714,6 +1717,7 @@ namespace PluginHost {
             Core::SinkType<Composit> _composit;
             Jobs _jobs;
             mode _type;
+            mutable Core::Event _initDeinitDone;
 
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;

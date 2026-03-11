@@ -332,6 +332,11 @@ namespace PluginHost {
 
         IShell::state currentState(State());
 
+        if (currentState == IShell::DEACTIVATION) {
+            // give the plugin some time to finish with the deactivation to avoid ERROR_ILLEGAL_STATE
+            currentState = waitForInitializationStateChange(500);
+        }
+
         if (currentState == IShell::state::ACTIVATION) {
             Unlock();
             result = Core::ERROR_INPROGRESS;
@@ -404,6 +409,8 @@ namespace PluginHost {
 
                 _administrator.Initialize(callSign, this);
 
+                _initDeinitDone.ResetEvent();
+
                 State(ACTIVATION);
 
                 Unlock();
@@ -472,6 +479,7 @@ namespace PluginHost {
                     #endif
                     Notify(_T("statechange"), string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}"));
                 }
+                _initDeinitDone.SetEvent();
             }
         } else {
             Unlock();
@@ -521,6 +529,11 @@ namespace PluginHost {
 
         IShell::state currentState(State());
 
+        if (currentState == IShell::ACTIVATION && why != IShell::INITIALIZATION_FAILED) {
+            // give the plugin some time to finish current activation (to avoid ERROR_ILLEGAL_STATE)
+            currentState = waitForInitializationStateChange(500);
+        }
+
         if (currentState == IShell::state::DEACTIVATION) {
             result = Core::ERROR_INPROGRESS;
             Unlock();
@@ -552,6 +565,7 @@ namespace PluginHost {
                 ASSERT(_handler != nullptr);
 
                 State(DEACTIVATION);
+                _initDeinitDone.ResetEvent();
 
                 SystemInfo& systeminfo = _administrator.SubSystemInfo();
 
@@ -591,6 +605,8 @@ namespace PluginHost {
                 REPORT_DURATION_WARNING( { _handler->Deinitialize(this); }, WarningReporting::TooLongPluginState, WarningReporting::TooLongPluginState::StateChange::DEACTIVATION, callSign.c_str());
 
                 Lock();
+
+                _initDeinitDone.SetEvent();
 
                 if (currentState != IShell::state::ACTIVATION) {
                     SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -916,6 +932,15 @@ namespace PluginHost {
         }
 
         _administrator.Notification(PluginHost::Service::Callsign(), jsonrpcEvent, message);
+    }
+
+    // the caller needs to hold _adminLock!
+    IShell::state Server::Service::waitForInitializationStateChange(int timeMaxMs) {
+        // gives the plugin some time to finish with current ACTIVATION or DEACTIVATION to avoid ERROR_ILLEGAL_STATE
+        Unlock();
+        _initDeinitDone.Lock(timeMaxMs);
+        Lock();
+        return State();
     }
 
     //
