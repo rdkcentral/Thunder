@@ -205,7 +205,8 @@ namespace Thunder {
             string identifier = _T("md");
             _settings.Configure(pathName, identifier, configuration, background, flushMode);
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (Core::File(_settings.BasePath()).IsDirectory() == true) {
                 //if directory exists remove it to clear data (eg. sockets) that can remain after previous run
@@ -223,10 +224,17 @@ namespace Thunder {
             // Store it on an environment variable so other instances can pick this info up..
             _settings.Save();
 
-            _dispatcher.reset(new MessageDispatcher(*this, identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort()));
-            ASSERT(_dispatcher != nullptr);
+            MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), identifier, 0, _settings.SocketPort());
 
-            if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+            _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+            ASSERT(_metaDataBuffer != nullptr);
+
+            if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                if (_settings.DataSize() != 0) {
+                    _dataBuffer.reset(new MessageDataBuffer(identifier, 0, _settings.BasePath().c_str(), _settings.DataSize(), _settings.SocketPort(), true));
+                    ASSERT(_dataBuffer != nullptr);
+                }
 
                 _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -235,6 +243,13 @@ namespace Thunder {
                 // according to received config,
                 // let all announced controls know, whether they should push messages
                 Update();
+
+                TRACE_L1("Messaging transport initialized: controls(metadata)=%s [buffer=%u], messages(data)=%s [buffer=%u], directOutput=%s",
+                    (_settings.MetadataBufferSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.MetadataBufferSize()),
+                    (_settings.DataSize() == 0 ? _T("disabled") : _T("enabled")),
+                    static_cast<unsigned>(_settings.DataSize()),
+                    (_settings.IsDirect() ? _T("true") : _T("false")));
 
                 // Redirect the standard out and standard error if requested
                 if (_settings.HasRedirectedError() == true) {
@@ -249,6 +264,9 @@ namespace Thunder {
  
                 result = Core::ERROR_NONE;
             }
+            else {
+                _metaDataBuffer.reset();
+            }
 
             return (result);
         }
@@ -261,15 +279,23 @@ namespace Thunder {
         {
             uint32_t result = Core::ERROR_OPENING_FAILED;
 
-            ASSERT(_dispatcher == nullptr);
+            ASSERT(_metaDataBuffer == nullptr);
+            ASSERT(_dataBuffer == nullptr);
 
             if (instanceId != static_cast<uint32_t>(~0)) {
                 _settings.Load();
 
-                _dispatcher.reset(new MessageDispatcher(*this, _settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort()));
-                ASSERT(_dispatcher != nullptr);
+                MessageFilenames filenames = PrepareFilenames(_settings.BasePath(), _settings.Identifier(), instanceId, _settings.SocketPort());
 
-                if ((_dispatcher != nullptr) && (_dispatcher->IsValid() == true)) {
+                _metaDataBuffer.reset(new MetaDataBuffer(*this, filenames.metaData));
+                ASSERT(_metaDataBuffer != nullptr);
+
+                if ((_metaDataBuffer != nullptr) && (_metaDataBuffer->IsOpen() == true)) {
+
+                    if (_settings.DataSize() != 0) {
+                        _dataBuffer.reset(new MessageDataBuffer(_settings.Identifier(), instanceId, _settings.BasePath(), _settings.DataSize(), _settings.SocketPort(), false));
+                        ASSERT(_dataBuffer != nullptr);
+                    }
 
                     _direct.Mode(_settings.IsBackground(), _settings.IsAbbreviated());
 
@@ -280,6 +306,9 @@ namespace Thunder {
                     Update();
 
                     result = Core::ERROR_NONE;
+                }
+                else {
+                    _metaDataBuffer.reset();
                 }
             }
 
@@ -304,7 +333,7 @@ namespace Thunder {
                 }
             } handler;
 
-            if (_dispatcher != nullptr) {
+            if (_metaDataBuffer != nullptr) {
                 if (_settings.HasRedirectedError() == true) {
                     Messaging::ConsoleStandardError::Instance().Close();
                 }
@@ -315,7 +344,8 @@ namespace Thunder {
                 Core::Messaging::IControl::Iterate(handler);
 
                 _adminLock.Lock();
-                _dispatcher.reset(nullptr);
+                _dataBuffer.reset(nullptr);
+                _metaDataBuffer.reset(nullptr);
                 _adminLock.Unlock();
             }
         }
@@ -331,9 +361,9 @@ namespace Thunder {
         {
             //logging messages can happen in Core, meaning, otherside plugin can be not started yet
             //those should be just printed
-            if ((_settings.IsDirect() == true) || (_dispatcher == nullptr)) {
+            if (_dataBuffer == nullptr) {
                 _direct.Output(messageInfo, message);
-            } else if (_dispatcher != nullptr) {
+            } else {
                 const uint16_t messageSize = _settings.MessageSize();
                 ASSERT(messageSize != 0);
                 uint8_t* serializationBuffer = static_cast<uint8_t*>(ALLOCA(messageSize));
@@ -347,7 +377,7 @@ namespace Thunder {
                 if (length != 0) {
                     length += message->Serialize(serializationBuffer + length, messageSize - length);
 
-                    if (_dispatcher->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
+                    if (_dataBuffer->PushData(length, serializationBuffer) != Core::ERROR_NONE) {
                         TRACE_L1("Unable to push message data!");
                     }
                 }
