@@ -36,7 +36,7 @@ file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/json/JsonEnum_*.cpp")
 file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JsonData_*.h" "${CMAKE_CURRENT_BINARY_DIR}/json/json_*.h")
 list(APPEND JSON_CODE_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/json/JStateController.h")
 
-add_library(${TARGET} SHARED
+add_library(${TARGET}
         Channel.cpp
         JSONRPC.cpp
         Metadata.cpp
@@ -55,6 +55,10 @@ add_library(${TARGET_PROXYSTUBS} SHARED
         ${PROXY_STUB_SOURCES}
         Module.cpp
         )
+
+# ProxyStubs should always be a shared object, so define BUILD_SHARED_LIBS
+# to get the proper Module.cpp version  
+target_compile_definitions(${TARGET_PROXYSTUBS} PRIVATE BUILD_SHARED_LIBS)
 
 set(PUBLIC_HEADERS
         Channel.h
