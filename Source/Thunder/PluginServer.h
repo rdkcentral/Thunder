@@ -2470,7 +2470,7 @@ namespace PluginHost {
                     auto range = _notifiers.equal_range(const_cast<PluginHost::IPlugin::INotification*>(notification));
                     for (auto it = range.first; it != range.second; ++it) {
                         PluginHost::IPlugin::INotification* foundnotification = it->first;
-                        _notifiers.erase(it);
+                        it = _notifiers.erase(it);
                         foundnotification->Release();
                         foundnotification = nullptr;
                     }
@@ -2483,7 +2483,7 @@ namespace PluginHost {
                     for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
                         if (static_cast<const Core::IUnknown*>(it->first) == notification) {
                             PluginHost::IPlugin::INotification* foundnotification = it->first;
-                            _notifiers.erase(it);
+                            it = _notifiers.erase(it);
                             foundnotification->Release();
                             foundnotification = nullptr;
                         }
@@ -2491,13 +2491,19 @@ namespace PluginHost {
 
                     _notificationLock.Unlock();
                 }
-                void Notify(const string& callsign, PluginHost::IShell* entry, void (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin)) const
+                void Notify(const string& callsign, PluginHost::IShell* entry, Core::hresult (PluginHost::IPlugin::INotification::*notificatonmethod)(const string& callsign, IShell* plugin)) 
                 {
                     _notificationLock.Lock();
 
-                    for (const auto& notifier : _notifiers) {
-                        if (notifier.second.SendNotification(callsign, entry) == true) {
-                            (notifier.first->*notificatonmethod)(callsign, entry);
+                    for (auto it = _notifiers.begin(); it != _notifiers.end(); ++it) {
+                        if (it->second.SendNotification(callsign, entry) == true) {
+                            Core::hresult result = (it->first->*notificatonmethod)(callsign, entry);
+                            if (result == Core::ERROR_CANCEL) {
+                                PluginHost::IPlugin::INotification* foundnotification = it->first;
+                                it = _notifiers.erase(it);
+                                foundnotification->Release();
+                                foundnotification = nullptr;
+                            }
                         }
                     }
 
@@ -3512,15 +3518,15 @@ namespace PluginHost {
             }
             void Activated(const string& callsign, PluginHost::IShell* entry)
             {
-                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::Activated);
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableActivated);
             }
             void Deactivated(const string& callsign, PluginHost::IShell* entry)
             {
-                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::Deactivated);
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableDeactivated);
             }
             void Unavailable(const string& callsign, PluginHost::IShell* entry)
             {
-                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::Unavailable);
+                _notifiers.Notify(callsign, entry, &PluginHost::IPlugin::INotification::CancelableUnavailable);
             }
             void StateControlStateChange(const string& callsign, const IStateControl::state state)
             {
