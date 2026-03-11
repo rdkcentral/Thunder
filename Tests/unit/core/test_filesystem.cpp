@@ -117,8 +117,9 @@ namespace Core {
         EXPECT_TRUE(dirOne.IsDirectory());
         dirOne.Reset();
         EXPECT_TRUE(dirOne.Next());
-
-        (void)system("rm -rf home");
+PUSH_WARNING(DISABLE_WARNING_UNUSED_RESULT)
+        system("rm -rf home");
+POP_WARNING()
     }
 
     TEST (test_file, directory_normalize_path)
