@@ -8,7 +8,7 @@ function(ApplyPatch SOURCE_DIR PATCH_FILE)
     GetPatchMarker(PATCH_APPLIED ${SOURCE_DIR} ${PATCH_FILE})
     
     # Find git
-    if (NOT EXISTS ${PATCH_APPLIED})
+    if (NOT EXISTS "${PATCH_APPLIED}")
 
         find_program(GIT_EXECUTABLE git)
 
