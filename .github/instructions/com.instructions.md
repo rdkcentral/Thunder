@@ -65,7 +65,6 @@ applyTo: 'Source/com/**'
 
 ## COM-RPC Debugging
 - Switch `communicator` to TCP (`"127.0.0.1:62000"`) to capture traffic.
-- Run `Thunder/GenerateLua.sh Thunder/ ThunderInterfaces/` to produce the Wireshark dissector data file.
 - Use `thunder-comrpc` Wireshark filter; inspect `invoke.hresult` for failures.
 
 ## `Core::ProxyType<T>` — Dynamic Cast Internals

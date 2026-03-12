@@ -110,17 +110,17 @@ The IPC framework is built on a type-erased message hierarchy:
 - **Unregister timing**: `Unregister()` may be called from the `Handle()` callback itself (re-entrant safe), but the resource must not be destroyed until `Unregister()` returns.
 
 ## New File Checklist
-- Include guard for new headers: use classic guards `#ifndef __MYFILE_H__` / `#define __MYFILE_H__` / `#endif` (double-underscore prefix and suffix); existing headers that already use `#pragma once` may remain unchanged.
+- Include guard for new headers: prefer `#pragma once` (consistent with `constraints.md`); existing files with classic `#ifndef` guards may keep them.
 - License header (Apache 2.0, Metrological copyright) at top.
 - `EXTERNAL` macro on any class/function exported from the shared library.
 - Export the new header from `core/core.h` if it is part of the public API.
 
 ## Dependency Inversion Rule
 
-`Source/core/` is a **provider of abstractions** — it must never depend on upper layers. Upper layers (`com/`, `plugins/`, `Thunder/`) implement the abstractions. Concretely:
-- `core/` defines `IWorkerPool`, `IResource`, `IDispatch` — it does not implement a `WorkerPool` that knows about plugins.
-- `com/` and `Thunder/` provide the concrete `WorkerPool` and `ResourceMonitor` implementations that are injected at runtime.
-- If a new abstraction in `core/` needs a concrete implementation, define an interface in `core/` and provide the implementation in `Thunder/` or `com/`.
+`Source/core/` is a **provider of abstractions** — it must never depend on upper layers. Concretely:
+- `core/` defines **and implements** `WorkerPool`, `ResourceMonitor`, `IWorkerPool`, `IResource`, `IDispatch` — these are fully self-contained in `Source/core/` with no dependency on `com/`, `plugins/`, or `Thunder/`.
+- Upper layers (`com/`, `plugins/`, `Thunder/`) consume these abstractions; they never provide implementations back into `core/`.
+- If new `core/` behaviour would require a dependency on a COM or plugin type, define an interface in `core/` and inject the concrete implementation from `Thunder/` or `com/` at runtime — never pull upper-layer headers into `core/`.
 
 ## Singleton Pattern in `core/`
 

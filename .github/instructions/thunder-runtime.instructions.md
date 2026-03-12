@@ -27,8 +27,8 @@ applyTo: 'Source/Thunder/**'
 
 ## `Service` — Plugin Wrapper
 - `Service` wraps the loaded plugin library and its `IPlugin` implementation.
-- Activation path: `Service::Activate()` → loads `.so` → calls `Initialize()` → transitions to `ACTIVATED`.
-- Deactivation path: `Service::Deactivate()` → calls `Deinitialize()` → unloads `.so`.
+- Activation path: `Service::Activate()` → loads the plugin shared library → calls `Initialize()` → transitions to `ACTIVATED`.
+- Deactivation path: `Service::Deactivate()` → calls `Deinitialize()` → unloads the plugin shared library.
 - Deactivation reasons are represented by `PluginHost::IShell::reason` enum: `REQUESTED`, `AUTOMATIC`, `FAILURE`, `STARTUP`, `SHUTDOWN`, `CONDITIONS`, `WATCHDOG_EXPIRED`, `INITIALIZATION_FAILED`. The reason is **not** passed as a parameter to `IPlugin::INotification::Deactivated()` — retrieve it inside the callback via `shell->Reason()`.
 - `Service::Submit(job)` enqueues a job through `ThrottleQueueType` — use this for all plugin-context async work.
 
@@ -116,7 +116,7 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 
 ## Hot-Reload Details
 
-- **Plugin config hot-reload**: `FileObserver` watches the `configs` directory. On change, `ConfigObserver` calls `Service::ConfigUpdated()` → plugin is deactivated, config updated, re-activated (if autostart). This is non-atomic — there is a brief window where the plugin is inactive.
+- **Plugin config hot-reload**: `FileObserver` watches the `configs` directory. On change, `ConfigObserver` calls `ServiceMap::ConfigReload()`, which scans `*.json` files and calls `Insert()` for each. `Insert()` **only registers new plugins** — if a plugin with that callsign is already registered, the updated config is silently ignored (an error is logged). Hot-reload does **not** deactivate or reconfigure already-running plugins; a daemon restart is required to apply config changes to existing plugins.
 - **Proxy stub hot-load**: when a new `.so`/`.dylib` appears in `proxystubpath`, it is loaded via `Core::Library` and its `Instantiation` static object fires, registering stubs. Already-loaded stubs are **never unloaded** — removing a proxy stub file does not deregister it.
 - **Daemon config**: `config.json` is read once at startup — changes require a daemon restart.
 
@@ -147,7 +147,7 @@ Controller is the only plugin that is part of `Source/Thunder/` itself. Key JSON
 
 ## Cross-Reference
 
-- For the complete OOP plugin lifecycle: see `01-architecture.md` (OOP Announce Handshake).
-- For `_adminLock` / `_pluginHandling` locking discipline: see `08-threading-and-synchronization.md`.
-- For adding daemon config fields: see `11-configuration-and-metadata.md`.
+- For the complete OOP plugin lifecycle: see `docs/plugin/execution-modes/outofprocess.md`.
+- For `_adminLock` / `_pluginHandling` locking discipline: see `constraints.md` (Multi-threading Discipline).
+- For adding daemon config fields: see `constraints.md` (Configuration / Paths).
 - For security and ISecurity interface: see `Source/plugins/ISecurity.h`.

@@ -63,14 +63,14 @@ These apply to all Thunder source code, with particular emphasis on the framewor
 
 ### Naming
 
-- **Files**: PascalCase — `MyModule.h`, `MyModule.cpp`.
+- **New feature/module files**: PascalCase — `MyModule.h`, `MyModule.cpp`. Legacy framework-level headers (e.g. `core.h`, `com.h`, `plugins.h`) use lowercase — do not rename them.
 - **Namespaces and classes**: PascalCase — `MyNameSpace`, `MyClass`.
 - **Class member methods**: PascalCase — `GetValue()`, `SetActive()`.
 - **Class member variables**: `_` prefix + camelCase — `_myVariable`, `_adminLock`.
 
 ### Comments
 
-Keep comments minimal — code must be self-explanatory. A comment must add context that cannot be read from the code itself. Write comments in correct English. Place comments on their own line immediately before or after the relevant code — never on the same line as a statement.
+Keep comments minimal — code must be self-explanatory. A comment must add context that cannot be read from the code itself. Write comments in correct English. Prefer placing comments on their own line before the relevant code; avoid trailing inline comments where possible (they make diffs and alignment fragile).
 
 ### Include Guards
 

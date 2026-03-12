@@ -4,7 +4,7 @@ applyTo: '**'
 
 # Thunder — Navigation
 
-Use this file to find where detailed documentation or canonical examples live. No rules are defined here — rules are in `copilot-instructions.md` and `constraints.md`. For anti-patterns, see `common-mistakes.md`.
+Use this file to find where detailed documentation or canonical examples live. This file does not define new rules — consult `copilot-instructions.md` and `constraints.md` for cross-cutting rules, the four scoped instruction files (`core.instructions.md`, `com.instructions.md`, `plugins.instructions.md`, `thunder-runtime.instructions.md`) for layer-specific rules, and `common-mistakes.md` for anti-patterns.
 
 ---
 

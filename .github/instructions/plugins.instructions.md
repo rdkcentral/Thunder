@@ -144,7 +144,7 @@ END_INTERFACE_MAP
 - `Core::ERROR_UNAVAILABLE`, `Core::ERROR_ILLEGAL_STATE`, `Core::ERROR_BAD_REQUEST` for common failure modes.
 - Use `Core::ErrorToString(code)` when logging errors.
 - Check for transport vs plugin errors: `if (result & COM_ERROR) { /* transport failure */ }`.
-- `Core::ERROR_TIMEDOUT` (== `Core::ERROR_ASYNC_ABORTED` in some contexts) indicates a COM-RPC call exceeded `CommunicationTimeOut`.
+- `Core::ERROR_TIMEDOUT` indicates a COM-RPC call exceeded `CommunicationTimeOut`. It is a distinct code from `Core::ERROR_ASYNC_ABORTED` — do not treat them as equivalent.
 
 ## External COM-RPC Clients (Standalone Tools)
 For standalone tools or test apps that connect to Thunder as COM-RPC clients (not as plugins):
@@ -314,7 +314,7 @@ void Unavailable(const string& callsign, PluginHost::IShell* plugin) override
 
 ## Cross-Reference
 
-- For complete plugin development workflow: see `10-plugin-development.md`.
-- For subsystem config (`precondition`, `termination`): see `11-configuration-and-metadata.md`.
-- For JSON-RPC event notification patterns: see `10-plugin-development.md` (JSON-RPC Events section).
-- For interface design: see `07-interface-driven-development.md`.
+- For complete plugin development workflow: see `navigation.md` and `docs/plugin/`.
+- For subsystem config (`precondition`, `termination`): see `constraints.md` (Initialize/Deinitialize Contract) and `docs/plugin/subsystems.md`.
+- For JSON-RPC event notification patterns: see `docs/plugin/messaging.md`.
+- For interface design: see `docs/plugin/interfaces/guidelines.md`.

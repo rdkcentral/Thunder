@@ -10,7 +10,7 @@ Thunder is a **plugin-based device abstraction framework** for embedded platform
 
 1. **Plugin isolation** — the daemon is infrastructure only. All domain logic lives in plugins behind COM interfaces. Never add business logic to `Source/Thunder/` or `Source/core/`.
 2. **COM-RPC over everything** — inter-plugin calls go through COM interface pointers. The framework short-circuits in-process calls to direct vtable calls automatically. Never use JSON-RPC, raw sockets, or function pointers to call between plugins.
-3. **No RTTI, no exceptions, no STL allocations across ABI boundaries** — Thunder targets embedded Linux (`-fno-exceptions`, `-fno-rtti`). COM ref-counting (`AddRef`/`Release`/`Core::ProxyType`) replaces smart pointers at interface boundaries.
+3. **No exceptions, no STL across ABI boundaries** — Thunder is built with `-fno-exceptions`. RTTI is available but avoid `dynamic_cast` and typeid-dependent patterns across dylib boundaries. COM ref-counting (`AddRef`/`Release`/`Core::ProxyType`) replaces smart pointers at interface boundaries.
 4. **Interfaces are contracts** — a published COM interface is a binary ABI. Design every interface as if the implementation will be replaced and the binary will be deployed independently. It cannot change after publication.
 
 ---
