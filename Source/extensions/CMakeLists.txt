@@ -15,10 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(BLUETOOTH
-        "Include bluetooth library in the build." OFF)
-option(BROADCAST
-        "Include broadcasting library in the build." OFF)
 option(HIBERNATESUPPORT
         "Include hibernate support in the build." OFF)
 option(LOCALTRACER
@@ -29,14 +25,6 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(WARNING_REPORTING
         "Include warning reporting in the build." OFF)
-
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
-endif()
-
-if(BROADCAST)
-    add_subdirectory(broadcast)
-endif()
 
 if(HIBERNATESUPPORT)
     add_subdirectory(hibernate)
