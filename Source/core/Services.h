@@ -131,7 +131,7 @@ namespace Core {
         }
         ~SinkType()
         {
-            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
+            REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount.load(std::memory_order_relaxed));
 
             if (_referenceCount.load(std::memory_order_relaxed) != 0) {
                 // Since this is a Composit of a larger object, it could be that the reference count has
