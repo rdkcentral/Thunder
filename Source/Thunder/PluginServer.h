@@ -1057,10 +1057,11 @@ namespace PluginHost {
                 Lock();
 
                 if ( (_jsonrpc == nullptr) || (IsActive() == false) ) {
+                    bool isHibernated = IsHibernated();
                     Unlock();
 
                     response = Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC());
-                    if (IsHibernated() == true) {
+                    if (isHibernated == true) {
                         response->Error.SetError(Core::ERROR_HIBERNATED);
                     }
                     else {
