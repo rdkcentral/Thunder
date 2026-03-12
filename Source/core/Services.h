@@ -155,8 +155,8 @@ namespace Core {
         }
         virtual uint32_t Release() const
         {
-            ASSERT (_referenceCount.load(std::memory_order_relaxed) > 0);
-            --_referenceCount;
+            VARIABLE_IS_NOT_USED uint32_t newvalue = --_referenceCount;
+            ASSERT (newvalue != std::numeric_limits<uint32_t>::max());
             return (Core::ERROR_COMPOSIT_OBJECT);
         }
 
