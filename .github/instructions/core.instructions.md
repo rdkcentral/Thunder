@@ -58,41 +58,26 @@ applyTo: 'Source/core/**'
 
 ## Platform Preprocessor Guards
 - Use `#ifdef __LINUX__` for Linux-specific code (includes Android).
-- Use `#ifdef __APPLE__` for macOS-specific code.
-- Use `#ifdef __POSIX__` for POSIX-common code (covers both Linux and macOS).
+- Use `#ifdef __POSIX__` for POSIX-common code.
 - Use `#ifdef __WINDOWS__` for Windows-specific code.
 - Use `#ifdef __UNIX__` for general Unix (POSIX + others).
 - Always provide an `#else` or `#error` for unsupported platforms in new platform-abstraction code.
-- **Never** assume Linux-only — always check if macOS needs a different implementation.
 
 ## Network Info (`NetworkInfo.h` / `NetworkInfo.cpp`)
-`AdapterIterator` provides a cross-platform abstraction over network interface enumeration:
+`AdapterIterator` provides a cross-platform abstraction over network interface enumeration.
 
 ### Linux Implementation
 - Uses `netlink` sockets (`AF_NETLINK`, `NETLINK_ROUTE`) for interface enumeration.
 - Reads `/proc/net/if_inet6` for IPv6 addresses.
 - Sends `RTM_GETADDR` / `RTM_GETLINK` requests to query interface state.
 
-### macOS Implementation
-- Uses `getifaddrs()` for address enumeration (IPv4 + IPv6) and interface flags.
-- Uses `sysctl()` with `PF_ROUTE` / `CTL_NET` / `RTM_IFLIST2` for MAC address and interface statistics.
-- **Key differences from Linux**:
-  - No `netlink` — all queries through BSD `sysctl` and `ioctl`.
-  - `AF_LINK` sockaddr contains MAC address (via `LLADDR()` macro from `<net/if_dl.h>`).
-  - `struct if_msghdr2` provides per-interface byte/packet counters.
-  - Interface index ↔ name mapping via `if_indextoname()` / `if_nametoindex()`.
-  - No `/proc` filesystem — never reference `/proc/**` in macOS code paths.
-
 ### DHCPClient
-- Linux: uses raw sockets (`AF_PACKET`) for DHCP discovery.
-- macOS: raw DHCP sockets require root privileges — conditional compilation guards needed.
-- Always guard DHCP-specific code with `#ifndef __APPLE__` or implement a macOS alternative.
+- Uses raw sockets (`AF_PACKET`) for DHCP discovery.
 
 ## NodeId (`NodeId.h` / `NodeId.cpp`)
 - `Core::NodeId` wraps socket addresses (IPv4, IPv6, Unix domain, Netlink).
 - `getaddrinfo()` is used for hostname resolution — handle `EAI_NONAME` and `EAI_AGAIN` as non-fatal (especially for numeric-only addresses).
-- On macOS, `EAI_NONAME` can trigger excessive syslog spam if logged at warning level — log at `TRACE_L1` only.
-- Unix domain socket paths: max length is `sizeof(sockaddr_un::sun_path) - 1` (typically 104 on macOS, 108 on Linux).
+- Unix domain socket paths: max length is `sizeof(sockaddr_un::sun_path) - 1` (108 bytes on Linux).
 
 ## IPC Message System (`IPCConnector.h`)
 The IPC framework is built on a type-erased message hierarchy:
@@ -116,7 +101,7 @@ The IPC framework is built on a type-erased message hierarchy:
 - `IPCChannel::Unregister(label)` removes the handler.
 - Incoming frames are deserialized, matched by label, and dispatched to the registered handler.
 - The handler receives `Core::ProxyType<Core::IIPC>&` — a type-erased smart pointer to the message.
-- **Critical**: converting this `ProxyType<IIPC>` to a specific `ProxyType<IPCMessageType<...>>` uses `dynamic_cast` internally, which **fails on macOS** for template types across dylibs. Use `Label()` + `static_cast` instead (see com.instructions.md).
+- **Critical**: never convert `ProxyType<IIPC>` to a specific `ProxyType<IPCMessageType<...>>` via `dynamic_cast` — use `Label()` to identify the message type and `static_cast` to convert (see `com.instructions.md`). `dynamic_cast` on template specialisations is not reliable across dylib boundaries.
 
 ## `ResourceMonitor` Details
 - Singleton: `Core::ResourceMonitor::Instance()`.
@@ -125,11 +110,10 @@ The IPC framework is built on a type-erased message hierarchy:
 - **Unregister timing**: `Unregister()` may be called from the `Handle()` callback itself (re-entrant safe), but the resource must not be destroyed until `Unregister()` returns.
 
 ## New File Checklist
-- Include guard for new headers: use classic guards `#ifndef __MYFILE_H` / `#define __MYFILE_H` / `#endif` (double-underscore); existing headers that already use `#pragma once` may remain unchanged.
+- Include guard for new headers: use classic guards `#ifndef __MYFILE_H__` / `#define __MYFILE_H__` / `#endif` (double-underscore prefix and suffix); existing headers that already use `#pragma once` may remain unchanged.
 - License header (Apache 2.0, Metrological copyright) at top.
 - `EXTERNAL` macro on any class/function exported from the shared library.
 - Export the new header from `core/core.h` if it is part of the public API.
-- If the feature has platform-specific behavior, provide both `__LINUX__` and `__APPLE__` implementations from the start.
 
 ## Dependency Inversion Rule
 
@@ -169,6 +153,5 @@ Core::Singleton::Dispose();
 
 ## Cross-Reference
 
-- For IPC message type safety and macOS `dynamic_cast` failure: see `05-object-lifecycle-and-memory.md`.
-- For `ResourceMonitor` usage in plugin context: see `08-threading-and-synchronization.md`.
-- For `NodeId` and `NetworkInfo` usage from the plugin layer: see `06-comrpc-fundamentals.md` (Communicator socket configuration).
+- For IPC message type safety (`Label()` + `static_cast` pattern): see `com.instructions.md`.
+- For `NodeId` and `NetworkInfo` usage from the plugin layer: see `com.instructions.md` (Communicator socket configuration).

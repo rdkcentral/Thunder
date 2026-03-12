@@ -95,9 +95,10 @@ static Plugin::Metadata<MyPlugin> metadata(
 );
 ```
 
-## `IPlugin::IPluginExtended` and `IPlugin::ICompositPlugin`
-- `IPluginExtended`: adds `Inbound(Web::Request&)` and `Process(const Web::Request&)` for HTTP handling. Also known as the `IWeb` pattern (prefer `IWeb` from the exchange interfaces if available).
-- `ICompositPlugin`: for plugins that aggregate sub-plugins — rare, check existing examples before implementing.
+## `PluginHost::IPluginExtended` and `PluginHost::ICompositPlugin`
+- `PluginHost::IPluginExtended`: extends `IPlugin` with `Attach(channelId)` / `Detach(channelId)` — called when a WebSocket or HTTP channel connects or disconnects.
+- HTTP request handling is provided by `PluginHost::IWeb`, which adds `Inbound(Web::Request&)` and `Process(const Web::Request&)`. Implement `IWeb` (not `IPluginExtended`) when exposing HTTP endpoints.
+- `PluginHost::ICompositPlugin`: for plugins that aggregate sub-plugins — rare, check existing examples before implementing.
 
 ## Custom Config
 Extend `Core::JSON::Container`; parse in `Initialize()`:
@@ -190,8 +191,6 @@ target_link_libraries(mytool
 ```
 
 ### RPATH Considerations
-- On macOS, set `CMAKE_INSTALL_RPATH` to the Thunder install `lib/` directory.
-- Use `@loader_path/../lib` for portable macOS bundles.
 - On Linux, use `$ORIGIN/../lib` or absolute paths via `CMAKE_INSTALL_RPATH`.
 
 ## Plugin Example Structure (`ThunderNanoServices/examples/`)

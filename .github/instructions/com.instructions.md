@@ -15,8 +15,7 @@ applyTo: 'Source/com/**'
 
 ## `Core::IUnknown` — The Base of All COM Interfaces
 - Every COM interface must inherit **`virtual public Core::IUnknown`** — virtual inheritance is mandatory to avoid diamond-problem reference count collisions.
-- `Core::IUnknown` provides `AddRef()`, `Release()`, and `QueryInterface(id)`.
-- Do not override `AddRef()`/`Release()` in interface definitions — only in final concrete implementations if absolutely required.
+- `Core::IUnknown` provides `QueryInterface(id)`. `AddRef()` and `Release()` are inherited via `Core::IReferenceCounted` — do not override them in interface definitions, only in final concrete implementations if absolutely required.
 - Every interface must declare: `enum { ID = RPC::ID_XXX };` where `ID_XXX` is registered in `ThunderInterfaces/interfaces/Ids.h` (or `Source/com/Ids.h` for core COM IDs).
 
 ## Proxy/Stub Pattern
@@ -71,9 +70,8 @@ applyTo: 'Source/com/**'
 
 ## `Core::ProxyType<T>` — Dynamic Cast Internals
 - `Core::ProxyType<T>` uses `dynamic_cast` internally when converting between types (e.g. `ProxyType<IIPC>` → `ProxyType<InvokeMessage>`).
-- **macOS caveat**: this `dynamic_cast` fails for template types across dylib boundaries because Apple Clang emits template typeinfo as "weak private external" (per-dylib private copies). `libc++` compares typeinfo by pointer only, not by name.
-- **Never** rely on `ProxyType<T>(base_proxy)` conversions for `IPCMessageType<>` specializations in code that runs across dylib boundaries. Use `IIPC::Label()` + `static_cast` instead.
-- This does NOT affect `ProxyType` conversions for non-template types (e.g. `ProxyType<IPCChannel>`) — those work correctly on all platforms.
+- **Never** rely on `ProxyType<T>(base_proxy)` conversion for `IPCMessageType<>` specialisations — `dynamic_cast` on template types is not reliable across dylib boundaries. Use `IIPC::Label()` + `static_cast` instead.
+- This does NOT affect `ProxyType` conversions for non-template types (e.g. `ProxyType<IPCChannel>`) — those work correctly.
 
 ## IPC Message Dispatch Pattern (`Administrator.h`, `Communicator.h`)
 The COM-RPC layer dispatches incoming IPC frames through a handler registry:
@@ -97,11 +95,11 @@ void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) ove
 }
 ```
 
-**Legacy pattern** (breaks on macOS for template message types):
+**Avoid this pattern** (fragile for template message types across dylib boundaries):
 ```cpp
 void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override {
     Core::ProxyType<AnnounceMessage> message(data);  // uses dynamic_cast internally
-    ASSERT(message.IsValid());  // FAILS on macOS — message is null
+    ASSERT(message.IsValid());  // FAILS — dynamic_cast on template types is not reliable across dylibs
 }
 ```
 
@@ -109,7 +107,7 @@ void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) ove
 - `Job::Invoke()` dispatches `InvokeMessage` frames to the `Administrator` for method call execution.
 - `Administrator::ExtractInvokeMessage()` extracts the concrete `InvokeMessage` from a `ProxyType<IIPC>`.
 - `Administrator::Identifier()` reads the interface ID from the message to route to the correct stub.
-- These methods must use `Label()` check + `static_cast` on macOS — see `dev/macos-dylib-dyncast` branch for the reference fix.
+- These methods must use `Label()` check + `static_cast` — the IPC channel routing guarantees type correctness by label, making `static_cast` safe.
 
 ### `Communicator::ChannelServer::AnnounceHandler`
 - Receives `AnnounceMessage` frames from OOP plugin processes and new COM-RPC client connections.
@@ -177,7 +175,7 @@ auto* iface = client.Interface();  // returns Exchange::INetworkControl*
 
 ## Cross-Reference
 
-- For interface design rules and annotation tags: see `07-interface-driven-development.md`.
-- For ref-counting contract and `ProxyType` macOS caveats: see `05-object-lifecycle-and-memory.md`.
-- For COM-RPC usage from the plugin layer: see `06-comrpc-fundamentals.md`.
-- For the OOP announce handshake sequence: see `01-architecture.md`.
+- For interface design rules and annotation tags: see `navigation.md`.
+- For ref-counting contract and `ProxyType` usage: see `constraints.md`.
+- For COM-RPC usage from the plugin layer: see `plugins.instructions.md`.
+- For the OOP announce handshake sequence: see `thunder-runtime.instructions.md`.

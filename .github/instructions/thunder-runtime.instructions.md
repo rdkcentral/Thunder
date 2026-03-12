@@ -23,13 +23,13 @@ applyTo: 'Source/Thunder/**'
 - **Acquire `_adminLock` as briefly as possible** — never call plugin code (`Initialize`, `Deinitialize`, JSON-RPC handlers) while holding it.
 - `_pluginHandling` (per-`Service`) guards per-plugin interface pointers — separate from `_adminLock`. Never hold both simultaneously.
 - Lookup by callsign: `ServiceMap::FromLocator()` resolves a URL segment to a `Service*`.
-- Plugin states are `UNAVAILABLE → DEACTIVATED → PRECONDITION → ACTIVATED` (plus `SUSPENDED`/`HIBERNATED`). Only the framework transitions states — never force-set `_state` directly.
+- Plugin lifecycle states follow `PluginHost::IShell::state` (see `Source/plugins/IShell.h`): `UNAVAILABLE`, `DEACTIVATED`, `ACTIVATION`, `PRECONDITION`, `ACTIVATED`, `DEACTIVATION`, `HIBERNATED`, `DESTROYED`. Only the framework transitions states — never force-set `_state` directly.
 
 ## `Service` — Plugin Wrapper
 - `Service` wraps the loaded plugin library and its `IPlugin` implementation.
 - Activation path: `Service::Activate()` → loads `.so` → calls `Initialize()` → transitions to `ACTIVATED`.
 - Deactivation path: `Service::Deactivate()` → calls `Deinitialize()` → unloads `.so`.
-- Reason codes for deactivation (`REQUESTED`, `AUTOMATIC`, `FAILURE`, `SHUTDOWN`, `CONDITIONS`, `WATCHDOG`) are passed to `IPlugin::INotification::Deactivated()` — use the correct reason when triggering deactivation.
+- Deactivation reasons are represented by `PluginHost::IShell::reason` enum: `REQUESTED`, `AUTOMATIC`, `FAILURE`, `STARTUP`, `SHUTDOWN`, `CONDITIONS`, `WATCHDOG_EXPIRED`, `INITIALIZATION_FAILED`. The reason is **not** passed as a parameter to `IPlugin::INotification::Deactivated()` — retrieve it inside the callback via `shell->Reason()`.
 - `Service::Submit(job)` enqueues a job through `ThrottleQueueType` — use this for all plugin-context async work.
 
 ## Dispatch & Throttle
@@ -109,12 +109,6 @@ When activating an out-of-process (OOP) plugin (`mode: Local` or `Container`):
 | `-m` | Proxy stub path |
 | `-t` | Thread count |
 
-## macOS Runtime Considerations
-- **`LD_LIBRARY_PATH`** manipulation in `Process::Launch()` does not work on macOS — macOS uses `DYLD_LIBRARY_PATH`, and SIP may strip it. Set rpaths at build time instead.
-- **Process forking**: `Core::Process::Launch()` uses `posix_spawn()` or `fork()`+`exec()` — both work on macOS but `posix_spawn()` is preferred.
-- **Socket paths**: macOS has a shorter `sun_path` limit (104 bytes vs 108 on Linux) — keep communicator socket paths short.
-- **Proxy stub loading**: `LoadProxyStubs()` uses `Core::Library` (wraps `dlopen`) — on macOS, libraries use `.dylib` extension. CMake's `CMAKE_SHARED_LIBRARY_SUFFIX` handles this automatically.
-
 ## Security
 - All JSON-RPC calls pass through `ISecurity::Allowed()` (token-based) before dispatch.
 - `SecurityAgent` plugin provides the `ISecurity` implementation — the daemon uses it via `QueryInterface`.
@@ -150,7 +144,6 @@ Controller is the only plugin that is part of `Source/Thunder/` itself. Key JSON
 4. Add post-mortem dump section to `PostMortem.cpp` if the feature has recoverable state.
 5. Add the new feature to `Controller`'s JSON-RPC interface if external management is needed.
 6. Update `ExampleConfigLinux.json` / `ExampleConfigAll.json` with the new config option.
-7. Test on both Linux and macOS — especially any code that touches shared libraries, `dynamic_cast`, or process spawning.
 
 ## Cross-Reference
 
