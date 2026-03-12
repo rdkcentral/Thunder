@@ -15,10 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(BLUETOOTH
-        "Include bluetooth library in the build." OFF)
-option(BROADCAST
-        "Include broadcasting library in the build." OFF)
 option(HIBERNATESUPPORT
         "Include hibernate support in the build." OFF)
 option(LOCALTRACER
