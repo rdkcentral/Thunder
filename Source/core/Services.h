@@ -133,7 +133,7 @@ namespace Core {
         {
             REPORT_OUTOFBOUNDS_WARNING(WarningReporting::SinkStillHasReference, _referenceCount);
 
-            if (_referenceCount != 0) {
+            if (_referenceCount.load(std::memory_order_relaxed) != 0) {
                 // Since this is a Composit of a larger object, it could be that the reference count has
                 // not reached 0. This can happen if a process that has a reference to this SinkType (e.g. 
                 // a registered notification) crashed before it could unregister this notification. Due to
@@ -150,13 +150,13 @@ namespace Core {
     public:
         virtual uint32_t AddRef() const
         {
-            Core::InterlockedIncrement(_referenceCount);
+            ++_referenceCount;
             return (Core::ERROR_COMPOSIT_OBJECT);
         }
         virtual uint32_t Release() const
         {
-            ASSERT (_referenceCount > 0);
-            Core::InterlockedDecrement(_referenceCount);
+            ASSERT (_referenceCount.load(std::memory_order_relaxed) > 0);
+            --_referenceCount;
             return (Core::ERROR_COMPOSIT_OBJECT);
         }
 
@@ -165,7 +165,7 @@ namespace Core {
             uint32_t result = Core::ERROR_NONE;
             uint64_t now = Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond;
             uint8_t count = 0;
-            while (_referenceCount > 0) {
+            while (_referenceCount.load(std::memory_order_relaxed) > 0) {
                     Core::Thread::Yield(count, 100);
                     if (( timeout != Core::infinite ) && ( (Core::Time::Now().Ticks() / Core::Time::TicksPerMillisecond) - now > timeout )) {
                         result = Core::ERROR_TIMEDOUT;
@@ -177,7 +177,7 @@ namespace Core {
         }
 
     private:
-        mutable uint32_t _referenceCount;
+        mutable std::atomic<uint32_t> _referenceCount;
     };
 
     template <typename ACTUALSERVICE>
