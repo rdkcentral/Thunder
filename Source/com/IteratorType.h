@@ -203,11 +203,12 @@ POP_WARNING()
         }
         void Add(const typename INTERFACE::Element& element)
         {
-            const bool wasValid = IsValid();
-            const bool wasBeforeFirst = (_index == 0);
             const bool wasPastEnd = (_index == (Count() + 1));
 
             if constexpr (detail::has_capacity<Container>::value == true) {
+                const bool wasValid = IsValid();
+                const bool wasBeforeFirst = (_index == 0);
+
                 size_t offset = 0;
 
                 if (wasValid == true) {
