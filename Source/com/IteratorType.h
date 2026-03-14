@@ -24,10 +24,26 @@ namespace Thunder {
 
 namespace RPC {
 
-    template<typename INTERFACE>
+    namespace detail {
+
+        template<typename, typename = void>
+        struct has_reserve : std::false_type {};
+
+        template<typename C>
+        struct has_reserve<C, std::void_t<decltype(std::declval<C>().reserve(std::declval<typename C::size_type>()))>> : std::true_type {};
+
+        template<typename, typename = void>
+        struct has_capacity : std::false_type {};
+
+        template<typename C>
+        struct has_capacity<C, std::void_t<decltype(std::declval<const C>().capacity())>> : std::true_type {};
+
+    } // namespace detail
+
+    template<typename INTERFACE, typename CONTAINER = std::list<typename INTERFACE::Element>>
     class IteratorType : public INTERFACE {
     public:
-        using Container = typename std::list<typename INTERFACE::Element>;
+        using Container = CONTAINER;
 
         IteratorType() = delete;
         IteratorType(const IteratorType&) = delete;
@@ -39,16 +55,35 @@ namespace RPC {
         {
             _iterator = _container.begin();
         }
-        template <typename CONTAINER, typename PREDICATE>
-        IteratorType(const CONTAINER& container, PREDICATE predicate)
+        template <typename T = typename INTERFACE::Element,
+                  std::enable_if_t<!std::is_same_v<Container, std::list<T>>, int> = 0>
+        IteratorType(std::list<T>&& container)
+            : _container()
+            , _index(0)
+        {
+            TRACE_L1("Thunder::RPC::IteratorType: Using std::list as a source container is less efficient.");
+
+            if constexpr (detail::has_reserve<Container>::value == true) {
+                _container.reserve(container.size());
+            }
+
+            std::move(
+                std::make_move_iterator(container.begin()),
+                std::make_move_iterator(container.end()),
+                std::back_inserter(_container));
+
+            _iterator = _container.begin();
+        }
+        template <typename SOURCECONTAINER, typename PREDICATE>
+        IteratorType(const SOURCECONTAINER& container, PREDICATE predicate)
             : _container()
             , _index(0)
         {
             std::copy_if(container.begin(), container.end(), std::back_inserter(_container), predicate);
             _iterator = _container.begin();
         }
-        template <typename CONTAINER>
-        IteratorType(const CONTAINER& container)
+        template <typename SOURCECONTAINER>
+        IteratorType(const SOURCECONTAINER& container)
             : _container()
             , _index(0)
         {
@@ -166,8 +201,42 @@ POP_WARNING()
 
             return (*_iterator);
         }
-        void Add(const typename INTERFACE::Element& element) {
-            _container.push_back(element);
+        void Add(const typename INTERFACE::Element& element)
+        {
+            const bool wasPastEnd = (_index == (Count() + 1));
+
+            if constexpr (detail::has_capacity<Container>::value == true) {
+                const bool wasValid = IsValid();
+                const bool wasBeforeFirst = (_index == 0);
+
+                size_t offset = 0;
+
+                if (wasValid == true) {
+                    offset = static_cast<size_t>(std::distance(_container.begin(), _iterator));
+                }
+
+                const auto oldCap = _container.capacity();
+                _container.push_back(element);
+
+                if (_container.capacity() != oldCap) {
+
+                    if (wasValid == true) {
+                        _iterator = _container.begin() + offset;
+                    }
+                    else if (wasBeforeFirst == true) {
+                        _iterator = _container.begin();
+                    }
+                }
+            } else {
+                // For containers with stable iterators (e.g., std::list),
+                // push_back does not invalidate existing iterators
+                _container.push_back(element);
+            }
+
+            if (wasPastEnd == true) {
+                _iterator = _container.end();
+                _index = Count() + 1;
+            }
         }
 
         BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
