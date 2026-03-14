@@ -2218,6 +2218,7 @@ namespace PluginHost {
 
                             if (baseInterface != nullptr) {
                                 hasinterface = true;
+                                // oh not too smart huppel, fix me (but that is not that easy)
                                 static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
                             }
                         }
@@ -2296,13 +2297,13 @@ namespace PluginHost {
                     bool send = false;
                     switch (_type) {
                     case Type::ALL:
-                        _allnotifier.SendNotification(callsign, entry);
+                        send = _allnotifier.SendNotification(callsign, entry);
                         break;
                     case Type::CALLSIGN:
-                        _callsignnotifier.SendNotification(callsign, entry);
+                        send = _callsignnotifier.SendNotification(callsign, entry);
                         break;
                     case Type::INTERFACE:
-                        _interfacenotifier.SendNotification(callsign, entry);
+                        send = _interfacenotifier.SendNotification(callsign, entry);
                         break;
                     default:
                         ASSERT(false);
@@ -2565,8 +2566,11 @@ namespace PluginHost {
             using ShellNotifiers = std::vector<Exchange::Controller::IShells::INotification*>;
             using ChannelObservers = std::vector<IShell::IConnectionServer::INotification*>;
 
-            void Snapshot(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign)
+            // returns false if wants to be unregistered again (quite unexpected) 
+            bool Snapshot(PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign)
             {
+                bool keepregistered = true;
+
                 ASSERT(sink != nullptr);
 
                 if (callsign.IsSet() == true) {
@@ -2575,7 +2579,9 @@ namespace PluginHost {
                     if (FromIdentifier(callsign.Value(), shell) == Core::ERROR_NONE) {
 
                         if (shell->State() == IShell::ACTIVATED) {
-                            sink->Activated(shell->Callsign(), shell.operator->());
+                            if (sink->CancelableActivated(shell->Callsign(), shell.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                            }
                         }
                     }
                 }
@@ -2590,23 +2596,36 @@ namespace PluginHost {
                         ASSERT(service.IsValid());
 
                         if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
-                            sink->Activated(service->Callsign(), service.operator->());
+                            if( sink->CancelableActivated(service->Callsign(), service.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                                break;
+                            }   
 
                             // Report any composite plugins that are active..
                             service->Composits().Visit([&](const string& callsign, IShell* proxy) {
                                 if (proxy->State() == IShell::ACTIVATED) {
-                                    sink->Activated(callsign, proxy);
+                                    if ((keepregistered == true) && (sink->CancelableActivated(callsign, proxy) == Core::ERROR_CANCEL)) {
+                                        keepregistered = false;
+                                    }   
                                 }
                             });
+
+                            if (keepregistered == false) {
+                                break;
+                            }
                         }
                     }
                     _adminLock.Unlock();
                 }
+                return keepregistered;  
             }
 
-            void Snapshot(PluginHost::IPlugin::INotification* sink, const uint32_t interface_id)
+            // returns false if wants to be unregistered again (quite unexpected) 
+            bool Snapshot(PluginHost::IPlugin::INotification* sink, const uint32_t interface_id)
             {
                 ASSERT(sink != nullptr);
+
+                bool keepregistered = true;
 
                 _adminLock.Lock();
 
@@ -2632,12 +2651,15 @@ namespace PluginHost {
                         }
 
                         if (hasinterface == true) {
-                            sink->Activated(service->Callsign(), service.operator->());
+                            if (sink->CancelableActivated(service->Callsign(), service.operator->()) == Core::ERROR_CANCEL) {
+                                keepregistered = false;
+                                break;
+                            }
                         }
 
                         // Report any composite plugins that are active..
                         service->Composits().Visit([&](const string& callsign, IShell* proxy) {
-                            if (proxy->State() == IShell::ACTIVATED) {
+                            if ((keepregistered == true) && (proxy->State() == IShell::ACTIVATED)) {
                                 bool hasinterface = true;
 
                                 if (interface_id != PluginHost::IShell::ID) {
@@ -2651,13 +2673,21 @@ namespace PluginHost {
                                 }
 
                                 if (hasinterface == true) {
-                                    sink->Activated(callsign, proxy);
+                                    if (sink->CancelableActivated(callsign, proxy) == Core::ERROR_CANCEL) {
+                                        keepregistered = false;
+                                    }
                                 }
                             }
                         });
+
+                        if (keepregistered == false) {
+                            break;
+                        }   
                     }
                 }
                 _adminLock.Unlock();
+
+                return keepregistered;
             }
 
             class CommunicatorServer : public RPC::Communicator {
@@ -3559,7 +3589,13 @@ namespace PluginHost {
                 }
 
                 if (registered == true) {
-                    Snapshot(sink, callsign);
+                    if (Snapshot(sink, callsign) == false) {
+                        if (callsign.IsSet() == true) {
+                            _notifiers.Remove(sink, callsign.Value());
+                        } else {
+                            _notifiers.Remove(sink);
+                        }
+                    }
                 }
             }
             void Unregister(const PluginHost::IPlugin::INotification* sink, const Core::OptionalType<string>& callsign = {})
@@ -3573,7 +3609,9 @@ namespace PluginHost {
             void Register(IPlugin::INotification* sink, const uint32_t interface_id)
             {
                 if( _notifiers.Add(sink, interface_id)  == true) {
-                    Snapshot(sink, interface_id);
+                    if( Snapshot(sink, interface_id) == false) {
+                        _notifiers.Remove(sink, interface_id);
+                    }   
                 }
             }
             void Unregister(IPlugin::INotification* sink, const uint32_t interface_id)
