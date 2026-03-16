@@ -72,8 +72,6 @@ namespace PluginHost {
 #else
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
-
-    /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
     /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::PluginOverrideDirectory = _T(EXPAND_AND_QUOTE(NAMESPACE) "/services/");
