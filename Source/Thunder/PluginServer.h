@@ -2089,7 +2089,7 @@ namespace PluginHost {
                         }
                     }
                     out = std::move(root);
-                    return true;
+                    return (out.IsValid() == true);
                 };
 
                 auto PersistToFile = [&](const Core::JSON::Variant& configValue) -> uint32_t {
