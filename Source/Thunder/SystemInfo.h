@@ -106,7 +106,7 @@ namespace PluginHost {
             string _firmwareVersion;
         };
 
-        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> {
+        class Provisioning : public RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>> {
         public:
             Provisioning(const Provisioning&) = delete;
             Provisioning& operator=(const Provisioning&) = delete;
@@ -114,13 +114,13 @@ namespace PluginHost {
             Provisioning() = delete;
 
             Provisioning(PluginHost::ISubSystem::IProvisioning* info)
-                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(info)
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>>(info)
                 , _storage(info->Storage())
             {
             }
 
             Provisioning(std::vector<std::string>&& labels, const std::string& storage)
-                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning>(std::move(labels))
+                : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>>(std::move(labels))
                 , _storage(storage)
             {
             }
