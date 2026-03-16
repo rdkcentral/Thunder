@@ -76,7 +76,7 @@ namespace PluginHost {
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
     /* static */ const TCHAR* Server::ExtensionsConfigDirectory = _T("extensions/");
     /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
-    /* static */ const TCHAR* Server::PluginOverrideDirectory = _T(EXPAND_AND_QUOTE(NAMESPACE) "/plugins/");
+    /* static */ const TCHAR* Server::PluginOverrideDirectory = _T(EXPAND_AND_QUOTE(NAMESPACE) "/services/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
