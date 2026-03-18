@@ -1674,9 +1674,9 @@ namespace Core {
         return ( value * static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator/(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator/(T value, const U& RHS)
     {
         ASSERT(!(   RHS.Overflowed() != false
                  || static_cast<T>(RHS) == 0
@@ -1686,21 +1686,9 @@ namespace Core {
         return ( value / static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator/(T value, const UInt24& RHS)
-    {
-        ASSERT(!(   RHS.Overflowed() != false
-                 || static_cast<T>(RHS) == 0
-                )
-        );
-
-        return ( value / static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator%(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator%(T value, const U& RHS)
     {
         ASSERT(!(   RHS.Overflowed() != false
                  || static_cast<T>(RHS) == 0
@@ -1710,66 +1698,27 @@ namespace Core {
         return ( value % static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator%(T value, const UInt24& RHS)
-    {
-        ASSERT(!(   RHS.Overflowed() != false
-                 || static_cast<T>(RHS) == 0
-                )
-        );
-
-        return ( value % static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator&(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator&(T value, const U& RHS)
     {
         ASSERT(RHS.Overflowed() != true);
 
         return ( value & static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator&(T value, const UInt24& RHS)
-    {
-        ASSERT(RHS.Overflowed() != true);
-
-        return ( value & static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator|(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator|(T value, const U& RHS)
     {
         ASSERT(RHS.Overflowed() != true);
 
         return ( value | static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator|(T value, const UInt24& RHS)
-    {
-        ASSERT(RHS.Overflowed() != true);
-
-        return ( value | static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator^(T value, const SInt24& RHS)
-    {
-        ASSERT(RHS.Overflowed() != true);
-
-        return ( value ^ static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator^(T value, const UInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator^(T value, const U& RHS)
     {
         ASSERT(RHS.Overflowed() != true);
 
@@ -1781,8 +1730,8 @@ namespace Core {
     operator<<(T value, const SInt24& RHS)
     {
         ASSERT(!(   RHS.Overflowed() != false
-                 || static_cast<T>(RHS) < 0
                  || static_cast<std::size_t>(RHS) >= (sizeof(T) * 8)
+                 || static_cast<T>(RHS) < 0
                  || value < 0
                 )
         );
@@ -1808,9 +1757,9 @@ namespace Core {
     operator>>(T value, const SInt24& RHS)
     {
         ASSERT(!(    RHS.Overflowed() != false 
-                  || static_cast<T>(RHS) < 0
                   || static_cast<std::size_t>(RHS) >= (sizeof(T) * 8)
-                     // Implementation defined, here defined as overflow
+                  || static_cast<T>(RHS) < 0
+                     // Implementation defined, here defined as undefined
                   || value < 0
                 )
         );
@@ -1824,7 +1773,7 @@ namespace Core {
     {
         ASSERT(!(    RHS.Overflowed() != false 
                   || static_cast<std::size_t>(RHS) >= (sizeof(T) * 8)
-                     // Implementation defined, here defined as overflow
+                     // Implementation defined, here defined as undefined
                   || value < 0
                 )
         );
@@ -1835,30 +1784,16 @@ namespace Core {
     // Out of class helpers for reordered operands of logical operators
     // ----------------------------------------------------------------
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator&&(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator&&(T value, const U& RHS)
     {
         return ( value && static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator&&(T value, const UInt24& RHS)
-    {
-        return ( value && static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator||(T value, const SInt24& RHS)
-    {
-        return ( value || static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator||(T value, const UInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator||(T value, const U& RHS)
     {
         return ( value || static_cast<T>(RHS) );
     }
@@ -1866,142 +1801,72 @@ namespace Core {
     // Out of class helpers for reordered operands of assignment operators
     // -------------------------------------------------------------------
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator+=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator+=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value + RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator+=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value + RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator-=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator-=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value - RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator-=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value - RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator*=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator*=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value * RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator*=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value * RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator/=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator/=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value / RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator/=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value / RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator%=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator%=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value % RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator%=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value % RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator&=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator&=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value & RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator&=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value & RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator|=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator|=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value | RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator|=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value | RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator^=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator^=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value ^ RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator^=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value ^ RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator<<=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator<<=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value << RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator<<=(T value, const UInt24& RHS)
-    {
-        return ( value = static_cast<T>(value << RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator>>=(T value, const SInt24& RHS)
-    {
-        return ( value = static_cast<T>(value >> RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, T>::type
-    operator>>=(T value, const UInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator>>=(T value, const U& RHS)
     {
         return ( value = static_cast<T>(value >> RHS) );
     }
@@ -2009,94 +1874,48 @@ namespace Core {
     // Out of class helpers for reordered operands of comparison operators
     // -------------------------------------------------------------------
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator==(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator==(T value, const U& RHS)
     {
         return ( value == static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator==(T value, const UInt24& RHS)
-    {
-        return ( value == static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator!=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator!=(T value, const U& RHS)
     {
         return ( value != static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator!=(T value, const UInt24& RHS)
-    {
-        return ( value != static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator<(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator<(T value, const U& RHS)
     {
         ASSERT(RHS.Overflowed() != true);
 
         return ( value < static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator<(T value, const UInt24& RHS)
-    {
-        ASSERT(RHS.Overflowed() != true);
-
-        return ( value < static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator>(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator>(T value, const U& RHS)
     {
         ASSERT(RHS.Overflowed() != true);
 
         return ( value > static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator>(T value, const UInt24& RHS)
-    {
-        ASSERT(RHS.Overflowed() != true);
-
-        return ( value > static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator<=(T value, const SInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator<=(T value, const U& RHS)
     {
         return ( value <= static_cast<T>(RHS) );
     }
 
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator<=(T value, const UInt24& RHS)
-    {
-        return ( value <= static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator>=(T value, const SInt24& RHS)
-    {
-        return ( value >= static_cast<T>(RHS) );
-    }
-
-    template<typename T>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    operator>=(T value, const UInt24& RHS)
+    template<typename T, typename U>
+    typename std::enable_if<std::is_integral<T>::value && (std::is_same<U, SInt24>::value || std::is_same<U, UInt24>::value), T>::type
+    operator>=(T value, const U& RHS)
     {
         return ( value >= static_cast<T>(RHS) );
     }
