@@ -272,7 +272,7 @@ namespace ProxyStub {
 
             return (result);
         }
-        inline void* RemoteInterface(const uint32_t id) const
+        inline void* RemoteInterface(const uint32_t id, const bool asIUknown) const
         {
             void* result = nullptr;
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
@@ -280,6 +280,7 @@ namespace ProxyStub {
 
             message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE));
             parameters.Number<uint32_t>(id);
+            parameters.Boolean(asIUknown);
 
             _adminLock.Lock();
 
@@ -537,20 +538,20 @@ namespace ProxyStub {
 
             return (result);
         }
-        void* QueryInterface(const uint32_t interfaceNumber) override
+        void* QueryInterface(const uint32_t interfaceNumber, const bool asIUknown) override
         {
             void* result = nullptr;
 
             if (interfaceNumber == INTERFACE::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();
-                result = static_cast<INTERFACE*>(this);
+                result = (asIUknown == false ? static_cast<INTERFACE*>(this) : static_cast<Core::IUnknown*>(this));
             } else if (interfaceNumber == Core::IUnknown::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();
                 result = static_cast<Core::IUnknown*>(this);
             } else {
-                result = _unknown.RemoteInterface(interfaceNumber);
+                result = _unknown.RemoteInterface(interfaceNumber, asIUknown);
             }
 
             return (result);

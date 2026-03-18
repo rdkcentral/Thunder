@@ -2210,19 +2210,7 @@ namespace PluginHost {
                     {
                         ASSERT(shell != nullptr);
 
-                        bool hasinterface = true;
-
-                        if (_interface_id != PluginHost::IShell::ID) {
-
-                            void* baseInterface = shell->QueryInterface(_interface_id);
-
-                            if (baseInterface != nullptr) {
-                                hasinterface = true;
-                                // oh not too smart huppel, fix me (but that is not that easy)
-                                static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
-                            }
-                        }
-                        return hasinterface;
+                        return shell->IsInterfaceSupported(_interface_id);
                     }
 
                     bool ConsideredDuplicate() const
@@ -2638,19 +2626,7 @@ namespace PluginHost {
 
                     if ((service.IsValid() == true) && (service->State() == IShell::ACTIVATED)) {
 
-                        bool hasinterface = true;
-
-                        if (interface_id != PluginHost::IShell::ID) {
-
-                            void* baseInterface = service.operator->()->QueryInterface(interface_id);
-
-                            if (baseInterface != nullptr) {
-                                hasinterface = true;
-                                static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
-                            }
-                        }
-
-                        if (hasinterface == true) {
+                        if (service.operator->()->IsInterfaceSupported(interface_id) == true) {
                             if (sink->CancelableActivated(service->Callsign(), service.operator->()) == Core::ERROR_CANCEL) {
                                 keepregistered = false;
                                 break;
@@ -2660,19 +2636,8 @@ namespace PluginHost {
                         // Report any composite plugins that are active..
                         service->Composits().Visit([&](const string& callsign, IShell* proxy) {
                             if ((keepregistered == true) && (proxy->State() == IShell::ACTIVATED)) {
-                                bool hasinterface = true;
 
-                                if (interface_id != PluginHost::IShell::ID) {
-
-                                    void* baseInterface = proxy->QueryInterface(interface_id);
-
-                                    if (baseInterface != nullptr) {
-                                        hasinterface = true;
-                                        static_cast<Core::IReferenceCounted*>(baseInterface)->Release();
-                                    }
-                                }
-
-                                if (hasinterface == true) {
+                                if (proxy->IsInterfaceSupported(interface_id) == true) {
                                     if (sink->CancelableActivated(callsign, proxy) == Core::ERROR_CANCEL) {
                                         keepregistered = false;
                                     }

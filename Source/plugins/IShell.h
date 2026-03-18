@@ -414,6 +414,26 @@ namespace PluginHost {
 
             return (nullptr);
         }
+
+        bool IsInterfaceSupported(const uint32_t interface_id) const
+        {
+            bool hasinterface = false;
+
+            if (interface_id != PluginHost::IShell::ID) {
+
+                void* interface = QueryInterface(interface_id, true);
+
+                if (interface != nullptr) {
+                    hasinterface = true;
+                    Core::IUnknown* piu = static_cast<Core::IUnknown*>(interface);
+                    piu->Release();
+                }
+            } else {
+                hasinterface = true;
+            }
+            return hasinterface;
+        }
+
         template <typename REQUESTEDINTERFACE>
         void Register(IPlugin::INotification* sink)
         {
