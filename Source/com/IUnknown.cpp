@@ -116,8 +116,9 @@ namespace ProxyStub {
                         return;
                     }
                     uint32_t newInterfaceId(reader.Number<uint32_t>());
+                    bool asIUknown(reader.Boolean());
 
-                    void* newInterface = implementation->QueryInterface(newInterfaceId);
+                    void* newInterface = implementation->QueryInterface(newInterfaceId, asIUknown);
 
                     if (newInterface != nullptr) {
                         if (RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId) == false) {
