@@ -59,7 +59,6 @@ add_library(${TARGET}
         XGetopt.cpp
         ResourceMonitor.cpp
         Errors.cpp
-        ExtraNumberDefinitions.cpp
         )
 
 #TODO: Remove all non public headers from this list,
