@@ -42,10 +42,20 @@ namespace Thunder {
         */
         class EXTERNAL MessageUnit : public Core::Messaging::IStore {
         public:
-            static constexpr uint16_t MetadataBufferSize = 4 * 1024;
-            static constexpr uint16_t TempMetadataBufferSize = 128;
+            static constexpr uint16_t MaxMetadataBufferSize = 16 * 1024;
+            static constexpr uint16_t MaxMetadataSize = 256;
             static constexpr uint16_t MaxDataBufferSize = 63 * 1024;
-            static constexpr uint16_t TempDataBufferSize = 8 * 1024;
+            static constexpr uint16_t MaxMessageSize = 32 * 1024;
+
+            static constexpr uint16_t DefaultMetadataBufferSize = (MaxMetadataBufferSize / 4);
+            static constexpr uint16_t DefaultMetadataSize = (MaxMetadataSize / 4);
+            static constexpr uint16_t DefaultDataBufferSize = (MaxDataBufferSize / 4);
+            static constexpr uint16_t DefaultMessageSize = (MaxMessageSize / 4);
+
+            static constexpr uint16_t MinMetadataBufferSize = (DefaultMetadataBufferSize / 4);
+            static constexpr uint16_t MinMetadataSize = (DefaultMetadataSize / 4);
+            static constexpr uint16_t MinDataBufferSize = (DefaultDataBufferSize / 4);
+            static constexpr uint16_t MinMessageSize = (DefaultMessageSize / 4);
 
             enum metadataFrameProtocol : uint8_t {
                 UPDATE      = 0,
@@ -62,8 +72,9 @@ namespace Thunder {
             class EXTERNAL Buffer : public Core::IPC::BufferType<static_cast<uint16_t>(~0)> {
             public:
                 Buffer()
-                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MetadataBufferSize)
+                    : Core::IPC::BufferType<static_cast<uint16_t>(~0)>(MessageUnit::Instance()._settings.MetadataBufferSize())
                 {
+                    ASSERT(MessageUnit::Instance()._settings.MetadataBufferSize() != 0);
                 }
                 ~Buffer() = default;
 
@@ -375,7 +386,10 @@ namespace Thunder {
                         , Flush(false)
                         , Out(true)
                         , Error(true)
-                        , DataSize(20 * 1024)
+                        , DataSize(MessageUnit::DefaultDataBufferSize)
+                        , MetadataBufferSize(MessageUnit::DefaultMetadataBufferSize)
+                        , MetadataSize(MessageUnit::DefaultMetadataSize)
+                        , MessageSize(MessageUnit::DefaultMessageSize)
                     {
                         Add(_T("tracing"), &Tracing);
                         Add(_T("logging"), &Logging);
@@ -387,6 +401,9 @@ namespace Thunder {
                         Add(_T("stdout"), &Out);
                         Add(_T("stderr"), &Error);
                         Add(_T("datasize"), &DataSize);
+                        Add(_T("metadatabuffersize"), &MetadataBufferSize);
+                        Add(_T("metadatasize"), &MetadataSize);
+                        Add(_T("messagesize"), &MessageSize);
                     }
                     ~Config() = default;
                     Config(const Config& other) = delete;
@@ -403,6 +420,9 @@ namespace Thunder {
                     Core::JSON::Boolean Out;
                     Core::JSON::Boolean Error;
                     Core::JSON::DecUInt16 DataSize;
+                    Core::JSON::DecUInt16 MetadataBufferSize;
+                    Core::JSON::DecUInt16 MetadataSize;
+                    Core::JSON::DecUInt16 MessageSize;
                 };
 
             public:
@@ -418,6 +438,9 @@ namespace Thunder {
                     , _permission(0)
                     , _mode(static_cast<mode>(0))
                     , _dataSize()
+                    , _metadataBufferSize()
+                    , _metadataSize()
+                    , _messageSize()
                 {
                 }
                 ~Settings() = default;
@@ -441,6 +464,18 @@ namespace Thunder {
 
                 uint16_t Permission() const {
                     return (_permission);
+                }
+
+                uint16_t MetadataBufferSize() const {
+                    return (_metadataBufferSize);
+                }
+
+                uint16_t MetadataSize() const {
+                    return (_metadataSize);
+                }
+
+                uint16_t MessageSize() const {
+                    return (_messageSize);
                 }
 
                 bool IsBackground() const {
@@ -486,14 +521,58 @@ namespace Thunder {
                             (flushMode == flush::FLUSH_ABBREVIATED ? mode::ABBREVIATED : 0) |
                             (jsonParsed.Error.Value() ? mode::REDIRECT_ERROR : 0) |
                             (jsonParsed.Out.IsSet() ? (jsonParsed.Out.Value() ? mode::REDIRECT_OUT : 0) : (background ? mode::REDIRECT_OUT : 0));
-                    if (jsonParsed.DataSize.Value() > MaxDataBufferSize) {
-                        TRACE_L1("Data buffer size set in the config is too large! The maximum has been used instead");
-                        _dataSize = MaxDataBufferSize;
 
+                    _metadataBufferSize = jsonParsed.MetadataBufferSize.Value();
+                    if (_metadataBufferSize > MessageUnit::MaxMetadataBufferSize) {
+                        TRACE_L1("MetadataBufferSize (%u) exceeds maximum (%u)! Using maximum instead.", _metadataBufferSize, MessageUnit::MaxMetadataBufferSize);
+                        _metadataBufferSize = MessageUnit::MaxMetadataBufferSize;
                         ASSERT(false);
+                    }
+                    else if (_metadataBufferSize < MessageUnit::MinMetadataBufferSize) {
+                        TRACE_L1("MetadataBufferSize (%u) is below minimum (%u)! Using minimum instead.", _metadataBufferSize, MessageUnit::MinMetadataBufferSize);
+                        _metadataBufferSize = MessageUnit::MinMetadataBufferSize;
+                        ASSERT(false);
+                    }
+
+                    _metadataSize = jsonParsed.MetadataSize.Value();
+                    if (_metadataSize > MessageUnit::MaxMetadataSize) {
+                        TRACE_L1("MetadataSize (%u) exceeds maximum (%u)! Using maximum instead.", _metadataSize, MessageUnit::MaxMetadataSize);
+                        _metadataSize = MessageUnit::MaxMetadataSize;
+                        ASSERT(false);
+                    }
+                    else if (_metadataSize < MessageUnit::MinMetadataSize) {
+                        TRACE_L1("MetadataSize (%u) is below minimum (%u)! Using minimum instead.", _metadataSize, MessageUnit::MinMetadataSize);
+                        _metadataSize = MessageUnit::MinMetadataSize;
+                        ASSERT(false);
+                    }
+
+                    _messageSize = jsonParsed.MessageSize.Value();
+                    if (_messageSize > MessageUnit::MaxMessageSize) {
+                        TRACE_L1("MessageSize (%u) exceeds maximum (%u)! Using maximum instead.", _messageSize, MessageUnit::MaxMessageSize);
+                        _messageSize = MessageUnit::MaxMessageSize;
+                        ASSERT(false);
+                    }
+                    else if (_messageSize < MessageUnit::MinMessageSize) {
+                        TRACE_L1("MessageSize (%u) is below minimum (%u)! Using minimum instead.", _messageSize, MessageUnit::MinMessageSize);
+                        _messageSize = MessageUnit::MinMessageSize;
+                        ASSERT(false);
+                    }
+
+                    if (IsDirect() == true) {
+                        _dataSize = 0;
                     }
                     else {
                         _dataSize = jsonParsed.DataSize.Value();
+                        if (_dataSize > MessageUnit::MaxDataBufferSize) {
+                            TRACE_L1("DataSize (%u) exceeds maximum (%u)! Using maximum instead.", _dataSize, MessageUnit::MaxDataBufferSize);
+                            _dataSize = MessageUnit::MaxDataBufferSize;
+                            ASSERT(false);
+                        }
+                        else if (_dataSize < MessageUnit::MinDataBufferSize) {
+                            TRACE_L1("DataSize (%u) is below minimum (%u)! Using minimum instead.", _dataSize, MessageUnit::MinDataBufferSize);
+                            _dataSize = MessageUnit::MinDataBufferSize;
+                            ASSERT(false);
+                        }
                     }
 
                     FromConfig(jsonParsed);
@@ -575,7 +654,10 @@ namespace Thunder {
                                _identifier + DELIMITER +
                                Core::NumberType<uint16_t>(_socketPort).Text() + DELIMITER +
                                Core::NumberType<uint8_t>(_mode & (mode::BACKGROUND|mode::DIRECT|mode::ABBREVIATED)).Text() + DELIMITER +
-                               Core::NumberType<uint16_t>(_dataSize).Text();
+                               Core::NumberType<uint16_t>(_dataSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_metadataBufferSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_metadataSize).Text() + DELIMITER +
+                               Core::NumberType<uint16_t>(_messageSize).Text();
 
                     for (auto& entry : _settings) {
                         settings += DELIMITER + Core::NumberType<uint8_t>(entry.Type()).Text() +
@@ -598,6 +680,9 @@ namespace Thunder {
                     _socketPort = 0;
                     _mode = 0;
                     _dataSize = 0;
+                    _metadataBufferSize = 0;
+                    _metadataSize = 0;
+                    _messageSize = 0;
                     _settings.clear();
 
                     if (iterator.Next() == true) {
@@ -610,6 +695,15 @@ namespace Thunder {
                                     _mode = Core::NumberType<uint8_t>(iterator.Current()).Value();
                                     if (iterator.Next() == true) {
                                         _dataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                        if (iterator.Next() == true) {
+                                            _metadataBufferSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                            if (iterator.Next() == true) {
+                                                _metadataSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                                if (iterator.Next() == true) {
+                                                    _messageSize = Core::NumberType<uint16_t>(iterator.Current()).Value();
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -715,12 +809,12 @@ namespace Thunder {
                 uint16_t _permission;
                 uint8_t _mode;
                 uint16_t _dataSize;
+                uint16_t _metadataBufferSize;
+                uint16_t _metadataSize;
+                uint16_t _messageSize;
             };
 
-            class EXTERNAL Client : public MessageDataBuffer {
-            private:
-                using BaseClass = MessageDataBuffer;
-
+            class EXTERNAL Client {
             public:
                 Client() = delete;
                 Client(Client&&) = delete;
@@ -729,8 +823,17 @@ namespace Thunder {
                 Client& operator=(const Client&) = delete;
 
                 Client(const string& identifier, const uint32_t instanceId, const string& baseDirectory, const uint16_t socketPort = 0)
-                    : MessageDataBuffer(identifier, instanceId, baseDirectory, MessageUnit::Instance().DataSize(), socketPort, false)
-                    , _channel(Core::NodeId(MetadataName().c_str()), MetadataBufferSize) {
+                    : _filenames(PrepareFilenames(baseDirectory, identifier, instanceId, socketPort))
+                    , _dataBuffer()
+                    , _channel(Core::NodeId(_filenames.metaData.c_str()), MessageUnit::Instance()._settings.MetadataBufferSize())
+                {
+                    ASSERT(MessageUnit::Instance()._settings.MetadataBufferSize() != 0);
+
+                    const uint16_t dataSize = MessageUnit::Instance()._settings.DataSize();
+                    if (dataSize != 0) {
+                        _dataBuffer.reset(new MessageDataBuffer(identifier, instanceId, baseDirectory, dataSize, socketPort, false));
+                    }
+
                     _channel.Open(Core::infinite);
                 }
                 ~Client() {
@@ -739,13 +842,39 @@ namespace Thunder {
 
             public:
                 bool IsValid() const {
-                    return (_channel.IsOpen());
+                    return ((_dataBuffer == nullptr || _dataBuffer->IsValid() == true) && _channel.IsOpen() == true);
                 }
 
                 void Validate()
                 {
-                    if ((IsValid() == false) && (MessageDataBuffer::Validate() == true)) {
-                        _channel.Open(Core::infinite);
+                    if (IsValid() == false) {
+                        if ((_dataBuffer == nullptr) || (_dataBuffer->Validate() == true)) {
+                            _channel.Open(Core::infinite);
+                        }
+                    }
+                }
+
+                uint32_t PopData(uint16_t& outLength, uint8_t* outValue)
+                {
+                    return (_dataBuffer != nullptr ? _dataBuffer->PopData(outLength, outValue) : static_cast<uint32_t>(Core::ERROR_UNAVAILABLE));
+                }
+
+                uint32_t Wait(const uint32_t waitTime)
+                {
+                    return (_dataBuffer != nullptr ? _dataBuffer->Wait(waitTime) : static_cast<uint32_t>(Core::ERROR_TIMEDOUT));
+                }
+
+                void Ring()
+                {
+                    if (_dataBuffer != nullptr) {
+                        _dataBuffer->Ring();
+                    }
+                }
+
+                void FlushDataBuffer()
+                {
+                    if (_dataBuffer != nullptr) {
+                        _dataBuffer->FlushDataBuffer();
                     }
                 }
 
@@ -764,22 +893,28 @@ namespace Thunder {
 
                     if (_channel.IsOpen() == true) {
 
-                        uint8_t dataBuffer[TempMetadataBufferSize];
+                        const uint16_t metadataSize = MessageUnit::Instance()._settings.MetadataSize();
+                        ASSERT(metadataSize != 0);
+                        uint8_t* dataBuffer = static_cast<uint8_t*>(ALLOCA(metadataSize));
 
                         // We got a connection to the spawned process side, get the list of traces from
                         // there and send our settings from here...
                         Core::ProxyType<MetadataFrame> metaDataFrame(Core::ProxyType<MetadataFrame>::Create());
 
-                        Core::FrameType<0> frame(dataBuffer, TempMetadataBufferSize, TempMetadataBufferSize);
+                        Core::FrameType<0> frame(dataBuffer, metadataSize, metadataSize);
                         Core::FrameType<0>::Writer writer(frame, 0);
                         writer.Number<metadataFrameProtocol>(metadataFrameProtocol::UPDATE);
 
                         Control message(control, enabled);
-                        uint16_t length = message.Serialize(dataBuffer + writer.Offset(), sizeof(dataBuffer) - writer.Offset());
+                        uint16_t length = message.Serialize(dataBuffer + writer.Offset(), metadataSize - writer.Offset());
 
-                        metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
-
-                        result = _channel.Invoke(metaDataFrame, waitTime);
+                        if (length != 0) {
+                            metaDataFrame->Parameters().Set(writer.Offset() + length, dataBuffer);
+                            result = _channel.Invoke(metaDataFrame, waitTime);
+                        }
+                        else {
+                            result = Core::ERROR_GENERAL;
+                        }
                     }
 
                     return (result);
@@ -869,134 +1004,104 @@ namespace Thunder {
                 }
 
             private:
+                MessageFilenames _filenames;
+                std::unique_ptr<MessageDataBuffer> _dataBuffer;
                 mutable Core::IPCChannelClientType<Core::Void, false, true> _channel;
             };
 
         private:
             using Factories = std::unordered_map<Core::Messaging::Metadata::type, IEventFactory*>;
 
-            // This is the listening end-point, and it is created as the master in which we push messages
-            class MessageDispatcher : public MessageDataBuffer {
+            // This is the listening end-point for metadata IPC (control enable/disable commands)
+            class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
             private:
-                using BaseClass = MessageDataBuffer;
-                class MetaDataBuffer : public Core::IPCChannelClientType<Core::Void, true, true> {
-                private:
-                    using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
+                using BaseClass = Core::IPCChannelClientType<Core::Void, true, true>;
 
-                    class MetadataFrameHandler : public Core::IIPCServer {
-                    public:
-                        MetadataFrameHandler() = delete;
-                        MetadataFrameHandler(const MetadataFrameHandler&) = delete;
-                        MetadataFrameHandler& operator=(const MetadataFrameHandler&) = delete;
+                class MetadataFrameHandler : public Core::IIPCServer {
+                public:
+                    MetadataFrameHandler() = delete;
+                    MetadataFrameHandler(const MetadataFrameHandler&) = delete;
+                    MetadataFrameHandler& operator=(const MetadataFrameHandler&) = delete;
 
-                        MetadataFrameHandler(MessageUnit& parent)
-                            : _parent(parent) {
-                        }
-                        ~MetadataFrameHandler() override = default;
-
-                    public:
-                        void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
-                        {
-                            uint8_t outBuffer[MetadataBufferSize];
-
-                            auto message = Core::ProxyType<MetadataFrame>(data);
-
-                            Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
-                            Core::FrameType<0>::Reader reader(frame, 0);
-
-                            ASSERT(reader.HasData());
-                            metadataFrameProtocol protocol = reader.Number<metadataFrameProtocol>();
-
-                            if (protocol == metadataFrameProtocol::UPDATE) {
-                                Control newSettings;
-                                newSettings.Deserialize(reader.Data(), reader.Length());
-                                _parent.Update(newSettings, newSettings.Enabled());
-                                message->Response().Set(0, nullptr);
-                            }
-                            else if (protocol == metadataFrameProtocol::CONTROLS) {
-                                ASSERT(reader.HasData());
-                                string module = reader.NullTerminatedText();
-                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer), module);
-                                message->Response().Set(length, outBuffer);
-                            }
-                            else if (protocol == metadataFrameProtocol::MODULES) {
-                                uint16_t length = _parent.Serialize(outBuffer, sizeof(outBuffer));
-                                message->Response().Set(length, outBuffer);
-                            }
-                            else {
-                                ASSERT(false);
-                            }
-                            source.ReportResponse(data);
-                        }
-
-                    private:
-                        MessageUnit& _parent;
-                    };
+                    MetadataFrameHandler(MessageUnit& parent)
+                        : _parent(parent) {
+                    }
+                    ~MetadataFrameHandler() override = default;
 
                 public:
-                    MetaDataBuffer() = delete;
-                    MetaDataBuffer(const MetaDataBuffer&) = delete;
-                    MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
+                    void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data) override
+                    {
+                        const uint16_t metadataBufferSize = _parent._settings.MetadataBufferSize();
+                        ASSERT(metadataBufferSize != 0);
+                        uint8_t* outBuffer = static_cast<uint8_t*>(ALLOCA(metadataBufferSize));
 
-                    MetaDataBuffer(MessageUnit& parent, const string& binding)
-                        : BaseClass(Core::NodeId(binding.c_str()), MetadataBufferSize)
-                        , _handler(parent)
-                    {
-                        _handler.AddRef();
-                        CreateFactory<MetadataFrame>(1);
-                        Register(MetadataFrame::Id(), Core::ProxyType<Core::IIPCServer>(_handler));
-                        Open(Core::infinite);
-                    }
-                    ~MetaDataBuffer() override
-                    {
-                        Close(Core::infinite);
-                        Unregister(MetadataFrame::Id());
-                        DestroyFactory<MetadataFrame>();
-                        _handler.CompositRelease();
+                        auto message = Core::ProxyType<MetadataFrame>(data);
+
+                        Core::FrameType<0> frame(const_cast<uint8_t*>(message->Parameters().Value()), message->Parameters().Length(), message->Parameters().Length());
+                        Core::FrameType<0>::Reader reader(frame, 0);
+
+                        ASSERT(reader.HasData());
+                        metadataFrameProtocol protocol = reader.Number<metadataFrameProtocol>();
+
+                        if (protocol == metadataFrameProtocol::UPDATE) {
+                            Control newSettings;
+                            newSettings.Deserialize(reader.Data(), reader.Length());
+                            _parent.Update(newSettings, newSettings.Enabled());
+                            message->Response().Set(0, nullptr);
+                        }
+                        else if (protocol == metadataFrameProtocol::CONTROLS) {
+                            ASSERT(reader.HasData());
+                            string module = reader.NullTerminatedText();
+                            uint16_t length = _parent.Serialize(outBuffer, metadataBufferSize, module);
+                            message->Response().Set(length, outBuffer);
+                        }
+                        else if (protocol == metadataFrameProtocol::MODULES) {
+                            uint16_t length = _parent.Serialize(outBuffer, metadataBufferSize);
+                            message->Response().Set(length, outBuffer);
+                        }
+                        else {
+                            ASSERT(false);
+                        }
+                        source.ReportResponse(data);
                     }
 
                 private:
-                    Core::ProxyObject<MetadataFrameHandler> _handler;
+                    MessageUnit& _parent;
                 };
 
             public:
-                MessageDispatcher() = delete;
-                MessageDispatcher(MessageDispatcher&&) = delete;
-                MessageDispatcher(const MessageDispatcher&) = delete;
-                MessageDispatcher& operator=(MessageDispatcher&&) = delete;
-                MessageDispatcher& operator=(const MessageDispatcher&) = delete;
+                MetaDataBuffer() = delete;
+                MetaDataBuffer(const MetaDataBuffer&) = delete;
+                MetaDataBuffer& operator=(const MetaDataBuffer&) = delete;
 
-                /**
-                 * @brief Construct a new Message Dispatcher object
-                 *
-                 * @param identifier name of the instance
-                 * @param instanceId number of the instance
-                 * @param initialize should dispatcher be initialzied. Should be done only once, on the server side
-                 * @param baseDirectory where to place all the necessary files. This directory should exist before creating this class.
-                 * @param dataSize size of the data buffer in bytes
-                 * @param socketPort triggers the use of using a IP socket in stead of a domain socket if the port value is not 0.
-                 */
-                MessageDispatcher(MessageUnit& parent, const string& identifier, const uint32_t instanceId, const string& basePath, const uint16_t dataSize, const uint16_t socketPort)
-                    : BaseClass(identifier, instanceId, basePath, dataSize, socketPort, true)
-                    , _metaDataBuffer(parent, BaseClass::MetadataName())
+                MetaDataBuffer(MessageUnit& parent, const string& binding)
+                    : BaseClass(Core::NodeId(binding.c_str()), parent._settings.MetadataBufferSize())
+                    , _handler(parent)
                 {
+                    ASSERT(parent._settings.MetadataBufferSize() != 0);
+                    _handler.AddRef();
+                    CreateFactory<MetadataFrame>(1);
+                    Register(MetadataFrame::Id(), Core::ProxyType<Core::IIPCServer>(_handler));
+                    Open(Core::infinite);
                 }
-                ~MessageDispatcher() = default;
-
-            public:
-                bool IsValid() const {
-                    return ((BaseClass::IsValid()) && (_metaDataBuffer.IsOpen()));
+                ~MetaDataBuffer() override
+                {
+                    Close(Core::infinite);
+                    Unregister(MetadataFrame::Id());
+                    DestroyFactory<MetadataFrame>();
+                    _handler.CompositRelease();
                 }
 
             private:
-                MetaDataBuffer _metaDataBuffer;
+                Core::ProxyObject<MetadataFrameHandler> _handler;
             };
 
         private:
             friend class Core::SingletonType<MessageUnit>;
             MessageUnit()
                 : _adminLock()
-                , _dispatcher()
+                , _metaDataBuffer()
+                , _dataBuffer()
                 , _settings()
                 , _direct()
             {
@@ -1009,7 +1114,7 @@ namespace Thunder {
             static MessageUnit& Instance();
 
             ~MessageUnit() {
-                ASSERT(_dispatcher == nullptr);
+                ASSERT(_metaDataBuffer == nullptr);
             }
 
         public:
@@ -1029,6 +1134,10 @@ namespace Thunder {
                 return (_settings.DataSize());
             }
 
+            uint16_t MessageSize() const {
+                return (_settings.MessageSize());
+            }
+
             uint32_t Open(const string& pathName, const Settings::Config& configuration, const bool background, const flush flushMode);
             uint32_t Open(const uint32_t instanceId);
             void Close();
@@ -1044,7 +1153,8 @@ namespace Thunder {
 
         private:
             mutable Core::CriticalSection _adminLock;
-            std::unique_ptr<MessageDispatcher> _dispatcher;
+            std::unique_ptr<MetaDataBuffer> _metaDataBuffer;
+            std::unique_ptr<MessageDataBuffer> _dataBuffer;
             Settings _settings;
             DirectOutput _direct;
         };
