@@ -421,7 +421,7 @@ namespace PluginHost {
 
             if (interface_id != PluginHost::IShell::ID) {
 
-                void* interface = QueryInterface(interface_id, true);
+                void* interface = const_cast<IShell*>(this)->QueryInterface(interface_id, true);
 
                 if (interface != nullptr) {
                     hasinterface = true;

@@ -1260,7 +1260,7 @@ namespace PluginHost {
             uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             ISubSystem* SubSystems() override;
             void Notify(const string& event, const string& message) override;
-            void* QueryInterface(const uint32_t id) override;
+            void* QueryInterface(const uint32_t id, const bool asIUknown = false) override;
             void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             template <typename REQUESTEDINTERFACE>
             REQUESTEDINTERFACE* QueryInterface()

@@ -38,7 +38,14 @@ namespace ProxyStub {
 
     typedef void (*MethodHandler)(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
 
-    class EXTERNAL UnknownStub {
+    struct EXTERNAL IProxyStubInterfaceConversion {
+
+        virtual ~IProxyStubInterfaceConversion() = default;  
+
+        virtual Core::IUnknown* Convert(void* incomingData) const = 0;
+    };
+
+    class EXTERNAL UnknownStub : public IProxyStubInterfaceConversion {
     public:
         UnknownStub(UnknownStub&&) = delete;
         UnknownStub(const UnknownStub&) = delete;
@@ -59,13 +66,15 @@ namespace ProxyStub {
         inline uint16_t Length() const {
             return (static_cast<uint16_t>(StubMethodsIndexType::QUERYINTERFACE) + 1);
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const {
-            return (reinterpret_cast<Core::IUnknown*>(incomingData));
-        }
         virtual uint32_t InterfaceId() const {
             return (Core::IUnknown::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
+
+        Core::IUnknown* Convert(void* incomingData) const override
+        {
+            return (reinterpret_cast<Core::IUnknown*>(incomingData));
+        }
 
     private:
         friend class Thunder::RPC::Administrator;
@@ -280,7 +289,6 @@ namespace ProxyStub {
 
             message->Parameters().Set(_implementation, _interfaceId, static_cast<uint8_t>(UnknownStub::StubMethodsIndexType::QUERYINTERFACE));
             parameters.Number<uint32_t>(id);
-            parameters.Boolean(asIUknown);
 
             _adminLock.Lock();
 
@@ -294,7 +302,11 @@ namespace ProxyStub {
                     Core::instance_id impl = response.Number<Core::instance_id>();
                     _adminLock.Unlock();
                     // From what is returned, we need to create a proxy
-                    RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
+                    ProxyStub::UnknownProxy* iuProxy = RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
+                    ASSERT((iuProxy == nullptr && result == nullptr) || (iuProxy != nullptr && result != nullptr));
+                    if ((asIUknown == true) && (iuProxy != nullptr)) {
+                        result = iuProxy->Parent();
+                    }
                 } else {
                     _adminLock.Unlock();
                     SYSLOG(Logging::Error, (_T("COMRPC Coherency check failed, QueryInterface message incomplete, interface ID [%u]"), message->Parameters().InterfaceId()));
@@ -545,7 +557,7 @@ namespace ProxyStub {
             if (interfaceNumber == INTERFACE::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();
-                result = (asIUknown == false ? static_cast<INTERFACE*>(this) : static_cast<Core::IUnknown*>(this));
+                asIUknown == false ? result = static_cast<INTERFACE*>(this) : result = static_cast<Core::IUnknown*>(this);
             } else if (interfaceNumber == Core::IUnknown::ID) {
                 // Just AddRef and return..
                 _unknown.AddRef();

@@ -272,7 +272,7 @@ namespace PluginHost {
         _processAdministrator.Destroy();
     }
 
-    void* Server::Service::QueryInterface(const uint32_t id) /* override */
+    void* Server::Service::QueryInterface(const uint32_t id, const bool asIUknown) /* override */
     {
         void* result = nullptr;
         if (id == Core::IUnknown::ID) {
@@ -281,15 +281,15 @@ namespace PluginHost {
         }
         else if (id == PluginHost::IShell::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell*>(this);
+            asIUknown == false ? result = static_cast<PluginHost::IShell*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::ICOMLink::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell::ICOMLink*>(this);
+            asIUknown == false ? result = static_cast<PluginHost::IShell::ICOMLink*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else if (id == PluginHost::IShell::IConnectionServer::ID) {
             AddRef();
-            result = static_cast<PluginHost::IShell::IConnectionServer*>(this);
+            asIUknown == false ? result = static_cast<PluginHost::IShell::IConnectionServer*>(this) : result = static_cast<Core::IUnknown*>(this);
         }
         else {
             _pluginHandling.Lock();
@@ -297,11 +297,11 @@ namespace PluginHost {
                 if (id == PluginHost::IDispatcher::ID) {
                     if (_jsonrpc != nullptr) {
                         _jsonrpc->AddRef();
-                        result = _jsonrpc;
+                        asIUknown == false ? result = _jsonrpc : result = static_cast<Core::IUnknown*>(_jsonrpc);
                     }
                 }
                 else if (_handler != nullptr) {
-                    result = _handler->QueryInterface(id);
+                    result = _handler->QueryInterface(id, asIUknown);
                 }
             }
             _pluginHandling.Unlock();
