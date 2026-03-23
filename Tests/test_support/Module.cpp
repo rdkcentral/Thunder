@@ -1,13 +1,12 @@
 // Module definition for the thunder_test_support static library.
-// MODULE_NAME is set to ThunderTestRuntime via -D in CMakeLists.txt,
-// which overrides Source/Thunder/Module.h's default of "Application".
-// This ensures all server sources and the MODULE_NAME_DECLARATION below
-// use the same symbol, and trace output shows "ThunderTestRuntime".
+//
+// Uses MODULE_NAME_ARCHIVE_DECLARATION instead of MODULE_NAME_DECLARATION
+// because this is a static archive, not a standalone binary. The archive
+// macro only defines the MODULE_NAME string symbol. The full declaration
+// (ModuleBuildRef, GetModuleServices, SetModuleServices) is left to the
+// consumer's own MODULE_NAME_DECLARATION, avoiding duplicate definitions.
 
-#ifndef MODULE_NAME
 #define MODULE_NAME ThunderTestRuntime
-#endif
-
 #include <core/core.h>
 
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+MODULE_NAME_ARCHIVE_DECLARATION

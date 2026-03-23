@@ -50,7 +50,7 @@ In production, Thunder runs as a standalone daemon (`PluginHost.cpp` → `main()
 
 2. **Statically links server internals** — `PluginServer.cpp`, `Controller.cpp`, `SystemInfo.cpp`, `PostMortem.cpp`, and `Probe.cpp` are compiled directly into the static library.
 
-3. **Wraps server lifecycle** — `ThunderTestRuntime` provides `Initialize()` and `Shutdown()` to manage the server, replacing the daemon's startup/shutdown sequence.
+3. **Wraps server lifecycle** — `ThunderTestRuntime` provides `Initialize()` and `Deinitialize()` to manage the server, replacing the daemon's startup/shutdown sequence.
 
 4. **Generates config on the fly** — instead of reading `/etc/Thunder/config.json`, the runtime builds a minimal JSON config programmatically and writes it to a temporary directory.
 
@@ -69,7 +69,11 @@ Tests/
     ├── CMakeLists.txt                   ← Build definitions for the static library
     ├── Module.cpp                       ← MODULE_NAME definition (ThunderTestRuntime)
     ├── ThunderTestRuntime.h             ← Public API header
-    └── ThunderTestRuntime.cpp           ← Implementation
+    ├── ThunderTestRuntime.cpp           ← Implementation
+    └── tests/
+        ├── CMakeLists.txt               ← Smoke test build
+        ├── Module.cpp                   ← MODULE_NAME_DECLARATION for smoke test binary
+        └── SmokeTest.cpp                ← Self-contained Controller smoke test
 ```
 
 ### 1. `Tests/CMakeLists.txt` (Modified)
@@ -95,19 +99,29 @@ Builds the `thunder_test_support` static library. Key design decisions:
 - **Source files**: Compiles `ThunderTestRuntime.cpp`, `Module.cpp`, plus Thunder server sources directly from `Source/Thunder/` (PluginServer, Controller, SystemInfo, PostMortem, Probe).
 - **Excludes `PluginHost.cpp`**: This contains `main()` and would conflict with the test binary's entry point.
 - **Compile definitions**: Sets `APPLICATION_NAME=ThunderTestRuntime` and `THREADPOOL_COUNT=4`.
-- **Public dependencies**: Exposes `ThunderCore`, `ThunderCOM`, `ThunderPlugins`, `ThunderMessaging`, `ThunderWebSocket`, `ThunderCOMProcess`, and `Threads` as PUBLIC link dependencies, so consumers automatically get all required libraries.
+- **Public dependencies**: Exposes `ThunderCore`, `ThunderCryptalgo`, `ThunderCOM`, `ThunderPlugins`, `ThunderMessaging`, `ThunderWebSocket`, `ThunderCOMProcess`, and `Threads` as PUBLIC link dependencies, so consumers automatically get all required libraries.
 - **Private dependencies**: `CompileSettings` is linked PRIVATE to apply Thunder's compile flags without propagating them.
 - **Conditional features**: Supports `WARNING_REPORTING`, `PROCESSCONTAINERS`, and `HIBERNATESUPPORT` when enabled.
 - **Install rules**: Installs the `.a` archive to `lib/` and the header to `include/thunder_test_support/`.
 
 ### 3. `Tests/test_support/Module.cpp` (New)
 
-Module definition required by Thunder's internal logging/tracing macros. The `MODULE_NAME` value appears in trace output to identify which component emitted a message. Using `ThunderTestRuntime` makes it easy to distinguish test runtime traces from production daemon or plugin traces:
+Module definition required by Thunder's internal logging/tracing macros. Uses `MODULE_NAME_ARCHIVE_DECLARATION` instead of `MODULE_NAME_DECLARATION` because this is a static archive, not a standalone binary. The archive macro only defines the `MODULE_NAME` string symbol. The full declaration (`ModuleBuildRef`, `GetModuleServices`, `SetModuleServices`) is left to the consumer's own `MODULE_NAME_DECLARATION`, avoiding duplicate definitions at link time:
 
 ```cpp
-#ifndef MODULE_NAME
 #define MODULE_NAME ThunderTestRuntime
-#endif
+#include <core/core.h>
+
+MODULE_NAME_ARCHIVE_DECLARATION
+```
+
+Consumer binaries (test executables) must provide their own `Module.cpp` with the full declaration:
+
+```cpp
+#define MODULE_NAME MyTestName
+#include <core/core.h>
+
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 ```
 
 ### 4. `Tests/test_support/ThunderTestRuntime.h` (New)
@@ -118,12 +132,12 @@ Public API header. Defines the `Thunder::TestCore::ThunderTestRuntime` class:
 |--------|-------------|
 | `PluginConfig` (struct) | Describes a plugin to load: callsign, locator (.so name), classname, autostart, startuporder, configuration JSON |
 | `Initialize()` | Boots the embedded server with given plugins, system path, and proxy stub path |
-| `InvokeJSONRPC()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()` |
+| `InvokeJSONRPC()` | Calls a JSON-RPC method synchronously via in-process `IDispatcher::Invoke()`. Callsign is derived from the method string. |
 | `GetInterface<T>()` | Template: obtains a COM-RPC interface from a plugin via `QueryInterface<T>()` |
 | `GetShell()` | Returns the `IShell` proxy for a plugin (for activation/deactivation control) |
 | `Server()` | Direct access to the underlying `PluginHost::Server` |
 | `CommunicatorPath()` | Returns the UNIX domain socket path |
-| `Shutdown()` | Stops the server, releases config, cleans up temp directories |
+| `Deinitialize()` | Stops the server, releases config, cleans up temp directories |
 
 ### 5. `Tests/test_support/ThunderTestRuntime.cpp` (New)
 
@@ -143,7 +157,7 @@ Initialize()
             ├── Activate Controller plugin
             └── Activate auto-start plugins
 
-Shutdown()
+Deinitialize()
     ├── Server::Close()
     │       ├── Deactivate all plugins
     │       └── Close connections
@@ -158,8 +172,9 @@ Shutdown()
 `InvokeJSONRPC()` bypasses HTTP/WebSocket entirely:
 
 ```
-InvokeJSONRPC("<Callsign>", "<Callsign>.1.<method>", params, response)
-    ├── Services().FromIdentifier("<Callsign>") → IShell proxy
+InvokeJSONRPC("<Callsign>.1.<method>", params, response)
+    ├── Extract callsign from method string (text before first '.')
+    ├── Services().FromIdentifier(callsign) → IShell proxy
     ├── shell->QueryInterface<IDispatcher>() → dispatcher
     └── dispatcher->Invoke(0, 0, "", method, params, response)
 ```
@@ -232,15 +247,13 @@ target_link_libraries(ThunderMyPluginImpl PRIVATE
 # Build the test executable
 add_executable(my_plugin_test MyPluginTest.cpp)
 target_link_libraries(my_plugin_test PRIVATE
-    -Wl,--whole-archive
     thunder_test_support
-    -Wl,--no-whole-archive
     gmock_main
     ${NAMESPACE}Definitions::${NAMESPACE}Definitions
 )
 ```
 
-> **Note**: `--whole-archive` is required for `thunder_test_support` to ensure Thunder's static initializers (MODULE_NAME_DECLARATION, service registrations, etc.) are linked even though the test binary doesn't reference them directly.
+> **Note**: The `thunder_test_support` target carries `INTERFACE` link options that automatically apply `--whole-archive` scoped to its own archive. This ensures Thunder's static initializers (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`) are preserved without the consumer needing to specify linker flags manually. This works when linking against the CMake target directly. When linking against the `.a` file by path (e.g. in external repos), manual `--whole-archive` / `--no-whole-archive` flags are still required.
 
 #### 2. Test fixture
 
@@ -274,7 +287,7 @@ protected:
     }
 
     static void TearDownTestSuite() {
-        _runtime.Shutdown();
+        _runtime.Deinitialize();
     }
 };
 
@@ -284,7 +297,7 @@ TestCore::ThunderTestRuntime MyPluginTest::_runtime;
 TEST_F(MyPluginTest, JsonRpcCall) {
     string response;
     EXPECT_EQ(Core::ERROR_NONE,
-        _runtime.InvokeJSONRPC("MyPlugin", "MyPlugin.1.someMethod", R"({"param":1})", response));
+        _runtime.InvokeJSONRPC("MyPlugin.1.someMethod", R"({"param":1})", response));
     // Validate response...
 }
 
@@ -357,6 +370,8 @@ A static archive ensures that all Thunder server symbols are available to the te
 
 Thunder uses static initializers extensively (`MODULE_NAME_DECLARATION`, `SERVICE_REGISTRATION`, singletons). Without `--whole-archive`, the linker would discard these symbols because the test binary doesn't reference them directly. The `--whole-archive` flag forces all object files from the archive to be included.
 
+This is enforced automatically via `target_link_options(INTERFACE)` on the CMake target, scoped to the archive using `$<TARGET_FILE:...>` so it doesn't affect other libraries on the link line. Consumers linking against the CMake target get this for free. Consumers linking against the `.a` file by path must add the flags manually.
+
 ### Why exclude `PluginHost.cpp`?
 
 `PluginHost.cpp` contains:
@@ -374,5 +389,22 @@ Thunder uses static initializers extensively (`MODULE_NAME_DECLARATION`, `SERVIC
 ### Why port 0?
 
 Using port 0 in the config tells the OS to assign an available port, avoiding conflicts when multiple test processes run simultaneously.
+
+---
+
+## Smoke Test
+
+A self-contained smoke test (`Tests/test_support/tests/SmokeTest.cpp`) is included with the library. It verifies that the library links, boots, and can exercise JSON-RPC against the built-in Controller plugin — no external plugin `.so` files needed.
+
+The smoke test is built automatically when `ENABLE_TEST_RUNTIME=ON` and GTest is available. It includes a `Module.cpp` with `MODULE_NAME_DECLARATION(BUILD_REFERENCE)` — required because the library uses `MODULE_NAME_ARCHIVE_DECLARATION`. It covers:
+
+- **ControllerStatus** — calls `Controller.1.status` and verifies a non-empty response containing "Controller"
+- **ControllerSubsystems** — calls `Controller.1.subsystems` and verifies a non-empty response
+- **GetControllerShell** — obtains the Controller's `IShell` and verifies it is in `ACTIVATED` state
+
+Running:
+```bash
+./thunder_test_runtime_smoke --gtest_color=yes
+```
 
 ---

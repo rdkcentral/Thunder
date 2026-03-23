@@ -8,7 +8,7 @@
 //   - Generates a minimal Thunder config (JSON) on the fly
 //   - Boots the embedded server and activates the controller
 //   - Exposes helpers for JSON-RPC invocation and COM-RPC queries
-//   - Tears everything down cleanly on Shutdown()
+//   - Tears everything down cleanly on Deinitialize()
 //
 // Typical usage in a GTest fixture:
 //
@@ -18,11 +18,11 @@
 //       std::vector<PluginConfig> plugins = { ... };
 //       _runtime.Initialize(plugins, pluginPath, proxyStubPath);
 //   }
-//   static void TearDownTestSuite() { _runtime.Shutdown(); }
+//   static void TearDownTestSuite() { _runtime.Deinitialize(); }
 //
 //   TEST_F(MyTest, JsonRpc) {
 //       string resp;
-//       _runtime.InvokeJSONRPC("Callsign", "Method", params, resp);
+//       _runtime.InvokeJSONRPC("Callsign.1.method", params, resp);
 //   }
 //
 //   TEST_F(MyTest, ComRpc) {
@@ -34,7 +34,8 @@
 #define MODULE_NAME Application
 #endif
 
-#include <plugins/plugins.h>
+#include <core/core.h>
+#include <plugins/IShell.h>
 #include <string>
 #include <vector>
 
@@ -74,9 +75,9 @@ namespace TestCore {
         uint32_t Initialize(const std::vector<PluginConfig>& plugins, const string& systemPath = "", const string& proxyStubPath = "");
 
         // Invoke a JSON-RPC method on a loaded plugin.
-        // Method format: "Callsign.Version.method" (e.g. "Counter.1.increment")
-        uint32_t InvokeJSONRPC(const string& callsign, const string& method,
-                               const string& params, string& response);
+        // The callsign is derived from the method string (text before the first '.').
+        // Method format: "Callsign.Version.method" (e.g. "MyPlugin.1.doSomething")
+        uint32_t InvokeJSONRPC(const string& method, const string& params, string& response);
 
         // Obtain a COM-RPC interface from a loaded plugin.
         // Caller must Release() the returned pointer when done.
@@ -101,7 +102,7 @@ namespace TestCore {
         string CommunicatorPath() const;
 
         // Stop the server, release config, and clean up temp directories.
-        void Shutdown();
+        void Deinitialize();
 
     private:
         string BuildConfigJSON(const std::vector<PluginConfig>& plugins, const string& systemPath, const string& proxyStubPath) const;

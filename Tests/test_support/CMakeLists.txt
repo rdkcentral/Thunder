@@ -10,7 +10,7 @@
 #   1. Link your test executable against thunder_test_support.
 #   2. Use ThunderTestRuntime::Initialize() to start the embedded server.
 #   3. Call JSON-RPC or COM-RPC methods directly against loaded plugins.
-#   4. Call ThunderTestRuntime::Shutdown() when done.
+#   4. Call ThunderTestRuntime::Deinitialize() when done.
 #
 # NOTE: PluginHost.cpp is deliberately excluded — it contains main().
 #       The test binary provides its own main() via GTest.
@@ -95,6 +95,14 @@ if(HIBERNATESUPPORT)
         HIBERNATE_SUPPORT_ENABLED=1)
 endif()
 
+# Enforce --whole-archive for this target so consumers automatically pull in
+# Thunder's static initializers (MODULE_NAME_DECLARATION, SERVICE_REGISTRATION).
+# Scoped to this archive only via $<TARGET_FILE:...> — won't affect other libs.
+target_link_options(thunder_test_support
+    INTERFACE
+        -Wl,--whole-archive $<TARGET_FILE:thunder_test_support> -Wl,--no-whole-archive
+)
+
 # --- Install rules ---
 install(TARGETS thunder_test_support
     ARCHIVE DESTINATION lib
@@ -103,3 +111,5 @@ install(TARGETS thunder_test_support
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ThunderTestRuntime.h
     DESTINATION include/thunder_test_support
 )
+
+add_subdirectory(tests)

@@ -1,0 +1,110 @@
+name: Test Thunder Test Support Library
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master", "development/Thunder_Test_Lib"]
+    paths:
+      - 'Tests/test_support/**'
+      - 'Source/Thunder/**'
+      - 'Source/core/**'
+      - 'Source/plugins/**'
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'Tests/test_support/**'
+      - 'Source/Thunder/**'
+      - 'Source/core/**'
+      - 'Source/plugins/**'
+
+jobs:
+  SmokeTest:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+
+    name: Smoke Test - ${{matrix.build_type}}
+
+    steps:
+    - name: Install necessary packages
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        command: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 fix --commit --launchpad --country=US
+          sudo apt-get update
+          sudo apt-get install -y python3-pip build-essential cmake ninja-build libusb-1.0-0-dev zlib1g-dev libssl-dev libgtest-dev
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install jsonref
+
+# ----- Checkout -----
+    - name: Checkout Thunder
+      uses: actions/checkout@v4
+      with:
+        path: Thunder
+
+    - name: Checkout ThunderTools - default
+      if: ${{ !contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+
+    - name: Regex ThunderTools
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      id: tools
+      uses: AsasInnab/regex-action@v1
+      with:
+        regex_pattern: '(?<=\[DependsOn=ThunderTools:).*(?=\])'
+        regex_flags: 'gim'
+        search_string: ${{github.event.pull_request.body}}
+
+    - name: Checkout ThunderTools - ${{steps.tools.outputs.first_match}}
+      if: ${{ contains(github.event.pull_request.body, '[DependsOn=ThunderTools:') }}
+      uses: actions/checkout@v4
+      with:
+        path: ThunderTools
+        repository: rdkcentral/ThunderTools
+        ref: ${{steps.tools.outputs.first_match}}
+
+# ----- Build -----
+    - name: Build ThunderTools
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S ThunderTools -B ${{matrix.build_type}}/build/ThunderTools \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr"
+        cmake --build ${{matrix.build_type}}/build/ThunderTools --target install
+
+    - name: Build Thunder with test support
+      run: |
+        source venv/bin/activate
+        cmake -G Ninja -S Thunder -B ${{matrix.build_type}}/build/Thunder \
+          -DBINDING="127.0.0.1" \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+          -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
+          -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
+          -DPORT="0" \
+          -DENABLE_TEST_RUNTIME=ON
+        cmake --build ${{matrix.build_type}}/build/Thunder --target install
+
+# ----- Run smoke test -----
+    - name: Run smoke test
+      run: |
+        LD_LIBRARY_PATH="${{matrix.build_type}}/install/usr/lib:$LD_LIBRARY_PATH" \
+        ${{matrix.build_type}}/build/Thunder/Tests/test_support/tests/thunder_test_runtime_smoke \
+          --gtest_output="xml:smoke-test-results.xml" \
+          --gtest_color=yes
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: smoke-test-results-${{matrix.build_type}}
+        path: smoke-test-results.xml

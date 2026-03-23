@@ -8,14 +8,14 @@
 // ==========================================================================
 // ThunderTestRuntime implementation
 //
-// Lifecycle: Initialize() -> [run tests] -> Shutdown()
+// Lifecycle: Initialize() -> [run tests] -> Deinitialize()
 //
 // Initialize creates a unique /tmp/thunder_test_XXXXXX/ directory tree,
 // writes a minimal Thunder config.json, parses it into PluginHost::Config,
 // constructs PluginHost::Server, and calls Server::Open() which boots
 // the controller and activates auto-start plugins.
 //
-// Shutdown reverses the process: Server::Close(), cleanup temp files.
+// Deinitialize reverses the process: Server::Close(), cleanup temp files.
 // ==========================================================================
 
 namespace Thunder {
@@ -23,7 +23,7 @@ namespace TestCore {
 
     ThunderTestRuntime::~ThunderTestRuntime()
     {
-        Shutdown();
+        Deinitialize();
     }
 
     void ThunderTestRuntime::CreateDirectories() const
@@ -43,6 +43,17 @@ namespace TestCore {
 
     // Build a minimal Thunder JSON config from the plugin list.
     // Uses port 0 (OS-assigned) and binds to localhost only.
+    // Helper: JSON-escape a string value and return it quoted (e.g. "foo\"bar" → "\"foo\\\"bar\"")
+    // Uses Core::JSON::String serialization to handle escaping correctly.
+    static string JsonEscape(const string& value)
+    {
+        Core::JSON::String json;
+        json = value;
+        string result;
+        json.ToString(result);
+        return result;
+    }
+
     string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
                                                 const string& systemPath,
                                                 const string& proxyStubPath) const
@@ -52,21 +63,21 @@ namespace TestCore {
              << "\"port\":0,"
              << "\"binding\":\"127.0.0.1\","
              << "\"idletime\":180,"
-             << "\"persistentpath\":\"" << _tempDir << "persistent/\","
-             << "\"volatilepath\":\"" << _tempDir << "volatile/\","
-             << "\"datapath\":\"" << _tempDir << "data/\","
-             << "\"systempath\":\"" << systemPath << "\","
-             << "\"proxystubpath\":\"" << proxyStubPath << "\","
-             << "\"communicator\":\"" << _tempDir << "communicator\","
+             << "\"persistentpath\":" << JsonEscape(_tempDir + "persistent/") << ","
+             << "\"volatilepath\":" << JsonEscape(_tempDir + "volatile/") << ","
+             << "\"datapath\":" << JsonEscape(_tempDir + "data/") << ","
+             << "\"systempath\":" << JsonEscape(systemPath) << ","
+             << "\"proxystubpath\":" << JsonEscape(proxyStubPath) << ","
+             << "\"communicator\":" << JsonEscape(_tempDir + "communicator") << ","
              << "\"plugins\":[";
 
         for (size_t i = 0; i < plugins.size(); ++i) {
             const auto& p = plugins[i];
             if (i > 0) json << ",";
             json << "{"
-                 << "\"callsign\":\"" << p.callsign << "\","
-                 << "\"locator\":\"" << p.locator << "\","
-                 << "\"classname\":\"" << p.classname << "\","
+                 << "\"callsign\":" << JsonEscape(p.callsign) << ","
+                 << "\"locator\":" << JsonEscape(p.locator) << ","
+                 << "\"classname\":" << JsonEscape(p.classname) << ","
                  << "\"startuporder\":" << p.startuporder << ","
                  << "\"autostart\":" << (p.autostart ? "true" : "false");
 
@@ -158,12 +169,19 @@ namespace TestCore {
 
     // Invoke a JSON-RPC method synchronously via the in-process dispatcher.
     // Bypasses HTTP/WebSocket — calls IDispatcher::Invoke() directly.
-    uint32_t ThunderTestRuntime::InvokeJSONRPC(const string& callsign, const string& method,
+    // Derives the callsign from the method string (text before the first '.').
+    uint32_t ThunderTestRuntime::InvokeJSONRPC(const string& method,
                                                 const string& params, string& response)
     {
         if (_server == nullptr) {
             return Core::ERROR_ILLEGAL_STATE;
         }
+
+        size_t dot = method.find('.');
+        if (dot == string::npos) {
+            return Core::ERROR_INVALID_SIGNATURE;
+        }
+        string callsign = method.substr(0, dot);
 
         Core::ProxyType<PluginHost::IShell> shell;
         uint32_t result = _server->Services().FromIdentifier(callsign, shell);
@@ -205,7 +223,7 @@ namespace TestCore {
         return string();
     }
 
-    void ThunderTestRuntime::Shutdown()
+    void ThunderTestRuntime::Deinitialize()
     {
         if (_server != nullptr) {
             _server->Close();
