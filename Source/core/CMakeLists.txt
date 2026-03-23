@@ -179,6 +179,24 @@ if(MESSAGING)
     message(STATUS "Messaging enabled")
 endif()
 
+if(BINDER_COMRPC)
+    find_package(AndroidBinder QUIET)
+    if(AndroidBinder_FOUND)
+        target_sources(${TARGET} PRIVATE BinderTransport.cpp)
+        target_sources(${TARGET} PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/BinderBuffer.h>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/BinderTransport.h>)
+        target_link_libraries(${TARGET} PRIVATE AndroidBinder::AndroidBinder)
+        target_compile_definitions(${TARGET} PUBLIC BINDER_COMRPC_ENABLED)
+        message(STATUS "Binder COMRPC transport enabled")
+    else()
+        # Fall back to the in-tree kernel uapi headers; no extra library needed on Linux
+        target_sources(${TARGET} PRIVATE BinderTransport.cpp)
+        target_compile_definitions(${TARGET} PUBLIC BINDER_COMRPC_ENABLED)
+        message(STATUS "Binder COMRPC transport enabled (using kernel uapi headers)")
+    endif()
+endif()
+
 if(WARNING_REPORTING)
     target_sources(${TARGET} PRIVATE WarningReportingControl.cpp WarningReportingCategories.cpp)
     target_compile_definitions(${TARGET} PUBLIC __CORE_WARNING_REPORTING__)

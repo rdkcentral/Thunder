@@ -52,6 +52,8 @@ option(HUMAN_VERSIONED_BINARIES
     "Create binaries with a human readeable version suffix" ON)
 option(VERSIONED_LIBRARY_LOADING
     "Uses the major version (*.so.<major>) to load libraries rather then *.so" OFF)
+option(BINDER_COMRPC
+    "Enable Android Binder as a COMRPC transport (requires linux/android/binder.h)" OFF)
 
 if (BUILD_REFERENCE)
     add_definitions (-DBUILD_REFERENCE=${BUILD_REFERENCE})

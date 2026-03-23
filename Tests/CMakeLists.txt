@@ -41,3 +41,7 @@ endif()
 if(UNRAVELLER)
     add_subdirectory(unraveller)
 endif()
+
+if(BINDER_COMRPC)
+    add_subdirectory(binder)
+endif()

@@ -82,6 +82,24 @@ if(PROCESSCONTAINERS)
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
 
+if(BINDER_COMRPC)
+    target_sources(${TARGET} PRIVATE
+        BinderCommunicator.cpp
+        BinderEndpoint.cpp
+        BinderIPCChannel.cpp
+        BinderServiceManager.cpp
+    )
+    list(APPEND PUBLIC_HEADERS
+        BinderCommunicator.h
+        BinderEndpoint.h
+        BinderIPCChannel.h
+        BinderServiceManager.h
+        IServiceManager.h
+    )
+    target_compile_definitions(${TARGET} PUBLIC BINDER_COMRPC_ENABLED)
+    message(STATUS "Binder COMRPC com layer enabled")
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD ${CXX_STD}
         CXX_STANDARD_REQUIRED YES
