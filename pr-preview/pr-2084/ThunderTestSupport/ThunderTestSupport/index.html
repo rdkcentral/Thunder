@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -3418,6 +3418,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#smoke-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smoke Test
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3505,7 +3516,7 @@
 <p><strong>Statically links server internals</strong> — <code>PluginServer.cpp</code>, <code>Controller.cpp</code>, <code>SystemInfo.cpp</code>, <code>PostMortem.cpp</code>, and <code>Probe.cpp</code> are compiled directly into the static library.</p>
 </li>
 <li>
-<p><strong>Wraps server lifecycle</strong> — <code>ThunderTestRuntime</code> provides <code>Initialize()</code> and <code>Shutdown()</code> to manage the server, replacing the daemon's startup/shutdown sequence.</p>
+<p><strong>Wraps server lifecycle</strong> — <code>ThunderTestRuntime</code> provides <code>Initialize()</code> and <code>Deinitialize()</code> to manage the server, replacing the daemon's startup/shutdown sequence.</p>
 </li>
 <li>
 <p><strong>Generates config on the fly</strong> — instead of reading <code>/etc/Thunder/config.json</code>, the runtime builds a minimal JSON config programmatically and writes it to a temporary directory.</p>
@@ -3523,7 +3534,11 @@
     ├── CMakeLists.txt                   ← Build definitions for the static library
     ├── Module.cpp                       ← MODULE_NAME definition (ThunderTestRuntime)
     ├── ThunderTestRuntime.h             ← Public API header
-    └── ThunderTestRuntime.cpp           ← Implementation
+    ├── ThunderTestRuntime.cpp           ← Implementation
+    └── tests/
+        ├── CMakeLists.txt               ← Smoke test build
+        ├── Module.cpp                   ← MODULE_NAME_DECLARATION for smoke test binary
+        └── SmokeTest.cpp                ← Self-contained Controller smoke test
 </code></pre></div>
 <h3 id="1-testscmakeliststxt-modified">1. <code>Tests/CMakeLists.txt</code> (Modified)</h3>
 <p>Two additions were made to the existing file:</p>
@@ -3542,16 +3557,23 @@
 <li><strong>Source files</strong>: Compiles <code>ThunderTestRuntime.cpp</code>, <code>Module.cpp</code>, plus Thunder server sources directly from <code>Source/Thunder/</code> (PluginServer, Controller, SystemInfo, PostMortem, Probe).</li>
 <li><strong>Excludes <code>PluginHost.cpp</code></strong>: This contains <code>main()</code> and would conflict with the test binary's entry point.</li>
 <li><strong>Compile definitions</strong>: Sets <code>APPLICATION_NAME=ThunderTestRuntime</code> and <code>THREADPOOL_COUNT=4</code>.</li>
-<li><strong>Public dependencies</strong>: Exposes <code>ThunderCore</code>, <code>ThunderCOM</code>, <code>ThunderPlugins</code>, <code>ThunderMessaging</code>, <code>ThunderWebSocket</code>, <code>ThunderCOMProcess</code>, and <code>Threads</code> as PUBLIC link dependencies, so consumers automatically get all required libraries.</li>
+<li><strong>Public dependencies</strong>: Exposes <code>ThunderCore</code>, <code>ThunderCryptalgo</code>, <code>ThunderCOM</code>, <code>ThunderPlugins</code>, <code>ThunderMessaging</code>, <code>ThunderWebSocket</code>, <code>ThunderCOMProcess</code>, and <code>Threads</code> as PUBLIC link dependencies, so consumers automatically get all required libraries.</li>
 <li><strong>Private dependencies</strong>: <code>CompileSettings</code> is linked PRIVATE to apply Thunder's compile flags without propagating them.</li>
 <li><strong>Conditional features</strong>: Supports <code>WARNING_REPORTING</code>, <code>PROCESSCONTAINERS</code>, and <code>HIBERNATESUPPORT</code> when enabled.</li>
 <li><strong>Install rules</strong>: Installs the <code>.a</code> archive to <code>lib/</code> and the header to <code>include/thunder_test_support/</code>.</li>
 </ul>
 <h3 id="3-teststest_supportmodulecpp-new">3. <code>Tests/test_support/Module.cpp</code> (New)</h3>
-<p>Module definition required by Thunder's internal logging/tracing macros. The <code>MODULE_NAME</code> value appears in trace output to identify which component emitted a message. Using <code>ThunderTestRuntime</code> makes it easy to distinguish test runtime traces from production daemon or plugin traces:</p>
-<div class="highlight"><pre><span></span><code><span class="cp">#ifndef MODULE_NAME</span>
-<span class="cp">#define MODULE_NAME ThunderTestRuntime</span>
-<span class="cp">#endif</span>
+<p>Module definition required by Thunder's internal logging/tracing macros. Uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code> instead of <code>MODULE_NAME_DECLARATION</code> because this is a static archive, not a standalone binary. The archive macro only defines the <code>MODULE_NAME</code> string symbol. The full declaration (<code>ModuleBuildRef</code>, <code>GetModuleServices</code>, <code>SetModuleServices</code>) is left to the consumer's own <code>MODULE_NAME_DECLARATION</code>, avoiding duplicate definitions at link time:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#define MODULE_NAME ThunderTestRuntime</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
+
+<span class="n">MODULE_NAME_ARCHIVE_DECLARATION</span>
+</code></pre></div>
+<p>Consumer binaries (test executables) must provide their own <code>Module.cpp</code> with the full declaration:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#define MODULE_NAME MyTestName</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;core/core.h&gt;</span>
+
+<span class="n">MODULE_NAME_DECLARATION</span><span class="p">(</span><span class="n">BUILD_REFERENCE</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="4-teststest_supportthundertestruntimeh-new">4. <code>Tests/test_support/ThunderTestRuntime.h</code> (New)</h3>
 <p>Public API header. Defines the <code>Thunder::TestCore::ThunderTestRuntime</code> class:</p>
@@ -3573,7 +3595,7 @@
 </tr>
 <tr>
 <td><code>InvokeJSONRPC()</code></td>
-<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code></td>
+<td>Calls a JSON-RPC method synchronously via in-process <code>IDispatcher::Invoke()</code>. Callsign is derived from the method string.</td>
 </tr>
 <tr>
 <td><code>GetInterface&lt;T&gt;()</code></td>
@@ -3592,7 +3614,7 @@
 <td>Returns the UNIX domain socket path</td>
 </tr>
 <tr>
-<td><code>Shutdown()</code></td>
+<td><code>Deinitialize()</code></td>
 <td>Stops the server, releases config, cleans up temp directories</td>
 </tr>
 </tbody>
@@ -3612,7 +3634,7 @@
             ├── Activate Controller plugin
             └── Activate auto-start plugins
 
-Shutdown()
+Deinitialize()
     ├── Server::Close()
     │       ├── Deactivate all plugins
     │       └── Close connections
@@ -3623,8 +3645,9 @@ Shutdown()
 </code></pre></div>
 <h4 id="json-rpc-invocation-path">JSON-RPC Invocation Path</h4>
 <p><code>InvokeJSONRPC()</code> bypasses HTTP/WebSocket entirely:</p>
-<div class="highlight"><pre><span></span><code>InvokeJSONRPC(&quot;&lt;Callsign&gt;&quot;, &quot;&lt;Callsign&gt;.1.&lt;method&gt;&quot;, params, response)
-    ├── Services().FromIdentifier(&quot;&lt;Callsign&gt;&quot;) → IShell proxy
+<div class="highlight"><pre><span></span><code>InvokeJSONRPC(&quot;&lt;Callsign&gt;.1.&lt;method&gt;&quot;, params, response)
+    ├── Extract callsign from method string (text before first &#39;.&#39;)
+    ├── Services().FromIdentifier(callsign) → IShell proxy
     ├── shell-&gt;QueryInterface&lt;IDispatcher&gt;() → dispatcher
     └── dispatcher-&gt;Invoke(0, 0, &quot;&quot;, method, params, response)
 </code></pre></div>
@@ -3693,15 +3716,13 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="c"># Build the test executable</span>
 <span class="nb">add_executable</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">MyPluginTest.cpp</span><span class="p">)</span>
 <span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_plugin_test</span><span class="w"> </span><span class="s">PRIVATE</span>
-<span class="w">    </span><span class="s">-Wl,--whole-archive</span>
 <span class="w">    </span><span class="s">thunder_test_support</span>
-<span class="w">    </span><span class="s">-Wl,--no-whole-archive</span>
 <span class="w">    </span><span class="s">gmock_main</span>
 <span class="w">    </span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions::</span><span class="o">${</span><span class="nv">NAMESPACE</span><span class="o">}</span><span class="s">Definitions</span>
 <span class="p">)</span>
 </code></pre></div>
 <blockquote>
-<p><strong>Note</strong>: <code>--whole-archive</code> is required for <code>thunder_test_support</code> to ensure Thunder's static initializers (MODULE_NAME_DECLARATION, service registrations, etc.) are linked even though the test binary doesn't reference them directly.</p>
+<p><strong>Note</strong>: The <code>thunder_test_support</code> target carries <code>INTERFACE</code> link options that automatically apply <code>--whole-archive</code> scoped to its own archive. This ensures Thunder's static initializers (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>) are preserved without the consumer needing to specify linker flags manually. This works when linking against the CMake target directly. When linking against the <code>.a</code> file by path (e.g. in external repos), manual <code>--whole-archive</code> / <code>--no-whole-archive</code> flags are still required.</p>
 </blockquote>
 <h4 id="2-test-fixture">2. Test fixture</h4>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;gtest/gtest.h&gt;</span>
@@ -3733,7 +3754,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">TearDownTestSuite</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Shutdown</span><span class="p">();</span>
+<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">Deinitialize</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>
 
@@ -3743,7 +3764,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <span class="n">TEST_F</span><span class="p">(</span><span class="n">MyPluginTest</span><span class="p">,</span><span class="w"> </span><span class="n">JsonRpcCall</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">Core</span><span class="o">::</span><span class="n">ERROR_NONE</span><span class="p">,</span>
-<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">InvokeJSONRPC</span><span class="p">(</span><span class="s">&quot;MyPlugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyPlugin.1.someMethod&quot;</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;param&quot;:1}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
+<span class="w">        </span><span class="n">_runtime</span><span class="p">.</span><span class="n">InvokeJSONRPC</span><span class="p">(</span><span class="s">&quot;MyPlugin.1.someMethod&quot;</span><span class="p">,</span><span class="w"> </span><span class="sa">R</span><span class="s">&quot;</span><span class="dl">(</span><span class="s">{&quot;param&quot;:1}</span><span class="dl">)</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">));</span>
 <span class="w">    </span><span class="c1">// Validate response...</span>
 <span class="p">}</span>
 
@@ -3801,6 +3822,7 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 <p>A static archive ensures that all Thunder server symbols are available to the test binary at link time. Shared libraries would require careful <code>RPATH</code> management and could conflict with the installed Thunder daemon libraries.</p>
 <h3 id="why-whole-archive">Why <code>--whole-archive</code>?</h3>
 <p>Thunder uses static initializers extensively (<code>MODULE_NAME_DECLARATION</code>, <code>SERVICE_REGISTRATION</code>, singletons). Without <code>--whole-archive</code>, the linker would discard these symbols because the test binary doesn't reference them directly. The <code>--whole-archive</code> flag forces all object files from the archive to be included.</p>
+<p>This is enforced automatically via <code>target_link_options(INTERFACE)</code> on the CMake target, scoped to the archive using <code>$&lt;TARGET_FILE:...&gt;</code> so it doesn't affect other libraries on the link line. Consumers linking against the CMake target get this for free. Consumers linking against the <code>.a</code> file by path must add the flags manually.</p>
 <h3 id="why-exclude-pluginhostcpp">Why exclude <code>PluginHost.cpp</code>?</h3>
 <p><code>PluginHost.cpp</code> contains:
 - <code>main()</code> — conflicts with GTest's <code>main()</code>
@@ -3815,6 +3837,18 @@ cmake<span class="w"> </span>--build<span class="w"> </span>build/Thunder<span c
 </ul>
 <h3 id="why-port-0">Why port 0?</h3>
 <p>Using port 0 in the config tells the OS to assign an available port, avoiding conflicts when multiple test processes run simultaneously.</p>
+<hr />
+<h2 id="smoke-test">Smoke Test</h2>
+<p>A self-contained smoke test (<code>Tests/test_support/tests/SmokeTest.cpp</code>) is included with the library. It verifies that the library links, boots, and can exercise JSON-RPC against the built-in Controller plugin — no external plugin <code>.so</code> files needed.</p>
+<p>The smoke test is built automatically when <code>ENABLE_TEST_RUNTIME=ON</code> and GTest is available. It includes a <code>Module.cpp</code> with <code>MODULE_NAME_DECLARATION(BUILD_REFERENCE)</code> — required because the library uses <code>MODULE_NAME_ARCHIVE_DECLARATION</code>. It covers:</p>
+<ul>
+<li><strong>ControllerStatus</strong> — calls <code>Controller.1.status</code> and verifies a non-empty response containing "Controller"</li>
+<li><strong>ControllerSubsystems</strong> — calls <code>Controller.1.subsystems</code> and verifies a non-empty response</li>
+<li><strong>GetControllerShell</strong> — obtains the Controller's <code>IShell</code> and verifies it is in <code>ACTIVATED</code> state</li>
+</ul>
+<p>Running:
+<div class="highlight"><pre><span></span><code>./thunder_test_runtime_smoke<span class="w"> </span>--gtest_color<span class="o">=</span>yes
+</code></pre></div></p>
 <hr />
 
 
