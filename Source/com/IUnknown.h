@@ -345,7 +345,7 @@ namespace ProxyStub {
 
             return (result);
         }
-        inline uint32_t Complete(const Core::instance_id& impl, const uint32_t id, const RPC::Data::Output::mode how)
+        inline uint32_t Complete(const Core::instance_id& impl, const uint32_t id, const RPC::Data::Output::mode how) const
         {
             // This method is called from the stubs.
             uint32_t result = Core::ERROR_NONE;
@@ -498,7 +498,7 @@ namespace ProxyStub {
         {
             return (_unknown.Interface(implementation, id));
         }
-        uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how)
+        uint32_t Complete(const Core::instance_id& instance, const uint32_t id, const RPC::Data::Output::mode how) const
         {
             return (_unknown.Complete(instance, id, how));
         }

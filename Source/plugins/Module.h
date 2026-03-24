@@ -38,3 +38,4 @@
 #define EXTERNAL EXTERNAL_EXPORT
 #endif
 
+// @insert <com/Ids.h>

@@ -58,6 +58,10 @@ namespace PluginHost {
     };
 
     class EXTERNAL JSONRPC : public ILocalDispatcher, public IDispatcher::ICallback {
+    public:
+        using SendIfMethod = std::function<bool(const string&)>;
+        using SendIfMethodIndexed = std::function<bool(const string&, const string&)>;
+
     private:
         class Observer {
         private:
@@ -160,7 +164,7 @@ namespace PluginHost {
                     }
                 }
             }
-            void Event(JSONRPC& parent, const string event, const string& parameter, std::function<bool(const string&)>&& sendifmethod) {
+            void Event(JSONRPC& parent, const string event, const string& parameter, SendIfMethod&& sendifmethod) {
                 for (const Destination& entry : _designators) {
                     if (!sendifmethod || sendifmethod(entry.second)) {
                         parent.Notify(entry.first, entry.second + '.' + event, parameter);
@@ -381,12 +385,17 @@ namespace PluginHost {
         {
             return (InternalNotify(event, _T("")));
         }
-        template <typename JSONOBJECT>
+        template <typename JSONOBJECT, typename std::enable_if<!std::is_convertible<JSONOBJECT, SendIfMethod>::value && !std::is_convertible<JSONOBJECT, SendIfMethodIndexed>::value, int>::type = 0>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters) const
         {
             string subject;
             parameters.ToString(subject);
             return (InternalNotify(event, subject));
+        }
+        template <typename SENDIFMETHOD, typename std::enable_if<std::is_convertible<SENDIFMETHOD, SendIfMethod>::value || std::is_convertible<SENDIFMETHOD, SendIfMethodIndexed>::value, int>::type = 0>
+        uint32_t Notify(const string& event, SENDIFMETHOD method) const
+        {
+            return InternalNotify(event, _T(""), std::move(method));
         }
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method) const
@@ -578,7 +587,7 @@ namespace PluginHost {
             ObserverMap::iterator index = _observers.find(eventId);
 
             if (index != _observers.end()) {
-                index->second.Event(*this, eventId, parameters, std::function<bool(const string&)>());
+                index->second.Event(*this, eventId, parameters, SendIfMethod());
             }
 
             _adminLock.Unlock();
@@ -763,7 +772,7 @@ namespace PluginHost {
             }
             return (result);
         }
-        uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>()) const
+        uint32_t InternalNotify(const string& event, const string& parameters, SendIfMethod&& sendifmethod = SendIfMethod()) const
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 

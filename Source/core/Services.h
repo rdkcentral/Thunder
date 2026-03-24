@@ -246,6 +246,11 @@ namespace Core {
         mutable uint32_t _referenceCount;
     };
 
+    template <typename TYPE>
+    using SinkType = Sink<TYPE>;
+
+    template <typename TYPE>
+    using ServiceType = Service<TYPE>;
 
     // Baseclass to turn objects into services
     template <typename ACTUALSERVICE>
