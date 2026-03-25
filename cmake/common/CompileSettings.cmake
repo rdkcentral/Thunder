@@ -62,8 +62,7 @@ endif()
 # target_compile_definitions(CompileSettings INTERFACE "THUNDER_PLATFORM=${THUNDER_PLATFORM}")
 # message(STATUS "Selected platform ${THUNDER_PLATFORM}")
 
-# TEMPORARY: Force C++11 to work around SocketServer.h IteratorType bug under C++17.
-target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
+target_compile_options(CompileSettings INTERFACE -Wno-psabi)
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(CompileSettings INTERFACE BUILD_SHARED_LIBS)

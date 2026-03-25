@@ -45,6 +45,11 @@ target_compile_definitions(thunder_test_support
 
 target_compile_options(thunder_test_support PRIVATE -Wno-psabi)
 
+set_target_properties(thunder_test_support PROPERTIES
+    CXX_STANDARD ${CXX_STD}
+    CXX_STANDARD_REQUIRED YES
+)
+
 target_link_libraries(thunder_test_support
     PRIVATE
         CompileSettings::CompileSettings
