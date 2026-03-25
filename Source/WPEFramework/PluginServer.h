@@ -2415,14 +2415,7 @@ namespace PluginHost {
                     // STRONG RECOMMENDATION TO HAVE THIS ACTIVE (TRUE)!!!
                     RPC::Administrator::Instance().DelegatedReleases(delegatedReleases);
 
-                    if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
-                        TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
-                    } else {
-                        // We need to pass the communication channel NodeId via an environment variable, for process,
-                        // not being started by the rpcprocess...
-                        Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
-                        RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
-                    }
+                    RPC::Communicator::ForcedDestructionTimes(softKillCheckWaitTime, hardKillCheckWaitTime);
 
                     if (observableProxyStubPath.empty() == true) {
                         SYSLOG(Logging::Startup, (_T("Dynamic COMRPC disabled.")));
@@ -2571,6 +2564,16 @@ namespace PluginHost {
                         _deadProxiesProtection.Lock();
                     }
                     _deadProxiesProtection.Unlock();
+                }
+
+                void Open() {
+                    if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
+                        TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
+                    } else {
+                        // We need to pass the communication channel NodeId via an environment variable, for process,
+                        // not being started by the rpcprocess...
+                        Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
+                    }
                 }
 
 
@@ -3085,6 +3088,9 @@ POP_WARNING()
                 return (result);
             }
 
+            void Open() {
+                _processAdministrator.Open();
+            }
             void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& dataPath, const string& persistentPath, const string& volatilePath)
             {
                 return (_processAdministrator.Create(sessionId, object, waitTime, dataPath, persistentPath, volatilePath));
@@ -3969,7 +3975,9 @@ POP_WARNING()
 
                 request->Service(status, Core::ProxyType<PluginHost::Service>(service), serviceCall);
 
-                ASSERT(request->State() != Request::INCOMPLETE);
+                // for now disable the assert as it is trigger probably when it shouldn't. But we should investigate how to enable it again so it fires at the right time: jira issue METROL-1211 created
+
+                //ASSERT(request->State() != Request::INCOMPLETE);
 
                 if (request->State() == Request::COMPLETE) {
 

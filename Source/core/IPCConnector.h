@@ -550,6 +550,7 @@ POP_WARNING()
 
             bool InProgress() const
             {
+                Core::SafeSyncType<Core::CriticalSection> lock(_lock);
                 return (_outbound.IsValid());
             }
 
@@ -757,6 +758,10 @@ POP_WARNING()
         void CustomData(const void* const data)
         {
             _customData = data;
+        }
+        bool InProgress() const
+        {
+            return (_administration.InProgress());
         }
 
         virtual uint32_t ReportResponse(Core::ProxyType<IIPC>& inbound) = 0;
