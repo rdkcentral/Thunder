@@ -1485,9 +1485,8 @@ namespace Thunder {
             ip_mreq_source multicastRequest;
 #else
             ip_mreq_source multicastRequest;
-
-            // TODO, Fix multicast join with interface
-            // multicastRequest.imr_interface = in_addr{ 0, 0;
+            memset(&multicastRequest, 0, sizeof(multicastRequest));
+            multicastRequest.imr_interface.s_addr = INADDR_ANY;
 #endif
 
 #ifdef __WINDOWS__
@@ -1515,9 +1514,8 @@ namespace Thunder {
             ip_mreq_source multicastRequest;
 #else
             ip_mreq_source multicastRequest;
-
-            // TODO, Fix multicast join with source
-            // multicastRequest.imr_interface = 0;
+            memset(&multicastRequest, 0, sizeof(multicastRequest));
+            multicastRequest.imr_interface.s_addr = INADDR_ANY;
 #endif
 
 #ifdef __WINDOWS__
