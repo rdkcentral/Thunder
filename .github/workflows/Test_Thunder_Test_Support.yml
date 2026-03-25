@@ -92,6 +92,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX="${{matrix.build_type}}/install/usr" \
           -DCMAKE_MODULE_PATH="${PWD}/${{matrix.build_type}}/install/usr/include/WPEFramework/Modules" \
           -DPORT="0" \
+          -DENABLE_CXX17=OFF
           -DENABLE_TEST_RUNTIME=ON
         cmake --build ${{matrix.build_type}}/build/Thunder --target install
 
