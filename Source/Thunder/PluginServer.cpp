@@ -1391,12 +1391,17 @@ namespace PluginHost {
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        destructor->AddRef();
-        _connections.Close(100);
-        destructor->Stopped();
-        _services.Close();
-        _dispatcher.Stop();
-        destructor->Release();
+
+        ASSERT(destructor != nullptr);
+
+        if (destructor != nullptr) {
+            destructor->AddRef();
+            _connections.Close(100);
+            destructor->Stopped();
+            _services.Close();
+            _dispatcher.Stop();
+            destructor->Release();
+        }
         _inputHandler.Deinitialize();
         _connections.Close(Core::infinite);
 
