@@ -105,7 +105,7 @@ namespace WPEFramework {
 #ifdef __DEBUG__
 #define _TRACE_LEVEL 2
 #else
-#define _TRACE_LEVEL 0
+#define _TRACE_LEVEL 7
 #endif
 #endif
 
