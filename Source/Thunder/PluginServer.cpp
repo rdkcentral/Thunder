@@ -229,6 +229,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Destroy()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed (begin()) after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         // First, move them all to deactivated except Controller
@@ -951,6 +954,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Close()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         Core::ProxyType<Service> controller(_server.Controller());

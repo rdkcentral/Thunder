@@ -1561,10 +1561,13 @@ POP_WARNING()
 
                 return (result);
             }
+            // coverity[MISSING_LOCK] - Intentional: diagnostic accessors returning a momentary
+            // snapshot. Callers are expected to tolerate a slightly stale value.
             inline uint32_t CreatedElements() const
             {
                 return (_createdElements);
             }
+            // coverity[MISSING_LOCK]
             inline uint32_t QueuedElements() const
             {
                 return (static_cast<uint32_t>(_queue.size()));
