@@ -764,6 +764,9 @@ namespace PluginHost {
                     local->Release();
                     result = Core::ERROR_NONE;
 #endif
+                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
+                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
+                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
                             SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
