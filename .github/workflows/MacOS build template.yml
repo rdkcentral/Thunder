@@ -19,9 +19,9 @@ jobs:
     steps:
 # --------- Installing packages ---------
     - name: Install necessary packages
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
       run: |
-          brew update
-          brew upgrade
           brew install ninja zlib
           python3 -m venv venv
           source venv/bin/activate
