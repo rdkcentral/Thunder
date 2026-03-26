@@ -190,7 +190,7 @@ POP_WARNING()
 
             return (*_iterator);
         }
-        BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
+        BEGIN_INTERFACE_MAP(IteratorType<INTERFACE, CONTAINER>)
             INTERFACE_ENTRY(INTERFACE)
         END_INTERFACE_MAP
 
