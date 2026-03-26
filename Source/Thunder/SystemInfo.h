@@ -493,7 +493,7 @@ namespace PluginHost {
                         _provisioning = nullptr;
                     }
 
-                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::vector<std::string>(), "");
+                    _provisioning = Core::ServiceType<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(std::vector<string>(), "");
 
                     _adminLock.Unlock();
                 } else {
