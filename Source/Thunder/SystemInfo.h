@@ -119,7 +119,7 @@ namespace PluginHost {
             {
             }
 
-            Provisioning(std::vector<std::string>&& labels, const std::string& storage)
+            Provisioning(std::vector<string>&& labels, const string& storage)
                 : RPC::IteratorType<PluginHost::ISubSystem::IProvisioning, std::vector<string>>(std::move(labels))
                 , _storage(storage)
             {
