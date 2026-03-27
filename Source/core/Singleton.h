@@ -21,6 +21,7 @@
 #define __SINGLETON_H
 
 // ---- Include system wide include files ----
+#include <atomic>
 #include <list>
 
 // ---- Include local include files ----
@@ -68,7 +69,9 @@ namespace Core {
 
         virtual ~Singleton()
         {
-            (*_realDeal) = nullptr;
+            if (_realDeal != nullptr) {
+                (*_realDeal) = nullptr;
+            }
         }
 
         inline static void Dispose()
@@ -92,7 +95,7 @@ namespace Core {
     protected:
         template <typename... Args>
         inline SingletonType(Args&&... args)
-            : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
+            : Singleton(nullptr)  // g_TypedSingleton is now std::atomic; zeroed in ~SingletonType
             , SINGLETON(std::forward<Args>(args)...)
         {
             ListInstance().Register(this);
@@ -106,10 +109,9 @@ namespace Core {
         virtual ~SingletonType()
         {
            ListInstance().Unregister(this);
-           ASSERT(g_TypedSingleton != nullptr);
-           g_TypedSingleton = nullptr;
+           // ASSERT(g_TypedSingleton.load(std::memory_order_relaxed) != nullptr);
+           g_TypedSingleton.store(nullptr, std::memory_order_relaxed);
         }
-
     public:
         virtual string ImplementationName() const
         {
@@ -121,21 +123,20 @@ namespace Core {
         {
             static CriticalSection g_AdminLock;
 
-            // Hmm Double Lock syndrom :-)
-            if (g_TypedSingleton == nullptr) {
+            SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
+            if (ptr == nullptr) {
                 g_AdminLock.Lock();
-
-                if (g_TypedSingleton == nullptr) {
-                    // Create a singleton
-                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+                ptr = g_TypedSingleton.load(std::memory_order_relaxed);
+                if (ptr == nullptr) {
+                    ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+                    g_TypedSingleton.store(ptr, std::memory_order_release);
                 }
-
                 g_AdminLock.Unlock();
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            ASSERT(ptr != nullptr);
 
-            return *(g_TypedSingleton);
+            return *ptr;
         }
 
         inline static SINGLETON& Instance() {
@@ -155,28 +156,32 @@ namespace Core {
         template <typename... Args>
         inline static void Create(Args&&... args)
         {
-            ASSERT(g_TypedSingleton == nullptr);
+            ASSERT(g_TypedSingleton.load(std::memory_order_relaxed) == nullptr);
 
-            if (g_TypedSingleton == nullptr) {
+            if (g_TypedSingleton.load(std::memory_order_relaxed) == nullptr) {
 
-                // Create a singleton
-                g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+                // Create a singleton — caller guarantees single-threaded context
+                SINGLETON* ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(std::forward<Args>(args)...));
+                g_TypedSingleton.store(ptr, std::memory_order_release);
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            ASSERT(g_TypedSingleton.load(std::memory_order_relaxed) != nullptr);
+
+
         }
+
         inline static bool Dispose()
         {
             // Unprotected. Make sure the dispose is *ONLY* called
-            // after all usage of the singlton is completed!!!
-            bool disposed = false;
-            if (g_TypedSingleton != nullptr) {
-
-                delete g_TypedSingleton;
-                // note destructor will set g_TypedSingleton to nullptr;
-                disposed = true;
+            // after all usage of the singleton is completed!!!
+            SINGLETON* ptr = g_TypedSingleton.exchange(nullptr, std::memory_order_acq_rel);
+            
+            if (ptr != nullptr) {
+                // Bypass the destructor's store — we already zeroed via exchange.
+                delete ptr;
+                return true;
             }
-            return disposed;
+            return false;
         }
 
     private:
@@ -184,37 +189,37 @@ namespace Core {
         {
             static CriticalSection g_AdminLock;
 
-            // Hmm Double Lock syndrom :-)
-            if (g_TypedSingleton == nullptr) {
+            SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
+            if (ptr == nullptr) {
                 g_AdminLock.Lock();
-
-                if (g_TypedSingleton == nullptr) {
-                    // Create a singleton
-                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());
+                ptr = g_TypedSingleton.load(std::memory_order_relaxed);
+                if (ptr == nullptr) {
+                    ptr = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());
+                    g_TypedSingleton.store(ptr, std::memory_order_release);
                 }
-
                 g_AdminLock.Unlock();
             }
 
-            ASSERT(g_TypedSingleton != nullptr);
+            ASSERT(ptr != nullptr);
 
-            return *(g_TypedSingleton);
+            return *ptr;
         }
         static SINGLETON& GetObject(const TemplateIntToType<false>& /* For compile time diffrentiation */)
         {
             // If the Singleton needs to be constructed with a parameter, the Create() method
             // should have been called prior to the instance..
-            ASSERT(g_TypedSingleton != nullptr);
+            SINGLETON* ptr = g_TypedSingleton.load(std::memory_order_acquire);
+            ASSERT(ptr != nullptr);
 
-            return *(g_TypedSingleton);
+            return *ptr;
         }
 
       private:
-        static SINGLETON* g_TypedSingleton;
+        static std::atomic<SINGLETON*> g_TypedSingleton;
     };
 
     template <typename SINGLETONTYPE>
-    EXTERNAL_HIDDEN SINGLETONTYPE*  SingletonType<SINGLETONTYPE>::g_TypedSingleton = nullptr;
+    EXTERNAL_HIDDEN std::atomic<SINGLETONTYPE*> SingletonType<SINGLETONTYPE>::g_TypedSingleton{ nullptr };
 
     template <typename PROXYTYPE>
     class SingletonProxyType {

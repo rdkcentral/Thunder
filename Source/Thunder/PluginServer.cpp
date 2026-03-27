@@ -229,6 +229,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Destroy()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed (begin()) after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         // First, move them all to deactivated except Controller
@@ -761,6 +764,9 @@ namespace PluginHost {
                     local->Release();
                     result = Core::ERROR_NONE;
 #endif
+                    // coverity[DEADCODE] - On the non-HIBERNATE_ENABLED path result is always
+                    // ERROR_NONE here, making the else-if appear unreachable to Coverity.
+                    // Both branches are reachable when HIBERNATE_ENABLED is defined.
                     if (result == Core::ERROR_NONE) {
                         if (State() == IShell::state::HIBERNATED) {
                             SYSLOG(Logging::Startup, ("Hibernated plugin [%s]:[%s]", ClassName().c_str(), Callsign().c_str()));
@@ -951,6 +957,9 @@ namespace PluginHost {
 
     void Server::ServiceMap::Close()
     {
+        // coverity[ATOMICITY] - Lock is intentionally dropped around Deactivate() which can
+        // block. The iterator is refreshed after re-acquiring the lock each iteration.
+        // This is correct lock-straddling, not a race.
         _adminLock.Lock();
 
         Core::ProxyType<Service> controller(_server.Controller());
@@ -1382,12 +1391,17 @@ namespace PluginHost {
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        destructor->AddRef();
-        _connections.Close(100);
-        destructor->Stopped();
-        _services.Close();
-        _dispatcher.Stop();
-        destructor->Release();
+
+        ASSERT(destructor != nullptr);
+
+        if (destructor != nullptr) {
+            destructor->AddRef();
+            _connections.Close(100);
+            destructor->Stopped();
+            _services.Close();
+            _dispatcher.Stop();
+            destructor->Release();
+        }
         _inputHandler.Deinitialize();
         _connections.Close(Core::infinite);
 
