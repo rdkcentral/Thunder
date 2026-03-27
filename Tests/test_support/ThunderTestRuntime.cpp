@@ -1,0 +1,249 @@
+#include "ThunderTestRuntime.h"
+
+#include <PluginServer.h>
+#include <core/core.h>
+#include <fstream>
+#include <sstream>
+
+// ==========================================================================
+// ThunderTestRuntime implementation
+//
+// Lifecycle: Initialize() -> [run tests] -> Deinitialize()
+//
+// Initialize creates a unique /tmp/thunder_test_XXXXXX/ directory tree,
+// writes a minimal Thunder config.json, parses it into PluginHost::Config,
+// constructs PluginHost::Server, and calls Server::Open() which boots
+// the controller and activates auto-start plugins.
+//
+// Deinitialize reverses the process: Server::Close(), cleanup temp files.
+// ==========================================================================
+
+namespace Thunder {
+namespace TestCore {
+
+    ThunderTestRuntime::~ThunderTestRuntime()
+    {
+        Deinitialize();
+    }
+
+    void ThunderTestRuntime::CreateDirectories() const
+    {
+        Core::Directory(_tempDir.c_str()).Create();
+        Core::Directory((_tempDir + "persistent/").c_str()).Create();
+        Core::Directory((_tempDir + "volatile/").c_str()).Create();
+        Core::Directory((_tempDir + "data/").c_str()).Create();
+    }
+
+    void ThunderTestRuntime::CleanupDirectories() const
+    {
+        if (!_tempDir.empty()) {
+            Core::Directory(_tempDir.c_str()).Destroy();
+        }
+    }
+
+    // Build a minimal Thunder JSON config from the plugin list.
+    // Uses port 0 (OS-assigned) and binds to localhost only.
+    // Helper: JSON-escape a string value and return it quoted (e.g. "foo\"bar" → "\"foo\\\"bar\"")
+    // Uses Core::JSON::String serialization to handle escaping correctly.
+    static string JsonEscape(const string& value)
+    {
+        Core::JSON::String json;
+        json = value;
+        string result;
+        json.ToString(result);
+        return result;
+    }
+
+    string ThunderTestRuntime::BuildConfigJSON(const std::vector<PluginConfig>& plugins,
+                                                const string& systemPath,
+                                                const string& proxyStubPath) const
+    {
+        std::ostringstream json;
+        json << "{"
+             << "\"port\":0,"
+             << "\"binding\":\"127.0.0.1\","
+             << "\"idletime\":180,"
+             << "\"persistentpath\":" << JsonEscape(_tempDir + "persistent/") << ","
+             << "\"volatilepath\":" << JsonEscape(_tempDir + "volatile/") << ","
+             << "\"datapath\":" << JsonEscape(_tempDir + "data/") << ","
+             << "\"systempath\":" << JsonEscape(systemPath) << ","
+             << "\"proxystubpath\":" << JsonEscape(proxyStubPath) << ","
+             << "\"communicator\":" << JsonEscape(_tempDir + "communicator") << ","
+             << "\"plugins\":[";
+
+        for (size_t i = 0; i < plugins.size(); ++i) {
+            const auto& p = plugins[i];
+            if (i > 0) json << ",";
+            json << "{"
+                 << "\"callsign\":" << JsonEscape(p.callsign) << ","
+                 << "\"locator\":" << JsonEscape(p.locator) << ","
+                 << "\"classname\":" << JsonEscape(p.classname) << ","
+                 << "\"startuporder\":" << p.startuporder << ","
+                 << "\"autostart\":" << (p.autostart ? "true" : "false");
+
+            if (!p.configuration.empty()) {
+                json << ",\"configuration\":" << p.configuration;
+            }
+
+            json << "}";
+        }
+
+        json << "]}";
+        return json.str();
+    }
+
+    uint32_t ThunderTestRuntime::Initialize(const std::vector<PluginConfig>& plugins,
+                                             const string& systemPath,
+                                             const string& proxyStubPath)
+    {
+        if (_server != nullptr) {
+            return Core::ERROR_ALREADY_CONNECTED;
+        }
+
+        // Create unique temp directory for this test run
+        char tempTemplate[] = "/tmp/thunder_test_XXXXXX";
+        char* tempResult = mkdtemp(tempTemplate);
+        if (tempResult == nullptr) {
+            return Core::ERROR_GENERAL;
+        }
+        _tempDir = string(tempResult) + "/";
+
+        CreateDirectories();
+
+        // Determine system path for plugin .so files
+        string sysPath = systemPath;
+        if (sysPath.empty()) {
+            sysPath = "/usr/lib/wpeframework/plugins/";
+        }
+        if (sysPath.back() != '/') {
+            sysPath += '/';
+        }
+
+        // Determine proxy stub path
+        _proxyStubPath = proxyStubPath;
+        if (_proxyStubPath.empty()) {
+            // Default: look next to system path
+            _proxyStubPath = sysPath + "../proxystubs/";
+        }
+        if (_proxyStubPath.back() != '/') {
+            _proxyStubPath += '/';
+        }
+
+        // Build and write config to temp file
+        string configJSON = BuildConfigJSON(plugins, sysPath, _proxyStubPath);
+        _configFilePath = _tempDir + "config.json";
+
+        {
+            std::ofstream configFile(_configFilePath);
+            if (!configFile.is_open()) {
+                CleanupDirectories();
+                return Core::ERROR_OPENING_FAILED;
+            }
+            configFile << configJSON;
+        }
+
+        // Parse config
+        Core::File configFile(_configFilePath);
+        if (configFile.Open(true) == false) {
+            CleanupDirectories();
+            return Core::ERROR_OPENING_FAILED;
+        }
+
+        Core::OptionalType<Core::JSON::Error> error;
+        _config = new PluginHost::Config(configFile, false, error);
+        configFile.Close();
+
+        if (error.IsSet()) {
+            delete _config;
+            _config = nullptr;
+            CleanupDirectories();
+            return Core::ERROR_INCOMPLETE_CONFIG;
+        }
+
+        // Create and start the server
+        _server = new PluginHost::Server(*_config, false);
+        _server->Open();
+
+        return Core::ERROR_NONE;
+    }
+
+    // Invoke a JSON-RPC method synchronously via the in-process dispatcher.
+    // Bypasses HTTP/WebSocket — calls IDispatcher::Invoke() directly.
+    // Derives the callsign from the method string (text before the first '.').
+    uint32_t ThunderTestRuntime::InvokeJSONRPC(const string& method,
+                                                const string& params, string& response)
+    {
+        if (_server == nullptr) {
+            return Core::ERROR_ILLEGAL_STATE;
+        }
+
+        size_t dot = method.find('.');
+        if (dot == string::npos) {
+            return Core::ERROR_INVALID_SIGNATURE;
+        }
+        string callsign = method.substr(0, dot);
+
+        Core::ProxyType<PluginHost::IShell> shell;
+        uint32_t result = _server->Services().FromIdentifier(callsign, shell);
+        if (result != Core::ERROR_NONE) {
+            return result;
+        }
+
+        PluginHost::IDispatcher* dispatcher = shell->QueryInterface<PluginHost::IDispatcher>();
+        if (dispatcher == nullptr) {
+            return Core::ERROR_UNAVAILABLE;
+        }
+
+        result = dispatcher->Invoke(0, 0, string(), method, params, response);
+        dispatcher->Release();
+
+        return result;
+    }
+
+    Core::ProxyType<PluginHost::IShell> ThunderTestRuntime::GetShell(const string& callsign)
+    {
+        Core::ProxyType<PluginHost::IShell> shell;
+        if (_server != nullptr) {
+            _server->Services().FromIdentifier(callsign, shell);
+        }
+        return shell;
+    }
+
+    PluginHost::Server& ThunderTestRuntime::Server()
+    {
+        ASSERT(_server != nullptr);
+        return *_server;
+    }
+
+    string ThunderTestRuntime::CommunicatorPath() const
+    {
+        if (_config != nullptr) {
+            return _config->Communicator().HostName();
+        }
+        return string();
+    }
+
+    void ThunderTestRuntime::Deinitialize()
+    {
+        if (_server != nullptr) {
+            _server->Close();
+            delete _server;
+            _server = nullptr;
+        }
+
+        if (_config != nullptr) {
+            delete _config;
+            _config = nullptr;
+        }
+
+        if (!_configFilePath.empty()) {
+            Core::File(_configFilePath).Destroy();
+            _configFilePath.clear();
+        }
+
+        CleanupDirectories();
+        _tempDir.clear();
+    }
+
+} // namespace TestCore
+} // namespace Thunder
