@@ -1151,10 +1151,11 @@ namespace Plugin {
 
     Core::hresult Controller::DiscoveryResults(IDiscovery::Data::IDiscoveryResultsIterator*& outResults) const
     {
-        std::list<IDiscovery::Data::DiscoveryResult> results;
+        std::vector<IDiscovery::Data::DiscoveryResult> results;
 
         if (_probe != nullptr) {
             Probe::Iterator index(_probe->Instances());
+            results.reserve(_probe->Instances().Count());
 
             while (index.Next() == true) {
                 IDiscovery::Data::DiscoveryResult result;
@@ -1171,8 +1172,9 @@ namespace Plugin {
 
         if (results.empty() == false) {
             using Iterator = IDiscovery::Data::IDiscoveryResultsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(results)>;
 
-            outResults = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(results);
+            outResults = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(results));
             ASSERT(outResults != nullptr);
         }
         else {
@@ -1185,7 +1187,7 @@ namespace Plugin {
     Core::hresult Controller::Services(const Core::OptionalType<string>& callsign, IMetadata::Data::IServicesIterator*& outServices) const
     {
         Core::hresult result = Core::ERROR_UNAVAILABLE;
-        std::list<IMetadata::Data::Service> services;
+        std::vector<IMetadata::Data::Service> services;
 
         if (callsign.IsSet() == false) {
             auto it = _pluginServer->Services().Services();
@@ -1202,14 +1204,7 @@ namespace Plugin {
                         meta.Callsign = cs;
                     }
 
-                    IMetadata::Data::Service service(meta);
-
-                    // Make sure the list is sorted..
-                    std::list<IMetadata::Data::Service>::iterator index(services.begin());
-                    while ((index != services.end()) && (index->Callsign < cs)) {
-                        index++;
-                    }
-                    services.insert(index, service);
+                    services.push_back(IMetadata::Data::Service(meta));
                 }
             }
         }
@@ -1229,9 +1224,15 @@ namespace Plugin {
         }
 
         if (services.empty() == false) {
-            using Iterator = IMetadata::Data::IServicesIterator;
+            std::sort(services.begin(), services.end(),
+                [](const IMetadata::Data::Service& a, const IMetadata::Data::Service& b) {
+                    return a.Callsign < b.Callsign;
+                });
 
-            outServices = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(services);
+            using Iterator = IMetadata::Data::IServicesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(services)>;
+
+            outServices = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(services));
             ASSERT(outServices != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1254,7 +1255,8 @@ namespace Plugin {
 
         if (callStackInfo.empty() == false) {
 
-            std::list<IMetadata::Data::CallStack> callstack;
+            std::vector<IMetadata::Data::CallStack> callstack;
+            callstack.reserve(callStackInfo.size());
 
             for (const Core::callstack_info& entry : callStackInfo) {
                 IMetadata::Data::CallStack cs;
@@ -1273,8 +1275,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ICallStackIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(callstack)>;
 
-            outCallStack = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(callstack);
+            outCallStack = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(callstack));
             ASSERT(outCallStack != nullptr);
 
             result = Core::ERROR_NONE;
@@ -1295,8 +1298,8 @@ namespace Plugin {
         _pluginServer->Metadata(meta);
 
         if (meta.Length() > 0) {
-            std::list<IMetadata::Data::Link> links;
-
+            std::vector<IMetadata::Data::Link> links;
+            links.reserve(meta.Length());
             auto it = meta.Elements();
 
             while (it.Next() == true) {
@@ -1316,8 +1319,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::ILinksIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(links)>;
 
-            outLinks = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(links);
+            outLinks = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(links));
             ASSERT(outLinks != nullptr);
         }
         else {
@@ -1350,8 +1354,9 @@ namespace Plugin {
 
         if (proxySearch == true) {
             using Iterator = IMetadata::Data::IProxiesIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(collection)>;
 
-            outProxies = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(std::move(collection));
+            outProxies = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(collection));
             ASSERT(outProxies != nullptr);
             result = Core::ERROR_NONE;
         }
@@ -1366,8 +1371,8 @@ namespace Plugin {
 
         if (meta.ThreadPoolRuns.Length() > 0) {
 
-            std::list<IMetadata::Data::Thread> threads;
-
+            std::vector<IMetadata::Data::Thread> threads;
+            threads.reserve(meta.ThreadPoolRuns.Length());
             auto it = meta.ThreadPoolRuns.Elements();
 
             while (it.Next() == true) {
@@ -1376,8 +1381,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IThreadsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(threads)>;
 
-            outThreads = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(threads);
+            outThreads = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(threads));
             ASSERT(outThreads != nullptr);
         }
         else {
@@ -1395,8 +1401,8 @@ namespace Plugin {
 
         if (meta.PendingRequests.Length() > 0) {
 
-            std::list<string> requests;
-
+            std::vector<string> requests;
+            requests.reserve(meta.PendingRequests.Length());
             auto it = meta.PendingRequests.Elements();
 
             while (it.Next() == true) {
@@ -1404,8 +1410,9 @@ namespace Plugin {
             }
 
             using Iterator = IMetadata::Data::IPendingRequestsIterator;
+            using IteratorImpl = RPC::IteratorType<Iterator, decltype(requests)>;
 
-            outRequests = Core::ServiceType<RPC::IteratorType<Iterator>>::Create<Iterator>(requests);
+            outRequests = Core::ServiceType<IteratorImpl>::Create<Iterator>(std::move(requests));
             ASSERT(outRequests != nullptr);
         }
         else {
@@ -1422,8 +1429,8 @@ namespace Plugin {
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
-            std::list<ISubsystems::Subsystem> subsystems;
-
+            std::vector<ISubsystems::Subsystem> subsystems;
+            subsystems.reserve(PluginHost::ISubSystem::END_LIST);
             std::underlying_type<PluginHost::ISubSystem::subsystem>::type i = 0;
 
             while (i < PluginHost::ISubSystem::END_LIST) {
@@ -1435,7 +1442,9 @@ namespace Plugin {
 
             subSystem->Release();
 
-            outSubsystems = Core::ServiceType<RPC::IteratorType<ISubsystems::ISubsystemsIterator>>::Create<ISubsystems::ISubsystemsIterator>(subsystems);
+            using IteratorImpl = RPC::IteratorType<ISubsystems::ISubsystemsIterator, decltype(subsystems)>;
+
+            outSubsystems = Core::ServiceType<IteratorImpl>::Create<ISubsystems::ISubsystemsIterator>(std::move(subsystems));
             ASSERT(outSubsystems != nullptr);
         }
         else {
