@@ -1889,7 +1889,6 @@ namespace PluginHost {
 
         private:
             static const TCHAR* PluginHostCallsign() {return _T("PluginHost");}
-            static const TCHAR* ControllerCallsign() {return _T("Controller");}
 
         public:
             Override(const Override&) = delete;
@@ -1986,7 +1985,7 @@ namespace PluginHost {
                     bool found = false;
 
                     const string& raw = callsign.Value();
-                    const string target = (raw.empty() == true) ? string(ControllerCallsign()) : raw;
+                    const string target = (raw.empty() == true) ? _services.ControllerCallsign() : raw;
                     ServiceMap::Iterator index(_services.Services());
                     while (index.Next() == true) {
                         if (index->Callsign() == target) {
@@ -2033,7 +2032,7 @@ namespace PluginHost {
                     bool found = false;
 
                     const string& raw = callsign.Value();
-                    const string target = (raw.empty() == true) ? string(ControllerCallsign()) : raw;
+                    const string target = (raw.empty() == true) ? _services.ControllerCallsign() : raw;
                     ServiceMap::Iterator index(_services.Services());
                     while (index.Next() == true) {
                         if (index->Callsign() == target) {
@@ -3193,6 +3192,10 @@ namespace PluginHost {
             }
 
         public:
+            inline string ControllerCallsign() const
+            {
+                return (_server.Controller()->Callsign());
+            }
             inline void Security(const bool enabled)
             {
                 _adminLock.Lock();
